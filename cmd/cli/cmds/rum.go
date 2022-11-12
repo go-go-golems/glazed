@@ -50,6 +50,15 @@ You can also specify fields to include in the output, using comma-separated list
 You can also specify fields to remove from the output, using comma-separated lists:
 
 	dd-cli rum ls-actions --filter "page.url"
+
+Here is a more complex example:
+	dd-cli rum ls-actions \
+ 		--action filters-search \
+        --from 2022/11/10 
+		--fields name,query.q,query.,pagination.total_hits \
+		--filter query.category \
+		--table-format markdown \
+		--count 50 
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		from := cmd.Flag("from").Value.String()
