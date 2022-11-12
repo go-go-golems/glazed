@@ -8,7 +8,6 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/araddon/dateparse"
 	_ "github.com/araddon/dateparse"
-	"github.com/scylladb/termtables"
 	_ "github.com/scylladb/termtables"
 	"github.com/spf13/cobra"
 	"os"
@@ -142,41 +141,28 @@ You can also specify fields to remove from the output, using comma-separated lis
 			}
 			fmt.Println(string(jsonBytes))
 		} else if output == "table" {
-			table := termtables.CreateTable()
+			of := cli.NewTableOutputFormatter(tableFormat)
+			of.AddMiddleware(cli.NewFlattenObjectMiddleware())
+			of.AddMiddleware(cli.NewFieldsFilterMiddleware(fields, filters))
+			if len(fields) == 0 {
+				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware([]cli.FieldName{"name"}))
+
+			} else {
+				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware(fields))
+
+			}
 
 			flattenedActions := flattenActions(actions)
-
-			columns := cli.CleanupColumns(flattenedActions, fields, filters)
-			columnsInterface := make([]interface{}, len(columns))
-			for i, v := range columns {
-				columnsInterface[i] = v
-			}
-
-			if tableFormat == "markdown" {
-				table.SetModeMarkdown()
-			} else if tableFormat == "html" {
-				table.SetModeHTML()
-			} else if tableFormat == "ascii" {
-				table.SetModeTerminal()
-			}
-
-			table.AddHeaders("name")
-			table.AddHeaders(columnsInterface...)
-
 			for _, action := range flattenedActions {
-				var row []interface{}
-				row = append(row, action["name"])
-				for _, column := range columns {
-					s := ""
-					if v, ok := action[column]; ok {
-						s = fmt.Sprintf("%v", v)
-					}
-					row = append(row, s)
-				}
-				table.AddRow(row...)
+				of.AddRow(&cli.SimpleRow{Hash: action})
 			}
 
-			fmt.Println(table.Render())
+			s, err := of.Output()
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(s)
 		} else if output == "csv" {
 
 		}
@@ -207,9 +193,9 @@ func init() {
 	listActionsCmd.Flags().String("from", "", "From date (accepts variety of formats)")
 	listActionsCmd.Flags().String("to", "", "To date (accepts variety of formats)")
 
-	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, csv, json, sqlite)")
+	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, json, sqlite)")
 	listActionsCmd.Flags().StringP("output-file", "f", "", "Output file")
-	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html)")
+	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv)")
 
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
