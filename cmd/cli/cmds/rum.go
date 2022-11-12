@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"dd-cli/lib/cli"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -54,13 +55,16 @@ You can also specify fields to remove from the output, using comma-separated lis
 	Run: func(cmd *cobra.Command, args []string) {
 		from := cmd.Flag("from").Value.String()
 		to := cmd.Flag("to").Value.String()
-		output := cmd.Flag("output").Value.String()
-		_ = cmd.Flag("output-file").Value.String()
 		action := cmd.Flag("action").Value.String()
 		actionNames := []string{}
 		if action != "" {
 			actionNames = strings.Split(action, ",")
 		}
+
+		// these are the flags used for the table output
+		output := cmd.Flag("output").Value.String()
+		_ = cmd.Flag("output-file").Value.String()
+
 		fieldStr := cmd.Flag("fields").Value.String()
 		filters := []string{}
 		fields := []string{}
@@ -71,6 +75,8 @@ You can also specify fields to remove from the output, using comma-separated lis
 		if filterStr != "" {
 			filters = strings.Split(filterStr, ",")
 		}
+
+		tableFormat := cmd.Flag("table-format").Value.String()
 
 		filter := datadogV2.NewRUMQueryFilter()
 		query := "@type:action"
@@ -140,10 +146,18 @@ You can also specify fields to remove from the output, using comma-separated lis
 
 			flattenedActions := flattenActions(actions)
 
-			columns := collectContextColumns(flattenedActions, fields, filters)
+			columns := cli.CleanupColumns(flattenedActions, fields, filters)
 			columnsInterface := make([]interface{}, len(columns))
 			for i, v := range columns {
 				columnsInterface[i] = v
+			}
+
+			if tableFormat == "markdown" {
+				table.SetModeMarkdown()
+			} else if tableFormat == "html" {
+				table.SetModeHTML()
+			} else if tableFormat == "ascii" {
+				table.SetModeTerminal()
 			}
 
 			table.AddHeaders("name")
@@ -169,23 +183,6 @@ You can also specify fields to remove from the output, using comma-separated lis
 	},
 }
 
-func flattenMapIntoColumns(rows map[string]interface{}) map[string]interface{} {
-	ret := map[string]interface{}{}
-
-	for key, value := range rows {
-		switch v := value.(type) {
-		case map[string]interface{}:
-			for k, v := range flattenMapIntoColumns(v) {
-				ret[fmt.Sprintf("%s.%s", key, k)] = v
-			}
-		default:
-			ret[key] = v
-		}
-	}
-
-	return ret
-}
-
 func flattenActions(actions []Action) []map[string]interface{} {
 	ret := []map[string]interface{}{}
 
@@ -194,7 +191,7 @@ func flattenActions(actions []Action) []map[string]interface{} {
 		row["name"] = action.Name
 		if action.Context != nil {
 			context := action.Context.(map[string]interface{})
-			for k, v := range flattenMapIntoColumns(context) {
+			for k, v := range cli.FlattenMapIntoColumns(context) {
 				row[k] = v
 			}
 		}
@@ -202,54 +199,6 @@ func flattenActions(actions []Action) []map[string]interface{} {
 	}
 
 	return ret
-}
-
-func collectContextColumns(rows []map[string]interface{}, fields []string, filters []string) []string {
-	ret := map[string]interface{}{}
-
-	for _, row := range rows {
-	Keys:
-		for key := range row {
-			if key != "name" {
-				if len(filters) > 0 {
-					for _, filter := range filters {
-						if strings.HasSuffix(filter, ".") {
-							if strings.HasPrefix(key, filter) {
-								continue Keys
-							}
-						} else {
-							if key == filter {
-								continue Keys
-							}
-						}
-					}
-				}
-
-				if len(fields) > 0 {
-					for _, field := range fields {
-						if strings.HasSuffix(field, ".") {
-							if strings.HasPrefix(key, field) {
-								ret[key] = nil
-							}
-						} else {
-							if key == field {
-								ret[key] = nil
-							}
-						}
-					}
-				} else {
-					ret[key] = nil
-				}
-			}
-		}
-	}
-
-	var keys []string
-	for k := range ret {
-		keys = append(keys, k)
-	}
-
-	return keys
 }
 
 func init() {
@@ -260,6 +209,8 @@ func init() {
 
 	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, csv, json, sqlite)")
 	listActionsCmd.Flags().StringP("output-file", "f", "", "Output file")
+	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html)")
+
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
 	listActionsCmd.Flags().String("filter", "", "Fields to remove from output")
