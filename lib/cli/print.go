@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/scylladb/termtables"
+	"sort"
 	"strings"
 )
 
@@ -30,15 +31,13 @@ import (
 //    - highlight certain values
 //    - filter the input structure / output structure using a jq like query language
 
-type TableName = string
-
 type OutputFormatter interface {
 	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
 	Output() (string, error)
 }
 
 // The following is all geared towards tabulated output
-
+type TableName = string
 type FieldName = string
 type GenericCellValue = interface{}
 type MapRow = map[FieldName]GenericCellValue
@@ -46,6 +45,16 @@ type MapRow = map[FieldName]GenericCellValue
 type Row interface {
 	GetFields() []FieldName
 	GetValues() MapRow
+}
+
+type TableMiddleware interface {
+	// Process transform a single row into potential multiple rows split across multiple tables
+	Process(table *Table) (*Table, error)
+}
+
+type Table struct {
+	Columns []FieldName
+	Rows    []Row
 }
 
 type SimpleRow struct {
@@ -64,19 +73,9 @@ func (sr *SimpleRow) GetValues() MapRow {
 	return sr.Hash
 }
 
-type Middleware interface {
-	// Process transform a single row into potential multiple rows split across multiple tables
-	Process(table *Table) (*Table, error)
-}
-
-type Table struct {
-	Columns []FieldName
-	Rows    []Row
-}
-
 type TableOutputFormatter struct {
 	table       *Table
-	middlewares []Middleware
+	middlewares []TableMiddleware
 	tableFormat string
 }
 
@@ -86,7 +85,7 @@ func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
 			Columns: []FieldName{},
 			Rows:    []Row{},
 		},
-		middlewares: []Middleware{},
+		middlewares: []TableMiddleware{},
 		tableFormat: tableFormat,
 	}
 }
@@ -134,7 +133,7 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 	}
 }
 
-func (tof *TableOutputFormatter) AddMiddleware(m Middleware) {
+func (tof *TableOutputFormatter) AddMiddleware(m TableMiddleware) {
 	tof.middlewares = append(tof.middlewares, m)
 }
 
@@ -208,23 +207,27 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 		for rowField, value := range values {
 			// skip all of this if we already filtered that field
 			if _, ok := newColumns[rowField]; !ok {
-				if len(ffm.fields) > 0 || len(ffm.prefixFields) > 0 {
-					fieldFound := false
+				exactMatchFound := false
+				prefixMatchFound := false
 
+				exactFilterMatchFound := false
+				prefixFilterMatchFound := false
+
+				if len(ffm.fields) > 0 || len(ffm.prefixFields) > 0 {
 					// first go through exact matches
 					if _, ok := ffm.fields[rowField]; ok {
-						fieldFound = true
+						exactMatchFound = true
 					} else {
 						// else, test against all prefixes
 						for _, prefix := range ffm.prefixFields {
 							if strings.HasPrefix(rowField, prefix) {
-								fieldFound = true
+								prefixMatchFound = true
 								break
 							}
 						}
 					}
 
-					if !fieldFound {
+					if !exactMatchFound && !prefixMatchFound {
 						continue NextRow
 					}
 				}
@@ -232,18 +235,34 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 				if len(ffm.filters) > 0 || len(ffm.prefixFilters) > 0 {
 					// if an exact filter matches, move on
 					if _, ok := ffm.filters[rowField]; ok {
+						exactFilterMatchFound = true
 						continue NextRow
 					} else {
 						// else, test against all prefixes
 						for _, prefix := range ffm.prefixFilters {
 							if strings.HasPrefix(rowField, prefix) {
-								continue NextRow
+								prefixFilterMatchFound = true
+								break
 							}
 						}
 					}
 				}
 
-				newColumns[rowField] = nil
+				if exactMatchFound {
+					newColumns[rowField] = nil
+				} else if prefixMatchFound {
+					if prefixFilterMatchFound {
+						// should we do by prefix length, nah...
+						// choose to include by default
+						newColumns[rowField] = nil
+					} else if exactFilterMatchFound {
+						continue NextRow
+					} else {
+						newColumns[rowField] = nil
+					}
+				} else if prefixMatchFound || exactFilterMatchFound {
+					continue NextRow
+				}
 			}
 
 			newRow.Hash[rowField] = value
@@ -390,4 +409,21 @@ func (scm *ReorderColumnOrderMiddleware) Process(table *Table) (*Table, error) {
 	table.Columns = newColumns
 
 	return table, nil
+}
+
+type SortColumnsMiddleware struct {
+}
+
+func NewSortColumnsMiddleware() *SortColumnsMiddleware {
+	return &SortColumnsMiddleware{}
+}
+
+func (scm *SortColumnsMiddleware) Process(table *Table) (*Table, error) {
+	sort.Strings(table.Columns)
+	return table, nil
+}
+
+type SQLiteOutputFormatter struct {
+	table       *Table
+	middlewares []TableMiddleware
 }

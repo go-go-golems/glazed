@@ -144,12 +144,12 @@ You can also specify fields to remove from the output, using comma-separated lis
 			of := cli.NewTableOutputFormatter(tableFormat)
 			of.AddMiddleware(cli.NewFlattenObjectMiddleware())
 			of.AddMiddleware(cli.NewFieldsFilterMiddleware(fields, filters))
+			of.AddMiddleware(cli.NewSortColumnsMiddleware())
 			if len(fields) == 0 {
 				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware([]cli.FieldName{"name"}))
 
 			} else {
 				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware(fields))
-
 			}
 
 			flattenedActions := flattenActions(actions)
@@ -163,7 +163,7 @@ You can also specify fields to remove from the output, using comma-separated lis
 			}
 
 			fmt.Println(s)
-		} else if output == "csv" {
+		} else if output == "sqlite" {
 
 		}
 	},
