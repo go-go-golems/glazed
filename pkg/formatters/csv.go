@@ -1,22 +1,24 @@
-package pkg
+package formatters
 
 import (
+	middlewares2 "dd-cli/pkg/middlewares"
+	"dd-cli/pkg/types"
 	"encoding/csv"
 	"fmt"
 	"strings"
 )
 
 type CSVOutputFormatter struct {
-	Table       *Table
-	middlewares []TableMiddleware
+	Table       *types.Table
+	middlewares []middlewares2.TableMiddleware
 	WithHeaders bool
 	Separator   rune
 }
 
 func NewCSVOutputFormatter() *CSVOutputFormatter {
 	return &CSVOutputFormatter{
-		Table:       NewTable(),
-		middlewares: []TableMiddleware{},
+		Table:       types.NewTable(),
+		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   ',',
 	}
@@ -24,18 +26,18 @@ func NewCSVOutputFormatter() *CSVOutputFormatter {
 
 func NewTSVOutputFormatter() *CSVOutputFormatter {
 	return &CSVOutputFormatter{
-		Table:       NewTable(),
-		middlewares: []TableMiddleware{},
+		Table:       types.NewTable(),
+		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   '\t',
 	}
 }
 
-func (f *CSVOutputFormatter) AddMiddleware(m TableMiddleware) {
+func (f *CSVOutputFormatter) AddMiddleware(m middlewares2.TableMiddleware) {
 	f.middlewares = append(f.middlewares, m)
 }
 
-func (f *CSVOutputFormatter) AddRow(row Row) {
+func (f *CSVOutputFormatter) AddRow(row types.Row) {
 	f.Table.Rows = append(f.Table.Rows, row)
 }
 

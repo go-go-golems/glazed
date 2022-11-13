@@ -1,150 +1,13 @@
-package pkg
+package middlewares
 
 import (
+	"bytes"
+	"dd-cli/pkg/types"
 	"fmt"
-	"github.com/scylladb/termtables"
 	"sort"
 	"strings"
+	"text/template"
 )
-
-// This part of the library contains helper functionality to do output formatting
-// for data.
-//
-// We want to do the following:
-//    - print a Table with a header
-//    - print the Table as csv
-//    - render raw data as json
-//    - render data as sqlite (potentially into multiple tables)
-//    - support multiple tables
-//        - transform tree like structures into flattened tables
-//    - make it easy for the user to add data
-//    - make it easy for the user to specify filters and fields
-//    - provide a middleware like structure to chain filters and transformers
-//    - provide a way to add documentation to the output / data schema
-//    - support go templating
-//    - load formatting values from a config file
-//    - streaming functionality (i.e., output as values come in)
-//
-// Advanced functionality:
-//    - excel output
-//    - pager and search
-//    - highlight certain values
-//    - filter the input structure / output structure using a jq like query language
-
-type OutputFormatter interface {
-	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
-	AddRow(row Row)
-	AddMiddleware(m TableMiddleware)
-	Output() (string, error)
-}
-
-// The following is all geared towards tabulated output
-
-type TableName = string
-type FieldName = string
-type GenericCellValue = interface{}
-type MapRow = map[FieldName]GenericCellValue
-
-type Row interface {
-	GetFields() []FieldName
-	GetValues() MapRow
-}
-
-type TableMiddleware interface {
-	// Process transform a single row into potential multiple rows split across multiple tables
-	Process(table *Table) (*Table, error)
-}
-
-type Table struct {
-	Columns []FieldName
-	Rows    []Row
-}
-
-func NewTable() *Table {
-	return &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
-	}
-}
-
-type SimpleRow struct {
-	Hash MapRow
-}
-
-func (sr *SimpleRow) GetFields() []FieldName {
-	ret := []FieldName{}
-	for key := range sr.Hash {
-		ret = append(ret, key)
-	}
-	return ret
-}
-
-func (sr *SimpleRow) GetValues() MapRow {
-	return sr.Hash
-}
-
-type TableOutputFormatter struct {
-	Table       *Table
-	middlewares []TableMiddleware
-	TableFormat string
-}
-
-func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
-	return &TableOutputFormatter{
-		Table:       NewTable(),
-		middlewares: []TableMiddleware{},
-		TableFormat: tableFormat,
-	}
-}
-
-func (tof *TableOutputFormatter) Output() (string, error) {
-	for _, middleware := range tof.middlewares {
-		newTable, err := middleware.Process(tof.Table)
-		if err != nil {
-			return "", err
-		}
-		tof.Table = newTable
-	}
-
-	table := termtables.CreateTable()
-
-	if tof.TableFormat == "markdown" {
-		table.SetModeMarkdown()
-	} else if tof.TableFormat == "html" {
-		table.SetModeHTML()
-	} else {
-		table.SetModeTerminal()
-	}
-
-	for _, column := range tof.Table.Columns {
-		table.AddHeaders(column)
-	}
-
-	for _, row := range tof.Table.Rows {
-		var row_ []interface{}
-		values := row.GetValues()
-		for _, column := range tof.Table.Columns {
-			s := ""
-			if v, ok := values[column]; ok {
-				s = fmt.Sprintf("%v", v)
-			}
-			row_ = append(row_, s)
-		}
-		table.AddRow(row_...)
-	}
-
-	return table.Render(), nil
-}
-
-func (tof *TableOutputFormatter) AddMiddleware(m TableMiddleware) {
-	tof.middlewares = append(tof.middlewares, m)
-}
-
-func (tof *TableOutputFormatter) AddRow(row Row) {
-	tof.Table.Rows = append(tof.Table.Rows, row)
-}
-
-// Let's go with different middlewares
 
 // FieldsFilterMiddleware keeps columns that are in the fields list and removes
 // columns that are in the filters list.
@@ -187,14 +50,14 @@ func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterM
 	}
 }
 
-func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
-	ret := &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
 	}
 
 	// how do we keep order here
-	newColumns := map[FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
 
 	if len(ffm.fields) == 0 && len(ffm.filters) == 0 {
 		return table, nil
@@ -202,8 +65,8 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
-		newRow := SimpleRow{
-			Hash: map[FieldName]GenericCellValue{},
+		newRow := types.SimpleRow{
+			Hash: map[types.FieldName]types.GenericCellValue{},
 		}
 
 	NextRow:
@@ -279,9 +142,9 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 	return ret, nil
 }
 
-func PreserveColumnOrder(table *Table, newColumns map[FieldName]interface{}) []FieldName {
-	seenRetColumns := map[FieldName]interface{}{}
-	retColumns := []FieldName{}
+func PreserveColumnOrder(table *types.Table, newColumns map[types.FieldName]interface{}) []types.FieldName {
+	seenRetColumns := map[types.FieldName]interface{}{}
+	retColumns := []types.FieldName{}
 
 	// preserve previous columns order as best as possible
 	for _, column := range table.Columns {
@@ -306,18 +169,18 @@ func NewFlattenObjectMiddleware() *FlattenObjectMiddleware {
 	return &FlattenObjectMiddleware{}
 }
 
-func (fom *FlattenObjectMiddleware) Process(table *Table) (*Table, error) {
-	ret := &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
 	}
 
-	newColumns := map[FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newValues := FlattenMapIntoColumns(values)
-		newRow := SimpleRow{
+		newRow := types.SimpleRow{
 			Hash: newValues,
 		}
 
@@ -332,12 +195,12 @@ func (fom *FlattenObjectMiddleware) Process(table *Table) (*Table, error) {
 	return ret, nil
 }
 
-func FlattenMapIntoColumns(rows MapRow) MapRow {
-	ret := MapRow{}
+func FlattenMapIntoColumns(rows types.MapRow) types.MapRow {
+	ret := types.MapRow{}
 
 	for key, value := range rows {
 		switch v := value.(type) {
-		case MapRow:
+		case types.MapRow:
 			for k, v := range FlattenMapIntoColumns(v) {
 				ret[fmt.Sprintf("%s.%s", key, k)] = v
 			}
@@ -350,17 +213,17 @@ func FlattenMapIntoColumns(rows MapRow) MapRow {
 }
 
 type PreserveColumnOrderMiddleware struct {
-	columns []FieldName
+	columns []types.FieldName
 }
 
-func NewPreserveColumnOrderMiddleware(columns []FieldName) *PreserveColumnOrderMiddleware {
+func NewPreserveColumnOrderMiddleware(columns []types.FieldName) *PreserveColumnOrderMiddleware {
 	return &PreserveColumnOrderMiddleware{
 		columns: columns,
 	}
 }
 
-func (scm *PreserveColumnOrderMiddleware) Process(table *Table) (*Table, error) {
-	columnHash := map[FieldName]interface{}{}
+func (scm *PreserveColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+	columnHash := map[types.FieldName]interface{}{}
 	for _, column := range scm.columns {
 		columnHash[column] = nil
 	}
@@ -370,23 +233,23 @@ func (scm *PreserveColumnOrderMiddleware) Process(table *Table) (*Table, error) 
 }
 
 type ReorderColumnOrderMiddleware struct {
-	columns []FieldName
+	columns []types.FieldName
 }
 
-func NewReorderColumnOrderMiddleware(columns []FieldName) *ReorderColumnOrderMiddleware {
+func NewReorderColumnOrderMiddleware(columns []types.FieldName) *ReorderColumnOrderMiddleware {
 	return &ReorderColumnOrderMiddleware{
 		columns: columns,
 	}
 }
 
-func (scm *ReorderColumnOrderMiddleware) Process(table *Table) (*Table, error) {
-	existingColumns := map[FieldName]interface{}{}
+func (scm *ReorderColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+	existingColumns := map[types.FieldName]interface{}{}
 	for _, column := range table.Columns {
 		existingColumns[column] = nil
 	}
 
-	seenColumns := map[FieldName]interface{}{}
-	newColumns := []FieldName{}
+	seenColumns := map[types.FieldName]interface{}{}
+	newColumns := []types.FieldName{}
 
 	for _, column := range scm.columns {
 		if strings.HasSuffix(column, ".") {
@@ -409,6 +272,13 @@ func (scm *ReorderColumnOrderMiddleware) Process(table *Table) (*Table, error) {
 		}
 	}
 
+	for column := range existingColumns {
+		if _, ok := seenColumns[column]; !ok {
+			newColumns = append(newColumns, column)
+			seenColumns[column] = nil
+		}
+	}
+
 	table.Columns = newColumns
 
 	return table, nil
@@ -421,12 +291,105 @@ func NewSortColumnsMiddleware() *SortColumnsMiddleware {
 	return &SortColumnsMiddleware{}
 }
 
-func (scm *SortColumnsMiddleware) Process(table *Table) (*Table, error) {
+func (scm *SortColumnsMiddleware) Process(table *types.Table) (*types.Table, error) {
 	sort.Strings(table.Columns)
 	return table, nil
 }
 
-type SQLiteOutputFormatter struct {
-	table       *Table
-	middlewares []TableMiddleware
+type RowGoTemplateMiddleware struct {
+	templates map[types.FieldName]*template.Template
+	// this field is used to replace "." in keys before passing them to the template,
+	// in order to avoid having to use the `index` template function to access fields
+	// that contain a ".", which is frequent due to flattening.
+	RenameSeparator string
+}
+
+// NewRowGoTemplateMiddleware creates a new RowGoTemplateMiddleware
+// which is the simplest go template middleware.
+//
+// It will render the template for each row and return the result as a new column called with
+// the given title.
+//
+// Because nested objects will be flattened to individual columns using the . separator,
+// this will make fields inaccessible to the template. One way around this is to use
+// {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
+// option.
+func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*RowGoTemplateMiddleware, error) {
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+	}
+
+	templates := map[types.FieldName]*template.Template{}
+	for columnName, templateString := range templateStrings {
+		tmpl, err := template.New("row").Funcs(funcMap).Parse(templateString)
+		if err != nil {
+			return nil, err
+		}
+		templates[columnName] = tmpl
+	}
+
+	return &RowGoTemplateMiddleware{
+		templates: templates,
+	}, nil
+}
+
+func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
+	}
+
+	columnRenames := map[types.FieldName]types.FieldName{}
+	existingColumns := map[types.FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
+
+	for _, row := range table.Rows {
+		newRow := types.SimpleRow{
+			Hash: row.GetValues(),
+		}
+
+		templateValues := map[string]interface{}{}
+
+		for key, value := range newRow.Hash {
+			if rgtm.RenameSeparator != "" {
+				if _, ok := columnRenames[key]; !ok {
+					columnRenames[key] = strings.ReplaceAll(key, ".", rgtm.RenameSeparator)
+				}
+			}
+			templateValues[columnRenames[key]] = value
+		}
+		templateValues["_row"] = templateValues
+
+		for columnName, tmpl := range rgtm.templates {
+			var buf bytes.Buffer
+			err := tmpl.Execute(&buf, templateValues)
+			if err != nil {
+				return nil, err
+			}
+
+			// we need to handle the fact that some rows might not have all the keys, and thus
+			// avoid counting columns as existing twice
+			if _, ok := newColumns[columnName]; !ok {
+				if _, ok := newRow.Hash[columnName]; ok {
+					newColumns[columnName] = nil
+				}
+			} else {
+				if _, ok := newRow.Hash[columnName]; !ok {
+					existingColumns[columnName] = nil
+				}
+			}
+			newRow.Hash[columnName] = buf.String()
+		}
+
+		ret.Rows = append(ret.Rows, &newRow)
+	}
+
+	// I guess another solution would just be to remove the duplicates once we are done...
+	for columnName := range newColumns {
+		if _, ok := existingColumns[columnName]; !ok {
+			ret.Columns = append(table.Columns, columnName)
+		}
+	}
+
+	return ret, nil
 }
