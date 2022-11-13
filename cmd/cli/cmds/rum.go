@@ -1,7 +1,9 @@
 package cmds
 
 import (
-	"dd-cli/pkg"
+	"dd-cli/pkg/formatters"
+	"dd-cli/pkg/middlewares"
+	"dd-cli/pkg/types"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -159,47 +161,50 @@ With CSV output:
 			fmt.Println(string(jsonBytes))
 		} else if output == "table" {
 			withHeaders, _ := cmd.Flags().GetBool("with-headers")
-			var of pkg.OutputFormatter
+			var of formatters.OutputFormatter
 			if tableFormat == "csv" {
 				csvSeparator, _ := cmd.Flags().GetString("csv-separator")
 
-				csvOf := pkg.NewCSVOutputFormatter()
+				csvOf := formatters.NewCSVOutputFormatter()
 				csvOf.WithHeaders = withHeaders
 				r, _ := utf8.DecodeRuneInString(csvSeparator)
 				csvOf.Separator = r
 				of = csvOf
 			} else if tableFormat == "tsv" {
-				tsvOf := pkg.NewTSVOutputFormatter()
+				tsvOf := formatters.NewTSVOutputFormatter()
 				tsvOf.WithHeaders = withHeaders
 				of = tsvOf
 			} else {
-				of = pkg.NewTableOutputFormatter(tableFormat)
+				of = formatters.NewTableOutputFormatter(tableFormat)
 			}
 
 			// templates get applied before flattening
 			templates, _ := cmd.Flags().GetStringSlice("template")
 			// support only one template for now
-			if len(templates) == 1 {
-				middleware, err := pkg.NewRowGoTemplateMiddleware("tmpl", templates[0])
-				if err != nil {
-					panic(err)
-				}
-				of.AddMiddleware(middleware)
-			}
+			//if len(templates) == 1 {
+			//	middleware, err := middlewares.NewRowGoTemplateMiddleware("tmpl", templates[0])
+			//	if err != nil {
+			//		panic(err)
+			//	}
+			//	of.AddMiddleware(middleware)
+			//}
 
-			of.AddMiddleware(pkg.NewFlattenObjectMiddleware())
-			of.AddMiddleware(pkg.NewFieldsFilterMiddleware(fields, filters))
-			of.AddMiddleware(pkg.NewSortColumnsMiddleware())
+			of.AddMiddleware(middlewares.NewFlattenObjectMiddleware())
+			of.AddMiddleware(middlewares.NewFieldsFilterMiddleware(fields, filters))
+			of.AddMiddleware(middlewares.NewSortColumnsMiddleware())
 			if len(fields) == 0 {
-				of.AddMiddleware(pkg.NewReorderColumnOrderMiddleware([]pkg.FieldName{"name"}))
+				of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware([]types.FieldName{"name"}))
 
 			} else {
-				of.AddMiddleware(pkg.NewReorderColumnOrderMiddleware(fields))
+				of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware(fields))
 			}
 
-			flattenedActions := flattenActions(actions)
+			flattenedActions, err := flattenActions(actions, templates)
+			if err != nil {
+				panic(err)
+			}
 			for _, action := range flattenedActions {
-				of.AddRow(&pkg.SimpleRow{Hash: action})
+				of.AddRow(&types.SimpleRow{Hash: action})
 			}
 
 			s, err := of.Output()
@@ -214,22 +219,44 @@ With CSV output:
 	},
 }
 
-func flattenActions(actions []Action) []map[string]interface{} {
+func flattenActions(actions []Action, templates []string) ([]map[string]interface{}, error) {
 	ret := []map[string]interface{}{}
+
+	var gtmw *middlewares.ObjectGoTemplateMiddleware
+	var err error
+	if len(templates) == 1 {
+		gtmw, err = middlewares.NewObjectGoTemplateMiddleware("tmpl", templates[0])
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	for _, action := range actions {
 		row := map[string]interface{}{}
 		row["name"] = action.Name
 		if action.Context != nil {
 			context := action.Context.(map[string]interface{})
-			for k, v := range pkg.FlattenMapIntoColumns(context) {
+			if gtmw != nil {
+				// we should pass action name to the context, or maybe actually the whole raw action
+				context["name"] = action.Name
+				res_, err := gtmw.Process(context)
+				if err != nil {
+					return nil, err
+				}
+
+				for k, v := range res_.(map[string]string) {
+					row[k] = v
+				}
+			}
+
+			for k, v := range middlewares.FlattenMapIntoColumns(context) {
 				row[k] = v
 			}
 		}
 		ret = append(ret, row)
 	}
 
-	return ret
+	return ret, nil
 }
 
 func init() {

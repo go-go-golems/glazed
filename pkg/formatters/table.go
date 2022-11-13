@@ -1,6 +1,8 @@
-package pkg
+package formatters
 
 import (
+	"dd-cli/pkg/middlewares"
+	"dd-cli/pkg/types"
 	"fmt"
 	"github.com/scylladb/termtables"
 )
@@ -31,61 +33,23 @@ import (
 
 type OutputFormatter interface {
 	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
-	AddRow(row Row)
-	AddMiddleware(m TableMiddleware)
+	AddRow(row types.Row)
+	AddMiddleware(m middlewares.TableMiddleware)
 	Output() (string, error)
 }
 
 // The following is all geared towards tabulated output
 
-type TableName = string
-type FieldName = string
-type GenericCellValue = interface{}
-type MapRow = map[FieldName]GenericCellValue
-
-type Row interface {
-	GetFields() []FieldName
-	GetValues() MapRow
-}
-
-type Table struct {
-	Columns []FieldName
-	Rows    []Row
-}
-
-func NewTable() *Table {
-	return &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
-	}
-}
-
-type SimpleRow struct {
-	Hash MapRow
-}
-
-func (sr *SimpleRow) GetFields() []FieldName {
-	ret := []FieldName{}
-	for key := range sr.Hash {
-		ret = append(ret, key)
-	}
-	return ret
-}
-
-func (sr *SimpleRow) GetValues() MapRow {
-	return sr.Hash
-}
-
 type TableOutputFormatter struct {
-	Table       *Table
-	middlewares []TableMiddleware
+	Table       *types.Table
+	middlewares []middlewares.TableMiddleware
 	TableFormat string
 }
 
 func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
 	return &TableOutputFormatter{
-		Table:       NewTable(),
-		middlewares: []TableMiddleware{},
+		Table:       types.NewTable(),
+		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
 	}
 }
@@ -129,17 +93,17 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 	return table.Render(), nil
 }
 
-func (tof *TableOutputFormatter) AddMiddleware(m TableMiddleware) {
+func (tof *TableOutputFormatter) AddMiddleware(m middlewares.TableMiddleware) {
 	tof.middlewares = append(tof.middlewares, m)
 }
 
-func (tof *TableOutputFormatter) AddRow(row Row) {
+func (tof *TableOutputFormatter) AddRow(row types.Row) {
 	tof.Table.Rows = append(tof.Table.Rows, row)
 }
 
 // Let's go with different middlewares
 
 type SQLiteOutputFormatter struct {
-	table       *Table
-	middlewares []TableMiddleware
+	table       *types.Table
+	middlewares []middlewares.TableMiddleware
 }

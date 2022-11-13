@@ -1,17 +1,13 @@
-package pkg
+package middlewares
 
 import (
 	"bytes"
+	"dd-cli/pkg/types"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
 )
-
-type TableMiddleware interface {
-	// Process transform a single row into potential multiple rows split across multiple tables
-	Process(table *Table) (*Table, error)
-}
 
 // FieldsFilterMiddleware keeps columns that are in the fields list and removes
 // columns that are in the filters list.
@@ -54,14 +50,14 @@ func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterM
 	}
 }
 
-func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
-	ret := &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
 	}
 
 	// how do we keep order here
-	newColumns := map[FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
 
 	if len(ffm.fields) == 0 && len(ffm.filters) == 0 {
 		return table, nil
@@ -69,8 +65,8 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
-		newRow := SimpleRow{
-			Hash: map[FieldName]GenericCellValue{},
+		newRow := types.SimpleRow{
+			Hash: map[types.FieldName]types.GenericCellValue{},
 		}
 
 	NextRow:
@@ -146,9 +142,9 @@ func (ffm *FieldsFilterMiddleware) Process(table *Table) (*Table, error) {
 	return ret, nil
 }
 
-func PreserveColumnOrder(table *Table, newColumns map[FieldName]interface{}) []FieldName {
-	seenRetColumns := map[FieldName]interface{}{}
-	retColumns := []FieldName{}
+func PreserveColumnOrder(table *types.Table, newColumns map[types.FieldName]interface{}) []types.FieldName {
+	seenRetColumns := map[types.FieldName]interface{}{}
+	retColumns := []types.FieldName{}
 
 	// preserve previous columns order as best as possible
 	for _, column := range table.Columns {
@@ -173,18 +169,18 @@ func NewFlattenObjectMiddleware() *FlattenObjectMiddleware {
 	return &FlattenObjectMiddleware{}
 }
 
-func (fom *FlattenObjectMiddleware) Process(table *Table) (*Table, error) {
-	ret := &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
 	}
 
-	newColumns := map[FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newValues := FlattenMapIntoColumns(values)
-		newRow := SimpleRow{
+		newRow := types.SimpleRow{
 			Hash: newValues,
 		}
 
@@ -199,12 +195,12 @@ func (fom *FlattenObjectMiddleware) Process(table *Table) (*Table, error) {
 	return ret, nil
 }
 
-func FlattenMapIntoColumns(rows MapRow) MapRow {
-	ret := MapRow{}
+func FlattenMapIntoColumns(rows types.MapRow) types.MapRow {
+	ret := types.MapRow{}
 
 	for key, value := range rows {
 		switch v := value.(type) {
-		case MapRow:
+		case types.MapRow:
 			for k, v := range FlattenMapIntoColumns(v) {
 				ret[fmt.Sprintf("%s.%s", key, k)] = v
 			}
@@ -217,17 +213,17 @@ func FlattenMapIntoColumns(rows MapRow) MapRow {
 }
 
 type PreserveColumnOrderMiddleware struct {
-	columns []FieldName
+	columns []types.FieldName
 }
 
-func NewPreserveColumnOrderMiddleware(columns []FieldName) *PreserveColumnOrderMiddleware {
+func NewPreserveColumnOrderMiddleware(columns []types.FieldName) *PreserveColumnOrderMiddleware {
 	return &PreserveColumnOrderMiddleware{
 		columns: columns,
 	}
 }
 
-func (scm *PreserveColumnOrderMiddleware) Process(table *Table) (*Table, error) {
-	columnHash := map[FieldName]interface{}{}
+func (scm *PreserveColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+	columnHash := map[types.FieldName]interface{}{}
 	for _, column := range scm.columns {
 		columnHash[column] = nil
 	}
@@ -237,23 +233,23 @@ func (scm *PreserveColumnOrderMiddleware) Process(table *Table) (*Table, error) 
 }
 
 type ReorderColumnOrderMiddleware struct {
-	columns []FieldName
+	columns []types.FieldName
 }
 
-func NewReorderColumnOrderMiddleware(columns []FieldName) *ReorderColumnOrderMiddleware {
+func NewReorderColumnOrderMiddleware(columns []types.FieldName) *ReorderColumnOrderMiddleware {
 	return &ReorderColumnOrderMiddleware{
 		columns: columns,
 	}
 }
 
-func (scm *ReorderColumnOrderMiddleware) Process(table *Table) (*Table, error) {
-	existingColumns := map[FieldName]interface{}{}
+func (scm *ReorderColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+	existingColumns := map[types.FieldName]interface{}{}
 	for _, column := range table.Columns {
 		existingColumns[column] = nil
 	}
 
-	seenColumns := map[FieldName]interface{}{}
-	newColumns := []FieldName{}
+	seenColumns := map[types.FieldName]interface{}{}
+	newColumns := []types.FieldName{}
 
 	for _, column := range scm.columns {
 		if strings.HasSuffix(column, ".") {
@@ -295,14 +291,14 @@ func NewSortColumnsMiddleware() *SortColumnsMiddleware {
 	return &SortColumnsMiddleware{}
 }
 
-func (scm *SortColumnsMiddleware) Process(table *Table) (*Table, error) {
+func (scm *SortColumnsMiddleware) Process(table *types.Table) (*types.Table, error) {
 	sort.Strings(table.Columns)
 	return table, nil
 }
 
 type RowGoTemplateMiddleware struct {
 	template   *template.Template
-	columnName FieldName
+	columnName types.FieldName
 	// this field is used to replace "." in keys before passing them to the template,
 	// in order to avoid having to use the `index` template function to access fields
 	// that contain a ".", which is frequent due to flattening.
@@ -320,7 +316,7 @@ type RowGoTemplateMiddleware struct {
 // {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
 // option.
 func NewRowGoTemplateMiddleware(
-	columName FieldName,
+	columName types.FieldName,
 	templateString string) (*RowGoTemplateMiddleware, error) {
 	tmpl, err := template.New("row").Parse(templateString)
 	if err != nil {
@@ -333,18 +329,18 @@ func NewRowGoTemplateMiddleware(
 	}, nil
 }
 
-func (rgtm *RowGoTemplateMiddleware) Process(table *Table) (*Table, error) {
-	ret := &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: []types.FieldName{},
+		Rows:    []types.Row{},
 	}
 
-	columnRenames := map[FieldName]FieldName{}
+	columnRenames := map[types.FieldName]types.FieldName{}
 
 	isNewColumn := true
 
 	for _, row := range table.Rows {
-		newRow := SimpleRow{
+		newRow := types.SimpleRow{
 			Hash: row.GetValues(),
 		}
 
