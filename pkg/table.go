@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"encoding/csv"
 	"fmt"
 	"github.com/scylladb/termtables"
 	"sort"
@@ -12,8 +11,8 @@ import (
 // for data.
 //
 // We want to do the following:
-//    - print a table with a header
-//    - print the table as csv
+//    - print a Table with a header
+//    - print the Table as csv
 //    - render raw data as json
 //    - render data as sqlite (potentially into multiple tables)
 //    - support multiple tables
@@ -34,6 +33,8 @@ import (
 
 type OutputFormatter interface {
 	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
+	AddRow(row Row)
+	AddMiddleware(m TableMiddleware)
 	Output() (string, error)
 }
 
@@ -59,6 +60,13 @@ type Table struct {
 	Rows    []Row
 }
 
+func NewTable() *Table {
+	return &Table{
+		Columns: []FieldName{},
+		Rows:    []Row{},
+	}
+}
+
 type SimpleRow struct {
 	Hash MapRow
 }
@@ -76,94 +84,56 @@ func (sr *SimpleRow) GetValues() MapRow {
 }
 
 type TableOutputFormatter struct {
-	table       *Table
+	Table       *Table
 	middlewares []TableMiddleware
-	tableFormat string
+	TableFormat string
 }
 
 func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
 	return &TableOutputFormatter{
-		table: &Table{
-			Columns: []FieldName{},
-			Rows:    []Row{},
-		},
+		Table:       NewTable(),
 		middlewares: []TableMiddleware{},
-		tableFormat: tableFormat,
+		TableFormat: tableFormat,
 	}
 }
 
 func (tof *TableOutputFormatter) Output() (string, error) {
 	for _, middleware := range tof.middlewares {
-		newTable, err := middleware.Process(tof.table)
+		newTable, err := middleware.Process(tof.Table)
 		if err != nil {
 			return "", err
 		}
-		tof.table = newTable
+		tof.Table = newTable
 	}
 
-	if tof.tableFormat == "csv" {
-		// create a buffer writer
-		buf := strings.Builder{}
-		w := csv.NewWriter(&buf)
+	table := termtables.CreateTable()
 
-		// TODO(manuel, 2022-11-13) add flag to make header output optional
-		err := w.Write(tof.table.Columns)
-		if err != nil {
-			return "", err
-		}
-
-		for _, row := range tof.table.Rows {
-			values := []string{}
-			for _, column := range tof.table.Columns {
-				if v, ok := row.GetValues()[column]; ok {
-					values = append(values, fmt.Sprintf("%v", v))
-				} else {
-					values = append(values, "")
-				}
-			}
-			err := w.Write(values)
-			if err != nil {
-				return "", err
-			}
-		}
-
-		w.Flush()
-
-		if err := w.Error(); err != nil {
-			return "", err
-		}
-
-		return buf.String(), nil
+	if tof.TableFormat == "markdown" {
+		table.SetModeMarkdown()
+	} else if tof.TableFormat == "html" {
+		table.SetModeHTML()
 	} else {
-		table := termtables.CreateTable()
-
-		if tof.tableFormat == "markdown" {
-			table.SetModeMarkdown()
-		} else if tof.tableFormat == "html" {
-			table.SetModeHTML()
-		} else {
-			table.SetModeTerminal()
-		}
-
-		for _, column := range tof.table.Columns {
-			table.AddHeaders(column)
-		}
-
-		for _, row := range tof.table.Rows {
-			var row_ []interface{}
-			values := row.GetValues()
-			for _, column := range tof.table.Columns {
-				s := ""
-				if v, ok := values[column]; ok {
-					s = fmt.Sprintf("%v", v)
-				}
-				row_ = append(row_, s)
-			}
-			table.AddRow(row_...)
-		}
-
-		return table.Render(), nil
+		table.SetModeTerminal()
 	}
+
+	for _, column := range tof.Table.Columns {
+		table.AddHeaders(column)
+	}
+
+	for _, row := range tof.Table.Rows {
+		var row_ []interface{}
+		values := row.GetValues()
+		for _, column := range tof.Table.Columns {
+			s := ""
+			if v, ok := values[column]; ok {
+				s = fmt.Sprintf("%v", v)
+			}
+			row_ = append(row_, s)
+		}
+		table.AddRow(row_...)
+	}
+
+	return table.Render(), nil
 }
 
 func (tof *TableOutputFormatter) AddMiddleware(m TableMiddleware) {
@@ -171,7 +141,7 @@ func (tof *TableOutputFormatter) AddMiddleware(m TableMiddleware) {
 }
 
 func (tof *TableOutputFormatter) AddRow(row Row) {
-	tof.table.Rows = append(tof.table.Rows, row)
+	tof.Table.Rows = append(tof.Table.Rows, row)
 }
 
 // Let's go with different middlewares

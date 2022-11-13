@@ -150,7 +150,15 @@ Here is a more complex example:
 			}
 			fmt.Println(string(jsonBytes))
 		} else if output == "table" {
-			of := pkg.NewTableOutputFormatter(tableFormat)
+			var of pkg.OutputFormatter
+			if tableFormat == "csv" {
+				of = pkg.NewCSVOutputFormatter()
+			} else if tableFormat == "tsv" {
+				of = pkg.NewTSVOutputFormatter()
+			} else {
+				of = pkg.NewTableOutputFormatter(tableFormat)
+			}
+
 			of.AddMiddleware(pkg.NewFlattenObjectMiddleware())
 			of.AddMiddleware(pkg.NewFieldsFilterMiddleware(fields, filters))
 			of.AddMiddleware(pkg.NewSortColumnsMiddleware())
@@ -204,7 +212,7 @@ func init() {
 
 	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, json, sqlite)")
 	listActionsCmd.Flags().StringP("output-file", "f", "", "Output file")
-	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv)")
+	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
 
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
