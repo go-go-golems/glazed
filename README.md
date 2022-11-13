@@ -1,7 +1,13 @@
-# dd-cli - Command line client for the Datadog API
+# glazed - format your structured data for CLI application output
 
-This is a small program I needed to read the RUM data from DataDog's API, 
-so that I could run analytics on some of our custom events.
+> Add the icing to your structured data!
 
-I don't plan to build it out further than my personal needs,
-but it might be of interest to somebody.
+This is a small library that makes it easy to output structured data
+in a rich variety of ways:
+
+- flatten nested objects into rows
+- format human-readable tables
+- filter and rename columns
+- export in CSV, JSON, markdown, html, text
+- use go templates to customize output
+- helper functions for integrating with cobra
