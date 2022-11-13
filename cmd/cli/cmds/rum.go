@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
+	"unicode/utf8"
 )
 
 var RumCmd = cobra.Command{
@@ -150,11 +151,20 @@ Here is a more complex example:
 			}
 			fmt.Println(string(jsonBytes))
 		} else if output == "table" {
+			withHeaders, _ := cmd.Flags().GetBool("with-headers")
 			var of pkg.OutputFormatter
 			if tableFormat == "csv" {
-				of = pkg.NewCSVOutputFormatter()
+				csvSeparator, _ := cmd.Flags().GetString("csv-separator")
+
+				csvOf := pkg.NewCSVOutputFormatter()
+				csvOf.WithHeaders = withHeaders
+				r, _ := utf8.DecodeRuneInString(csvSeparator)
+				csvOf.Separator = r
+				of = csvOf
 			} else if tableFormat == "tsv" {
-				of = pkg.NewTSVOutputFormatter()
+				tsvOf := pkg.NewTSVOutputFormatter()
+				tsvOf.WithHeaders = withHeaders
+				of = tsvOf
 			} else {
 				of = pkg.NewTableOutputFormatter(tableFormat)
 			}
@@ -213,6 +223,8 @@ func init() {
 	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, json, sqlite)")
 	listActionsCmd.Flags().StringP("output-file", "f", "", "Output file")
 	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
+	listActionsCmd.Flags().Bool("with-headers", true, "Include headers in output (CSV, TSV)")
+	listActionsCmd.Flags().String("csv-separator", ",", "CSV separator")
 
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
