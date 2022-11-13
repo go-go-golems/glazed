@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/scylladb/termtables"
 	"sort"
@@ -37,6 +38,7 @@ type OutputFormatter interface {
 }
 
 // The following is all geared towards tabulated output
+
 type TableName = string
 type FieldName = string
 type GenericCellValue = interface{}
@@ -100,7 +102,38 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 	}
 
 	if tof.tableFormat == "csv" {
-		return "", fmt.Errorf("not implemented")
+		// create a buffer writer
+		buf := strings.Builder{}
+		w := csv.NewWriter(&buf)
+
+		// TODO(manuel, 2022-11-13) add flag to make header output optional
+		err := w.Write(tof.table.Columns)
+		if err != nil {
+			return "", err
+		}
+
+		for _, row := range tof.table.Rows {
+			values := []string{}
+			for _, column := range tof.table.Columns {
+				if v, ok := row.GetValues()[column]; ok {
+					values = append(values, fmt.Sprintf("%v", v))
+				} else {
+					values = append(values, "")
+				}
+			}
+			err := w.Write(values)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		w.Flush()
+
+		if err := w.Error(); err != nil {
+			return "", err
+		}
+
+		return buf.String(), nil
 	} else {
 		table := termtables.CreateTable()
 
