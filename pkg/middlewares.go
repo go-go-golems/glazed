@@ -303,12 +303,22 @@ func (scm *SortColumnsMiddleware) Process(table *Table) (*Table, error) {
 type RowGoTemplateMiddleware struct {
 	template   *template.Template
 	columnName FieldName
+	// this field is used to replace "." in keys before passing them to the template,
+	// in order to avoid having to use the `index` template function to access fields
+	// that contain a ".", which is frequent due to flattening.
+	RenameSeparator string
 }
 
 // NewRowGoTemplateMiddleware creates a new RowGoTemplateMiddleware
 // which is the simplest go template middleware.
+//
 // It will render the template for each row and return the result as a new column called with
-// the given title
+// the given title.
+//
+// Because nested objects will be flattened to individual columns using the . separator,
+// this will make fields inaccessible to the template. One way around this is to use
+// {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
+// option.
 func NewRowGoTemplateMiddleware(
 	columName FieldName,
 	templateString string) (*RowGoTemplateMiddleware, error) {
@@ -329,25 +339,33 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *Table) (*Table, error) {
 		Rows:    []Row{},
 	}
 
+	columnRenames := map[FieldName]FieldName{}
+
 	isNewColumn := true
 
 	for _, row := range table.Rows {
 		newRow := SimpleRow{
-			Hash: MapRow{},
+			Hash: row.GetValues(),
 		}
 
+		templateValues := map[string]interface{}{}
+
+		for key, value := range newRow.Hash {
+			if rgtm.RenameSeparator != "" {
+				if _, ok := columnRenames[key]; !ok {
+					columnRenames[key] = strings.ReplaceAll(key, ".", rgtm.RenameSeparator)
+				}
+			}
+			templateValues[columnRenames[key]] = value
+		}
+		templateValues["_row"] = templateValues
+
 		var buf bytes.Buffer
-		values := row.GetValues()
-		// TODO(manuel, 2022-11-13) We need to replace . with _ in the field names before running the template
-		// since we otherwise run into issue, as it asssumes they are nested fields, but we use .
-		// as a standard separator when flattening.
-		// In fact we should make that separator configurable in the flattening middleware
-		err := rgtm.template.Execute(&buf, values)
+		err := rgtm.template.Execute(&buf, templateValues)
 		if err != nil {
 			return nil, err
 		}
 
-		newRow.Hash = values
 		if _, ok := newRow.Hash[rgtm.columnName]; ok {
 			isNewColumn = false
 		}
