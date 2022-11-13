@@ -84,6 +84,19 @@ With field templates:
 				--template-field 'yo:{{.name | ToUpper }}' \
 				--template-field 'hits:{{.pagination.total_hits}}' \
 				--fields 'name,yo,hits'
+
+Give a yaml file:
+
+	yo: "{{ .name | ToUpper }}"
+	hits: "{{ .pagination.total_hits }}"
+
+	dd-cli rum ls-actions \
+				--action filters-search --from 2022/11/10 --count 12 \
+				--table-format markdown \
+				--template-field '@misc/rum-action-field-templates.yaml' \
+				--template-field 'double:{{.name}}-{{.name}}' \
+				--fields 'name,double,yo,hits'
+
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		from := cmd.Flag("from").Value.String()
