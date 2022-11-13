@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"dd-cli/pkg/cli"
 	"dd-cli/pkg/formatters"
 	"dd-cli/pkg/middlewares"
 	"dd-cli/pkg/types"
@@ -69,6 +70,20 @@ With CSV output:
 				--action filters-search --from 2022/11/10 \
                	--count 50 \
 				--table-format csv --csv-separator '|' --with-headers=false
+
+With a single line template:
+	dd-cli rum ls-actions \
+				--action filters-search --from 2022/11/10 \
+				--count 12 \
+				--template '{{.name}} - {{.pagination.total_hits}}'
+
+With field templates:
+	dd-cli rum ls-actions \
+				--action filters-search --from 2022/11/10 --count 12 \
+				--table-format markdown \
+				--template-field 'yo:{{.name | ToUpper }}' \
+				--template-field 'hits:{{.pagination.total_hits}}' \
+				--fields 'name,yo,hits'
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		from := cmd.Flag("from").Value.String()
@@ -153,79 +168,97 @@ With CSV output:
 			})
 		}
 
-		if output == "json" {
-			jsonBytes, err := json.MarshalIndent(actions, "", "  ")
+		// templates get applied before flattening
+		var templates map[types.FieldName]string
+
+		templateArgument, _ := cmd.Flags().GetString("template")
+		if templateArgument != "" {
+			templates = map[types.FieldName]string{}
+			templates["_0"] = templateArgument
+		} else {
+			templateFields, _ := cmd.Flags().GetStringSlice("template-field")
+			templates, err = cli.ParseTemplateFieldArguments(templateFields)
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println(string(jsonBytes))
-		} else if output == "table" {
-			withHeaders, _ := cmd.Flags().GetBool("with-headers")
-			var of formatters.OutputFormatter
-			if tableFormat == "csv" {
-				csvSeparator, _ := cmd.Flags().GetString("csv-separator")
+		}
 
-				csvOf := formatters.NewCSVOutputFormatter()
-				csvOf.WithHeaders = withHeaders
-				r, _ := utf8.DecodeRuneInString(csvSeparator)
-				csvOf.Separator = r
-				of = csvOf
-			} else if tableFormat == "tsv" {
-				tsvOf := formatters.NewTSVOutputFormatter()
-				tsvOf.WithHeaders = withHeaders
-				of = tsvOf
-			} else {
-				of = formatters.NewTableOutputFormatter(tableFormat)
-			}
-
-			// templates get applied before flattening
-			templates, _ := cmd.Flags().GetStringSlice("template")
-			// support only one template for now
-			//if len(templates) == 1 {
-			//	middleware, err := middlewares.NewRowGoTemplateMiddleware("tmpl", templates[0])
-			//	if err != nil {
-			//		panic(err)
-			//	}
-			//	of.AddMiddleware(middleware)
-			//}
-
-			of.AddMiddleware(middlewares.NewFlattenObjectMiddleware())
-			of.AddMiddleware(middlewares.NewFieldsFilterMiddleware(fields, filters))
-			of.AddMiddleware(middlewares.NewSortColumnsMiddleware())
-			if len(fields) == 0 {
-				of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware([]types.FieldName{"name"}))
-
-			} else {
-				of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware(fields))
-			}
-
+		if templateArgument != "" {
+			// if a template is specified, we only print out the individual template lines
 			flattenedActions, err := flattenActions(actions, templates)
 			if err != nil {
 				panic(err)
 			}
 			for _, action := range flattenedActions {
-				of.AddRow(&types.SimpleRow{Hash: action})
+				fmt.Println(action["_0"])
 			}
+		} else {
+			if output == "json" {
+				jsonBytes, err := json.MarshalIndent(actions, "", "  ")
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(string(jsonBytes))
+			} else if output == "table" {
+				withHeaders, _ := cmd.Flags().GetBool("with-headers")
+				var of formatters.OutputFormatter
+				if tableFormat == "csv" {
+					csvSeparator, _ := cmd.Flags().GetString("csv-separator")
 
-			s, err := of.Output()
-			if err != nil {
-				panic(err)
+					csvOf := formatters.NewCSVOutputFormatter()
+					csvOf.WithHeaders = withHeaders
+					r, _ := utf8.DecodeRuneInString(csvSeparator)
+					csvOf.Separator = r
+					of = csvOf
+				} else if tableFormat == "tsv" {
+					tsvOf := formatters.NewTSVOutputFormatter()
+					tsvOf.WithHeaders = withHeaders
+					of = tsvOf
+				} else {
+					of = formatters.NewTableOutputFormatter(tableFormat)
+				}
+
+				of.AddMiddleware(middlewares.NewFlattenObjectMiddleware())
+				of.AddMiddleware(middlewares.NewFieldsFilterMiddleware(fields, filters))
+				of.AddMiddleware(middlewares.NewSortColumnsMiddleware())
+				if len(fields) == 0 {
+					of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware([]types.FieldName{"name"}))
+
+				} else {
+					of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware(fields))
+				}
+
+				flattenedActions, err := flattenActions(actions, templates)
+				if err != nil {
+					panic(err)
+				}
+				for _, action := range flattenedActions {
+					of.AddRow(&types.SimpleRow{Hash: action})
+				}
+
+				s, err := of.Output()
+				if err != nil {
+					panic(err)
+				}
+
+				fmt.Println(s)
+			} else if output == "sqlite" {
+
 			}
-
-			fmt.Println(s)
-		} else if output == "sqlite" {
-
 		}
+
 	},
 }
 
-func flattenActions(actions []Action, templates []string) ([]map[string]interface{}, error) {
+func flattenActions(
+	actions []Action,
+	templates map[types.FieldName]string,
+) ([]map[string]interface{}, error) {
 	ret := []map[string]interface{}{}
-
 	var gtmw *middlewares.ObjectGoTemplateMiddleware
 	var err error
-	if len(templates) == 1 {
-		gtmw, err = middlewares.NewObjectGoTemplateMiddleware("tmpl", templates[0])
+	if len(templates) > 0 {
+		gtmw, err = middlewares.NewObjectGoTemplateMiddleware(templates)
 		if err != nil {
 			return nil, err
 		}
@@ -271,7 +304,8 @@ func init() {
 	listActionsCmd.Flags().Bool("with-headers", true, "Include headers in output (CSV, TSV)")
 	listActionsCmd.Flags().String("csv-separator", ",", "CSV separator")
 
-	listActionsCmd.Flags().StringSlice("template", nil, "Go Template to use for output")
+	listActionsCmd.Flags().String("template", "", "Go Template to use for single string")
+	listActionsCmd.Flags().StringSlice("template-field", nil, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
 
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")

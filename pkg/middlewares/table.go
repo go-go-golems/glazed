@@ -297,8 +297,7 @@ func (scm *SortColumnsMiddleware) Process(table *types.Table) (*types.Table, err
 }
 
 type RowGoTemplateMiddleware struct {
-	template   *template.Template
-	columnName types.FieldName
+	templates map[types.FieldName]*template.Template
 	// this field is used to replace "." in keys before passing them to the template,
 	// in order to avoid having to use the `index` template function to access fields
 	// that contain a ".", which is frequent due to flattening.
@@ -315,17 +314,22 @@ type RowGoTemplateMiddleware struct {
 // this will make fields inaccessible to the template. One way around this is to use
 // {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
 // option.
-func NewRowGoTemplateMiddleware(
-	columName types.FieldName,
-	templateString string) (*RowGoTemplateMiddleware, error) {
-	tmpl, err := template.New("row").Parse(templateString)
-	if err != nil {
-		return nil, err
+func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*RowGoTemplateMiddleware, error) {
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+	}
+
+	templates := map[types.FieldName]*template.Template{}
+	for columnName, templateString := range templateStrings {
+		tmpl, err := template.New("row").Funcs(funcMap).Parse(templateString)
+		if err != nil {
+			return nil, err
+		}
+		templates[columnName] = tmpl
 	}
 
 	return &RowGoTemplateMiddleware{
-		columnName: columName,
-		template:   tmpl,
+		templates: templates,
 	}, nil
 }
 
@@ -336,8 +340,8 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 	}
 
 	columnRenames := map[types.FieldName]types.FieldName{}
-
-	isNewColumn := true
+	existingColumns := map[types.FieldName]interface{}{}
+	newColumns := map[types.FieldName]interface{}{}
 
 	for _, row := range table.Rows {
 		newRow := types.SimpleRow{
@@ -356,22 +360,35 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 		}
 		templateValues["_row"] = templateValues
 
-		var buf bytes.Buffer
-		err := rgtm.template.Execute(&buf, templateValues)
-		if err != nil {
-			return nil, err
-		}
+		for columnName, tmpl := range rgtm.templates {
+			var buf bytes.Buffer
+			err := tmpl.Execute(&buf, templateValues)
+			if err != nil {
+				return nil, err
+			}
 
-		if _, ok := newRow.Hash[rgtm.columnName]; ok {
-			isNewColumn = false
+			// we need to handle the fact that some rows might not have all the keys, and thus
+			// avoid counting columns as existing twice
+			if _, ok := newColumns[columnName]; !ok {
+				if _, ok := newRow.Hash[columnName]; ok {
+					newColumns[columnName] = nil
+				}
+			} else {
+				if _, ok := newRow.Hash[columnName]; !ok {
+					existingColumns[columnName] = nil
+				}
+			}
+			newRow.Hash[columnName] = buf.String()
 		}
-		newRow.Hash[rgtm.columnName] = buf.String()
 
 		ret.Rows = append(ret.Rows, &newRow)
 	}
 
-	if isNewColumn {
-		ret.Columns = append(table.Columns, rgtm.columnName)
+	// I guess another solution would just be to remove the duplicates once we are done...
+	for columnName := range newColumns {
+		if _, ok := existingColumns[columnName]; !ok {
+			ret.Columns = append(table.Columns, columnName)
+		}
 	}
 
 	return ret, nil
