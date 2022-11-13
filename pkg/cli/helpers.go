@@ -45,14 +45,19 @@ func ParseTemplateFieldFileArgument(fileName string) (map[types.FieldName]string
 	}
 
 	// parse yaml file
-	var ret map[types.FieldName]string
+	ret := map[types.FieldName]string{}
+	ret2 := map[string]interface{}{}
 	fileContent, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file %s", fileName)
 	}
-	err = yaml.Unmarshal(fileContent, ret)
+	err = yaml.Unmarshal(fileContent, ret2)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse file %s", fileName)
+	}
+
+	for key, v := range ret2 {
+		ret[key] = v.(string)
 	}
 
 	return ret, nil
