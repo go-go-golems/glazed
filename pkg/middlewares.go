@@ -337,12 +337,17 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *Table) (*Table, error) {
 		}
 
 		var buf bytes.Buffer
-		err := rgtm.template.Execute(&buf, row.GetValues())
+		values := row.GetValues()
+		// TODO(manuel, 2022-11-13) We need to replace . with _ in the field names before running the template
+		// since we otherwise run into issue, as it asssumes they are nested fields, but we use .
+		// as a standard separator when flattening.
+		// In fact we should make that separator configurable in the flattening middleware
+		err := rgtm.template.Execute(&buf, values)
 		if err != nil {
 			return nil, err
 		}
 
-		newRow.Hash = row.GetValues()
+		newRow.Hash = values
 		if _, ok := newRow.Hash[rgtm.columnName]; ok {
 			isNewColumn = false
 		}
