@@ -60,6 +60,13 @@ Here is a more complex example:
 		--filter query.category \
 		--table-format markdown \
 		--count 50 
+
+
+With CSV output:
+	dd-cli rum ls-actions \
+				--action filters-search --from 2022/11/10 \
+               	--count 50 \
+				--table-format csv --csv-separator '|' --with-headers=false
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		from := cmd.Flag("from").Value.String()
@@ -169,6 +176,17 @@ Here is a more complex example:
 				of = pkg.NewTableOutputFormatter(tableFormat)
 			}
 
+			// templates get applied before flattening
+			templates, _ := cmd.Flags().GetStringSlice("template")
+			// support only one template for now
+			if len(templates) == 1 {
+				middleware, err := pkg.NewRowGoTemplateMiddleware("tmpl", templates[0])
+				if err != nil {
+					panic(err)
+				}
+				of.AddMiddleware(middleware)
+			}
+
 			of.AddMiddleware(pkg.NewFlattenObjectMiddleware())
 			of.AddMiddleware(pkg.NewFieldsFilterMiddleware(fields, filters))
 			of.AddMiddleware(pkg.NewSortColumnsMiddleware())
@@ -225,6 +243,8 @@ func init() {
 	listActionsCmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
 	listActionsCmd.Flags().Bool("with-headers", true, "Include headers in output (CSV, TSV)")
 	listActionsCmd.Flags().String("csv-separator", ",", "CSV separator")
+
+	listActionsCmd.Flags().StringSlice("template", nil, "Go Template to use for output")
 
 	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
