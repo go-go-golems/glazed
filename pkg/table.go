@@ -1,4 +1,4 @@
-package cli
+package pkg
 
 import (
 	"encoding/csv"

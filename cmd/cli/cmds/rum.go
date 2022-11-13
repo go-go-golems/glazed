@@ -1,7 +1,7 @@
 package cmds
 
 import (
-	"dd-cli/lib/cli"
+	"dd-cli/pkg"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -150,20 +150,20 @@ Here is a more complex example:
 			}
 			fmt.Println(string(jsonBytes))
 		} else if output == "table" {
-			of := cli.NewTableOutputFormatter(tableFormat)
-			of.AddMiddleware(cli.NewFlattenObjectMiddleware())
-			of.AddMiddleware(cli.NewFieldsFilterMiddleware(fields, filters))
-			of.AddMiddleware(cli.NewSortColumnsMiddleware())
+			of := pkg.NewTableOutputFormatter(tableFormat)
+			of.AddMiddleware(pkg.NewFlattenObjectMiddleware())
+			of.AddMiddleware(pkg.NewFieldsFilterMiddleware(fields, filters))
+			of.AddMiddleware(pkg.NewSortColumnsMiddleware())
 			if len(fields) == 0 {
-				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware([]cli.FieldName{"name"}))
+				of.AddMiddleware(pkg.NewReorderColumnOrderMiddleware([]pkg.FieldName{"name"}))
 
 			} else {
-				of.AddMiddleware(cli.NewReorderColumnOrderMiddleware(fields))
+				of.AddMiddleware(pkg.NewReorderColumnOrderMiddleware(fields))
 			}
 
 			flattenedActions := flattenActions(actions)
 			for _, action := range flattenedActions {
-				of.AddRow(&cli.SimpleRow{Hash: action})
+				of.AddRow(&pkg.SimpleRow{Hash: action})
 			}
 
 			s, err := of.Output()
@@ -186,7 +186,7 @@ func flattenActions(actions []Action) []map[string]interface{} {
 		row["name"] = action.Name
 		if action.Context != nil {
 			context := action.Context.(map[string]interface{})
-			for k, v := range cli.FlattenMapIntoColumns(context) {
+			for k, v := range pkg.FlattenMapIntoColumns(context) {
 				row[k] = v
 			}
 		}
