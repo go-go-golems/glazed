@@ -107,23 +107,6 @@ Give a yaml file:
 			actionNames = strings.Split(action, ",")
 		}
 
-		// these are the flags used for the table output
-		output := cmd.Flag("output").Value.String()
-		_ = cmd.Flag("output-file").Value.String()
-
-		fieldStr := cmd.Flag("fields").Value.String()
-		filters := []string{}
-		fields := []string{}
-		if fieldStr != "" {
-			fields = strings.Split(fieldStr, ",")
-		}
-		filterStr := cmd.Flag("filter").Value.String()
-		if filterStr != "" {
-			filters = strings.Split(filterStr, ",")
-		}
-
-		tableFormat := cmd.Flag("table-format").Value.String()
-
 		filter := datadogV2.NewRUMQueryFilter()
 		query := "@type:action"
 		if action != "" {
@@ -180,6 +163,23 @@ Give a yaml file:
 				Context:    attrs["context"],
 			})
 		}
+
+		// these are the flags used for the table output
+		output := cmd.Flag("output").Value.String()
+		_ = cmd.Flag("output-file").Value.String()
+
+		fieldStr := cmd.Flag("fields").Value.String()
+		filters := []string{}
+		fields := []string{}
+		if fieldStr != "" {
+			fields = strings.Split(fieldStr, ",")
+		}
+		filterStr := cmd.Flag("filter").Value.String()
+		if filterStr != "" {
+			filters = strings.Split(filterStr, ",")
+		}
+
+		tableFormat := cmd.Flag("table-format").Value.String()
 
 		// templates get applied before flattening
 		var templates map[types.FieldName]string
@@ -310,6 +310,8 @@ func init() {
 
 	listActionsCmd.Flags().String("from", "", "From date (accepts variety of formats)")
 	listActionsCmd.Flags().String("to", "", "To date (accepts variety of formats)")
+	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
+	listActionsCmd.Flags().IntP("count", "c", 20, "Number of results to return")
 
 	listActionsCmd.Flags().StringP("output", "o", "table", "Output format (table, json, sqlite)")
 	listActionsCmd.Flags().StringP("output-file", "f", "", "Output file")
@@ -320,9 +322,7 @@ func init() {
 	listActionsCmd.Flags().String("template", "", "Go Template to use for single string")
 	listActionsCmd.Flags().StringSlice("template-field", nil, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
 
-	listActionsCmd.Flags().StringP("action", "a", "", "Action name")
 	listActionsCmd.Flags().String("fields", "", "Fields to include in the output, default: all")
 	listActionsCmd.Flags().String("filter", "", "Fields to remove from output")
 
-	listActionsCmd.Flags().IntP("count", "c", 20, "Number of results to return")
 }

@@ -1,0 +1,1 @@
+# RFC - Configuration file support for glaze / CLI applications
