@@ -2,6 +2,10 @@
 
 ## Changelog
 
+### 2022-11-14 - manuel
+
+- Refine flag loading infrastructure
+
 ### 2022-11-13 - manuel
 
 - Created document
@@ -34,6 +38,8 @@ The following entries are ideas
 
 ### 2022-11-13
 
+### Meta description of command line flag
+
 We could have one structure to describe command line flags. A collection
 of these flag structures is attached to the output system, middleware and other
 configurable component or subsystem.
@@ -55,10 +61,16 @@ type Flag struct {
 	ShortDescription string
 	LongDescription  string
 }
+```
 
-// potentially we could imagine a structure to do nested configurations for more complex subsystems,
-// for example for go field templates. Although to be honest, the value is more in being able to register
-// and parse flags in a generic manner.
+### Subsystems describe their flags
+
+We could imagine a structure to do nested configurations for more complex subsystems,
+for example for go field templates. Although to be honest, the value is more in being able to register
+and parse flags in a generic manner.
+
+```go
+package cli
 
 type OutputConfigurationFlags struct {
 	Output       Flag
@@ -89,5 +101,25 @@ I think these systems should be super easy, deal only with flags and single stri
 Anything more complicated is either something we provide for easy hookup too, 
 or is something that can be written by the user in more detail.
 
+### Command line flag parsing middlewares
 
+Parsing configuration flags out of a
+- cobra Flags() object
+- normal global flags (how would that work)
+- config file object
+
+should be a configurable list of middlewares. The type for those middlewares is probably just a function type,
+but an interface makes it easier to pass bound data and avoid making too many closures.
+
+These can be grouped in a list and processed generically. This is how we could implement styles maybe,
+and have styles parse their own command line flags?
+
+### Create flags from configuration structure
+
+Making it possible to use the system the other way around (creating the flags that would reproduce
+a configuration) is quite useful too, as it can be used to generate documentation strings.
+
+### VHS creation from configuration files
+
+As part of the documentation, create a way to output a little vhs script to reproduce some use case.
 

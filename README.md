@@ -135,9 +135,13 @@ Write a tiny command line tool:
 
 ### Output flags
 
+## General brainstorm
+
+- documentation for each subsystem
+
 ## Future ideas
 
-- SQLite output 
+- [-] SQLite output 
 - API server to render local data
 - parquet format (and pandas? numpy?)
 - do we want some kind of transformation DSL / configuration DSL to do
@@ -160,4 +164,5 @@ Write a tiny command line tool:
   - SQL
   - dynamodb
   - s3
-  - 
+- style aliases (like pretty=oneline for git)
+  - maybe styles can also have additional parameters
