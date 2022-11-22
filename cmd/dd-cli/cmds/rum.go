@@ -231,14 +231,13 @@ Give a yaml file:
 					of = formatters.NewTableOutputFormatter(tableFormat)
 				}
 
-				of.AddMiddleware(middlewares.NewFlattenObjectMiddleware())
-				of.AddMiddleware(middlewares.NewFieldsFilterMiddleware(fields, filters))
-				of.AddMiddleware(middlewares.NewSortColumnsMiddleware())
+				of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+				of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(fields, filters))
+				of.AddTableMiddleware(middlewares.NewSortColumnsMiddleware())
 				if len(fields) == 0 {
-					of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware([]types.FieldName{"name"}))
-
+					of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware([]types.FieldName{"name"}))
 				} else {
-					of.AddMiddleware(middlewares.NewReorderColumnOrderMiddleware(fields))
+					of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(fields))
 				}
 
 				flattenedActions, err := flattenActions(actions, templates)
@@ -290,7 +289,7 @@ func flattenActions(
 					return nil, err
 				}
 
-				for k, v := range res_.(map[string]string) {
+				for k, v := range res_ {
 					row[k] = v
 				}
 			}
