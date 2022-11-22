@@ -17,8 +17,34 @@ while I try to figure out what is possible and worth tackling.
 
 With glazed, you can output object and table data in a rich variety of ways:
 
-- export in CSV, JSON, markdown, html, text
-- filter and rename columns
+- as human-readable tables
+
+![output as human-readable table](doc/gifs/01-simple.gif)
+
+- as CSV/TSV
+
+![output as CSV](doc/gifs/02-csv.gif)
+
+- as markdown
+
+![output as Markdown](doc/gifs/03-markdown.gif)
+
+- as JSON
+
+![output as JSON](doc/gifs/04-json.gif)
+
+You can flatten fields (happens by default when outputting to a table)
+
+![flatten fields in JSON](doc/gifs/05-json-flatten.gif)
+
+You can select and reorder fields:
+
+![select and reorder fields](doc/gifs/06-fields-markdown.gif)
+
+You can filter out fields:
+
+![filter out fields](doc/gifs/07-filter.gif)
+
 - use go templates to customize output
 - output individual objects or rows as separate files
 
@@ -28,11 +54,33 @@ Glazed provides a variety of "middlewares" with which you can:
 - create new fields based on go templates
 - filter and reorder columns
 
+```go
+of := formatters.NewCSVOutputFormatter()
+
+of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(
+	[]string{"a", "b"},
+	[]string{"c"}
+)
+
+for _, obj := range objects {
+	of.AddRow(&types.SimpleRow{Hash: obj})
+}
+
+s, err := of.Output()
+fmt.Println(s)
+```
+
 For easy integration into your own tools, glazed provides:
-- a simple API
-- bindings for go command-line flag parsing
-- cobra and viper libraries
-- loading output configuration from a configuration file
+
+- a simple API for:
+  - input processors
+  - row and object middlewares
+  - output formatters
+- bindings and helpers for:
+  - go command-line flag parsing
+  - cobra and viper libraries
+  - YAML driven configuration
 
 Glazed also comes with the glaze tool which can be use for simple data manipulation
 and rich terminal output, leveraging the glazed library.
@@ -122,7 +170,7 @@ Write a tiny command line tool:
 
 ### Installation
 
-- install with go get
+Run the `glaze` to using `go run ./cmd/glaze`.
 
 ### Import formats
 

@@ -126,8 +126,10 @@ func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, er
 					} else {
 						newColumns[rowField] = nil
 					}
-				} else if prefixMatchFound || exactFilterMatchFound {
+				} else if exactFilterMatchFound {
 					continue NextRow
+				} else if len(ffm.fields) == 0 {
+					newColumns[rowField] = nil
 				}
 			}
 

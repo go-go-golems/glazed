@@ -13,15 +13,15 @@ type JSONOutputFormatter struct {
 	middlewares          []middlewares.TableMiddleware
 }
 
-func (J JSONOutputFormatter) AddRow(row types.Row) {
+func (J *JSONOutputFormatter) AddRow(row types.Row) {
 	J.Table.Rows = append(J.Table.Rows, row)
 }
 
-func (J JSONOutputFormatter) AddTableMiddleware(_ middlewares.TableMiddleware) {
-	panic("JSONOutputFormatter does not support table middlewares")
+func (J *JSONOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
+	J.middlewares = append(J.middlewares, mw)
 }
 
-func (J JSONOutputFormatter) Output() (string, error) {
+func (J *JSONOutputFormatter) Output() (string, error) {
 	for _, middleware := range J.middlewares {
 		newTable, err := middleware.Process(J.Table)
 		if err != nil {

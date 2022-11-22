@@ -1,18 +1,15 @@
 package cli
 
 import (
-	"dd-cli/pkg/formatters"
-	"dd-cli/pkg/middlewares"
 	"dd-cli/pkg/types"
 	"github.com/spf13/cobra"
 	"strings"
-	"unicode/utf8"
 )
 
 // Helpers for cobra commands
 
 func AddOutputFlags(cmd *cobra.Command) {
-	cmd.Flags().StringP("output", "o", "table", "Output format (table, json, sqlite)")
+	cmd.Flags().StringP("output", "o", "table", "Output format (table, csv, tsv, json, sqlite)")
 	cmd.Flags().StringP("output-file", "f", "", "Output file")
 
 	cmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
@@ -23,50 +20,26 @@ func AddOutputFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("output-as-objects", false, "Output as individual objects instead of JSON array")
 
 	// output processing
-	cmd.Flags().Bool("flatten", true, "Flatten nested fields (before templating)")
+	cmd.Flags().Bool("flatten", false, "Flatten nested fields (after templating)")
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	output := cmd.Flag("output").Value.String()
+	// TODO(manuel, 2022-11-21) Add support for output file / directory
 	_ = cmd.Flag("output-file").Value.String()
 	tableFormat := cmd.Flag("table-format").Value.String()
-
 	flattenInput, _ := cmd.Flags().GetBool("flatten")
 	outputAsObjects, _ := cmd.Flags().GetBool("output-as-objects")
-
 	withHeaders, _ := cmd.Flags().GetBool("with-headers")
-	var of formatters.OutputFormatter
-	if output == "json" {
-		of = formatters.NewJSONOutputFormatter(outputAsObjects)
-	} else {
-		if tableFormat == "csv" {
-			csvSeparator, _ := cmd.Flags().GetString("csv-separator")
-
-			csvOf := formatters.NewCSVOutputFormatter()
-			csvOf.WithHeaders = withHeaders
-			r, _ := utf8.DecodeRuneInString(csvSeparator)
-			csvOf.Separator = r
-			of = csvOf
-		} else if tableFormat == "tsv" {
-			tsvOf := formatters.NewTSVOutputFormatter()
-			tsvOf.WithHeaders = withHeaders
-			of = tsvOf
-		} else {
-			of = formatters.NewTableOutputFormatter(tableFormat)
-		}
-	}
-
-	if flattenInput {
-		mw := middlewares.NewFlattenObjectMiddleware()
-		of.AddTableMiddleware(mw)
-	}
+	csvSeparator, _ := cmd.Flags().GetString("csv-separator")
 
 	return &OutputFormatterSettings{
 		Output:          output,
 		TableFormat:     tableFormat,
-		OutputFormatter: of,
+		WithHeaders:     withHeaders,
 		OutputAsObjects: outputAsObjects,
 		FlattenObjects:  flattenInput,
+		CsvSeparator:    csvSeparator,
 	}, nil
 }
 

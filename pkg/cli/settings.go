@@ -4,14 +4,51 @@ import (
 	"dd-cli/pkg/formatters"
 	"dd-cli/pkg/middlewares"
 	"dd-cli/pkg/types"
+	"github.com/pkg/errors"
+	"unicode/utf8"
 )
 
 type OutputFormatterSettings struct {
 	Output          string
 	TableFormat     string
-	OutputFormatter formatters.OutputFormatter
 	OutputAsObjects bool
 	FlattenObjects  bool
+	WithHeaders     bool
+	CsvSeparator    string
+}
+
+func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
+	if ofs.Output == "csv" {
+		ofs.Output = "table"
+		ofs.TableFormat = "csv"
+	} else if ofs.Output == "tsv" {
+		ofs.Output = "table"
+		ofs.TableFormat = "tsv"
+	}
+
+	var of formatters.OutputFormatter
+	if ofs.Output == "json" {
+		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects)
+	} else if ofs.Output == "table" {
+		if ofs.TableFormat == "csv" {
+			csvOf := formatters.NewCSVOutputFormatter()
+			csvOf.WithHeaders = ofs.WithHeaders
+			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
+			csvOf.Separator = r
+			of = csvOf
+		} else if ofs.TableFormat == "tsv" {
+			tsvOf := formatters.NewTSVOutputFormatter()
+			tsvOf.WithHeaders = ofs.WithHeaders
+			of = tsvOf
+		} else {
+			of = formatters.NewTableOutputFormatter(ofs.TableFormat)
+		}
+		of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+	} else {
+		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
+	}
+
+	return of, nil
 }
 
 type TemplateSettings struct {

@@ -69,12 +69,21 @@ var jsonCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		of := outputSettings.OutputFormatter
+		of, err := outputSettings.CreateOutputFormatter()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Error creating output formatter: %v\n", err)
+			os.Exit(1)
+		}
 
 		err = templateSettings.AddMiddlewares(of)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error adding template middlewares: %v\n", err)
 			os.Exit(1)
+		}
+
+		if outputSettings.Output == "json" && outputSettings.FlattenObjects {
+			mw := middlewares.NewFlattenObjectMiddleware()
+			of.AddTableMiddleware(mw)
 		}
 		fieldsFilterSettings.AddMiddlewares(of)
 
@@ -152,6 +161,7 @@ func main() {
 func init() {
 	// TODO(manuel, 2022-11-20) We should make it possible to specify the names of the flags
 	// if the defaults don't make use happy. Potentially with a builder interface
+	jsonCmd.Flags().SortFlags = false
 	cli.AddOutputFlags(jsonCmd)
 	cli.AddTemplateFlags(jsonCmd)
 	cli.AddFieldsFilterFlags(jsonCmd)
