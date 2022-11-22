@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"dd-cli/pkg/types"
 	"github.com/spf13/cobra"
+	"glazed/pkg/types"
 	"strings"
 )
 

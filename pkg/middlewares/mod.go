@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"dd-cli/pkg/types"
+	"glazed/pkg/types"
 )
 
 type TableMiddleware interface {

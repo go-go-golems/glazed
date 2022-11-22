@@ -1,10 +1,10 @@
 package cli
 
 import (
-	"dd-cli/pkg/formatters"
-	"dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"github.com/pkg/errors"
+	"glazed/pkg/formatters"
+	"glazed/pkg/middlewares"
+	"glazed/pkg/types"
 	"unicode/utf8"
 )
 

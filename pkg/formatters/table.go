@@ -1,10 +1,10 @@
 package formatters
 
 import (
-	"dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"fmt"
 	"github.com/scylladb/termtables"
+	"glazed/pkg/middlewares"
+	"glazed/pkg/types"
 )
 
 // This part of the library contains helper functionality to do output formatting

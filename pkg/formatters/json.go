@@ -2,9 +2,9 @@ package formatters
 
 import (
 	"bytes"
-	"dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"encoding/json"
+	"glazed/pkg/middlewares"
+	"glazed/pkg/types"
 )
 
 type JSONOutputFormatter struct {

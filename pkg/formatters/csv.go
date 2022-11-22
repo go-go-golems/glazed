@@ -1,10 +1,10 @@
 package formatters
 
 import (
-	middlewares2 "dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"encoding/csv"
 	"fmt"
+	middlewares2 "glazed/pkg/middlewares"
+	"glazed/pkg/types"
 	"strings"
 )
 

@@ -1,10 +1,6 @@
 package cmds
 
 import (
-	"dd-cli/pkg/cli"
-	"dd-cli/pkg/formatters"
-	"dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -13,6 +9,10 @@ import (
 	_ "github.com/araddon/dateparse"
 	_ "github.com/scylladb/termtables"
 	"github.com/spf13/cobra"
+	"glazed/pkg/cli"
+	"glazed/pkg/formatters"
+	"glazed/pkg/middlewares"
+	"glazed/pkg/types"
 	"os"
 	"strings"
 	"unicode/utf8"

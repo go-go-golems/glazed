@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"bytes"
-	"dd-cli/pkg/types"
+	"glazed/pkg/types"
 	"strings"
 	"text/template"
 )

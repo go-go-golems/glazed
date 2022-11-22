@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"dd-cli/pkg/types"
 	"github.com/pkg/errors"
+	"glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"

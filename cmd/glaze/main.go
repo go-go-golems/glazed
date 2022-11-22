@@ -1,13 +1,13 @@
 package main
 
 import (
-	"dd-cli/pkg/cli"
-	"dd-cli/pkg/formatters"
-	"dd-cli/pkg/middlewares"
-	"dd-cli/pkg/types"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
+	"glazed/pkg/cli"
+	"glazed/pkg/formatters"
+	"glazed/pkg/middlewares"
+	"glazed/pkg/types"
 	"os"
 )
 

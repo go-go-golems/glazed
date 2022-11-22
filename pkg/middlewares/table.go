@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"bytes"
-	"dd-cli/pkg/types"
 	"fmt"
+	"glazed/pkg/types"
 	"sort"
 	"strings"
 	"text/template"

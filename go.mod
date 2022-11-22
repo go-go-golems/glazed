@@ -1,4 +1,4 @@
-module dd-cli
+module glazed
 
 go 1.18
 
