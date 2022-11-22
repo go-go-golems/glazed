@@ -143,6 +143,7 @@ I keep a list of the current planned features as RFC documents.
 - [02 - Multi-file output](doc/rfcs/drafts/02_2022-11-13_multi-file-output.md)
 - [03 - SQLite output](doc/rfcs/drafts/03_2022-11-13_sqlite-output.md)
 - [04 - Configuration files](doc/rfcs/drafts/04_2022-11-13_configuration-file.md)
+- [05 - Glaze CLI tool](doc/rfcs/drafts/05_2022-11-19_glaze-cli-tool.md)
 
 ## General brainstorm
 
@@ -150,28 +151,49 @@ I keep a list of the current planned features as RFC documents.
 
 ## Future ideas
 
-- [-] SQLite output 
-- API server to render local data
+### Glaze CLI
+
+#### UX
+
+- table app that can hide/show/rename/reorder columns
+- markdown rendering with glow
+- style aliases (like pretty=oneline for git)
+  - maybe styles can also have additional parameters
+- sparklines and other shenanigans
+
+#### File Formats
+
+- add support for arbitrary input / output SQL
+- add support for inputting binary data and providing a parser
+- add support for pcap input
+- add support for excel input
 - parquet format (and pandas? numpy?)
-- do we want some kind of transformation DSL / configuration DSL to do
-  more complicated things? Definitely not at first, before having the use case for it.
-- glaze tool
-  - import and parse binary data
-  - pcap input
 - excel export
   - annotate excel export with as much metadata as possible
-- HTML frontend
-- jq integration
-- markdown rendering with glow
-- table app that can hide/show/rename/reorder columns
+
+#### Transformation
+
+- add jq support
 - search engine  / autocompletion based on known schema
   - use query language to create hyperlinks in output
-- hyperlinked schema definitions
-- sparklines and other shenanigans
-- collect metadata and event logs to what led to the creation of the data itself
+
+#### Misc glaze features
+
+- add support for pushing to cloud resources
+  - dynamodb
+  - S3
+  - SQL connectors (see arbitrary input / output SQL)
+- add support for serving over HTTP
+  - API server to render local data
+  - HTML frontend
+- serve a local SQL database? meh...
+  - useful if you want the user to modify the DB? why not just output sqlite
 - cloud / network API output forms, for example to store something in s3 or other databases
   - SQL
   - dynamodb
   - s3
-- style aliases (like pretty=oneline for git)
-  - maybe styles can also have additional parameters
+- do we want some kind of transformation DSL / configuration DSL to do
+  more complicated things? Definitely not at first, before having the use case for it.
+- hyperlinked schema definitions
+- collect metadata and event logs to what led to the creation of the data itself
+

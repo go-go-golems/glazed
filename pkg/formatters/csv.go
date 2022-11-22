@@ -33,7 +33,7 @@ func NewTSVOutputFormatter() *CSVOutputFormatter {
 	}
 }
 
-func (f *CSVOutputFormatter) AddMiddleware(m middlewares2.TableMiddleware) {
+func (f *CSVOutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) {
 	f.middlewares = append(f.middlewares, m)
 }
 

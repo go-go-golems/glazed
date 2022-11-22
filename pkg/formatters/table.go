@@ -34,7 +34,7 @@ import (
 type OutputFormatter interface {
 	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
 	AddRow(row types.Row)
-	AddMiddleware(m middlewares.TableMiddleware)
+	AddTableMiddleware(m middlewares.TableMiddleware)
 	Output() (string, error)
 }
 
@@ -93,7 +93,7 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 	return table.Render(), nil
 }
 
-func (tof *TableOutputFormatter) AddMiddleware(m middlewares.TableMiddleware) {
+func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
 	tof.middlewares = append(tof.middlewares, m)
 }
 
