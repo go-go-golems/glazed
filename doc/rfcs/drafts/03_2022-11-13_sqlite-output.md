@@ -1,5 +1,7 @@
 # RFC - Add SQLite output
 
+Issue: #23
+
 ## Changelog
 
 ### 2022-11-13 - manuel

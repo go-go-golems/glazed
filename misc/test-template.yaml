@@ -1,0 +1,2 @@
+foobar: "{{ .a | ToUpper }}"
+barbaz: "{{ .d.e }} - {{ .d.f }}"

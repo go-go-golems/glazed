@@ -104,17 +104,17 @@ Write a tiny command line tool:
 
 ### Output formats
 
-- json
-- yaml
-- csv
-- ascii
-- markdown
-- html
+- json [x]
+- yaml - #19
+- csv [x]
+- ascii [x]
+- markdown [x]
+- html [x]
 
 ### File output
 
-- Single file output
-- Multi file output
+- Single file output - #4
+- Multi file output - #4
 
 ### Flattening structures
 
@@ -158,9 +158,11 @@ Write a tiny command line tool:
 
 ### Command Line Integration
 
-- cobra integration
+- cobra integration [x]
+- golang flags - #3
+- add support for configuring command line flags (enable / disable / rename)
 - viper integration
-- calibrate from config files
+- calibrate from config files - #17
 
 ### Schema documentation
 
@@ -170,15 +172,15 @@ Write a tiny command line tool:
 
 ### Installation
 
-Run the `glaze` to using `go run ./cmd/glaze`.
+Run the `glaze` CLI by using `go run ./cmd/glaze`.
 
 ### Import formats
 
-- json / json rows / multiple files
-- yaml / multiple files
-- csv
-- cut / ascii
-- sqlite / SQL
+- json / json rows / multiple files - #13
+- yaml / multiple files - #14
+- csv - #15
+- cut / ascii - #16
+- sqlite / SQL - #20
 - binary parser
 
 ### Output flags
@@ -204,7 +206,7 @@ I keep a list of the current planned features as RFC documents.
 #### UX
 
 - table app that can hide/show/rename/reorder columns
-- markdown rendering with glow
+- markdown rendering with glow - #21
 - style aliases (like pretty=oneline for git)
   - maybe styles can also have additional parameters
 - sparklines and other shenanigans

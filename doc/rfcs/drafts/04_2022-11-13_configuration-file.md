@@ -1,5 +1,7 @@
 # RFC - Configuration file support for glaze / CLI applications
 
+Issue: #17
+
 ## Changelog
 
 ### 2022-11-14 - manuel

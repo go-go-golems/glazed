@@ -1,2 +1,0 @@
-yo: "{{ .name | ToUpper }}"
-hits: "{{ .pagination.total_hits }}"

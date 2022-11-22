@@ -1,5 +1,7 @@
 # RFC - Output data into more than one file
 
+Issue: #4
+
 ## Changelog
 
 ### 2022-11-13 - manuel

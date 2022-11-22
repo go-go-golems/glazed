@@ -28,16 +28,15 @@ or by being used for some of the more user oriented transformation commands.
 
 The `glaze` application should allow a user to:
 - read in data from files
-  - json
-  - csv
-  - sqlite
-  - yaml
+  - json - #13
+  - csv - #14
+  - sqlite - #15
+  - yaml - #16
 - write out data
-  - json
-  - csv
+  - json [x]
+  - csv [x]
   - sqlite
   - yaml
-  - 
 - select and order columns
 
 ## Developer side
