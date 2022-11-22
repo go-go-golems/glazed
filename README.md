@@ -13,37 +13,114 @@ It is in early alpha, and will change. Contributions are welcome,
 but this project is going to be an experimental playground for a while,
 while I try to figure out what is possible and worth tackling.
 
+![Command line recording of the functionality described in "Features"](doc/gifs/demo.gif)
+
 ## Features
 
 With glazed, you can output object and table data in a rich variety of ways:
 
 - as human-readable tables
 
-![output as human-readable table](doc/gifs/01-simple.gif)
+```
++ glaze json misc/test-data/1.json misc/test-data/2.json misc/test-data/3.json
++-----+-----+------------+-----+-----+
+| a   | b   | c          | d.e | d.f |
++-----+-----+------------+-----+-----+
+| 1   | 2   | [3 4 5]    | 6   | 7   |
+| 10  | 20  | [30 40 50] | 60  | 70  |
+| 100 | 200 | [300]      |     |     |
++-----+-----+------------+-----+-----+
+```
 
 - as CSV/TSV
 
-![output as CSV](doc/gifs/02-csv.gif)
+```
++ glaze json misc/test-data/1.json misc/test-data/2.json misc/test-data/3.json --output csv
+a,b,c,d.e,d.f
+1,2,[3 4 5],6,7
+10,20,[30 40 50],60,70
+100,200,[300],,
+```
 
 - as markdown
 
-![output as Markdown](doc/gifs/03-markdown.gif)
+```
++ glaze json misc/test-data/1.json misc/test-data/2.json misc/test-data/3.json --table-format markdown
++ glow -
+
+
+   A  │  B  │     C      │ D E │ D F
+──────┼─────┼────────────┼─────┼──────
+    1 │   2 │ [3 4 5]    │   6 │   7
+   10 │  20 │ [30 40 50] │  60 │  70
+  100 │ 200 │ [300]      │     │
+```
 
 - as JSON
 
-![output as JSON](doc/gifs/04-json.gif)
+```
++ glaze json misc/test-data/2.json --output json
+[
+  {
+    "a": 10,
+    "b": 20,
+    "c": [
+      30,
+      40,
+      50
+    ],
+    "d": {
+      "e": 60,
+      "f": 70
+    }
+  }
+]
+```
 
 You can flatten fields (happens by default when outputting to a table)
 
-![flatten fields in JSON](doc/gifs/05-json-flatten.gif)
+```
++ glaze json misc/test-data/2.json --output json --flatten
+[
+  {
+    "a": 10,
+    "b": 20,
+    "c": [
+      30,
+      40,
+      50
+    ],
+    "d.e": 60,
+    "d.f": 70
+  }
+```
 
 You can select and reorder fields:
 
-![select and reorder fields](doc/gifs/06-fields-markdown.gif)
+```
++ glaze json misc/test-data/1.json misc/test-data/2.json misc/test-data/3.json --fields c,b,a --table-format markdown
++ glow -
+
+      C      │  B  │  A
+─────────────┼─────┼──────
+  [3 4 5]    │   2 │   1
+  [30 40 50] │  20 │  10
+  [300]      │ 200 │ 100
+```
 
 You can filter out fields:
 
-![filter out fields](doc/gifs/07-filter.gif)
+```
++ glaze json misc/test-data/1.json misc/test-data/2.json misc/test-data/3.json --filter d.e
++-----+-----+------------+-----+
+| a   | b   | c          | d.f |
++-----+-----+------------+-----+
+| 1   | 2   | [3 4 5]    | 7   |
+| 10  | 20  | [30 40 50] | 70  |
+| 100 | 200 | [300]      |     |
++-----+-----+------------+-----+
+```
+
 
 - use go templates to customize output
 - output individual objects or rows as separate files
