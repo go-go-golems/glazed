@@ -35,7 +35,7 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 		for _, row := range J.Table.Rows {
 			jsonBytes, err := json.MarshalIndent(row.GetValues(), "", "  ")
 			if err != nil {
-				panic(err)
+				return "", err
 			}
 			buf.Write(jsonBytes)
 		}
@@ -48,7 +48,7 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 		}
 		jsonBytes, err := json.MarshalIndent(rows, "", "  ")
 		if err != nil {
-			panic(err)
+			return "", err
 		}
 		return string(jsonBytes), nil
 	}
