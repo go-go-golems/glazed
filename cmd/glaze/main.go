@@ -81,7 +81,7 @@ var jsonCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if outputSettings.Output == "json" && outputSettings.FlattenObjects {
+		if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
 			mw := middlewares.NewFlattenObjectMiddleware()
 			of.AddTableMiddleware(mw)
 		}

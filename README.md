@@ -95,6 +95,21 @@ You can flatten fields (happens by default when outputting to a table)
   }
 ```
 
+- as YAML
+``` 
++ glaze json --output yaml ./misc/test-data/1.json
+- a: 1
+  b: 2
+  c:
+    - 3
+    - 4
+    - 5
+  d:
+    e: 6
+    f: 7
+
+```
+
 You can select and reorder fields:
 
 ```

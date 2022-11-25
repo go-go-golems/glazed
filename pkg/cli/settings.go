@@ -29,6 +29,8 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	var of formatters.OutputFormatter
 	if ofs.Output == "json" {
 		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects)
+	} else if ofs.Output == "yaml" {
+		of = formatters.NewYAMLOutputFormatter()
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := formatters.NewCSVOutputFormatter()

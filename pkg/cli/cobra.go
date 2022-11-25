@@ -9,7 +9,7 @@ import (
 // Helpers for cobra commands
 
 func AddOutputFlags(cmd *cobra.Command) {
-	cmd.Flags().StringP("output", "o", "table", "Output format (table, csv, tsv, json, sqlite)")
+	cmd.Flags().StringP("output", "o", "table", "Output format (table, csv, tsv, json, yaml, sqlite)")
 	cmd.Flags().StringP("output-file", "f", "", "Output file")
 
 	cmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
