@@ -2,6 +2,8 @@ package cli
 
 import (
 	"github.com/pkg/errors"
+	"glazed/pkg/formatters"
+	"glazed/pkg/middlewares"
 	"glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -61,4 +63,29 @@ func ParseTemplateFieldFileArgument(fileName string) (map[types.FieldName]string
 	}
 
 	return ret, nil
+}
+
+type GlazeProcessor struct {
+	of  formatters.OutputFormatter
+	oms []middlewares.ObjectMiddleware
+}
+
+func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMiddleware) *GlazeProcessor {
+	return &GlazeProcessor{
+		of:  of,
+		oms: oms,
+	}
+}
+
+func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
+	for _, om := range gp.oms {
+		obj2, err := om.Process(obj)
+		if err != nil {
+			return err
+		}
+		obj = obj2
+	}
+
+	gp.of.AddRow(&types.SimpleRow{Hash: obj})
+	return nil
 }

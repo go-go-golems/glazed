@@ -138,6 +138,8 @@ You can filter out fields:
 
 
 - use go templates to customize output
+
+
 - output individual objects or rows as separate files
 
 Glazed provides a variety of "middlewares" with which you can:
