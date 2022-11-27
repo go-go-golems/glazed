@@ -316,7 +316,9 @@ type RowGoTemplateMiddleware struct {
 // this will make fields inaccessible to the template. One way around this is to use
 // {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
 // option.
-func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*RowGoTemplateMiddleware, error) {
+func NewRowGoTemplateMiddleware(
+	templateStrings map[types.FieldName]string,
+	renameSeparator string) (*RowGoTemplateMiddleware, error) {
 	funcMap := template.FuncMap{
 		"ToUpper": strings.ToUpper,
 	}
@@ -331,7 +333,8 @@ func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*Ro
 	}
 
 	return &RowGoTemplateMiddleware{
-		templates: templates,
+		templates:       templates,
+		RenameSeparator: renameSeparator,
 	}, nil
 }
 
@@ -366,14 +369,7 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 				columnRenames[key] = key
 			}
 			newKey := columnRenames[key]
-			templateValues[columnRenames[newKey]] = value
-			if _, ok := existingColumns[newKey]; !ok {
-				existingColumns[newKey] = nil
-				ret.Columns = append(ret.Columns, newKey)
-			}
-			if _, ok := newColumns[newKey]; !ok {
-				newColumns[newKey] = nil
-			}
+			templateValues[newKey] = value
 		}
 		templateValues["_row"] = templateValues
 

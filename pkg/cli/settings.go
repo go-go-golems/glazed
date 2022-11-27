@@ -54,13 +54,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 }
 
 type TemplateSettings struct {
+	RenameSeparator string
 	UseRowTemplates bool
 	Templates       map[types.FieldName]string
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if tf.UseRowTemplates {
-		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates)
+		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {
 			return err
 		}
