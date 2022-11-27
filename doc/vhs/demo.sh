@@ -16,3 +16,14 @@ glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d_f}}'
 glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d_f}}' \
   --use-row-templates --fields a,_0 \
   --output csv
+
+glaze json misc/test-data/[123].json \
+    --template-field 'foo:{{.a}}-{{.b}},bar:{{.d_f}}' \
+    --use-row-templates --fields a,foo,bar
+glaze json misc/test-data/[123].json \
+    --template-field '@misc/template-field-row.yaml' \
+    --use-row-templates  --output markdown
+
+glaze json misc/test-data/[123].json \
+    --template-field '@misc/template-field-object.yaml' \
+    --output json

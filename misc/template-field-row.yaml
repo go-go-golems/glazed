@@ -1,0 +1,2 @@
+foobar: "{{ .a }}"
+barbaz: "{{ .d_e }} - {{ .d_f }}"

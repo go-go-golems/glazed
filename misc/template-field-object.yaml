@@ -1,0 +1,3 @@
+foobar: "{{ .a }}"
+# Compared to a row template, we don't need to rename fields here
+barbaz: "{{ .d.e }} - {{ .d.f }}"
