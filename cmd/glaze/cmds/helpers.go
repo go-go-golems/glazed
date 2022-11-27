@@ -41,7 +41,7 @@ func SetupProcessor(cmd *cobra.Command) (*cli.GlazeProcessor, formatters.OutputF
 	fieldsFilterSettings.AddMiddlewares(of)
 
 	var middlewares_ []middlewares.ObjectMiddleware
-	if templateSettings.UseRowTemplates {
+	if !templateSettings.UseRowTemplates {
 		ogtm, err := middlewares.NewObjectGoTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Could not process template argument")

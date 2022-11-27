@@ -345,6 +345,11 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 	existingColumns := map[types.FieldName]interface{}{}
 	newColumns := map[types.FieldName]interface{}{}
 
+	for _, columnName := range table.Columns {
+		existingColumns[columnName] = nil
+		ret.Columns = append(ret.Columns, columnName)
+	}
+
 	for _, row := range table.Rows {
 		newRow := types.SimpleRow{
 			Hash: row.GetValues(),
@@ -357,8 +362,18 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 				if _, ok := columnRenames[key]; !ok {
 					columnRenames[key] = strings.ReplaceAll(key, ".", rgtm.RenameSeparator)
 				}
+			} else {
+				columnRenames[key] = key
 			}
-			templateValues[columnRenames[key]] = value
+			newKey := columnRenames[key]
+			templateValues[columnRenames[newKey]] = value
+			if _, ok := existingColumns[newKey]; !ok {
+				existingColumns[newKey] = nil
+				ret.Columns = append(ret.Columns, newKey)
+			}
+			if _, ok := newColumns[newKey]; !ok {
+				newColumns[newKey] = nil
+			}
 		}
 		templateValues["_row"] = templateValues
 
@@ -368,29 +383,18 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 			if err != nil {
 				return nil, err
 			}
+			s := buf.String()
 
 			// we need to handle the fact that some rows might not have all the keys, and thus
 			// avoid counting columns as existing twice
 			if _, ok := newColumns[columnName]; !ok {
-				if _, ok := newRow.Hash[columnName]; ok {
-					newColumns[columnName] = nil
-				}
-			} else {
-				if _, ok := newRow.Hash[columnName]; !ok {
-					existingColumns[columnName] = nil
-				}
+				newColumns[columnName] = nil
+				ret.Columns = append(ret.Columns, columnName)
 			}
-			newRow.Hash[columnName] = buf.String()
+			newRow.Hash[columnName] = s
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)
-	}
-
-	// I guess another solution would just be to remove the duplicates once we are done...
-	for columnName := range newColumns {
-		if _, ok := existingColumns[columnName]; !ok {
-			ret.Columns = append(table.Columns, columnName)
-		}
 	}
 
 	return ret, nil
