@@ -71,6 +71,7 @@ func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
 	return &TemplateSettings{
 		Templates:       templates,
 		UseRowTemplates: useRowTemplates,
+		RenameSeparator: "_",
 	}, nil
 }
 

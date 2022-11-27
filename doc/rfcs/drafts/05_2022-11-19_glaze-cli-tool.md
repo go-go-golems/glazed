@@ -36,7 +36,7 @@ The `glaze` application should allow a user to:
   - json [x]
   - csv [x]
   - sqlite
-  - yaml
+  - yaml [x]
 - select and order columns
 
 ## Developer side

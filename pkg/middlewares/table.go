@@ -316,7 +316,9 @@ type RowGoTemplateMiddleware struct {
 // this will make fields inaccessible to the template. One way around this is to use
 // {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
 // option.
-func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*RowGoTemplateMiddleware, error) {
+func NewRowGoTemplateMiddleware(
+	templateStrings map[types.FieldName]string,
+	renameSeparator string) (*RowGoTemplateMiddleware, error) {
 	funcMap := template.FuncMap{
 		"ToUpper": strings.ToUpper,
 	}
@@ -331,7 +333,8 @@ func NewRowGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*Ro
 	}
 
 	return &RowGoTemplateMiddleware{
-		templates: templates,
+		templates:       templates,
+		RenameSeparator: renameSeparator,
 	}, nil
 }
 
@@ -345,6 +348,11 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 	existingColumns := map[types.FieldName]interface{}{}
 	newColumns := map[types.FieldName]interface{}{}
 
+	for _, columnName := range table.Columns {
+		existingColumns[columnName] = nil
+		ret.Columns = append(ret.Columns, columnName)
+	}
+
 	for _, row := range table.Rows {
 		newRow := types.SimpleRow{
 			Hash: row.GetValues(),
@@ -357,8 +365,11 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 				if _, ok := columnRenames[key]; !ok {
 					columnRenames[key] = strings.ReplaceAll(key, ".", rgtm.RenameSeparator)
 				}
+			} else {
+				columnRenames[key] = key
 			}
-			templateValues[columnRenames[key]] = value
+			newKey := columnRenames[key]
+			templateValues[newKey] = value
 		}
 		templateValues["_row"] = templateValues
 
@@ -368,29 +379,18 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 			if err != nil {
 				return nil, err
 			}
+			s := buf.String()
 
 			// we need to handle the fact that some rows might not have all the keys, and thus
 			// avoid counting columns as existing twice
 			if _, ok := newColumns[columnName]; !ok {
-				if _, ok := newRow.Hash[columnName]; ok {
-					newColumns[columnName] = nil
-				}
-			} else {
-				if _, ok := newRow.Hash[columnName]; !ok {
-					existingColumns[columnName] = nil
-				}
+				newColumns[columnName] = nil
+				ret.Columns = append(ret.Columns, columnName)
 			}
-			newRow.Hash[columnName] = buf.String()
+			newRow.Hash[columnName] = s
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)
-	}
-
-	// I guess another solution would just be to remove the duplicates once we are done...
-	for columnName := range newColumns {
-		if _, ok := existingColumns[columnName]; !ok {
-			ret.Columns = append(table.Columns, columnName)
-		}
 	}
 
 	return ret, nil

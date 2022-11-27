@@ -1,4 +1,4 @@
-Output doc/gifs/demo.gif
+Output doc/gifs/demo.webm
 
 Set FontSize 14
 Set Width 800
@@ -34,8 +34,34 @@ Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
 Type "    --filter d.e" Enter Sleep 0.1
 Sleep 1200ms
 
-Type "glaze json --input-is-array misc/test-data/rows.json" Enter Sleep 0.1
+Type "glaze json --input-is-array misc/test-data/rows.json \" Enter Sleep 0.1
+Type "    --output yaml" Enter Sleep 0.1
 Sleep 1200ms
 
 Type "glaze yaml misc/test-data/[123].yaml" Enter Sleep 0.1
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --template '{{.a}}-{{.b}}: {{.d.f}}' " Enter
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --use-row-templates \" Enter Sleep 0.1
+Type "    --fields a,_0 \" Enter Sleep 0.1
+Type "    --template '{{.a}}-{{.b}}: {{.d_f}}' " Enter
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --template-field 'foo:{{.a}}-{{.b}},bar:{{.d_f}}' \" Enter Sleep 0.1
+Type "    --use-row-templates --fields a,foo,bar" Enter
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --template-field '@misc/template-field-row.yaml' \" Enter Sleep 0.1
+Type "    --use-row-templates  --output markdown" Enter Sleep 0.1
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --template-field '@misc/template-field-object.yaml' \" Enter Sleep 0.1
+Type "    --output json" Enter Sleep 0.1
 Sleep 1200ms

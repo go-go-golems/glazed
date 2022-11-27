@@ -24,6 +24,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	} else if ofs.Output == "tsv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "tsv"
+	} else if ofs.Output == "markdown" {
+		ofs.Output = "table"
+		ofs.TableFormat = "markdown"
+	} else if ofs.Output == "html" {
+		ofs.Output = "table"
+		ofs.TableFormat = "html"
 	}
 
 	var of formatters.OutputFormatter
@@ -54,13 +60,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 }
 
 type TemplateSettings struct {
+	RenameSeparator string
 	UseRowTemplates bool
 	Templates       map[types.FieldName]string
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
-	if tf.UseRowTemplates {
-		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates)
+	if tf.UseRowTemplates && len(tf.Templates) > 0 {
+		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {
 			return err
 		}
