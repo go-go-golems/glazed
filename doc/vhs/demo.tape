@@ -1,4 +1,4 @@
-Output doc/gifs/demo.gif
+Output doc/gifs/demo.webm
 
 Set FontSize 14
 Set Width 800
@@ -42,7 +42,7 @@ Type "glaze yaml misc/test-data/[123].yaml" Enter Sleep 0.1
 Sleep 1200ms
 
 Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
-Type "    --template '{{.a}}-{{.b}}: {{.d_f}}' " Enter
+Type "    --template '{{.a}}-{{.b}}: {{.d.f}}' " Enter
 Sleep 1200ms
 
 Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1

@@ -23,7 +23,7 @@ var YamlCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		inputIsArray, err := cmd.Flags().GetBool("input-id-array")
+		inputIsArray, err := cmd.Flags().GetBool("input-is-array")
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error parsing input-is-array)lag: %v\n", err)
 			os.Exit(1)

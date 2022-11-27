@@ -66,7 +66,7 @@ type TemplateSettings struct {
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
-	if tf.UseRowTemplates {
+	if tf.UseRowTemplates && len(tf.Templates) > 0 {
 		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {
 			return err
