@@ -1,4 +1,4 @@
-Output doc/gifs/demo.webm
+Output doc/gifs/demo.mov
 
 Set FontSize 14
 Set Width 800

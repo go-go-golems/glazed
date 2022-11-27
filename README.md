@@ -13,7 +13,7 @@ It is in early alpha, and will change. Contributions are welcome,
 but this project is going to be an experimental playground for a while,
 while I try to figure out what is possible and worth tackling.
 
-![Command line recording of the functionality described in "Features"](doc/gifs/demo.webm)
+![Command line recording of the functionality described in "Features"](doc/gifs/demo.mov)
 
 ## Features
 
