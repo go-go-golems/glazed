@@ -3,8 +3,8 @@ package formatters
 import (
 	"fmt"
 	"github.com/scylladb/termtables"
-	"glazed/pkg/middlewares"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/types"
 )
 
 // This part of the library contains helper functionality to do output formatting

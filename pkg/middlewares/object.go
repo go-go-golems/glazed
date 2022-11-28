@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"bytes"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/types"
 	"strings"
 	"text/template"
 )

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-	"glazed/cmd/glaze/cmds"
+	"github.com/wesen/glazed/cmd/glaze/cmds"
 )
 
 var rootCmd = &cobra.Command{

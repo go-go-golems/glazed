@@ -3,7 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"fmt"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/types"
 	"sort"
 	"strings"
 	"text/template"

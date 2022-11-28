@@ -1,4 +1,4 @@
-module glazed
+module github.com/wesen/glazed
 
 go 1.18
 

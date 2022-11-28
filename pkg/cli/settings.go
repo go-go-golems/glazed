@@ -2,9 +2,9 @@ package cli
 
 import (
 	"github.com/pkg/errors"
-	"glazed/pkg/formatters"
-	"glazed/pkg/middlewares"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/formatters"
+	"github.com/wesen/glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/types"
 	"unicode/utf8"
 )
 

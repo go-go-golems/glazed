@@ -2,7 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/types"
 	"strings"
 )
 

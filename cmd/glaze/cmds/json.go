@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"glazed/pkg/cli"
+	"github.com/wesen/glazed/pkg/cli"
 	"os"
 )
 
