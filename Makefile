@@ -2,6 +2,8 @@
 
 all: gifs
 
+VERSION=v0.1.0
+
 TAPES=$(shell ls doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
@@ -16,5 +18,10 @@ build:
 	go generate ./...
 	go build
 
-release:
+goreleaser:
 	goreleaser release --snapshot --rm-dist
+
+release:
+	git tag ${VERSION}
+	git push origin ${VERSION}
+	GOPROXY=proxy.golang.org go list -m github.com/wesen/glazed@${VERSION}
