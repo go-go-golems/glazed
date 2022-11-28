@@ -3,8 +3,8 @@ package formatters
 import (
 	"fmt"
 	"github.com/scylladb/termtables"
-	"glazed/pkg/middlewares"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/types"
 )
 
 // This part of the library contains helper functionality to do output formatting
@@ -99,11 +99,4 @@ func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddlewar
 
 func (tof *TableOutputFormatter) AddRow(row types.Row) {
 	tof.Table.Rows = append(tof.Table.Rows, row)
-}
-
-// Let's go with different middlewares
-
-type SQLiteOutputFormatter struct {
-	table       *types.Table
-	middlewares []middlewares.TableMiddleware
 }

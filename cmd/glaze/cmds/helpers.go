@@ -3,9 +3,9 @@ package cmds
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"glazed/pkg/cli"
-	"glazed/pkg/formatters"
-	"glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/cli"
+	"github.com/wesen/glazed/pkg/formatters"
+	"github.com/wesen/glazed/pkg/middlewares"
 )
 
 func SetupProcessor(cmd *cobra.Command) (*cli.GlazeProcessor, formatters.OutputFormatter, error) {

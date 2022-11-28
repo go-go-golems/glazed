@@ -2,18 +2,17 @@ package cli
 
 import (
 	"github.com/pkg/errors"
-	"glazed/pkg/formatters"
-	"glazed/pkg/middlewares"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/formatters"
+	"github.com/wesen/glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 	"os"
 	"strings"
 )
 
 // ParseTemplateFieldArguments parses a slice of --template-field arguments from the CLI.
 //
-//   --template-field '$fieldName:$template'
+//	--template-field '$fieldName:$template'
 func ParseTemplateFieldArguments(templateArguments []string) (map[types.FieldName]string, error) {
 	ret := map[types.FieldName]string{}
 	for i, templateArgument := range templateArguments {
@@ -49,7 +48,7 @@ func ParseTemplateFieldFileArgument(fileName string) (map[types.FieldName]string
 	// parse yaml file
 	ret := map[types.FieldName]string{}
 	ret2 := map[string]interface{}{}
-	fileContent, err := ioutil.ReadFile(fileName)
+	fileContent, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file %s", fileName)
 	}

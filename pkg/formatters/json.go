@@ -3,8 +3,8 @@ package formatters
 import (
 	"bytes"
 	"encoding/json"
-	"glazed/pkg/middlewares"
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/middlewares"
+	"github.com/wesen/glazed/pkg/types"
 )
 
 type JSONOutputFormatter struct {

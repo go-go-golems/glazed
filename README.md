@@ -1,5 +1,10 @@
 # glazed - Output structured data in a variety of formats
 
+
+
+![](https://img.shields.io/github/license/wesen/glazed)
+![](https://img.shields.io/github/workflow/status/wesen/glazed/golang-pipeline)
+
 > Add the icing to your structured data!
 
 Glazed is a library that makes it easy to output structured data.

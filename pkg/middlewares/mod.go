@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"glazed/pkg/types"
+	"github.com/wesen/glazed/pkg/types"
 )
 
 type TableMiddleware interface {
