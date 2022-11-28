@@ -12,7 +12,9 @@ lint:
 test:
 	go test ./...
 
-
 build:
 	go generate ./...
 	go build
+
+release:
+	goreleaser release --snapshot --rm-dist
