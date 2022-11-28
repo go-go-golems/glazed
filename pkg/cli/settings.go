@@ -72,7 +72,6 @@ func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error 
 			return err
 		}
 		of.AddTableMiddleware(middleware)
-	} else {
 	}
 
 	return nil

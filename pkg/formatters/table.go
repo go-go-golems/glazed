@@ -100,10 +100,3 @@ func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddlewar
 func (tof *TableOutputFormatter) AddRow(row types.Row) {
 	tof.Table.Rows = append(tof.Table.Rows, row)
 }
-
-// Let's go with different middlewares
-
-type SQLiteOutputFormatter struct {
-	table       *types.Table
-	middlewares []middlewares.TableMiddleware
-}
