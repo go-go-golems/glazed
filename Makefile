@@ -21,7 +21,9 @@ build:
 goreleaser:
 	goreleaser release --snapshot --rm-dist
 
-release:
+tag-release:
 	git tag ${VERSION}
+
+release:
 	git push origin ${VERSION}
 	GOPROXY=proxy.golang.org go list -m github.com/wesen/glazed@${VERSION}
