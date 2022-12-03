@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wesen/glazed/cmd/glaze/cmds"
+	"github.com/wesen/glazed/pkg/help"
 )
 
 var rootCmd = &cobra.Command{
@@ -15,6 +16,8 @@ func main() {
 }
 
 func init() {
+	helpCmd := help.NewCobraHelpCommand()
+	rootCmd.SetHelpCommand(helpCmd)
 	rootCmd.AddCommand(cmds.JsonCmd)
 	rootCmd.AddCommand(cmds.YamlCmd)
 }
