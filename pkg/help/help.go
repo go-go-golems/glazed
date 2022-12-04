@@ -52,6 +52,12 @@ type Section struct {
 	HelpSystem *HelpSystem
 }
 
+// SectionQuery represents a query to get different types of sections that we can pass it from the top
+// so that we can for example restrict the examples of a certain general topic to the context of the command
+// in which it is rendered
+type SectionQuery struct {
+}
+
 func (s *Section) IsForCommand(command string) bool {
 	return helpers.StringInSlice(command, s.Commands)
 }
@@ -64,15 +70,54 @@ func (s *Section) IsForTopic(topic string) bool {
 	return helpers.StringInSlice(topic, s.Topics)
 }
 
-func (s *Section) DefaultExamples() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
+// these should potentially be scoped by command
+
+func (s *Section) DefaultGeneralTopic() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionGeneralTopic, s.Slug)
 	sections = GetSectionsShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
 	return sections
 }
 
-func (s *Section) NonDefaultExamples() []*Section {
+func (s *Section) DefaultExamples() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
+	sections = GetSectionsShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
+	return sections
+}
+
+func (s *Section) OtherExamples() []*Section {
 	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
 	sections = GetSectionsNotShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
+	return sections
+}
+
+func (s *Section) DefaultTutorials() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionTutorial, s.Slug)
+	sections = GetSectionsShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
+	return sections
+}
+
+func (s *Section) OtherTutorials() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionTutorial, s.Slug)
+	sections = GetSectionsNotShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
+	return sections
+}
+
+func (s *Section) DefaultApplications() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionApplication, s.Slug)
+	sections = GetSectionsShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
+	return sections
+}
+
+func (s *Section) OtherApplications() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionApplication, s.Slug)
+	sections = GetSectionsNotShownByDefault(sections)
+	sections = FilterOutSection(sections, s)
 	return sections
 }
 
@@ -132,6 +177,16 @@ func (hs *HelpSystem) AddSection(section *Section) {
 	section.HelpSystem = hs
 }
 
+func FilterOutSection(sections []*Section, section *Section) []*Section {
+	filtered := []*Section{}
+	for _, s := range sections {
+		if s != section {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
+}
+
 func GetSectionsByType(sections []*Section, sectionType SectionType) []*Section {
 	ret := []*Section{}
 	for _, section := range sections {
@@ -162,7 +217,7 @@ func GetSectionsByTypeAndTopic(sections []*Section, sectiontype SectionType, top
 	return ret
 }
 
-func GetToplevelSections(sections []*Section) []*Section {
+func GetTopLevelSections(sections []*Section) []*Section {
 	ret := []*Section{}
 	for _, section := range sections {
 		if section.IsTopLevel {
@@ -192,24 +247,32 @@ func GetSectionsNotShownByDefault(sections []*Section) []*Section {
 	return ret
 }
 
-func GetSectionsByTypeAndCommand(sections []*Section, sectiontype SectionType, command string) []*Section {
+func GetSectionsForCommand(sections []*Section, command string) []*Section {
 	ret := []*Section{}
 	for _, section := range sections {
-		if section.SectionType == sectiontype && section.IsForCommand(command) {
+		if section.IsForCommand(command) {
 			ret = append(ret, section)
 		}
 	}
 	return ret
 }
 
-func GetSectionsByTypeCommandAndFlag(sections []*Section, sectiontype SectionType, command string, flag string) []*Section {
+func GetSectionsForFlag(sections []*Section, flag string) []*Section {
 	ret := []*Section{}
 	for _, section := range sections {
-		if section.SectionType == sectiontype && section.IsForCommand(command) && section.IsForFlag(flag) {
+		if section.IsForFlag(flag) {
 			ret = append(ret, section)
 		}
 	}
 	return ret
+}
+
+func GetSectionsByTypeAndCommand(sections []*Section, sectiontype SectionType, command string) []*Section {
+	return GetSectionsByType(GetSectionsForCommand(sections, command), sectiontype)
+}
+
+func GetSectionsByTypeCommandAndFlag(sections []*Section, sectiontype SectionType, command string, flag string) []*Section {
+	return GetSectionsByType(GetSectionsForFlag(GetSectionsForCommand(sections, command), flag), sectiontype)
 }
 
 type RenderContext struct {

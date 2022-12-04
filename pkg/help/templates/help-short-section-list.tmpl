@@ -1,5 +1,5 @@
-
-{{range .GeneralTopics}}
+{{if gt (len .DefaultGeneralTopics) 0}}
+{{range .DefaultGeneralTopics}}
 {{.Title}}:
     {{.Short}}
 
@@ -12,10 +12,56 @@
             {{.Short}}
     {{end -}}
 {{end -}}
-{{if gt (len .NonDefaultExamples) 0}}
+{{if gt (len .OtherExamples) 0}}
     To see more examples for this topic, run:
         {{$.HelpCommand}} {{.Slug}} --examples
 {{end -}}
 {{end}}
+{{end -}}
+{{if gt (len .OtherGeneralTopics) 0 -}}
+To see more topics, run:
+    {{$.HelpCommand}} {{.Slug}} --topics
+{{end -}}
 
-This is where we would show applications, tutorials, more examples...
+{{if gt (len .DefaultExamples) 0}}
+
+Examples:
+{{- range .DefaultExamples}}
+    {{.Title}}:
+        {{.Short}}
+{{end}}
+{{end -}}
+{{if gt (len .OtherExamples) 0 -}}
+To see more examples, run:
+    {{$.HelpCommand}} {{.Slug}} --examples
+{{end -}}
+
+{{if gt (len .DefaultApplications) 0}}
+Applications:
+{{- range .DefaultApplications}}
+    {{.Title}}:
+        {{.Short}}
+
+    To learn more, run:
+        {{$.HelpCommand}} {{.Slug}}
+{{end}}
+{{end -}}
+{{if gt (len .OtherApplications) 0 -}}
+    To see more applications, run:
+        {{$.HelpCommand}} {{.Slug}} --applications
+{{end -}}
+
+{{if gt (len .DefaultTutorials) 0}}
+Tutorials:
+{{- range .DefaultTutorials}}
+    {{.Title}}:
+        {{.Short}}
+
+    To learn more, run:
+        {{$.HelpCommand}} {{.Slug}}
+{{end}}
+{{end -}}
+{{if gt (len .OtherTutorials) 0 -}}
+    To see more tutorials, run:
+    {{$.HelpCommand}} {{.Slug}} --tutorials
+{{end -}}

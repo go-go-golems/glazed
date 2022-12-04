@@ -48,8 +48,29 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		data["Command"] = c
 		data["HelpCommand"] = c.CommandPath() + " help"
 
-		generalTopics := GetSectionsByTypeAndCommand(hs.Sections, SectionGeneralTopic, c.Name())
-		data["GeneralTopics"] = generalTopics
+		isTopLevel := c.Parent() == nil
+		sections := hs.Sections
+		if isTopLevel {
+			sections = GetTopLevelSections(sections)
+		} else {
+			sections = GetSectionsForCommand(sections, c.Name())
+		}
+
+		generalTopics := GetSectionsByType(sections, SectionGeneralTopic)
+		data["DefaultGeneralTopics"] = GetSectionsShownByDefault(generalTopics)
+		data["OtherGeneralTopics"] = GetSectionsNotShownByDefault(generalTopics)
+
+		examples := GetSectionsByType(sections, SectionExample)
+		data["DefaultExamples"] = GetSectionsShownByDefault(examples)
+		data["OtherExamples"] = GetSectionsNotShownByDefault(examples)
+
+		applications := GetSectionsByType(sections, SectionApplication)
+		data["DefaultApplications"] = GetSectionsShownByDefault(applications)
+		data["OtherApplications"] = GetSectionsNotShownByDefault(applications)
+
+		tutorials := GetSectionsByType(sections, SectionTutorial)
+		data["DefaultTutorials"] = GetSectionsShownByDefault(tutorials)
+		data["OtherTutorials"] = GetSectionsNotShownByDefault(tutorials)
 
 		err := t.Execute(c.OutOrStderr(), data)
 		return err
@@ -91,7 +112,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			generalTopics := GetSectionsByType(GetToplevelSections(hs.Sections), SectionGeneralTopic)
+			generalTopics := GetSectionsByType(GetTopLevelSections(hs.Sections), SectionGeneralTopic)
 			for _, section := range generalTopics {
 				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
 			}
@@ -118,7 +139,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			if len(args) == 1 {
 				// we need to integrate those into the standard help command template
-				topicSections := GetSectionsByTopic(GetToplevelSections(hs.Sections), args[0])
+				topicSections := GetSectionsByTopic(GetTopLevelSections(hs.Sections), args[0])
 				if len(topicSections) > 1 {
 					// if we have multiple topics we should show the short section (kind of table of contents for the whole thing)
 
