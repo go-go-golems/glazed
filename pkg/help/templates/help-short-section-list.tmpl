@@ -1,69 +1,85 @@
 {{if gt (len .DefaultGeneralTopics) 0}}
 
 {{range .DefaultGeneralTopics}}
-{{.Title}}:
-    {{.Short}}
+## {{.Title}}:
+{{.Short}}
 
-    To learn more, run:
-        {{$.HelpCommand}} {{.Slug}}
+To learn more, run:
+    `{{$.HelpCommand}} {{.Slug}}`
 {{if gt (len .DefaultExamples) 0}}
-    Examples:
-    {{- range .DefaultExamples}}
-        {{.Title}}
-            {{.Short}}
-    {{end -}}
+### Examples:
+{{- range .DefaultExamples}}
+**{{.Title}}**
+
+```
+{{.Short}}
+```
+{{end -}}
 {{end -}}
 {{if gt (len .OtherExamples) 0}}
-    To see more examples for this topic, run:
-        {{$.HelpCommand}} {{.Slug}} --examples
+To see more examples for this topic, run:
+    `{{$.HelpCommand}} {{.Slug}} --examples`
 {{end -}}
 {{end}}
 {{end -}}
 {{if gt (len .OtherGeneralTopics) 0 -}}
 To see more topics, run:
-    {{$.HelpCommand}} {{.Slug}} --topics
+```
+{{$.HelpCommand}} {{.Slug}} --topics
+```
 {{end -}}
 
 {{if gt (len .DefaultExamples) 0}}
 
-Examples:
+## Examples:
 {{- range .DefaultExamples}}
-    {{.Title}}:
-        {{.Short}}
+**{{.Title}}**
+
+```
+{{.Short}}
+```
 {{end}}
 {{end -}}
 {{if gt (len .OtherExamples) 0 -}}
 To see more examples, run:
-    {{$.HelpCommand}} {{.Slug}} --examples
+```
+{{$.HelpCommand}} {{.Slug}} --examples
+```
 {{end -}}
 
 {{if gt (len .DefaultApplications) 0}}
 
-Applications:
+## Applications:
 {{- range .DefaultApplications}}
-    {{.Title}}:
-        {{.Short}}
+### {{.Title}}:
+{{.Short}}
 
-    To learn more, run:
-        {{$.HelpCommand}} {{.Slug}}
+To learn more, run:
+```
+{{$.HelpCommand}} {{.Slug}}
+```
 {{end}}
 {{end -}}
 {{if gt (len .OtherApplications) 0 -}}
-    To see more applications, run:
-        {{$.HelpCommand}} {{.Slug}} --applications
+To see more applications, run:
+```
+{{$.HelpCommand}} {{.Slug}} --applications
+```
 {{end -}}
 
 {{if gt (len .DefaultTutorials) 0}}
-Tutorials:
+## Tutorials:
 {{- range .DefaultTutorials}}
-    {{.Title}}:
-        {{.Short}}
+### {{.Title}}:
+{{.Short}}
 
-    To learn more, run:
-        {{$.HelpCommand}} {{.Slug}}
+To learn more, run:
+```
+{{$.HelpCommand}} {{.Slug}}
+```
 {{end}}
 {{end -}}
 {{if gt (len .OtherTutorials) 0 -}}
     To see more tutorials, run:
-    {{$.HelpCommand}} {{.Slug}} --tutorials
+        `{{$.HelpCommand}} {{.Slug}} --tutorials`
 {{end -}}

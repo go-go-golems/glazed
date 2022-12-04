@@ -35,8 +35,12 @@ var TemplateFuncs = template.FuncMap{
 	"trimRightSpace":          trimRightSpace,
 	"trimTrailingWhitespaces": trimRightSpace,
 	"rpad":                    rpad,
+	"quote":                   quote,
 }
 
+func quote(s string) string {
+	return fmt.Sprintf("`%s`", s)
+}
 func trimRightSpace(s string) string {
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }

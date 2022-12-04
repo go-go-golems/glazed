@@ -3,6 +3,7 @@ package help
 import (
 	_ "embed"
 	"fmt"
+	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"glazed/pkg/helpers"
@@ -23,7 +24,18 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		data := map[string]interface{}{}
 		data["Command"] = c
 
-		err := t.Execute(c.OutOrStderr(), data)
+		// get markdown output
+		var sb strings.Builder
+		r, _ := glamour.NewTermRenderer(
+			//glamour.WithWordWrap(110),
+			glamour.WithAutoStyle(),
+		)
+
+		err := t.Execute(&sb, data)
+
+		s := sb.String()
+		out, err := r.Render(s)
+		fmt.Fprintln(c.OutOrStderr(), out)
 		if err != nil {
 			c.PrintErrln(err)
 		}
@@ -73,6 +85,7 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		data["OtherTutorials"] = GetSectionsNotShownByDefault(tutorials)
 
 		err := t.Execute(c.OutOrStderr(), data)
+
 		return err
 	}
 
@@ -209,6 +222,6 @@ var USAGE_TEMPLATE string
 //go:embed templates/help-short-section-list.tmpl
 var HELP_SHORT_SECTION_TEMPLATE string
 
-const HELP_TEMPLATE = `{{with .Command}}{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
+const HELP_TEMPLATE = `{{with .Command}}{{with (or .Long .Short)}}# {{. | trimTrailingWhitespaces}}
 
 {{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}{{end}}`
