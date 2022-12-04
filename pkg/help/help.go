@@ -163,14 +163,14 @@ func FindSection(sections []*Section, args []string) (*Section, error) {
 
 }
 
-func FindSectionWithTags(sections []*Section, tags []string) []*Section {
+func FindSectionWithAnyTags(sections []*Section, tags []string) []*Section {
 	var result []*Section
 	for _, section := range sections {
 		if section.IsTaggedWithAny(tags) {
 			result = append(result, section)
 		}
 		for _, subSection := range section.SubSections {
-			result = append(result, FindSectionWithTags([]*Section{subSection}, tags)...)
+			result = append(result, FindSectionWithAnyTags([]*Section{subSection}, tags)...)
 		}
 	}
 	return result

@@ -1,6 +1,7 @@
 package help
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -39,7 +40,7 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 		// TODO(manuel, 2022-12-03) The commands matching a flag tag should probably be listed separately under the flag itself?
 		// or maybe we should actually add some metadata about why the section was found
 		// so that it can be used to render the help text
-		cmdSections := FindSectionWithTags(sections, tags)
+		cmdSections := FindSectionWithAnyTags(sections, tags)
 
 		t := template.New("top")
 
@@ -210,39 +211,8 @@ func NewRenderContext(tags []string, data interface{}) *RenderContext {
 //
 //
 // 2022-12-03 - Manuel Odendahl - Augmented template with sections
-const USAGE_TEMPLATE string = `{{with .Command}}Usage:{{if .Runnable}}
-  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
-  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
-
-Aliases:
-  {{.NameAndAliases}}{{end}}{{if .HasExample}}
-
-Examples:
-{{.Example}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
-
-Available Commands:{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
-
-{{.Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
-
-Additional Commands:{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasSections}}
-
-Additional Topics:{{$sections := .Sections}}{{range $sections}}
-  {{rpad .Slug .SlugPadding }} {{.Title}}{{end}}{{end}}{{with .Command}}{{if .HasAvailableLocalFlags}}
-
-Flags:
-{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
-
-Global Flags:
-{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
-
-Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
-
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}{{end}}
-`
+//go:embed templates/cobra-usage.tmpl
+var USAGE_TEMPLATE string
 
 const HELP_TEMPLATE = `{{with .Command}}{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
 
