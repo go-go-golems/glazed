@@ -16,6 +16,7 @@ type Section struct {
 	Tags           []string
 	IsTemplate     bool
 	ShowPerDefault bool
+	Order          int
 }
 
 func (s *Section) AddSubSection(subSection *Section) {
@@ -96,6 +97,7 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 		}
 	}
 
+	// TODO(manuel, 2022-12-03) subsections should be sorted by order
 	for _, subSection := range s.SubSections {
 		if subSection.ShowPerDefault || rc.IsTaggedWithAny(subSection.Tags) {
 			err := subSection.Render(w, rc.IncreaseDepth())

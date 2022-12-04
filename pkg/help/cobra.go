@@ -32,21 +32,9 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 	usageFunc := func(c *cobra.Command) error {
 		t := template.New("top")
 
-		var renderedSections []map[string]interface{}
-		for _, section := range sections {
-			buf := &strings.Builder{}
-			err := section.Render(buf, NewRenderContext([]string{}, nil))
-			if err != nil {
-				return err
-			}
-			renderedSections = append(renderedSections, map[string]interface{}{
-				"Slug":    section.Slug,
-				"Title":   section.Title,
-				"Content": buf.String(),
-				"Tags":    section.Tags,
-				// TODO(manuel, 2022-12-03) - Compute padding
-				"SlugPadding": 11,
-			})
+		renderedSections, err2 := renderHelpSections(sections)
+		if err2 != nil {
+			return err2
 		}
 
 		// this is where we would have to find the help sections we should show for this specific command
@@ -57,7 +45,8 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 		data["Command"] = c
 
 		// TODO (manuel, 2021-12-03) - potentially we should also separate additional help sections, additional flag related usage sections, etc
-		data["Sections"] = renderedSections
+		// TODO (manuel, 2021-12-03) - disable for actual usages for now, only shown on help
+		//data["Sections"] = renderedSections
 		data["HasSections"] = len(renderedSections) > 0
 
 		err := t.Execute(c.OutOrStderr(), data)
@@ -65,6 +54,26 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 	}
 
 	return helpFunc, usageFunc
+}
+
+func renderHelpSections(sections []*Section) ([]map[string]interface{}, error) {
+	var renderedSections []map[string]interface{}
+	for _, section := range sections {
+		buf := &strings.Builder{}
+		err := section.Render(buf, NewRenderContext([]string{}, nil))
+		if err != nil {
+			return nil, err
+		}
+		renderedSections = append(renderedSections, map[string]interface{}{
+			"Slug":    section.Slug,
+			"Title":   section.Title,
+			"Content": buf.String(),
+			"Tags":    section.Tags,
+			// TODO(manuel, 2022-12-03) - Compute padding
+			"SlugPadding": 11,
+		})
+	}
+	return renderedSections, nil
 }
 
 func GetHelpUsageTemplates(sections []*Section) (string, string) {
@@ -132,10 +141,15 @@ func NewCobraHelpCommand(sections []*Section) *cobra.Command {
 				err := section.Render(c.OutOrStdout(), rc)
 				cobra.CheckErr(err)
 			} else {
-				cmd, _, e := c.Root().Find(args)
+				root := c.Root()
+				cmd, _, e := root.Find(args)
+				if cmd == root {
+					// we got asked to just `help`, so we need to output all the additional topics as part of the help command too,
+					// not just the root command usage, or maybe we should just move the root command help to `help glaze`
+				}
 				if cmd == nil || e != nil {
 					c.Printf("Unknown help topic %#q\n", args)
-					cobra.CheckErr(c.Root().Usage())
+					cobra.CheckErr(root.Usage())
 				} else {
 					cmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown
 					cmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown
