@@ -189,4 +189,5 @@ func init() {
 
 	rootCmd.AddCommand(cmds.JsonCmd)
 	rootCmd.AddCommand(cmds.YamlCmd)
+	rootCmd.AddCommand(cmds.DocsCmd)
 }

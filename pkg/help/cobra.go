@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/charmbracelet/glamour"
+	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"glazed/pkg/helpers"
@@ -15,26 +16,23 @@ type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
 
 func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
+	calledFromHelp := false
 	helpFunc := func(c *cobra.Command, args []string) {
 		t := template.New("top")
 		t.Funcs(helpers.TemplateFuncs)
-		template.Must(t.Parse(c.HelpTemplate()))
+		helpTemplate := c.HelpTemplate()
+		template.Must(t.Parse(helpTemplate))
 
 		// this is where we have to find the help sections we should show for this specific command
 		data := map[string]interface{}{}
 		data["Command"] = c
 
-		// get markdown output
-		var sb strings.Builder
-		r, _ := glamour.NewTermRenderer(
-			//glamour.WithWordWrap(110),
-			glamour.WithAutoStyle(),
-		)
+		prevCalledFromHelp := calledFromHelp
+		calledFromHelp = true
+		out, err := renderToMarkdown(t, data)
 
-		err := t.Execute(&sb, data)
+		calledFromHelp = prevCalledFromHelp
 
-		s := sb.String()
-		out, err := r.Render(s)
 		fmt.Fprintln(c.OutOrStderr(), out)
 		if err != nil {
 			c.PrintErrln(err)
@@ -84,12 +82,53 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		data["DefaultTutorials"] = GetSectionsShownByDefault(tutorials)
 		data["OtherTutorials"] = GetSectionsNotShownByDefault(tutorials)
 
-		err := t.Execute(c.OutOrStderr(), data)
+		var err error
+
+		// TODO this is a hack to get the error handling to show the help as markdown
+		// Not sure if we should bypass this entirely, and do all the markdown rendering in Usage itself
+		if calledFromHelp {
+			err = t.Execute(c.OutOrStderr(), data)
+		} else {
+			// if we are not called from help, then maybe we should render the markdown
+			// here?
+			s, err := renderToMarkdown(t, data)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(c.OutOrStderr(), s)
+		}
 
 		return err
 	}
 
 	return helpFunc, usageFunc
+}
+
+func renderToMarkdown(t *template.Template, data map[string]interface{}) (string, error) {
+	sz, err := tsize.GetSize()
+	if err != nil {
+		sz.Width = 80
+	}
+
+	// get markdown output
+	var sb strings.Builder
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithWordWrap(sz.Width),
+		//glamour.WithAutoStyle(),
+		// TODO(manuel, 2022-12-04): We need to check if we can use colors here,
+		// which is not the case if we render things out to a file / pipe,
+		// in the context of a redirect, or if we render to file
+		glamour.WithStandardStyle("notty"),
+	)
+
+	err = t.Execute(&sb, data)
+
+	s := sb.String()
+	sizeString := fmt.Sprintf("size: %dx%d\n", sz.Width, sz.Height)
+	_ = sizeString
+
+	out, err := r.Render(s)
+	return out, err
 }
 
 func GetHelpUsageTemplates(hs *HelpSystem) (string, string) {

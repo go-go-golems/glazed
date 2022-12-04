@@ -11,6 +11,7 @@ import (
 var YamlCmd = &cobra.Command{
 	Use:   "yaml",
 	Short: "Format YAML data",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("No input file specified")
@@ -88,7 +89,7 @@ func init() {
 	YamlCmd.Flags().SortFlags = false
 	cli.AddOutputFlags(YamlCmd)
 	cli.AddTemplateFlags(YamlCmd)
-	cli.AddFieldsFilterFlags(YamlCmd)
+	cli.AddFieldsFilterFlags(YamlCmd, "")
 
 	// json input options
 	YamlCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")
