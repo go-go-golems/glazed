@@ -1,0 +1,21 @@
+
+{{range .GeneralTopics}}
+{{.Title}}:
+    {{.Short}}
+
+    To learn more, run:
+        {{$.HelpCommand}} {{.Slug}}
+{{if gt (len .DefaultExamples) 0}}
+    Examples:
+    {{- range .DefaultExamples}}
+        {{.Title}}
+            {{.Short}}
+    {{end -}}
+{{end -}}
+{{if gt (len .NonDefaultExamples) 0}}
+    To see more examples for this topic, run:
+        {{$.HelpCommand}} {{.Slug}} --examples
+{{end -}}
+{{end}}
+
+This is where we would show applications, tutorials, more examples...

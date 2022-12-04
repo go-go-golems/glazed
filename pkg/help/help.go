@@ -3,25 +3,213 @@ package help
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkg/errors"
+	"glazed/pkg/helpers"
 	"io"
 	"text/template"
 )
 
+type SectionType int
+
+const (
+	SectionGeneralTopic SectionType = iota
+	SectionExample
+	SectionApplication
+	SectionTutorial
+)
+
 type Section struct {
-	Title       string
 	Slug        string
-	Content     string
-	SubSections []*Section
-	// TODO(manuel, 2022-12-03) tags should be a hash map really
-	Tags           []string
-	IsTemplate     bool
+	SectionType SectionType
+	// TODO(manuel, 2022-12-04): Potentially we want to attach a different topic name here
+	// as the slug is used to look things up and it might be prettier?
+	// or maybe introduce a "related topics" that can be used to look up topics to
+	// attach to this section? That sounds actually like a better idea.
+	//
+	// If we want to attach examples to a specific section, that might better  be done
+	// over a separate sectionSlugs entry, actually, instead of mixing slug and topic.
+
+	Title    string
+	SubTitle string
+	Short    string
+	Content  string
+
+	// metadata used to search and select sections to be shown
+	Topics   []string
+	Flags    []string
+	Commands []string
+
+	// Show this section in the toplevel help
+	IsTopLevel bool
+
+	IsTemplate bool
+
+	// show this template as a default example
 	ShowPerDefault bool
-	Order          int
+
+	// Used to give some rough sense of order, not sure how useful this is going to be
+	Order int
+
+	HelpSystem *HelpSystem
 }
 
-func (s *Section) AddSubSection(subSection *Section) {
-	s.SubSections = append(s.SubSections, subSection)
+func (s *Section) IsForCommand(command string) bool {
+	return helpers.StringInSlice(command, s.Commands)
+}
+
+func (s *Section) IsForFlag(flag string) bool {
+	return helpers.StringInSlice(flag, s.Flags)
+}
+
+func (s *Section) IsForTopic(topic string) bool {
+	return helpers.StringInSlice(topic, s.Topics)
+}
+
+func (s *Section) DefaultExamples() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
+	sections = GetSectionsShownByDefault(sections)
+	return sections
+}
+
+func (s *Section) NonDefaultExamples() []*Section {
+	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
+	sections = GetSectionsNotShownByDefault(sections)
+	return sections
+}
+
+func GetSectionsTopics(sections []*Section) []string {
+	// TODO(manuel, 2022-12-04): This should be a set, and maybe sorted at the end
+	// Potentially we want to show a short line for each topic, which might exist already if
+	// the topic is actually a slug. Otherwise we might need to keep that information in the helpsystem.
+	// this topic system needs to be fleshed out a bit more, since it's an odd mix of toplevel
+	// and topic/command/flag restricted topics.
+	topics := []string{}
+	for _, section := range sections {
+		for _, topic := range section.Topics {
+			if !helpers.StringInSlice(topic, topics) {
+				topics = append(topics, topic)
+			}
+		}
+	}
+	return topics
+}
+
+type CommandHelpPage struct {
+	GeneralTopics []*Section
+	Examples      []*Section
+	Applications  []*Section
+	Tutorials     []*Section
+}
+
+type HelpSystem struct {
+	Sections []*Section
+
+	SectionsByFlag    map[string][]*Section
+	SectionsByCommand map[string][]*Section
+}
+
+func NewHelpSystem() *HelpSystem {
+	return &HelpSystem{
+		Sections:          []*Section{},
+		SectionsByFlag:    map[string][]*Section{},
+		SectionsByCommand: map[string][]*Section{},
+	}
+}
+
+func (hs *HelpSystem) AddSection(section *Section) {
+	hs.Sections = append(hs.Sections, section)
+	for _, flag := range section.Flags {
+		if hs.SectionsByFlag[flag] == nil {
+			hs.SectionsByFlag[flag] = []*Section{}
+		}
+		hs.SectionsByFlag[flag] = append(hs.SectionsByFlag[flag], section)
+	}
+	for _, command := range section.Commands {
+		if hs.SectionsByCommand[command] == nil {
+			hs.SectionsByCommand[command] = []*Section{}
+		}
+		hs.SectionsByCommand[command] = append(hs.SectionsByCommand[command], section)
+	}
+	section.HelpSystem = hs
+}
+
+func GetSectionsByType(sections []*Section, sectionType SectionType) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.SectionType == sectionType {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsByTopic(sections []*Section, topic string) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.IsForTopic(topic) {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsByTypeAndTopic(sections []*Section, sectiontype SectionType, topic string) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.SectionType == sectiontype && section.IsForTopic(topic) {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetToplevelSections(sections []*Section) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.IsTopLevel {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsShownByDefault(sections []*Section) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.ShowPerDefault {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsNotShownByDefault(sections []*Section) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if !section.ShowPerDefault {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsByTypeAndCommand(sections []*Section, sectiontype SectionType, command string) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.SectionType == sectiontype && section.IsForCommand(command) {
+			ret = append(ret, section)
+		}
+	}
+	return ret
+}
+
+func GetSectionsByTypeCommandAndFlag(sections []*Section, sectiontype SectionType, command string, flag string) []*Section {
+	ret := []*Section{}
+	for _, section := range sections {
+		if section.SectionType == sectiontype && section.IsForCommand(command) && section.IsForFlag(flag) {
+			ret = append(ret, section)
+		}
+	}
+	return ret
 }
 
 type RenderContext struct {
@@ -67,6 +255,7 @@ type ContentSection interface {
 	Render(w io.Writer, rc *RenderContext) error
 }
 
+// TODO(manuel, 2022-12-04): This is all a placeholder for now
 func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 	renderedTitle := s.Title
 	if s.IsTemplate {
@@ -98,35 +287,7 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 		}
 	}
 
-	// TODO(manuel, 2022-12-03) subsections should be sorted by order
-	for _, subSection := range s.SubSections {
-		if subSection.ShowPerDefault || rc.IsTaggedWithAny(subSection.Tags) {
-			err := subSection.Render(w, rc.IncreaseDepth())
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	return nil
-}
-
-func (s *Section) IsTagged(tag string) bool {
-	for _, t := range s.Tags {
-		if t == tag {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Section) IsTaggedWithAny(tags []string) bool {
-	for _, t := range tags {
-		if s.IsTagged(t) {
-			return true
-		}
-	}
-	return false
 }
 
 type HelpError int
@@ -142,36 +303,4 @@ func (e HelpError) Error() string {
 	default:
 		return "Unknown error"
 	}
-}
-
-func FindSection(sections []*Section, args []string) (*Section, error) {
-	if len(args) == 0 {
-		return nil, errors.Wrap(ErrSectionNotFound, "No sections available")
-	}
-
-	for _, section := range sections {
-		if section.Slug == args[0] {
-			if len(args) == 1 {
-				return section, nil
-			} else {
-				return FindSection(section.SubSections, args[1:])
-			}
-		}
-	}
-
-	return nil, errors.Wrap(ErrSectionNotFound, fmt.Sprintf("Section %s not found", args[0]))
-
-}
-
-func FindSectionWithAnyTags(sections []*Section, tags []string) []*Section {
-	var result []*Section
-	for _, section := range sections {
-		if section.IsTaggedWithAny(tags) {
-			result = append(result, section)
-		}
-		for _, subSection := range section.SubSections {
-			result = append(result, FindSectionWithAnyTags([]*Section{subSection}, tags)...)
-		}
-	}
-	return result
 }

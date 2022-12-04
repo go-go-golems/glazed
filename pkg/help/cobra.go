@@ -13,7 +13,7 @@ import (
 type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
 
-func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
+func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
 		t := template.New("top")
 		t.Funcs(helpers.TemplateFuncs)
@@ -37,39 +37,19 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 			tags = append(tags, fmt.Sprintf("flag:%s", f.Name))
 		})
 
-		// TODO(manuel, 2022-12-03) The commands matching a flag tag should probably be listed separately under the flag itself?
-		// or maybe we should actually add some metadata about why the section was found
-		// so that it can be used to render the help text
-		cmdSections := FindSectionWithAnyTags(sections, tags)
-
 		t := template.New("top")
-
-		renderedSections, err2 := renderHelpSections(cmdSections)
-		if err2 != nil {
-			return err2
-		}
 
 		// this is where we would have to find the help sections we should show for this specific command
 		t.Funcs(helpers.TemplateFuncs)
-		template.Must(t.Parse(c.UsageTemplate()))
+		templateString := c.UsageTemplate() + HELP_SHORT_SECTION_TEMPLATE
+		template.Must(t.Parse(templateString))
 
 		data := map[string]interface{}{}
 		data["Command"] = c
+		data["HelpCommand"] = c.CommandPath() + " help"
 
-		// TODO (manuel, 2021-12-03) - potentially we should also separate additional help sections, additional flag related usage sections, etc
-		// TODO (manuel, 2021-12-03) - disable for actual usages for now, only shown on help
-		data["Sections"] = renderedSections
-		data["HasSections"] = len(renderedSections) > 0
-		slugPadding := 7
-		for _, section := range renderedSections {
-			slug := section["Slug"].(string)
-			if len(slug) > slugPadding {
-				slugPadding = len(slug)
-			}
-		}
-		for _, section := range renderedSections {
-			section["SlugPadding"] = slugPadding + 1
-		}
+		generalTopics := GetSectionsByTypeAndCommand(hs.Sections, SectionGeneralTopic, c.Name())
+		data["GeneralTopics"] = generalTopics
 
 		err := t.Execute(c.OutOrStderr(), data)
 		return err
@@ -78,26 +58,8 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 	return helpFunc, usageFunc
 }
 
-func renderHelpSections(sections []*Section) ([]map[string]interface{}, error) {
-	var renderedSections []map[string]interface{}
-	for _, section := range sections {
-		buf := &strings.Builder{}
-		err := section.Render(buf, NewRenderContext([]string{}, nil))
-		if err != nil {
-			return nil, err
-		}
-		renderedSections = append(renderedSections, map[string]interface{}{
-			"Slug":    section.Slug,
-			"Title":   section.Title,
-			"Content": buf.String(),
-			"Tags":    section.Tags,
-		})
-	}
-	return renderedSections, nil
-}
-
-func GetHelpUsageTemplates(sections []*Section) (string, string) {
-	_ = sections
+func GetHelpUsageTemplates(hs *HelpSystem) (string, string) {
+	_ = hs
 	return HELP_TEMPLATE, USAGE_TEMPLATE
 }
 
@@ -119,7 +81,7 @@ func GetHelpUsageTemplates(sections []*Section) (string, string) {
 // limitations under the License.
 //
 // 2022-12-03 - Manuel Odendahl - Added support for help sections
-func NewCobraHelpCommand(sections []*Section) *cobra.Command {
+func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 	var ret *cobra.Command
 	ret = &cobra.Command{
 		Use:   "help [topic/command]",
@@ -129,7 +91,8 @@ func NewCobraHelpCommand(sections []*Section) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			for _, section := range sections {
+			generalTopics := GetSectionsByType(GetToplevelSections(hs.Sections), SectionGeneralTopic)
+			for _, section := range generalTopics {
 				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
 			}
 
@@ -153,28 +116,36 @@ func NewCobraHelpCommand(sections []*Section) *cobra.Command {
 		},
 
 		Run: func(c *cobra.Command, args []string) {
-			// we need to integrate those into the standard help command template
-			section, _ := FindSection(sections, args)
-			if section != nil {
-				// we need to parse the tags here
-				rc := NewRenderContext([]string{}, nil)
-				err := section.Render(c.OutOrStdout(), rc)
-				cobra.CheckErr(err)
-			} else {
-				root := c.Root()
-				cmd, _, e := root.Find(args)
-				if cmd == root {
-					// we got asked to just `help`, so we need to output all the additional topics as part of the help command too,
-					// not just the root command usage, or maybe we should just move the root command help to `help glaze`
-					cobra.CheckErr(cmd.Help())
-				} else if cmd == nil || e != nil {
-					c.Printf("Unknown help topic %#q\n", args)
-					cobra.CheckErr(root.Usage())
-				} else {
-					cmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown
-					cmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown
-					cobra.CheckErr(cmd.Help())
+			if len(args) == 1 {
+				// we need to integrate those into the standard help command template
+				topicSections := GetSectionsByTopic(GetToplevelSections(hs.Sections), args[0])
+				if len(topicSections) > 1 {
+					// if we have multiple topics we should show the short section (kind of table of contents for the whole thing)
+
+					fmt.Println("XXX we should show a toplevel topic index page")
+				} else if len(topicSections) == 1 {
+					// we need to parse the tags here
+					rc := NewRenderContext([]string{}, nil)
+					err := topicSections[0].Render(c.OutOrStdout(), rc)
+					cobra.CheckErr(err)
+					return
 				}
+			}
+
+			root := c.Root()
+			cmd, _, e := root.Find(args)
+			if cmd == root {
+				// we got asked to just `help`, so we need to output all the additional topics as part of the help command too,
+				// not just the root command usage, or maybe we should just move the root command help to `help glaze`
+				// TODO - we need to add the short section list but only for toplevel topics
+				cobra.CheckErr(cmd.Help())
+			} else if cmd == nil || e != nil {
+				c.Printf("Unknown help topic %#q\n", args)
+				cobra.CheckErr(root.Usage())
+			} else {
+				cmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown
+				cmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown
+				cobra.CheckErr(cmd.Help())
 			}
 		},
 	}
@@ -213,6 +184,9 @@ func NewRenderContext(tags []string, data interface{}) *RenderContext {
 // 2022-12-03 - Manuel Odendahl - Augmented template with sections
 //go:embed templates/cobra-usage.tmpl
 var USAGE_TEMPLATE string
+
+//go:embed templates/help-short-section-list.tmpl
+var HELP_SHORT_SECTION_TEMPLATE string
 
 const HELP_TEMPLATE = `{{with .Command}}{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
 
