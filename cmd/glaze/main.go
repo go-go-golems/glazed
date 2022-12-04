@@ -21,12 +21,22 @@ func init() {
 		Slug:           "templates",
 		Content:        `Information about templates`,
 		SubSections:    []*help.Section{},
-		Tags:           []string{"templates"},
+		Tags:           []string{"templates", "flag:template", "flag:template-field"},
 		IsTemplate:     false,
 		ShowPerDefault: true,
 	}
 
-	sections := []*help.Section{templatesSection}
+	jsonInfoSection := &help.Section{
+		Title:          "JSON",
+		Slug:           "json-information",
+		Content:        `Information about JSON`,
+		SubSections:    []*help.Section{},
+		Tags:           []string{"command:json", "json"},
+		IsTemplate:     false,
+		ShowPerDefault: true,
+	}
+
+	sections := []*help.Section{templatesSection, jsonInfoSection}
 	helpFunc, usageFunc := help.GetHelpUsageFuncs(sections)
 	helpTemplate, usageTemplate := help.GetHelpUsageTemplates(sections)
 

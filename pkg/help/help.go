@@ -9,10 +9,11 @@ import (
 )
 
 type Section struct {
-	Title          string
-	Slug           string
-	Content        string
-	SubSections    []*Section
+	Title       string
+	Slug        string
+	Content     string
+	SubSections []*Section
+	// TODO(manuel, 2022-12-03) tags should be a hash map really
 	Tags           []string
 	IsTemplate     bool
 	ShowPerDefault bool
@@ -110,6 +111,24 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 	return nil
 }
 
+func (s *Section) IsTagged(tag string) bool {
+	for _, t := range s.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Section) IsTaggedWithAny(tags []string) bool {
+	for _, t := range tags {
+		if s.IsTagged(t) {
+			return true
+		}
+	}
+	return false
+}
+
 type HelpError int
 
 const (
@@ -142,4 +161,17 @@ func FindSection(sections []*Section, args []string) (*Section, error) {
 
 	return nil, errors.Wrap(ErrSectionNotFound, fmt.Sprintf("Section %s not found", args[0]))
 
+}
+
+func FindSectionWithTags(sections []*Section, tags []string) []*Section {
+	var result []*Section
+	for _, section := range sections {
+		if section.IsTaggedWithAny(tags) {
+			result = append(result, section)
+		}
+		for _, subSection := range section.SubSections {
+			result = append(result, FindSectionWithTags([]*Section{subSection}, tags)...)
+		}
+	}
+	return result
 }

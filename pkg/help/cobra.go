@@ -3,6 +3,7 @@ package help
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"glazed/pkg/helpers"
 	"strings"
 	"text/template"
@@ -13,8 +14,6 @@ type UsageFunc = func(c *cobra.Command) error
 
 func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		// The help should be sent to stdout
-		// See https://github.com/spf13/cobra/issues/1002
 		t := template.New("top")
 		t.Funcs(helpers.TemplateFuncs)
 		template.Must(t.Parse(c.HelpTemplate()))
@@ -30,9 +29,21 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
+		var tags []string
+
+		tags = append(tags, fmt.Sprintf("command:%s", c.Name()))
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			tags = append(tags, fmt.Sprintf("flag:%s", f.Name))
+		})
+
+		// TODO(manuel, 2022-12-03) The commands matching a flag tag should probably be listed separately under the flag itself?
+		// or maybe we should actually add some metadata about why the section was found
+		// so that it can be used to render the help text
+		cmdSections := FindSectionWithTags(sections, tags)
+
 		t := template.New("top")
 
-		renderedSections, err2 := renderHelpSections(sections)
+		renderedSections, err2 := renderHelpSections(cmdSections)
 		if err2 != nil {
 			return err2
 		}
@@ -46,8 +57,18 @@ func GetHelpUsageFuncs(sections []*Section) (HelpFunc, UsageFunc) {
 
 		// TODO (manuel, 2021-12-03) - potentially we should also separate additional help sections, additional flag related usage sections, etc
 		// TODO (manuel, 2021-12-03) - disable for actual usages for now, only shown on help
-		//data["Sections"] = renderedSections
+		data["Sections"] = renderedSections
 		data["HasSections"] = len(renderedSections) > 0
+		slugPadding := 7
+		for _, section := range renderedSections {
+			slug := section["Slug"].(string)
+			if len(slug) > slugPadding {
+				slugPadding = len(slug)
+			}
+		}
+		for _, section := range renderedSections {
+			section["SlugPadding"] = slugPadding + 1
+		}
 
 		err := t.Execute(c.OutOrStderr(), data)
 		return err
@@ -69,8 +90,6 @@ func renderHelpSections(sections []*Section) ([]map[string]interface{}, error) {
 			"Title":   section.Title,
 			"Content": buf.String(),
 			"Tags":    section.Tags,
-			// TODO(manuel, 2022-12-03) - Compute padding
-			"SlugPadding": 11,
 		})
 	}
 	return renderedSections, nil
@@ -146,8 +165,8 @@ func NewCobraHelpCommand(sections []*Section) *cobra.Command {
 				if cmd == root {
 					// we got asked to just `help`, so we need to output all the additional topics as part of the help command too,
 					// not just the root command usage, or maybe we should just move the root command help to `help glaze`
-				}
-				if cmd == nil || e != nil {
+					cobra.CheckErr(cmd.Help())
+				} else if cmd == nil || e != nil {
 					c.Printf("Unknown help topic %#q\n", args)
 					cobra.CheckErr(root.Usage())
 				} else {
