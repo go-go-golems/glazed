@@ -3,6 +3,7 @@ package help
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"text/template"
 )
@@ -24,7 +25,7 @@ func (s *Section) AddSubSection(subSection *Section) {
 type RenderContext struct {
 	Depth int
 	Tags  []string
-	Date  interface{}
+	Data  interface{}
 }
 
 func (rc *RenderContext) AddTag(tag string) *RenderContext {
@@ -70,7 +71,7 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 		t := template.New("title")
 		template.Must(t.Parse(s.Title))
 		var titleBuffer bytes.Buffer
-		err := t.Execute(&titleBuffer, rc.Date)
+		err := t.Execute(&titleBuffer, rc.Data)
 		if err != nil {
 			return err
 		}
@@ -84,7 +85,7 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 	if s.IsTemplate {
 		t := template.New("content")
 		template.Must(t.Parse(s.Content))
-		err := t.Execute(w, rc.Date)
+		err := t.Execute(w, rc.Data)
 		if err != nil {
 			return err
 		}
@@ -105,4 +106,38 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 	}
 
 	return nil
+}
+
+type HelpError int
+
+const (
+	ErrSectionNotFound HelpError = iota
+)
+
+func (e HelpError) Error() string {
+	switch e {
+	case ErrSectionNotFound:
+		return "Section not found"
+	default:
+		return "Unknown error"
+	}
+}
+
+func FindSection(sections []*Section, args []string) (*Section, error) {
+	if len(args) == 0 {
+		return nil, errors.Wrap(ErrSectionNotFound, "No sections available")
+	}
+
+	for _, section := range sections {
+		if section.Slug == args[0] {
+			if len(args) == 1 {
+				return section, nil
+			} else {
+				return FindSection(section.SubSections, args[1:])
+			}
+		}
+	}
+
+	return nil, errors.Wrap(ErrSectionNotFound, fmt.Sprintf("Section %s not found", args[0]))
+
 }
