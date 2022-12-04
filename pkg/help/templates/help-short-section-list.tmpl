@@ -1,4 +1,5 @@
 {{if gt (len .DefaultGeneralTopics) 0}}
+
 {{range .DefaultGeneralTopics}}
 {{.Title}}:
     {{.Short}}
@@ -37,6 +38,7 @@ To see more examples, run:
 {{end -}}
 
 {{if gt (len .DefaultApplications) 0}}
+
 Applications:
 {{- range .DefaultApplications}}
     {{.Title}}:
