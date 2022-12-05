@@ -8,3 +8,15 @@ func StringInSlice(needle string, haystack []string) bool {
 	}
 	return false
 }
+
+func InterfaceListToStringList(list []interface{}) []string {
+	var result []string
+	for _, item := range list {
+		result = append(result, item.(string))
+	}
+	return result
+}
+
+func InterfaceToStringList(list interface{}) []string {
+	return InterfaceListToStringList(list.([]interface{}))
+}

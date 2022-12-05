@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"github.com/spf13/cobra"
 	"github.com/wesen/glazed/cmd/glaze/cmds"
 	"github.com/wesen/glazed/pkg/help"
@@ -15,21 +16,10 @@ func main() {
 	_ = rootCmd.Execute()
 }
 
-func init() {
-	templatesSection := &help.Section{
-		Title:          "Using go templates",
-		Slug:           "templates",
-		Short:          "Using go templates",
-		Content:        `Information about templates`,
-		Topics:         []string{"templates"},
-		Flags:          []string{"template", "template-field"},
-		Commands:       []string{"yaml", "json"},
-		SectionType:    help.SectionGeneralTopic,
-		IsTopLevel:     true,
-		IsTemplate:     false,
-		ShowPerDefault: true,
-	}
+//go:embed doc/*
+var docFS embed.FS
 
+func init() {
 	obscureJsonSection := &help.Section{
 		Title:          "Obscuring JSON data",
 		Slug:           "obscure-json",
@@ -42,70 +32,6 @@ func init() {
 		IsTopLevel:     true,
 		IsTemplate:     false,
 		ShowPerDefault: false,
-	}
-
-	templatesExample1 := &help.Section{
-		Title:          "Example 1",
-		Slug:           "templates-example-1",
-		Short:          "glaze json foo.json --template '{{.foo}}'",
-		Commands:       []string{"json"},
-		Topics:         []string{"templates", "json-information"},
-		Flags:          []string{"template"},
-		SectionType:    help.SectionExample,
-		ShowPerDefault: true,
-		IsTemplate:     false,
-		IsTopLevel:     false,
-	}
-	templatesExampleYAML1 := &help.Section{
-		Title:          "Example 1",
-		Slug:           "templates-yaml-example-1",
-		Short:          "glaze yaml foo.yaml --template '{{.foo}}'",
-		Commands:       []string{"yaml"},
-		Topics:         []string{"templates"},
-		Flags:          []string{"template"},
-		SectionType:    help.SectionExample,
-		ShowPerDefault: true,
-		IsTemplate:     false,
-		IsTopLevel:     false,
-	}
-
-	templatesExample2 := &help.Section{
-		Title:          "Example 2",
-		Slug:           "templates-example-2",
-		Short:          "glaze json foo2.json --template '{{.foo}}' --template-field foo",
-		Commands:       []string{"json"},
-		Topics:         []string{"templates"},
-		Flags:          []string{"template", "template-field"},
-		SectionType:    help.SectionExample,
-		ShowPerDefault: false,
-		IsTemplate:     false,
-		IsTopLevel:     false,
-	}
-
-	templatesExampleYAML2 := &help.Section{
-		Title:          "Example 2",
-		Slug:           "templates-yaml-example-2",
-		Short:          "glaze yaml foo2.yaml --template '{{.foo}}' --template-field foo",
-		Commands:       []string{"yaml"},
-		Topics:         []string{"templates"},
-		Flags:          []string{"template", "template-field"},
-		SectionType:    help.SectionExample,
-		ShowPerDefault: false,
-		IsTemplate:     false,
-		IsTopLevel:     false,
-	}
-
-	templatesExample3 := &help.Section{
-		Title:          "Example 3",
-		Slug:           "templates-example-3",
-		Short:          "glaze json foo3.json --template '{{.foo}}' --template-field foo",
-		Commands:       []string{"json"},
-		Topics:         []string{"templates"},
-		Flags:          []string{"template", "template-field"},
-		SectionType:    help.SectionExample,
-		ShowPerDefault: true,
-		IsTemplate:     false,
-		IsTopLevel:     true,
 	}
 
 	jsonInfoSection := &help.Section{
@@ -161,13 +87,11 @@ func init() {
 	}
 
 	helpSystem := help.NewHelpSystem()
-	helpSystem.AddSection(templatesSection)
+	err := helpSystem.LoadSectionsFromEmbedFS(docFS, ".")
+	if err != nil {
+		panic(err)
+	}
 	helpSystem.AddSection(obscureJsonSection)
-	helpSystem.AddSection(templatesExample1)
-	helpSystem.AddSection(templatesExample2)
-	helpSystem.AddSection(templatesExample3)
-	helpSystem.AddSection(templatesExampleYAML1)
-	helpSystem.AddSection(templatesExampleYAML2)
 	helpSystem.AddSection(jsonInfoSection)
 	helpSystem.AddSection(yamlInfoSection)
 	helpSystem.AddSection(dataDogApplicationSection)

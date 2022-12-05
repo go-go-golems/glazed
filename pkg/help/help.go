@@ -2,9 +2,12 @@ package help
 
 import (
 	"bytes"
-	"fmt"
+	"embed"
+	"github.com/adrg/frontmatter"
+	"github.com/pkg/errors"
 	"glazed/pkg/helpers"
 	"io"
+	"path/filepath"
 	"text/template"
 )
 
@@ -16,6 +19,20 @@ const (
 	SectionApplication
 	SectionTutorial
 )
+
+func SectionTypeFromString(s string) (SectionType, error) {
+	switch s {
+	case "GeneralTopic":
+		return SectionGeneralTopic, nil
+	case "Example":
+		return SectionExample, nil
+	case "Application":
+		return SectionApplication, nil
+	case "Tutorial":
+		return SectionTutorial, nil
+	}
+	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
+}
 
 type Section struct {
 	Slug        string
@@ -138,16 +155,135 @@ func GetSectionsTopics(sections []*Section) []string {
 	return topics
 }
 
-type CommandHelpPage struct {
-	GeneralTopics []*Section
-	Examples      []*Section
-	Applications  []*Section
-	Tutorials     []*Section
+func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
+	// get YAML metadata from markdown bytes
+	//var matter struct {
+	//	Name string   `yaml:"name"`
+	//	Tags []string `yaml:"tags"`
+	//}
+	var metaData map[string]interface{}
+
+	inputReader := bytes.NewReader(markdownBytes)
+	rest, err := frontmatter.Parse(inputReader, &metaData)
+	if err != nil {
+		return nil, err
+	}
+
+	section := &Section{}
+
+	if title, ok := metaData["Title"]; ok {
+		section.Title = title.(string)
+	}
+	if subTitle, ok := metaData["SubTitle"]; ok {
+		section.SubTitle = subTitle.(string)
+	}
+	if short, ok := metaData["Short"]; ok {
+		section.Short = short.(string)
+	}
+
+	if sectionType, ok := metaData["SectionType"]; ok {
+		section.SectionType, err = SectionTypeFromString(sectionType.(string))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		section.SectionType = SectionGeneralTopic
+	}
+
+	if slug := metaData["Slug"]; slug != nil {
+		section.Slug = slug.(string)
+	}
+	section.Content = string(rest)
+
+	if topics, ok := metaData["Topics"]; ok {
+		section.Topics = helpers.InterfaceToStringList(topics)
+	}
+
+	if flags, ok := metaData["Flags"]; ok {
+		section.Flags = helpers.InterfaceToStringList(flags)
+	}
+
+	if commands, ok := metaData["Commands"]; ok {
+		section.Commands = helpers.InterfaceToStringList(commands)
+	}
+
+	if isTopLevel, ok := metaData["IsTopLevel"]; ok {
+		section.IsTopLevel = isTopLevel.(bool)
+	}
+
+	if isTemplate, ok := metaData["IsTemplate"]; ok {
+		section.IsTemplate = isTemplate.(bool)
+	}
+
+	if showPerDefault, ok := metaData["ShowPerDefault"]; ok {
+		section.ShowPerDefault = showPerDefault.(bool)
+	}
+
+	if order, ok := metaData["Order"]; ok {
+		section.Order = order.(int)
+	}
+
+	return section, nil
+}
+
+// GenericHelpPage contains all the sections related to a command
+//
+// TODO (manuel, 2022-12-04): Not sure if we really need this, as it is all done with queries in help/cobra.go
+// for now, but it might be good to centralize it here. Also move the split in Default/Others as well
+type GenericHelpPage struct {
+	DefaultGeneralTopics []*Section
+	OtherGeneralTopics   []*Section
+	DefaultExamples      []*Section
+	OtherExamples        []*Section
+	DefaultApplications  []*Section
+	OtherApplications    []*Section
+	DefaultTutorials     []*Section
+	OtherTutorials       []*Section
+}
+
+func (hs *HelpSystem) GetCommandHelpPage(command string) *GenericHelpPage {
+	sections := GetSectionsForCommand(hs.Sections, command)
+	return NewHelpPage(sections)
+}
+
+func NewHelpPage(sections []*Section) *GenericHelpPage {
+	ret := &GenericHelpPage{}
+
+	generalTopics := GetSectionsByType(sections, SectionGeneralTopic)
+	ret.DefaultGeneralTopics = GetSectionsShownByDefault(generalTopics)
+	ret.OtherGeneralTopics = GetSectionsNotShownByDefault(generalTopics)
+
+	examples := GetSectionsByType(sections, SectionExample)
+	ret.DefaultExamples = GetSectionsShownByDefault(examples)
+	ret.OtherExamples = GetSectionsNotShownByDefault(examples)
+
+	applications := GetSectionsByType(sections, SectionApplication)
+	ret.DefaultApplications = GetSectionsShownByDefault(applications)
+	ret.OtherApplications = GetSectionsNotShownByDefault(applications)
+
+	tutorials := GetSectionsByType(sections, SectionTutorial)
+	ret.DefaultTutorials = GetSectionsShownByDefault(tutorials)
+	ret.OtherTutorials = GetSectionsNotShownByDefault(tutorials)
+
+	return ret
+}
+
+func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
+	return NewHelpPage(GetTopLevelSections(hs.Sections))
+}
+
+func (hs *HelpSystem) RenderSectionSummaries(w io.Writer, sections []*Section) error {
+	return nil
+}
+
+func (hs *HelpSystem) RenderTopic(w io.Writer, section *Section) error {
+	return nil
 }
 
 type HelpSystem struct {
 	Sections []*Section
 
+	// TODO(manuel, 2022-12-04): I don't think this is needed actually
 	SectionsByFlag    map[string][]*Section
 	SectionsByCommand map[string][]*Section
 }
@@ -158,6 +294,33 @@ func NewHelpSystem() *HelpSystem {
 		SectionsByFlag:    map[string][]*Section{},
 		SectionsByCommand: map[string][]*Section{},
 	}
+}
+
+func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
+	entries, err := f.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			err = hs.LoadSectionsFromEmbedFS(f, filepath.Join(dir, entry.Name()))
+			if err != nil {
+				return err
+			}
+		} else {
+			b, err := f.ReadFile(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				return err
+			}
+			section, err := LoadSectionFromMarkdown(b)
+			if err != nil {
+				return err
+			}
+			hs.AddSection(section)
+		}
+	}
+
+	return nil
 }
 
 func (hs *HelpSystem) AddSection(section *Section) {
@@ -181,6 +344,16 @@ func FilterOutSection(sections []*Section, section *Section) []*Section {
 	filtered := []*Section{}
 	for _, s := range sections {
 		if s != section {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
+}
+
+func GetSectionsBySlug(sections []*Section, slug string) []*Section {
+	filtered := []*Section{}
+	for _, s := range sections {
+		if s.Slug == slug {
 			filtered = append(filtered, s)
 		}
 	}
@@ -275,63 +448,20 @@ func GetSectionsByTypeCommandAndFlag(sections []*Section, sectiontype SectionTyp
 	return GetSectionsByType(GetSectionsForFlag(GetSectionsForCommand(sections, command), flag), sectiontype)
 }
 
-type RenderContext struct {
-	Depth int
-	Tags  []string
-	Data  interface{}
-}
-
-func (rc *RenderContext) AddTag(tag string) *RenderContext {
-	newrc := &RenderContext{
-		Depth: rc.Depth,
-		Tags:  append(rc.Tags, tag),
-	}
-	return newrc
-}
-
-func (rc *RenderContext) IsTaggedWithAny(tags []string) bool {
-	for _, t := range tags {
-		if rc.IsTagged(t) {
-			return true
-		}
-	}
-	return false
-}
-
-func (rc *RenderContext) IsTagged(tag string) bool {
-	return rc.IsTaggedWithAny([]string{tag})
-}
-
-func (rc *RenderContext) IncreaseDepth() *RenderContext {
-	newrc := &RenderContext{
-		Depth: rc.Depth + 1,
-		Tags:  rc.Tags,
-	}
-	return newrc
-}
-
-func makeMarkdownHeader(depth int, title string) string {
-	return fmt.Sprintf("%s %s\n\n", bytes.Repeat([]byte("#"), depth), title)
-}
-
-type ContentSection interface {
-	Render(w io.Writer, rc *RenderContext) error
-}
-
 // TODO(manuel, 2022-12-04): This is all a placeholder for now
-func (s *Section) Render(w io.Writer, rc *RenderContext) error {
+func (s *Section) Render(w io.Writer, data interface{}) error {
 	renderedTitle := s.Title
 	if s.IsTemplate {
 		t := template.New("title")
 		template.Must(t.Parse(s.Title))
 		var titleBuffer bytes.Buffer
-		err := t.Execute(&titleBuffer, rc.Data)
+		err := t.Execute(&titleBuffer, data)
 		if err != nil {
 			return err
 		}
 		renderedTitle = titleBuffer.String()
 	}
-	_, err := w.Write([]byte(makeMarkdownHeader(rc.Depth, renderedTitle)))
+	_, err := w.Write([]byte(renderedTitle))
 	if err != nil {
 		return err
 	}
@@ -339,7 +469,7 @@ func (s *Section) Render(w io.Writer, rc *RenderContext) error {
 	if s.IsTemplate {
 		t := template.New("content")
 		template.Must(t.Parse(s.Content))
-		err := t.Execute(w, rc.Data)
+		err := t.Execute(w, data)
 		if err != nil {
 			return err
 		}

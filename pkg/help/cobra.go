@@ -33,7 +33,7 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 
 		calledFromHelp = prevCalledFromHelp
 
-		fmt.Fprintln(c.OutOrStderr(), out)
+		_, _ = fmt.Fprintln(c.OutOrStderr(), out)
 		if err != nil {
 			c.PrintErrln(err)
 		}
@@ -47,7 +47,7 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			tags = append(tags, fmt.Sprintf("flag:%s", f.Name))
 		})
 
-		t := template.New("top")
+		t := template.New("commandUsage")
 
 		// this is where we would have to find the help sections we should show for this specific command
 		t.Funcs(helpers.TemplateFuncs)
@@ -57,30 +57,14 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		data := map[string]interface{}{}
 		data["Command"] = c
 		data["HelpCommand"] = c.CommandPath() + " help"
+		data["Slug"] = c.Name()
 
 		isTopLevel := c.Parent() == nil
-		sections := hs.Sections
 		if isTopLevel {
-			sections = GetTopLevelSections(sections)
+			data["Help"] = hs.GetTopLevelHelpPage()
 		} else {
-			sections = GetSectionsForCommand(sections, c.Name())
+			data["Help"] = hs.GetCommandHelpPage(c.Name())
 		}
-
-		generalTopics := GetSectionsByType(sections, SectionGeneralTopic)
-		data["DefaultGeneralTopics"] = GetSectionsShownByDefault(generalTopics)
-		data["OtherGeneralTopics"] = GetSectionsNotShownByDefault(generalTopics)
-
-		examples := GetSectionsByType(sections, SectionExample)
-		data["DefaultExamples"] = GetSectionsShownByDefault(examples)
-		data["OtherExamples"] = GetSectionsNotShownByDefault(examples)
-
-		applications := GetSectionsByType(sections, SectionApplication)
-		data["DefaultApplications"] = GetSectionsShownByDefault(applications)
-		data["OtherApplications"] = GetSectionsNotShownByDefault(applications)
-
-		tutorials := GetSectionsByType(sections, SectionTutorial)
-		data["DefaultTutorials"] = GetSectionsShownByDefault(tutorials)
-		data["OtherTutorials"] = GetSectionsNotShownByDefault(tutorials)
 
 		var err error
 
@@ -95,7 +79,7 @@ func GetHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(c.OutOrStderr(), s)
+			_, _ = fmt.Fprintln(c.OutOrStderr(), s)
 		}
 
 		return err
@@ -118,7 +102,7 @@ func renderToMarkdown(t *template.Template, data map[string]interface{}) (string
 		// TODO(manuel, 2022-12-04): We need to check if we can use colors here,
 		// which is not the case if we render things out to a file / pipe,
 		// in the context of a redirect, or if we render to file
-		glamour.WithStandardStyle("notty"),
+		glamour.WithStandardStyle("dark"),
 	)
 
 	err = t.Execute(&sb, data)
@@ -154,6 +138,7 @@ func GetHelpUsageTemplates(hs *HelpSystem) (string, string) {
 // limitations under the License.
 //
 // 2022-12-03 - Manuel Odendahl - Added support for help sections
+// 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
 func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 	var ret *cobra.Command
 	ret = &cobra.Command{
@@ -189,18 +174,19 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		},
 
 		Run: func(c *cobra.Command, args []string) {
+			// TODO(manuel, 2022-12-04): Handle properly showing all the options we have
+			// and which sections to render out how. The cobra-usage.tmpl has been a crutch until
+			// now
 			if len(args) == 1 {
 				// we need to integrate those into the standard help command template
-				topicSections := GetSectionsByTopic(GetTopLevelSections(hs.Sections), args[0])
+				topicSections := GetSectionsBySlug(hs.Sections, args[0])
 				if len(topicSections) > 1 {
 					// if we have multiple topics we should show the short section (kind of table of contents for the whole thing)
-
 					fmt.Println("XXX we should show a toplevel topic index page")
+					_ = hs.RenderSectionSummaries(c.OutOrStdout(), topicSections)
 				} else if len(topicSections) == 1 {
-					// we need to parse the tags here
-					rc := NewRenderContext([]string{}, nil)
-					err := topicSections[0].Render(c.OutOrStdout(), rc)
-					cobra.CheckErr(err)
+					// TODO(manuel, 2022-12-04): Markdown rendering of help topics is not working yet
+					_ = hs.RenderTopic(c.OutOrStdout(), topicSections[0])
 					return
 				}
 			}
@@ -223,15 +209,20 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		},
 	}
 
-	return ret
-}
+	ret.Flags().StringSlice("topics", []string{}, "Show help for topics")
+	ret.Flags().StringSlice("commands", []string{}, "Show help for commands")
+	ret.Flags().StringSlice("flags", []string{}, "Show help for flags")
+	ret.Flags().StringSlice("applications", []string{}, "Show help for applications")
+	ret.Flags().StringSlice("tutorials", []string{}, "Show help for tutorials")
+	ret.Flags().Bool("examples", false, "Show examples")
 
-func NewRenderContext(tags []string, data interface{}) *RenderContext {
-	return &RenderContext{
-		Depth: 0,
-		Tags:  tags,
-		Data:  data,
-	}
+	// TODO(manuel, 2022-12-04): Additional verbs to build
+	// - toc
+	// - topics
+	// - search
+	// - serve
+
+	return ret
 }
 
 // USAGE_TEMPLATE - template used by the glazed library help cobra command.
@@ -255,6 +246,7 @@ func NewRenderContext(tags []string, data interface{}) *RenderContext {
 //
 //
 // 2022-12-03 - Manuel Odendahl - Augmented template with sections
+// 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
 //go:embed templates/cobra-usage.tmpl
 var USAGE_TEMPLATE string
 

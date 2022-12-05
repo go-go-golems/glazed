@@ -3,10 +3,8 @@ package cmds
 import (
 	"bytes"
 	"fmt"
+	"github.com/adrg/frontmatter"
 	"github.com/spf13/cobra"
-	"github.com/yuin/goldmark"
-	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/parser"
 	"glazed/pkg/cli"
 	"os"
 )
@@ -19,23 +17,16 @@ var DocsCmd = &cobra.Command{
 		gp, of, err := SetupProcessor(cmd)
 		cobra.CheckErr(err)
 
-		markdown := goldmark.New(
-			goldmark.WithExtensions(
-				meta.Meta,
-			),
-		)
-
 		for _, arg := range args {
 			// read markdown file
 			s, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			var buf bytes.Buffer
-			context := parser.NewContext()
-			err = markdown.Convert(s, &buf, parser.WithContext(context))
+			var metaData map[string]interface{}
+			inputReader := bytes.NewReader(s)
+			_, err = frontmatter.Parse(inputReader, &metaData)
 			cobra.CheckErr(err)
 
-			metaData := meta.Get(context)
 			metaData["path"] = arg
 
 			err = gp.ProcessInputObject(metaData)
