@@ -9,12 +9,15 @@ Commands:
 - yaml
 Flags:
 - template
-- template-field
 IsTemplate: false
 IsTopLevel: false
 ShowPerDefault: true
 SectionType: Example
 ---
+You can use go templates to either create a new field (called _0 per default).
+Per default, the templates are applied at the input level, when rows
+are actually still full blown objects (if reading in from JSON for example).
+
 ```
 ❯ glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d.f}}'
 

@@ -34,6 +34,27 @@ func SectionTypeFromString(s string) (SectionType, error) {
 	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
 }
 
+// Section is a structure describing an actual documentation section.
+// This can describe:
+// - a general topic: think of this as an entry in a book
+// - an example: a way to run a certain command
+// - an application: a concrete use case for running a command. This can potentially
+//   use additional external tools, multiple commands, etc. While it is nice to keep
+//   these self-contained, it is not required.
+// - a tutorial: a step-by-step guide to running a command.
+//
+// Each section has a title, subtitle, short description and a full content.
+// The slug is similar to an id and used to reference the section internally.
+//
+// Each section can be related to a list of topics (this would be a list of slugs
+// a set of flags, and a list of commands.
+//
+// Some sections are shown by default. For example, when calling up the help for a command,
+// the general topics,examples, applications and tutorials related to that command and that
+// have the ShowPerDefault flag will be shown without further flags.
+//
+// Sections that don't have the ShowPerDefault flag set however will only be shown when
+// explicitly asked for using the --topics --flags --examples options.
 type Section struct {
 	Slug        string
 	SectionType SectionType

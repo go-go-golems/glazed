@@ -26,7 +26,6 @@ To see more examples for this topic, run:
 {{if gt (len .OtherGeneralTopics) 0 -}}
 To see more topics, run: `{{$.HelpCommand}} {{$.Slug}} --topics`
 {{end -}}
-
 {{if gt (len .DefaultExamples) 0}}
 
 ## Examples:
@@ -36,13 +35,12 @@ To see more topics, run: `{{$.HelpCommand}} {{$.Slug}} --topics`
 ```
 {{.Short}}
 ```
-{{end}}
 {{end -}}
-{{if gt (len .OtherExamples) 0 -}}
+{{end -}}
+{{- if gt (len .OtherExamples) 0 -}}
 To see more examples, run:
 `{{$.HelpCommand}} {{$.Slug}} --examples`
 {{end -}}
-
 {{if gt (len .DefaultApplications) 0}}
 
 ## Applications:
@@ -53,10 +51,9 @@ To see more examples, run:
 To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 {{end}}
 {{end -}}
-{{if gt (len .OtherApplications) 0 -}}
+{{- if gt (len .OtherApplications) 0 -}}
 To see more applications, run: `{{$.HelpCommand}} {{$.Slug}} --applications`
 {{end -}}
-
 {{if gt (len .DefaultTutorials) 0}}
 ## Tutorials:
 {{- range .DefaultTutorials}}
