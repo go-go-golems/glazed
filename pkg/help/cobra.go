@@ -28,7 +28,16 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		return renderCommandHelpPage(c, nil, hs)
+		qb := NewQueryBuilder().
+			ReturnExamples()
+
+		options := &RenderOptions{
+			Query:           qb,
+			ShowAllSections: false,
+			ShowShortTopic:  true,
+			HelpCommand:     c.Root().CommandPath() + " help",
+		}
+		return renderCommandHelpPage(c, options, hs)
 	}
 
 	return helpFunc, usageFunc
@@ -41,7 +50,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
 	if options.ShowShortTopic {
-		tmpl = COBRA_COMMAND_HELP_TEMPLATE
+		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + c.UsageTemplate()
 	}
 	if options.ShowAllSections {
 		tmpl += HELP_LONG_SECTION_TEMPLATE
@@ -279,9 +288,8 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 //go:embed templates/cobra-usage.tmpl
 var COBRA_COMMAND_USAGE_TEMPLATE string
 
-const COBRA_COMMAND_HELP_TEMPLATE = `{{with .Command -}}
-# {{.Name}} - {{.Short}}
+//go:embed templates/cobra-help.tmpl
+var COBRA_COMMAND_HELP_TEMPLATE string
 
-{{.Long}}
-
-{{end}}`
+//go:embed templates/cobra-short-help.tmpl
+var COBRA_COMMAND_SHORT_HELP_TEMPLATE string
