@@ -82,8 +82,12 @@ func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
 // - FieldsFilterMiddleware
 // - SortColumnsMiddleware
 // - ReorderColumnOrderMiddleware
-func AddFieldsFilterFlags(cmd *cobra.Command) {
-	cmd.Flags().String("fields", "", "Fields to include in the output, default: all")
+func AddFieldsFilterFlags(cmd *cobra.Command, defaultFields string) {
+	defaultFieldHelp := defaultFields
+	if defaultFieldHelp == "" {
+		defaultFieldHelp = "all"
+	}
+	cmd.Flags().String("fields", defaultFields, "Fields to include in the output, default: "+defaultFieldHelp)
 	cmd.Flags().String("filter", "", "Fields to remove from output")
 	cmd.Flags().Bool("sort-columns", true, "Sort columns alphabetically")
 }

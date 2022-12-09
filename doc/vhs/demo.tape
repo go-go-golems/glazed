@@ -9,6 +9,12 @@ Set TypingSpeed 0.01
 Type "glaze json misc/test-data/[123].json" Enter
 Sleep 1200ms
 
+Type "glaze help json" Enter
+Sleep 2000ms
+
+Type "glaze help json --examples" Enter
+Sleep 2000ms
+
 Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
 Type "    --output csv " Enter
 Sleep 1200ms
@@ -40,6 +46,12 @@ Sleep 1200ms
 
 Type "glaze yaml misc/test-data/[123].yaml" Enter Sleep 0.1
 Sleep 1200ms
+
+Type "glaze help templates" Enter
+Sleep 2000ms
+
+Type "glaze help templates --examples" Enter
+Sleep 2000ms
 
 Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
 Type "    --template '{{.a}}-{{.b}}: {{.d.f}}' " Enter

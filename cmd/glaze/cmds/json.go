@@ -11,6 +11,8 @@ import (
 var JsonCmd = &cobra.Command{
 	Use:   "json",
 	Short: "Format JSON data",
+	Long:  "Format JSON data LONG LONG LONG",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("No input file specified")
@@ -84,7 +86,7 @@ func init() {
 	JsonCmd.Flags().SortFlags = false
 	cli.AddOutputFlags(JsonCmd)
 	cli.AddTemplateFlags(JsonCmd)
-	cli.AddFieldsFilterFlags(JsonCmd)
+	cli.AddFieldsFilterFlags(JsonCmd, "")
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")
