@@ -13,27 +13,18 @@ type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
-	calledFromHelp := false
 	helpFunc := func(c *cobra.Command, args []string) {
-		t := template.New("top")
-		t.Funcs(helpers.TemplateFuncs)
-		helpTemplate := c.HelpTemplate()
-		template.Must(t.Parse(helpTemplate))
+		qb := NewQueryBuilder().
+			ReturnAllTypes()
 
-		// this is where we have to find the help sections we should show for this specific command
-		data := map[string]interface{}{}
-		data["Command"] = c
-
-		prevCalledFromHelp := calledFromHelp
-		calledFromHelp = true
-		out, err := RenderToMarkdown(t, data)
-
-		calledFromHelp = prevCalledFromHelp
-
-		_, _ = fmt.Fprintln(c.OutOrStderr(), out)
-		if err != nil {
-			c.PrintErrln(err)
+		options := &RenderOptions{
+			Query:           qb,
+			ShowAllSections: false,
+			ShowShortTopic:  false,
+			HelpCommand:     c.Root().CommandPath() + " help",
 		}
+
+		cobra.CheckErr(renderCommandHelpPage(c, options, hs))
 	}
 
 	usageFunc := func(c *cobra.Command) error {
