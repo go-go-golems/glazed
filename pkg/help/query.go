@@ -7,7 +7,9 @@ package help
 //
 // It can however also be used on its own.
 type SectionQuery struct {
-	OnlyDefault bool
+	OnlyShownByDefault    bool
+	OnlyNotShownByDefault bool
+	OnlyTopLevel          bool
 
 	// only these types will be returned
 	Types []SectionType
@@ -28,6 +30,9 @@ type SectionQuery struct {
 	OnlyFlags    []string
 	OnlyCommands []string
 	OnlySlugs    []string
+
+	// We often need to filter sections that have already been shown
+	WithoutSections []*Section
 }
 
 type QueryBuilder struct {
@@ -66,8 +71,23 @@ func (b *QueryBuilder) ReturnTutorials() *QueryBuilder {
 	return b
 }
 
-func (b *QueryBuilder) OnlyDefault() *QueryBuilder {
-	b.SectionQuery.OnlyDefault = true
+func (b *QueryBuilder) OnlyShownByDefault() *QueryBuilder {
+	b.SectionQuery.OnlyShownByDefault = true
+	return b
+}
+
+func (b *QueryBuilder) OnlyNotShownByDefault() *QueryBuilder {
+	b.SectionQuery.OnlyNotShownByDefault = true
+	return b
+}
+
+func (b *QueryBuilder) OnlyTopLevel() *QueryBuilder {
+	b.SectionQuery.OnlyTopLevel = true
+	return b
+}
+
+func (b *QueryBuilder) WithoutSections(sections ...*Section) *QueryBuilder {
+	b.SectionQuery.WithoutSections = sections
 	return b
 }
 
@@ -115,6 +135,10 @@ func (b *QueryBuilder) OnlySlugs(slugs ...string) *QueryBuilder {
 	return b
 }
 
+func (b *QueryBuilder) FindSections(sections []*Section) []*Section {
+	return b.Build().FindSections(sections)
+}
+
 func (b *QueryBuilder) Build() *SectionQuery {
 	return b.SectionQuery
 }
@@ -124,8 +148,22 @@ func (q *SectionQuery) FindSections(sections []*Section) []*Section {
 
 sectionLoop:
 	for _, section := range sections {
-		if q.OnlyDefault && !section.ShowPerDefault {
+		if q.OnlyShownByDefault && !section.ShowPerDefault {
 			continue
+		}
+
+		if q.OnlyNotShownByDefault && section.ShowPerDefault {
+			continue
+		}
+
+		if q.OnlyTopLevel && !section.IsTopLevel {
+			continue
+		}
+
+		for _, without := range q.WithoutSections {
+			if without == section {
+				continue sectionLoop
+			}
 		}
 
 		foundMatchingType := false

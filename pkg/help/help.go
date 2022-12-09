@@ -105,69 +105,66 @@ func (s *Section) IsForTopic(topic string) bool {
 // these should potentially be scoped by command
 
 func (s *Section) DefaultGeneralTopic() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionGeneralTopic, s.Slug)
-	sections = GetSectionsShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnTopics().
+		OnlyTopics(s.Slug).
+		OnlyShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultExamples() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
-	sections = GetSectionsShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnExamples().
+		OnlyTopics(s.Slug).
+		OnlyShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherExamples() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionExample, s.Slug)
-	sections = GetSectionsNotShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnExamples().
+		OnlyTopics(s.Slug).
+		OnlyNotShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultTutorials() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionTutorial, s.Slug)
-	sections = GetSectionsShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnTutorials().
+		OnlyTopics(s.Slug).
+		OnlyShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherTutorials() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionTutorial, s.Slug)
-	sections = GetSectionsNotShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnTutorials().
+		OnlyTopics(s.Slug).
+		OnlyNotShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultApplications() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionApplication, s.Slug)
-	sections = GetSectionsShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
+	return NewQueryBuilder().
+		ReturnApplications().
+		OnlyTopics(s.Slug).
+		OnlyShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherApplications() []*Section {
-	sections := GetSectionsByTypeAndTopic(s.HelpSystem.Sections, SectionApplication, s.Slug)
-	sections = GetSectionsNotShownByDefault(sections)
-	sections = FilterOutSection(sections, s)
-	return sections
-}
-
-func GetSectionsTopics(sections []*Section) []string {
-	// TODO(manuel, 2022-12-04): This should be a set, and maybe sorted at the end
-	// Potentially we want to show a short line for each topic, which might exist already if
-	// the topic is actually a slug. Otherwise we might need to keep that information in the helpsystem.
-	// this topic system needs to be fleshed out a bit more, since it's an odd mix of toplevel
-	// and topic/command/flag restricted topics.
-	topics := []string{}
-	for _, section := range sections {
-		for _, topic := range section.Topics {
-			if !helpers.StringInSlice(topic, topics) {
-				topics = append(topics, topic)
-			}
-		}
-	}
-	return topics
+	return NewQueryBuilder().
+		ReturnApplications().
+		OnlyTopics(s.Slug).
+		OnlyNotShownByDefault().
+		WithoutSections(s).
+		FindSections(s.HelpSystem.Sections)
 }
 
 func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
@@ -257,34 +254,54 @@ type GenericHelpPage struct {
 }
 
 func (hs *HelpSystem) GetCommandHelpPage(command string) *GenericHelpPage {
-	sections := GetSectionsForCommand(hs.Sections, command)
+	sections := NewQueryBuilder().
+		OnlyCommands(command).
+		ReturnAllTypes().
+		FindSections(hs.Sections)
 	return NewHelpPage(sections)
 }
 
 func NewHelpPage(sections []*Section) *GenericHelpPage {
 	ret := &GenericHelpPage{}
 
-	generalTopics := GetSectionsByType(sections, SectionGeneralTopic)
-	ret.DefaultGeneralTopics = GetSectionsShownByDefault(generalTopics)
-	ret.OtherGeneralTopics = GetSectionsNotShownByDefault(generalTopics)
-
-	examples := GetSectionsByType(sections, SectionExample)
-	ret.DefaultExamples = GetSectionsShownByDefault(examples)
-	ret.OtherExamples = GetSectionsNotShownByDefault(examples)
-
-	applications := GetSectionsByType(sections, SectionApplication)
-	ret.DefaultApplications = GetSectionsShownByDefault(applications)
-	ret.OtherApplications = GetSectionsNotShownByDefault(applications)
-
-	tutorials := GetSectionsByType(sections, SectionTutorial)
-	ret.DefaultTutorials = GetSectionsShownByDefault(tutorials)
-	ret.OtherTutorials = GetSectionsNotShownByDefault(tutorials)
+	for _, section := range sections {
+		switch section.SectionType {
+		case SectionGeneralTopic:
+			if section.ShowPerDefault {
+				ret.DefaultGeneralTopics = append(ret.DefaultGeneralTopics, section)
+			} else {
+				ret.OtherGeneralTopics = append(ret.OtherGeneralTopics, section)
+			}
+		case SectionExample:
+			if section.ShowPerDefault {
+				ret.DefaultExamples = append(ret.DefaultExamples, section)
+			} else {
+				ret.OtherExamples = append(ret.OtherExamples, section)
+			}
+		case SectionApplication:
+			if section.ShowPerDefault {
+				ret.DefaultApplications = append(ret.DefaultApplications, section)
+			} else {
+				ret.OtherApplications = append(ret.OtherApplications, section)
+			}
+		case SectionTutorial:
+			if section.ShowPerDefault {
+				ret.DefaultTutorials = append(ret.DefaultTutorials, section)
+			} else {
+				ret.OtherTutorials = append(ret.OtherTutorials, section)
+			}
+		}
+	}
 
 	return ret
 }
 
 func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
-	return NewHelpPage(GetTopLevelSections(hs.Sections))
+	sections := NewQueryBuilder().
+		OnlyTopLevel().
+		ReturnAllTypes().
+		FindSections(hs.Sections)
+	return NewHelpPage(sections)
 }
 
 func (hs *HelpSystem) RenderSectionSummaries(w io.Writer, sections []*Section) error {
@@ -363,104 +380,6 @@ func FilterOutSection(sections []*Section, section *Section) []*Section {
 		}
 	}
 	return filtered
-}
-
-func GetSectionsBySlug(sections []*Section, slug string) []*Section {
-	filtered := []*Section{}
-	for _, s := range sections {
-		if s.Slug == slug {
-			filtered = append(filtered, s)
-		}
-	}
-	return filtered
-}
-
-func GetSectionsByType(sections []*Section, sectionType SectionType) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.SectionType == sectionType {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsByTopic(sections []*Section, topic string) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.IsForTopic(topic) {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsByTypeAndTopic(sections []*Section, sectiontype SectionType, topic string) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.SectionType == sectiontype && section.IsForTopic(topic) {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetTopLevelSections(sections []*Section) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.IsTopLevel {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsShownByDefault(sections []*Section) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.ShowPerDefault {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsNotShownByDefault(sections []*Section) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if !section.ShowPerDefault {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsForCommand(sections []*Section, command string) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.IsForCommand(command) {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsForFlag(sections []*Section, flag string) []*Section {
-	ret := []*Section{}
-	for _, section := range sections {
-		if section.IsForFlag(flag) {
-			ret = append(ret, section)
-		}
-	}
-	return ret
-}
-
-func GetSectionsByTypeAndCommand(sections []*Section, sectiontype SectionType, command string) []*Section {
-	return GetSectionsByType(GetSectionsForCommand(sections, command), sectiontype)
-}
-
-func GetSectionsByTypeCommandAndFlag(sections []*Section, sectiontype SectionType, command string, flag string) []*Section {
-	return GetSectionsByType(GetSectionsForFlag(GetSectionsForCommand(sections, command), flag), sectiontype)
 }
 
 // TODO(manuel, 2022-12-04): This is all a placeholder for now

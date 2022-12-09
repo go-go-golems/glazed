@@ -22,7 +22,7 @@ func TestSingleQueryAll(t *testing.T) {
 }
 
 func TestQueryOnlyDefault(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().OnlyDefault().Build()
+	query := NewQueryBuilder().ReturnAllTypes().OnlyShownByDefault().Build()
 
 	sections := []*Section{
 		{
@@ -188,4 +188,11 @@ func TestQueryTopicOnlyTemplatesTemplatesFields(t *testing.T) {
 	assert.Equal(t, sections[3].Slug, foundSections[1].Slug)
 	assert.Equal(t, sections[7].Slug, foundSections[2].Slug)
 	assert.Equal(t, sections[8].Slug, foundSections[3].Slug)
+}
+
+func TestQueryWithoutSections(t *testing.T) {
+	query := NewQueryBuilder().ReturnAllTypes().WithoutSections(sections[0], sections[1]).Build()
+	foundSections := query.FindSections(sections)
+	assert.Len(t, foundSections, 8)
+	assert.Equal(t, sections[2].Slug, foundSections[0].Slug)
 }

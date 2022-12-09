@@ -149,7 +149,11 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			generalTopics := GetSectionsByType(GetTopLevelSections(hs.Sections), SectionGeneralTopic)
+			generalTopics := NewQueryBuilder().
+				OnlyTopLevel().
+				ReturnTopics().
+				FindSections(hs.Sections)
+
 			for _, section := range generalTopics {
 				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
 			}
@@ -179,7 +183,11 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// now
 			if len(args) == 1 {
 				// we need to integrate those into the standard help command template
-				topicSections := GetSectionsBySlug(hs.Sections, args[0])
+				topicSections := NewQueryBuilder().
+					ReturnTopics().
+					Slugs(args[0]).
+					FindSections(hs.Sections)
+
 				if len(topicSections) > 1 {
 					// if we have multiple topics we should show the short section (kind of table of contents for the whole thing)
 					fmt.Println("XXX we should show a toplevel topic index page")
