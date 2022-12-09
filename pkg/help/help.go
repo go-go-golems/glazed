@@ -90,12 +90,6 @@ type Section struct {
 	HelpSystem *HelpSystem
 }
 
-// SectionQuery represents a query to get different types of sections that we can pass it from the top
-// so that we can for example restrict the examples of a certain general topic to the context of the command
-// in which it is rendered
-type SectionQuery struct {
-}
-
 func (s *Section) IsForCommand(command string) bool {
 	return helpers.StringInSlice(command, s.Commands)
 }
