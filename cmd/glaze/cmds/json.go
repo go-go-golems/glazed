@@ -11,6 +11,7 @@ import (
 var JsonCmd = &cobra.Command{
 	Use:   "json",
 	Short: "Format JSON data",
+	Long:  "Format JSON data LONG LONG LONG",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {

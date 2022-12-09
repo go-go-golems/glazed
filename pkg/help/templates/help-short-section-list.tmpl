@@ -6,25 +6,12 @@
 {{.Short}}
 
 To learn more, run:
-    `{{$.HelpCommand}} {{.Slug}}`
-{{if gt (len .DefaultExamples) 0}}
-### Examples:
-{{- range .DefaultExamples}}
-**{{.Title}}**
-
-```
-{{.Short}}
-```
+`{{$.HelpCommand}} {{.Slug}}`
 {{end -}}
 {{end -}}
-{{if gt (len .OtherExamples) 0}}
+{{if gt (len .OtherGeneralTopics) 0}}
 To see more examples for this topic, run:
-    `{{$.HelpCommand}} {{$.Slug}} --examples`
-{{end -}}
-{{end}}
-{{end -}}
-{{if gt (len .OtherGeneralTopics) 0 -}}
-To see more topics, run: `{{$.HelpCommand}} {{$.Slug}} --topics`
+`{{$.HelpCommand}} {{$.Slug}} --topics`
 {{end -}}
 {{if gt (len .DefaultExamples) 0}}
 
@@ -52,7 +39,8 @@ To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 {{end}}
 {{end -}}
 {{- if gt (len .OtherApplications) 0 -}}
-To see more applications, run: `{{$.HelpCommand}} {{$.Slug}} --applications`
+To see more applications, run:
+`{{$.HelpCommand}} {{$.Slug}} --applications`
 {{end -}}
 {{if gt (len .DefaultTutorials) 0}}
 ## Tutorials:
@@ -65,6 +53,6 @@ To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 {{end -}}
 {{if gt (len .OtherTutorials) 0 -}}
 To see more tutorials, run:
-    `{{$.HelpCommand}} {{$.Slug}} --tutorials`
+`{{$.HelpCommand}} {{$.Slug}} --tutorials`
 {{end -}}
 {{end -}}

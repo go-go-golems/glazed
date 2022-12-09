@@ -16,7 +16,7 @@ Flags:
 - template-field
 IsTemplate: false
 IsTopLevel: false
-ShowPerDefault: true
+ShowPerDefault: false
 SectionType: Example
 ---
 Instead of just adding / replacing everything with a single field `_0`, you

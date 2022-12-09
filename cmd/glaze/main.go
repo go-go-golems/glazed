@@ -26,8 +26,8 @@ func init() {
 		panic(err)
 	}
 
-	helpFunc, usageFunc := help.GetHelpUsageFuncs(helpSystem)
-	helpTemplate, usageTemplate := help.GetHelpUsageTemplates(helpSystem)
+	helpFunc, usageFunc := help.GetCobraHelpUsageFuncs(helpSystem)
+	helpTemplate, usageTemplate := help.GetCobraHelpUsageTemplates(helpSystem)
 
 	_ = usageFunc
 	_ = usageTemplate

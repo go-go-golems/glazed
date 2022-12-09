@@ -3,12 +3,11 @@ package help
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/pkg/errors"
 	"glazed/pkg/helpers"
-	"io"
 	"path/filepath"
-	"text/template"
 )
 
 type SectionType int
@@ -245,20 +244,29 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 type GenericHelpPage struct {
 	DefaultGeneralTopics []*Section
 	OtherGeneralTopics   []*Section
-	DefaultExamples      []*Section
-	OtherExamples        []*Section
-	DefaultApplications  []*Section
-	OtherApplications    []*Section
-	DefaultTutorials     []*Section
-	OtherTutorials       []*Section
+	// this is just the concatenation of default and others
+	AllGeneralTopics []*Section
+
+	DefaultExamples []*Section
+	OtherExamples   []*Section
+	AllExamples     []*Section
+
+	DefaultApplications []*Section
+	OtherApplications   []*Section
+	AllApplications     []*Section
+
+	DefaultTutorials []*Section
+	OtherTutorials   []*Section
+	AllTutorials     []*Section
 }
 
-func (hs *HelpSystem) GetCommandHelpPage(command string) *GenericHelpPage {
-	sections := NewQueryBuilder().
-		OnlyCommands(command).
-		ReturnAllTypes().
-		FindSections(hs.Sections)
-	return NewHelpPage(sections)
+func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
+	for _, section := range hs.Sections {
+		if section.Slug == slug {
+			return section, nil
+		}
+	}
+	return nil, fmt.Errorf("no section with slug %s found", slug)
 }
 
 func NewHelpPage(sections []*Section) *GenericHelpPage {
@@ -272,24 +280,28 @@ func NewHelpPage(sections []*Section) *GenericHelpPage {
 			} else {
 				ret.OtherGeneralTopics = append(ret.OtherGeneralTopics, section)
 			}
+			ret.AllGeneralTopics = append(ret.DefaultGeneralTopics, ret.OtherGeneralTopics...)
 		case SectionExample:
 			if section.ShowPerDefault {
 				ret.DefaultExamples = append(ret.DefaultExamples, section)
 			} else {
 				ret.OtherExamples = append(ret.OtherExamples, section)
 			}
+			ret.AllExamples = append(ret.DefaultExamples, ret.OtherExamples...)
 		case SectionApplication:
 			if section.ShowPerDefault {
 				ret.DefaultApplications = append(ret.DefaultApplications, section)
 			} else {
 				ret.OtherApplications = append(ret.OtherApplications, section)
 			}
+			ret.AllApplications = append(ret.DefaultApplications, ret.OtherApplications...)
 		case SectionTutorial:
 			if section.ShowPerDefault {
 				ret.DefaultTutorials = append(ret.DefaultTutorials, section)
 			} else {
 				ret.OtherTutorials = append(ret.OtherTutorials, section)
 			}
+			ret.AllTutorials = append(ret.DefaultTutorials, ret.OtherTutorials...)
 		}
 	}
 
@@ -302,14 +314,6 @@ func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
 		ReturnAllTypes().
 		FindSections(hs.Sections)
 	return NewHelpPage(sections)
-}
-
-func (hs *HelpSystem) RenderSectionSummaries(w io.Writer, sections []*Section) error {
-	return nil
-}
-
-func (hs *HelpSystem) RenderTopic(w io.Writer, section *Section) error {
-	return nil
 }
 
 type HelpSystem struct {
@@ -370,51 +374,6 @@ func (hs *HelpSystem) AddSection(section *Section) {
 		hs.SectionsByCommand[command] = append(hs.SectionsByCommand[command], section)
 	}
 	section.HelpSystem = hs
-}
-
-func FilterOutSection(sections []*Section, section *Section) []*Section {
-	filtered := []*Section{}
-	for _, s := range sections {
-		if s != section {
-			filtered = append(filtered, s)
-		}
-	}
-	return filtered
-}
-
-// TODO(manuel, 2022-12-04): This is all a placeholder for now
-func (s *Section) Render(w io.Writer, data interface{}) error {
-	renderedTitle := s.Title
-	if s.IsTemplate {
-		t := template.New("title")
-		template.Must(t.Parse(s.Title))
-		var titleBuffer bytes.Buffer
-		err := t.Execute(&titleBuffer, data)
-		if err != nil {
-			return err
-		}
-		renderedTitle = titleBuffer.String()
-	}
-	_, err := w.Write([]byte(renderedTitle))
-	if err != nil {
-		return err
-	}
-
-	if s.IsTemplate {
-		t := template.New("content")
-		template.Must(t.Parse(s.Content))
-		err := t.Execute(w, data)
-		if err != nil {
-			return err
-		}
-	} else {
-		_, err := w.Write([]byte(s.Content))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 type HelpError int

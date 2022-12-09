@@ -1,4 +1,5 @@
-{{with .Command}}## Usage:{{if .Runnable}}
+{{with .Command -}}
+## Usage:{{if .Runnable}}
 `{{.UseLine}}`{{end}}{{if .HasAvailableSubCommands}}
 `{{.CommandPath}} [command]`{{end}}{{if gt (len .Aliases) 0}}
 
