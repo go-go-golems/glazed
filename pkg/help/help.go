@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/pkg/errors"
-	"glazed/pkg/helpers"
+	"github.com/wesen/glazed/pkg/helpers"
 	"path/filepath"
 )
 

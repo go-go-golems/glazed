@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/spf13/cobra"
-	"glazed/pkg/cli"
+	"github.com/wesen/glazed/pkg/cli"
 	"os"
 )
 

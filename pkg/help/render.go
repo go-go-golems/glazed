@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/glamour"
 	"github.com/kopoli/go-terminal-size"
-	"glazed/pkg/helpers"
+	"github.com/wesen/glazed/pkg/helpers"
 	"strings"
 	"text/template"
 )

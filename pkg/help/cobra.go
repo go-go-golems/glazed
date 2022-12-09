@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/spf13/cobra"
-	"glazed/pkg/helpers"
+	"github.com/wesen/glazed/pkg/helpers"
 	"strings"
 	"text/template"
 )
