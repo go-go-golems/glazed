@@ -10,7 +10,7 @@ Commands:
 Flags:
 - template
 IsTemplate: false
-IsTopLevel: false
+IsTopLevel: true
 ShowPerDefault: true
 SectionType: Example
 ---

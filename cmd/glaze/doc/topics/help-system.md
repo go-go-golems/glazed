@@ -41,7 +41,74 @@ TODO(manuel, 2022-12-09) - we could use a nice ASCII diagram of the pipeline her
 
 ## Using the `help` command
 
-(This is currently only implemented for `cobra` applications).
+(This is currently only implemented for `cobra` applications, for example for `glaze`).
+
+The help system is accessible through the cobra help system.
+
+You can use `glaze help <slug>` to access any section from the command line.
+This can be used to display a topic page (which will also show related examples,
+applications or tutorials), or a single section in full.
+
+To get help on the options of the `help` command itself, you can run :
+
+``` 
+❯ glaze help help
+
+   help - Help about any command or topic                                                              
+                                                                                                       
+  Help provides help for any command and topic in the application.                                     
+                                                                                                       
+  For more help, run:  glaze help help                                                                 
+                                                                                                       
+  ## Usage:                                                                                            
+                                                                                                       
+   glaze help [topic/command] [flags]                                                                  
+                                                                                                       
+  ## Flags:                                                                                            
+                                                                                                       
+          --all              Show all sections, not just default                                       
+          --applications     Show all applications                                                     
+          --command string   Show help related to command                                              
+          --examples         Show all examples                                                         
+          --flag string      Show help related to flag                                                 
+      -h, --help             help for help                                                             
+          --list             List all sections                                                         
+          --short            Show short version                                                        
+          --topic string     Show help related to topic                                                
+          --topics           Show all topics                                                           
+          --tutorials        Show all tutorials                                                        
+                                                                                                       
+  ## Help System:                                                                                      
+                                                                                                       
+  glazed comes with a powerful help system to make it easy to create rich CLI help pages.              
+                                                                                                       
+  To learn more, run:  glaze help help-system                                                          
+
+```
+
+To get an overview of the toplevel help sections, you can run:
+```
+
+❯ glaze help --list
+
+   glaze - glaze is a tool to format structured data                                                   
+                                                                                                       
+  For more help, run:  glaze help glaze                                                                
+                                                                                                       
+  ## General topics                                                                                    
+                                                                                                       
+  Run  glaze help <topic>  to view a topic's page.                                                     
+                                                                                                       
+  • help-system - Help System                                                                          
+  • templates - Templates                                                                              
+                                                                                                       
+  ## Examples                                                                                          
+                                                                                                       
+  Run  glaze help <example>  to view an example in full.                                               
+                                                                                                       
+  • templates-example-1 - Use a single template for single field output                                
+
+```
 
 ## Section structure
 
