@@ -38,7 +38,7 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 }
 
 type RenderOptions struct {
-	Query                       *QueryBuilder
+	Query                       *SectionQuery
 	ShowAllSections             bool
 	ShowShortTopic              bool
 	HelpCommand                 string

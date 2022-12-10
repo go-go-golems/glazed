@@ -88,65 +88,65 @@ func (s *Section) IsForTopic(topic string) bool {
 // these should potentially be scoped by command
 
 func (s *Section) DefaultGeneralTopic() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTopics().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultExamples() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnExamples().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherExamples() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnExamples().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultTutorials() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTutorials().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherTutorials() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTutorials().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultApplications() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnApplications().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherApplications() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnApplications().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
@@ -221,11 +221,12 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 	return section, nil
 }
 
-// GenericHelpPage contains all the sections related to a command
+// HelpPage contains all the sections related to a command
 //
 // TODO (manuel, 2022-12-04): Not sure if we really need this, as it is all done with queries in help/cobra.go
 // for now, but it might be good to centralize it here. Also move the split in Default/Others as well
-type GenericHelpPage struct {
+type HelpPage struct {
+	Query                *SectionQuery
 	DefaultGeneralTopics []*Section
 	OtherGeneralTopics   []*Section
 	// this is just the concatenation of default and others
@@ -253,8 +254,8 @@ func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
 	return nil, fmt.Errorf("no section with slug %s found", slug)
 }
 
-func NewHelpPage(sections []*Section) *GenericHelpPage {
-	ret := &GenericHelpPage{}
+func NewHelpPage(sections []*Section) *HelpPage {
+	ret := &HelpPage{}
 
 	sort.Slice(sections, func(i, j int) bool {
 		return sections[i].Order < sections[j].Order
@@ -296,9 +297,9 @@ func NewHelpPage(sections []*Section) *GenericHelpPage {
 	return ret
 }
 
-func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
-	sections := NewQueryBuilder().
-		OnlyTopLevel().
+func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
+	sections := NewSectionQuery().
+		ReturnOnlyTopLevel().
 		ReturnAllTypes().
 		FindSections(hs.Sections)
 	return NewHelpPage(sections)

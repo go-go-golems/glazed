@@ -33,7 +33,7 @@ types of sections:
 - application sections, which show interesting ways of using some functionality, often using additional external programs
 - tutorials, which are step by step guides for using a specific functionality
 
-Multiple sections get combined to create one help page (`GenericHelpPage` in the
+Multiple sections get combined to create one help page (`HelpPage` in the
 library), which is then handed off to various go templates, which in turn create 
 a markdown output.
 
@@ -145,7 +145,7 @@ running `command --help`) with its related pages.
 
 For example, if the user requests the help for the `json` command,
 glazed will look for all the sections related to the `json` command (in the `Commands` 
-metadata entry), sort them into a `GenericHelpPage`, and then render them using
+metadata entry), sort them into a `HelpPage`, and then render them using
 one of the `help-long-section-list.tmpl` or `help-short-section-list.tmpl` templates.
 
 TODO(manuel, 2022-12-09): Add more information about how we actually query sections (using SectionQuery)

@@ -1,5 +1,7 @@
 package help
 
+import "strings"
+
 // SectionQuery represents a query to get different types of sections.
 //
 // This is used for example by the `help` command line function
@@ -35,112 +37,151 @@ type SectionQuery struct {
 	WithoutSections []*Section
 }
 
-type QueryBuilder struct {
-	SectionQuery *SectionQuery
-}
-
-func NewQueryBuilder() *QueryBuilder {
-	return &QueryBuilder{
-		SectionQuery: &SectionQuery{
-			All: true,
-		},
+func NewSectionQuery() *SectionQuery {
+	return &SectionQuery{
+		All: true,
 	}
 }
 
-func (b *QueryBuilder) ReturnAllTypes() *QueryBuilder {
-	return b.ReturnTopics().ReturnExamples().ReturnApplications().ReturnTutorials()
+func (s *SectionQuery) ReturnAllTypes() *SectionQuery {
+	return s.ReturnTopics().ReturnExamples().ReturnApplications().ReturnTutorials()
 }
 
-func (b *QueryBuilder) ReturnTopics() *QueryBuilder {
-	b.SectionQuery.Types = append(b.SectionQuery.Types, SectionGeneralTopic)
-	return b
+func (s *SectionQuery) ReturnTopics() *SectionQuery {
+	s.Types = append(s.Types, SectionGeneralTopic)
+	return s
 }
 
-func (b *QueryBuilder) ReturnExamples() *QueryBuilder {
-	b.SectionQuery.Types = append(b.SectionQuery.Types, SectionExample)
-	return b
+func (s *SectionQuery) ReturnExamples() *SectionQuery {
+	s.Types = append(s.Types, SectionExample)
+	return s
 }
 
-func (b *QueryBuilder) ReturnApplications() *QueryBuilder {
-	b.SectionQuery.Types = append(b.SectionQuery.Types, SectionApplication)
-	return b
+func (s *SectionQuery) ReturnApplications() *SectionQuery {
+	s.Types = append(s.Types, SectionApplication)
+	return s
 }
 
-func (b *QueryBuilder) ReturnTutorials() *QueryBuilder {
-	b.SectionQuery.Types = append(b.SectionQuery.Types, SectionTutorial)
-	return b
+func (s *SectionQuery) ReturnTutorials() *SectionQuery {
+	s.Types = append(s.Types, SectionTutorial)
+	return s
 }
 
-func (b *QueryBuilder) OnlyShownByDefault() *QueryBuilder {
-	b.SectionQuery.OnlyShownByDefault = true
-	return b
+func (s *SectionQuery) ReturnOnlyShownByDefault() *SectionQuery {
+	s.OnlyShownByDefault = true
+	return s
 }
 
-func (b *QueryBuilder) OnlyNotShownByDefault() *QueryBuilder {
-	b.SectionQuery.OnlyNotShownByDefault = true
-	return b
+func (s *SectionQuery) ReturnOnlyNotShownByDefault() *SectionQuery {
+	s.OnlyNotShownByDefault = true
+	return s
 }
 
-func (b *QueryBuilder) OnlyTopLevel() *QueryBuilder {
-	b.SectionQuery.OnlyTopLevel = true
-	return b
+func (s *SectionQuery) ReturnOnlyTopLevel() *SectionQuery {
+	s.OnlyTopLevel = true
+	return s
 }
 
-func (b *QueryBuilder) WithoutSections(sections ...*Section) *QueryBuilder {
-	b.SectionQuery.WithoutSections = sections
-	return b
+func (s *SectionQuery) FilterSections(sections ...*Section) *SectionQuery {
+	s.WithoutSections = sections
+	return s
 }
 
-func (b *QueryBuilder) Topics(topics ...string) *QueryBuilder {
-	b.SectionQuery.All = false
-	b.SectionQuery.Topics = topics
-	return b
+func (s *SectionQuery) ReturnAnyOfTopics(topics ...string) *SectionQuery {
+	s.All = false
+	s.Topics = topics
+	return s
 }
 
-func (b *QueryBuilder) Flags(flags ...string) *QueryBuilder {
-	b.SectionQuery.All = false
-	b.SectionQuery.Flags = flags
-	return b
+func (s *SectionQuery) ReturnAnyOfFlags(flags ...string) *SectionQuery {
+	s.All = false
+	s.Flags = flags
+	return s
 }
 
-func (b *QueryBuilder) Commands(commands ...string) *QueryBuilder {
-	b.SectionQuery.All = false
-	b.SectionQuery.Commands = commands
-	return b
+func (s *SectionQuery) ReturnAnyOfCommands(commands ...string) *SectionQuery {
+	s.All = false
+	s.Commands = commands
+	return s
 }
 
-func (b *QueryBuilder) Slugs(slugs ...string) *QueryBuilder {
-	b.SectionQuery.All = false
-	b.SectionQuery.Slugs = slugs
-	return b
+func (s *SectionQuery) ReturnAnyOfSlugs(slugs ...string) *SectionQuery {
+	s.All = false
+	s.Slugs = slugs
+	return s
 }
 
-func (b *QueryBuilder) OnlyTopics(topics ...string) *QueryBuilder {
-	b.SectionQuery.OnlyTopics = topics
-	return b
+func (s *SectionQuery) ReturnOnlyTopics(topics ...string) *SectionQuery {
+	s.OnlyTopics = topics
+	return s
 }
 
-func (b *QueryBuilder) OnlyFlags(flags ...string) *QueryBuilder {
-	b.SectionQuery.OnlyFlags = flags
-	return b
+func (s *SectionQuery) ReturnOnlyFlags(flags ...string) *SectionQuery {
+	s.OnlyFlags = flags
+	return s
 }
 
-func (b *QueryBuilder) OnlyCommands(commands ...string) *QueryBuilder {
-	b.SectionQuery.OnlyCommands = commands
-	return b
+func (s *SectionQuery) ReturnOnlyCommands(commands ...string) *SectionQuery {
+	s.OnlyCommands = commands
+	return s
 }
 
-func (b *QueryBuilder) OnlySlugs(slugs ...string) *QueryBuilder {
-	b.SectionQuery.OnlySlugs = slugs
-	return b
+func (s *SectionQuery) ReturnOnlySlugs(slugs ...string) *SectionQuery {
+	s.OnlySlugs = slugs
+	return s
 }
 
-func (b *QueryBuilder) FindSections(sections []*Section) []*Section {
-	return b.Build().FindSections(sections)
+func (s *SectionQuery) HasOnlyQueries() bool {
+	return len(s.OnlyTopics) > 0 || len(s.OnlyFlags) > 0 || len(s.OnlyCommands) > 0 || len(s.OnlySlugs) > 0
 }
 
-func (b *QueryBuilder) Build() *SectionQuery {
-	return b.SectionQuery
+func (s *SectionQuery) GetOnlyQueryAsString() string {
+	sb := strings.Builder{}
+	if len(s.OnlySlugs) > 0 {
+		sb.WriteString(" sections: ")
+		sb.WriteString(strings.Join(s.OnlySlugs, ","))
+	}
+	if len(s.OnlyTopics) > 0 {
+		sb.WriteString(" topics: ")
+		sb.WriteString(strings.Join(s.OnlyTopics, ","))
+	}
+	if len(s.OnlyFlags) > 0 {
+		sb.WriteString(" flags: ")
+		sb.WriteString(strings.Join(s.OnlyFlags, ","))
+	}
+	if len(s.OnlyCommands) > 0 {
+		sb.WriteString(" commands: ")
+		sb.WriteString(strings.Join(s.OnlyCommands, ","))
+	}
+
+	return sb.String()
+}
+
+func (s *SectionQuery) ResetOnlyQueries() *SectionQuery {
+	s.OnlyTopics = []string{}
+	s.OnlyFlags = []string{}
+	s.OnlyCommands = []string{}
+	s.OnlySlugs = []string{}
+	return s
+}
+
+func (q *SectionQuery) Clone() *SectionQuery {
+	return &SectionQuery{
+		OnlyShownByDefault:    q.OnlyShownByDefault,
+		OnlyNotShownByDefault: q.OnlyNotShownByDefault,
+		OnlyTopLevel:          q.OnlyTopLevel,
+		Types:                 q.Types,
+		Topics:                q.Topics,
+		Flags:                 q.Flags,
+		Commands:              q.Commands,
+		Slugs:                 q.Slugs,
+		All:                   q.All,
+		OnlyTopics:            q.OnlyTopics,
+		OnlyFlags:             q.OnlyFlags,
+		OnlyCommands:          q.OnlyCommands,
+		OnlySlugs:             q.OnlySlugs,
+		WithoutSections:       q.WithoutSections,
+	}
 }
 
 func (q *SectionQuery) FindSections(sections []*Section) []*Section {

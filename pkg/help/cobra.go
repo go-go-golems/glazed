@@ -14,7 +14,7 @@ type UsageFunc = func(c *cobra.Command) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		qb := NewQueryBuilder().
+		qb := NewSectionQuery().
 			ReturnAllTypes()
 
 		options := &RenderOptions{
@@ -28,7 +28,7 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		qb := NewQueryBuilder().
+		qb := NewSectionQuery().
 			ReturnExamples()
 
 		options := &RenderOptions{
@@ -69,13 +69,19 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	data["Slug"] = c.Name()
 
 	isTopLevel := c.Parent() == nil
+
+	var sections []*Section
 	if isTopLevel {
-		hp := NewHelpPage(options.Query.OnlyTopLevel().FindSections(hs.Sections))
-		data["Help"] = hp
+		sections = options.Query.ReturnOnlyTopLevel().FindSections(hs.Sections)
 	} else {
-		hp := NewHelpPage(options.Query.OnlyCommands(c.Name()).FindSections(hs.Sections))
-		data["Help"] = hp
+		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
 	}
+	if len(sections) == 0 {
+		// if we don't have any sections, we should check if an explicit search was requested
+		// and show an error string and a list of alternatives
+	}
+	hp := NewHelpPage(sections)
+	data["Help"] = hp
 
 	s, err := RenderToMarkdown(t, data)
 	if err != nil {
@@ -120,8 +126,8 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			generalTopics := NewQueryBuilder().
-				OnlyTopLevel().
+			generalTopics := NewSectionQuery().
+				ReturnOnlyTopLevel().
 				ReturnTopics().
 				FindSections(hs.Sections)
 
@@ -161,24 +167,24 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// dashes. It's not clear that we expect the flag name without --
 			explicitInformationRequested := false
 			someFlagSet := false
-			qb := NewQueryBuilder()
+			qb := NewSectionQuery()
 
 			topic := c.Flag("topic").Value.String()
 			if topic != "" {
-				qb = qb.OnlyTopics(topic)
+				qb = qb.ReturnOnlyTopics(topic)
 				explicitInformationRequested = true
 				someFlagSet = true
 			}
 			flag := c.Flag("flag").Value.String()
 			if flag != "" {
-				qb = qb.OnlyFlags(flag)
+				qb = qb.ReturnOnlyFlags(flag)
 				explicitInformationRequested = true
 				someFlagSet = true
 			}
 
 			command := c.Flag("command").Value.String()
 			if command != "" {
-				qb = qb.OnlyCommands(command)
+				qb = qb.ReturnOnlyCommands(command)
 				explicitInformationRequested = true
 				someFlagSet = true
 			}
@@ -242,8 +248,8 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 				if err == nil {
 					// we allow the user to restrict the search to subtopics
 					options.Query = options.Query.
-						OnlyTopics(args...).
-						WithoutSections(topicSection)
+						ReturnOnlyTopics(args...).
+						FilterSections(topicSection)
 
 					s, err := hs.RenderTopicHelp(
 						topicSection,
