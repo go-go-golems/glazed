@@ -51,6 +51,13 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	isTopLevel := c.Parent() == nil
 	data["IsTopLevel"] = isTopLevel
 
+	// check if the user has restricted the help to only specific commands, flags or topics
+	// (this is before adding our own restriction based on the command or toplevel we are
+	// going to show the help for)
+	hasUserRestrictedQuery := options.Query.HasOnlyQueries()
+	// Check if the user has restricted the query to only certain return types
+	hasUserRestrictedTypes := options.Query.HasRestrictedReturnTypes()
+
 	var sections []*Section
 	if isTopLevel {
 		sections = options.Query.ReturnOnlyTopLevel().FindSections(hs.Sections)
@@ -58,16 +65,56 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
 	}
 
+	if len(sections) == 0 {
+		var alternativeSections []*Section
+
+		if hasUserRestrictedQuery {
+			// in this case, we should widen our query to not have restrictions on commands, flags, topics
+			alternativeQuery := options.Query.Clone().ResetOnlyQueries()
+			if !isTopLevel {
+				// if we are actually showing a command help, we need to still restrict our query
+				alternativeQuery = alternativeQuery.ReturnOnlyCommands(c.Name())
+			}
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
+			// in this case, we should widen our query to not have restrictions on return types
+			alternativeQuery := options.Query.Clone().ReturnAllTypes()
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		if len(alternativeSections) == 0 {
+			// in this case, both the query relaxation and the type relaxation don't return anything,
+			// so we should show all possible options for the command / topLevel
+			alternativeQuery := options.Query.Clone().ResetOnlyQueries().ReturnAllTypes()
+			if !isTopLevel {
+				// if we are actually showing a command help, we need to still restrict our query
+				alternativeQuery = alternativeQuery.ReturnOnlyCommands(c.Name())
+			}
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		alternativeHelpPage := NewHelpPage(alternativeSections)
+		data["Help"] = alternativeHelpPage
+	} else {
+		hp := NewHelpPage(sections)
+		data["Help"] = hp
+	}
+
 	// TODO(manuel, 2022-12-09): we should also check if there was a query for a specific section type
 	// and see if this is why the query didn't return any results.
-	noResultsFound := len(sections) == 0 && options.Query.HasOnlyQueries()
+
+	noResultsFound := len(sections) == 0 && (options.Query.HasOnlyQueries() || options.Query.HasRestrictedReturnTypes())
+
 	data["NoResultsFound"] = noResultsFound
 	data["QueryString"] = options.Query.GetOnlyQueryAsString()
+	data["RequestedTypes"] = options.Query.GetRequestedTypesAsString()
 	data["Query"] = options.Query
 
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
-	if options.ListSections {
+	if options.ListSections || noResultsFound {
 		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
 	} else {
 		if options.ShowShortTopic {
@@ -84,9 +131,6 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	data["Command"] = c
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
-
-	hp := NewHelpPage(sections)
-	data["Help"] = hp
 
 	s, err := RenderToMarkdown(t, data)
 	if err != nil {

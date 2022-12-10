@@ -34,6 +34,20 @@ func SectionTypeFromString(s string) (SectionType, error) {
 	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
 }
 
+func (s SectionType) String() string {
+	switch s {
+	case SectionGeneralTopic:
+		return "GeneralTopic"
+	case SectionExample:
+		return "Example"
+	case SectionApplication:
+		return "Application"
+	case SectionTutorial:
+		return "Tutorial"
+	}
+	return "Unknown"
+}
+
 // Section is a structure describing an actual documentation section.
 //
 // This can describe:

@@ -14,7 +14,7 @@ type SectionQuery struct {
 	OnlyTopLevel          bool
 
 	// only these types will be returned
-	Types []SectionType
+	Types map[SectionType]bool
 
 	// if any of these is set, and they match each of the Only types,
 	// the section will be return
@@ -38,9 +38,13 @@ type SectionQuery struct {
 }
 
 func NewSectionQuery() *SectionQuery {
-	return &SectionQuery{
-		All: true,
+	ret := &SectionQuery{
+		Types: make(map[SectionType]bool),
+		All:   true,
 	}
+
+	// per default, we don't return any kind of section
+	return ret.DontReturnTopics().DontReturnExamples().DontReturnApplications().DontReturnTutorials()
 }
 
 func (s *SectionQuery) ReturnAllTypes() *SectionQuery {
@@ -48,23 +52,53 @@ func (s *SectionQuery) ReturnAllTypes() *SectionQuery {
 }
 
 func (s *SectionQuery) ReturnTopics() *SectionQuery {
-	s.Types = append(s.Types, SectionGeneralTopic)
+	s.Types[SectionGeneralTopic] = true
+	return s
+}
+
+func (s *SectionQuery) DontReturnTopics() *SectionQuery {
+	s.Types[SectionGeneralTopic] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnExamples() *SectionQuery {
-	s.Types = append(s.Types, SectionExample)
+	s.Types[SectionExample] = true
+	return s
+}
+
+func (s *SectionQuery) DontReturnExamples() *SectionQuery {
+	s.Types[SectionExample] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnApplications() *SectionQuery {
-	s.Types = append(s.Types, SectionApplication)
+	s.Types[SectionApplication] = true
+	return s
+}
+
+func (s *SectionQuery) DontReturnApplications() *SectionQuery {
+	s.Types[SectionApplication] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnTutorials() *SectionQuery {
-	s.Types = append(s.Types, SectionTutorial)
+	s.Types[SectionTutorial] = true
 	return s
+}
+
+func (s *SectionQuery) DontReturnTutorials() *SectionQuery {
+	s.Types[SectionTutorial] = false
+	return s
+}
+
+func (s *SectionQuery) HasRestrictedReturnTypes() bool {
+	for _, v := range s.Types {
+		if !v {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *SectionQuery) ReturnOnlyShownByDefault() *SectionQuery {
@@ -136,25 +170,21 @@ func (s *SectionQuery) HasOnlyQueries() bool {
 }
 
 func (s *SectionQuery) GetOnlyQueryAsString() string {
-	sb := strings.Builder{}
+	ret := []string{}
 	if len(s.OnlySlugs) > 0 {
-		sb.WriteString(" sections: ")
-		sb.WriteString(strings.Join(s.OnlySlugs, ","))
+		ret = append(ret, "slugs "+strings.Join(s.OnlySlugs, ", "))
 	}
 	if len(s.OnlyTopics) > 0 {
-		sb.WriteString(" topics: ")
-		sb.WriteString(strings.Join(s.OnlyTopics, ","))
+		ret = append(ret, "topics "+strings.Join(s.OnlyTopics, ", "))
 	}
 	if len(s.OnlyFlags) > 0 {
-		sb.WriteString(" flags: ")
-		sb.WriteString(strings.Join(s.OnlyFlags, ","))
+		ret = append(ret, "flags "+strings.Join(s.OnlyFlags, ", "))
 	}
 	if len(s.OnlyCommands) > 0 {
-		sb.WriteString(" commands: ")
-		sb.WriteString(strings.Join(s.OnlyCommands, ","))
+		ret = append(ret, "commands "+strings.Join(s.OnlyCommands, ", "))
 	}
 
-	return sb.String()
+	return strings.Join(ret, " and ")
 }
 
 func (s *SectionQuery) ResetOnlyQueries() *SectionQuery {
@@ -165,63 +195,74 @@ func (s *SectionQuery) ResetOnlyQueries() *SectionQuery {
 	return s
 }
 
-func (q *SectionQuery) Clone() *SectionQuery {
-	return &SectionQuery{
-		OnlyShownByDefault:    q.OnlyShownByDefault,
-		OnlyNotShownByDefault: q.OnlyNotShownByDefault,
-		OnlyTopLevel:          q.OnlyTopLevel,
-		Types:                 q.Types,
-		Topics:                q.Topics,
-		Flags:                 q.Flags,
-		Commands:              q.Commands,
-		Slugs:                 q.Slugs,
-		All:                   q.All,
-		OnlyTopics:            q.OnlyTopics,
-		OnlyFlags:             q.OnlyFlags,
-		OnlyCommands:          q.OnlyCommands,
-		OnlySlugs:             q.OnlySlugs,
-		WithoutSections:       q.WithoutSections,
+func (s *SectionQuery) Clone() *SectionQuery {
+	ret := &SectionQuery{
+		OnlyShownByDefault:    s.OnlyShownByDefault,
+		OnlyNotShownByDefault: s.OnlyNotShownByDefault,
+		OnlyTopLevel:          s.OnlyTopLevel,
+		All:                   s.All,
 	}
+
+	// gotta love go, let's do a deep copy
+
+	ret.Types = make(map[SectionType]bool)
+	for k, v := range s.Types {
+		ret.Types[k] = v
+	}
+	ret.Topics = make([]string, len(s.Topics))
+	copy(ret.Topics, s.Topics)
+	ret.Flags = make([]string, len(s.Flags))
+	copy(ret.Flags, s.Flags)
+	ret.Commands = make([]string, len(s.Commands))
+	copy(ret.Commands, s.Commands)
+	ret.Slugs = make([]string, len(s.Slugs))
+	copy(ret.Slugs, s.Slugs)
+	ret.OnlyTopics = make([]string, len(s.OnlyTopics))
+	copy(ret.OnlyTopics, s.OnlyTopics)
+	ret.OnlyFlags = make([]string, len(s.OnlyFlags))
+	copy(ret.OnlyFlags, s.OnlyFlags)
+	ret.OnlyCommands = make([]string, len(s.OnlyCommands))
+	copy(ret.OnlyCommands, s.OnlyCommands)
+	ret.OnlySlugs = make([]string, len(s.OnlySlugs))
+	copy(ret.OnlySlugs, s.OnlySlugs)
+	ret.WithoutSections = make([]*Section, len(s.WithoutSections))
+	copy(ret.WithoutSections, s.WithoutSections)
+
+	return ret
 }
 
-func (q *SectionQuery) FindSections(sections []*Section) []*Section {
+func (s *SectionQuery) FindSections(sections []*Section) []*Section {
 	var result []*Section
 
 sectionLoop:
 	for _, section := range sections {
-		if q.OnlyShownByDefault && !section.ShowPerDefault {
+		if s.OnlyShownByDefault && !section.ShowPerDefault {
 			continue
 		}
 
-		if q.OnlyNotShownByDefault && section.ShowPerDefault {
+		if s.OnlyNotShownByDefault && section.ShowPerDefault {
 			continue
 		}
 
-		if q.OnlyTopLevel && !section.IsTopLevel {
+		if s.OnlyTopLevel && !section.IsTopLevel {
 			continue
 		}
 
-		for _, without := range q.WithoutSections {
+		for _, without := range s.WithoutSections {
 			if without == section {
 				continue sectionLoop
 			}
 		}
 
-		foundMatchingType := false
-		for _, t := range q.Types {
-			if section.SectionType == t {
-				foundMatchingType = true
-				break
-			}
-		}
-		if !foundMatchingType {
+		foundMatchingType, ok := s.Types[section.SectionType]
+		if !ok || !foundMatchingType {
 			continue
 		}
 
 		// filter out the Only*
-		if len(q.OnlyTopics) > 0 {
+		if len(s.OnlyTopics) > 0 {
 			foundMatchingTopic := true
-			for _, t := range q.OnlyTopics {
+			for _, t := range s.OnlyTopics {
 				if !section.IsForTopic(t) {
 					foundMatchingTopic = false
 					break
@@ -232,9 +273,9 @@ sectionLoop:
 			}
 		}
 
-		if len(q.OnlyFlags) > 0 {
+		if len(s.OnlyFlags) > 0 {
 			foundMatchingFlag := true
-			for _, f := range q.OnlyFlags {
+			for _, f := range s.OnlyFlags {
 				if !section.IsForFlag(f) {
 					foundMatchingFlag = false
 					break
@@ -245,9 +286,9 @@ sectionLoop:
 			}
 		}
 
-		if len(q.OnlyCommands) > 0 {
+		if len(s.OnlyCommands) > 0 {
 			foundMatchingCommand := true
-			for _, c := range q.OnlyCommands {
+			for _, c := range s.OnlyCommands {
 				if !section.IsForCommand(c) {
 					foundMatchingCommand = false
 					break
@@ -258,9 +299,9 @@ sectionLoop:
 			}
 		}
 
-		if len(q.OnlySlugs) > 0 {
+		if len(s.OnlySlugs) > 0 {
 			foundMatchingSlug := true
-			for _, s := range q.OnlySlugs {
+			for _, s := range s.OnlySlugs {
 				if section.Slug != s {
 					foundMatchingSlug = true
 					break
@@ -271,30 +312,30 @@ sectionLoop:
 			}
 		}
 
-		if q.All {
+		if s.All {
 			result = append(result, section)
 			continue sectionLoop
 		}
 
-		for _, topic := range q.Topics {
+		for _, topic := range s.Topics {
 			if section.IsForTopic(topic) {
 				result = append(result, section)
 				continue sectionLoop
 			}
 		}
-		for _, flag := range q.Flags {
+		for _, flag := range s.Flags {
 			if section.IsForFlag(flag) {
 				result = append(result, section)
 				continue sectionLoop
 			}
 		}
-		for _, command := range q.Commands {
+		for _, command := range s.Commands {
 			if section.IsForCommand(command) {
 				result = append(result, section)
 				continue sectionLoop
 			}
 		}
-		for _, slug := range q.Slugs {
+		for _, slug := range s.Slugs {
 			if section.Slug == slug {
 				result = append(result, section)
 				continue sectionLoop
@@ -303,4 +344,26 @@ sectionLoop:
 	}
 
 	return result
+}
+
+func (s *SectionQuery) GetRequestedTypesAsString() string {
+	requestedTypes := []string{}
+	for sectionType, requested := range s.Types {
+		if requested {
+			switch sectionType {
+			case SectionGeneralTopic:
+				requestedTypes = append(requestedTypes, "general topics")
+			case SectionExample:
+				requestedTypes = append(requestedTypes, "examples")
+			case SectionApplication:
+				requestedTypes = append(requestedTypes, "applications")
+			case SectionTutorial:
+				requestedTypes = append(requestedTypes, "tutorials")
+
+			}
+
+		}
+	}
+
+	return strings.Join(requestedTypes, ", ")
 }
