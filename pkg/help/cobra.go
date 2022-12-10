@@ -49,13 +49,17 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	// this is where we would have to find the help sections we should show for this specific command
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
-	if options.ShowShortTopic {
-		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + c.UsageTemplate()
-	}
-	if options.ShowAllSections {
-		tmpl += HELP_LONG_SECTION_TEMPLATE
+	if options.ListSections {
+		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
 	} else {
-		tmpl += HELP_SHORT_SECTION_TEMPLATE
+		if options.ShowShortTopic {
+			tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + c.UsageTemplate()
+		}
+		if options.ShowAllSections {
+			tmpl += HELP_LONG_SECTION_TEMPLATE
+		} else {
+			tmpl += HELP_SHORT_SECTION_TEMPLATE
+		}
 	}
 	template.Must(t.Parse(tmpl))
 
