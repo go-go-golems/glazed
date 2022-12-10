@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wesen/glazed/pkg/helpers"
 	"path/filepath"
+	"sort"
 )
 
 type SectionType int
@@ -34,6 +35,7 @@ func SectionTypeFromString(s string) (SectionType, error) {
 }
 
 // Section is a structure describing an actual documentation section.
+//
 // This can describe:
 // - a general topic: think of this as an entry in a book
 // - an example: a way to run a certain command
@@ -42,28 +44,10 @@ func SectionTypeFromString(s string) (SectionType, error) {
 //   these self-contained, it is not required.
 // - a tutorial: a step-by-step guide to running a command.
 //
-// Each section has a title, subtitle, short description and a full content.
-// The slug is similar to an id and used to reference the section internally.
-//
-// Each section can be related to a list of topics (this would be a list of slugs
-// a set of flags, and a list of commands.
-//
-// Some sections are shown by default. For example, when calling up the help for a command,
-// the general topics,examples, applications and tutorials related to that command and that
-// have the ShowPerDefault flag will be shown without further flags.
-//
-// Sections that don't have the ShowPerDefault flag set however will only be shown when
-// explicitly asked for using the --topics --flags --examples options.
+// Run `glaze help help-system` for more information.
 type Section struct {
 	Slug        string
 	SectionType SectionType
-	// TODO(manuel, 2022-12-04): Potentially we want to attach a different topic name here
-	// as the slug is used to look things up and it might be prettier?
-	// or maybe introduce a "related topics" that can be used to look up topics to
-	// attach to this section? That sounds actually like a better idea.
-	//
-	// If we want to attach examples to a specific section, that might better  be done
-	// over a separate sectionSlugs entry, actually, instead of mixing slug and topic.
 
 	Title    string
 	SubTitle string
@@ -271,6 +255,10 @@ func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
 
 func NewHelpPage(sections []*Section) *GenericHelpPage {
 	ret := &GenericHelpPage{}
+
+	sort.Slice(sections, func(i, j int) bool {
+		return sections[i].Order < sections[j].Order
+	})
 
 	for _, section := range sections {
 		switch section.SectionType {

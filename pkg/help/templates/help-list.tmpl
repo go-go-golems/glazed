@@ -1,0 +1,38 @@
+{{with .Help -}}
+{{if gt (len .AllGeneralTopics) 0}}
+
+## General topics
+
+Run `{{$.HelpCommand}} <topic>` to view a topic's page.
+
+{{range .AllGeneralTopics}}
+- {{.Slug}} - {{.Title}}
+{{end -}}
+{{end -}}
+{{if gt (len .AllExamples) 0}}
+
+## Examples
+
+Run `{{$.HelpCommand}} <example>` to view an example in full.
+{{- range .AllExamples}}
+- {{.Slug}} - {{.Title}}
+{{end -}}
+{{end -}}
+{{if gt (len .AllApplications) 0}}
+
+## Applications
+
+Run `{{$.HelpCommand}} <application>` to view an application in full.
+{{- range .AllApplications}}
+- {{.Slug}} - {{.Title}}
+{{end}}
+{{end -}}
+{{if gt (len .AllTutorials) 0}}
+## Tutorials
+
+Run `{{$.HelpCommand}} <tutorial>` to view a tutorial in full.
+{{- range .AllTutorials}}
+- {{.Slug}} - {{.Title}}
+{{end}}
+{{end -}}
+{{end -}}

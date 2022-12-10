@@ -38,11 +38,13 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 }
 
 type RenderOptions struct {
-	Query           *QueryBuilder
-	ShowAllSections bool
-	ShowShortTopic  bool
-	HelpCommand     string
-	ListSections    bool
+	Query                       *QueryBuilder
+	ShowAllSections             bool
+	ShowShortTopic              bool
+	HelpCommand                 string
+	ListSections                bool
+	ExplictInformationRequested bool
+	SomeFlagSet                 bool
 }
 
 func (hs *HelpSystem) RenderTopicHelp(
@@ -50,20 +52,26 @@ func (hs *HelpSystem) RenderTopicHelp(
 	options *RenderOptions) (string, error) {
 	hp := NewHelpPage(options.Query.FindSections(hs.Sections))
 
-	// this still doesn't handle if all examples or topics should be shown,
-	// ie if we need a full section
+	// TODO(manuel, 2022-12-09): we should check if we found any sections here in case a flag was set
+	// if that's the case, we should probably show a list
 
 	t := template.New("topic")
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := HELP_TOPIC_TEMPLATE
+
 	if options.ShowShortTopic {
 		tmpl = HELP_SHORT_TOPIC_TEMPLATE
 	}
-	if options.ShowAllSections {
-		tmpl += HELP_LONG_SECTION_TEMPLATE
+	if options.ListSections {
+		tmpl = HELP_SHORT_TOPIC_TEMPLATE + HELP_LIST_TEMPLATE
 	} else {
-		tmpl += HELP_SHORT_SECTION_TEMPLATE
+		if options.ShowAllSections {
+			tmpl += HELP_LONG_SECTION_TEMPLATE
+		} else {
+			tmpl += HELP_SHORT_SECTION_TEMPLATE
+		}
 	}
+
 	template.Must(t.Parse(tmpl))
 
 	data := map[string]interface{}{}
@@ -87,3 +95,6 @@ var HELP_SHORT_SECTION_TEMPLATE string
 
 //go:embed templates/help-long-section-list.tmpl
 var HELP_LONG_SECTION_TEMPLATE string
+
+//go:embed templates/help-list.tmpl
+var HELP_LIST_TEMPLATE string
