@@ -28,6 +28,9 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 	)
 
 	err = t.Execute(&sb, data)
+	if err != nil {
+		return "", err
+	}
 
 	s := sb.String()
 	sizeString := fmt.Sprintf("size: %dx%d\n", sz.Width, sz.Height)

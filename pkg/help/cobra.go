@@ -76,9 +76,11 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	} else {
 		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
 	}
-	if len(sections) == 0 {
+	if len(sections) == 0 && options.Query.HasOnlyQueries() {
 		// if we don't have any sections, we should check if an explicit search was requested
 		// and show an error string and a list of alternatives
+		queryString := options.Query.GetOnlyQueryAsString()
+		_ = queryString
 	}
 	hp := NewHelpPage(sections)
 	data["Help"] = hp
