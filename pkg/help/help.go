@@ -226,7 +226,6 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 // TODO (manuel, 2022-12-04): Not sure if we really need this, as it is all done with queries in help/cobra.go
 // for now, but it might be good to centralize it here. Also move the split in Default/Others as well
 type HelpPage struct {
-	Query                *SectionQuery
 	DefaultGeneralTopics []*Section
 	OtherGeneralTopics   []*Section
 	// this is just the concatenation of default and others

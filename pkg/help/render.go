@@ -41,13 +41,11 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 }
 
 type RenderOptions struct {
-	Query                       *SectionQuery
-	ShowAllSections             bool
-	ShowShortTopic              bool
-	HelpCommand                 string
-	ListSections                bool
-	ExplictInformationRequested bool
-	SomeFlagSet                 bool
+	Query           *SectionQuery
+	ShowAllSections bool
+	ShowShortTopic  bool
+	HelpCommand     string
+	ListSections    bool
 }
 
 func (hs *HelpSystem) RenderTopicHelp(

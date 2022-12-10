@@ -46,7 +46,25 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSystem) error {
 	t := template.New("commandUsage")
 
-	// this is where we would have to find the help sections we should show for this specific command
+	data := map[string]interface{}{}
+
+	isTopLevel := c.Parent() == nil
+	data["IsTopLevel"] = isTopLevel
+
+	var sections []*Section
+	if isTopLevel {
+		sections = options.Query.ReturnOnlyTopLevel().FindSections(hs.Sections)
+	} else {
+		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
+	}
+
+	// TODO(manuel, 2022-12-09): we should also check if there was a query for a specific section type
+	// and see if this is why the query didn't return any results.
+	noResultsFound := len(sections) == 0 && options.Query.HasOnlyQueries()
+	data["NoResultsFound"] = noResultsFound
+	data["QueryString"] = options.Query.GetOnlyQueryAsString()
+	data["Query"] = options.Query
+
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
 	if options.ListSections {
@@ -63,25 +81,10 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	}
 	template.Must(t.Parse(tmpl))
 
-	data := map[string]interface{}{}
 	data["Command"] = c
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
 
-	isTopLevel := c.Parent() == nil
-
-	var sections []*Section
-	if isTopLevel {
-		sections = options.Query.ReturnOnlyTopLevel().FindSections(hs.Sections)
-	} else {
-		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
-	}
-	if len(sections) == 0 && options.Query.HasOnlyQueries() {
-		// if we don't have any sections, we should check if an explicit search was requested
-		// and show an error string and a list of alternatives
-		queryString := options.Query.GetOnlyQueryAsString()
-		_ = queryString
-	}
 	hp := NewHelpPage(sections)
 	data["Help"] = hp
 
@@ -159,36 +162,20 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			root := c.Root()
 
-			// TODO(manuel, 2022-12-09): What we want to do here is warn if a certain
-			// request (for a flag, a command, etc...) wasn't found, and to give a list
-			// of the possible alternatives instead. Say, if looking for the flag --templates,
-			// we can provide a list of the possible flags.
-
-			// TODO(manuel, 2022-12-09): Furthermore, when searching for a flag, we should
-			// make it easier on the user by stripping -- in case the option was passed with
-			// dashes. It's not clear that we expect the flag name without --
-			explicitInformationRequested := false
-			someFlagSet := false
 			qb := NewSectionQuery()
 
 			topic := c.Flag("topic").Value.String()
 			if topic != "" {
 				qb = qb.ReturnOnlyTopics(topic)
-				explicitInformationRequested = true
-				someFlagSet = true
 			}
 			flag := c.Flag("flag").Value.String()
 			if flag != "" {
 				qb = qb.ReturnOnlyFlags(flag)
-				explicitInformationRequested = true
-				someFlagSet = true
 			}
 
 			command := c.Flag("command").Value.String()
 			if command != "" {
 				qb = qb.ReturnOnlyCommands(command)
-				explicitInformationRequested = true
-				someFlagSet = true
 			}
 
 			showAllSections, _ := c.Flags().GetBool("all")
@@ -199,28 +186,24 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 				qb = qb.ReturnTopics()
 				showAllSections = true
 				showShortTopic = true
-				someFlagSet = true
 			}
 			examples, _ := c.Flags().GetBool("examples")
 			if examples {
 				qb = qb.ReturnExamples()
 				showAllSections = true
 				showShortTopic = true
-				someFlagSet = true
 			}
 			applications, _ := c.Flags().GetBool("applications")
 			if applications {
 				qb = qb.ReturnApplications()
 				showAllSections = true
 				showShortTopic = true
-				someFlagSet = true
 			}
 			tutorials, _ := c.Flags().GetBool("tutorials")
 			if tutorials {
 				qb = qb.ReturnTutorials()
 				showAllSections = true
 				showShortTopic = true
-				someFlagSet = true
 			}
 
 			if !topics && !examples && !applications && !tutorials {
@@ -228,18 +211,13 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			}
 
 			list, _ := c.Flags().GetBool("list")
-			if list {
-				someFlagSet = true
-			}
 
 			options := &RenderOptions{
-				Query:                       qb,
-				ShowAllSections:             showAllSections,
-				ShowShortTopic:              showShortTopic,
-				ExplictInformationRequested: explicitInformationRequested,
-				SomeFlagSet:                 someFlagSet,
-				ListSections:                list,
-				HelpCommand:                 root.CommandPath() + " help",
+				Query:           qb,
+				ShowAllSections: showAllSections,
+				ShowShortTopic:  showShortTopic,
+				ListSections:    list,
+				HelpCommand:     root.CommandPath() + " help",
 			}
 
 			// first, we check if we can find an explicit help topic
@@ -270,11 +248,9 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			cmd, _, e := root.Find(args)
 			if cmd == nil || e != nil {
 				c.Printf("Unknown help topic %#q\n", args)
-				if someFlagSet {
-
-				} else if list {
+				if list {
 					// TODO(manuel, 2022-12-09): We could show a main help page if specified
-
+					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
 				} else {
 					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
 				}
