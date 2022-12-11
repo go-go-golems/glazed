@@ -240,9 +240,6 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 }
 
 // HelpPage contains all the sections related to a command
-//
-// TODO (manuel, 2022-12-04): Not sure if we really need this, as it is all done with queries in help/cobra.go
-// for now, but it might be good to centralize it here. Also move the split in Default/Others as well
 type HelpPage struct {
 	DefaultGeneralTopics []*Section
 	OtherGeneralTopics   []*Section
@@ -324,17 +321,11 @@ func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
 
 type HelpSystem struct {
 	Sections []*Section
-
-	// TODO(manuel, 2022-12-04): I don't think this is needed actually
-	SectionsByFlag    map[string][]*Section
-	SectionsByCommand map[string][]*Section
 }
 
 func NewHelpSystem() *HelpSystem {
 	return &HelpSystem{
-		Sections:          []*Section{},
-		SectionsByFlag:    map[string][]*Section{},
-		SectionsByCommand: map[string][]*Section{},
+		Sections: []*Section{},
 	}
 }
 
@@ -368,18 +359,6 @@ func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
 
 func (hs *HelpSystem) AddSection(section *Section) {
 	hs.Sections = append(hs.Sections, section)
-	for _, flag := range section.Flags {
-		if hs.SectionsByFlag[flag] == nil {
-			hs.SectionsByFlag[flag] = []*Section{}
-		}
-		hs.SectionsByFlag[flag] = append(hs.SectionsByFlag[flag], section)
-	}
-	for _, command := range section.Commands {
-		if hs.SectionsByCommand[command] == nil {
-			hs.SectionsByCommand[command] = []*Section{}
-		}
-		hs.SectionsByCommand[command] = append(hs.SectionsByCommand[command], section)
-	}
 	section.HelpSystem = hs
 }
 

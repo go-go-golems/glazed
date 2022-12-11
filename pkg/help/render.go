@@ -24,6 +24,8 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 		// TODO(manuel, 2022-12-04): We need to check if we can use colors here,
 		// which is not the case if we render things out to a file / pipe,
 		// in the context of a redirect, or if we render to file
+		//
+		// See: https://github.com/wesen/glazed/issues/38
 		glamour.WithStandardStyle("dark"),
 	)
 
