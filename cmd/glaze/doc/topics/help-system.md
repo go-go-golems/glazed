@@ -154,3 +154,6 @@ TODO(manuel, 2022-12-09): Add more information about how we actually query secti
 
 These pages are most easily included into the CLI utility by loading them
 from markdown files at compile time using the `go:embed` functionality.
+
+In fact, the `HelpSystem` can load an entire `embed.FS` directory recursively,
+parsing all the markdown files found in it.

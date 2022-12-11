@@ -61,12 +61,17 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
 	t.Funcs(helpers.TemplateFuncs)
-	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
+	var tmpl string
 	if options.ListSections || noResultsFound {
 		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
 	} else {
 		if options.ShowShortTopic {
-			tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + c.UsageTemplate()
+			tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE
+		} else {
+			tmpl = COBRA_COMMAND_HELP_TEMPLATE
+		}
+		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
+			tmpl += c.UsageTemplate()
 		}
 		if options.ShowAllSections {
 			tmpl += HELP_LONG_SECTION_TEMPLATE
@@ -262,7 +267,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 	ret.Flags().Bool("short", false, "Show short version")
 
 	// TODO(manuel, 2022-12-04): Additional verbs to build
-	// - toc
+	// - toc -- done with --list
 	// - topics
 	// - search
 	// - serve

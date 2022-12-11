@@ -1,10 +1,12 @@
 ---
 Title: Specifying multiple templates with --template-field
 Slug: templates-example-3
-Short: |-
+Short: |
+  ```
   glaze json misc/test-data/[123].json \
   --template-field 'foo:{{.a}}-{{.b}},bar:{{.d_f}}' \
   --use-row-templates --fields a,foo,bar
+  ```
 Topics:
 - templates
 Commands:

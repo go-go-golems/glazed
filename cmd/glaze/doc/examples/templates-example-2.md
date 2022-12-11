@@ -1,10 +1,12 @@
 ---
 Title: Use a single template for single field output
 Slug: templates-example-1
-Short: |-
+Short: |
+  ```
   glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d_f}}' \
   --use-row-templates --fields a,_0 \
   --output csv
+  ```
 Topics:
 - templates
 Commands:

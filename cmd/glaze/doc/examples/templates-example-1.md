@@ -1,7 +1,10 @@
 ---
 Title: Use a single template for single field output
 Slug: templates-example-1
-Short: "glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d.f}}'"
+Short: |
+  ```
+  glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d.f}}'
+  ```
 Topics:
 - templates
 Commands:
