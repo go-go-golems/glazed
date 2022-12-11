@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wesen/glazed/pkg/helpers"
 	"path/filepath"
+	"sort"
 )
 
 type SectionType int
@@ -33,7 +34,22 @@ func SectionTypeFromString(s string) (SectionType, error) {
 	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
 }
 
+func (s SectionType) String() string {
+	switch s {
+	case SectionGeneralTopic:
+		return "GeneralTopic"
+	case SectionExample:
+		return "Example"
+	case SectionApplication:
+		return "Application"
+	case SectionTutorial:
+		return "Tutorial"
+	}
+	return "Unknown"
+}
+
 // Section is a structure describing an actual documentation section.
+//
 // This can describe:
 // - a general topic: think of this as an entry in a book
 // - an example: a way to run a certain command
@@ -42,28 +58,10 @@ func SectionTypeFromString(s string) (SectionType, error) {
 //   these self-contained, it is not required.
 // - a tutorial: a step-by-step guide to running a command.
 //
-// Each section has a title, subtitle, short description and a full content.
-// The slug is similar to an id and used to reference the section internally.
-//
-// Each section can be related to a list of topics (this would be a list of slugs
-// a set of flags, and a list of commands.
-//
-// Some sections are shown by default. For example, when calling up the help for a command,
-// the general topics,examples, applications and tutorials related to that command and that
-// have the ShowPerDefault flag will be shown without further flags.
-//
-// Sections that don't have the ShowPerDefault flag set however will only be shown when
-// explicitly asked for using the --topics --flags --examples options.
+// Run `glaze help help-system` for more information.
 type Section struct {
 	Slug        string
 	SectionType SectionType
-	// TODO(manuel, 2022-12-04): Potentially we want to attach a different topic name here
-	// as the slug is used to look things up and it might be prettier?
-	// or maybe introduce a "related topics" that can be used to look up topics to
-	// attach to this section? That sounds actually like a better idea.
-	//
-	// If we want to attach examples to a specific section, that might better  be done
-	// over a separate sectionSlugs entry, actually, instead of mixing slug and topic.
 
 	Title    string
 	SubTitle string
@@ -104,65 +102,65 @@ func (s *Section) IsForTopic(topic string) bool {
 // these should potentially be scoped by command
 
 func (s *Section) DefaultGeneralTopic() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTopics().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultExamples() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnExamples().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherExamples() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnExamples().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultTutorials() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTutorials().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherTutorials() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnTutorials().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultApplications() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnApplications().
-		OnlyTopics(s.Slug).
-		OnlyShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) OtherApplications() []*Section {
-	return NewQueryBuilder().
+	return NewSectionQuery().
 		ReturnApplications().
-		OnlyTopics(s.Slug).
-		OnlyNotShownByDefault().
-		WithoutSections(s).
+		ReturnOnlyTopics(s.Slug).
+		ReturnOnlyNotShownByDefault().
+		FilterSections(s).
 		FindSections(s.HelpSystem.Sections)
 }
 
@@ -234,14 +232,15 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 		section.Order = order.(int)
 	}
 
+	if section.Slug == "" || section.Title == "" {
+		return nil, fmt.Errorf("missing slug or title")
+	}
+
 	return section, nil
 }
 
-// GenericHelpPage contains all the sections related to a command
-//
-// TODO (manuel, 2022-12-04): Not sure if we really need this, as it is all done with queries in help/cobra.go
-// for now, but it might be good to centralize it here. Also move the split in Default/Others as well
-type GenericHelpPage struct {
+// HelpPage contains all the sections related to a command
+type HelpPage struct {
 	DefaultGeneralTopics []*Section
 	OtherGeneralTopics   []*Section
 	// this is just the concatenation of default and others
@@ -269,8 +268,12 @@ func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
 	return nil, fmt.Errorf("no section with slug %s found", slug)
 }
 
-func NewHelpPage(sections []*Section) *GenericHelpPage {
-	ret := &GenericHelpPage{}
+func NewHelpPage(sections []*Section) *HelpPage {
+	ret := &HelpPage{}
+
+	sort.Slice(sections, func(i, j int) bool {
+		return sections[i].Order < sections[j].Order
+	})
 
 	for _, section := range sections {
 		switch section.SectionType {
@@ -308,9 +311,9 @@ func NewHelpPage(sections []*Section) *GenericHelpPage {
 	return ret
 }
 
-func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
-	sections := NewQueryBuilder().
-		OnlyTopLevel().
+func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
+	sections := NewSectionQuery().
+		ReturnOnlyTopLevel().
 		ReturnAllTypes().
 		FindSections(hs.Sections)
 	return NewHelpPage(sections)
@@ -318,17 +321,11 @@ func (hs *HelpSystem) GetTopLevelHelpPage() *GenericHelpPage {
 
 type HelpSystem struct {
 	Sections []*Section
-
-	// TODO(manuel, 2022-12-04): I don't think this is needed actually
-	SectionsByFlag    map[string][]*Section
-	SectionsByCommand map[string][]*Section
 }
 
 func NewHelpSystem() *HelpSystem {
 	return &HelpSystem{
-		Sections:          []*Section{},
-		SectionsByFlag:    map[string][]*Section{},
-		SectionsByCommand: map[string][]*Section{},
+		Sections: []*Section{},
 	}
 }
 
@@ -338,19 +335,20 @@ func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
 		return err
 	}
 	for _, entry := range entries {
+		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			err = hs.LoadSectionsFromEmbedFS(f, filepath.Join(dir, entry.Name()))
+			err = hs.LoadSectionsFromEmbedFS(f, fileName)
 			if err != nil {
 				return err
 			}
 		} else {
-			b, err := f.ReadFile(filepath.Join(dir, entry.Name()))
+			b, err := f.ReadFile(fileName)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to read file %s", fileName)
 			}
 			section, err := LoadSectionFromMarkdown(b)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to load section from file %s", fileName)
 			}
 			hs.AddSection(section)
 		}
@@ -361,18 +359,6 @@ func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
 
 func (hs *HelpSystem) AddSection(section *Section) {
 	hs.Sections = append(hs.Sections, section)
-	for _, flag := range section.Flags {
-		if hs.SectionsByFlag[flag] == nil {
-			hs.SectionsByFlag[flag] = []*Section{}
-		}
-		hs.SectionsByFlag[flag] = append(hs.SectionsByFlag[flag], section)
-	}
-	for _, command := range section.Commands {
-		if hs.SectionsByCommand[command] == nil {
-			hs.SectionsByCommand[command] = []*Section{}
-		}
-		hs.SectionsByCommand[command] = append(hs.SectionsByCommand[command], section)
-	}
 	section.HelpSystem = hs
 }
 

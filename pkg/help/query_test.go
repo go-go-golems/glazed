@@ -6,7 +6,7 @@ import (
 )
 
 func TestSingleQueryAll(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().Build()
+	query := NewSectionQuery().ReturnAllTypes()
 
 	sections := []*Section{
 		{
@@ -22,7 +22,7 @@ func TestSingleQueryAll(t *testing.T) {
 }
 
 func TestQueryOnlyDefault(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().OnlyShownByDefault().Build()
+	query := NewSectionQuery().ReturnAllTypes().ReturnOnlyShownByDefault()
 
 	sections := []*Section{
 		{
@@ -43,7 +43,7 @@ func TestQueryOnlyDefault(t *testing.T) {
 }
 
 func TestQueryAllExamples(t *testing.T) {
-	query := NewQueryBuilder().ReturnExamples().Build()
+	query := NewSectionQuery().ReturnExamples()
 
 	sections := []*Section{
 		{
@@ -75,7 +75,7 @@ func TestQueryAllExamples(t *testing.T) {
 }
 
 func TestQueryOnlyJsonCommandExamples(t *testing.T) {
-	query := NewQueryBuilder().ReturnExamples().OnlyCommands("json").Build()
+	query := NewSectionQuery().ReturnExamples().ReturnOnlyCommands("json")
 
 	sections := []*Section{
 		{
@@ -167,7 +167,7 @@ var sections = []*Section{
 }
 
 func TestQueryTopicTemplates(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().Topics("templates", "template-fields").Build()
+	query := NewSectionQuery().ReturnAllTypes().ReturnAnyOfTopics("templates", "template-fields")
 	foundSections := query.FindSections(sections)
 	assert.Len(t, foundSections, 8)
 	assert.Equal(t, sections[0].Slug, foundSections[0].Slug)
@@ -181,7 +181,7 @@ func TestQueryTopicTemplates(t *testing.T) {
 }
 
 func TestQueryTopicOnlyTemplatesTemplatesFields(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().OnlyTopics("templates", "template-fields").Build()
+	query := NewSectionQuery().ReturnAllTypes().ReturnOnlyTopics("templates", "template-fields")
 	foundSections := query.FindSections(sections)
 	assert.Len(t, foundSections, 4)
 	assert.Equal(t, sections[2].Slug, foundSections[0].Slug)
@@ -190,8 +190,8 @@ func TestQueryTopicOnlyTemplatesTemplatesFields(t *testing.T) {
 	assert.Equal(t, sections[8].Slug, foundSections[3].Slug)
 }
 
-func TestQueryWithoutSections(t *testing.T) {
-	query := NewQueryBuilder().ReturnAllTypes().WithoutSections(sections[0], sections[1]).Build()
+func TestQueryFilterSections(t *testing.T) {
+	query := NewSectionQuery().ReturnAllTypes().FilterSections(sections[0], sections[1])
 	foundSections := query.FindSections(sections)
 	assert.Len(t, foundSections, 8)
 	assert.Equal(t, sections[2].Slug, foundSections[0].Slug)

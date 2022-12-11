@@ -14,7 +14,7 @@ type UsageFunc = func(c *cobra.Command) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		qb := NewQueryBuilder().
+		qb := NewSectionQuery().
 			ReturnAllTypes()
 
 		options := &RenderOptions{
@@ -28,7 +28,7 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		qb := NewQueryBuilder().
+		qb := NewSectionQuery().
 			ReturnExamples()
 
 		options := &RenderOptions{
@@ -46,32 +46,44 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSystem) error {
 	t := template.New("commandUsage")
 
-	// this is where we would have to find the help sections we should show for this specific command
-	t.Funcs(helpers.TemplateFuncs)
-	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
-	if options.ShowShortTopic {
-		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + c.UsageTemplate()
-	}
-	if options.ShowAllSections {
-		tmpl += HELP_LONG_SECTION_TEMPLATE
+	isTopLevel := c.Parent() == nil
+
+	userQuery := options.Query
+
+	if isTopLevel {
+		// we need to clone the userQuery because we need to modify it to restrict the search to the command
+		// but however the initial data is computed from the incoming userQuery
+		userQuery = userQuery.ReturnOnlyTopLevel()
 	} else {
-		tmpl += HELP_SHORT_SECTION_TEMPLATE
+		userQuery = userQuery.SearchForCommand(c.Name())
+	}
+
+	data, noResultsFound := hs.ComputeRenderData(userQuery)
+
+	t.Funcs(helpers.TemplateFuncs)
+	var tmpl string
+	if options.ListSections || noResultsFound {
+		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
+	} else {
+		if options.ShowShortTopic {
+			tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE
+		} else {
+			tmpl = COBRA_COMMAND_HELP_TEMPLATE
+		}
+		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
+			tmpl += c.UsageTemplate()
+		}
+		if options.ShowAllSections {
+			tmpl += HELP_LONG_SECTION_TEMPLATE
+		} else {
+			tmpl += HELP_SHORT_SECTION_TEMPLATE
+		}
 	}
 	template.Must(t.Parse(tmpl))
 
-	data := map[string]interface{}{}
 	data["Command"] = c
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
-
-	isTopLevel := c.Parent() == nil
-	if isTopLevel {
-		hp := NewHelpPage(options.Query.OnlyTopLevel().FindSections(hs.Sections))
-		data["Help"] = hp
-	} else {
-		hp := NewHelpPage(options.Query.OnlyCommands(c.Name()).FindSections(hs.Sections))
-		data["Help"] = hp
-	}
 
 	s, err := RenderToMarkdown(t, data)
 	if err != nil {
@@ -116,12 +128,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			generalTopics := NewQueryBuilder().
-				OnlyTopLevel().
-				ReturnTopics().
-				FindSections(hs.Sections)
-
-			for _, section := range generalTopics {
+			for _, section := range hs.Sections {
 				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
 			}
 
@@ -147,20 +154,20 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			root := c.Root()
 
-			qb := NewQueryBuilder()
+			qb := NewSectionQuery()
 
 			topic := c.Flag("topic").Value.String()
 			if topic != "" {
-				qb = qb.Topics(topic)
+				qb = qb.ReturnOnlyTopics(topic)
 			}
 			flag := c.Flag("flag").Value.String()
 			if flag != "" {
-				qb = qb.Flags(flag)
+				qb = qb.ReturnOnlyFlags(flag)
 			}
 
 			command := c.Flag("command").Value.String()
 			if command != "" {
-				qb = qb.Commands(command)
+				qb = qb.ReturnOnlyCommands(command)
 			}
 
 			showAllSections, _ := c.Flags().GetBool("all")
@@ -211,10 +218,10 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 				// if we found a topic with that slug, show it
 				if err == nil {
-					// we allow the user to restrict the search to subtopics
+					// TODO(manuel, 2022-12-10) Potentially allow subtopics search
 					options.Query = options.Query.
-						OnlyTopics(args...).
-						WithoutSections(topicSection)
+						ReturnAnyOfTopics(args[0]).
+						FilterSections(topicSection)
 
 					s, err := hs.RenderTopicHelp(
 						topicSection,
@@ -233,7 +240,12 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			cmd, _, e := root.Find(args)
 			if cmd == nil || e != nil {
 				c.Printf("Unknown help topic %#q\n", args)
-				cobra.CheckErr(renderCommandHelpPage(root, options, hs))
+				if list {
+					// TODO(manuel, 2022-12-09): We could show a main help page if specified
+					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
+				} else {
+					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
+				}
 			} else {
 				cobra.CheckErr(renderCommandHelpPage(cmd, options, hs))
 
@@ -255,7 +267,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 	ret.Flags().Bool("short", false, "Show short version")
 
 	// TODO(manuel, 2022-12-04): Additional verbs to build
-	// - toc
+	// - toc -- done with --list
 	// - topics
 	// - search
 	// - serve

@@ -1,4 +1,10 @@
 {{with .Topic -}}
-    # {{.Title}}:
-    {{.Short}}
+# {{.Title}}:
+{{.Short}}
+{{end}}
+---
+{{if $.NoResultsFound}}
+**No {{$.RequestedTypes}} found{{if $.QueryString}} for {{$.QueryString}}{{end}}!**
+
+Showing a list of alternatives:
 {{end}}

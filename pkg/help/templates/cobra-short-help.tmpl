@@ -1,6 +1,14 @@
 {{with .Command -}}
 # {{.Name}} - {{.Short}}
 
+{{.Long}}
+
+{{if $.NoResultsFound}}
+---
+**No {{$.RequestedTypes}} found{{if $.QueryString}} for {{$.QueryString}}{{end}}!**
+
+Showing a list of alternatives:
+{{end}}
 For more help, run:
 `{{$.HelpCommand}} {{.Name}}`
 {{end}}
