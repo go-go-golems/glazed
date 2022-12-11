@@ -46,71 +46,19 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSystem) error {
 	t := template.New("commandUsage")
 
-	data := map[string]interface{}{}
-
 	isTopLevel := c.Parent() == nil
-	data["IsTopLevel"] = isTopLevel
 
-	// check if the user has restricted the help to only specific commands, flags or topics
-	// (this is before adding our own restriction based on the command or toplevel we are
-	// going to show the help for)
-	hasUserRestrictedQuery := options.Query.HasOnlyQueries()
-	// Check if the user has restricted the query to only certain return types
-	hasUserRestrictedTypes := options.Query.HasRestrictedReturnTypes()
+	userQuery := options.Query
 
-	var sections []*Section
 	if isTopLevel {
-		sections = options.Query.ReturnOnlyTopLevel().FindSections(hs.Sections)
+		// we need to clone the userQuery because we need to modify it to restrict the search to the command
+		// but however the initial data is computed from the incoming userQuery
+		userQuery = userQuery.ReturnOnlyTopLevel()
 	} else {
-		sections = options.Query.ReturnOnlyCommands(c.Name()).FindSections(hs.Sections)
+		userQuery = userQuery.SearchForCommand(c.Name())
 	}
 
-	if len(sections) == 0 {
-		var alternativeSections []*Section
-
-		if hasUserRestrictedQuery {
-			// in this case, we should widen our query to not have restrictions on commands, flags, topics
-			alternativeQuery := options.Query.Clone().ResetOnlyQueries()
-			if !isTopLevel {
-				// if we are actually showing a command help, we need to still restrict our query
-				alternativeQuery = alternativeQuery.ReturnOnlyCommands(c.Name())
-			}
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
-		}
-
-		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
-			// in this case, we should widen our query to not have restrictions on return types
-			alternativeQuery := options.Query.Clone().ReturnAllTypes()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
-		}
-
-		if len(alternativeSections) == 0 {
-			// in this case, both the query relaxation and the type relaxation don't return anything,
-			// so we should show all possible options for the command / topLevel
-			alternativeQuery := options.Query.Clone().ResetOnlyQueries().ReturnAllTypes()
-			if !isTopLevel {
-				// if we are actually showing a command help, we need to still restrict our query
-				alternativeQuery = alternativeQuery.ReturnOnlyCommands(c.Name())
-			}
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
-		}
-
-		alternativeHelpPage := NewHelpPage(alternativeSections)
-		data["Help"] = alternativeHelpPage
-	} else {
-		hp := NewHelpPage(sections)
-		data["Help"] = hp
-	}
-
-	// TODO(manuel, 2022-12-09): we should also check if there was a query for a specific section type
-	// and see if this is why the query didn't return any results.
-
-	noResultsFound := len(sections) == 0 && (options.Query.HasOnlyQueries() || options.Query.HasRestrictedReturnTypes())
-
-	data["NoResultsFound"] = noResultsFound
-	data["QueryString"] = options.Query.GetOnlyQueryAsString()
-	data["RequestedTypes"] = options.Query.GetRequestedTypesAsString()
-	data["Query"] = options.Query
+	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
 	t.Funcs(helpers.TemplateFuncs)
 	tmpl := COBRA_COMMAND_HELP_TEMPLATE + c.UsageTemplate()
@@ -175,12 +123,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			generalTopics := NewSectionQuery().
-				ReturnOnlyTopLevel().
-				ReturnTopics().
-				FindSections(hs.Sections)
-
-			for _, section := range generalTopics {
+			for _, section := range hs.Sections {
 				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
 			}
 
@@ -270,9 +213,9 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 				// if we found a topic with that slug, show it
 				if err == nil {
-					// we allow the user to restrict the search to subtopics
+					// TODO(manuel, 2022-12-10) Potentially allow subtopics search
 					options.Query = options.Query.
-						ReturnOnlyTopics(args...).
+						ReturnAnyOfTopics(args[0]).
 						FilterSections(topicSection)
 
 					s, err := hs.RenderTopicHelp(

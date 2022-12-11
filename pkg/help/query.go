@@ -26,12 +26,14 @@ type SectionQuery struct {
 	// this will return any section as long as it matches the Only strings
 	All bool
 
+	SearchedCommand string
+	SearchedSlug    string
+
 	// a section will be returned only if it matches all
 	// of the following criteria
 	OnlyTopics   []string
 	OnlyFlags    []string
 	OnlyCommands []string
-	OnlySlugs    []string
 
 	// We often need to filter sections that have already been shown
 	WithoutSections []*Section
@@ -86,6 +88,16 @@ func (s *SectionQuery) ReturnTutorials() *SectionQuery {
 	return s
 }
 
+func (s *SectionQuery) SearchForSlug(slug string) *SectionQuery {
+	s.SearchedSlug = slug
+	return s
+}
+
+func (s *SectionQuery) SearchForCommand(command string) *SectionQuery {
+	s.SearchedCommand = command
+	return s
+}
+
 func (s *SectionQuery) DontReturnTutorials() *SectionQuery {
 	s.Types[SectionTutorial] = false
 	return s
@@ -114,6 +126,10 @@ func (s *SectionQuery) ReturnOnlyNotShownByDefault() *SectionQuery {
 func (s *SectionQuery) ReturnOnlyTopLevel() *SectionQuery {
 	s.OnlyTopLevel = true
 	return s
+}
+
+func (s *SectionQuery) IsOnlyTopLevel() bool {
+	return s.OnlyTopLevel
 }
 
 func (s *SectionQuery) FilterSections(sections ...*Section) *SectionQuery {
@@ -160,20 +176,12 @@ func (s *SectionQuery) ReturnOnlyCommands(commands ...string) *SectionQuery {
 	return s
 }
 
-func (s *SectionQuery) ReturnOnlySlugs(slugs ...string) *SectionQuery {
-	s.OnlySlugs = slugs
-	return s
-}
-
 func (s *SectionQuery) HasOnlyQueries() bool {
-	return len(s.OnlyTopics) > 0 || len(s.OnlyFlags) > 0 || len(s.OnlyCommands) > 0 || len(s.OnlySlugs) > 0
+	return len(s.OnlyTopics) > 0 || len(s.OnlyFlags) > 0 || len(s.OnlyCommands) > 0
 }
 
 func (s *SectionQuery) GetOnlyQueryAsString() string {
 	ret := []string{}
-	if len(s.OnlySlugs) > 0 {
-		ret = append(ret, "slugs "+strings.Join(s.OnlySlugs, ", "))
-	}
 	if len(s.OnlyTopics) > 0 {
 		ret = append(ret, "topics "+strings.Join(s.OnlyTopics, ", "))
 	}
@@ -191,7 +199,6 @@ func (s *SectionQuery) ResetOnlyQueries() *SectionQuery {
 	s.OnlyTopics = []string{}
 	s.OnlyFlags = []string{}
 	s.OnlyCommands = []string{}
-	s.OnlySlugs = []string{}
 	return s
 }
 
@@ -201,6 +208,8 @@ func (s *SectionQuery) Clone() *SectionQuery {
 		OnlyNotShownByDefault: s.OnlyNotShownByDefault,
 		OnlyTopLevel:          s.OnlyTopLevel,
 		All:                   s.All,
+		SearchedCommand:       s.SearchedCommand,
+		SearchedSlug:          s.SearchedSlug,
 	}
 
 	// gotta love go, let's do a deep copy
@@ -223,8 +232,6 @@ func (s *SectionQuery) Clone() *SectionQuery {
 	copy(ret.OnlyFlags, s.OnlyFlags)
 	ret.OnlyCommands = make([]string, len(s.OnlyCommands))
 	copy(ret.OnlyCommands, s.OnlyCommands)
-	ret.OnlySlugs = make([]string, len(s.OnlySlugs))
-	copy(ret.OnlySlugs, s.OnlySlugs)
 	ret.WithoutSections = make([]*Section, len(s.WithoutSections))
 	copy(ret.WithoutSections, s.WithoutSections)
 
@@ -250,6 +257,25 @@ sectionLoop:
 
 		for _, without := range s.WithoutSections {
 			if without == section {
+				continue sectionLoop
+			}
+		}
+
+		if s.SearchedSlug != "" {
+			if section.Slug != s.SearchedSlug {
+				continue sectionLoop
+			}
+		}
+
+		if s.SearchedCommand != "" {
+			foundMatchingCommand := false
+			for _, command := range section.Commands {
+				if command == s.SearchedCommand {
+					foundMatchingCommand = true
+					break
+				}
+			}
+			if !foundMatchingCommand {
 				continue sectionLoop
 			}
 		}
@@ -295,19 +321,6 @@ sectionLoop:
 				}
 			}
 			if !foundMatchingCommand {
-				continue sectionLoop
-			}
-		}
-
-		if len(s.OnlySlugs) > 0 {
-			foundMatchingSlug := true
-			for _, s := range s.OnlySlugs {
-				if section.Slug != s {
-					foundMatchingSlug = true
-					break
-				}
-			}
-			if !foundMatchingSlug {
 				continue sectionLoop
 			}
 		}

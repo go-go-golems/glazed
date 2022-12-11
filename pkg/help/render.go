@@ -48,13 +48,62 @@ type RenderOptions struct {
 	ListSections    bool
 }
 
+func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {
+	sections := userQuery.FindSections(hs.Sections)
+	data := map[string]interface{}{}
+
+	// check if the user has restricted the help to only specific commands, flags or topics
+	// (this is before adding our own restriction based on the command or toplevel we are
+	// going to show the help for)
+	hasUserRestrictedQuery := userQuery.HasOnlyQueries()
+	// Check if the user has restricted the userQuery to only certain return types
+	hasUserRestrictedTypes := userQuery.HasRestrictedReturnTypes()
+
+	if len(sections) == 0 {
+		var alternativeSections []*Section
+
+		if hasUserRestrictedQuery {
+			// in this case, we should widen our userQuery to not have restrictions on commands, flags, topics
+			alternativeQuery := userQuery.Clone().ResetOnlyQueries()
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
+			// in this case, we should widen our userQuery to not have restrictions on return types
+			alternativeQuery := userQuery.Clone().ReturnAllTypes()
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		if len(alternativeSections) == 0 {
+			// in this case, both the userQuery relaxation and the type relaxation don't return anything,
+			// so we should show all possible options for the command / topLevel
+			alternativeQuery := userQuery.Clone().ResetOnlyQueries().ReturnAllTypes()
+			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+		}
+
+		alternativeHelpPage := NewHelpPage(alternativeSections)
+		data["Help"] = alternativeHelpPage
+	} else {
+		hp := NewHelpPage(sections)
+		data["Help"] = hp
+	}
+
+	noResultsFound := len(sections) == 0 && (userQuery.HasOnlyQueries() || userQuery.HasRestrictedReturnTypes())
+
+	data["NoResultsFound"] = noResultsFound
+	data["QueryString"] = userQuery.GetOnlyQueryAsString()
+	data["RequestedTypes"] = userQuery.GetRequestedTypesAsString()
+	data["Query"] = userQuery
+	data["IsTopLevel"] = userQuery.IsOnlyTopLevel()
+	return data, noResultsFound
+}
+
 func (hs *HelpSystem) RenderTopicHelp(
 	topicSection *Section,
 	options *RenderOptions) (string, error) {
-	hp := NewHelpPage(options.Query.FindSections(hs.Sections))
+	userQuery := options.Query
 
-	// TODO(manuel, 2022-12-09): we should check if we found any sections here in case a flag was set
-	// if that's the case, we should probably show a list
+	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
 	t := template.New("topic")
 	t.Funcs(helpers.TemplateFuncs)
@@ -63,7 +112,7 @@ func (hs *HelpSystem) RenderTopicHelp(
 	if options.ShowShortTopic {
 		tmpl = HELP_SHORT_TOPIC_TEMPLATE
 	}
-	if options.ListSections {
+	if options.ListSections || noResultsFound {
 		tmpl = HELP_SHORT_TOPIC_TEMPLATE + HELP_LIST_TEMPLATE
 	} else {
 		if options.ShowAllSections {
@@ -75,11 +124,9 @@ func (hs *HelpSystem) RenderTopicHelp(
 
 	template.Must(t.Parse(tmpl))
 
-	data := map[string]interface{}{}
 	data["Topic"] = topicSection
 	data["Slug"] = topicSection.Slug
 	data["HelpCommand"] = options.HelpCommand
-	data["Help"] = hp
 
 	s, err := RenderToMarkdown(t, data)
 	return s, err

@@ -232,6 +232,10 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 		section.Order = order.(int)
 	}
 
+	if section.Slug == "" || section.Title == "" {
+		return nil, fmt.Errorf("missing slug or title")
+	}
+
 	return section, nil
 }
 
@@ -340,19 +344,20 @@ func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
 		return err
 	}
 	for _, entry := range entries {
+		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			err = hs.LoadSectionsFromEmbedFS(f, filepath.Join(dir, entry.Name()))
+			err = hs.LoadSectionsFromEmbedFS(f, fileName)
 			if err != nil {
 				return err
 			}
 		} else {
-			b, err := f.ReadFile(filepath.Join(dir, entry.Name()))
+			b, err := f.ReadFile(fileName)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to read file %s", fileName)
 			}
 			section, err := LoadSectionFromMarkdown(b)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to load section from file %s", fileName)
 			}
 			hs.AddSection(section)
 		}

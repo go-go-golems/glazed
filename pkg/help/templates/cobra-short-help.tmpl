@@ -1,6 +1,9 @@
 {{with .Command -}}
 # {{.Name}} - {{.Short}}
 
+{{.Long}}
+
+---
 {{if $.NoResultsFound}}
 **No {{$.RequestedTypes}} found{{if $.QueryString}} for {{$.QueryString}}{{end}}!**
 
