@@ -24,6 +24,14 @@ func SetupProcessor(cmd *cobra.Command) (*cli.GlazeProcessor, formatters.OutputF
 		return nil, nil, errors.Wrapf(err, "Error parsing fields filter flags")
 	}
 
+	selectSettings, err := cli.ParseSelectFlags(cmd)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error parsing select flags")
+	}
+	outputSettings.UpdateWithSelectSettings(selectSettings)
+	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
+	templateSettings.UpdateWithSelectSettings(selectSettings)
+
 	of, err := outputSettings.CreateOutputFormatter()
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error creating output formatter")
