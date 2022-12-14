@@ -76,7 +76,7 @@ var JsonCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Println(s)
+		fmt.Print(s)
 	},
 }
 

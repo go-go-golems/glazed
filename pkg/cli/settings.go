@@ -101,7 +101,7 @@ type SelectSettings struct {
 }
 
 func (ofs *OutputFormatterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
-	if ss.SelectField != "" {
+	if ss.SelectField != "" || ss.SelectTemplate != "" {
 		ofs.Output = "table"
 		ofs.TableFormat = "tsv"
 		ofs.FlattenObjects = true
@@ -117,9 +117,8 @@ func (ffs *FieldsFilterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 
 func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 	if ss.SelectTemplate != "" {
-		tf.UseRowTemplates = true
 		tf.Templates = map[types.FieldName]string{
-			ss.SelectField: ss.SelectTemplate,
+			"_0": ss.SelectTemplate,
 		}
 	}
 }
