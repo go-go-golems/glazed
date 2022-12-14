@@ -18,7 +18,3 @@ ShowPerDefault: true
 SectionType: Example
 ---
 You can ask the help system to give you examples for a specific command (here, for `glaze json`).
-
----
-
-```
