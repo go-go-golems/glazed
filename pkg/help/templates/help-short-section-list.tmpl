@@ -20,6 +20,8 @@ To see more examples for this topic, run:
 ### {{.Title}}
 
 {{.Short}}
+
+{{.Content}}
 {{end -}}
 {{end -}}
 {{- if gt (len .OtherExamples) 0 -}}
@@ -53,4 +55,4 @@ To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 To see more tutorials, run:
 `{{$.HelpCommand}} {{$.Slug}} --tutorials`
 {{end -}}
-{{end -}}
+{{end -}
