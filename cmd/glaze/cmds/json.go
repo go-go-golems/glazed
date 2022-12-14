@@ -76,7 +76,7 @@ var JsonCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Println(s)
+		fmt.Print(s)
 	},
 }
 
@@ -87,6 +87,7 @@ func init() {
 	cli.AddOutputFlags(JsonCmd)
 	cli.AddTemplateFlags(JsonCmd)
 	cli.AddFieldsFilterFlags(JsonCmd, "")
+	cli.AddSelectFlags(JsonCmd)
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")

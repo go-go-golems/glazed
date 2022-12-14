@@ -361,7 +361,7 @@ I keep a list of the current planned features as RFC documents.
 - [02 - Multi-file output](doc/rfcs/drafts/02_2022-11-13_multi-file-output.md)
 - [03 - SQLite output](doc/rfcs/drafts/03_2022-11-13_sqlite-output.md)
 - [04 - Configuration files](doc/rfcs/drafts/04_2022-11-13_configuration-file.md)
-- [05 - Glaze CLI tool](doc/rfcs/drafts/05_2022-11-19_glaze-cli-tool.md)
+- [05 - Glaze CLI tool](doc/rfcs/done/05_2022-11-19_glaze-cli-tool.md)
 
 ## General brainstorm
 

@@ -28,10 +28,10 @@ or by being used for some of the more user oriented transformation commands.
 
 The `glaze` application should allow a user to:
 - read in data from files
-  - json - #13
-  - csv - #14
-  - sqlite - #15
-  - yaml - #16
+  - json - #13 [x]
+  - csv - #14 [x]
+  - sqlite - #15 [x]
+  - yaml - #16 [x]
 - write out data
   - json [x]
   - csv [x]
@@ -52,18 +52,18 @@ The `glaze` sourcecode should showcase every interesting feature of `glazed`.
 
 ### Output formatters
 
-- Output as CSV
-- Output as human readable table
-- Output as json
+- Output as CSV [x]
+- Output as human readable table [x]
+- Output as json [x]
 - Output as SQLite
-- Output as yaml
+- Output as yaml [x]
 
 ### Middlewares
 
 #### Table middlewares
 
-- Fields filter
-- Flatten Object Paths
+- Fields filter [x]
+- Flatten Object Paths [x]
 - Preserve Column Order
 - Reorder Column
 - Sort Columns

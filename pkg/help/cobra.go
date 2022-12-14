@@ -89,7 +89,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintln(c.OutOrStderr(), s)
+	_, _ = fmt.Fprint(c.OutOrStderr(), s)
 
 	return err
 }
@@ -231,7 +231,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 						c.Printf("Unknown help topic: %s", args[0])
 						cobra.CheckErr(root.Usage())
 					}
-					_, _ = fmt.Fprintln(c.OutOrStderr(), s)
+					_, _ = fmt.Fprint(c.OutOrStderr(), s)
 					return
 				}
 			}

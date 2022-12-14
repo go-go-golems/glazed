@@ -43,6 +43,21 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	}, nil
 }
 
+func AddSelectFlags(cmd *cobra.Command) {
+	cmd.Flags().String("select", "", "Select a single field and output as a single line")
+	cmd.Flags().String("select-template", "", "Output a single templated value for each row, on a single line")
+}
+
+func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
+	selectField, _ := cmd.Flags().GetString("select")
+	selectTemplate, _ := cmd.Flags().GetString("select-template")
+
+	return &SelectSettings{
+		SelectField:    selectField,
+		SelectTemplate: selectTemplate,
+	}, nil
+}
+
 func AddTemplateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("template", "", "Go Template to use for single string")
 	cmd.Flags().StringSlice("template-field", nil, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")

@@ -94,3 +94,31 @@ func (fff *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
 	}
 
 }
+
+type SelectSettings struct {
+	SelectField    string
+	SelectTemplate string
+}
+
+func (ofs *OutputFormatterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
+	if ss.SelectField != "" || ss.SelectTemplate != "" {
+		ofs.Output = "table"
+		ofs.TableFormat = "tsv"
+		ofs.FlattenObjects = true
+		ofs.WithHeaders = false
+	}
+}
+
+func (ffs *FieldsFilterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
+	if ss.SelectField != "" {
+		ffs.Fields = []string{ss.SelectField}
+	}
+}
+
+func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
+	if ss.SelectTemplate != "" {
+		tf.Templates = map[types.FieldName]string{
+			"_0": ss.SelectTemplate,
+		}
+	}
+}
