@@ -3,7 +3,7 @@
 
 
 ![](https://img.shields.io/github/license/wesen/glazed)
-![](https://img.shields.io/github/workflow/status/wesen/glazed/golang-pipeline)
+![](https://img.shields.io/github/actions/workflow/status/wesen/glazed/push.yml?branch=main)
 
 > Add the icing to your structured data!
 

@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/dd-cli.iml" filepath="$PROJECT_DIR$/.idea/dd-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../sqliton/.idea/sqliton.iml" filepath="$PROJECT_DIR$/../sqliton/.idea/sqliton.iml" />
     </modules>
   </component>
 </project>
