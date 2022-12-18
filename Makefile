@@ -8,8 +8,11 @@ TAPES=$(shell ls doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
 
-lint:
+docker-lint:
 	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v1.50.1 golangci-lint run -v
+
+lint:
+	golangci-lint run -v
 
 test:
 	go test ./...
