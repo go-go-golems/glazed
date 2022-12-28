@@ -18,7 +18,7 @@ It is in early alpha, and will change. Contributions are welcome,
 but this project is going to be an experimental playground for a while,
 while I try to figure out what is possible and worth tackling.
 
-![Command line recording of the functionality described in "Features"](doc/gifs/demo.mov)
+![Command line recording of the functionality described in "Features"](https://imgur.com/ZEtdLes.gif)
 
 ## Features
 
@@ -141,6 +141,31 @@ You can filter out fields:
 +-----+-----+------------+-----+
 ```
 
+You can rename columns, using both simple string replacement or
+more advanced regexp matching:
+
+```
++ glaze yaml misc/test-data/test.yaml --input-is-array --rename baz:blop,d.e:dang
++-----+------+-----+------+-----+---------+
+| bar | blop | d.f | dang | foo | foobar  |
++-----+------+-----+------+-----+---------+
+| 7   | 2    | 7   | 6    | 1   | [3 4 5] |
+| 70  | 20   | 70  | 60   | 10  |         |
+|     | 200  |     |      |     | [300]   |
++-----+------+-----+------+-----+---------+
+```
+
+```
++ glaze yaml misc/test-data/test.yaml --input-is-array \
+  --rename-regexp '^(.*)bar:${1}blop','b..:blip'
++------+------+-----+-----+-----+---------+
+| blip | blop | d.e | d.f | foo | fooblop |
++------+------+-----+-----+-----+---------+
+| 2    | 7    | 6   | 7   | 1   | [3 4 5] |
+| 20   | 70   | 60  | 70  | 10  |         |
+| 200  |      |     |     |     | [300]   |
++------+------+-----+-----+-----+---------+
+```
 
 - use go templates to customize output
 

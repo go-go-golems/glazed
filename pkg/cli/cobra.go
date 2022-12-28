@@ -6,6 +6,7 @@ import (
 	"github.com/wesen/glazed/pkg/formatters"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
+	"regexp"
 	"strings"
 )
 
@@ -58,6 +59,47 @@ func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
 	return &SelectSettings{
 		SelectField:    selectField,
 		SelectTemplate: selectTemplate,
+	}, nil
+}
+
+func AddRenameFlags(cmd *cobra.Command) {
+	cmd.Flags().StringSlice("rename", []string{}, "Rename fields (list of oldName:newName)")
+	cmd.Flags().StringSlice("rename-regexp", []string{}, "Rename fields using regular expressions (list of regex:newName)")
+	cmd.Flags().String("rename-yaml", "", "Rename fields using a yaml file")
+}
+
+func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
+	renameFields, _ := cmd.Flags().GetStringSlice("rename")
+	renameRegexpFields, _ := cmd.Flags().GetStringSlice("rename-regexp")
+	renameYaml, _ := cmd.Flags().GetString("rename-yaml")
+
+	renamesFieldsMap := map[types.FieldName]types.FieldName{}
+	for _, renameField := range renameFields {
+		parts := strings.Split(renameField, ":")
+		if len(parts) != 2 {
+			return nil, errors.Errorf("Invalid rename field: %s", renameField)
+		}
+		renamesFieldsMap[types.FieldName(parts[0])] = types.FieldName(parts[1])
+	}
+
+	regexpReplacements := middlewares.RegexpReplacements{}
+	for _, renameRegexpField := range renameRegexpFields {
+		parts := strings.Split(renameRegexpField, ":")
+		if len(parts) != 2 {
+			return nil, errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
+		}
+		re, err := regexp.Compile(parts[0])
+		if err != nil {
+			return nil, errors.Wrapf(err, "Invalid regexp: %s", parts[0])
+		}
+		regexpReplacements = append(regexpReplacements,
+			&middlewares.RegexpReplacement{Regexp: re, Replacement: parts[1]})
+	}
+
+	return &RenameSettings{
+		RenameFields:  renamesFieldsMap,
+		RenameRegexps: regexpReplacements,
+		YamlFile:      renameYaml,
 	}, nil
 }
 
@@ -159,9 +201,23 @@ func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputForma
 	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
+	renameSettings, err := ParseRenameFlags(cmd)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error parsing rename flags")
+	}
+
 	of, err := outputSettings.CreateOutputFormatter()
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error creating output formatter")
+	}
+
+	// rename middlewares run first because they are used to clean up column names
+	// for the following middlewares too.
+	// these following middlewares can create proper column names on their own
+	// when needed
+	err = renameSettings.AddMiddlewares(of)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
 
 	err = templateSettings.AddMiddlewares(of)

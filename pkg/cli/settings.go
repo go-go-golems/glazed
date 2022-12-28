@@ -5,6 +5,8 @@ import (
 	"github.com/wesen/glazed/pkg/formatters"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
+	"gopkg.in/yaml.v3"
+	"os"
 	"unicode/utf8"
 )
 
@@ -121,4 +123,33 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 			"_0": ss.SelectTemplate,
 		}
 	}
+}
+
+type RenameSettings struct {
+	RenameFields  map[types.FieldName]string
+	RenameRegexps middlewares.RegexpReplacements
+	YamlFile      string
+}
+
+func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
+	if len(rs.RenameFields) > 0 || len(rs.RenameRegexps) > 0 {
+		of.AddTableMiddleware(middlewares.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
+	}
+
+	if rs.YamlFile != "" {
+		f, err := os.Open(rs.YamlFile)
+		if err != nil {
+			return err
+		}
+		decoder := yaml.NewDecoder(f)
+
+		mw, err := middlewares.NewRenameColumnMiddlewareFromYAML(decoder)
+		if err != nil {
+			return err
+		}
+
+		of.AddTableMiddleware(mw)
+	}
+
+	return nil
 }

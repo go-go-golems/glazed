@@ -90,6 +90,8 @@ func init() {
 	cli.AddOutputFlags(YamlCmd)
 	cli.AddTemplateFlags(YamlCmd)
 	cli.AddFieldsFilterFlags(YamlCmd, "")
+	cli.AddSelectFlags(YamlCmd)
+	cli.AddRenameFlags(YamlCmd)
 
 	// json input options
 	YamlCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")

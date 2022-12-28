@@ -1,4 +1,4 @@
-Output doc/gifs/demo.mov
+Output doc/gifs/demo.gif
 
 Set FontSize 14
 Set Width 800
@@ -77,3 +77,23 @@ Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
 Type "    --template-field '@misc/template-field-object.yaml' \" Enter Sleep 0.1
 Type "    --output json" Enter Sleep 0.1
 Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json --select a" Enter
+Sleep 1200ms
+
+Type "glaze json misc/test-data/[123].json \" Enter Sleep 0.1
+Type "    --select-template '{{.a}}-{{.b}}'"  Enter
+Sleep 1200ms
+
+Type "glaze yaml misc/test-data/test.yaml --input-is-array --rename baz:blop" Enter
+Sleep 1200ms
+
+Type "glaze yaml misc/test-data/test.yaml --input-is-array \" Enter Sleep 0.1
+Type "    --rename-regexp '^(.*)bar:${1}blop'" Enter
+Sleep 1200ms
+
+Type "glaze yaml misc/test-data/test.yaml --input-is-array \" Enter Sleep 0.1
+Type "    --rename-yaml misc/rename.yaml" Enter
+Sleep 1200ms
+
+Sleep 2000ms

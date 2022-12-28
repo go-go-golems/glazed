@@ -1,0 +1,5 @@
+renames:
+  foo: bar
+regexpRenames:
+  "^bar$": "baz"
+  ".(o.b).": "$1"
