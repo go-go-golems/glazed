@@ -6,6 +6,8 @@ Short: |
   glaze yaml misc/test-data/test.yaml --input-is-array \
   --rename-yaml misc/rename.yaml
   ```
+Topics:
+- rename
 Commands:
 - yaml
 - json

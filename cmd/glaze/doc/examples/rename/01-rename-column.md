@@ -5,6 +5,8 @@ Short: |
   ```
   glaze yaml misc/test-data/test.yaml --input-is-array --rename baz:blop
   ```
+Topics:
+- rename
 Commands:
 - yaml
 - json

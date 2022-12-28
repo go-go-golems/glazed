@@ -6,6 +6,8 @@ Short: |
   glaze yaml misc/test-data/test.yaml --input-is-array \
   --rename-regexp '^(.*)bar:${1}blop'
   ```
+Topics:
+- rename
 Commands:
 - yaml
 - json
