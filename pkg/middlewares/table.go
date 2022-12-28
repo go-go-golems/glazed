@@ -477,14 +477,13 @@ columnLoop:
 		}
 
 		for pattern, rename := range r.RegexpRenames {
-			newColumn := pattern.ReplaceAllString(column, rename)
-			if newColumn != column {
-				column = newColumn
-				if _, ok := renamedColumns[newColumn]; !ok {
-					orderedColumns = append(orderedColumns, column)
-					renamedColumns[column] = nil
+			rename = pattern.ReplaceAllString(column, rename)
+			if rename != column {
+				if _, ok := renamedColumns[rename]; !ok {
+					orderedColumns = append(orderedColumns, rename)
+					renamedColumns[rename] = nil
 				}
-				columnRenames[newColumn] = column
+				columnRenames[column] = rename
 				continue columnLoop
 			}
 		}
