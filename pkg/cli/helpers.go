@@ -69,6 +69,10 @@ type GlazeProcessor struct {
 	oms []middlewares.ObjectMiddleware
 }
 
+func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
+	return gp.of
+}
+
 func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMiddleware) *GlazeProcessor {
 	return &GlazeProcessor{
 		of:  of,
