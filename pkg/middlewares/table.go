@@ -3,7 +3,6 @@ package middlewares
 import (
 	"bytes"
 	"fmt"
-	"github.com/elliotchance/orderedmap/v2"
 	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -402,17 +401,17 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 type RenameColumnMiddleware struct {
 	Renames map[types.FieldName]types.FieldName
 	// orderedmap *regexp.Regexp -> string
-	RegexpRenames *orderedmap.OrderedMap[*regexp.Regexp, string]
+	RegexpRenames RegexpReplacements
 }
 
 func NewFieldRenameColumnMiddleware(renames map[types.FieldName]types.FieldName) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       renames,
-		RegexpRenames: orderedmap.NewOrderedMap[*regexp.Regexp, string](),
+		RegexpRenames: RegexpReplacements{},
 	}
 }
 
-func NewRegexpRenameColumnMiddleware(renames *orderedmap.OrderedMap[*regexp.Regexp, string]) *RenameColumnMiddleware {
+func NewRegexpRenameColumnMiddleware(renames RegexpReplacements) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       map[types.FieldName]types.FieldName{},
 		RegexpRenames: renames,
@@ -421,7 +420,7 @@ func NewRegexpRenameColumnMiddleware(renames *orderedmap.OrderedMap[*regexp.Rege
 
 func NewRenameColumnMiddleware(
 	renames map[types.FieldName]types.FieldName,
-	regexpRenames *orderedmap.OrderedMap[*regexp.Regexp, string],
+	regexpRenames RegexpReplacements,
 ) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       renames,
@@ -429,10 +428,45 @@ func NewRenameColumnMiddleware(
 	}
 }
 
+type RegexpReplacement struct {
+	Regexp      *regexp.Regexp
+	Replacement string
+}
+
+type RegexpReplacements []*RegexpReplacement
+
+func (rr *RegexpReplacements) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected a mapping node, got %v", value.Kind)
+	}
+	*rr = RegexpReplacements{}
+	for i := 0; i < len(value.Content); i += 2 {
+		key := value.Content[i]
+		val := value.Content[i+1]
+
+		if key.Kind != yaml.ScalarNode {
+			return fmt.Errorf("expected a scalar node, got %v", key.Kind)
+		}
+		if val.Kind != yaml.ScalarNode {
+			return fmt.Errorf("expected a scalar node, got %v", val.Kind)
+		}
+		re, err := regexp.Compile(key.Value)
+		if err != nil {
+			return err
+		}
+		*rr = append(*rr, &RegexpReplacement{
+			Regexp:      re,
+			Replacement: val.Value,
+		})
+	}
+
+	return nil
+}
+
 type ColumnMiddlewareConfig struct {
 	FieldRenames map[types.FieldName]types.FieldName `yaml:"renames"`
 	// FIXME regex renames actually need to ordered
-	RegexpRenames map[string]string `yaml:"regexpRenames"`
+	RegexpRenames RegexpReplacements `yaml:"regexpRenames"`
 }
 
 func NewRenameColumnMiddlewareFromYAML(decoder *yaml.Decoder) (*RenameColumnMiddleware, error) {
@@ -442,21 +476,7 @@ func NewRenameColumnMiddlewareFromYAML(decoder *yaml.Decoder) (*RenameColumnMidd
 		return nil, err
 	}
 
-	renames := map[types.FieldName]types.FieldName{}
-	for key, value := range config.FieldRenames {
-		renames[key] = value
-	}
-
-	regexpRenames := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
-	for key, value := range config.RegexpRenames {
-		regex, err := regexp.Compile(key)
-		if err != nil {
-			return nil, err
-		}
-		regexpRenames.Set(regex, value)
-	}
-
-	return NewRenameColumnMiddleware(renames, regexpRenames), nil
+	return NewRenameColumnMiddleware(config.FieldRenames, config.RegexpRenames), nil
 }
 
 func (r *RenameColumnMiddleware) RenameColumns(
@@ -481,9 +501,9 @@ columnLoop:
 			}
 		}
 
-		for el := r.RegexpRenames.Front(); el != nil; el = el.Next() {
-			regex := el.Key
-			rename := el.Value
+		for _, rr := range r.RegexpRenames {
+			regex := rr.Regexp
+			rename := rr.Replacement
 
 			rename = regex.ReplaceAllString(column, rename)
 			if rename != column {

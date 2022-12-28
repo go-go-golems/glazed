@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wesen/glazed/pkg/types"
@@ -69,10 +68,13 @@ func TestRenameOverrideColumn(t *testing.T) {
 }
 
 func TestRenameRegexpSimpleMatch(t *testing.T) {
-	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
-	regexpOm.Set(regexp.MustCompile("^foo$"), "bar")
+	rrs := RegexpReplacements{}
 
-	mw := NewRegexpRenameColumnMiddleware(regexpOm)
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("^foo$"), "bar",
+	})
+
+	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
 	newTable, ret := mw.Process(table)
@@ -88,11 +90,12 @@ func TestRenameRegexpSimpleMatch(t *testing.T) {
 }
 
 func TestRenameRegexpDoubleMatch(t *testing.T) {
-	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
-	// regexp.MustCompile("f.."): "bar",
-	regexpOm.Set(regexp.MustCompile("f.."), "bar")
+	rrs := RegexpReplacements{}
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("f.."), "bar",
+	})
 
-	mw := NewRegexpRenameColumnMiddleware(regexpOm)
+	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
 	newTable, ret := mw.Process(table)
@@ -110,12 +113,19 @@ func TestRenameRegexpDoubleMatch(t *testing.T) {
 }
 
 func TestRenameRegexpOrderedMatch(t *testing.T) {
-	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
-	regexpOm.Set(regexp.MustCompile("f..$"), "bar")
-	regexpOm.Set(regexp.MustCompile("^foo$"), "bar2")
-	regexpOm.Set(regexp.MustCompile("^foo$"), "bar3")
+	rrs := RegexpReplacements{}
 
-	mw := NewRegexpRenameColumnMiddleware(regexpOm)
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("f..$"), "bar",
+	})
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("^foo$"), "bar2",
+	})
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("^foo$"), "bar3",
+	})
+
+	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
 	newTable, ret := mw.Process(table)
