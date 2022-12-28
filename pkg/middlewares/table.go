@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"fmt"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -399,25 +400,29 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 }
 
 type RenameColumnMiddleware struct {
-	Renames       map[types.FieldName]types.FieldName
-	RegexpRenames map[*regexp.Regexp]string
+	Renames map[types.FieldName]types.FieldName
+	// orderedmap *regexp.Regexp -> string
+	RegexpRenames *orderedmap.OrderedMap[*regexp.Regexp, string]
 }
 
 func NewFieldRenameColumnMiddleware(renames map[types.FieldName]types.FieldName) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       renames,
-		RegexpRenames: map[*regexp.Regexp]string{},
+		RegexpRenames: orderedmap.NewOrderedMap[*regexp.Regexp, string](),
 	}
 }
 
-func NewRegexpRenameColumnMiddleware(renames map[*regexp.Regexp]string) *RenameColumnMiddleware {
+func NewRegexpRenameColumnMiddleware(renames *orderedmap.OrderedMap[*regexp.Regexp, string]) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       map[types.FieldName]types.FieldName{},
 		RegexpRenames: renames,
 	}
 }
 
-func NewRenameColumnMiddleware(renames map[types.FieldName]types.FieldName, regexpRenames map[*regexp.Regexp]string) *RenameColumnMiddleware {
+func NewRenameColumnMiddleware(
+	renames map[types.FieldName]types.FieldName,
+	regexpRenames *orderedmap.OrderedMap[*regexp.Regexp, string],
+) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:       renames,
 		RegexpRenames: regexpRenames,
@@ -442,13 +447,13 @@ func NewRenameColumnMiddlewareFromYAML(decoder *yaml.Decoder) (*RenameColumnMidd
 		renames[key] = value
 	}
 
-	regexpRenames := map[*regexp.Regexp]string{}
+	regexpRenames := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
 	for key, value := range config.RegexpRenames {
 		regex, err := regexp.Compile(key)
 		if err != nil {
 			return nil, err
 		}
-		regexpRenames[regex] = value
+		regexpRenames.Set(regex, value)
 	}
 
 	return NewRenameColumnMiddleware(renames, regexpRenames), nil
@@ -476,8 +481,11 @@ columnLoop:
 			}
 		}
 
-		for pattern, rename := range r.RegexpRenames {
-			rename = pattern.ReplaceAllString(column, rename)
+		for el := r.RegexpRenames.Front(); el != nil; el = el.Next() {
+			regex := el.Key
+			rename := el.Value
+
+			rename = regex.ReplaceAllString(column, rename)
 			if rename != column {
 				if _, ok := renamedColumns[rename]; !ok {
 					orderedColumns = append(orderedColumns, rename)

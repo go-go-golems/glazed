@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wesen/glazed/pkg/types"
@@ -68,10 +69,10 @@ func TestRenameOverrideColumn(t *testing.T) {
 }
 
 func TestRenameRegexpSimpleMatch(t *testing.T) {
-	regexpTable := map[*regexp.Regexp]string{
-		regexp.MustCompile("^f..$"): "bar",
-	}
-	mw := NewRegexpRenameColumnMiddleware(regexpTable)
+	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
+	regexpOm.Set(regexp.MustCompile("^foo$"), "bar")
+
+	mw := NewRegexpRenameColumnMiddleware(regexpOm)
 	table := createTestTable()
 
 	newTable, ret := mw.Process(table)
@@ -87,10 +88,11 @@ func TestRenameRegexpSimpleMatch(t *testing.T) {
 }
 
 func TestRenameRegexpDoubleMatch(t *testing.T) {
-	regexpTable := map[*regexp.Regexp]string{
-		regexp.MustCompile("f.."): "bar",
-	}
-	mw := NewRegexpRenameColumnMiddleware(regexpTable)
+	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
+	// regexp.MustCompile("f.."): "bar",
+	regexpOm.Set(regexp.MustCompile("f.."), "bar")
+
+	mw := NewRegexpRenameColumnMiddleware(regexpOm)
 	table := createTestTable()
 
 	newTable, ret := mw.Process(table)
@@ -105,7 +107,31 @@ func TestRenameRegexpDoubleMatch(t *testing.T) {
 	assert.Equal(t, 1, rowMap["bar"])
 	assert.Equal(t, 2, rowMap["baz"])
 	assert.Equal(t, 3, rowMap["barbar"])
+}
 
+func TestRenameRegexpOrderedMatch(t *testing.T) {
+	regexpOm := orderedmap.NewOrderedMap[*regexp.Regexp, string]()
+	regexpOm.Set(regexp.MustCompile("f..$"), "bar")
+	regexpOm.Set(regexp.MustCompile("^foo$"), "bar2")
+	regexpOm.Set(regexp.MustCompile("^foo$"), "bar3")
+
+	mw := NewRegexpRenameColumnMiddleware(regexpOm)
+	table := createTestTable()
+
+	newTable, ret := mw.Process(table)
+	require.Nil(t, ret)
+
+	row := newTable.Rows[0].(*types.SimpleRow)
+	rowMap := row.GetValues()
+
+	// it's going to be hard to test that these will happen in the right
+	// order as it really depends on the map
+	assert.Nil(t, rowMap["foo"])
+	assert.Nil(t, rowMap["bar2"])
+	assert.Nil(t, rowMap["bar3"])
+	assert.Equal(t, 1, rowMap["bar"])
+	assert.Equal(t, 2, rowMap["baz"])
+	assert.Equal(t, 3, rowMap["foobar"])
 }
 
 func createTestTable() *types.Table {
