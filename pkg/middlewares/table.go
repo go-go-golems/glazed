@@ -502,10 +502,7 @@ columnLoop:
 		}
 
 		for _, rr := range r.RegexpRenames {
-			regex := rr.Regexp
-			rename := rr.Replacement
-
-			rename = regex.ReplaceAllString(column, rename)
+			rename := rr.Regexp.ReplaceAllString(column, rr.Replacement)
 			if rename != column {
 				if _, ok := renamedColumns[rename]; !ok {
 					orderedColumns = append(orderedColumns, rename)

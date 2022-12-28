@@ -1,0 +1,20 @@
+- foo: 1
+  bar: 7
+  baz: 2
+  foobar:
+    - 3
+    - 4
+    - 5
+  d:
+    e: 6
+    f: 7
+- foo: 10
+  bar: 70
+  baz: 20
+  d:
+    e: 60
+    f: 70
+- baz: 200
+  foobar:
+    - 300
+

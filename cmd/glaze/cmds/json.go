@@ -88,6 +88,7 @@ func init() {
 	cli.AddTemplateFlags(JsonCmd)
 	cli.AddFieldsFilterFlags(JsonCmd, "")
 	cli.AddSelectFlags(JsonCmd)
+	cli.AddRenameFlags(JsonCmd)
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")

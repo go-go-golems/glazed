@@ -276,3 +276,50 @@ regexpRenames:
 	assert.Equal(t, 2, rowMap["qux"])
 	assert.Equal(t, 3, rowMap["barbar"])
 }
+
+func TestRegexpCaptureGroupRename(t *testing.T) {
+	rrs := RegexpReplacements{}
+	rrs = append(rrs, &RegexpReplacement{
+		regexp.MustCompile("^foo(.*)$"), "bar$1",
+	})
+
+	mw := NewRegexpRenameColumnMiddleware(rrs)
+	table := createTestTable()
+
+	newTable, ret := mw.Process(table)
+	require.Nil(t, ret)
+
+	row := newTable.Rows[0].(*types.SimpleRow)
+	rowMap := row.GetValues()
+
+	assert.Nil(t, rowMap["foo"])
+	assert.Nil(t, rowMap["foobar"])
+	assert.Equal(t, 1, rowMap["bar"])
+	assert.Equal(t, 2, rowMap["baz"])
+	assert.Equal(t, 3, rowMap["barbar"])
+}
+
+func TestRegexpCaptureGroupRenameFromYAML(t *testing.T) {
+	yamlString := `
+regexpRenames:
+  "^foo(.*)$": bar$1
+`
+
+	decoder := yaml.NewDecoder(strings.NewReader(yamlString))
+	mw, err := NewRenameColumnMiddlewareFromYAML(decoder)
+	require.Nil(t, err)
+
+	table := createTestTable()
+
+	newTable, ret := mw.Process(table)
+	require.Nil(t, ret)
+
+	row := newTable.Rows[0].(*types.SimpleRow)
+	rowMap := row.GetValues()
+
+	assert.Nil(t, rowMap["foo"])
+	assert.Nil(t, rowMap["foobar"])
+	assert.Equal(t, 1, rowMap["bar"])
+	assert.Equal(t, 2, rowMap["baz"])
+	assert.Equal(t, 3, rowMap["barbar"])
+}
