@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/wesen/glazed/pkg/types"
+	"gopkg.in/yaml.v3"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -391,6 +393,144 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)
+	}
+
+	return ret, nil
+}
+
+type RenameColumnMiddleware struct {
+	Renames       map[types.FieldName]types.FieldName
+	RegexpRenames map[*regexp.Regexp]string
+}
+
+func NewFieldRenameColumnMiddleware(renames map[types.FieldName]types.FieldName) *RenameColumnMiddleware {
+	return &RenameColumnMiddleware{
+		Renames:       renames,
+		RegexpRenames: map[*regexp.Regexp]string{},
+	}
+}
+
+func NewRegexpRenameColumnMiddleware(renames map[*regexp.Regexp]string) *RenameColumnMiddleware {
+	return &RenameColumnMiddleware{
+		Renames:       map[types.FieldName]types.FieldName{},
+		RegexpRenames: renames,
+	}
+}
+
+func NewRenameColumnMiddleware(renames map[types.FieldName]types.FieldName, regexpRenames map[*regexp.Regexp]string) *RenameColumnMiddleware {
+	return &RenameColumnMiddleware{
+		Renames:       renames,
+		RegexpRenames: regexpRenames,
+	}
+}
+
+type ColumnMiddlewareConfig struct {
+	FieldRenames map[types.FieldName]types.FieldName `yaml:"renames"`
+	// FIXME regex renames actually need to ordered
+	RegexpRenames map[string]string `yaml:"regexpRenames"`
+}
+
+func NewRenameColumnMiddlewareFromYAML(decoder *yaml.Decoder) (*RenameColumnMiddleware, error) {
+	var config ColumnMiddlewareConfig
+	err := decoder.Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	renames := map[types.FieldName]types.FieldName{}
+	for key, value := range config.FieldRenames {
+		renames[key] = value
+	}
+
+	regexpRenames := map[*regexp.Regexp]string{}
+	for key, value := range config.RegexpRenames {
+		regex, err := regexp.Compile(key)
+		if err != nil {
+			return nil, err
+		}
+		regexpRenames[regex] = value
+	}
+
+	return NewRenameColumnMiddleware(renames, regexpRenames), nil
+}
+
+func (r *RenameColumnMiddleware) RenameColumns(
+	columns []types.FieldName,
+) ([]types.FieldName, map[types.FieldName]types.FieldName) {
+	var columnRenames = map[types.FieldName]types.FieldName{}
+	var renamedColumns = map[types.FieldName]interface{}{}
+	var orderedColumns = []types.FieldName{}
+
+	// first, we create a map of all the original columns to the new columns
+columnLoop:
+	for _, column := range columns {
+		// we run string renames first, as we consider them more exhaustive matches
+		for match, rename := range r.Renames {
+			if column == match {
+				if _, ok := renamedColumns[rename]; !ok {
+					orderedColumns = append(orderedColumns, rename)
+					renamedColumns[rename] = nil
+				}
+				columnRenames[match] = rename
+				continue columnLoop
+			}
+		}
+
+		for pattern, rename := range r.RegexpRenames {
+			newColumn := pattern.ReplaceAllString(column, rename)
+			if newColumn != column {
+				column = newColumn
+				if _, ok := renamedColumns[newColumn]; !ok {
+					orderedColumns = append(orderedColumns, column)
+					renamedColumns[column] = nil
+				}
+				columnRenames[newColumn] = column
+				continue columnLoop
+			}
+		}
+
+		// check if we already had a rename
+		if _, ok := renamedColumns[column]; !ok {
+			columnRenames[column] = column
+			renamedColumns[column] = nil
+			orderedColumns = append(orderedColumns, column)
+		}
+	}
+
+	return orderedColumns, columnRenames
+}
+
+func (r *RenameColumnMiddleware) Process(table *types.Table) (*types.Table, error) {
+	orderedColumns, renamedColumns := r.RenameColumns(table.Columns)
+
+	ret := &types.Table{
+		Columns: orderedColumns,
+		Rows:    []types.Row{},
+	}
+
+	// TODO(2022-12-28, manuel): we need to formalize the copy/clone behaviour of middlewares
+	// This is wrt to mutability, and also how things can be used in a streaming context
+	// I wonder if immutability is really necessary, or if the whole thing by design meshes
+	// well with just passing references to previous rows wrt efficiency.
+	// See: https://github.com/wesen/glazed/issues/74
+
+	// we must now go through every row, and rename the hash keys.
+	// this really requires us to copy most of the maps.
+	// whatever, we'll address efficient renames later
+	for _, row := range table.Rows {
+		newRow := &types.SimpleRow{
+			Hash: map[types.FieldName]interface{}{},
+		}
+		values := row.GetValues()
+		for key, value := range values {
+			newKey, ok := renamedColumns[key]
+			if !ok {
+				// skip, it means columns were overwritten in the rename
+				continue
+			}
+			newRow.Hash[newKey] = value
+		}
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil
