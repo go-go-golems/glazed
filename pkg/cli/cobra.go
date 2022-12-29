@@ -149,7 +149,7 @@ func AddFieldsFilterFlags(cmd *cobra.Command, defaultFields string) {
 	}
 	cmd.Flags().String("fields", defaultFields, "Fields to include in the output, default: "+defaultFieldHelp)
 	cmd.Flags().String("filter", "", "Fields to remove from output")
-	cmd.Flags().Bool("sort-columns", true, "Sort columns alphabetically")
+	cmd.Flags().Bool("sort-columns", false, "Sort columns alphabetically")
 }
 
 func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {

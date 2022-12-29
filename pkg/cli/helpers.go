@@ -67,28 +67,6 @@ func ParseTemplateFieldFileArgument(fileName string) (map[types.FieldName]string
 type GlazeProcessor struct {
 	of  formatters.OutputFormatter
 	oms []middlewares.ObjectMiddleware
-	// we keep an explicit reference to the column rename middleware because
-	// we need to transform column names for middlewares that get added later on
-	renameMiddlewares []*middlewares.RenameColumnMiddleware
-}
-
-func (gp *GlazeProcessor) AddTableMiddlewares(mws ...middlewares.TableMiddleware) {
-	for _, m := range mws {
-		switch m := m.(type) {
-		case *middlewares.RenameColumnMiddleware:
-			gp.renameMiddlewares = append(gp.renameMiddlewares, m)
-		}
-		gp.of.AddTableMiddleware(m)
-	}
-}
-
-func (gp *GlazeProcessor) RenameColumns(columns []types.FieldName) []types.FieldName {
-	for _, m := range gp.renameMiddlewares {
-		orderedColumns, _ := m.RenameColumns(columns)
-		columns = orderedColumns
-	}
-
-	return columns
 }
 
 func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
@@ -97,21 +75,9 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 
 func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMiddleware) *GlazeProcessor {
 	ret := &GlazeProcessor{
-		of:                of,
-		oms:               oms,
-		renameMiddlewares: []*middlewares.RenameColumnMiddleware{},
+		of:  of,
+		oms: oms,
 	}
-
-	// FIXME this is a bit ugly, and will need revisiting when we clean up the API
-	// since so many middlewares rely on column renaming and ordering,
-	// we need to remember column renames for future ordering middlwares.
-	// This was surfaced by sqleton, which in order to preserve the column order that was
-	// sent from the database, adds a ReorderColumns middleware.
-	//
-	// We need to rename the columns previous to create the middleware, since by the time the columns reach the middleware,
-	// they will have been renamed. I wonder in this case if it shouldn't be possible to insert a middleware up front.
-	//
-	// In fact, let's add that functionality instead.
 
 	return ret
 }

@@ -15,8 +15,20 @@ func (Y *YAMLOutputFormatter) AddRow(row types.Row) {
 	Y.Table.Rows = append(Y.Table.Rows, row)
 }
 
+func (f *YAMLOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+	f.Table.Columns = columns
+}
+
 func (Y *YAMLOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
 	Y.middlewares = append(Y.middlewares, mw)
+}
+
+func (Y *YAMLOutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+	Y.middlewares = append([]middlewares.TableMiddleware{mw}, Y.middlewares...)
+}
+
+func (Y *YAMLOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+	Y.middlewares = append(Y.middlewares[:i], append([]middlewares.TableMiddleware{mw}, Y.middlewares[i:]...)...)
 }
 
 func (Y *YAMLOutputFormatter) Output() (string, error) {
