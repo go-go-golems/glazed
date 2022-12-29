@@ -37,8 +37,20 @@ func (f *CSVOutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) 
 	f.middlewares = append(f.middlewares, m)
 }
 
+func (f *CSVOutputFormatter) AddTableMiddlewareInFront(m middlewares2.TableMiddleware) {
+	f.middlewares = append([]middlewares2.TableMiddleware{m}, f.middlewares...)
+}
+
+func (f *CSVOutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares2.TableMiddleware) {
+	f.middlewares = append(f.middlewares[:i], append([]middlewares2.TableMiddleware{m}, f.middlewares[i:]...)...)
+}
+
 func (f *CSVOutputFormatter) AddRow(row types.Row) {
 	f.Table.Rows = append(f.Table.Rows, row)
+}
+
+func (f *CSVOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+	f.Table.Columns = columns
 }
 
 func (f *CSVOutputFormatter) Output() (string, error) {
@@ -55,7 +67,6 @@ func (f *CSVOutputFormatter) Output() (string, error) {
 	w := csv.NewWriter(&buf)
 	w.Comma = f.Separator
 
-	// TODO(manuel, 2022-11-13) add flag to make header output optional
 	var err error
 	if f.WithHeaders {
 		err = w.Write(f.Table.Columns)
@@ -86,5 +97,4 @@ func (f *CSVOutputFormatter) Output() (string, error) {
 	}
 
 	return buf.String(), nil
-
 }

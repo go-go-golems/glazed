@@ -17,8 +17,20 @@ func (J *JSONOutputFormatter) AddRow(row types.Row) {
 	J.Table.Rows = append(J.Table.Rows, row)
 }
 
+func (f *JSONOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+	f.Table.Columns = columns
+}
+
 func (J *JSONOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
 	J.middlewares = append(J.middlewares, mw)
+}
+
+func (J *JSONOutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+	J.middlewares = append([]middlewares.TableMiddleware{mw}, J.middlewares...)
+}
+
+func (J *JSONOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+	J.middlewares = append(J.middlewares[:i], append([]middlewares.TableMiddleware{mw}, J.middlewares[i:]...)...)
 }
 
 func (J *JSONOutputFormatter) Output() (string, error) {

@@ -74,10 +74,12 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 }
 
 func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMiddleware) *GlazeProcessor {
-	return &GlazeProcessor{
+	ret := &GlazeProcessor{
 		of:  of,
 		oms: oms,
 	}
+
+	return ret
 }
 
 // TODO(2022-12-18, manuel) we should actually make it possible to order the columns

@@ -34,7 +34,14 @@ import (
 type OutputFormatter interface {
 	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
 	AddRow(row types.Row)
+
+	SetColumnOrder(columnOrder []types.FieldName)
+
+	// AddTableMiddleware adds a middleware at the end of the processing list
 	AddTableMiddleware(m middlewares.TableMiddleware)
+	AddTableMiddlewareInFront(m middlewares.TableMiddleware)
+	AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware)
+
 	Output() (string, error)
 }
 
@@ -97,6 +104,18 @@ func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddlewar
 	tof.middlewares = append(tof.middlewares, m)
 }
 
+func (tof *TableOutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
+	tof.middlewares = append([]middlewares.TableMiddleware{m}, tof.middlewares...)
+}
+
+func (tof *TableOutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
+	tof.middlewares = append(tof.middlewares[:i], append([]middlewares.TableMiddleware{m}, tof.middlewares[i:]...)...)
+}
+
 func (tof *TableOutputFormatter) AddRow(row types.Row) {
 	tof.Table.Rows = append(tof.Table.Rows, row)
+}
+
+func (tof *TableOutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
+	tof.Table.Columns = columnOrder
 }
