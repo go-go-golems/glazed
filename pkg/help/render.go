@@ -3,11 +3,14 @@ package help
 import (
 	_ "embed"
 	"fmt"
-	"github.com/charmbracelet/glamour"
-	"github.com/kopoli/go-terminal-size"
-	"github.com/wesen/glazed/pkg/helpers"
+	"os"
 	"strings"
 	"text/template"
+
+	"github.com/charmbracelet/glamour"
+	tsize "github.com/kopoli/go-terminal-size"
+	"github.com/mattn/go-isatty"
+	"github.com/wesen/glazed/pkg/helpers"
 )
 
 func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string, error) {
@@ -16,18 +19,22 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 		sz.Width = 80
 	}
 
+	options := [](glamour.TermRendererOption){
+		glamour.WithWordWrap(sz.Width),
+		// If this isn't set before we set WithEnvironmentConfig or WithStandardStyle,
+		// printing with colors does not appear to work.
+		glamour.WithAutoStyle(),
+	}
+
+	if os.Getenv("GLAMOUR_STYLE") != "" {
+		options = append(options, glamour.WithEnvironmentConfig())
+	} else if !isatty.IsTerminal(os.Stderr.Fd()) {
+		options = append(options, glamour.WithStandardStyle("notty"))
+	}
+
 	// get markdown output
 	var sb strings.Builder
-	r, _ := glamour.NewTermRenderer(
-		glamour.WithWordWrap(sz.Width),
-		//glamour.WithAutoStyle(),
-		// TODO(manuel, 2022-12-04): We need to check if we can use colors here,
-		// which is not the case if we render things out to a file / pipe,
-		// in the context of a redirect, or if we render to file
-		//
-		// See: https://github.com/wesen/glazed/issues/38
-		glamour.WithStandardStyle("dark"),
-	)
+	r, _ := glamour.NewTermRenderer(options...)
 
 	err = t.Execute(&sb, data)
 	if err != nil {
