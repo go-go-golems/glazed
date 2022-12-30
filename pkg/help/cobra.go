@@ -102,13 +102,13 @@ func GetCobraHelpUsageTemplates(hs *HelpSystem) (string, string) {
 // NewCobraHelpCommand uses the InitDefaultHelpCommand code from cobra.
 // This code is lifted from cobra and modified to accommodate help sections
 //
-// Copyright 2013-2022 The Cobra Authors
+// # Copyright 2013-2022 The Cobra Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -280,13 +280,13 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 //
 // Original: https://github.com/spf13/cobra
 //
-// Copyright 2013-2022 The Cobra Authors
+// # Copyright 2013-2022 The Cobra Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -294,9 +294,9 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//
 // 2022-12-03 - Manuel Odendahl - Augmented template with sections
 // 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
+//
 //go:embed templates/cobra-usage.tmpl
 var COBRA_COMMAND_USAGE_TEMPLATE string
 

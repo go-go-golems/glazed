@@ -51,12 +51,12 @@ func (s SectionType) String() string {
 // Section is a structure describing an actual documentation section.
 //
 // This can describe:
-// - a general topic: think of this as an entry in a book
-// - an example: a way to run a certain command
-// - an application: a concrete use case for running a command. This can potentially
-//   use additional external tools, multiple commands, etc. While it is nice to keep
-//   these self-contained, it is not required.
-// - a tutorial: a step-by-step guide to running a command.
+//   - a general topic: think of this as an entry in a book
+//   - an example: a way to run a certain command
+//   - an application: a concrete use case for running a command. This can potentially
+//     use additional external tools, multiple commands, etc. While it is nice to keep
+//     these self-contained, it is not required.
+//   - a tutorial: a step-by-step guide to running a command.
 //
 // Run `glaze help help-system` for more information.
 type Section struct {
