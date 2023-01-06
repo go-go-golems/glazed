@@ -141,17 +141,17 @@ func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, er
 		ret.Rows = append(ret.Rows, &newRow)
 	}
 
-	ret.Columns = PreserveColumnOrder(ret, newColumns)
+	ret.Columns = PreserveColumnOrder(table.Columns, newColumns)
 
 	return ret, nil
 }
 
-func PreserveColumnOrder(table *types.Table, newColumns map[types.FieldName]interface{}) []types.FieldName {
+func PreserveColumnOrder(oldColumns []types.FieldName, newColumns map[types.FieldName]interface{}) []types.FieldName {
 	seenRetColumns := map[types.FieldName]interface{}{}
 	retColumns := []types.FieldName{}
 
 	// preserve previous columns order as best as possible
-	for _, column := range table.Columns {
+	for _, column := range oldColumns {
 		if _, ok := newColumns[column]; ok {
 			retColumns = append(retColumns, column)
 			seenRetColumns[column] = nil
@@ -194,7 +194,7 @@ func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, e
 		ret.Rows = append(ret.Rows, &newRow)
 	}
 
-	ret.Columns = PreserveColumnOrder(table, newColumns)
+	ret.Columns = PreserveColumnOrder(table.Columns, newColumns)
 
 	return ret, nil
 }
@@ -232,7 +232,7 @@ func (scm *PreserveColumnOrderMiddleware) Process(table *types.Table) (*types.Ta
 		columnHash[column] = nil
 	}
 
-	table.Columns = PreserveColumnOrder(table, columnHash)
+	table.Columns = PreserveColumnOrder(table.Columns, columnHash)
 	return table, nil
 }
 
