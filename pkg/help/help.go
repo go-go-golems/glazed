@@ -9,6 +9,7 @@ import (
 	"github.com/wesen/glazed/pkg/helpers"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 type SectionType int
@@ -342,6 +343,9 @@ func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
 				return err
 			}
 		} else {
+			if !strings.HasSuffix(fileName, ".md") {
+				continue
+			}
 			b, err := f.ReadFile(fileName)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read file %s", fileName)
