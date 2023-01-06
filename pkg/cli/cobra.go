@@ -12,19 +12,41 @@ import (
 
 // Helpers for cobra commands
 
-func AddOutputFlags(cmd *cobra.Command) {
-	cmd.Flags().StringP("output", "o", "table", "Output format (table, csv, tsv, json, yaml, sqlite)")
-	cmd.Flags().StringP("output-file", "f", "", "Output file")
+type OutputFlagsDefaults struct {
+	Output          string
+	OutputFile      string
+	TableFormat     string
+	WithHeaders     bool
+	CsvSeparator    string
+	OutputAsObjects bool
+	Flatten         bool
+}
 
-	cmd.Flags().String("table-format", "ascii", "Table format (ascii, markdown, html, csv, tsv)")
-	cmd.Flags().Bool("with-headers", true, "Include headers in output (CSV, TSV)")
-	cmd.Flags().String("csv-separator", ",", "CSV separator")
+func NewOutputFlagsDefaults() *OutputFlagsDefaults {
+	return &OutputFlagsDefaults{
+		Output:          "table",
+		OutputFile:      "",
+		TableFormat:     "ascii",
+		WithHeaders:     true,
+		CsvSeparator:    ",",
+		OutputAsObjects: false,
+		Flatten:         false,
+	}
+}
+
+func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
+	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite)")
+	cmd.Flags().StringP("output-file", "f", defaults.OutputFile, "Output file")
+
+	cmd.Flags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
+	cmd.Flags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
+	cmd.Flags().String("csv-separator", defaults.CsvSeparator, "CSV separator")
 
 	// json output flags
-	cmd.Flags().Bool("output-as-objects", false, "Output as individual objects instead of JSON array")
+	cmd.Flags().Bool("output-as-objects", defaults.OutputAsObjects, "Output as individual objects instead of JSON array")
 
 	// output processing
-	cmd.Flags().Bool("flatten", false, "Flatten nested fields (after templating)")
+	cmd.Flags().Bool("flatten", defaults.Flatten, "Flatten nested fields (after templating)")
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
@@ -47,9 +69,21 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	}, nil
 }
 
-func AddSelectFlags(cmd *cobra.Command) {
-	cmd.Flags().String("select", "", "Select a single field and output as a single line")
-	cmd.Flags().String("select-template", "", "Output a single templated value for each row, on a single line")
+type SelectFlagsDefaults struct {
+	Select         string
+	SelectTemplate string
+}
+
+func NewSelectFlagsDefaults() *SelectFlagsDefaults {
+	return &SelectFlagsDefaults{
+		Select:         "",
+		SelectTemplate: "",
+	}
+}
+
+func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) {
+	cmd.Flags().String("select", defaults.Select, "Select a single field and output as a single line")
+	cmd.Flags().String("select-template", defaults.SelectTemplate, "Output a single templated value for each row, on a single line")
 }
 
 func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
@@ -62,10 +96,24 @@ func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
 	}, nil
 }
 
-func AddRenameFlags(cmd *cobra.Command) {
-	cmd.Flags().StringSlice("rename", []string{}, "Rename fields (list of oldName:newName)")
-	cmd.Flags().StringSlice("rename-regexp", []string{}, "Rename fields using regular expressions (list of regex:newName)")
-	cmd.Flags().String("rename-yaml", "", "Rename fields using a yaml file")
+type RenameFlagsDefaults struct {
+	Rename       []string
+	RenameRegexp []string
+	RenameYaml   string
+}
+
+func NewRenameFlagsDefaults() *RenameFlagsDefaults {
+	return &RenameFlagsDefaults{
+		Rename:       []string{},
+		RenameRegexp: []string{},
+		RenameYaml:   "",
+	}
+}
+
+func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) {
+	cmd.Flags().StringSlice("rename", defaults.Rename, "Rename fields (list of oldName:newName)")
+	cmd.Flags().StringSlice("rename-regexp", defaults.RenameRegexp, "Rename fields using regular expressions (list of regex:newName)")
+	cmd.Flags().String("rename-yaml", defaults.RenameYaml, "Rename fields using a yaml file")
 }
 
 func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
@@ -103,10 +151,24 @@ func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
 	}, nil
 }
 
-func AddTemplateFlags(cmd *cobra.Command) {
-	cmd.Flags().String("template", "", "Go Template to use for single string")
-	cmd.Flags().StringSlice("template-field", nil, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
-	cmd.Flags().Bool("use-row-templates", false, "Use row templates instead of column templates")
+type TemplateFlagsDefaults struct {
+	Template        string
+	TemplateField   []string
+	UseRowTemplates bool
+}
+
+func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
+	return &TemplateFlagsDefaults{
+		Template:        "",
+		TemplateField:   nil,
+		UseRowTemplates: false,
+	}
+}
+
+func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) {
+	cmd.Flags().String("template", defaults.Template, "Go Template to use for single string")
+	cmd.Flags().StringSlice("template-field", defaults.TemplateField, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
+	cmd.Flags().Bool("use-row-templates", defaults.UseRowTemplates, "Use row templates instead of column templates")
 }
 
 func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
@@ -138,18 +200,32 @@ func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
 // TODO(manuel, 2022-11-20) Make it easy for the developer to configure which flag they want
 // and which they don't
 
+type FieldsFilterFlagsDefaults struct {
+	Fields      string
+	Filter      string
+	SortColumns bool
+}
+
+func NewFieldsFilterFlagsDefaults() *FieldsFilterFlagsDefaults {
+	return &FieldsFilterFlagsDefaults{
+		Fields:      "",
+		Filter:      "",
+		SortColumns: false,
+	}
+}
+
 // AddFieldsFilterFlags adds the flags for the following middlewares to the cmd:
 // - FieldsFilterMiddleware
 // - SortColumnsMiddleware
 // - ReorderColumnOrderMiddleware
-func AddFieldsFilterFlags(cmd *cobra.Command, defaultFields string) {
-	defaultFieldHelp := defaultFields
+func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefaults) {
+	defaultFieldHelp := defaults.Fields
 	if defaultFieldHelp == "" {
 		defaultFieldHelp = "all"
 	}
-	cmd.Flags().String("fields", defaultFields, "Fields to include in the output, default: "+defaultFieldHelp)
-	cmd.Flags().String("filter", "", "Fields to remove from output")
-	cmd.Flags().Bool("sort-columns", false, "Sort columns alphabetically")
+	cmd.Flags().String("fields", defaults.Fields, "Fields to include in the output, default: "+defaultFieldHelp)
+	cmd.Flags().String("filter", defaults.Filter, "Fields to remove from output")
+	cmd.Flags().Bool("sort-columns", defaults.SortColumns, "Sort columns alphabetically")
 }
 
 func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
@@ -175,6 +251,32 @@ func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
 		SortColumns:    sortColumns,
 		ReorderColumns: fields,
 	}, nil
+}
+
+type FlagsDefaults struct {
+	Output       *OutputFlagsDefaults
+	Select       *SelectFlagsDefaults
+	Rename       *RenameFlagsDefaults
+	Template     *TemplateFlagsDefaults
+	FieldsFilter *FieldsFilterFlagsDefaults
+}
+
+func NewFlagsDefaults() *FlagsDefaults {
+	return &FlagsDefaults{
+		Output:       NewOutputFlagsDefaults(),
+		Select:       NewSelectFlagsDefaults(),
+		Rename:       NewRenameFlagsDefaults(),
+		Template:     NewTemplateFlagsDefaults(),
+		FieldsFilter: NewFieldsFilterFlagsDefaults(),
+	}
+}
+
+func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
+	AddOutputFlags(cmd, defaults.Output)
+	AddSelectFlags(cmd, defaults.Select)
+	AddRenameFlags(cmd, defaults.Rename)
+	AddTemplateFlags(cmd, defaults.Template)
+	AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
 }
 
 func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputFormatter, error) {

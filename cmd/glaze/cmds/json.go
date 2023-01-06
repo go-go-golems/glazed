@@ -81,14 +81,8 @@ var JsonCmd = &cobra.Command{
 }
 
 func init() {
-	// TODO(manuel, 2022-11-20) We should make it possible to specify the names of the flags
-	// if the defaults don't make use happy. Potentially with a builder interface
 	JsonCmd.Flags().SortFlags = false
-	cli.AddOutputFlags(JsonCmd)
-	cli.AddTemplateFlags(JsonCmd)
-	cli.AddFieldsFilterFlags(JsonCmd, "")
-	cli.AddSelectFlags(JsonCmd)
-	cli.AddRenameFlags(JsonCmd)
+	cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")
