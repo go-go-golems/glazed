@@ -235,9 +235,13 @@ func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
 	if fieldStr != "" {
 		fields = strings.Split(fieldStr, ",")
 	}
-	filterStr := cmd.Flag("filter").Value.String()
-	if filterStr != "" {
-		filters = strings.Split(filterStr, ",")
+	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
+		filters = []string{}
+	} else {
+		filterStr := cmd.Flag("filter").Value.String()
+		if filterStr != "" {
+			filters = strings.Split(filterStr, ",")
+		}
 	}
 
 	sortColumns, err := cmd.Flags().GetBool("sort-columns")
