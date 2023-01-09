@@ -7,6 +7,7 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/pkg/errors"
 	"github.com/wesen/glazed/pkg/helpers"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -328,6 +329,37 @@ func NewHelpSystem() *HelpSystem {
 	return &HelpSystem{
 		Sections: []*Section{},
 	}
+}
+
+func (hs *HelpSystem) LoadSectionsFromDirectory(dir string) error {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range files {
+		filePath := filepath.Join(dir, entry.Name())
+		if entry.IsDir() {
+			err := hs.LoadSectionsFromDirectory(filePath)
+			if err != nil {
+				return err
+			}
+		} else {
+			if !strings.HasSuffix(entry.Name(), ".md") {
+				continue
+			}
+			b, err := os.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+			section, err := LoadSectionFromMarkdown(b)
+			if err != nil {
+				return err
+			}
+			hs.AddSection(section)
+		}
+	}
+
+	return nil
 }
 
 func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
