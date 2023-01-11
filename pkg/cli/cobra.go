@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/wesen/glazed/pkg/formatters"
+	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
 	"os"
@@ -41,6 +42,7 @@ func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
 	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
 	cmd.Flags().StringP("output-file", "f", defaults.OutputFile, "Output file")
 	cmd.Flags().String("template-file", defaults.TemplateFile, "Template file for template output")
+	cmd.Flags().StringSlice("template-data", []string{}, "Additional data for template output")
 
 	cmd.Flags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
 	cmd.Flags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
@@ -63,7 +65,13 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	withHeaders, _ := cmd.Flags().GetBool("with-headers")
 	csvSeparator, _ := cmd.Flags().GetString("csv-separator")
 	templateFile, _ := cmd.Flags().GetString("template-file")
+	templateData_, _ := cmd.Flags().GetStringSlice("template-data")
 	templateContent := ""
+
+	templateData, err := ParseCLIKeyValueData(templateData_)
+	if err != nil {
+		return nil, err
+	}
 
 	if output == "template" && templateFile == "" {
 		return nil, errors.New("template output requires a template file")
@@ -84,6 +92,10 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 		FlattenObjects:  flattenInput,
 		CsvSeparator:    csvSeparator,
 		Template:        templateContent,
+		TemplateFormatterSettings: &TemplateFormatterSettings{
+			TemplateFuncs:  helpers.TemplateFuncs,
+			AdditionalData: templateData,
+		},
 	}, nil
 }
 
@@ -191,8 +203,7 @@ func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) {
 
 func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
 	// templates get applied before flattening
-	var templates map[types.FieldName]string
-	var err error
+	templates := map[types.FieldName]string{}
 
 	templateArgument, _ := cmd.Flags().GetString("template")
 	if templateArgument != "" {
@@ -200,9 +211,16 @@ func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
 		templates["_0"] = templateArgument
 	} else {
 		templateFields, _ := cmd.Flags().GetStringSlice("template-field")
-		templates, err = ParseTemplateFieldArguments(templateFields)
+		kvs, err := ParseCLIKeyValueData(templateFields)
 		if err != nil {
 			return nil, err
+		}
+		for k, v := range kvs {
+			vString, ok := v.(string)
+			if !ok {
+				return nil, errors.Errorf("template-field %s is not a string", k)
+			}
+			templates[types.FieldName(k)] = vString
 		}
 	}
 
