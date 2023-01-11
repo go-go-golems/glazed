@@ -3,20 +3,29 @@ package cli
 import (
 	"github.com/pkg/errors"
 	"github.com/wesen/glazed/pkg/formatters"
+	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"os"
+	"text/template"
 	"unicode/utf8"
 )
 
+type TemplateFormatterSettings struct {
+	TemplateFuncs  template.FuncMap
+	AdditionalData map[string]interface{}
+}
+
 type OutputFormatterSettings struct {
-	Output          string
-	TableFormat     string
-	OutputAsObjects bool
-	FlattenObjects  bool
-	WithHeaders     bool
-	CsvSeparator    string
+	Output                    string
+	TableFormat               string
+	OutputAsObjects           bool
+	FlattenObjects            bool
+	WithHeaders               bool
+	CsvSeparator              string
+	Template                  string
+	TemplateFormatterSettings *TemplateFormatterSettings
 }
 
 func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
@@ -54,6 +63,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			of = formatters.NewTableOutputFormatter(ofs.TableFormat)
 		}
 		of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+	} else if ofs.Output == "template" {
+		if ofs.TemplateFormatterSettings == nil {
+			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
+				TemplateFuncs:  helpers.TemplateFuncs,
+				AdditionalData: make(map[string]interface{}),
+			}
+		}
+		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncs, ofs.TemplateFormatterSettings.AdditionalData)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}

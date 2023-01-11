@@ -6,6 +6,7 @@ import (
 	"github.com/wesen/glazed/pkg/formatters"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -20,6 +21,7 @@ type OutputFlagsDefaults struct {
 	CsvSeparator    string
 	OutputAsObjects bool
 	Flatten         bool
+	TemplateFile    string
 }
 
 func NewOutputFlagsDefaults() *OutputFlagsDefaults {
@@ -31,12 +33,14 @@ func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 		CsvSeparator:    ",",
 		OutputAsObjects: false,
 		Flatten:         false,
+		TemplateFile:    "",
 	}
 }
 
 func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
-	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite)")
+	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
 	cmd.Flags().StringP("output-file", "f", defaults.OutputFile, "Output file")
+	cmd.Flags().String("template-file", defaults.TemplateFile, "Template file for template output")
 
 	cmd.Flags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
 	cmd.Flags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
@@ -58,6 +62,19 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	outputAsObjects, _ := cmd.Flags().GetBool("output-as-objects")
 	withHeaders, _ := cmd.Flags().GetBool("with-headers")
 	csvSeparator, _ := cmd.Flags().GetString("csv-separator")
+	templateFile, _ := cmd.Flags().GetString("template-file")
+	templateContent := ""
+
+	if output == "template" && templateFile == "" {
+		return nil, errors.New("template output requires a template file")
+	}
+	if templateFile != "" {
+		templateBytes, err := os.ReadFile(templateFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read template file")
+		}
+		templateContent = string(templateBytes)
+	}
 
 	return &OutputFormatterSettings{
 		Output:          output,
@@ -66,6 +83,7 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 		OutputAsObjects: outputAsObjects,
 		FlattenObjects:  flattenInput,
 		CsvSeparator:    csvSeparator,
+		Template:        templateContent,
 	}, nil
 }
 
