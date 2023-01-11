@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"fmt"
+	"reflect"
+	"regexp"
 	"strings"
 	"text/template"
 	"unicode"
@@ -37,6 +39,237 @@ var TemplateFuncs = template.FuncMap{
 	"rpad":                    rpad,
 	"quote":                   quote,
 	"stripNewlines":           stripNewlines,
+
+	"toUpper": strings.ToUpper,
+	"toLower": strings.ToLower,
+
+	"replace":       replace,
+	"replaceRegexp": replaceRegexp,
+
+	"add": add,
+	"sub": sub,
+	"div": div,
+	"mul": mul,
+}
+
+func add(a, b interface{}) interface{} {
+	av := reflect.ValueOf(a)
+	bv := reflect.ValueOf(b)
+
+	switch av.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Int() + bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Int() + int64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Int()) + bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return int64(av.Uint()) + bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Uint() + bv.Uint()
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Uint()) + bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Float32, reflect.Float64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Float() + float64(bv.Int())
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Float() + float64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return av.Float() + bv.Float()
+
+		default:
+			return nil
+		}
+
+	default:
+		return nil
+	}
+}
+
+func sub(a, b interface{}) interface{} {
+	av := reflect.ValueOf(a)
+	bv := reflect.ValueOf(b)
+
+	switch av.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Int() - bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Int() - int64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Int()) - bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return int64(av.Uint()) - bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Uint() - bv.Uint()
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Uint()) - bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Float32, reflect.Float64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Float() - float64(bv.Int())
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Float() - float64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return av.Float() - bv.Float()
+
+		default:
+			return nil
+		}
+
+	default:
+		return nil
+	}
+}
+
+func mul(a, b interface{}) interface{} {
+	av := reflect.ValueOf(a)
+	bv := reflect.ValueOf(b)
+
+	switch av.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Int() * bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Int() * int64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Int()) * bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return int64(av.Uint()) * bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Uint() * bv.Uint()
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Uint()) * bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Float32, reflect.Float64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Float() * float64(bv.Int())
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Float() * float64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return av.Float() * bv.Float()
+
+		default:
+			return nil
+		}
+
+	default:
+		return nil
+	}
+}
+
+func div(a, b interface{}) interface{} {
+	av := reflect.ValueOf(a)
+	bv := reflect.ValueOf(b)
+
+	switch av.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Int() / bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Int() / int64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Int()) / bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return int64(av.Uint()) / bv.Int()
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Uint() / bv.Uint()
+
+		case reflect.Float32, reflect.Float64:
+			return float64(av.Uint()) / bv.Float()
+
+		default:
+			return nil
+		}
+
+	case reflect.Float32, reflect.Float64:
+		switch bv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return av.Float() / float64(bv.Int())
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return av.Float() / float64(bv.Uint())
+
+		case reflect.Float32, reflect.Float64:
+			return av.Float() / bv.Float()
+
+		default:
+			return nil
+		}
+
+	default:
+		return nil
+	}
 }
 
 func quote(s string) string {
@@ -55,4 +288,16 @@ func stripNewlines(s string) string {
 func rpad(s string, padding int) string {
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
+}
+
+func replace(s, old, new string) string {
+	return strings.ReplaceAll(s, old, new)
+}
+
+func replaceRegexp(s, old, new string) string {
+	re, err := regexp.Compile(old)
+	if err != nil {
+		return s
+	}
+	return re.ReplaceAllString(s, new)
 }

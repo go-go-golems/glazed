@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"fmt"
+	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -321,13 +322,10 @@ type RowGoTemplateMiddleware struct {
 func NewRowGoTemplateMiddleware(
 	templateStrings map[types.FieldName]string,
 	renameSeparator string) (*RowGoTemplateMiddleware, error) {
-	funcMap := template.FuncMap{
-		"ToUpper": strings.ToUpper,
-	}
 
 	templates := map[types.FieldName]*template.Template{}
 	for columnName, templateString := range templateStrings {
-		tmpl, err := template.New("row").Funcs(funcMap).Parse(templateString)
+		tmpl, err := template.New("row").Funcs(helpers.TemplateFuncs).Parse(templateString)
 		if err != nil {
 			return nil, err
 		}
