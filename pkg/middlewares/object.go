@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"bytes"
+	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/types"
-	"strings"
 	"text/template"
 )
 
@@ -16,13 +16,9 @@ type ObjectGoTemplateMiddleware struct {
 //
 // It will render the template for each object and return a single field.
 func NewObjectGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*ObjectGoTemplateMiddleware, error) {
-	funcMap := template.FuncMap{
-		"ToUpper": strings.ToUpper,
-	}
-
 	templates := map[types.FieldName]*template.Template{}
 	for columnName, templateString := range templateStrings {
-		tmpl, err := template.New("row").Funcs(funcMap).Parse(templateString)
+		tmpl, err := template.New("row").Funcs(helpers.TemplateFuncs).Parse(templateString)
 		if err != nil {
 			return nil, err
 		}

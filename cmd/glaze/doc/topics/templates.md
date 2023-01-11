@@ -72,6 +72,22 @@ the form `COLNAME:TEMPLATE`.
 +-----+---------+------------+
 ```
 
+Please note that the `--template-field` flag is parsed by cobra as a slice value,
+which uses the golang csv parser. If you want to use the `"` character in your field, you need to
+jump through a few hoops. See the end of this file for a list of functions that can be used in 
+templates.
+
+```
+❯ glaze json misc/test-data/book.json \
+   --template-field '"french_author:{{ replace .author ""Poe"" ""Pouet"" }}"' \
+   --use-row-templates
++-----------------+-----------+-------------------+
+| author          | title     | french_author     |
++-----------------+-----------+-------------------+
+| Edgar Allan Poe | The Raven | Edgar Allan Pouet |
++-----------------+-----------+-------------------+
+```
+
 To make things a bit more readable, especially when doing a lot of template transformations,
 you can also load field templates from a yaml file using the `@` symbol.
 
@@ -190,3 +206,54 @@ Author: J.R.R Tolkien
 - a: 100
   %       
   ```
+
+## Templating functions
+
+The template engine offers a few functions per default:
+
+### Arithmetic functions
+
+The following functions are available for computing inside template: 
+- add
+- sub
+- mul
+- div
+
+
+```
+❯ glaze json misc/test-data/[123].json \
+    --template-field 'foo:{{.a}} + {{.b}} = {{add .a .b}},bar:{{.a}} * {{ .d_f }} = {{ mul .a .d_f}}' \
+    --use-row-templates --fields a,foo,bar
++-----+-----------------+-------------------------------+
+| a   | foo             | bar                           |
++-----+-----------------+-------------------------------+
+| 1   | 1 + 2 = 3       | 1 * 7 = 7                     |
+| 10  | 10 + 20 = 30    | 10 * 70 = 700                 |
+| 100 | 100 + 200 = 300 | 100 * <no value> = <no value> |
++-----+-----------------+-------------------------------+
+```
+
+### String functions 
+
+The following functions are available to manipulate strings:
+- trim(s) - remove spaces
+- trimRightSpace(s) - remove spaces from the right
+- trimTrailingWhitespaces(s) - remove trailing whitespaces
+- rpad(s, n) - right pad a string
+- quote(s) - quote a string
+- stripNewlines(s) - remove newlines
+- toUpper(s) - convert to uppercase
+- toLower(s) - convert to lowercase
+- replace(s, old, new) - replace old with new in s
+- replaceRegexp(s, old, new) - replace old with new in s using regexp
+
+```
+❯ glaze json misc/test-data/book.json \
+   --template-field '"robot_author:{{ replaceRegexp .author ""([A-Za-z])"" ""$1."" | toUpper }}"' \
+   --use-row-templates
++-----------------+-----------+------------------------------+
+| author          | title     | robot_author                 |
++-----------------+-----------+------------------------------+
+| Edgar Allan Poe | The Raven | E.D.G.A.R. A.L.L.A.N. P.O.E. |
++-----------------+-----------+------------------------------+
+```
