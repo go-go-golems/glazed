@@ -36,13 +36,19 @@ var TemplateFuncs = template.FuncMap{
 	"trimTrailingWhitespaces": trimRightSpace,
 	"rpad":                    rpad,
 	"quote":                   quote,
+	"stripNewlines":           stripNewlines,
 }
 
 func quote(s string) string {
 	return fmt.Sprintf("`%s`", s)
 }
 func trimRightSpace(s string) string {
+
 	return strings.TrimRightFunc(s, unicode.IsSpace)
+}
+
+func stripNewlines(s string) string {
+	return strings.ReplaceAll(s, "\n", " ")
 }
 
 // rpad adds padding to the right of a string.
