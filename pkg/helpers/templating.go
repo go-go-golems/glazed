@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -50,6 +51,11 @@ var TemplateFuncs = template.FuncMap{
 	"sub": sub,
 	"div": div,
 	"mul": mul,
+
+	"parseFloat": parseFloat,
+	"parseInt":   parseInt,
+
+	"currency": currency,
 }
 
 func add(a, b interface{}) interface{} {
@@ -300,4 +306,29 @@ func replaceRegexp(s, old, new string) string {
 		return s
 	}
 	return re.ReplaceAllString(s, new)
+}
+
+func parseFloat(s string) float64 {
+	f, _ := strconv.ParseFloat(s, 64)
+	return f
+}
+
+func parseInt(s string) int64 {
+	i, _ := strconv.ParseInt(s, 10, 64)
+	return i
+}
+
+func currency(i interface{}) string {
+	iv := reflect.ValueOf(i)
+
+	switch iv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d.00", iv.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("%d.00", iv.Uint())
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%.2f", iv.Float())
+	default:
+		return ""
+	}
 }
