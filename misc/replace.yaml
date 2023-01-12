@@ -1,0 +1,21 @@
+field1:
+  replace:
+    - p: v
+    - p2: v2
+  regex_replace:
+    - ^v.*1$: replaced
+  regex_skip:
+    - kip$
+  skip:
+    - skip
+field2:
+  replace:
+    - p: v
+    - p2: v2
+  regex_replace:
+    - ^v.*2$: replaced
+  regex_skip:
+    - value2$
+  skip:
+    - value2
+    - value3
