@@ -211,13 +211,15 @@ Author: J.R.R Tolkien
 
 The template engine offers a few functions per default:
 
-### Arithmetic functions
+### Number functions
 
 The following functions are available for computing inside template: 
 - add
 - sub
 - mul
 - div
+- parseFloat(s)
+- parseInt(s)
 
 
 ```
@@ -257,3 +259,7 @@ The following functions are available to manipulate strings:
 | Edgar Allan Poe | The Raven | E.D.G.A.R. A.L.L.A.N. P.O.E. |
 +-----------------+-----------+------------------------------+
 ```
+
+### Miscellanous functions
+
+- currency(n) - format a number as a currency (int, float, uint)

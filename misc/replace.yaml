@@ -1,0 +1,12 @@
+author:
+  skip:
+    - "Margaret"
+    - "Dante"
+  replace:
+    - "Evelyn": "Vivian"
+  regex_replace:
+    - "W...iam": "Wookie"
+    - ^J(.*)n: "P$1"
+title:
+  regex_skip:
+    - "Adventures of (.*)"

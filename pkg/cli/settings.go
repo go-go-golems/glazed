@@ -170,3 +170,25 @@ func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 
 	return nil
 }
+
+type ReplaceSettings struct {
+	ReplaceFile string
+}
+
+func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
+	if rs.ReplaceFile != "" {
+		b, err := os.ReadFile(rs.ReplaceFile)
+		if err != nil {
+			return err
+		}
+
+		mw, err := middlewares.NewReplaceMiddlewareFromYAML(b)
+		if err != nil {
+			return err
+		}
+
+		of.AddTableMiddleware(mw)
+	}
+
+	return nil
+}
