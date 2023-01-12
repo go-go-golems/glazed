@@ -1,21 +1,12 @@
-field1:
-  replace:
-    - p: v
-    - p2: v2
-  regex_replace:
-    - ^v.*1$: replaced
-  regex_skip:
-    - kip$
+author:
   skip:
-    - skip
-field2:
+    - "Margaret"
+    - "Dante"
   replace:
-    - p: v
-    - p2: v2
+    - "Evelyn": "Vivian"
   regex_replace:
-    - ^v.*2$: replaced
+    - "W...iam": "Wookie"
+    - ^J(.*)n: "P$1"
+title:
   regex_skip:
-    - value2$
-  skip:
-    - value2
-    - value3
+    - "Adventures of (.*)"

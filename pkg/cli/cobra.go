@@ -126,6 +126,29 @@ func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
 	}, nil
 }
 
+type ReplaceFlagsDefaults struct {
+	// currently, only support loading replacements from a file
+	ReplaceFile string
+}
+
+func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
+	return &ReplaceFlagsDefaults{
+		ReplaceFile: "",
+	}
+}
+
+func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) {
+	cmd.Flags().String("replace-file", defaults.ReplaceFile, "File with replacements")
+}
+
+func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
+	replaceFile, _ := cmd.Flags().GetString("replace-file")
+
+	return &ReplaceSettings{
+		ReplaceFile: replaceFile,
+	}, nil
+}
+
 type RenameFlagsDefaults struct {
 	Rename       []string
 	RenameRegexp []string
@@ -299,6 +322,7 @@ type FlagsDefaults struct {
 	Rename       *RenameFlagsDefaults
 	Template     *TemplateFlagsDefaults
 	FieldsFilter *FieldsFilterFlagsDefaults
+	Replace      *ReplaceFlagsDefaults
 }
 
 func NewFlagsDefaults() *FlagsDefaults {
@@ -308,6 +332,7 @@ func NewFlagsDefaults() *FlagsDefaults {
 		Rename:       NewRenameFlagsDefaults(),
 		Template:     NewTemplateFlagsDefaults(),
 		FieldsFilter: NewFieldsFilterFlagsDefaults(),
+		Replace:      NewReplaceFlagsDefaults(),
 	}
 }
 
@@ -317,6 +342,7 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
 	AddRenameFlags(cmd, defaults.Rename)
 	AddTemplateFlags(cmd, defaults.Template)
 	AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
+	AddReplaceFlags(cmd, defaults.Replace)
 }
 
 func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputFormatter, error) {
@@ -348,6 +374,11 @@ func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputForma
 		return nil, nil, errors.Wrapf(err, "Error parsing rename flags")
 	}
 
+	replaceSettings, err := ParseReplaceFlags(cmd)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error parsing replace flags")
+	}
+
 	of, err := outputSettings.CreateOutputFormatter()
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error creating output formatter")
@@ -372,6 +403,11 @@ func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputForma
 		of.AddTableMiddleware(mw)
 	}
 	fieldsFilterSettings.AddMiddlewares(of)
+
+	err = replaceSettings.AddMiddlewares(of)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error adding replace middlewares")
+	}
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {

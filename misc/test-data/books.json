@@ -1,0 +1,142 @@
+[
+  {
+    "author": "William Shakespeare",
+    "title": "Hamlet",
+    "price": 14.99,
+    "isbn": "978-3-16-148410-4",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  },
+  {
+    "author": "George Orwell",
+    "title": "1984",
+    "price": 12.99,
+    "isbn": "978-3-16-148410-5",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  },
+  {
+    "author": "J.K. Rowling",
+    "title": "Harry Potter and the Philosopher's Stone",
+    "price": 18.99,
+    "isbn": "978-3-16-148410-6",
+    "categories": [
+      "Fiction",
+      "Fantasy"
+    ]
+  },
+  {
+    "author": "Stephen King",
+    "title": "The Shining",
+    "price": 15.99,
+    "isbn": "978-3-16-148410-7",
+    "categories": [
+      "Fiction",
+      "Horror"
+    ]
+  },
+  {
+    "author": "F. Scott Fitzgerald",
+    "title": "The Great Gatsby",
+    "price": 10.99,
+    "isbn": "978-3-16-148410-8",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  },
+  {
+    "author": "Mark Twain",
+    "title": "The Adventures of Huckleberry Finn",
+    "price": 16.99,
+    "isbn": "978-3-16-148410-9",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  },
+  {
+    "author": "Agatha Christie",
+    "title": "Murder on the Orient Express",
+    "price": 13.99,
+    "isbn": "978-3-16-148411-0",
+    "categories": [
+      "Fiction",
+      "Mystery"
+    ]
+  },
+  {
+    "author": "J.R.R. Tolkien",
+    "title": "The Silmarillion",
+    "price": 20.99,
+    "isbn": "978-3-16-148411-1",
+    "categories": [
+      "Fiction",
+      "Fantasy"
+    ]
+  },
+  {
+    "author": "Stephenie Meyer",
+    "title": "Twilight",
+    "price": 12.99,
+    "isbn": "978-3-16-148411-2",
+    "categories": [
+      "Fiction",
+      "Fantasy"
+    ]
+  },
+  {
+    "author": "Dante Alighieri",
+    "title": "The Divine Comedy",
+    "price": 18.99,
+    "isbn": "978-3-16-148411-3",
+    "categories": [
+      "Fiction",
+      "Poetry"
+    ]
+  },
+  {
+    "author": "E.L. James",
+    "title": "Fifty Shades of Grey",
+    "price": 14.99,
+    "isbn": "978-3-16-148411-4",
+    "categories": [
+      "Fiction",
+      "Romance"
+    ]
+  },
+  {
+    "author": "Evelyn Waugh",
+    "title": "Brideshead Revisited",
+    "price": 12.99,
+    "isbn": "978-3-16-148411-5",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  },
+  {
+    "author": "Margaret Atwood",
+    "title": "The Handmaid's Tale",
+    "price": 15.99,
+    "isbn": "978-3-16-148411-6",
+    "categories": [
+      "Fiction",
+      "Science Fiction"
+    ]
+  },
+  {
+    "author": "John Steinbeck",
+    "title": "Of Mice and Men",
+    "price": 13.99,
+    "isbn": "978-3-16-148411-7",
+    "categories": [
+      "Fiction",
+      "Classic"
+    ]
+  }
+  ]

@@ -197,7 +197,7 @@ func (r *ReplaceMiddleware) Process(table *types.Table) (*types.Table, error) {
 		Rows:    []types.Row{},
 	}
 
-	copy(ret.Columns, table.Columns)
+	ret.Columns = append(ret.Columns, table.Columns...)
 
 NextRow:
 	for _, row := range table.Rows {
