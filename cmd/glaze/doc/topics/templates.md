@@ -248,6 +248,8 @@ The following functions are available to manipulate strings:
 - toLower(s) - convert to lowercase
 - replace(s, old, new) - replace old with new in s
 - replaceRegexp(s, old, new) - replace old with new in s using regexp
+- padLeft(s, n) - pad s with spaces on the left
+- padRight(s, n) - pad s with spaces on the right
 
 ```
 ❯ glaze json misc/test-data/book.json \
@@ -259,6 +261,17 @@ The following functions are available to manipulate strings:
 | Edgar Allan Poe | The Raven | E.D.G.A.R. A.L.L.A.N. P.O.E. |
 +-----------------+-----------+------------------------------+
 ```
+
+### Markdown functions
+
+The following templates make generating markdown easier:
+
+- bold(s) - make text bold
+- italic(s) - make text italic
+- underline(s) - make text underlined
+- strikethrough(s) - make text strikethrough
+- code(s) - make text code
+- codeBlock(s, lang) - make text a code block
 
 ### Miscellanous functions
 
