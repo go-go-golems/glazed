@@ -56,6 +56,33 @@ var TemplateFuncs = template.FuncMap{
 	"parseInt":   parseInt,
 
 	"currency": currency,
+
+	"padLeft":  padLeft,
+	"padRight": padRight,
+
+	"bold":      bold,
+	"underline": underline,
+	"italic":    italic,
+}
+
+func bold(s string) string {
+	return fmt.Sprintf("**%s**", s)
+}
+
+func underline(s string) string {
+	return fmt.Sprintf("__%s__", s)
+}
+
+func italic(s string) string {
+	return fmt.Sprintf("*%s*", s)
+}
+
+func padLeft(value string, length int) string {
+	return fmt.Sprintf("%*s", length, value)
+}
+
+func padRight(value string, length int) string {
+	return fmt.Sprintf("%-*s", length, value)
 }
 
 func add(a, b interface{}) interface{} {
