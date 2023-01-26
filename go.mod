@@ -4,14 +4,19 @@ go 1.18
 
 require (
 	github.com/adrg/frontmatter v0.2.0
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/mattn/go-isatty v0.0.16
 	github.com/piprate/json-gold v0.5.0
 	github.com/pkg/errors v0.9.1
+	github.com/rs/zerolog v1.28.0
 	github.com/scylladb/termtables v0.0.0-20191203121021-c4c0b6d42ff4
 	github.com/spf13/cobra v1.6.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
+	github.com/tj/go-naturaldate v1.3.0
+	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -26,6 +31,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.21 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
@@ -35,7 +41,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/yuin/goldmark v1.5.2 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b // indirect
