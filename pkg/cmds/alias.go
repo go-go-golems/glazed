@@ -16,11 +16,11 @@ type CommandAlias struct {
 	Source         string   `yaml:",omitempty"`
 }
 
-func (a *CommandAlias) Run() error {
+func (a *CommandAlias) Run(parameters map[string]interface{}) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run()
+	return a.AliasedCommand.Run(parameters)
 }
 
 func (a *CommandAlias) IsValid() bool {
@@ -113,4 +113,8 @@ func (a *CommandAlias) Description() *CommandDescription {
 
 func (a *CommandAlias) RunFromCobra(cmd *cobra.Command, args []string) error {
 	return a.AliasedCommand.(CobraCommand).RunFromCobra(cmd, args)
+}
+
+func (a *CommandAlias) BuildCobraCommand() (*cobra.Command, error) {
+	return NewCobraCommand(a)
 }

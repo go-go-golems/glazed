@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -51,7 +52,7 @@ type CommandDescription struct {
 }
 
 type Command interface {
-	Run() error
+	Run(map[string]interface{}) error
 	Description() *CommandDescription
 	// XXX(manuel, 2023-01-25) what about parents and source to load inside a cobra command tree
 }
@@ -270,6 +271,15 @@ func (p *Parameter) ParseParameter(v []string) (interface{}, error) {
 
 	case ParameterTypeStringFromFile:
 		fileName := v[0]
+		if fileName == "-" {
+			var b bytes.Buffer
+			_, err := io.Copy(&b, os.Stdin)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not read from stdin")
+			}
+			return b.String(), nil
+		}
+
 		bs, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
