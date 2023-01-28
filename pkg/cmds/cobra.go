@@ -16,10 +16,7 @@ import (
 type CobraCommand interface {
 	Command
 	RunFromCobra(cmd *cobra.Command, args []string) error
-}
-
-type CobraCommandBuilder interface {
-	BuildCobraCommand(d *CommandDescription) *cobra.Command
+	BuildCobraCommand() (*cobra.Command, error)
 }
 
 // refTime is used to set a reference time for natural date parsing for unit test purposes
@@ -405,25 +402,8 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 	return parameters, nil
 }
 
-// ToCobraCommand converts a SqletonCommand into a concrete cobra command.
-// It adds the necessary flags to the cobra command, configures the positional arguments
-// validity checks and sets the Run command to actually run the command.
-func ToCobraCommand(s CobraCommand) (*cobra.Command, error) {
+func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 	description := s.Description()
-	cmd, err := NewCobraCommandFromDescription(description)
-	if err != nil {
-		return nil, err
-	}
-
-	cmd.Run = func(cmd *cobra.Command, args []string) {
-		err := s.RunFromCobra(cmd, args)
-		cobra.CheckErr(err)
-	}
-
-	return cmd, nil
-}
-
-func NewCobraCommandFromDescription(description *CommandDescription) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   description.Name,
 		Short: description.Short,
@@ -438,6 +418,13 @@ func NewCobraCommandFromDescription(description *CommandDescription) (*cobra.Com
 	err = AddArguments(cmd, description)
 	if err != nil {
 		return nil, err
+	}
+
+	cmd.Flags().String("create-alias", "", "Create an alias for the query")
+
+	cmd.Run = func(cmd *cobra.Command, args []string) {
+		err := s.RunFromCobra(cmd, args)
+		cobra.CheckErr(err)
 	}
 
 	return cmd, nil
@@ -471,7 +458,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []CobraCommand, a
 		// find the proper subcommand, or create if it doesn't exist
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
-		cobraCommand, err := NewCobraCommandFromDescription(description)
+		cobraCommand, err := command.BuildCobraCommand()
 		if err != nil {
 			return err
 		}
@@ -496,7 +483,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []CobraCommand, a
 		alias.AliasedCommand = aliasedCommand
 
 		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
-		cobraCommand, err := NewCobraCommandFromDescription(alias.Description())
+		cobraCommand, err := alias.BuildCobraCommand()
 		if err != nil {
 			return err
 		}
