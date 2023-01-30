@@ -5,6 +5,7 @@ import (
 	"github.com/scylladb/termtables"
 	"github.com/wesen/glazed/pkg/middlewares"
 	"github.com/wesen/glazed/pkg/types"
+	"strings"
 )
 
 // This part of the library contains helper functionality to do output formatting
@@ -90,7 +91,15 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 		for _, column := range tof.Table.Columns {
 			s := ""
 			if v, ok := values[column]; ok {
-				s = fmt.Sprintf("%v", v)
+				if v_, ok := v.([]interface{}); ok {
+					var elms []string
+					for _, elm := range v_ {
+						elms = append(elms, fmt.Sprintf("%v", elm))
+					}
+					s = strings.Join(elms, ", ")
+				} else {
+					s = fmt.Sprintf("%v", v)
+				}
 			}
 			row_ = append(row_, s)
 		}
