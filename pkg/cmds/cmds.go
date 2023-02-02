@@ -373,11 +373,7 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 					command := commands[0]
 					command.Description().Source = "embed:" + fileName
 
-					pathToFile := strings.TrimPrefix(dir+"/", cmdRoot)
-					parents := strings.Split(pathToFile, "/")
-					if len(parents) > 0 && parents[len(parents)-1] == "" {
-						parents = parents[:len(parents)-1]
-					}
+					parents := getParentsFromDir(dir, cmdRoot)
 					command.Description().Parents = parents
 
 					return command, err
@@ -403,8 +399,7 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 						alias := aliases[0]
 						alias.Source = "embed:" + fileName
 
-						pathToFile := strings.TrimPrefix(dir, cmdRoot)
-						alias.Parents = strings.Split(pathToFile, "/")
+						alias.Parents = getParentsFromDir(dir, cmdRoot)
 
 						return alias, err
 					}()
@@ -423,6 +418,22 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 	}
 
 	return commands, aliases, nil
+}
+
+func getParentsFromDir(dir string, cmdRoot string) []string {
+	// make sure both dir and cmdRoot have a trailing slash
+	if !strings.HasSuffix(dir, "/") {
+		dir += "/"
+	}
+	if !strings.HasSuffix(cmdRoot, "/") {
+		cmdRoot += "/"
+	}
+	pathToFile := strings.TrimPrefix(dir, cmdRoot)
+	parents := strings.Split(pathToFile, "/")
+	if len(parents) > 0 && parents[len(parents)-1] == "" {
+		parents = parents[:len(parents)-1]
+	}
+	return parents
 }
 
 func LoadCommandsFromDirectory(loader CommandLoader, dir string, cmdRoot string) ([]Command, []*CommandAlias, error) {
@@ -468,10 +479,7 @@ func LoadCommandsFromDirectory(loader CommandLoader, dir string, cmdRoot string)
 					}
 					command := commands[0]
 
-					pathToFile := strings.TrimPrefix(dir, cmdRoot)
-					pathToFile = strings.TrimPrefix(pathToFile, "/")
-					command.Description().Parents = strings.Split(pathToFile, "/")
-
+					command.Description().Parents = getParentsFromDir(dir, cmdRoot)
 					command.Description().Source = "file:" + fileName
 
 					return command, err
@@ -498,9 +506,7 @@ func LoadCommandsFromDirectory(loader CommandLoader, dir string, cmdRoot string)
 
 						alias.Source = "file:" + fileName
 
-						pathToFile := strings.TrimPrefix(dir, cmdRoot)
-						pathToFile = strings.TrimPrefix(pathToFile, "/")
-						alias.Parents = strings.Split(pathToFile, "/")
+						alias.Parents = getParentsFromDir(dir, cmdRoot)
 
 						return alias, err
 					}()
