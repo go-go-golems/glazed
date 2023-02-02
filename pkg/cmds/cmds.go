@@ -373,8 +373,12 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 					command := commands[0]
 					command.Description().Source = "embed:" + fileName
 
-					pathToFile := strings.TrimPrefix(dir, cmdRoot)
-					command.Description().Parents = strings.Split(pathToFile, "/")
+					pathToFile := strings.TrimPrefix(dir+"/", cmdRoot)
+					parents := strings.Split(pathToFile, "/")
+					if len(parents) > 0 && parents[len(parents)-1] == "" {
+						parents = parents[:len(parents)-1]
+					}
+					command.Description().Parents = parents
 
 					return command, err
 				}()

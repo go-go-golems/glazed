@@ -435,14 +435,15 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	parentCmd := rootCmd
 	for _, parent := range parents {
 		subCmd, _, _ := parentCmd.Find([]string{parent})
-		if subCmd == nil || subCmd == rootCmd {
+		if subCmd == nil || subCmd == parentCmd {
 			// TODO(2022-12-19) Load documentation for subcommands from a readme file
 			// See https://github.com/wesen/sqleton/issues/34
-			parentCmd = &cobra.Command{
+			newParentCmd := &cobra.Command{
 				Use:   parent,
 				Short: fmt.Sprintf("All commands for %s", parent),
 			}
-			rootCmd.AddCommand(parentCmd)
+			parentCmd.AddCommand(newParentCmd)
+			parentCmd = newParentCmd
 		} else {
 			parentCmd = subCmd
 		}
