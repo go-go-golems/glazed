@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"bytes"
+	"github.com/Masterminds/sprig"
 	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/types"
 	"text/template"
@@ -15,10 +16,18 @@ type ObjectGoTemplateMiddleware struct {
 // individual objects.
 //
 // It will render the template for each object and return a single field.
-func NewObjectGoTemplateMiddleware(templateStrings map[types.FieldName]string) (*ObjectGoTemplateMiddleware, error) {
+//
+// TODO(manuel, 2023-02-02) Add support for passing in custom funcmaps
+// See #110 https://github.com/wesen/glazed/issues/110
+func NewObjectGoTemplateMiddleware(
+	templateStrings map[types.FieldName]string,
+) (*ObjectGoTemplateMiddleware, error) {
 	templates := map[types.FieldName]*template.Template{}
 	for columnName, templateString := range templateStrings {
-		tmpl, err := template.New("row").Funcs(helpers.TemplateFuncs).Parse(templateString)
+		tmpl, err := template.New("row").
+			Funcs(sprig.TxtFuncMap()).
+			Funcs(helpers.TemplateFuncs).
+			Parse(templateString)
 		if err != nil {
 			return nil, err
 		}

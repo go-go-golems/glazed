@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -384,7 +385,10 @@ func currency(i interface{}) string {
 }
 
 func RenderTemplateString(tmpl string, data interface{}) (string, error) {
-	t, err := template.New("template").Funcs(TemplateFuncs).Parse(tmpl)
+	t, err := template.New("template").
+		Funcs(sprig.TxtFuncMap()).
+		Funcs(TemplateFuncs).
+		Parse(tmpl)
 	if err != nil {
 		return "", err
 	}

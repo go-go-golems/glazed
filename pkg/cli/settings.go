@@ -68,8 +68,8 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
 				TemplateFuncMaps: []template.FuncMap{
-					helpers.TemplateFuncs,
 					sprig.TxtFuncMap(),
+					helpers.TemplateFuncs,
 				},
 				AdditionalData: make(map[string]interface{}),
 			}

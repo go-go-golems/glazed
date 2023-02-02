@@ -96,8 +96,8 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 		Template:        templateContent,
 		TemplateFormatterSettings: &TemplateFormatterSettings{
 			TemplateFuncMaps: []template.FuncMap{
-				helpers.TemplateFuncs,
 				sprig.TxtFuncMap(),
+				helpers.TemplateFuncs,
 			},
 			AdditionalData: templateData,
 		},
