@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -35,6 +36,8 @@ import (
 
 // TemplateFuncs provides helpers for the standard cobra usage and help templates
 var TemplateFuncs = template.FuncMap{
+	// TODO(manuel, 2023-02-02) A lot of these are now deprecated since we added sprig
+	// See #108
 	"trim":                    strings.TrimSpace,
 	"trimRightSpace":          trimRightSpace,
 	"trimTrailingWhitespaces": trimRightSpace,
@@ -382,7 +385,10 @@ func currency(i interface{}) string {
 }
 
 func RenderTemplateString(tmpl string, data interface{}) (string, error) {
-	t, err := template.New("template").Funcs(TemplateFuncs).Parse(tmpl)
+	t, err := template.New("template").
+		Funcs(sprig.TxtFuncMap()).
+		Funcs(TemplateFuncs).
+		Parse(tmpl)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/wesen/glazed/pkg/formatters"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 // Helpers for cobra commands
@@ -93,7 +95,10 @@ func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 		CsvSeparator:    csvSeparator,
 		Template:        templateContent,
 		TemplateFormatterSettings: &TemplateFormatterSettings{
-			TemplateFuncs:  helpers.TemplateFuncs,
+			TemplateFuncMaps: []template.FuncMap{
+				sprig.TxtFuncMap(),
+				helpers.TemplateFuncs,
+			},
 			AdditionalData: templateData,
 		},
 	}, nil

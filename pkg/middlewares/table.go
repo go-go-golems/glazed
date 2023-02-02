@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"github.com/wesen/glazed/pkg/helpers"
 	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
@@ -319,13 +320,19 @@ type RowGoTemplateMiddleware struct {
 // this will make fields inaccessible to the template. One way around this is to use
 // {{ index . "field.subfield" }} in the template. Another is to pass a separator rename
 // option.
+//
+// TODO(manuel, 2023-02-02) Add support for passing in custom funcmaps
+// See #110 https://github.com/wesen/glazed/issues/110
 func NewRowGoTemplateMiddleware(
 	templateStrings map[types.FieldName]string,
 	renameSeparator string) (*RowGoTemplateMiddleware, error) {
 
 	templates := map[types.FieldName]*template.Template{}
 	for columnName, templateString := range templateStrings {
-		tmpl, err := template.New("row").Funcs(helpers.TemplateFuncs).Parse(templateString)
+		tmpl, err := template.New("row").
+			Funcs(sprig.TxtFuncMap()).
+			Funcs(helpers.TemplateFuncs).
+			Parse(templateString)
 		if err != nil {
 			return nil, err
 		}

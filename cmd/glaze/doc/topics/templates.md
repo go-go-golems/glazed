@@ -209,7 +209,11 @@ Author: J.R.R Tolkien
 
 ## Templating functions
 
-The template engine offers a few functions per default:
+Glazed uses the [sprig](http://masterminds.github.io/sprig/) templating 
+library to provide many useful functions.
+
+Furthermore, there is support for a variety of legacy templating functions that
+will be phased out in the future.
 
 ### Number functions
 
@@ -231,7 +235,7 @@ The following functions are available for computing inside template:
 +-----+-----------------+-------------------------------+
 | 1   | 1 + 2 = 3       | 1 * 7 = 7                     |
 | 10  | 10 + 20 = 30    | 10 * 70 = 700                 |
-| 100 | 100 + 200 = 300 | 100 * <no value> = <no value> |
+| 100 | 100 + 200 = 300 | 100 * <no value> = 0          |
 +-----+-----------------+-------------------------------+
 ```
 
