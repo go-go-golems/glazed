@@ -35,6 +35,8 @@ import (
 
 // TemplateFuncs provides helpers for the standard cobra usage and help templates
 var TemplateFuncs = template.FuncMap{
+	// TODO(manuel, 2023-02-02) A lot of these are now deprecated since we added sprig
+	// See #108
 	"trim":                    strings.TrimSpace,
 	"trimRightSpace":          trimRightSpace,
 	"trimTrailingWhitespaces": trimRightSpace,
