@@ -8,11 +8,11 @@ import (
 )
 
 type TemplateFormatter struct {
-	Template       string
-	Table          *types.Table
-	TemplateFuncs  template.FuncMap
-	middlewares    []middlewares.TableMiddleware
-	AdditionalData interface{}
+	Template         string
+	Table            *types.Table
+	TemplateFuncMaps []template.FuncMap
+	middlewares      []middlewares.TableMiddleware
+	AdditionalData   interface{}
 }
 
 func (t *TemplateFormatter) AddRow(row types.Row) {
@@ -44,7 +44,11 @@ func (t *TemplateFormatter) Output() (string, error) {
 		t.Table = newTable
 	}
 
-	tmpl, err := template.New("template").Funcs(t.TemplateFuncs).Parse(t.Template)
+	t2 := template.New("template")
+	for _, templateFuncMap := range t.TemplateFuncMaps {
+		t2 = t2.Funcs(templateFuncMap)
+	}
+	tmpl, err := t2.Parse(t.Template)
 	if err != nil {
 		return "", err
 	}
@@ -64,11 +68,11 @@ func (t *TemplateFormatter) Output() (string, error) {
 	return buf.String(), err
 }
 
-func NewTemplateOutputFormatter(template string, templateFuncs template.FuncMap, additionalData interface{}) *TemplateFormatter {
+func NewTemplateOutputFormatter(template string, templateFuncMaps []template.FuncMap, additionalData interface{}) *TemplateFormatter {
 	return &TemplateFormatter{
-		Template:       template,
-		Table:          types.NewTable(),
-		TemplateFuncs:  templateFuncs,
-		AdditionalData: additionalData,
+		Template:         template,
+		Table:            types.NewTable(),
+		TemplateFuncMaps: templateFuncMaps,
+		AdditionalData:   additionalData,
 	}
 }

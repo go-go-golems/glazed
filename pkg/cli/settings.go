@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	"github.com/wesen/glazed/pkg/formatters"
 	"github.com/wesen/glazed/pkg/helpers"
@@ -13,8 +14,8 @@ import (
 )
 
 type TemplateFormatterSettings struct {
-	TemplateFuncs  template.FuncMap
-	AdditionalData map[string]interface{}
+	TemplateFuncMaps []template.FuncMap
+	AdditionalData   map[string]interface{}
 }
 
 type OutputFormatterSettings struct {
@@ -66,11 +67,18 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
-				TemplateFuncs:  helpers.TemplateFuncs,
+				TemplateFuncMaps: []template.FuncMap{
+					helpers.TemplateFuncs,
+					sprig.FuncMap(),
+				},
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncs, ofs.TemplateFormatterSettings.AdditionalData)
+		of = formatters.NewTemplateOutputFormatter(
+			ofs.Template,
+			ofs.TemplateFormatterSettings.TemplateFuncMaps,
+			ofs.TemplateFormatterSettings.AdditionalData,
+		)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}

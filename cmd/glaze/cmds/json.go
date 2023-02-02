@@ -11,7 +11,6 @@ import (
 var JsonCmd = &cobra.Command{
 	Use:   "json",
 	Short: "Format JSON data",
-	Long:  "Format JSON data LONG LONG LONG",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -21,7 +20,7 @@ var JsonCmd = &cobra.Command{
 
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  procersors: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
 			os.Exit(1)
 		}
 
