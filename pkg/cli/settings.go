@@ -69,7 +69,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
 				TemplateFuncMaps: []template.FuncMap{
 					helpers.TemplateFuncs,
-					sprig.FuncMap(),
+					sprig.TxtFuncMap(),
 				},
 				AdditionalData: make(map[string]interface{}),
 			}
