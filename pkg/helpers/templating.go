@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -40,6 +41,7 @@ var TemplateFuncs = template.FuncMap{
 	"rpad":                    rpad,
 	"quote":                   quote,
 	"stripNewlines":           stripNewlines,
+	"quoteNewlines":           quoteNewlines,
 
 	"toUpper": strings.ToUpper,
 	"toLower": strings.ToLower,
@@ -328,6 +330,10 @@ func trimRightSpace(s string) string {
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
+func quoteNewlines(s string) string {
+	return strings.ReplaceAll(s, "\n", `\n`)
+}
+
 func stripNewlines(s string) string {
 	return strings.ReplaceAll(s, "\n", " ")
 }
@@ -373,4 +379,19 @@ func currency(i interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func RenderTemplateString(tmpl string, data interface{}) (string, error) {
+	t, err := template.New("template").Funcs(TemplateFuncs).Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, data)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
