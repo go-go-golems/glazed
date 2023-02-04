@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wesen/glazed/pkg/cli"
@@ -12,6 +13,7 @@ import (
 	"github.com/yuin/goldmark/text"
 	"gopkg.in/errgo.v2/fmt/errors"
 	"os"
+	"strings"
 )
 
 type ExtensionFlag struct {
@@ -110,6 +112,11 @@ type outputElement = map[string]interface{}
 var MarkdownCmd = &cobra.Command{
 	Use:   "markdown",
 	Short: "Convert markdown data",
+}
+
+var parseCmd = &cobra.Command{
+	Use:   "parse",
+	Short: "Parse markdown data as AST and process further",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.SetupProcessor(cmd)
@@ -297,12 +304,96 @@ func simpleLinearize(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) err
 	return nil
 }
 
+var splitByHeadingCmd = &cobra.Command{
+	Use:   "split-by-heading",
+	Short: "Split a markdown file by heading",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		gp, of, err := cli.SetupProcessor(cmd)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
+			os.Exit(1)
+		}
+
+		level, _ := cmd.Flags().GetInt("level")
+		keepEmptyHeadings, _ := cmd.Flags().GetBool("keep-empty-headings")
+
+		// repeat # level number of times
+		splitLevelString := strings.Repeat("#", level) + " "
+
+		for _, arg := range args {
+			func() {
+				f, err := os.Open(arg)
+				cobra.CheckErr(err)
+				defer f.Close()
+
+				s := bufio.NewScanner(f)
+				var currentTitle string
+				var current []string
+
+				processSection := func() {
+					if len(current) == 0 && currentTitle == "" {
+						currentTitle = ""
+						current = []string{}
+						return
+					}
+
+					if currentTitle == "" && !keepEmptyHeadings {
+						currentTitle = ""
+						current = []string{}
+						return
+					}
+
+					row := map[string]interface{}{
+						"heading": currentTitle,
+						"content": strings.Trim(strings.Join(current, "\n"), " \n\t"),
+					}
+					err = gp.ProcessInputObject(row)
+					cobra.CheckErr(err)
+
+					currentTitle = ""
+					current = []string{}
+
+				}
+				for s.Scan() {
+					line := s.Text()
+					if strings.HasPrefix(line, splitLevelString) {
+						if len(current) > 0 {
+							processSection()
+						}
+						currentTitle = strings.TrimSpace(line[len(splitLevelString):])
+					} else {
+						current = append(current, line)
+					}
+				}
+
+				processSection()
+			}()
+		}
+
+		_ = gp
+
+		s, err := of.Output()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(s)
+
+	},
+}
+
 func init() {
-	MarkdownCmd.Flags().SortFlags = false
-	cli.AddFlags(MarkdownCmd, cli.NewFlagsDefaults())
-
-	addExtensionFlags(MarkdownCmd)
-
+	parseCmd.Flags().SortFlags = false
+	cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
 	// parser can be "simple" or "dom"
-	MarkdownCmd.Flags().StringP("parser", "t", "simple", "Type of output to generate")
+	parseCmd.Flags().StringP("parser", "t", "simple", "Type of output to generate")
+	addExtensionFlags(parseCmd)
+	MarkdownCmd.AddCommand(parseCmd)
+
+	splitByHeadingCmd.Flags().SortFlags = false
+	cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	splitByHeadingCmd.Flags().Bool("keep-empty-headings", false, "Keep empty headings")
+	splitByHeadingCmd.Flags().Int("level", 2, "Heading level to split by")
+	MarkdownCmd.AddCommand(splitByHeadingCmd)
 }
