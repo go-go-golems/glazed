@@ -13,11 +13,6 @@ var JsonCmd = &cobra.Command{
 	Short: "Format JSON data",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("No input file specified")
-			os.Exit(1)
-		}
-
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
