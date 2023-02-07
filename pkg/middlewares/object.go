@@ -18,7 +18,7 @@ type ObjectGoTemplateMiddleware struct {
 // It will render the template for each object and return a single field.
 //
 // TODO(manuel, 2023-02-02) Add support for passing in custom funcmaps
-// See #110 https://github.com/wesen/glazed/issues/110
+// See #110 https://github.com/go-go-golems/glazed/issues/110
 func NewObjectGoTemplateMiddleware(
 	templateStrings map[types.FieldName]string,
 ) (*ObjectGoTemplateMiddleware, error) {

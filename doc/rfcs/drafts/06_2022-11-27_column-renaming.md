@@ -1,6 +1,6 @@
 # Add support for renaming columns
 
-Ticket: [#27 - Add rename column middleware](https://github.com/wesen/glazed/issues/27)
+Ticket: [#27 - Add rename column middleware](https://github.com/go-go-golems/glazed/issues/27)
 
 ## Overview
 

@@ -2,8 +2,8 @@
 
 
 
-![](https://img.shields.io/github/license/wesen/glazed)
-![](https://img.shields.io/github/actions/workflow/status/wesen/glazed/push.yml?branch=main)
+![](https://img.shields.io/github/license/go-go-golems/glazed)
+![](https://img.shields.io/github/actions/workflow/status/go-go-golems/glazed/push.yml?branch=main)
 
 > Add the icing to your structured data!
 

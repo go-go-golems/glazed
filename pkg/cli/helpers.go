@@ -28,7 +28,7 @@ func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMi
 }
 
 // TODO(2022-12-18, manuel) we should actually make it possible to order the columns
-// https://github.com/wesen/glazed/issues/56
+// https://github.com/go-go-golems/glazed/issues/56
 func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
 	for _, om := range gp.oms {
 		obj2, err := om.Process(obj)

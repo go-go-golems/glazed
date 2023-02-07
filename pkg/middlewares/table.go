@@ -322,7 +322,7 @@ type RowGoTemplateMiddleware struct {
 // option.
 //
 // TODO(manuel, 2023-02-02) Add support for passing in custom funcmaps
-// See #110 https://github.com/wesen/glazed/issues/110
+// See #110 https://github.com/go-go-golems/glazed/issues/110
 func NewRowGoTemplateMiddleware(
 	templateStrings map[types.FieldName]string,
 	renameSeparator string) (*RowGoTemplateMiddleware, error) {
@@ -541,7 +541,7 @@ func (r *RenameColumnMiddleware) Process(table *types.Table) (*types.Table, erro
 	// This is wrt to mutability, and also how things can be used in a streaming context
 	// I wonder if immutability is really necessary, or if the whole thing by design meshes
 	// well with just passing references to previous rows wrt efficiency.
-	// See: https://github.com/wesen/glazed/issues/74
+	// See: https://github.com/go-go-golems/glazed/issues/74
 
 	// we must now go through every row, and rename the hash keys.
 	// this really requires us to copy most of the maps.
