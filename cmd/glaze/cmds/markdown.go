@@ -3,8 +3,8 @@ package cmds
 import (
 	"bufio"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/spf13/cobra"
-	"github.com/wesen/glazed/pkg/cli"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"

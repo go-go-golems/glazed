@@ -3,8 +3,8 @@ package help
 import (
 	_ "embed"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/spf13/cobra"
-	"github.com/wesen/glazed/pkg/helpers"
 	"strings"
 	"text/template"
 )

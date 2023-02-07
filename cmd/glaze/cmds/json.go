@@ -3,8 +3,8 @@ package cmds
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/spf13/cobra"
-	"github.com/wesen/glazed/pkg/cli"
 	"os"
 )
 

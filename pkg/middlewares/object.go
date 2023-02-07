@@ -3,8 +3,8 @@ package middlewares
 import (
 	"bytes"
 	"github.com/Masterminds/sprig"
-	"github.com/wesen/glazed/pkg/helpers"
-	"github.com/wesen/glazed/pkg/types"
+	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"text/template"
 )
 

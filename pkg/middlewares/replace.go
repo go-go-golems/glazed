@@ -1,8 +1,8 @@
 package middlewares
 
 import (
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
 	"strings"

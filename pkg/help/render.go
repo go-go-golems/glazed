@@ -8,9 +8,9 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/go-go-golems/glazed/pkg/helpers"
 	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/mattn/go-isatty"
-	"github.com/wesen/glazed/pkg/helpers"
 )
 
 func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string, error) {

@@ -3,8 +3,8 @@ package formatters
 import (
 	"encoding/csv"
 	"fmt"
-	middlewares2 "github.com/wesen/glazed/pkg/middlewares"
-	"github.com/wesen/glazed/pkg/types"
+	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"strings"
 )
 

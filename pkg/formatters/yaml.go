@@ -1,8 +1,8 @@
 package formatters
 
 import (
-	"github.com/wesen/glazed/pkg/middlewares"
-	"github.com/wesen/glazed/pkg/types"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 

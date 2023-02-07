@@ -1,4 +1,4 @@
-module github.com/wesen/glazed
+module github.com/go-go-golems/glazed
 
 go 1.18
 

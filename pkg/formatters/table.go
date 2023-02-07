@@ -2,9 +2,9 @@ package formatters
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/scylladb/termtables"
-	"github.com/wesen/glazed/pkg/middlewares"
-	"github.com/wesen/glazed/pkg/types"
 	"strings"
 )
 

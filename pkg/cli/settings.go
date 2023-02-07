@@ -2,11 +2,11 @@ package cli
 
 import (
 	"github.com/Masterminds/sprig"
+	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/wesen/glazed/pkg/formatters"
-	"github.com/wesen/glazed/pkg/helpers"
-	"github.com/wesen/glazed/pkg/middlewares"
-	"github.com/wesen/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"os"
 	"text/template"

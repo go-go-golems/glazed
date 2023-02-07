@@ -2,8 +2,8 @@ package formatters
 
 import (
 	"bytes"
-	"github.com/wesen/glazed/pkg/middlewares"
-	"github.com/wesen/glazed/pkg/types"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"text/template"
 )
 

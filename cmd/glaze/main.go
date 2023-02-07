@@ -2,9 +2,9 @@ package main
 
 import (
 	"embed"
+	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
+	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
-	"github.com/wesen/glazed/cmd/glaze/cmds"
-	"github.com/wesen/glazed/pkg/help"
 )
 
 var rootCmd = &cobra.Command{

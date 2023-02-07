@@ -1,9 +1,9 @@
 package middlewares
 
 import (
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/wesen/glazed/pkg/types"
 	"regexp"
 	"testing"
 )
