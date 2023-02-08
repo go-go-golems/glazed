@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/araddon/dateparse"
@@ -11,6 +10,7 @@ import (
 	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,6 +18,10 @@ import (
 	"time"
 )
 
+// Parameter is a declarative way of describing a command line parameter.
+// A Parameter can be either a Flag or an Argument.
+// Along with metadata (Name, Help) that is useful for help,
+// it also specifies a Type, a Default value and if it is Required.
 type Parameter struct {
 	Name      string        `yaml:"name"`
 	ShortFlag string        `yaml:"shortFlag,omitempty"`
@@ -40,6 +44,9 @@ func (p *Parameter) Copy() *Parameter {
 	}
 }
 
+// CommandDescription contains the necessary information for registering
+// a command with cobra. Because a command gets registered in a verb tree,
+// a full list of Parents all the way to the root needs to be provided.
 type CommandDescription struct {
 	Name      string       `yaml:"name"`
 	Short     string       `yaml:"short"`
@@ -48,15 +55,31 @@ type CommandDescription struct {
 	Arguments []*Parameter `yaml:"arguments,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
-	Source  string   `yaml:",omitempty"`
+	// Source indicates where the command was loaded from, to make debugging easier.
+	Source string `yaml:",omitempty"`
 }
 
 type Command interface {
+	// NOTE(2023-02-07, manuel) This is not actually used either by sqleton or pinocchio
+	//
+	// The reason for this is that they implement CobraCommand, which calls
+	// RunFromCobra(cmd), and thus there is no need to actually implement Run() itself.
+	// All they use is the Description() call, so there might be a reason to split the
+	// interface into DescribedCommand and RunnableCommand, or so.
+	// I don't really feel fluent with golang interface architecturing yet.
+
 	Run(map[string]interface{}) error
 	Description() *CommandDescription
-	// XXX(manuel, 2023-01-25) what about parents and source to load inside a cobra command tree
 }
 
+// CommandLoader is an interface that allows an application using the glazed
+// library to load commands from YAML files.
+//
+// TODO(2023-02-07, manuel) Refactor this to use an FS instead
+// In fact, this might not even be fully necessary, let the application
+// walk a FS and do the loading.
+//
+// See https://github.com/go-go-golems/glazed/issues/116
 type CommandLoader interface {
 	LoadCommandFromYAML(s io.Reader) ([]Command, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
@@ -65,13 +88,19 @@ type CommandLoader interface {
 // TODO(2022-12-21, manuel): Add list of choices as a type
 // what about list of dates? list of bools?
 // should list just be a flag?
+//
+// See https://github.com/go-go-golems/glazed/issues/117
 
 type ParameterType string
 
 const (
 	ParameterTypeString         ParameterType = "string"
 	ParameterTypeStringFromFile ParameterType = "stringFromFile"
-	// load structure from json/yaml/csv file
+
+	// TODO (2023-02-07) It would be great to have "list of objects from file" here
+	// See https://github.com/go-go-golems/glazed/issues/117
+
+	// ParameterTypeObjectFromFile - load structure from json/yaml/csv file
 	ParameterTypeObjectFromFile ParameterType = "objectFromFile"
 	ParameterTypeInteger        ParameterType = "int"
 	ParameterTypeFloat          ParameterType = "float"
@@ -330,11 +359,14 @@ func parseDate(value string) (time.Time, error) {
 	return parsedDate, nil
 }
 
-func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRoot string) ([]Command, []*CommandAlias, error) {
+func LoadCommandsFromFS(loader CommandLoader,
+	f fs.FS, sourceName string,
+	dir string,
+	cmdRoot string) ([]Command, []*CommandAlias, error) {
 	var commands []Command
 	var aliases []*CommandAlias
 
-	entries, err := f.ReadDir(dir)
+	entries, err := fs.ReadDir(f, dir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -345,12 +377,23 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 		}
 		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			subCommands, _, err := LoadCommandsFromEmbedFS(loader, f, fileName, cmdRoot)
+			subCommands, subAliases, err := LoadCommandsFromFS(loader, f, sourceName, fileName, cmdRoot)
 			if err != nil {
 				return nil, nil, err
 			}
 			commands = append(commands, subCommands...)
+			aliases = append(aliases, subAliases...)
 		} else {
+			// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
+			//
+			// One problem with the "commands from YAML" pattern being defined in glazed
+			// is that is actually not great for a more complex application like pinocchio which
+			// would benefit from loading applications from entire directories.
+			//
+			// Similarly, we might want to store applications in a database, or generate them on the
+			// fly using some resources on the disk.
+			//
+			// See https://github.com/go-go-golems/glazed/issues/116
 			if strings.HasSuffix(entry.Name(), ".yml") ||
 				strings.HasSuffix(entry.Name(), ".yaml") {
 				command, err := func() (Command, error) {
@@ -371,10 +414,9 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 						return nil, errors.New("Expected exactly one command")
 					}
 					command := commands[0]
-					command.Description().Source = "embed:" + fileName
 
-					parents := getParentsFromDir(dir, cmdRoot)
-					command.Description().Parents = parents
+					command.Description().Parents = getParentsFromDir(dir, cmdRoot)
+					command.Description().Source = sourceName + ":" + fileName
 
 					return command, err
 				}()
@@ -397,7 +439,7 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 							return nil, errors.New("Expected exactly one alias")
 						}
 						alias := aliases[0]
-						alias.Source = "embed:" + fileName
+						alias.Source = sourceName + ":" + fileName
 
 						alias.Parents = getParentsFromDir(dir, cmdRoot)
 
@@ -420,6 +462,9 @@ func LoadCommandsFromEmbedFS(loader CommandLoader, f embed.FS, dir string, cmdRo
 	return commands, aliases, nil
 }
 
+// getParentsFromDir is a helper function to simply return a list of parent verbs
+// for applications loaded from declarative yaml files.
+// The directory structure mirrors the verb structure in cobra.
 func getParentsFromDir(dir string, cmdRoot string) []string {
 	// make sure both dir and cmdRoot have a trailing slash
 	if !strings.HasSuffix(dir, "/") {
@@ -434,96 +479,4 @@ func getParentsFromDir(dir string, cmdRoot string) []string {
 		parents = parents[:len(parents)-1]
 	}
 	return parents
-}
-
-func LoadCommandsFromDirectory(loader CommandLoader, dir string, cmdRoot string) ([]Command, []*CommandAlias, error) {
-	var commands []Command
-	var aliases []*CommandAlias
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, entry := range entries {
-		// skip hidden files
-		if strings.HasPrefix(entry.Name(), ".") {
-			continue
-		}
-		fileName := filepath.Join(dir, entry.Name())
-		if entry.IsDir() {
-			subCommands, subAliases, err := LoadCommandsFromDirectory(loader, fileName, cmdRoot)
-			if err != nil {
-				return nil, nil, err
-			}
-			commands = append(commands, subCommands...)
-			aliases = append(aliases, subAliases...)
-		} else {
-			if strings.HasSuffix(entry.Name(), ".yml") ||
-				strings.HasSuffix(entry.Name(), ".yaml") {
-				command, err := func() (Command, error) {
-					file, err := os.Open(fileName)
-					if err != nil {
-						return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-					}
-					defer func() {
-						_ = file.Close()
-					}()
-
-					log.Debug().Str("file", fileName).Msg("Loading command from file")
-					commands, err := loader.LoadCommandFromYAML(file)
-					if err != nil {
-						return nil, errors.Wrapf(err, "Could not load command from file %s", fileName)
-					}
-					if len(commands) != 1 {
-						return nil, errors.New("Expected exactly one command")
-					}
-					command := commands[0]
-
-					command.Description().Parents = getParentsFromDir(dir, cmdRoot)
-					command.Description().Source = "file:" + fileName
-
-					return command, err
-				}()
-				if err != nil {
-					alias, err := func() (*CommandAlias, error) {
-						file, err := os.Open(fileName)
-						if err != nil {
-							return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-						}
-						defer func() {
-							_ = file.Close()
-						}()
-
-						log.Debug().Str("file", fileName).Msg("Loading alias from file")
-						aliases, err := loader.LoadCommandAliasFromYAML(file)
-						if err != nil {
-							return nil, err
-						}
-						if len(aliases) != 1 {
-							return nil, errors.New("Expected exactly one alias")
-						}
-						alias := aliases[0]
-
-						alias.Source = "file:" + fileName
-
-						alias.Parents = getParentsFromDir(dir, cmdRoot)
-
-						return alias, err
-					}()
-
-					if err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
-						continue
-
-					} else {
-						aliases = append(aliases, alias)
-					}
-				} else {
-					commands = append(commands, command)
-				}
-			}
-		}
-	}
-
-	return commands, aliases, nil
 }
