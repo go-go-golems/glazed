@@ -2,12 +2,11 @@ package help
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -331,15 +330,15 @@ func NewHelpSystem() *HelpSystem {
 	}
 }
 
-func (hs *HelpSystem) LoadSectionsFromDirectory(dir string) error {
-	files, err := os.ReadDir(dir)
+func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
+	entries, err := fs.ReadDir(f, dir)
 	if err != nil {
 		return err
 	}
-	for _, entry := range files {
+	for _, entry := range entries {
 		filePath := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			err := hs.LoadSectionsFromDirectory(filePath)
+			err = hs.LoadSectionsFromFS(f, filePath)
 			if err != nil {
 				return err
 			}
@@ -347,44 +346,13 @@ func (hs *HelpSystem) LoadSectionsFromDirectory(dir string) error {
 			if !strings.HasSuffix(entry.Name(), ".md") {
 				continue
 			}
-			b, err := os.ReadFile(filePath)
+			b, err := fs.ReadFile(f, filePath)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to read file %s", filePath)
 			}
 			section, err := LoadSectionFromMarkdown(b)
 			if err != nil {
-				return err
-			}
-			hs.AddSection(section)
-		}
-	}
-
-	return nil
-}
-
-func (hs *HelpSystem) LoadSectionsFromEmbedFS(f embed.FS, dir string) error {
-	entries, err := f.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		fileName := filepath.Join(dir, entry.Name())
-		if entry.IsDir() {
-			err = hs.LoadSectionsFromEmbedFS(f, fileName)
-			if err != nil {
-				return err
-			}
-		} else {
-			if !strings.HasSuffix(fileName, ".md") {
-				continue
-			}
-			b, err := f.ReadFile(fileName)
-			if err != nil {
-				return errors.Wrapf(err, "failed to read file %s", fileName)
-			}
-			section, err := LoadSectionFromMarkdown(b)
-			if err != nil {
-				return errors.Wrapf(err, "failed to load section from file %s", fileName)
+				return errors.Wrapf(err, "failed to load section from file %s", filePath)
 			}
 			hs.AddSection(section)
 		}

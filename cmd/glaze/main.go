@@ -21,7 +21,7 @@ var docFS embed.FS
 
 func init() {
 	helpSystem := help.NewHelpSystem()
-	err := helpSystem.LoadSectionsFromEmbedFS(docFS, ".")
+	err := helpSystem.LoadSectionsFromFS(docFS, ".")
 	if err != nil {
 		panic(err)
 	}
