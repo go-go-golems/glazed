@@ -72,17 +72,35 @@ type Command interface {
 	Description() *CommandDescription
 }
 
-// CommandLoader is an interface that allows an application using the glazed
-// library to load commands from YAML files.
+// YAMLCommandLoader is an interface that allows an application using the glazed
+// library to loader commands from YAML files.
 //
 // TODO(2023-02-07, manuel) Refactor this to use an FS instead
 // In fact, this might not even be fully necessary, let the application
 // walk a FS and do the loading.
 //
 // See https://github.com/go-go-golems/glazed/issues/116
-type CommandLoader interface {
+type YAMLCommandLoader interface {
 	LoadCommandFromYAML(s io.Reader) ([]Command, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
+}
+
+type FSCommandLoader interface {
+	LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error)
+}
+
+func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
+	var alias CommandAlias
+	err := yaml.NewDecoder(s).Decode(&alias)
+	if err != nil {
+		return nil, err
+	}
+
+	if !alias.IsValid() {
+		return nil, errors.New("Invalid command alias")
+	}
+
+	return []*CommandAlias{&alias}, nil
 }
 
 // TODO(2022-12-21, manuel): Add list of choices as a type
@@ -100,7 +118,7 @@ const (
 	// TODO (2023-02-07) It would be great to have "list of objects from file" here
 	// See https://github.com/go-go-golems/glazed/issues/117
 
-	// ParameterTypeObjectFromFile - load structure from json/yaml/csv file
+	// ParameterTypeObjectFromFile - loader structure from json/yaml/csv file
 	ParameterTypeObjectFromFile ParameterType = "objectFromFile"
 	ParameterTypeInteger        ParameterType = "int"
 	ParameterTypeFloat          ParameterType = "float"
@@ -359,10 +377,25 @@ func parseDate(value string) (time.Time, error) {
 	return parsedDate, nil
 }
 
-func LoadCommandsFromFS(loader CommandLoader,
-	f fs.FS, sourceName string,
-	dir string,
-	cmdRoot string) ([]Command, []*CommandAlias, error) {
+type YAMLFSCommandLoader struct {
+	loader     YAMLCommandLoader
+	sourceName string
+	cmdRoot    string
+}
+
+func NewYAMLFSCommandLoader(
+	loader YAMLCommandLoader,
+	sourceName string,
+	cmdRoot string,
+) *YAMLFSCommandLoader {
+	return &YAMLFSCommandLoader{
+		loader:     loader,
+		sourceName: sourceName,
+		cmdRoot:    cmdRoot,
+	}
+}
+
+func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error) {
 	var commands []Command
 	var aliases []*CommandAlias
 
@@ -377,7 +410,7 @@ func LoadCommandsFromFS(loader CommandLoader,
 		}
 		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			subCommands, subAliases, err := LoadCommandsFromFS(loader, f, sourceName, fileName, cmdRoot)
+			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -406,7 +439,7 @@ func LoadCommandsFromFS(loader CommandLoader,
 					}()
 
 					log.Debug().Str("file", fileName).Msg("Loading command from file")
-					commands, err := loader.LoadCommandFromYAML(file)
+					commands, err := l.loader.LoadCommandFromYAML(file)
 					if err != nil {
 						return nil, errors.Wrapf(err, "Could not load command from file %s", fileName)
 					}
@@ -415,8 +448,8 @@ func LoadCommandsFromFS(loader CommandLoader,
 					}
 					command := commands[0]
 
-					command.Description().Parents = getParentsFromDir(dir, cmdRoot)
-					command.Description().Source = sourceName + ":" + fileName
+					command.Description().Parents = getParentsFromDir(dir, l.cmdRoot)
+					command.Description().Source = l.sourceName + ":" + fileName
 
 					return command, err
 				}()
@@ -431,7 +464,7 @@ func LoadCommandsFromFS(loader CommandLoader,
 						}()
 
 						log.Debug().Str("file", fileName).Msg("Loading alias from file")
-						aliases, err := loader.LoadCommandAliasFromYAML(file)
+						aliases, err := l.loader.LoadCommandAliasFromYAML(file)
 						if err != nil {
 							return nil, err
 						}
@@ -439,9 +472,9 @@ func LoadCommandsFromFS(loader CommandLoader,
 							return nil, errors.New("Expected exactly one alias")
 						}
 						alias := aliases[0]
-						alias.Source = sourceName + ":" + fileName
+						alias.Source = l.sourceName + ":" + fileName
 
-						alias.Parents = getParentsFromDir(dir, cmdRoot)
+						alias.Parents = getParentsFromDir(dir, l.cmdRoot)
 
 						return alias, err
 					}()
