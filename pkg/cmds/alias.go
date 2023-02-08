@@ -54,15 +54,19 @@ func (a *CommandAlias) Description() *CommandDescription {
 	for _, argument := range s.Arguments {
 		newArgument := argument.Copy()
 
-		// TODO(2022-12-22, manuel) this needs to be handled, overriding arguments and figuring out which order
-		// is a bitch
-		//
 		// NOTE(2023-02-07, manuel) I don't fully understand what this is referring to anymore,
 		// but I remember struggling with this in the context of setting and overriding default values.
 		// Say, if an alias defines --fields id,name and then the user passes in --fields foo,bla
 		// on top, I remember there being some kind of conflict.
 		//
+		// See also the note in cobra.go about checking the argument count. This might all
+		// refer to overloading arguments, and not just flags. This seems to make sense given the
+		// talk about argument counts.
+		//
 		// ---
+		//
+		// TODO(2022-12-22, manuel) this needs to be handled, overriding arguments and figuring out which order
+		// is a bitch
 		//
 		// so iN command.go in cobra, prerun is run before the arg validation is done
 		// so that we could potentially override the args here

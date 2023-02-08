@@ -23,3 +23,13 @@ package cmds
 //
 // - a generic CommandAlias struct that should be possible to use by
 //   any kind of command line application.
+//
+// # Load commands and aliases from disk and register with cobra
+//
+// If an application implements CommandLoader, glazed provides helper
+// functions to load all commands and applications from a directory
+// containing YAML files, by giving the application control over how
+// these YAML files are parsed.
+//
+// This part probably will be refactored soon
+// See https://github.com/go-go-golems/glazed/issues/117

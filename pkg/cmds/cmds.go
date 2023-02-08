@@ -60,6 +60,14 @@ type CommandDescription struct {
 }
 
 type Command interface {
+	// NOTE(2023-02-07, manuel) This is not actually used either by sqleton or pinocchio
+	//
+	// The reason for this is that they implement CobraCommand, which calls
+	// RunFromCobra(cmd), and thus there is no need to actually implement Run() itself.
+	// All they use is the Description() call, so there might be a reason to split the
+	// interface into DescribedCommand and RunnableCommand, or so.
+	// I don't really feel fluent with golang interface architecturing yet.
+
 	Run(map[string]interface{}) error
 	Description() *CommandDescription
 }
@@ -70,6 +78,8 @@ type Command interface {
 // TODO(2023-02-07, manuel) Refactor this to use an FS instead
 // In fact, this might not even be fully necessary, let the application
 // walk a FS and do the loading.
+//
+// See https://github.com/go-go-golems/glazed/issues/116
 type CommandLoader interface {
 	LoadCommandFromYAML(s io.Reader) ([]Command, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
@@ -78,13 +88,19 @@ type CommandLoader interface {
 // TODO(2022-12-21, manuel): Add list of choices as a type
 // what about list of dates? list of bools?
 // should list just be a flag?
+//
+// See https://github.com/go-go-golems/glazed/issues/117
 
 type ParameterType string
 
 const (
 	ParameterTypeString         ParameterType = "string"
 	ParameterTypeStringFromFile ParameterType = "stringFromFile"
-	// load structure from json/yaml/csv file
+
+	// TODO (2023-02-07) It would be great to have "list of objects from file" here
+	// See https://github.com/go-go-golems/glazed/issues/117
+
+	// ParameterTypeObjectFromFile - load structure from json/yaml/csv file
 	ParameterTypeObjectFromFile ParameterType = "objectFromFile"
 	ParameterTypeInteger        ParameterType = "int"
 	ParameterTypeFloat          ParameterType = "float"
@@ -368,6 +384,16 @@ func LoadCommandsFromFS(loader CommandLoader,
 			commands = append(commands, subCommands...)
 			aliases = append(aliases, subAliases...)
 		} else {
+			// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
+			//
+			// One problem with the "commands from YAML" pattern being defined in glazed
+			// is that is actually not great for a more complex application like pinocchio which
+			// would benefit from loading applications from entire directories.
+			//
+			// Similarly, we might want to store applications in a database, or generate them on the
+			// fly using some resources on the disk.
+			//
+			// See https://github.com/go-go-golems/glazed/issues/116
 			if strings.HasSuffix(entry.Name(), ".yml") ||
 				strings.HasSuffix(entry.Name(), ".yaml") {
 				command, err := func() (Command, error) {
@@ -436,6 +462,9 @@ func LoadCommandsFromFS(loader CommandLoader,
 	return commands, aliases, nil
 }
 
+// getParentsFromDir is a helper function to simply return a list of parent verbs
+// for applications loaded from declarative yaml files.
+// The directory structure mirrors the verb structure in cobra.
 func getParentsFromDir(dir string, cmdRoot string) []string {
 	// make sure both dir and cmdRoot have a trailing slash
 	if !strings.HasSuffix(dir, "/") {

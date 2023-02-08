@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+// CobraCommand is a subset of Command than can be registered as a
+// cobra.Command by using BuildCobraCommand, and can then be executed
+// when cobra runs it through RunFromCobra, passing in the full cobra object
+// in case the user wants to overload anything.
 type CobraCommand interface {
 	Command
 	RunFromCobra(cmd *cobra.Command, args []string) error
@@ -436,8 +440,6 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	for _, parent := range parents {
 		subCmd, _, _ := parentCmd.Find([]string{parent})
 		if subCmd == nil || subCmd == parentCmd {
-			// TODO(2022-12-19) Load documentation for subcommands from a readme file
-			// See https://github.com/wesen/sqleton/issues/34
 			newParentCmd := &cobra.Command{
 				Use:   parent,
 				Short: fmt.Sprintf("All commands for %s", parent),
@@ -451,7 +453,6 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-// XXX(manuel, 2023-01-25) Figure out how to refactor parents/aliases
 func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []CobraCommand, aliases []*CommandAlias) error {
 	commandsByName := map[string]Command{}
 
@@ -496,8 +497,12 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []CobraCommand, a
 					cobra.CheckErr(err)
 				}
 			}
+
 			// TODO(2022-12-22, manuel) This is not right because the args count is checked earlier, but when,
 			// and how can i override it
+			//
+			// NOTE(2023-02-07, manuel) I think the above refers to the fact that an alias
+			// should be able to override arguments.
 			if len(args) == 0 {
 				args = alias2.Arguments
 			}
