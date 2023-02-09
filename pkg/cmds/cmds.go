@@ -74,17 +74,21 @@ type Command interface {
 
 // YAMLCommandLoader is an interface that allows an application using the glazed
 // library to loader commands from YAML files.
-//
-// TODO(2023-02-07, manuel) Refactor this to use an FS instead
-// In fact, this might not even be fully necessary, let the application
-// walk a FS and do the loading.
-//
-// See https://github.com/go-go-golems/glazed/issues/116
 type YAMLCommandLoader interface {
 	LoadCommandFromYAML(s io.Reader) ([]Command, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
 }
 
+// TODO(2023-02-09, manuel) We can probably implement the directory walking part in a couple of lines
+//
+// Currently, we walk the directory in both the yaml loader below, and in the elastic search directory
+// command loader in escuse-me.
+
+// FSCommandLoader is an interface that describes the most generic loader type,
+// which is then used to load commands and command aliases from embedded queries
+// and from "repository" directories used by glazed.
+//
+// Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
 	LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error)
 }
