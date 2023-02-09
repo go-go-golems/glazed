@@ -31,6 +31,9 @@ var YamlCmd = &cobra.Command{
 		}
 
 		for _, arg := range args {
+			if arg == "-" {
+				arg = "/dev/stdin"
+			}
 
 			inputBytes, err := os.ReadFile(arg)
 			if err != nil {

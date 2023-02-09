@@ -26,6 +26,9 @@ var JsonCmd = &cobra.Command{
 		}
 
 		for _, arg := range args {
+			if arg == "-" {
+				arg = "/dev/stdin"
+			}
 			f, err := os.Open(arg)
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", arg, err)

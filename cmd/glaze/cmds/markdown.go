@@ -323,6 +323,9 @@ var splitByHeadingCmd = &cobra.Command{
 
 		for _, arg := range args {
 			func() {
+				if arg == "-" {
+					arg = "/dev/stdin"
+				}
 				f, err := os.Open(arg)
 				cobra.CheckErr(err)
 				defer f.Close()
