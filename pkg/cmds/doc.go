@@ -11,7 +11,7 @@ package cmds
 // and this is where the current messy situation is starting.
 //
 // Currently, sqleton, escuse-me and pinocchio benefit from loading applications
-// declaratively. In addition to flags and arguments, they need to load:
+// declaratively. In addition to flags and arguments, they need to loader:
 //
 // - a SQL query template, in sqleton's case
 // - a ElasticSearch query template, in escuse-me's case
@@ -26,8 +26,8 @@ package cmds
 //
 // # Load commands and aliases from disk and register with cobra
 //
-// If an application implements CommandLoader, glazed provides helper
-// functions to load all commands and applications from a directory
+// If an application implements YAMLCommandLoader, glazed provides helper
+// functions to loader all commands and applications from a directory
 // containing YAML files, by giving the application control over how
 // these YAML files are parsed.
 //
