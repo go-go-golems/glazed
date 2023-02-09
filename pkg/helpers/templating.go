@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"gopkg.in/yaml.v3"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -71,6 +72,30 @@ var TemplateFuncs = template.FuncMap{
 	"strikethrough": strikethrough,
 	"code":          code,
 	"codeBlock":     codeBlock,
+
+	"toYaml":      toYaml,
+	"indentBlock": indentBlock,
+}
+
+func toYaml(value interface{}) string {
+	var buffer bytes.Buffer
+
+	err := yaml.NewEncoder(&buffer).Encode(value)
+	if err != nil {
+		return ""
+	}
+
+	return buffer.String()
+}
+
+func indentBlock(indent int, value string) string {
+	var buffer bytes.Buffer
+
+	for _, line := range strings.Split(value, "\n") {
+		buffer.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(" ", indent), line))
+	}
+
+	return buffer.String()
 }
 
 func bold(s string) string {
@@ -329,7 +354,6 @@ func quote(s string) string {
 	return fmt.Sprintf("`%s`", s)
 }
 func trimRightSpace(s string) string {
-
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
@@ -383,21 +407,35 @@ func currency(i interface{}) string {
 		return ""
 	}
 }
-
-func RenderTemplateString(tmpl string, data interface{}) (string, error) {
-	t, err := template.New("template").
-		Funcs(sprig.TxtFuncMap()).
-		Funcs(TemplateFuncs).
-		Parse(tmpl)
-	if err != nil {
-		return "", err
-	}
-
+func RenderTemplate(tmpl *template.Template, data interface{}) (string, error) {
 	var buf bytes.Buffer
-	err = t.Execute(&buf, data)
+	err := tmpl.Execute(&buf, data)
 	if err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
+}
+
+func RenderTemplateString(tmpl string, data interface{}) (string, error) {
+	t, err := CreateTemplate("template").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	return RenderTemplate(t, data)
+}
+
+func RenderTemplateFile(filename string, data interface{}) (string, error) {
+	t, err := CreateTemplate("template").ParseFiles(filename)
+	if err != nil {
+		return "", err
+	}
+	return RenderTemplate(t, data)
+}
+
+func CreateTemplate(name string) *template.Template {
+	return template.New(name).
+		Funcs(sprig.TxtFuncMap()).
+		Funcs(TemplateFuncs)
 }
