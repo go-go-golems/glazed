@@ -441,6 +441,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 					log.Debug().Str("file", fileName).Msg("Loading command from file")
 					commands, err := l.loader.LoadCommandFromYAML(file)
 					if err != nil {
+						log.Warn().Err(err).Str("file", fileName).Msg("Could not load command from file")
 						return nil, errors.Wrapf(err, "Could not load command from file %s", fileName)
 					}
 					if len(commands) != 1 {
@@ -453,37 +454,43 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 
 					return command, err
 				}()
+
 				if err != nil {
-					alias, err := func() (*CommandAlias, error) {
-						file, err := f.Open(fileName)
-						if err != nil {
-							return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-						}
-						defer func() {
-							_ = file.Close()
+					// If the error was a yaml parsing error, then we try to load the YAML file
+					// again, but as an alias this time around. YAML / JSON parsing in golang
+					// definitely is a bit of an adventure.
+					if _, ok := err.(*yaml.TypeError); ok {
+						alias, err := func() (*CommandAlias, error) {
+							file, err := f.Open(fileName)
+							if err != nil {
+								return nil, errors.Wrapf(err, "Could not open file %s", fileName)
+							}
+							defer func() {
+								_ = file.Close()
+							}()
+
+							log.Debug().Str("file", fileName).Msg("Loading alias from file")
+							aliases, err := l.loader.LoadCommandAliasFromYAML(file)
+							if err != nil {
+								return nil, err
+							}
+							if len(aliases) != 1 {
+								return nil, errors.New("Expected exactly one alias")
+							}
+							alias := aliases[0]
+							alias.Source = l.sourceName + ":" + fileName
+
+							alias.Parents = getParentsFromDir(dir, l.cmdRoot)
+
+							return alias, err
 						}()
 
-						log.Debug().Str("file", fileName).Msg("Loading alias from file")
-						aliases, err := l.loader.LoadCommandAliasFromYAML(file)
 						if err != nil {
-							return nil, err
+							_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
+							continue
+						} else {
+							aliases = append(aliases, alias)
 						}
-						if len(aliases) != 1 {
-							return nil, errors.New("Expected exactly one alias")
-						}
-						alias := aliases[0]
-						alias.Source = l.sourceName + ":" + fileName
-
-						alias.Parents = getParentsFromDir(dir, l.cmdRoot)
-
-						return alias, err
-					}()
-
-					if err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
-						continue
-					} else {
-						aliases = append(aliases, alias)
 					}
 				} else {
 					commands = append(commands, command)
