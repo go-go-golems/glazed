@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -183,7 +184,7 @@ var parseCmd = &cobra.Command{
 //		    }
 //
 // ]
-func splitByHeading(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) error {
+func splitByHeading(md goldmark.Markdown, s []byte, gp *cmds.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -256,7 +257,7 @@ func splitByHeading(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) erro
 // simpleLinearize is a simple walker that will linearize the blocks encountered,
 // and filter out the Document and Text blocks
 // to avoid duplicates, for a very simple document.
-func simpleLinearize(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) error {
+func simpleLinearize(md goldmark.Markdown, s []byte, gp *cmds.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:

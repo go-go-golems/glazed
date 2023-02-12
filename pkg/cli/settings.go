@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
@@ -9,24 +10,78 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"os"
+	"reflect"
 	"text/template"
 	"unicode/utf8"
 )
 
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
-	AdditionalData   map[string]interface{}
+	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
+}
+
+func NewTemplateFormatterSettings(parameters map[string]interface{}) (*TemplateFormatterSettings, error) {
+	s := &TemplateFormatterSettings{}
+	st := reflect.TypeOf(s).Elem()
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		parameterName := field.Tag.Get("glazed.parameter")
+		if parameterName == "" {
+			continue
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+		v, ok := parameters[parameterName]
+		if !ok {
+			return nil, fmt.Errorf("parameter %s not found in map", parameterName)
+		}
+		value.Set(reflect.ValueOf(v))
+	}
+	return s, nil
 }
 
 type OutputFormatterSettings struct {
-	Output                    string
-	TableFormat               string
-	OutputAsObjects           bool
-	FlattenObjects            bool
-	WithHeaders               bool
-	CsvSeparator              string
-	Template                  string
+	Output                    string `glazed.parameter:"output"`
+	TableFormat               string `glazed.parameter:"table-format"`
+	OutputAsObjects           bool   `glazed.parameter:"output-as-objects"`
+	FlattenObjects            bool   `glazed.parameter:"flatten-objects"`
+	WithHeaders               bool   `glazed.parameter:"with-headers"`
+	CsvSeparator              string `glazed.parameter:"csv-separator"`
+	Template                  string `glazed.parameter:"template"`
 	TemplateFormatterSettings *TemplateFormatterSettings
+}
+
+func NewOutputFormatterSettings(parameters map[string]interface{}) (*OutputFormatterSettings, error) {
+	s := &OutputFormatterSettings{}
+	st := reflect.TypeOf(s).Elem()
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		parameterName := field.Tag.Get("glazed.parameter")
+		if parameterName == "" {
+			continue
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+		if field.Type.Kind() == reflect.Ptr {
+			if value.IsNil() {
+				value.Set(reflect.New(field.Type.Elem()))
+			}
+			value = value.Elem()
+			switch field.Name {
+			case "TemplateFormatterSettings":
+				tfs, err := NewTemplateFormatterSettings(parameters)
+				if err != nil {
+					return nil, err
+				}
+				value.Set(reflect.ValueOf(tfs))
+			}
+		} else {
+			v, ok := parameters[parameterName]
+			if !ok {
+				return nil, fmt.Errorf("parameter %s not found in map", parameterName)
+			}
+			value.Set(reflect.ValueOf(v))
+		}
+	}
+	return s, nil
 }
 
 func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {

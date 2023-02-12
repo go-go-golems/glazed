@@ -88,13 +88,13 @@ func GatherParameters(
 // An optional argument cannot be followed by a required argument.
 // Similarly, a list of arguments cannot be followed by any argument (since we otherwise wouldn't
 // know how many belong to the list and where to do the cut off).
-func AddArguments(cmd *cobra.Command, description *CommandDescription) error {
+func AddArguments(cmd *cobra.Command, arguments []*Parameter) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
 	hadOptional := false
 
-	for _, argument := range description.Arguments {
+	for _, argument := range arguments {
 		if maxArgs == -1 {
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
@@ -174,8 +174,8 @@ func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (
 
 // AddFlags takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Flags() of a the passed cobra command.
-func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
-	for _, parameter := range description.Flags {
+func AddFlags(cmd *cobra.Command, flags []*Parameter) error {
+	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
@@ -414,12 +414,12 @@ func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := AddFlags(cmd, description)
+	err := AddFlags(cmd, description.Flags)
 	if err != nil {
 		return nil, err
 	}
 
-	err = AddArguments(cmd, description)
+	err = AddArguments(cmd, description.Arguments)
 	if err != nil {
 		return nil, err
 	}

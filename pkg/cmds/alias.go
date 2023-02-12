@@ -19,11 +19,11 @@ type CommandAlias struct {
 	Source         string   `yaml:",omitempty"`
 }
 
-func (a *CommandAlias) Run(parameters map[string]interface{}) error {
+func (a *CommandAlias) Run(parameters map[string]interface{}, gp *GlazeProcessor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run(parameters)
+	return a.AliasedCommand.Run(parameters, gp)
 }
 
 func (a *CommandAlias) IsValid() bool {

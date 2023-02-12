@@ -1,107 +1,84 @@
 package cli
 
 import (
-	"github.com/Masterminds/sprig"
+	_ "embed"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
+	"gopkg.in/yaml.v3"
 	"regexp"
 	"strings"
-	"text/template"
 )
 
 // Helpers for cobra commands
 
-type OutputFlagsDefaults struct {
-	Output          string
-	OutputFile      string
-	TableFormat     string
-	WithHeaders     bool
-	CsvSeparator    string
-	OutputAsObjects bool
-	Flatten         bool
-	TemplateFile    string
-}
+//go:embed "flags/output.yaml"
+var outputFlagsYaml []byte
 
-func NewOutputFlagsDefaults() *OutputFlagsDefaults {
-	return &OutputFlagsDefaults{
-		Output:          "table",
-		OutputFile:      "",
-		TableFormat:     "ascii",
-		WithHeaders:     true,
-		CsvSeparator:    ",",
-		OutputAsObjects: false,
-		Flatten:         false,
-		TemplateFile:    "",
+var outputFlagsParameters map[string]*cmds.Parameter
+var outputFlagsParametersList []*cmds.Parameter
+
+func init() {
+	outputFlagsParameters = make(map[string]*cmds.Parameter)
+	outputFlagsParametersList = make([]*cmds.Parameter, 0)
+
+	var err error
+	parameters := []*cmds.Parameter{}
+
+	err = yaml.Unmarshal(outputFlagsYaml, &parameters)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to unmarshal output flags yaml"))
+	}
+
+	for _, p := range parameters {
+		err := p.CheckParameterDefaultValueValidity()
+		if err != nil {
+			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
+		}
+		outputFlagsParameters[p.Name] = p
+		outputFlagsParametersList = append(outputFlagsParametersList, p)
 	}
 }
 
+type OutputFlagsDefaults struct {
+	Output          string `glazed.parameter:"output"`
+	OutputFile      string `glazed.parameter:"output-file"`
+	TableFormat     string `glazed.parameter:"table-format"`
+	WithHeaders     bool   `glazed.parameter:"with-headers"`
+	CsvSeparator    string `glazed.parameter:"csv-separator"`
+	OutputAsObjects bool   `glazed.parameter:"output-as-objects"`
+	Flatten         bool   `glazed.parameter:"flatten"`
+	TemplateFile    string `glazed.parameter:"template-file"`
+}
+
+func NewOutputFlagsDefaults() *OutputFlagsDefaults {
+	s := &OutputFlagsDefaults{}
+	err := cmds.InitializeStruct(s, outputFlagsParameters)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize output flags defaults"))
+	}
+
+	return s
+}
+
 func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
-	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
-	cmd.Flags().StringP("output-file", "f", defaults.OutputFile, "Output file")
-	cmd.Flags().String("template-file", defaults.TemplateFile, "Template file for template output")
-	cmd.Flags().StringSlice("template-data", []string{}, "Additional data for template output")
-
-	cmd.Flags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
-	cmd.Flags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
-	cmd.Flags().String("csv-separator", defaults.CsvSeparator, "CSV separator")
-
-	// json output flags
-	cmd.Flags().Bool("output-as-objects", defaults.OutputAsObjects, "Output as individual objects instead of JSON array")
-
-	// output processing
-	cmd.Flags().Bool("flatten", defaults.Flatten, "Flatten nested fields (after templating)")
+	err := cmds.AddFlags(cmd, outputFlagsParametersList)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to add output flags")
+	}
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
-	output := cmd.Flag("output").Value.String()
-	// TODO(manuel, 2022-11-21) Add support for output file / directory
-	_ = cmd.Flag("output-file").Value.String()
-	tableFormat := cmd.Flag("table-format").Value.String()
-	flattenInput, _ := cmd.Flags().GetBool("flatten")
-	outputAsObjects, _ := cmd.Flags().GetBool("output-as-objects")
-	withHeaders, _ := cmd.Flags().GetBool("with-headers")
-	csvSeparator, _ := cmd.Flags().GetString("csv-separator")
-	templateFile, _ := cmd.Flags().GetString("template-file")
-	templateData_, _ := cmd.Flags().GetStringSlice("template-data")
-	templateContent := ""
-
-	templateData, err := ParseCLIKeyValueData(templateData_)
+	parameters, err := cmds.GatherFlags(cmd, outputFlagsParametersList, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if output == "template" && templateFile == "" {
-		return nil, errors.New("template output requires a template file")
-	}
-	if templateFile != "" {
-		templateBytes, err := os.ReadFile(templateFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read template file")
-		}
-		templateContent = string(templateBytes)
-	}
-
-	return &OutputFormatterSettings{
-		Output:          output,
-		TableFormat:     tableFormat,
-		WithHeaders:     withHeaders,
-		OutputAsObjects: outputAsObjects,
-		FlattenObjects:  flattenInput,
-		CsvSeparator:    csvSeparator,
-		Template:        templateContent,
-		TemplateFormatterSettings: &TemplateFormatterSettings{
-			TemplateFuncMaps: []template.FuncMap{
-				sprig.TxtFuncMap(),
-				helpers.TemplateFuncs,
-			},
-			AdditionalData: templateData,
-		},
-	}, nil
+	return NewOutputFormatterSettings(parameters)
 }
 
 type SelectFlagsDefaults struct {
@@ -350,7 +327,7 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
 	AddReplaceFlags(cmd, defaults.Replace)
 }
 
-func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputFormatter, error) {
+func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.OutputFormatter, error) {
 	outputSettings, err := ParseOutputFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing output flags")
@@ -423,6 +400,6 @@ func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputForma
 		middlewares_ = append(middlewares_, ogtm)
 	}
 
-	gp := NewGlazeProcessor(of, middlewares_)
+	gp := cmds.NewGlazeProcessor(of, middlewares_)
 	return gp, of, nil
 }

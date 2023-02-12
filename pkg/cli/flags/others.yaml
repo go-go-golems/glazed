@@ -1,0 +1,59 @@
+- name: select
+  type: string
+  help: Select a single field and output as a single line
+  default: ""
+
+- name: select-template
+  type: string
+  help: Output a single templated value for each row, on a single line
+  default: ""
+
+- name: replace-file
+  type: string
+  help: File with replacements
+  default: ""
+
+- name: rename
+  type: stringList
+  help: Rename fields (list of oldName:newName)
+  default: []
+
+- name: rename-regexp
+  type: stringList
+  help: Rename fields using regular expressions (list of regex:newName)
+  default: []
+
+- name: rename-yaml
+  type: string
+  help: Rename fields using a yaml file
+  default: ""
+
+- name: template
+  type: string
+  help: Go Template to use for single string
+  default: ""
+
+- name: template-field
+  type: stringList
+  help: For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary
+  default: []
+
+- name: use-row-templates
+  type: bool
+  help: Use row templates instead of column templates
+  default: false
+
+- name: fields
+  type: string
+  help: Fields to include in the output
+  default: ""
+
+- name: filter
+  type: string
+  help: Fields to remove from output
+  default: ""
+
+- name: sort-columns
+  type: bool
+  help: Sort columns alphabetically
+  default: false
