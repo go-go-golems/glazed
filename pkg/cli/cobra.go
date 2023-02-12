@@ -119,58 +119,6 @@ func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
 	}, nil
 }
 
-type TemplateFlagsDefaults struct {
-	Template        string
-	TemplateField   []string
-	UseRowTemplates bool
-}
-
-func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
-	return &TemplateFlagsDefaults{
-		Template:        "",
-		TemplateField:   nil,
-		UseRowTemplates: false,
-	}
-}
-
-func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) {
-	cmd.Flags().String("template", defaults.Template, "Go Template to use for single string")
-	cmd.Flags().StringSlice("template-field", defaults.TemplateField, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
-	cmd.Flags().Bool("use-row-templates", defaults.UseRowTemplates, "Use row templates instead of column templates")
-}
-
-func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
-	// templates get applied before flattening
-	templates := map[types.FieldName]string{}
-
-	templateArgument, _ := cmd.Flags().GetString("template")
-	if templateArgument != "" {
-		templates = map[types.FieldName]string{}
-		templates["_0"] = templateArgument
-	} else {
-		templateFields, _ := cmd.Flags().GetStringSlice("template-field")
-		kvs, err := ParseCLIKeyValueData(templateFields)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range kvs {
-			vString, ok := v.(string)
-			if !ok {
-				return nil, errors.Errorf("template-field %s is not a string", k)
-			}
-			templates[types.FieldName(k)] = vString
-		}
-	}
-
-	useRowTemplates, _ := cmd.Flags().GetBool("use-row-templates")
-
-	return &TemplateSettings{
-		Templates:       templates,
-		UseRowTemplates: useRowTemplates,
-		RenameSeparator: "_",
-	}, nil
-}
-
 // TODO(manuel, 2022-11-20) Make it easy for the developer to configure which flag they want
 // and which they don't
 
@@ -255,7 +203,7 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
 	AddOutputFlags(cmd)
 	AddSelectFlags(cmd, defaults.Select)
 	AddRenameFlags(cmd, defaults.Rename)
-	AddTemplateFlags(cmd, defaults.Template)
+	AddTemplateFlags(cmd)
 	AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
 	AddReplaceFlags(cmd, defaults.Replace)
 }

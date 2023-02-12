@@ -42,7 +42,7 @@ var DocsCmd = &cobra.Command{
 func init() {
 	DocsCmd.Flags().SortFlags = false
 	cli.AddOutputFlags(DocsCmd)
-	cli.AddTemplateFlags(DocsCmd, cli.NewTemplateFlagsDefaults())
+	cli.AddTemplateFlags(DocsCmd)
 	cli.AddFieldsFilterFlags(DocsCmd, &cli.FieldsFilterFlagsDefaults{
 		Fields:      "path,Title,SectionType,Slug,Commands,Flags,Topics,IsTopLevel,ShowPerDefault",
 		Filter:      "",

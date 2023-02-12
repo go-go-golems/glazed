@@ -26,15 +26,15 @@ type CobraCommand interface {
 // refTime is used to set a reference time for natural date parsing for unit test purposes
 var refTime *time.Time
 
-// GatherParameters takes a cobra command, an argument list as well as a description
+// GatherParametersFromCobraCommand takes a cobra command, an argument list as well as a description
 // of the sqleton command arguments, and returns a list of parsed parameters as a
 // hashmap. It does so by parsing both the flags and the positional arguments.
-func GatherParameters(
+func GatherParametersFromCobraCommand(
 	cmd *cobra.Command,
 	description *CommandDescription,
 	args []string,
 ) (map[string]interface{}, error) {
-	parameters, err := GatherFlags(cmd, description.Flags, false)
+	parameters, err := GatherFlagsFromCobraCommand(cmd, description.Flags, false)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +83,12 @@ func GatherParameters(
 	return parameters, nil
 }
 
-// AddArguments adds the arguments (not the flags) of a CommandDescription to a cobra command
+// AddArgumentsToCobraCommand adds the arguments (not the flags) of a CommandDescription to a cobra command
 // as positional arguments.
 // An optional argument cannot be followed by a required argument.
 // Similarly, a list of arguments cannot be followed by any argument (since we otherwise wouldn't
 // know how many belong to the list and where to do the cut off).
-func AddArguments(cmd *cobra.Command, arguments []*ParameterDefinition) error {
+func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
@@ -172,9 +172,9 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 	return result, nil
 }
 
-// AddFlags takes the parameters from a CommandDescription and converts them
+// AddFlagsToCobraCommand takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Flags() of a the passed cobra command.
-func AddFlags(cmd *cobra.Command, flags []*ParameterDefinition) error {
+func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
@@ -189,6 +189,12 @@ func AddFlags(cmd *cobra.Command, flags []*ParameterDefinition) error {
 
 		switch parameter.Type {
 		case ParameterTypeString:
+			fallthrough
+		case ParameterTypeStringFromFile:
+			fallthrough
+		case ParameterTypeObjectFromFile:
+			fallthrough
+		case ParameterTypeObjectListFromFile:
 			defaultValue := ""
 
 			if parameter.Default != nil {
@@ -284,6 +290,42 @@ func AddFlags(cmd *cobra.Command, flags []*ParameterDefinition) error {
 				cmd.Flags().StringSlice(flagName, defaultValue, parameter.Help)
 			}
 
+		case ParameterTypeKeyValue:
+			var defaultValue []string
+
+			if parameter.Default != nil {
+				stringMap, ok := parameter.Default.(map[string]string)
+				if !ok {
+					defaultValue, ok := parameter.Default.(map[string]interface{})
+					if !ok {
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+					}
+
+					stringMap = make(map[string]string)
+					for k, v := range defaultValue {
+						stringMap[k] = fmt.Sprintf("%v", v)
+					}
+				}
+
+				stringList := make([]string, 0)
+				for k, v := range stringMap {
+					// TODO(manuel, 2023-02-11) This is fixed to : but should be configurable
+					// See https://github.com/go-go-golems/glazed/issues/129
+					stringList = append(stringList, fmt.Sprintf("%s:%s", k, v))
+				}
+
+				defaultValue = stringList
+			}
+			if err != nil {
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+			}
+
+			if parameter.ShortFlag != "" {
+				cmd.Flags().StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				cmd.Flags().StringSlice(flagName, defaultValue, parameter.Help)
+			}
+
 		case ParameterTypeIntegerList:
 			var defaultValue []int
 			if parameter.Default != nil {
@@ -316,19 +358,22 @@ func AddFlags(cmd *cobra.Command, flags []*ParameterDefinition) error {
 			} else {
 				cmd.Flags().String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
 			}
+
+		default:
+			panic(fmt.Sprintf("Unknown parameter type %s", parameter.Type))
 		}
 	}
 
 	return nil
 }
 
-// GatherFlags gathers the flags from the cobra command, and parses them according
+// GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
 // to the parameter description passed in params. The result is a map of parameter
 // names to parsed values. If onlyProvided is true, only parameters that are provided
 // by the user are returned (i.e. not the default values).
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlags(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
+func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	parameters := map[string]interface{}{}
 
 	for _, parameter := range params {
@@ -352,6 +397,12 @@ func GatherFlags(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided
 
 		switch parameter.Type {
 		case ParameterTypeString:
+			fallthrough
+		case ParameterTypeObjectFromFile:
+			fallthrough
+		case ParameterTypeObjectListFromFile:
+			fallthrough
+		case ParameterTypeStringFromFile:
 			fallthrough
 		case ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
@@ -388,6 +439,8 @@ func GatherFlags(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided
 			}
 			parameters[parameter.Name] = v
 
+		case ParameterTypeKeyValue:
+			fallthrough
 		case ParameterTypeStringList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
@@ -414,12 +467,12 @@ func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := AddFlags(cmd, description.Flags)
+	err := AddFlagsToCobraCommand(cmd, description.Flags)
 	if err != nil {
 		return nil, err
 	}
 
-	err = AddArguments(cmd, description.Arguments)
+	err = AddArgumentsToCobraCommand(cmd, description.Arguments)
 	if err != nil {
 		return nil, err
 	}

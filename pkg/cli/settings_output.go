@@ -147,14 +147,14 @@ func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 }
 
 func AddOutputFlags(cmd *cobra.Command) {
-	err := cmds.AddFlags(cmd, outputFlagsParametersList)
+	err := cmds.AddFlagsToCobraCommand(cmd, outputFlagsParametersList)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to add output flags")
 	}
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
-	parameters, err := cmds.GatherFlags(cmd, outputFlagsParametersList, false)
+	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, outputFlagsParametersList, false)
 	if err != nil {
 		return nil, err
 	}

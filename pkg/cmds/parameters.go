@@ -230,15 +230,35 @@ const (
 
 	ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
 	ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
-	ParameterTypeInteger            ParameterType = "int"
-	ParameterTypeFloat              ParameterType = "float"
-	ParameterTypeBool               ParameterType = "bool"
-	ParameterTypeDate               ParameterType = "date"
-	ParameterTypeStringList         ParameterType = "stringList"
-	ParameterTypeIntegerList        ParameterType = "intList"
-	ParameterTypeFloatList          ParameterType = "floatList"
-	ParameterTypeChoice             ParameterType = "choice"
+	// ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
+	ParameterTypeKeyValue    ParameterType = "keyValue"
+	ParameterTypeInteger     ParameterType = "int"
+	ParameterTypeFloat       ParameterType = "float"
+	ParameterTypeBool        ParameterType = "bool"
+	ParameterTypeDate        ParameterType = "date"
+	ParameterTypeStringList  ParameterType = "stringList"
+	ParameterTypeIntegerList ParameterType = "intList"
+	ParameterTypeFloatList   ParameterType = "floatList"
+	ParameterTypeChoice      ParameterType = "choice"
 )
+
+// IsFileLoadingParameter returns true if the parameter type is one that loads a file, when provided with the given
+// value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
+// beginning character of @ indicates a file.
+func IsFileLoadingParameter(p ParameterType, v string) bool {
+	switch p {
+	case ParameterTypeStringFromFile:
+		return true
+	case ParameterTypeObjectListFromFile:
+		return true
+	case ParameterTypeObjectFromFile:
+		return true
+	case ParameterTypeKeyValue:
+		return strings.HasPrefix(v, "@")
+	default:
+		return false
+	}
+}
 
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	// we can have no default
@@ -431,6 +451,39 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 
 		return object, nil
+
+	case ParameterTypeKeyValue:
+		ret := map[string]interface{}{}
+		if len(v) == 1 && strings.HasPrefix(v[0], "@") {
+			// load from file
+			templateDataFile := v[0][1:]
+
+			if strings.HasSuffix(templateDataFile, ".json") {
+				err := helpers.LoadJSONFile(templateDataFile, &ret)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Error loading template data from file %s", templateDataFile)
+				}
+			} else if strings.HasSuffix(templateDataFile, ".yaml") || strings.HasSuffix(templateDataFile, ".yml") {
+				err := helpers.LoadYAMLFile(templateDataFile, &ret)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Error loading template data from file %s", templateDataFile)
+				}
+			} else {
+				return nil, errors.Errorf("Unknown template data file format for file %s", templateDataFile)
+			}
+		} else {
+			for _, arg := range v {
+				// TODO(2023-02-11): The separator could be stored in the parameter itself?
+				// It was configurable before.
+				//
+				// See https://github.com/go-go-golems/glazed/issues/129
+				parts := strings.Split(arg, ":")
+				if len(parts) != 2 {
+					return nil, errors.Errorf("Could not parse argument %s as key=value pair", arg)
+				}
+				ret[parts[0]] = parts[1]
+			}
+		}
 
 	case ParameterTypeStringFromFile:
 		fileName := v[0]
