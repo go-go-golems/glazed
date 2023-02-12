@@ -7,79 +7,12 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"regexp"
 	"strings"
 )
 
 // Helpers for cobra commands
-
-//go:embed "flags/output.yaml"
-var outputFlagsYaml []byte
-
-var outputFlagsParameters map[string]*cmds.ParameterDefinition
-var outputFlagsParametersList []*cmds.ParameterDefinition
-
-func init() {
-	outputFlagsParameters = make(map[string]*cmds.ParameterDefinition)
-	outputFlagsParametersList = make([]*cmds.ParameterDefinition, 0)
-
-	var err error
-	parameters := []*cmds.ParameterDefinition{}
-
-	err = yaml.Unmarshal(outputFlagsYaml, &parameters)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to unmarshal output flags yaml"))
-	}
-
-	for _, p := range parameters {
-		err := p.CheckParameterDefaultValueValidity()
-		if err != nil {
-			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
-		}
-		outputFlagsParameters[p.Name] = p
-		outputFlagsParametersList = append(outputFlagsParametersList, p)
-	}
-}
-
-type OutputFlagsDefaults struct {
-	Output          string `glazed.parameter:"output"`
-	OutputFile      string `glazed.parameter:"output-file"`
-	TableFormat     string `glazed.parameter:"table-format"`
-	WithHeaders     bool   `glazed.parameter:"with-headers"`
-	CsvSeparator    string `glazed.parameter:"csv-separator"`
-	OutputAsObjects bool   `glazed.parameter:"output-as-objects"`
-	Flatten         bool   `glazed.parameter:"flatten"`
-	TemplateFile    string `glazed.parameter:"template-file"`
-}
-
-func NewOutputFlagsDefaults() *OutputFlagsDefaults {
-	s := &OutputFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, outputFlagsParameters)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize output flags defaults"))
-	}
-
-	return s
-}
-
-func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
-	err := cmds.AddFlags(cmd, outputFlagsParametersList)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to add output flags")
-	}
-}
-
-func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
-	parameters, err := cmds.GatherFlags(cmd, outputFlagsParametersList, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewOutputFormatterSettings(parameters)
-}
 
 type SelectFlagsDefaults struct {
 	Select         string
@@ -319,7 +252,7 @@ func NewFlagsDefaults() *FlagsDefaults {
 }
 
 func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
-	AddOutputFlags(cmd, defaults.Output)
+	AddOutputFlags(cmd)
 	AddSelectFlags(cmd, defaults.Select)
 	AddRenameFlags(cmd, defaults.Rename)
 	AddTemplateFlags(cmd, defaults.Template)
