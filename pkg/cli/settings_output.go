@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"text/template"
 	"unicode/utf8"
 )
@@ -104,25 +103,7 @@ var outputFlagsParameters map[string]*cmds.ParameterDefinition
 var outputFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	outputFlagsParameters = make(map[string]*cmds.ParameterDefinition)
-	outputFlagsParametersList = make([]*cmds.ParameterDefinition, 0)
-
-	var err error
-	var parameters []*cmds.ParameterDefinition
-
-	err = yaml.Unmarshal(outputFlagsYaml, &parameters)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to unmarshal output flags yaml"))
-	}
-
-	for _, p := range parameters {
-		err := p.CheckParameterDefaultValueValidity()
-		if err != nil {
-			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
-		}
-		outputFlagsParameters[p.Name] = p
-		outputFlagsParametersList = append(outputFlagsParametersList, p)
-	}
+	outputFlagsParameters, outputFlagsParametersList = initFlagsFromYaml(outputFlagsYaml)
 }
 
 type OutputFlagsDefaults struct {

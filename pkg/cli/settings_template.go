@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 type TemplateSettings struct {
@@ -26,25 +25,7 @@ var templateFlagsParameters map[string]*cmds.ParameterDefinition
 var templateFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	templateFlagsParameters = make(map[string]*cmds.ParameterDefinition)
-	templateFlagsParametersList = make([]*cmds.ParameterDefinition, 0)
-
-	var err error
-	var parameters []*cmds.ParameterDefinition
-
-	err = yaml.Unmarshal(templateFlagsYaml, &parameters)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to unmarshal template flags yaml"))
-	}
-
-	for _, p := range parameters {
-		err := p.CheckParameterDefaultValueValidity()
-		if err != nil {
-			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
-		}
-		templateFlagsParameters[p.Name] = p
-		templateFlagsParametersList = append(templateFlagsParametersList, p)
-	}
+	templateFlagsParameters, templateFlagsParametersList = initFlagsFromYaml(templateFlagsYaml)
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {

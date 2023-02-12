@@ -1,13 +1,3 @@
-- name: select
-  type: string
-  help: Select a single field and output as a single line
-  default: ""
-
-- name: select-template
-  type: string
-  help: Output a single templated value for each row, on a single line
-  default: ""
-
 - name: replace-file
   type: string
   help: File with replacements
@@ -28,17 +18,3 @@
   help: Rename fields using a yaml file
   default: ""
 
-- name: fields
-  type: string
-  help: Fields to include in the output
-  default: ""
-
-- name: filter
-  type: string
-  help: Fields to remove from output
-  default: ""
-
-- name: sort-columns
-  type: bool
-  help: Sort columns alphabetically
-  default: false

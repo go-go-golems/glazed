@@ -119,66 +119,6 @@ func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
 	}, nil
 }
 
-// TODO(manuel, 2022-11-20) Make it easy for the developer to configure which flag they want
-// and which they don't
-
-type FieldsFilterFlagsDefaults struct {
-	Fields      string
-	Filter      string
-	SortColumns bool
-}
-
-func NewFieldsFilterFlagsDefaults() *FieldsFilterFlagsDefaults {
-	return &FieldsFilterFlagsDefaults{
-		Fields:      "",
-		Filter:      "",
-		SortColumns: false,
-	}
-}
-
-// AddFieldsFilterFlags adds the flags for the following middlewares to the cmd:
-// - FieldsFilterMiddleware
-// - SortColumnsMiddleware
-// - ReorderColumnOrderMiddleware
-func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefaults) {
-	defaultFieldHelp := defaults.Fields
-	if defaultFieldHelp == "" {
-		defaultFieldHelp = "all"
-	}
-	cmd.Flags().String("fields", defaults.Fields, "Fields to include in the output, default: "+defaultFieldHelp)
-	cmd.Flags().String("filter", defaults.Filter, "Fields to remove from output")
-	cmd.Flags().Bool("sort-columns", defaults.SortColumns, "Sort columns alphabetically")
-}
-
-func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
-	fieldStr := cmd.Flag("fields").Value.String()
-	filters := []string{}
-	fields := []string{}
-	if fieldStr != "" {
-		fields = strings.Split(fieldStr, ",")
-	}
-	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		filters = []string{}
-	} else {
-		filterStr := cmd.Flag("filter").Value.String()
-		if filterStr != "" {
-			filters = strings.Split(filterStr, ",")
-		}
-	}
-
-	sortColumns, err := cmd.Flags().GetBool("sort-columns")
-	if err != nil {
-		return nil, err
-	}
-
-	return &FieldsFilterSettings{
-		Fields:         fields,
-		Filters:        filters,
-		SortColumns:    sortColumns,
-		ReorderColumns: fields,
-	}, nil
-}
-
 type FlagsDefaults struct {
 	Output       *OutputFlagsDefaults
 	Select       *SelectFlagsDefaults

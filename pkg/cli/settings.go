@@ -1,33 +1,43 @@
 package cli
 
 import (
+	_ "embed"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"os"
 )
 
-type FieldsFilterSettings struct {
-	Filters        []string
-	Fields         []string
-	SortColumns    bool
-	ReorderColumns []string
-}
+func initFlagsFromYaml(yamlContent []byte) (map[string]*cmds.ParameterDefinition, []*cmds.ParameterDefinition) {
+	flags := make(map[string]*cmds.ParameterDefinition)
+	flagList := make([]*cmds.ParameterDefinition, 0)
 
-func (fff *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
-	of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(fff.Fields, fff.Filters))
-	if fff.SortColumns {
-		of.AddTableMiddleware(middlewares.NewSortColumnsMiddleware())
+	var err error
+	var parameters []*cmds.ParameterDefinition
+
+	err = yaml.Unmarshal(yamlContent, &parameters)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to unmarshal output flags yaml"))
 	}
-	if len(fff.ReorderColumns) > 0 {
-		of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(fff.ReorderColumns))
+
+	for _, p := range parameters {
+		err := p.CheckParameterDefaultValueValidity()
+		if err != nil {
+			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
+		}
+		flags[p.Name] = p
+		flagList = append(flagList, p)
 	}
+
+	return flags, flagList
 }
 
 type SelectSettings struct {
-	SelectField    string
-	SelectTemplate string
+	SelectField    string `glazed.parameter:"select-field"`
+	SelectTemplate string `glazed.parameter:"select-template"`
 }
 
 func (ofs *OutputFormatterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
@@ -102,4 +112,7 @@ func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	}
 
 	return nil
+}
+func init() {
+
 }
