@@ -88,7 +88,7 @@ func GatherParameters(
 // An optional argument cannot be followed by a required argument.
 // Similarly, a list of arguments cannot be followed by any argument (since we otherwise wouldn't
 // know how many belong to the list and where to do the cut off).
-func AddArguments(cmd *cobra.Command, arguments []*Parameter) error {
+func AddArguments(cmd *cobra.Command, arguments []*ParameterDefinition) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
@@ -132,7 +132,7 @@ func AddArguments(cmd *cobra.Command, arguments []*Parameter) error {
 // GatherArguments parses the positional arguments passed as a list of strings into a map of
 // parsed values. If onlyProvided is true, then only arguments that are provided are returned
 // (i.e. the default values are not included).
-func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (map[string]interface{}, error) {
+func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	_ = args
 	result := make(map[string]interface{})
 	argsIdx := 0
@@ -174,7 +174,7 @@ func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (
 
 // AddFlags takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Flags() of a the passed cobra command.
-func AddFlags(cmd *cobra.Command, flags []*Parameter) error {
+func AddFlags(cmd *cobra.Command, flags []*ParameterDefinition) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
@@ -328,7 +328,7 @@ func AddFlags(cmd *cobra.Command, flags []*Parameter) error {
 // by the user are returned (i.e. not the default values).
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (map[string]interface{}, error) {
+func GatherFlags(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	parameters := map[string]interface{}{}
 
 	for _, parameter := range params {
@@ -338,7 +338,7 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 
 		if !cmd.Flags().Changed(flagName) {
 			if parameter.Required {
-				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
+				return nil, errors.Errorf("ParameterDefinition %s is required", parameter.Name)
 			}
 
 			if parameter.Default == nil {

@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"os"
-	"reflect"
 	"text/template"
 	"unicode/utf8"
 )
@@ -18,25 +17,6 @@ import (
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
 	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
-}
-
-func NewTemplateFormatterSettings(parameters map[string]interface{}) (*TemplateFormatterSettings, error) {
-	s := &TemplateFormatterSettings{}
-	st := reflect.TypeOf(s).Elem()
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		parameterName := field.Tag.Get("glazed.parameter")
-		if parameterName == "" {
-			continue
-		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-		v, ok := parameters[parameterName]
-		if !ok {
-			return nil, fmt.Errorf("parameter %s not found in map", parameterName)
-		}
-		value.Set(reflect.ValueOf(v))
-	}
-	return s, nil
 }
 
 type OutputFormatterSettings struct {
@@ -52,34 +32,9 @@ type OutputFormatterSettings struct {
 
 func NewOutputFormatterSettings(parameters map[string]interface{}) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	st := reflect.TypeOf(s).Elem()
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		parameterName := field.Tag.Get("glazed.parameter")
-		if parameterName == "" {
-			continue
-		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-		if field.Type.Kind() == reflect.Ptr {
-			if value.IsNil() {
-				value.Set(reflect.New(field.Type.Elem()))
-			}
-			value = value.Elem()
-			switch field.Name {
-			case "TemplateFormatterSettings":
-				tfs, err := NewTemplateFormatterSettings(parameters)
-				if err != nil {
-					return nil, err
-				}
-				value.Set(reflect.ValueOf(tfs))
-			}
-		} else {
-			v, ok := parameters[parameterName]
-			if !ok {
-				return nil, fmt.Errorf("parameter %s not found in map", parameterName)
-			}
-			value.Set(reflect.ValueOf(v))
-		}
+	err := cmds.InitializeStructFromParameters(s, parameters)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}
 	return s, nil
 }

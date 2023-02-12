@@ -19,15 +19,15 @@ import (
 //go:embed "flags/output.yaml"
 var outputFlagsYaml []byte
 
-var outputFlagsParameters map[string]*cmds.Parameter
-var outputFlagsParametersList []*cmds.Parameter
+var outputFlagsParameters map[string]*cmds.ParameterDefinition
+var outputFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	outputFlagsParameters = make(map[string]*cmds.Parameter)
-	outputFlagsParametersList = make([]*cmds.Parameter, 0)
+	outputFlagsParameters = make(map[string]*cmds.ParameterDefinition)
+	outputFlagsParametersList = make([]*cmds.ParameterDefinition, 0)
 
 	var err error
-	parameters := []*cmds.Parameter{}
+	parameters := []*cmds.ParameterDefinition{}
 
 	err = yaml.Unmarshal(outputFlagsYaml, &parameters)
 	if err != nil {
@@ -57,7 +57,7 @@ type OutputFlagsDefaults struct {
 
 func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 	s := &OutputFlagsDefaults{}
-	err := cmds.InitializeStruct(s, outputFlagsParameters)
+	err := cmds.InitializeStructFromParameterDefinitions(s, outputFlagsParameters)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize output flags defaults"))
 	}

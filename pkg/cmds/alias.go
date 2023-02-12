@@ -41,8 +41,8 @@ func (a *CommandAlias) Description() *CommandDescription {
 		Name:      a.Name,
 		Short:     s.Short,
 		Long:      s.Long,
-		Flags:     []*Parameter{},
-		Arguments: []*Parameter{},
+		Flags:     []*ParameterDefinition{},
+		Arguments: []*ParameterDefinition{},
 	}
 
 	for _, flag := range s.Flags {

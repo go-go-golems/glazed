@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/araddon/dateparse"
+	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
 	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
@@ -15,11 +16,11 @@ import (
 	"time"
 )
 
-// Parameter is a declarative way of describing a command line parameter.
-// A Parameter can be either a Flag or an Argument.
+// ParameterDefinition is a declarative way of describing a command line parameter.
+// A ParameterDefinition can be either a Flag or an Argument.
 // Along with metadata (Name, Help) that is useful for help,
 // it also specifies a Type, a Default value and if it is Required.
-type Parameter struct {
+type ParameterDefinition struct {
 	Name      string        `yaml:"name"`
 	ShortFlag string        `yaml:"shortFlag,omitempty"`
 	Type      ParameterType `yaml:"type"`
@@ -29,8 +30,8 @@ type Parameter struct {
 	Required  bool          `yaml:"required,omitempty"`
 }
 
-func (p *Parameter) Copy() *Parameter {
-	return &Parameter{
+func (p *ParameterDefinition) Copy() *ParameterDefinition {
+	return &ParameterDefinition{
 		Name:      p.Name,
 		ShortFlag: p.ShortFlag,
 		Type:      p.Type,
@@ -41,7 +42,7 @@ func (p *Parameter) Copy() *Parameter {
 	}
 }
 
-func (p *Parameter) SetValue(value *reflect.Value) error {
+func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	switch p.Type {
 	case ParameterTypeString:
 		if p.Default == nil {
@@ -117,7 +118,7 @@ func (p *Parameter) SetValue(value *reflect.Value) error {
 	return nil
 }
 
-func InitializeStruct(s interface{}, parameterDefinitions map[string]*Parameter) error {
+func InitializeStructFromParameterDefinitions(s interface{}, parameterDefinitions map[string]*ParameterDefinition) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
@@ -139,9 +140,79 @@ func InitializeStruct(s interface{}, parameterDefinitions map[string]*Parameter)
 		}
 		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 
-		err := parameter.SetValue(&value)
+		if field.Type.Kind() == reflect.Ptr {
+			if value.IsNil() {
+				value.Set(reflect.New(field.Type.Elem()))
+			}
+			if field.Type.Elem().Kind() == reflect.Struct {
+				err := InitializeStructFromParameterDefinitions(value.Interface(), parameterDefinitions)
+				if err != nil {
+					return errors.Wrapf(err, "failed to initialize struct for %s", v)
+				}
+			} else {
+				err := parameter.SetValueFromDefault(value.Elem())
+				if err != nil {
+					return errors.Wrapf(err, "failed to set value for %s", v)
+				}
+			}
+
+		}
+
+		err := parameter.SetValueFromDefault(value)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set value for %s", v)
+		}
+	}
+
+	return nil
+}
+
+func InitializeStructFromParameters(s interface{}, parameters map[string]interface{}) error {
+	// check that s is indeed a pointer to a struct
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return errors.Errorf("s is not a pointer")
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return errors.Errorf("s is not a pointer to a struct")
+	}
+	st := reflect.TypeOf(s).Elem()
+
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		v, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+		v_, ok := parameters[v]
+		if !ok {
+			return errors.Errorf("unknown parameter %s", v)
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+
+		if field.Type.Kind() == reflect.Ptr {
+			elem := field.Type.Elem()
+			if value.IsNil() {
+				value.Set(reflect.New(elem))
+			} else {
+				switch elem.Kind() {
+				case reflect.Struct:
+					err := InitializeStructFromParameters(value.Interface(), parameters)
+					if err != nil {
+						return errors.Wrapf(err, "failed to initialize struct for %s", v)
+					}
+				default:
+					err := helpers.SetReflectValue(value.Elem(), v_)
+					if err != nil {
+						return errors.Wrapf(err, "failed to set value for %s", v)
+					}
+				}
+			}
+
+		} else {
+			err := helpers.SetReflectValue(value, v_)
+			if err != nil {
+				return errors.Wrapf(err, "failed to set value for %s", v)
+			}
 		}
 	}
 
@@ -169,7 +240,7 @@ const (
 	ParameterTypeChoice             ParameterType = "choice"
 )
 
-func (p *Parameter) CheckParameterDefaultValueValidity() error {
+func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	// we can have no default
 	if p.Default == nil {
 		return nil
@@ -253,7 +324,7 @@ func (p *Parameter) CheckParameterDefaultValueValidity() error {
 
 	case ParameterTypeChoice:
 		if len(p.Choices) == 0 {
-			return errors.Errorf("Parameter %s is a choice parameter but has no choices", p.Name)
+			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
 		defaultValue, ok := p.Default.(string)
@@ -275,7 +346,7 @@ func (p *Parameter) CheckParameterDefaultValueValidity() error {
 	return nil
 }
 
-func (p *Parameter) ParseParameter(v []string) (interface{}, error) {
+func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	if len(v) == 0 {
 		if p.Required {
 			return nil, errors.Errorf("Argument %s not found", p.Name)

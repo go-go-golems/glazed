@@ -12,7 +12,7 @@ import (
 func TestAddZeroArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{},
+		Arguments: []*ParameterDefinition{},
 	}
 	err := AddArguments(cmd, desc.Arguments)
 	// assert that err is nil
@@ -22,7 +22,7 @@ func TestAddZeroArguments(t *testing.T) {
 func TestAddSingleRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -51,7 +51,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 func TestAddTwoRequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -90,7 +90,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -132,7 +132,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 func TestOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Default: "123",
@@ -160,7 +160,7 @@ func TestOneOptionalArgument(t *testing.T) {
 func TestDefaultIntValue(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Default: 123,
@@ -237,7 +237,7 @@ func TestValidDefaultValue(t *testing.T) {
 		{Type: ParameterTypeIntegerList, Value: []int{}},
 	}
 	for _, testCase := range testCases {
-		param := &Parameter{
+		param := &ParameterDefinition{
 			Name:    "foo",
 			Default: testCase.Value,
 			Type:    testCase.Type,
@@ -248,7 +248,7 @@ func TestValidDefaultValue(t *testing.T) {
 }
 
 func TestValidChoiceDefaultValue(t *testing.T) {
-	param := &Parameter{
+	param := &ParameterDefinition{
 		Name:    "foo",
 		Default: "bar",
 		Type:    ParameterTypeChoice,
@@ -265,7 +265,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 		"flop",
 	}
 	for _, testCase := range testCases {
-		param := &Parameter{
+		param := &ParameterDefinition{
 			Name:    "foo",
 			Default: testCase,
 			Type:    ParameterTypeChoice,
@@ -294,7 +294,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 	}
 	for _, failingType := range failingTypes {
 		desc := CommandDescription{
-			Arguments: []*Parameter{
+			Arguments: []*ParameterDefinition{
 				{
 					Name:    "foo",
 					Default: failingType.Value,
@@ -313,7 +313,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 func TestTwoOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -333,7 +333,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 func TestFailAddingRequiredAfterOptional(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -350,7 +350,7 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 func TestAddStringListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -369,7 +369,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Type:    ParameterTypeStringList,
@@ -399,7 +399,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 				Type: ParameterTypeStringList,
@@ -416,7 +416,7 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 func TestAddIntegerListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -435,7 +435,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -458,7 +458,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -481,7 +481,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Type:    ParameterTypeString,
@@ -505,7 +505,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -530,7 +530,7 @@ type expectedCommandResults struct {
 
 func TestGatherCommand(t *testing.T) {
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Type:     ParameterTypeString,
@@ -542,7 +542,7 @@ func TestGatherCommand(t *testing.T) {
 				Required: true,
 			},
 		},
-		Flags: []*Parameter{
+		Flags: []*ParameterDefinition{
 			{
 				Name:    "baz",
 				Type:    ParameterTypeString,

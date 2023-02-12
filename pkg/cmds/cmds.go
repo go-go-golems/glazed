@@ -16,11 +16,11 @@ import (
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
 type CommandDescription struct {
-	Name      string       `yaml:"name"`
-	Short     string       `yaml:"short"`
-	Long      string       `yaml:"long,omitempty"`
-	Flags     []*Parameter `yaml:"flags,omitempty"`
-	Arguments []*Parameter `yaml:"arguments,omitempty"`
+	Name      string                 `yaml:"name"`
+	Short     string                 `yaml:"short"`
+	Long      string                 `yaml:"long,omitempty"`
+	Flags     []*ParameterDefinition `yaml:"flags,omitempty"`
+	Arguments []*ParameterDefinition `yaml:"arguments,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
