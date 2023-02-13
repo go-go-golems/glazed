@@ -66,16 +66,15 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		}
 	case ParameterTypeInteger:
 		if p.Default == nil {
-			value.SetInt(0)
+			return helpers.SetReflectValue(value, 0)
 		} else {
-			i := int64(p.Default.(int))
-			value.SetInt(i)
+			return helpers.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeFloat:
 		if p.Default == nil {
-			value.SetFloat(0)
+			return helpers.SetReflectValue(value, 0.0)
 		} else {
-			value.SetFloat(p.Default.(float64))
+			return helpers.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeStringList:
 		if p.Default == nil {
@@ -89,19 +88,24 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			// maybe this should be nil too (?)
 			value.Set(reflect.ValueOf(time.Time{}))
 		} else {
-			value.Set(reflect.ValueOf(p.Default.(time.Time)))
+			s := p.Default.(string)
+			dateTime, err := parseDate(s)
+			if err != nil {
+				return errors.Wrapf(err, "error parsing default value for parameter %s", p.Name)
+			}
+			value.Set(reflect.ValueOf(dateTime))
 		}
 	case ParameterTypeIntegerList:
 		if p.Default == nil {
-			value.Set(reflect.ValueOf([]int64{}))
+			return helpers.SetReflectValue(value, []int64{})
 		} else {
-			value.Set(reflect.ValueOf(p.Default.([]int64)))
+			return helpers.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeFloatList:
 		if p.Default == nil {
-			value.Set(reflect.ValueOf([]float64{}))
+			return helpers.SetReflectValue(value, []float64{})
 		} else {
-			value.Set(reflect.ValueOf(p.Default.([]float64)))
+			return helpers.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeChoice:
 		if p.Default == nil {
