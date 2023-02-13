@@ -41,20 +41,20 @@ func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 }
 
 func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
-	cmd.Flags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
-	cmd.Flags().StringP("output-file", "f", defaults.OutputFile, "Output file")
-	cmd.Flags().String("template-file", defaults.TemplateFile, "Template file for template output")
-	cmd.Flags().StringSlice("template-data", []string{}, "Additional data for template output")
+	cmd.PersistentFlags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
+	cmd.PersistentFlags().StringP("output-file", "f", defaults.OutputFile, "Output file")
+	cmd.PersistentFlags().String("template-file", defaults.TemplateFile, "Template file for template output")
+	cmd.PersistentFlags().StringSlice("template-data", []string{}, "Additional data for template output")
 
-	cmd.Flags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
-	cmd.Flags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
-	cmd.Flags().String("csv-separator", defaults.CsvSeparator, "CSV separator")
+	cmd.PersistentFlags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
+	cmd.PersistentFlags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
+	cmd.PersistentFlags().String("csv-separator", defaults.CsvSeparator, "CSV separator")
 
 	// json output flags
-	cmd.Flags().Bool("output-as-objects", defaults.OutputAsObjects, "Output as individual objects instead of JSON array")
+	cmd.PersistentFlags().Bool("output-as-objects", defaults.OutputAsObjects, "Output as individual objects instead of JSON array")
 
 	// output processing
-	cmd.Flags().Bool("flatten", defaults.Flatten, "Flatten nested fields (after templating)")
+	cmd.PersistentFlags().Bool("flatten", defaults.Flatten, "Flatten nested fields (after templating)")
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
@@ -117,8 +117,8 @@ func NewSelectFlagsDefaults() *SelectFlagsDefaults {
 }
 
 func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) {
-	cmd.Flags().String("select", defaults.Select, "Select a single field and output as a single line")
-	cmd.Flags().String("select-template", defaults.SelectTemplate, "Output a single templated value for each row, on a single line")
+	cmd.PersistentFlags().String("select", defaults.Select, "Select a single field and output as a single line")
+	cmd.PersistentFlags().String("select-template", defaults.SelectTemplate, "Output a single templated value for each row, on a single line")
 }
 
 func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
@@ -143,7 +143,7 @@ func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
 }
 
 func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) {
-	cmd.Flags().String("replace-file", defaults.ReplaceFile, "File with replacements")
+	cmd.PersistentFlags().String("replace-file", defaults.ReplaceFile, "File with replacements")
 }
 
 func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
@@ -169,9 +169,9 @@ func NewRenameFlagsDefaults() *RenameFlagsDefaults {
 }
 
 func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) {
-	cmd.Flags().StringSlice("rename", defaults.Rename, "Rename fields (list of oldName:newName)")
-	cmd.Flags().StringSlice("rename-regexp", defaults.RenameRegexp, "Rename fields using regular expressions (list of regex:newName)")
-	cmd.Flags().String("rename-yaml", defaults.RenameYaml, "Rename fields using a yaml file")
+	cmd.PersistentFlags().StringSlice("rename", defaults.Rename, "Rename fields (list of oldName:newName)")
+	cmd.PersistentFlags().StringSlice("rename-regexp", defaults.RenameRegexp, "Rename fields using regular expressions (list of regex:newName)")
+	cmd.PersistentFlags().String("rename-yaml", defaults.RenameYaml, "Rename fields using a yaml file")
 }
 
 func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
@@ -224,9 +224,9 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) {
-	cmd.Flags().String("template", defaults.Template, "Go Template to use for single string")
-	cmd.Flags().StringSlice("template-field", defaults.TemplateField, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
-	cmd.Flags().Bool("use-row-templates", defaults.UseRowTemplates, "Use row templates instead of column templates")
+	cmd.PersistentFlags().String("template", defaults.Template, "Go Template to use for single string")
+	cmd.PersistentFlags().StringSlice("template-field", defaults.TemplateField, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
+	cmd.PersistentFlags().Bool("use-row-templates", defaults.UseRowTemplates, "Use row templates instead of column templates")
 }
 
 func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
@@ -287,9 +287,9 @@ func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefault
 	if defaultFieldHelp == "" {
 		defaultFieldHelp = "all"
 	}
-	cmd.Flags().String("fields", defaults.Fields, "Fields to include in the output, default: "+defaultFieldHelp)
-	cmd.Flags().String("filter", defaults.Filter, "Fields to remove from output")
-	cmd.Flags().Bool("sort-columns", defaults.SortColumns, "Sort columns alphabetically")
+	cmd.PersistentFlags().String("fields", defaults.Fields, "Fields to include in the output, default: "+defaultFieldHelp)
+	cmd.PersistentFlags().String("filter", defaults.Filter, "Fields to remove from output")
+	cmd.PersistentFlags().Bool("sort-columns", defaults.SortColumns, "Sort columns alphabetically")
 }
 
 func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
