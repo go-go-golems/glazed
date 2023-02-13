@@ -42,7 +42,15 @@ func (p *ParameterDefinition) Copy() *ParameterDefinition {
 	}
 }
 
+// SetValueFromDefault assigns the default value of the ParameterDefinition to the given value.
+// If the Default value is nil, the value is set to the zero value of the type.
+//
+// TODO(manuel, 2023-02-12) Not sure if the setting to the zero value of the type is the best idea, really.
 func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
+	if !value.CanSet() {
+		return errors.Errorf("cannot set value of %s", p.Name)
+	}
+
 	switch p.Type {
 	case ParameterTypeString:
 		if p.Default == nil {
@@ -60,7 +68,8 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.SetInt(0)
 		} else {
-			value.SetInt(p.Default.(int64))
+			i := int64(p.Default.(int))
+			value.SetInt(i)
 		}
 	case ParameterTypeFloat:
 		if p.Default == nil {
@@ -343,16 +352,24 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	}
 
 	switch p.Type {
-	case ParameterTypeObjectListFromFile:
-		fallthrough
-	case ParameterTypeObjectFromFile:
-		fallthrough
 	case ParameterTypeStringFromFile:
 		fallthrough
 	case ParameterTypeString:
 		_, ok := p.Default.(string)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
+		}
+
+	case ParameterTypeObjectListFromFile:
+		_, ok := p.Default.([]interface{})
+		if !ok {
+			return errors.Errorf("Default value for parameter %s is not a list of objects: %v", p.Name, p.Default)
+		}
+
+	case ParameterTypeObjectFromFile:
+		_, ok := p.Default.(map[string]interface{})
+		if !ok {
+			return errors.Errorf("Default value for parameter %s is not an object: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeInteger:
@@ -362,9 +379,9 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeFloat:
-		_, ok := p.Default.(int)
+		_, ok := p.Default.(float64)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeBool:
@@ -403,13 +420,27 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	case ParameterTypeIntegerList:
 		_, ok := p.Default.([]int)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
+			defaultValue, ok := p.Default.([]interface{})
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
+			}
+			_, ok = helpers.CastList[int, interface{}](defaultValue)
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
+			}
 		}
 
 	case ParameterTypeFloatList:
-		_, ok := p.Default.([]float32)
+		_, ok := p.Default.([]float64)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
+			defaultValue, ok := p.Default.([]interface{})
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
+			}
+			_, ok = helpers.CastList[float64, interface{}](defaultValue)
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
+			}
 		}
 
 	case ParameterTypeChoice:
@@ -435,7 +466,15 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	case ParameterTypeKeyValue:
 		_, ok := p.Default.(map[string]string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a key value map: %v", p.Name, p.Default)
+			defaultValue, ok := p.Default.(map[string]interface{})
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
+			}
+
+			_, ok = helpers.CastStringMap[string, interface{}](defaultValue)
+			if !ok {
+				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
+			}
 		}
 	}
 
@@ -642,4 +681,28 @@ func parseDate(value string) (time.Time, error) {
 	}
 
 	return parsedDate, nil
+}
+
+func InitFlagsFromYaml(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
+	flags := make(map[string]*ParameterDefinition)
+	flagList := make([]*ParameterDefinition, 0)
+
+	var err error
+	var parameters []*ParameterDefinition
+
+	err = yaml.Unmarshal(yamlContent, &parameters)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to unmarshal output flags yaml"))
+	}
+
+	for _, p := range parameters {
+		err := p.CheckParameterDefaultValueValidity()
+		if err != nil {
+			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
+		}
+		flags[p.Name] = p
+		flagList = append(flagList, p)
+	}
+
+	return flags, flagList
 }

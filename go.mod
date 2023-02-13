@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/mattn/go-isatty v0.0.16
+	github.com/nishanths/exhaustive v0.9.5
 	github.com/piprate/json-gold v0.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.28.0
@@ -19,7 +20,9 @@ require (
 	github.com/tj/go-naturaldate v1.3.0
 	github.com/yuin/goldmark v1.5.4
 	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
+	golang.org/x/sync v0.1.0
 	gopkg.in/errgo.v2 v2.1.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -55,6 +58,6 @@ require (
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/tools v0.4.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

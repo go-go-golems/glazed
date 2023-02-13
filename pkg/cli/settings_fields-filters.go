@@ -16,7 +16,7 @@ var fieldsFiltersFlagsParameters map[string]*cmds.ParameterDefinition
 var fieldsFiltersFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	fieldsFiltersFlagsParameters, fieldsFiltersFlagsParametersList = initFlagsFromYaml(fieldsFiltersFlagsYaml)
+	fieldsFiltersFlagsParameters, fieldsFiltersFlagsParametersList = cmds.InitFlagsFromYaml(fieldsFiltersFlagsYaml)
 }
 
 type FieldsFilterSettings struct {

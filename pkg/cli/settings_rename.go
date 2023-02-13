@@ -21,7 +21,7 @@ var renameFlagsParameters map[string]*cmds.ParameterDefinition
 var renameFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	renameFlagsParameters, renameFlagsParametersList = initFlagsFromYaml(renameFlagsYaml)
+	renameFlagsParameters, renameFlagsParametersList = cmds.InitFlagsFromYaml(renameFlagsYaml)
 }
 
 type RenameSettings struct {

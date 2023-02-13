@@ -102,7 +102,7 @@ var outputFlagsParameters map[string]*cmds.ParameterDefinition
 var outputFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	outputFlagsParameters, outputFlagsParametersList = initFlagsFromYaml(outputFlagsYaml)
+	outputFlagsParameters, outputFlagsParametersList = cmds.InitFlagsFromYaml(outputFlagsYaml)
 }
 
 type OutputFlagsDefaults struct {

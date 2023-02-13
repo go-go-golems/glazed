@@ -24,7 +24,7 @@ var templateFlagsParameters map[string]*cmds.ParameterDefinition
 var templateFlagsParametersList []*cmds.ParameterDefinition
 
 func init() {
-	templateFlagsParameters, templateFlagsParametersList = initFlagsFromYaml(templateFlagsYaml)
+	templateFlagsParameters, templateFlagsParametersList = cmds.InitFlagsFromYaml(templateFlagsYaml)
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
