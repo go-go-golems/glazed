@@ -22,10 +22,10 @@ type OutputFormatterSettings struct {
 	Output                    string `glazed.parameter:"output"`
 	TableFormat               string `glazed.parameter:"table-format"`
 	OutputAsObjects           bool   `glazed.parameter:"output-as-objects"`
-	FlattenObjects            bool   `glazed.parameter:"flatten-objects"`
+	FlattenObjects            bool   `glazed.parameter:"flatten"`
 	WithHeaders               bool   `glazed.parameter:"with-headers"`
 	CsvSeparator              string `glazed.parameter:"csv-separator"`
-	Template                  string `glazed.parameter:"template"`
+	Template                  string
 	TemplateFormatterSettings *TemplateFormatterSettings
 }
 
@@ -141,6 +141,8 @@ func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
+	// TODO(manuel, 2023-02-12): This is not enough, because the flags template-file is not handled properly by just parsing it into here
+	// Really what this should be parsed into is a defaults struct, and then loading that into the settings by hand
 	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, outputFlagsParametersList, false)
 	if err != nil {
 		return nil, err

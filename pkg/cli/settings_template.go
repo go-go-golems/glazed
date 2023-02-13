@@ -56,7 +56,7 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(fieldsFiltersFlagsParametersList, defaults)
+	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(templateFlagsParametersList, defaults)
 	if err != nil {
 		return errors.Wrap(err, "Failed to clone template flags parameters")
 	}

@@ -54,9 +54,9 @@ func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 }
 
 type RenameFlagsDefaults struct {
-	Rename       []string `glazed.parameter:"rename"`
-	RenameRegexp []string `glazed.parameter:"rename-regexp"`
-	RenameYaml   string   `glazed.parameter:"rename-yaml"`
+	Rename       []string          `glazed.parameter:"rename"`
+	RenameRegexp map[string]string `glazed.parameter:"rename-regexp"`
+	RenameYaml   string            `glazed.parameter:"rename-yaml"`
 }
 
 func NewRenameFlagsDefaults() *RenameFlagsDefaults {

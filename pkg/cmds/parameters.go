@@ -131,7 +131,15 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.Set(reflect.ValueOf(map[string]interface{}{}))
 		} else {
-			value.Set(reflect.ValueOf(p.Default.(map[string]interface{})))
+			v, ok := p.Default.(map[string]interface{})
+			if !ok {
+				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
+			}
+			v2, ok := helpers.CastStringMap[string, interface{}](v)
+			if !ok {
+				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
+			}
+			value.Set(reflect.ValueOf(v2))
 		}
 
 	default:

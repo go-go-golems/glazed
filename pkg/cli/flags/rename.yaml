@@ -4,9 +4,9 @@
   default: []
 
 - name: rename-regexp
-  type: keyValueList
+  type: keyValue
   help: Rename fields using regular expressions (list of regex:newName)
-  default: []
+  default: {}
 
 - name: rename-yaml
   type: string
