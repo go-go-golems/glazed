@@ -74,6 +74,14 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		} else {
 			value.Set(reflect.ValueOf(p.Default.([]string)))
 		}
+	case ParameterTypeDate:
+		// TODO(manuel, 2023-02-12) Not sure exactly if this should be fully parsed at this point, or left up to the flag
+		if p.Default == nil {
+			// maybe this should be nil too (?)
+			value.Set(reflect.ValueOf(time.Time{}))
+		} else {
+			value.Set(reflect.ValueOf(p.Default.(time.Time)))
+		}
 	case ParameterTypeIntegerList:
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]int64{}))
@@ -105,6 +113,12 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			value.Set(reflect.ValueOf(p.Default.([]map[string]interface{})))
 		}
 	case ParameterTypeObjectFromFile:
+		if p.Default == nil {
+			value.Set(reflect.ValueOf(map[string]interface{}{}))
+		} else {
+			value.Set(reflect.ValueOf(p.Default.(map[string]interface{})))
+		}
+	case ParameterTypeKeyValue:
 		if p.Default == nil {
 			value.Set(reflect.ValueOf(map[string]interface{}{}))
 		} else {
@@ -194,6 +208,7 @@ func InitializeStructFromParameters(s interface{}, parameters map[string]interfa
 			if value.IsNil() {
 				value.Set(reflect.New(elem))
 			} else {
+				//exhaustive:ignore
 				switch elem.Kind() {
 				case reflect.Struct:
 					err := InitializeStructFromParameters(value.Interface(), parameters)
@@ -290,6 +305,7 @@ const (
 // value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
 // beginning character of @ indicates a file.
 func IsFileLoadingParameter(p ParameterType, v string) bool {
+	//exhaustive:ignore
 	switch p {
 	case ParameterTypeStringFromFile:
 		return true
@@ -304,6 +320,22 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 	}
 }
 
+func IsListParameter(p ParameterType) bool {
+	//exhaustive:ignore
+	switch p {
+	case ParameterTypeStringList:
+		return true
+	case ParameterTypeIntegerList:
+		return true
+	case ParameterTypeFloatList:
+		return true
+	case ParameterTypeKeyValue:
+		return true
+	default:
+		return false
+	}
+}
+
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	// we can have no default
 	if p.Default == nil {
@@ -311,19 +343,13 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	}
 
 	switch p.Type {
-	case ParameterTypeString:
-		_, ok := p.Default.(string)
-		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
-		}
-
-	case ParameterTypeStringFromFile:
-		_, ok := p.Default.(string)
-		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
-		}
-
+	case ParameterTypeObjectListFromFile:
+		fallthrough
 	case ParameterTypeObjectFromFile:
+		fallthrough
+	case ParameterTypeStringFromFile:
+		fallthrough
+	case ParameterTypeString:
 		_, ok := p.Default.(string)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
@@ -404,6 +430,12 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 		if !found {
 			return errors.Errorf("Default value for parameter %s is not a valid choice: %v", p.Name, p.Default)
+		}
+
+	case ParameterTypeKeyValue:
+		_, ok := p.Default.(map[string]string)
+		if !ok {
+			return errors.Errorf("Default value for parameter %s is not a key value map: %v", p.Name, p.Default)
 		}
 	}
 
@@ -495,6 +527,28 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 
 		return object, nil
+
+	case ParameterTypeObjectListFromFile:
+		fileName := v[0]
+		f, err := os.Open(fileName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+		}
+
+		objectList := []interface{}{}
+		if strings.HasSuffix(fileName, ".json") {
+			err = json.NewDecoder(f).Decode(&objectList)
+		} else if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
+			err = yaml.NewDecoder(f).Decode(&objectList)
+		} else {
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", fileName)
+		}
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not parse file %s", fileName)
+		}
+
+		return objectList, nil
 
 	case ParameterTypeKeyValue:
 		ret := map[string]interface{}{}

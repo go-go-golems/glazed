@@ -113,10 +113,7 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 			hadOptional = true
 		}
 		maxArgs++
-		switch argument.Type {
-		case ParameterTypeStringList:
-			fallthrough
-		case ParameterTypeIntegerList:
+		if argument.Type == ParameterTypeStringList || argument.Type == ParameterTypeIntegerList {
 			maxArgs = -1
 		}
 	}
@@ -150,13 +147,10 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 
 		v := []string{args[argsIdx]}
 
-		switch argument.Type {
-		case ParameterTypeStringList:
-			fallthrough
-		case ParameterTypeIntegerList:
+		if IsListParameter(argument.Type) {
 			v = args[argsIdx:]
 			argsIdx = len(args)
-		default:
+		} else {
 			argsIdx++
 		}
 		i2, err := argument.ParseParameter(v)
@@ -260,6 +254,22 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 				cmd.Flags().IntP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
 				cmd.Flags().Int(flagName, defaultValue, parameter.Help)
+			}
+
+		case ParameterTypeFloat:
+			defaultValue := 0.0
+
+			if parameter.Default != nil {
+				defaultValue, ok = parameter.Default.(float64)
+				if !ok {
+					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
+				}
+			}
+
+			if parameter.ShortFlag != "" {
+				cmd.Flags().Float64P(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				cmd.Flags().Float64(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeBool:
@@ -378,6 +388,20 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 				cmd.Flags().IntSlice(flagName, defaultValue, parameter.Help)
 			}
 
+		case ParameterTypeFloatList:
+			var defaultValue []float64
+			if parameter.Default != nil {
+				defaultValue, ok = parameter.Default.([]float64)
+				if !ok {
+					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
+				}
+			}
+			if parameter.ShortFlag != "" {
+				cmd.Flags().Float64SliceP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				cmd.Flags().Float64Slice(flagName, defaultValue, parameter.Help)
+			}
+
 		case ParameterTypeChoice:
 			defaultValue := ""
 
@@ -448,6 +472,13 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 			}
 			parameters[parameter.Name] = v
 
+		case ParameterTypeFloat:
+			v, err := cmd.Flags().GetFloat64(flagName)
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = v
+
 		case ParameterTypeInteger:
 			v, err := cmd.Flags().GetInt(flagName)
 			if err != nil {
@@ -487,6 +518,13 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 
 		case ParameterTypeIntegerList:
 			v, err := cmd.Flags().GetIntSlice(flagName)
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = v
+
+		case ParameterTypeFloatList:
+			v, err := cmd.Flags().GetFloat64Slice(flagName)
 			if err != nil {
 				return nil, err
 			}

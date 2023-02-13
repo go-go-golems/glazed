@@ -8,7 +8,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"text/template"
 	"unicode/utf8"
@@ -127,11 +126,18 @@ func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 	return s
 }
 
-func AddOutputFlags(cmd *cobra.Command) {
-	err := cmds.AddFlagsToCobraCommand(cmd, outputFlagsParametersList)
+func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
+	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(outputFlagsParametersList, defaults)
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to add output flags")
+		return errors.Wrap(err, "Failed to clone output flags parameters")
 	}
+
+	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	if err != nil {
+		return errors.Wrap(err, "Failed to add output flags to cobra command")
+	}
+
+	return nil
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {

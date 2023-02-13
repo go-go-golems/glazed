@@ -6,6 +6,9 @@ pre-commit:
     test:
       glob: '*.go'
       run: make test
+    exhaustive:
+      glob: '*.go'
+      run: make exhaustive
   parallel: true
 
 pre-push:

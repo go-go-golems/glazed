@@ -5,119 +5,11 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"regexp"
-	"strings"
 )
 
 // Helpers for cobra commands
-
-type SelectFlagsDefaults struct {
-	Select         string
-	SelectTemplate string
-}
-
-func NewSelectFlagsDefaults() *SelectFlagsDefaults {
-	return &SelectFlagsDefaults{
-		Select:         "",
-		SelectTemplate: "",
-	}
-}
-
-func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) {
-	cmd.Flags().String("select", defaults.Select, "Select a single field and output as a single line")
-	cmd.Flags().String("select-template", defaults.SelectTemplate, "Output a single templated value for each row, on a single line")
-}
-
-func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
-	selectField, _ := cmd.Flags().GetString("select")
-	selectTemplate, _ := cmd.Flags().GetString("select-template")
-
-	return &SelectSettings{
-		SelectField:    selectField,
-		SelectTemplate: selectTemplate,
-	}, nil
-}
-
-type ReplaceFlagsDefaults struct {
-	// currently, only support loading replacements from a file
-	ReplaceFile string
-}
-
-func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
-	return &ReplaceFlagsDefaults{
-		ReplaceFile: "",
-	}
-}
-
-func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) {
-	cmd.Flags().String("replace-file", defaults.ReplaceFile, "File with replacements")
-}
-
-func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
-	replaceFile, _ := cmd.Flags().GetString("replace-file")
-
-	return &ReplaceSettings{
-		ReplaceFile: replaceFile,
-	}, nil
-}
-
-type RenameFlagsDefaults struct {
-	Rename       []string
-	RenameRegexp []string
-	RenameYaml   string
-}
-
-func NewRenameFlagsDefaults() *RenameFlagsDefaults {
-	return &RenameFlagsDefaults{
-		Rename:       []string{},
-		RenameRegexp: []string{},
-		RenameYaml:   "",
-	}
-}
-
-func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) {
-	cmd.Flags().StringSlice("rename", defaults.Rename, "Rename fields (list of oldName:newName)")
-	cmd.Flags().StringSlice("rename-regexp", defaults.RenameRegexp, "Rename fields using regular expressions (list of regex:newName)")
-	cmd.Flags().String("rename-yaml", defaults.RenameYaml, "Rename fields using a yaml file")
-}
-
-func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
-	renameFields, _ := cmd.Flags().GetStringSlice("rename")
-	renameRegexpFields, _ := cmd.Flags().GetStringSlice("rename-regexp")
-	renameYaml, _ := cmd.Flags().GetString("rename-yaml")
-
-	renamesFieldsMap := map[types.FieldName]types.FieldName{}
-	for _, renameField := range renameFields {
-		parts := strings.Split(renameField, ":")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename field: %s", renameField)
-		}
-		renamesFieldsMap[types.FieldName(parts[0])] = types.FieldName(parts[1])
-	}
-
-	regexpReplacements := middlewares.RegexpReplacements{}
-	for _, renameRegexpField := range renameRegexpFields {
-		parts := strings.Split(renameRegexpField, ":")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
-		}
-		re, err := regexp.Compile(parts[0])
-		if err != nil {
-			return nil, errors.Wrapf(err, "Invalid regexp: %s", parts[0])
-		}
-		regexpReplacements = append(regexpReplacements,
-			&middlewares.RegexpReplacement{Regexp: re, Replacement: parts[1]})
-	}
-
-	return &RenameSettings{
-		RenameFields:  renamesFieldsMap,
-		RenameRegexps: regexpReplacements,
-		YamlFile:      renameYaml,
-	}, nil
-}
 
 type FlagsDefaults struct {
 	Output       *OutputFlagsDefaults
@@ -139,13 +31,33 @@ func NewFlagsDefaults() *FlagsDefaults {
 	}
 }
 
-func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
-	AddOutputFlags(cmd)
-	AddSelectFlags(cmd, defaults.Select)
-	AddRenameFlags(cmd, defaults.Rename)
-	AddTemplateFlags(cmd)
-	AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
-	AddReplaceFlags(cmd, defaults.Replace)
+func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
+	err := AddOutputFlags(cmd, defaults.Output)
+	if err != nil {
+		return err
+	}
+	err = AddSelectFlags(cmd, defaults.Select)
+	if err != nil {
+		return err
+	}
+	err = AddRenameFlags(cmd, defaults.Rename)
+	if err != nil {
+		return err
+	}
+	err = AddTemplateFlags(cmd, defaults.Template)
+	if err != nil {
+		return err
+	}
+	err = AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
+	if err != nil {
+		return err
+	}
+	err = AddReplaceFlags(cmd, defaults.Replace)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.OutputFormatter, error) {

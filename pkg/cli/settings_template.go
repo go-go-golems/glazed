@@ -8,7 +8,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -56,11 +55,17 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 	return s
 }
 
-func AddTemplateFlags(cmd *cobra.Command) {
-	err := cmds.AddFlagsToCobraCommand(cmd, templateFlagsParametersList)
+func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error {
+	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(fieldsFiltersFlagsParametersList, defaults)
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to add template flags")
+		return errors.Wrap(err, "Failed to clone template flags parameters")
 	}
+	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	if err != nil {
+		return errors.Wrap(err, "Failed to add template flags to cobra command")
+	}
+
+	return nil
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {

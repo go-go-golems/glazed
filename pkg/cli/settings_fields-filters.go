@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 //go:embed "flags/fields-filters.yaml"
@@ -25,6 +24,15 @@ type FieldsFilterSettings struct {
 	Fields         []string `glazed.parameter:"fields"`
 	SortColumns    bool     `glazed.parameter:"sort-columns"`
 	ReorderColumns []string
+}
+
+func NewFieldsFilterSettings(parameters map[string]interface{}) (*FieldsFilterSettings, error) {
+	s := &FieldsFilterSettings{}
+	err := cmds.InitializeStructFromParameters(s, parameters)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize fields and filters settings")
+	}
+	return s, nil
 }
 
 func (fff *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
@@ -62,47 +70,38 @@ func NewFieldsFilterFlagsDefaults() *FieldsFilterFlagsDefaults {
 // - FieldsFilterMiddleware
 // - SortColumnsMiddleware
 // - ReorderColumnOrderMiddleware
-func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefaults) {
+func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefaults) error {
 	defaultFieldHelp := defaults.Fields
 	if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
 		defaults.Fields = []string{"all"}
 	}
 	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(fieldsFiltersFlagsParametersList, defaults)
 	if err != nil {
-		// TODO(manuel, 2023-02-12) This needs proper error handling
-		panic(errors.Wrap(err, "Failed to add fields and filters flags to cobra command"))
+		return errors.Wrap(err, "Failed to clone fields and filters flags parameters")
 	}
 	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
 	if err != nil {
-		panic(errors.Wrap(err, "Failed to add fields and filters flags to cobra command"))
+		return errors.Wrap(err, "Failed to add fields and filters flags to cobra command")
 	}
+
+	return nil
 }
 
 func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
-	fieldStr := cmd.Flag("fields").Value.String()
-	filters := []string{}
-	fields := []string{}
-	if fieldStr != "" {
-		fields = strings.Split(fieldStr, ",")
-	}
-	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		filters = []string{}
-	} else {
-		filterStr := cmd.Flag("filter").Value.String()
-		if filterStr != "" {
-			filters = strings.Split(filterStr, ",")
-		}
-	}
-
-	sortColumns, err := cmd.Flags().GetBool("sort-columns")
+	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, fieldsFiltersFlagsParametersList, false)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
-	return &FieldsFilterSettings{
-		Fields:         fields,
-		Filters:        filters,
-		SortColumns:    sortColumns,
-		ReorderColumns: fields,
-	}, nil
+	res, err := NewFieldsFilterSettings(parameters)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create fields and filters settings from parameters")
+	}
+
+	// if fields were manually specified, clear whatever default filters we might have set
+	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
+		res.Filters = []string{}
+	}
+
+	return res, nil
 }

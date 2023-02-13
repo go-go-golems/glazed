@@ -1,15 +1,10 @@
-- name: replace-file
-  type: string
-  help: File with replacements
-  default: ""
-
 - name: rename
   type: stringList
   help: Rename fields (list of oldName:newName)
   default: []
 
 - name: rename-regexp
-  type: stringList
+  type: keyValueList
   help: Rename fields using regular expressions (list of regex:newName)
   default: []
 

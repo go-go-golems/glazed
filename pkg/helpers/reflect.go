@@ -13,6 +13,7 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 		return fmt.Errorf("cannot set unexported reflect.Value")
 	}
 
+	//exhaustive:ignore
 	switch value.Kind() {
 	case reflect.String:
 		if s, ok := v.(string); ok {

@@ -134,8 +134,10 @@ func add(a, b interface{}) interface{} {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 
+	//exhaustive:ignore
 	switch av.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() + bv.Int()
@@ -151,6 +153,7 @@ func add(a, b interface{}) interface{} {
 		}
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return int64(av.Uint()) + bv.Int()
@@ -166,6 +169,7 @@ func add(a, b interface{}) interface{} {
 		}
 
 	case reflect.Float32, reflect.Float64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Float() + float64(bv.Int())
@@ -189,8 +193,10 @@ func sub(a, b interface{}) interface{} {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 
+	//exhaustive:ignore
 	switch av.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() - bv.Int()
@@ -206,6 +212,7 @@ func sub(a, b interface{}) interface{} {
 		}
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return int64(av.Uint()) - bv.Int()
@@ -221,6 +228,7 @@ func sub(a, b interface{}) interface{} {
 		}
 
 	case reflect.Float32, reflect.Float64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Float() - float64(bv.Int())
@@ -244,8 +252,10 @@ func mul(a, b interface{}) interface{} {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 
+	//exhaustive:ignore
 	switch av.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() * bv.Int()
@@ -261,6 +271,7 @@ func mul(a, b interface{}) interface{} {
 		}
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return int64(av.Uint()) * bv.Int()
@@ -276,6 +287,7 @@ func mul(a, b interface{}) interface{} {
 		}
 
 	case reflect.Float32, reflect.Float64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Float() * float64(bv.Int())
@@ -299,8 +311,10 @@ func div(a, b interface{}) interface{} {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 
+	//exhaustive:ignore
 	switch av.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() / bv.Int()
@@ -316,6 +330,7 @@ func div(a, b interface{}) interface{} {
 		}
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return int64(av.Uint()) / bv.Int()
@@ -331,6 +346,7 @@ func div(a, b interface{}) interface{} {
 		}
 
 	case reflect.Float32, reflect.Float64:
+		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Float() / float64(bv.Int())
@@ -396,6 +412,7 @@ func parseInt(s string) int64 {
 func currency(i interface{}) string {
 	iv := reflect.ValueOf(i)
 
+	//exhaustive:ignore
 	switch iv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%d.00", iv.Int())

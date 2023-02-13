@@ -389,14 +389,20 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	err := cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 	// parser can be "simple" or "dom"
 	parseCmd.Flags().StringP("parser", "t", "simple", "Type of output to generate")
 	addExtensionFlags(parseCmd)
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	err = cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 	splitByHeadingCmd.Flags().Bool("keep-empty-headings", false, "Keep empty headings")
 	splitByHeadingCmd.Flags().Int("level", 2, "Heading level to split by")
 	MarkdownCmd.AddCommand(splitByHeadingCmd)

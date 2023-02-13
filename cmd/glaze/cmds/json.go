@@ -79,7 +79,10 @@ var JsonCmd = &cobra.Command{
 
 func init() {
 	JsonCmd.Flags().SortFlags = false
-	cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
+	err := cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")
