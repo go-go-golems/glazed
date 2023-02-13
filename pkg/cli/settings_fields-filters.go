@@ -30,7 +30,11 @@ func NewFieldsFilterSettings(parameters map[string]interface{}) (*FieldsFilterSe
 	s := &FieldsFilterSettings{}
 	err := cmds.InitializeStructFromParameters(s, parameters)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize fields and filters settings")
+		return nil, err
+	}
+
+	if len(s.Fields) == 1 && s.Fields[0] == "all" {
+		s.Fields = []string{}
 	}
 	return s, nil
 }

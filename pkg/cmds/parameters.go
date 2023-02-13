@@ -216,7 +216,7 @@ func InitializeStructFromParameters(s interface{}, parameters map[string]interfa
 		}
 		v_, ok := parameters[v]
 		if !ok {
-			return errors.Errorf("unknown parameter %s", v)
+			continue
 		}
 		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 

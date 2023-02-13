@@ -15,7 +15,7 @@ var JsonCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
 		}
 
