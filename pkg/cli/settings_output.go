@@ -132,7 +132,7 @@ func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
 		return errors.Wrap(err, "Failed to clone output flags parameters")
 	}
 
-	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
 	if err != nil {
 		return errors.Wrap(err, "Failed to add output flags to cobra command")
 	}

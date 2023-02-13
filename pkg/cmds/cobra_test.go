@@ -605,7 +605,7 @@ func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *exp
 
 	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
-	err = AddFlagsToCobraCommand(cmd, desc.Flags)
+	err = AddFlagsToCobraCommand(cmd.Flags(), desc.Flags)
 	require.Nil(t, err)
 	cmd.SetArgs(expected.Args)
 

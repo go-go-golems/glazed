@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +18,11 @@ type CommandAlias struct {
 	AliasedCommand Command  `yaml:",omitempty"`
 	Parents        []string `yaml:",omitempty"`
 	Source         string   `yaml:",omitempty"`
+}
+
+func (a *CommandAlias) String() string {
+	return fmt.Sprintf("CommandAlias{Name: %s, AliasFor: %s, Parents: %v, Source: %s}",
+		a.Name, a.AliasFor, a.Parents, a.Source)
 }
 
 func (a *CommandAlias) Run(parameters map[string]interface{}, gp *GlazeProcessor) error {

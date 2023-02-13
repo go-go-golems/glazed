@@ -60,7 +60,7 @@ func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error
 	if err != nil {
 		return errors.Wrap(err, "Failed to clone template flags parameters")
 	}
-	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
 	if err != nil {
 		return errors.Wrap(err, "Failed to add template flags to cobra command")
 	}

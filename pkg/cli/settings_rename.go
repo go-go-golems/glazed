@@ -74,7 +74,7 @@ func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) error {
 	if err != nil {
 		return err
 	}
-	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
 	if err != nil {
 		return err
 	}

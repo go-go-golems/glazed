@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	flag "github.com/spf13/pflag"
 	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -205,7 +206,7 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 // concept of what it means for a library user to overload the defaults handling
 // mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
 // an empty list or a list containing "all" should be treated the same.
-func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) error {
+func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
@@ -236,9 +237,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 		case ParameterTypeInteger:
 			defaultValue := 0
@@ -251,9 +252,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().IntP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Int(flagName, defaultValue, parameter.Help)
+				flagSet.Int(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeFloat:
@@ -267,9 +268,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().Float64P(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.Float64P(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Float64(flagName, defaultValue, parameter.Help)
+				flagSet.Float64(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeBool:
@@ -283,9 +284,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().BoolP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.BoolP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Bool(flagName, defaultValue, parameter.Help)
+				flagSet.Bool(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeDate:
@@ -305,9 +306,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeStringList:
@@ -332,9 +333,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeKeyValue:
@@ -368,9 +369,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeIntegerList:
@@ -383,9 +384,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().IntSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntSliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().IntSlice(flagName, defaultValue, parameter.Help)
+				flagSet.IntSlice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeFloatList:
@@ -397,9 +398,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 				}
 			}
 			if parameter.ShortFlag != "" {
-				cmd.Flags().Float64SliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.Float64SliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Float64Slice(flagName, defaultValue, parameter.Help)
+				flagSet.Float64Slice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeChoice:
@@ -415,9 +416,9 @@ func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) er
 			choiceString := strings.Join(parameter.Choices, ",")
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
 			} else {
-				cmd.Flags().String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
 			}
 
 		default:
@@ -542,7 +543,7 @@ func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := AddFlagsToCobraCommand(cmd, description.Flags)
+	err := AddFlagsToCobraCommand(cmd.Flags(), description.Flags)
 	if err != nil {
 		return nil, err
 	}

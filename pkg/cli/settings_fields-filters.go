@@ -39,13 +39,13 @@ func NewFieldsFilterSettings(parameters map[string]interface{}) (*FieldsFilterSe
 	return s, nil
 }
 
-func (fff *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
-	of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(fff.Fields, fff.Filters))
-	if fff.SortColumns {
+func (ffs *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
+	of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
+	if ffs.SortColumns {
 		of.AddTableMiddleware(middlewares.NewSortColumnsMiddleware())
 	}
-	if len(fff.ReorderColumns) > 0 {
-		of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(fff.ReorderColumns))
+	if len(ffs.ReorderColumns) > 0 {
+		of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
 	}
 }
 
@@ -83,7 +83,7 @@ func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefault
 	if err != nil {
 		return errors.Wrap(err, "Failed to clone fields and filters flags parameters")
 	}
-	err = cmds.AddFlagsToCobraCommand(cmd, parameters)
+	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
 	if err != nil {
 		return errors.Wrap(err, "Failed to add fields and filters flags to cobra command")
 	}
