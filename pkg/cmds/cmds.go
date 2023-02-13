@@ -445,7 +445,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 					log.Debug().Str("file", fileName).Msg("Loading command from file")
 					commands, err := l.loader.LoadCommandFromYAML(file)
 					if err != nil {
-						return nil, errors.Wrapf(err, "Could not load command from file %s", fileName)
+						return nil, err
 					}
 					if len(commands) != 1 {
 						return nil, errors.New("Expected exactly one command")
