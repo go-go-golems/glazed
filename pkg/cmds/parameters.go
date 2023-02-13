@@ -219,6 +219,50 @@ func InitializeStructFromParameters(s interface{}, parameters map[string]interfa
 	return nil
 }
 
+// CloneParameterDefinitionsWithDefaultsStruct clones the parameter definitions
+// and sets the default values from the struct's tag `glazed.parameter`.
+//
+// TODO(manuel, 2023-02-12): This function is not necessary if we have a better way of initializing defaults
+//
+// This is more of a placeholder while we are refactoring things for
+// https://github.com/go-go-golems/glazed/issues/132
+func CloneParameterDefinitionsWithDefaultsStruct(
+	parameterList []*ParameterDefinition,
+	s interface{},
+) ([]*ParameterDefinition, error) {
+	ret := make([]*ParameterDefinition, len(parameterList))
+
+	// gather default by parameter name from s
+	defaults := map[string]reflect.Value{}
+	// check that s is indeed a pointer to a struct
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return nil, errors.Errorf("s is not a pointer")
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return nil, errors.Errorf("s is not a pointer to a struct")
+	}
+	st := reflect.TypeOf(s).Elem()
+
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		v, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+		defaults[v] = value
+	}
+
+	for i, p := range parameterList {
+		ret[i] = p.Copy()
+		if v, ok := defaults[p.Name]; ok {
+			ret[i].Default = v.Interface()
+		}
+	}
+
+	return ret, nil
+}
+
 type ParameterType string
 
 const (

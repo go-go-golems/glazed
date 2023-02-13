@@ -174,6 +174,43 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 
 // AddFlagsToCobraCommand takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Flags() of a the passed cobra command.
+//
+// # TODO(manuel, 2023-02-12) We need to handle arbitrary defaults here
+//
+// See https://github.com/go-go-golems/glazed/issues/132
+//
+// Currently, usage of this functions just passes the defaults encoded in
+// the metadata YAML files (for glazed flags at least), but really we want
+// to override this on a per command basis easily without having to necessarily
+// copy or mutate the parameters loaded from yaml.
+//
+// One option would be to remove the defaults structs, and do the overloading
+// by command with ParameterList manipulating functions, so that it is easy for the
+// library user to override and further tweak the defaults.
+//
+// Currently, that behaviour is encoded in the AddFieldsFilterFlags function itself.
+//
+// What also needs to be considered is the bigger context that these declarative flags
+// and arguments definitions are going to be used in a lot of different contexts,
+// and might need to be overloaded and initialized in different ways.
+//
+// For example:
+// - REST API
+// - CLI
+// - GRPC service
+// - TUI bubbletea UI
+// - Web UI
+// - declarative config files
+//
+// --- 2023-02-12 - manuel
+//
+// I went with the following solution:
+//
+// One other option would be to pass this function a map with overloaded default,
+// but while that feels easier and cleaner in the short term, I think it limits the
+// concept of what it means for a library user to overload the defaults handling
+// mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
+// an empty list or a list containing "all" should be treated the same.
 func AddFlagsToCobraCommand(cmd *cobra.Command, flags []*ParameterDefinition) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()

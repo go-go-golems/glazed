@@ -44,8 +44,18 @@ func init() {
 	cli.AddOutputFlags(DocsCmd)
 	cli.AddTemplateFlags(DocsCmd)
 	cli.AddFieldsFilterFlags(DocsCmd, &cli.FieldsFilterFlagsDefaults{
-		Fields:      "path,Title,SectionType,Slug,Commands,Flags,Topics,IsTopLevel,ShowPerDefault",
-		Filter:      "",
+		Fields: []string{
+			"path",
+			"Title",
+			"SectionType",
+			"Slug",
+			"Commands",
+			"Flags",
+			"Topics",
+			"IsTopLevel",
+			"ShowPerDefault",
+		},
+		Filter:      []string{},
 		SortColumns: false,
 	})
 }
