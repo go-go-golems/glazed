@@ -16,6 +16,7 @@ type UnsignedInt interface {
 	uint | uint8 | uint16 | uint32 | uint64 | uintptr
 }
 
+// CastList casts a list of From objects to To, by casting it to an interface{} in between.
 func CastList[To any, From any](list []From) ([]To, bool) {
 	ret := []To{}
 
@@ -32,16 +33,34 @@ func CastList[To any, From any](list []From) ([]To, bool) {
 	return ret, true
 }
 
-func CastToInt64List[From Number](list []From) ([]int64, bool) {
-	ret := []int64{}
+// CastList2 attempts even harder to cast a list of From object to To, by checking if we might
+// be dealing with a list masquerading as a interface{}, then a []interface{}, before checking for []To.
+func CastList2[To any, From any](list interface{}) ([]To, bool) {
+	ret := []To{}
 
-	for _, item := range list {
-		ret = append(ret, int64(item))
+	switch l := list.(type) {
+	case []interface{}:
+		for _, item := range l {
+			casted, ok := item.(To)
+			if !ok {
+				return ret, false
+			}
+
+			ret = append(ret, casted)
+		}
+	case []From:
+		return CastList[To, From](l)
+	case []To:
+		ret = append(ret, l...)
+	default:
+		return ret, false
 	}
 
 	return ret, true
 }
 
+// CastToNumberList casts a list of From objects to To.
+// This is useful for transform between different int types, for example.
 func CastToNumberList[To Number, From Number](list []From) ([]To, bool) {
 	ret := []To{}
 

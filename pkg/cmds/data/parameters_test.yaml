@@ -133,7 +133,7 @@
       - name: "default1"
         value: 42
       - name: "default2"
-        value: 42
+        value: 43
 
 - name: object-list-from-file-flag-without-default
   type: objectListFromFile

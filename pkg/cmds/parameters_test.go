@@ -216,3 +216,202 @@ func TestSetValueFromDefaultIntList(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []int{}, il)
 }
+
+func TestSetValueFromDefaultInt32List(t *testing.T) {
+	intListFlag := testParameterDefinitions["int-list-flag"]
+	require.NotNil(t, intListFlag)
+
+	il := []int32{4, 5, 6}
+
+	// get values of testStruct.IntList
+	ilValue := reflect.ValueOf(&il).Elem()
+
+	err := intListFlag.SetValueFromDefault(ilValue)
+	require.NoError(t, err)
+	assert.Equal(t, []int32{1, 2, 3}, il)
+
+	intListFlag = testParameterDefinitions["int-list-flag-without-default"]
+	require.NotNil(t, intListFlag)
+	err = intListFlag.SetValueFromDefault(ilValue)
+	require.NoError(t, err)
+	assert.Equal(t, []int32{}, il)
+
+	il = []int32{4, 5, 6}
+
+	intListFlag = testParameterDefinitions["int-list-flag-with-empty-default"]
+	require.NotNil(t, intListFlag)
+	err = intListFlag.SetValueFromDefault(ilValue)
+	require.NoError(t, err)
+	assert.Equal(t, []int32{}, il)
+}
+
+func TestSetValueFromDefaultFloatList(t *testing.T) {
+	floatListFlag := testParameterDefinitions["float-list-flag"]
+
+	fl := []float64{4.0, 5.0, 6.0}
+
+	// get values of testStruct.FloatList
+	flValue := reflect.ValueOf(&fl).Elem()
+
+	err := floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float64{1.1, 2.2, 3.3}, fl)
+
+	floatListFlag = testParameterDefinitions["float-list-flag-without-default"]
+	err = floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float64{}, fl)
+
+	fl = []float64{4.0, 5.0, 6.0}
+
+	floatListFlag = testParameterDefinitions["float-list-flag-with-empty-default"]
+	err = floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float64{}, fl)
+}
+
+func TestSetValueFromDefaultFloat32List(t *testing.T) {
+	floatListFlag := testParameterDefinitions["float-list-flag"]
+	require.NotNil(t, floatListFlag)
+
+	fl := []float32{4.0, 5.0, 6.0}
+
+	// get values of testStruct.FloatList
+	flValue := reflect.ValueOf(&fl).Elem()
+
+	err := floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float32{1.1, 2.2, 3.3}, fl)
+
+	floatListFlag = testParameterDefinitions["float-list-flag-without-default"]
+	require.NotNil(t, floatListFlag)
+	err = floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float32{}, fl)
+
+	fl = []float32{4.0, 5.0, 6.0}
+
+	floatListFlag = testParameterDefinitions["float-list-flag-with-empty-default"]
+	require.NotNil(t, floatListFlag)
+	err = floatListFlag.SetValueFromDefault(flValue)
+	require.NoError(t, err)
+	assert.Equal(t, []float32{}, fl)
+}
+
+func TestSetValueFromDefaultObjectFromFile(t *testing.T) {
+	objectFromFileFlag := testParameterDefinitions["object-from-file-flag"]
+
+	fl := map[string]interface{}{"foo": "bar"}
+	oValue := reflect.ValueOf(&fl).Elem()
+
+	err := objectFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"name": "default", "value": 42}, fl)
+
+	objectFromFileFlag = testParameterDefinitions["object-from-file-flag-without-default"]
+	err = objectFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{}, fl)
+
+	fl = map[string]interface{}{"foo": "bar"}
+
+	objectFromFileFlag = testParameterDefinitions["object-from-file-flag-with-empty-default"]
+	err = objectFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{}, fl)
+}
+
+func TestSetValueFromDefaultObjectListFromFile(t *testing.T) {
+	objectListFromFileFlag := testParameterDefinitions["object-list-from-file-flag"]
+
+	fl := []map[string]interface{}{{"foo": "bar"}}
+	oValue := reflect.ValueOf(&fl).Elem()
+
+	err := objectListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{
+		{"name": "default1", "value": 42},
+		{"name": "default2", "value": 43},
+	}, fl)
+
+	objectListFromFileFlag = testParameterDefinitions["object-list-from-file-flag-without-default"]
+	err = objectListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{}, fl)
+
+	fl = []map[string]interface{}{{"foo": "bar"}}
+
+	objectListFromFileFlag = testParameterDefinitions["object-list-from-file-flag-with-empty-default"]
+	err = objectListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{}, fl)
+}
+
+func TestSetValueFromDefaultStringFromFile(t *testing.T) {
+	stringFromFileFlag := testParameterDefinitions["string-from-file-flag"]
+
+	fl := "foo"
+	oValue := reflect.ValueOf(&fl).Elem()
+
+	err := stringFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, "default", fl)
+
+	stringFromFileFlag = testParameterDefinitions["string-from-file-flag-without-default"]
+	err = stringFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, "", fl)
+
+	fl = "foo"
+
+	stringFromFileFlag = testParameterDefinitions["string-from-file-flag-with-empty-default"]
+	err = stringFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, "", fl)
+}
+
+//	func TestSetValueFromDefaultStringListFromFile(t *testing.T) {
+//		stringListFromFileFlag := testParameterDefinitions["string-list-from-file-flag"]
+//
+//		fl := []string{"foo"}
+//		oValue := reflect.ValueOf(&fl).Elem()
+//
+//		err := stringListFromFileFlag.SetValueFromDefault(oValue)
+//		require.NoError(t, err)
+//		assert.Equal(t, []string{"default1", "default2"}, fl)
+//
+//		stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-without-default"]
+//		err = stringListFromFileFlag.SetValueFromDefault(oValue)
+//		require.NoError(t, err)
+//		assert.Equal(t, []string{}, fl)
+//
+//		fl = []string{"foo"}
+//
+//		stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-with-empty-default"]
+//		err = stringListFromFileFlag.SetValueFromDefault(oValue)
+//		require.NoError(t, err)
+//		assert.Equal(t, []string{}, fl)
+//	}
+
+func TestSetValueFromDefaultKeyValue(t *testing.T) {
+	keyValueFlag := testParameterDefinitions["key-value-flag"]
+
+	fl := map[string]string{"foo": "bar"}
+	oValue := reflect.ValueOf(&fl).Elem()
+
+	err := keyValueFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"key1": "value1", "key2": "value2"}, fl)
+
+	keyValueFlag = testParameterDefinitions["key-value-flag-without-default"]
+	err = keyValueFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{}, fl)
+
+	fl = map[string]string{"foo": "bar"}
+
+	keyValueFlag = testParameterDefinitions["key-value-flag-with-empty-default"]
+	err = keyValueFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{}, fl)
+}

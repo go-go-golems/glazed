@@ -3,6 +3,7 @@ package cmds
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/araddon/dateparse"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
@@ -28,6 +29,10 @@ type ParameterDefinition struct {
 	Default   interface{}   `yaml:"default,omitempty"`
 	Choices   []string      `yaml:"choices,omitempty"`
 	Required  bool          `yaml:"required,omitempty"`
+}
+
+func (p *ParameterDefinition) String() string {
+	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
 }
 
 func (p *ParameterDefinition) Copy() *ParameterDefinition {
@@ -123,7 +128,11 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]map[string]interface{}{}))
 		} else {
-			value.Set(reflect.ValueOf(p.Default.([]map[string]interface{})))
+			list2, b := helpers.CastList2[map[string]interface{}, interface{}](p.Default)
+			if !b {
+				return errors.Errorf("default value for parameter %s is not a list of maps", p.Name)
+			}
+			value.Set(reflect.ValueOf(list2))
 		}
 	case ParameterTypeObjectFromFile:
 		if p.Default == nil {
@@ -133,7 +142,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		}
 	case ParameterTypeKeyValue:
 		if p.Default == nil {
-			value.Set(reflect.ValueOf(map[string]interface{}{}))
+			value.Set(reflect.ValueOf(map[string]string{}))
 		} else {
 			v, ok := p.Default.(map[string]interface{})
 			if !ok {
@@ -307,11 +316,16 @@ const (
 
 	// TODO (2023-02-07) It would be great to have "list of objects from file" here
 	// See https://github.com/go-go-golems/glazed/issues/117
+	//
+	// - string (potentially from file if starting with @)
+	// - string/int/float list from file is another useful type
 
 	ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
 	ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
+
 	// ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
-	ParameterTypeKeyValue    ParameterType = "keyValue"
+	ParameterTypeKeyValue ParameterType = "keyValue"
+
 	ParameterTypeInteger     ParameterType = "int"
 	ParameterTypeFloat       ParameterType = "float"
 	ParameterTypeBool        ParameterType = "bool"
