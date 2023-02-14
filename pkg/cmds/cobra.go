@@ -458,13 +458,16 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 		}
 
 		switch parameter.Type {
-		case ParameterTypeString:
-			fallthrough
 		case ParameterTypeObjectFromFile:
+			// XXX should be implemented
 			fallthrough
 		case ParameterTypeObjectListFromFile:
+			// XXX should be implemented
 			fallthrough
 		case ParameterTypeStringFromFile:
+			// XXX should be implemented
+			fallthrough
+		case ParameterTypeString:
 			fallthrough
 		case ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
@@ -509,7 +512,20 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 			parameters[parameter.Name] = v
 
 		case ParameterTypeKeyValue:
-			fallthrough
+			v, err := cmd.Flags().GetStringSlice(flagName)
+			if err != nil {
+				return nil, err
+			}
+			keyValueMap := map[string]string{}
+			for _, keyValue := range v {
+				parts := strings.SplitN(keyValue, ":", 2)
+				if len(parts) != 2 {
+					return nil, errors.Errorf("Invalid key value pair %s", keyValue)
+				}
+				keyValueMap[parts[0]] = parts[1]
+			}
+			parameters[parameter.Name] = keyValueMap
+
 		case ParameterTypeStringList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {

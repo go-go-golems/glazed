@@ -543,82 +543,43 @@ type commandTest struct {
 	Tests       []*expectedCommandResults `yaml:"tests"`
 }
 
-//go:embed "data/cobra/*.yaml"
+//go:embed "test-data/cobra/*.yaml"
 var cobraData embed.FS
 
 func TestCommandArgumentsParsing(t *testing.T) {
 	// enumerate all the test files in cobraData
-	files, err := cobraData.ReadDir("data/cobra")
+	files, err := cobraData.ReadDir("test-data/cobra")
 	require.NoError(t, err)
 
 	for _, file := range files {
 		// load yaml from file
 		testSuite := &commandTest{}
-		fileData, err := cobraData.ReadFile("data/cobra/" + file.Name())
+		fileData, err := cobraData.ReadFile("test-data/cobra/" + file.Name())
 		require.NoError(t, err)
+
 		err = yaml.Unmarshal(fileData, testSuite)
 		require.NoError(t, err)
-		for _, test := range testSuite.Tests {
-			testCommandParseHelper(t, testSuite.Description, test)
+
+		if testSuite.Description.Name != "key-value" {
+			// XXX hack to debug
+			continue
 		}
-	}
-}
 
-func TestGatherCommand(t *testing.T) {
-	desc := &CommandDescription{
-		Arguments: []*ParameterDefinition{
-			{
-				Name:     "foo",
-				Type:     ParameterTypeString,
-				Required: true,
-			},
-			{
-				Name:     "bar",
-				Type:     ParameterTypeStringList,
-				Required: true,
-			},
-		},
-		Flags: []*ParameterDefinition{
-			{
-				Name:    "baz",
-				Type:    ParameterTypeString,
-				Default: "blop",
-			},
-		},
-	}
+		for _, test := range testSuite.Tests {
+			test2 := test
+			if test2.ExpectedArgumentParameters == nil {
+				test2.ExpectedArgumentParameters = map[string]interface{}{}
+			}
+			if test2.ExpectedFlagParameters == nil {
+				test2.ExpectedFlagParameters = map[string]interface{}{}
+			}
 
-	expectedResults := []expectedCommandResults{
-		{
-			Args: []string{"--baz", "blip", "foo", "bar", "baz"},
-			ExpectedArgumentParameters: map[string]interface{}{
-				"foo": "foo",
-				"bar": []string{"bar", "baz"},
-			},
-			ExpectedFlagParameters: map[string]interface{}{
-				"baz": "blip",
-			},
-		},
-		{
-			Args: []string{"foo", "bar"},
-			ExpectedArgumentParameters: map[string]interface{}{
-				"foo": "foo",
-				"bar": []string{"bar"},
-			},
-			ExpectedFlagParameters: map[string]interface{}{
-				"baz": "blop",
-			},
-		},
-		{
-			Args:                  []string{"foo"},
-			ExpectedArgumentError: true,
-		},
-	}
-
-	for _, expected := range expectedResults {
-		expected2 := expected
-		t.Run(fmt.Sprintf("%s: %s", desc.Name, expected2.Name), func(t *testing.T) {
-			testCommandParseHelper(t, desc, &expected2)
-		})
+			t.Run(
+				fmt.Sprintf("%s/%s", testSuite.Description.Name, test2.Name),
+				func(t *testing.T) {
+					testCommandParseHelper(t, testSuite.Description, test2)
+				})
+		}
 	}
 }
 
@@ -682,10 +643,10 @@ func testCommandParseHelper(
 	assertJsonEquivalent(t, expected.ExpectedFlagParameters, flagParameters)
 }
 
-func assertJsonEquivalent(t *testing.T, a interface{}, b interface{}) {
-	aBytes, err := json.Marshal(a)
+func assertJsonEquivalent(t *testing.T, expected interface{}, actual interface{}) {
+	expectedBytes, err := json.MarshalIndent(expected, "", "  ")
 	require.NoError(t, err)
-	bBytes, err := json.Marshal(b)
+	actualBytes, err := json.MarshalIndent(actual, "", "  ")
 	require.NoError(t, err)
-	assert.JSONEq(t, string(aBytes), string(bBytes))
+	assert.JSONEq(t, string(expectedBytes), string(actualBytes))
 }

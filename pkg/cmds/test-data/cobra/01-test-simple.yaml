@@ -1,5 +1,6 @@
 description:
   name: test-simple
+  short: A simple test to handle multiple arguments, one required, the rest a list
   arguments:
     - name: foo
       type: string

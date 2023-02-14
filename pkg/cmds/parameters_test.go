@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//go:embed "data/parameters_test.yaml"
+//go:embed "test-data/parameters_test.yaml"
 var testFlagsYaml []byte
 
 var testParameterDefinitions map[string]*ParameterDefinition
