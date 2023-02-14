@@ -4,9 +4,9 @@
   default: ""
 
 - name: template-field
-  type: stringList
+  type: keyValue
   help: For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary
-  default: []
+  default: {}
 
 - name: use-row-templates
   type: bool

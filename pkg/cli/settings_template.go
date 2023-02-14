@@ -40,9 +40,9 @@ func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error 
 }
 
 type TemplateFlagsDefaults struct {
-	Template        string   `glazed.parameter:"template"`
-	TemplateField   []string `glazed.parameter:"template-field"`
-	UseRowTemplates bool     `glazed.parameter:"use-row-templates"`
+	Template        string            `glazed.parameter:"template"`
+	TemplateField   map[string]string `glazed.parameter:"template-field"`
+	UseRowTemplates bool              `glazed.parameter:"use-row-templates"`
 }
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
