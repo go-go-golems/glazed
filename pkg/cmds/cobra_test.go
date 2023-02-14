@@ -1,10 +1,14 @@
 package cmds
 
 import (
+	"embed"
+	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zenizh/go-capturer"
+	"gopkg.in/yaml.v3"
 	"testing"
 	"time"
 )
@@ -520,16 +524,48 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// expectedCommandResults is a struct that contains the expected results of a command,
+// which is a list of parsed flag parameters, a list of parsed arguments parameters,
+// as well as potential errors.
+//
+// This is used to quickly check the result of passing a set of arguments to a command.
 type expectedCommandResults struct {
-	ExpectedArgumentParameters map[string]interface{}
-	ExpectedFlagParameters     map[string]interface{}
-	ExpectedFlagError          bool
-	ExpectedArgumentError      bool
-	Args                       []string
+	Name                       string                 `yaml:"name"`
+	ExpectedArgumentParameters map[string]interface{} `yaml:"argumentParameters"`
+	ExpectedFlagParameters     map[string]interface{} `yaml:"flagParameters"`
+	ExpectedFlagError          bool                   `yaml:"flagError"`
+	ExpectedArgumentError      bool                   `yaml:"argumentError"`
+	Args                       []string               `yaml:"args"`
+}
+
+type commandTest struct {
+	Description *CommandDescription       `yaml:"description"`
+	Tests       []*expectedCommandResults `yaml:"tests"`
+}
+
+//go:embed "data/cobra/*.yaml"
+var cobraData embed.FS
+
+func TestCommandArgumentsParsing(t *testing.T) {
+	// enumerate all the test files in cobraData
+	files, err := cobraData.ReadDir("data/cobra")
+	require.NoError(t, err)
+
+	for _, file := range files {
+		// load yaml from file
+		testSuite := &commandTest{}
+		fileData, err := cobraData.ReadFile("data/cobra/" + file.Name())
+		require.NoError(t, err)
+		err = yaml.Unmarshal(fileData, testSuite)
+		require.NoError(t, err)
+		for _, test := range testSuite.Tests {
+			testCommandParseHelper(t, testSuite.Description, test)
+		}
+	}
 }
 
 func TestGatherCommand(t *testing.T) {
-	desc := CommandDescription{
+	desc := &CommandDescription{
 		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
@@ -579,12 +615,18 @@ func TestGatherCommand(t *testing.T) {
 	}
 
 	for _, expected := range expectedResults {
-		testCommandParseHelper(t, desc, &expected)
+		expected2 := expected
+		t.Run(fmt.Sprintf("%s: %s", desc.Name, expected2.Name), func(t *testing.T) {
+			testCommandParseHelper(t, desc, &expected2)
+		})
 	}
-
 }
 
-func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *expectedCommandResults) {
+func testCommandParseHelper(
+	t *testing.T,
+	desc *CommandDescription,
+	expected *expectedCommandResults,
+) {
 	var flagsError error
 	var argsError error
 	var flagParameters map[string]interface{}
@@ -636,6 +678,14 @@ func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *exp
 		assert.NoErrorf(t, argsError, "expected no error for %v", expected.Args)
 	}
 
-	assert.Equal(t, expected.ExpectedArgumentParameters, argumentParameters)
-	assert.Equal(t, expected.ExpectedFlagParameters, flagParameters)
+	assertJsonEquivalent(t, expected.ExpectedArgumentParameters, argumentParameters)
+	assertJsonEquivalent(t, expected.ExpectedFlagParameters, flagParameters)
+}
+
+func assertJsonEquivalent(t *testing.T, a interface{}, b interface{}) {
+	aBytes, err := json.Marshal(a)
+	require.NoError(t, err)
+	bBytes, err := json.Marshal(b)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(aBytes), string(bBytes))
 }

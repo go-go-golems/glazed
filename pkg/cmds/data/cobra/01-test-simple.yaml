@@ -1,0 +1,35 @@
+description:
+  name: test-simple
+  arguments:
+    - name: foo
+      type: string
+      required: true
+    - name: bar
+      type: stringList
+      required: true
+  flags:
+    - name: baz
+      type: string
+      default: "blop"
+tests:
+  - args: [ "--baz", "blip", "foo", "bar", "baz" ]
+    name: "test a single flag and multiple arguments"
+    argumentParameters:
+      foo: "foo"
+      bar:
+        - "bar"
+        - "baz"
+    flagParameters:
+      baz: "blip"
+
+  - args: [ "foo", "bar" ]
+    name: "test multiple arguments and a default flag"
+    argumentParameters:
+      foo: "foo"
+      bar:
+        - "bar"
+    flagParameters:
+      baz: "blop"
+  - args: [ "foo"]
+    name: "test a single argument and a default flag, which should fail, since we need at least two arguments"
+    argumentError: true
