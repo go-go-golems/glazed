@@ -27,3 +27,16 @@ glaze json misc/test-data/[123].json \
 glaze json misc/test-data/[123].json \
     --template-field '@misc/template-field-object.yaml' \
     --output json
+
+glaze json misc/test-data/[123].json --select a
+
+glaze json misc/test-data/[123].json \
+    --select-template '{{.a}}-{{.b}}'
+
+glaze yaml misc/test-data/test.yaml --input-is-array --rename baz:blop
+
+glaze yaml misc/test-data/test.yaml --input-is-array \
+    --rename-regexp '^(.*)bar:${1}blop'
+
+glaze yaml misc/test-data/test.yaml --input-is-array \
+    --rename-yaml misc/rename.yaml

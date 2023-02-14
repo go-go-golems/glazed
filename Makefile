@@ -33,3 +33,9 @@ release:
 
 exhaustive:
 	golangci-lint run -v --enable=exhaustive
+
+GLAZE_BINARY=$(shell which glaze)
+
+install:
+	go build -o ./dist/glaze ./cmd/glaze && \
+		cp ./dist/glaze $(GLAZE_BINARY)
