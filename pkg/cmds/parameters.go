@@ -311,7 +311,12 @@ func CloneParameterDefinitionsWithDefaultsStruct(
 type ParameterType string
 
 const (
-	ParameterTypeString         ParameterType = "string"
+	ParameterTypeString ParameterType = "string"
+
+	// TODO(2023-02-13, manuel) Should the "default" of a stringFromFile be the filename, or the string?
+	//
+	// See https://github.com/go-go-golems/glazed/issues/137
+
 	ParameterTypeStringFromFile ParameterType = "stringFromFile"
 
 	// TODO (2023-02-07) It would be great to have "list of objects from file" here

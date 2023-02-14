@@ -560,7 +560,7 @@ func TestCommandArgumentsParsing(t *testing.T) {
 		err = yaml.Unmarshal(fileData, testSuite)
 		require.NoError(t, err)
 
-		if testSuite.Description.Name != "key-value" {
+		if testSuite.Description.Name != "string-from-file" {
 			// XXX hack to debug
 			continue
 		}

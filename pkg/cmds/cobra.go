@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/araddon/dateparse"
 	"github.com/pkg/errors"
@@ -220,13 +221,20 @@ func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition)
 		ok := false
 
 		switch parameter.Type {
-		case ParameterTypeString:
-			fallthrough
 		case ParameterTypeStringFromFile:
 			fallthrough
 		case ParameterTypeObjectFromFile:
 			fallthrough
 		case ParameterTypeObjectListFromFile:
+			defaultValue := ""
+
+			if parameter.ShortFlag != "" {
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.String(flagName, defaultValue, parameter.Help)
+			}
+
+		case ParameterTypeString:
 			defaultValue := ""
 
 			if parameter.Default != nil {
@@ -459,14 +467,112 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 
 		switch parameter.Type {
 		case ParameterTypeObjectFromFile:
-			// XXX should be implemented
-			fallthrough
+			v, err := cmd.Flags().GetString(flagName)
+			if err != nil {
+				return nil, err
+			}
+			if v == "" {
+				parameters[parameter.Name] = parameter.Default
+				continue
+			}
+			// TODO(manuel, 2023-02-13) Handle stdin
+			// See https://github.com/go-go-golems/glazed/issues/138
+
+			if v == "-" {
+				return nil, errors.Errorf("Reading from stdin is not implemented yet")
+			}
+
+			// open file and parse it
+			data, err := os.ReadFile(v)
+			if err != nil {
+				return nil, err
+			}
+
+			// check file name for format
+			if strings.HasSuffix(v, ".json") {
+				var obj interface{}
+				err = json.Unmarshal(data, &obj)
+				if err != nil {
+					return nil, err
+				}
+				parameters[parameter.Name] = obj
+			} else if strings.HasSuffix(v, ".yaml") || strings.HasSuffix(v, ".yml") {
+				var obj interface{}
+				err = yaml.Unmarshal(data, &obj)
+				if err != nil {
+					return nil, err
+				}
+				parameters[parameter.Name] = obj
+			} else {
+				return nil, errors.Errorf("Cannot parse file %s: unknown file format", v)
+			}
+
 		case ParameterTypeObjectListFromFile:
-			// XXX should be implemented
-			fallthrough
+			v, err := cmd.Flags().GetString(flagName)
+			if err != nil {
+				return nil, err
+			}
+
+			if v == "" {
+				parameters[parameter.Name] = parameter.Default
+				continue
+			}
+
+			if v == "-" {
+				return nil, errors.Errorf("Reading from stdin is not implemented yet")
+			}
+
+			// open file and parse it
+			data, err := os.ReadFile(v)
+			if err != nil {
+				return nil, err
+			}
+
+			// check file name for format
+			if strings.HasSuffix(v, ".json") {
+				var obj []interface{}
+				err = json.Unmarshal(data, &obj)
+				if err != nil {
+					return nil, err
+				}
+				parameters[parameter.Name] = obj
+			} else if strings.HasSuffix(v, ".yaml") || strings.HasSuffix(v, ".yml") {
+				var obj []interface{}
+				err = yaml.Unmarshal(data, &obj)
+				if err != nil {
+					return nil, err
+				}
+				parameters[parameter.Name] = obj
+			} else {
+				return nil, errors.Errorf("Cannot parse file %s: unknown file format", v)
+			}
+
 		case ParameterTypeStringFromFile:
-			// XXX should be implemented
-			fallthrough
+			v, err := cmd.Flags().GetString(flagName)
+			if err != nil {
+				return nil, err
+			}
+
+			// print pwd
+			pwd, _ := os.Getwd()
+			fmt.Println(pwd)
+
+			if v == "" {
+				parameters[parameter.Name] = parameter.Default
+				continue
+			}
+
+			if v == "-" {
+				return nil, errors.Errorf("Reading from stdin is not implemented yet")
+			}
+
+			// open file and parse it
+			data, err := os.ReadFile(v)
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = string(data)
+
 		case ParameterTypeString:
 			fallthrough
 		case ParameterTypeChoice:
