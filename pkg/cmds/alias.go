@@ -25,11 +25,11 @@ func (a *CommandAlias) String() string {
 		a.Name, a.AliasFor, a.Parents, a.Source)
 }
 
-func (a *CommandAlias) Run(parameters map[string]interface{}) error {
+func (a *CommandAlias) Run(parameters map[string]interface{}, gp *GlazeProcessor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run(parameters)
+	return a.AliasedCommand.Run(parameters, gp)
 }
 
 func (a *CommandAlias) IsValid() bool {
@@ -47,8 +47,8 @@ func (a *CommandAlias) Description() *CommandDescription {
 		Name:      a.Name,
 		Short:     s.Short,
 		Long:      s.Long,
-		Flags:     []*Parameter{},
-		Arguments: []*Parameter{},
+		Flags:     []*ParameterDefinition{},
+		Arguments: []*ParameterDefinition{},
 	}
 
 	for _, flag := range s.Flags {

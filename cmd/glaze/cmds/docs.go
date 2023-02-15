@@ -41,11 +41,34 @@ var DocsCmd = &cobra.Command{
 
 func init() {
 	DocsCmd.Flags().SortFlags = false
-	cli.AddOutputFlags(DocsCmd, cli.NewOutputFlagsDefaults())
-	cli.AddTemplateFlags(DocsCmd, cli.NewTemplateFlagsDefaults())
-	cli.AddFieldsFilterFlags(DocsCmd, &cli.FieldsFilterFlagsDefaults{
-		Fields:      "path,Title,SectionType,Slug,Commands,Flags,Topics,IsTopLevel,ShowPerDefault",
-		Filter:      "",
+	err := cli.AddOutputFlags(DocsCmd, cli.NewOutputFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
+	err = cli.AddTemplateFlags(DocsCmd, cli.NewTemplateFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO(2023-02-12, manuel) Overload settings could be loaded from YAML too
+	//
+	// See https://github.com/go-go-golems/glazed/issues/133
+	err = cli.AddFieldsFilterFlags(DocsCmd, &cli.FieldsFilterFlagsDefaults{
+		Fields: []string{
+			"path",
+			"Title",
+			"SectionType",
+			"Slug",
+			"Commands",
+			"Flags",
+			"Topics",
+			"IsTopLevel",
+			"ShowPerDefault",
+		},
+		Filter:      []string{},
 		SortColumns: false,
 	})
+	if err != nil {
+		panic(err)
+	}
 }

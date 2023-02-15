@@ -2,11 +2,10 @@ package cmds
 
 import (
 	"fmt"
-	"github.com/araddon/dateparse"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/tj/go-naturaldate"
+	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
@@ -26,15 +25,15 @@ type CobraCommand interface {
 // refTime is used to set a reference time for natural date parsing for unit test purposes
 var refTime *time.Time
 
-// GatherParameters takes a cobra command, an argument list as well as a description
+// GatherParametersFromCobraCommand takes a cobra command, an argument list as well as a description
 // of the sqleton command arguments, and returns a list of parsed parameters as a
 // hashmap. It does so by parsing both the flags and the positional arguments.
-func GatherParameters(
+func GatherParametersFromCobraCommand(
 	cmd *cobra.Command,
 	description *CommandDescription,
 	args []string,
 ) (map[string]interface{}, error) {
-	parameters, err := GatherFlags(cmd, description.Flags, false)
+	parameters, err := GatherFlagsFromCobraCommand(cmd, description.Flags, false)
 	if err != nil {
 		return nil, err
 	}
@@ -83,18 +82,18 @@ func GatherParameters(
 	return parameters, nil
 }
 
-// AddArguments adds the arguments (not the flags) of a CommandDescription to a cobra command
+// AddArgumentsToCobraCommand adds the arguments (not the flags) of a CommandDescription to a cobra command
 // as positional arguments.
 // An optional argument cannot be followed by a required argument.
 // Similarly, a list of arguments cannot be followed by any argument (since we otherwise wouldn't
 // know how many belong to the list and where to do the cut off).
-func AddArguments(cmd *cobra.Command, description *CommandDescription) error {
+func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
 	hadOptional := false
 
-	for _, argument := range description.Arguments {
+	for _, argument := range arguments {
 		if maxArgs == -1 {
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
@@ -113,10 +112,7 @@ func AddArguments(cmd *cobra.Command, description *CommandDescription) error {
 			hadOptional = true
 		}
 		maxArgs++
-		switch argument.Type {
-		case ParameterTypeStringList:
-			fallthrough
-		case ParameterTypeIntegerList:
+		if argument.Type == ParameterTypeStringList || argument.Type == ParameterTypeIntegerList {
 			maxArgs = -1
 		}
 	}
@@ -132,7 +128,7 @@ func AddArguments(cmd *cobra.Command, description *CommandDescription) error {
 // GatherArguments parses the positional arguments passed as a list of strings into a map of
 // parsed values. If onlyProvided is true, then only arguments that are provided are returned
 // (i.e. the default values are not included).
-func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (map[string]interface{}, error) {
+func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	_ = args
 	result := make(map[string]interface{})
 	argsIdx := 0
@@ -150,13 +146,10 @@ func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (
 
 		v := []string{args[argsIdx]}
 
-		switch argument.Type {
-		case ParameterTypeStringList:
-			fallthrough
-		case ParameterTypeIntegerList:
+		if IsListParameter(argument.Type) {
 			v = args[argsIdx:]
 			argsIdx = len(args)
-		default:
+		} else {
 			argsIdx++
 		}
 		i2, err := argument.ParseParameter(v)
@@ -172,10 +165,47 @@ func GatherArguments(args []string, arguments []*Parameter, onlyProvided bool) (
 	return result, nil
 }
 
-// AddFlags takes the parameters from a CommandDescription and converts them
+// AddFlagsToCobraCommand takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Flags() of a the passed cobra command.
-func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
-	for _, parameter := range description.Flags {
+//
+// # TODO(manuel, 2023-02-12) We need to handle arbitrary defaults here
+//
+// See https://github.com/go-go-golems/glazed/issues/132
+//
+// Currently, usage of this functions just passes the defaults encoded in
+// the metadata YAML files (for glazed flags at least), but really we want
+// to override this on a per command basis easily without having to necessarily
+// copy or mutate the parameters loaded from yaml.
+//
+// One option would be to remove the defaults structs, and do the overloading
+// by command with ParameterList manipulating functions, so that it is easy for the
+// library user to override and further tweak the defaults.
+//
+// Currently, that behaviour is encoded in the AddFieldsFilterFlags function itself.
+//
+// What also needs to be considered is the bigger context that these declarative flags
+// and arguments definitions are going to be used in a lot of different contexts,
+// and might need to be overloaded and initialized in different ways.
+//
+// For example:
+// - REST API
+// - CLI
+// - GRPC service
+// - TUI bubbletea UI
+// - Web UI
+// - declarative config files
+//
+// --- 2023-02-12 - manuel
+//
+// I went with the following solution:
+//
+// One other option would be to pass this function a map with overloaded default,
+// but while that feels easier and cleaner in the short term, I think it limits the
+// concept of what it means for a library user to overload the defaults handling
+// mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
+// an empty list or a list containing "all" should be treated the same.
+func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition) error {
+	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
@@ -188,6 +218,19 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 		ok := false
 
 		switch parameter.Type {
+		case ParameterTypeStringFromFile:
+			fallthrough
+		case ParameterTypeObjectFromFile:
+			fallthrough
+		case ParameterTypeObjectListFromFile:
+			defaultValue := ""
+
+			if parameter.ShortFlag != "" {
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.String(flagName, defaultValue, parameter.Help)
+			}
+
 		case ParameterTypeString:
 			defaultValue := ""
 
@@ -199,9 +242,9 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 		case ParameterTypeInteger:
 			defaultValue := 0
@@ -214,9 +257,25 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().IntP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Int(flagName, defaultValue, parameter.Help)
+				flagSet.Int(flagName, defaultValue, parameter.Help)
+			}
+
+		case ParameterTypeFloat:
+			defaultValue := 0.0
+
+			if parameter.Default != nil {
+				defaultValue, ok = parameter.Default.(float64)
+				if !ok {
+					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
+				}
+			}
+
+			if parameter.ShortFlag != "" {
+				flagSet.Float64P(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.Float64(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeBool:
@@ -230,9 +289,9 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().BoolP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.BoolP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().Bool(flagName, defaultValue, parameter.Help)
+				flagSet.Bool(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeDate:
@@ -252,9 +311,9 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeStringList:
@@ -279,9 +338,45 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
+			}
+
+		case ParameterTypeKeyValue:
+			var defaultValue []string
+
+			if parameter.Default != nil {
+				stringMap, ok := parameter.Default.(map[string]string)
+				if !ok {
+					defaultValue, ok := parameter.Default.(map[string]interface{})
+					if !ok {
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+					}
+
+					stringMap = make(map[string]string)
+					for k, v := range defaultValue {
+						stringMap[k] = fmt.Sprintf("%v", v)
+					}
+				}
+
+				stringList := make([]string, 0)
+				for k, v := range stringMap {
+					// TODO(manuel, 2023-02-11) This is fixed to : but should be configurable
+					// See https://github.com/go-go-golems/glazed/issues/129
+					stringList = append(stringList, fmt.Sprintf("%s:%s", k, v))
+				}
+
+				defaultValue = stringList
+			}
+			if err != nil {
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+			}
+
+			if parameter.ShortFlag != "" {
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeIntegerList:
@@ -294,9 +389,23 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			}
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().IntSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntSliceP(flagName, shortFlag, defaultValue, parameter.Help)
 			} else {
-				cmd.Flags().IntSlice(flagName, defaultValue, parameter.Help)
+				flagSet.IntSlice(flagName, defaultValue, parameter.Help)
+			}
+
+		case ParameterTypeFloatList:
+			var defaultValue []float64
+			if parameter.Default != nil {
+				defaultValue, ok = parameter.Default.([]float64)
+				if !ok {
+					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
+				}
+			}
+			if parameter.ShortFlag != "" {
+				flagSet.Float64SliceP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.Float64Slice(flagName, defaultValue, parameter.Help)
 			}
 
 		case ParameterTypeChoice:
@@ -312,23 +421,26 @@ func AddFlags(cmd *cobra.Command, description *CommandDescription) error {
 			choiceString := strings.Join(parameter.Choices, ",")
 
 			if parameter.ShortFlag != "" {
-				cmd.Flags().StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
 			} else {
-				cmd.Flags().String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
 			}
+
+		default:
+			panic(fmt.Sprintf("Unknown parameter type %s", parameter.Type))
 		}
 	}
 
 	return nil
 }
 
-// GatherFlags gathers the flags from the cobra command, and parses them according
+// GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
 // to the parameter description passed in params. The result is a map of parameter
 // names to parsed values. If onlyProvided is true, only parameters that are provided
 // by the user are returned (i.e. not the default values).
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (map[string]interface{}, error) {
+func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	parameters := map[string]interface{}{}
 
 	for _, parameter := range params {
@@ -338,7 +450,7 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 
 		if !cmd.Flags().Changed(flagName) {
 			if parameter.Required {
-				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
+				return nil, errors.Errorf("ParameterDefinition %s is required", parameter.Name)
 			}
 
 			if parameter.Default == nil {
@@ -351,10 +463,29 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 		}
 
 		switch parameter.Type {
+		case ParameterTypeObjectFromFile:
+			fallthrough
+		case ParameterTypeObjectListFromFile:
+			fallthrough
+		case ParameterTypeStringFromFile:
+			fallthrough
 		case ParameterTypeString:
+			fallthrough
+		case ParameterTypeDate:
 			fallthrough
 		case ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
+			if err != nil {
+				return nil, err
+			}
+			v2, err := parameter.ParseParameter([]string{v})
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = v2
+
+		case ParameterTypeFloat:
+			v, err := cmd.Flags().GetFloat64(flagName)
 			if err != nil {
 				return nil, err
 			}
@@ -367,20 +498,6 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 			}
 			parameters[parameter.Name] = v
 
-		case ParameterTypeDate:
-			v, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, err
-			}
-			parsedDate, err := dateparse.ParseAny(v)
-			if err != nil {
-				parsedDate, err = naturaldate.Parse(v, time.Now())
-				if err != nil {
-					return nil, errors.Wrapf(err, "Could not parse date %s", v)
-				}
-			}
-			parameters[parameter.Name] = parsedDate
-
 		case ParameterTypeBool:
 			v, err := cmd.Flags().GetBool(flagName)
 			if err != nil {
@@ -389,14 +506,27 @@ func GatherFlags(cmd *cobra.Command, params []*Parameter, onlyProvided bool) (ma
 			parameters[parameter.Name] = v
 
 		case ParameterTypeStringList:
+			fallthrough
+		case ParameterTypeKeyValue:
 			v, err := cmd.Flags().GetStringSlice(flagName)
+			if err != nil {
+				return nil, err
+			}
+			v2, err := parameter.ParseParameter(v)
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = v2
+
+		case ParameterTypeIntegerList:
+			v, err := cmd.Flags().GetIntSlice(flagName)
 			if err != nil {
 				return nil, err
 			}
 			parameters[parameter.Name] = v
 
-		case ParameterTypeIntegerList:
-			v, err := cmd.Flags().GetIntSlice(flagName)
+		case ParameterTypeFloatList:
+			v, err := cmd.Flags().GetFloat64Slice(flagName)
 			if err != nil {
 				return nil, err
 			}
@@ -414,12 +544,12 @@ func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := AddFlags(cmd, description)
+	err := AddFlagsToCobraCommand(cmd.Flags(), description.Flags)
 	if err != nil {
 		return nil, err
 	}
 
-	err = AddArguments(cmd, description)
+	err = AddArgumentsToCobraCommand(cmd, description.Arguments)
 	if err != nil {
 		return nil, err
 	}

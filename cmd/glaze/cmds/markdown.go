@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -121,7 +122,7 @@ var parseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -183,7 +184,7 @@ var parseCmd = &cobra.Command{
 //		    }
 //
 // ]
-func splitByHeading(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) error {
+func splitByHeading(md goldmark.Markdown, s []byte, gp *cmds.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -256,7 +257,7 @@ func splitByHeading(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) erro
 // simpleLinearize is a simple walker that will linearize the blocks encountered,
 // and filter out the Document and Text blocks
 // to avoid duplicates, for a very simple document.
-func simpleLinearize(md goldmark.Markdown, s []byte, gp *cli.GlazeProcessor) error {
+func simpleLinearize(md goldmark.Markdown, s []byte, gp *cmds.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -311,7 +312,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -388,14 +389,20 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	err := cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 	// parser can be "simple" or "dom"
 	parseCmd.Flags().StringP("parser", "t", "simple", "Type of output to generate")
 	addExtensionFlags(parseCmd)
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	err = cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 	splitByHeadingCmd.Flags().Bool("keep-empty-headings", false, "Keep empty headings")
 	splitByHeadingCmd.Flags().Int("level", 2, "Heading level to split by")
 	MarkdownCmd.AddCommand(splitByHeadingCmd)

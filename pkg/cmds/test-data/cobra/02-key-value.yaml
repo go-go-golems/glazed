@@ -1,0 +1,17 @@
+description:
+  name: key-value
+  short: Test parsing key value flags
+  flags:
+      - name: kv
+        type: keyValue
+        default:
+          key1: value1
+          key2: value2
+tests:
+  - args: []
+    name: default
+    flagParameters:
+      kv:
+        key1: value1
+        key2: value2
+

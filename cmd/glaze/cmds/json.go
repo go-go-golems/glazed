@@ -15,7 +15,7 @@ var JsonCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.SetupProcessor(cmd)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  processors: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -79,7 +79,10 @@ var JsonCmd = &cobra.Command{
 
 func init() {
 	JsonCmd.Flags().SortFlags = false
-	cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
+	err := cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 
 	// json input options
 	JsonCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")

@@ -1,0 +1,52 @@
+- name: output
+  shortFlag: o
+  type: choice
+  help: Output format (table, csv, tsv, json, yaml, sqlite, template, markdown)
+  default: table
+  choices:
+    - table
+    - csv
+    - tsv
+    - json
+    - yaml
+    - sqlite
+    - template
+    - markdown
+
+- name: output-file
+  shortFlag: f
+  type: string
+  help: Output file
+
+- name: template-file
+  type: string
+  help: Template file for template output
+
+- name: template-data
+  type: stringList
+  help: Additional data for template output
+
+- name: table-format
+  type: string
+  help: Table format (ascii, markdown, html, csv, tsv)
+  default: "ascii"
+
+- name: with-headers
+  type: bool
+  help: Include headers in output (CSV, TSV)
+  default: true
+
+- name: csv-separator
+  type: string
+  help: CSV separator
+  default: ","
+
+- name: output-as-objects
+  type: bool
+  help: Output as individual objects instead of JSON array
+  default: false
+
+- name: flatten
+  type: bool
+  help: Flatten nested fields (after templating)
+  default: false

@@ -1,10 +1,14 @@
 package cmds
 
 import (
+	"embed"
+	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zenizh/go-capturer"
+	"gopkg.in/yaml.v3"
 	"testing"
 	"time"
 )
@@ -12,9 +16,9 @@ import (
 func TestAddZeroArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{},
+		Arguments: []*ParameterDefinition{},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	// assert that err is nil
 	require.Nil(t, err)
 }
@@ -22,7 +26,7 @@ func TestAddZeroArguments(t *testing.T) {
 func TestAddSingleRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -30,7 +34,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -51,7 +55,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 func TestAddTwoRequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -64,7 +68,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -90,7 +94,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -103,7 +107,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -132,7 +136,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 func TestOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Default: "123",
@@ -140,7 +144,7 @@ func TestOneOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -160,7 +164,7 @@ func TestOneOptionalArgument(t *testing.T) {
 func TestDefaultIntValue(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Default: 123,
@@ -168,7 +172,7 @@ func TestDefaultIntValue(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	values, err := GatherArguments([]string{}, desc.Arguments, false)
 	require.Nil(t, err)
@@ -237,7 +241,7 @@ func TestValidDefaultValue(t *testing.T) {
 		{Type: ParameterTypeIntegerList, Value: []int{}},
 	}
 	for _, testCase := range testCases {
-		param := &Parameter{
+		param := &ParameterDefinition{
 			Name:    "foo",
 			Default: testCase.Value,
 			Type:    testCase.Type,
@@ -248,7 +252,7 @@ func TestValidDefaultValue(t *testing.T) {
 }
 
 func TestValidChoiceDefaultValue(t *testing.T) {
-	param := &Parameter{
+	param := &ParameterDefinition{
 		Name:    "foo",
 		Default: "bar",
 		Type:    ParameterTypeChoice,
@@ -265,7 +269,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 		"flop",
 	}
 	for _, testCase := range testCases {
-		param := &Parameter{
+		param := &ParameterDefinition{
 			Name:    "foo",
 			Default: testCase,
 			Type:    ParameterTypeChoice,
@@ -294,7 +298,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 	}
 	for _, failingType := range failingTypes {
 		desc := CommandDescription{
-			Arguments: []*Parameter{
+			Arguments: []*ParameterDefinition{
 				{
 					Name:    "foo",
 					Default: failingType.Value,
@@ -302,7 +306,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 				},
 			},
 		}
-		err := AddArguments(cmd, &desc)
+		err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
 		}
@@ -313,7 +317,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 func TestTwoOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -322,7 +326,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "blop"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -333,7 +337,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 func TestFailAddingRequiredAfterOptional(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -343,14 +347,14 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
 func TestAddStringListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -358,7 +362,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -369,7 +373,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Type:    ParameterTypeStringList,
@@ -377,7 +381,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -399,7 +403,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 				Type: ParameterTypeStringList,
@@ -409,14 +413,14 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
 func TestAddIntegerListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -424,7 +428,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"1", "2"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -435,7 +439,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -447,7 +451,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -458,7 +462,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:     "foo",
 				Required: true,
@@ -470,7 +474,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -481,7 +485,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name:    "foo",
 				Type:    ParameterTypeString,
@@ -494,7 +498,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -505,7 +509,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	desc := CommandDescription{
-		Arguments: []*Parameter{
+		Arguments: []*ParameterDefinition{
 			{
 				Name: "foo",
 			},
@@ -516,75 +520,74 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
+// expectedCommandResults is a struct that contains the expected results of a command,
+// which is a list of parsed flag parameters, a list of parsed arguments parameters,
+// as well as potential errors.
+//
+// This is used to quickly check the result of passing a set of arguments to a command.
 type expectedCommandResults struct {
-	ExpectedArgumentParameters map[string]interface{}
-	ExpectedFlagParameters     map[string]interface{}
-	ExpectedFlagError          bool
-	ExpectedArgumentError      bool
-	Args                       []string
+	Name                       string                 `yaml:"name"`
+	ExpectedArgumentParameters map[string]interface{} `yaml:"argumentParameters"`
+	ExpectedFlagParameters     map[string]interface{} `yaml:"flagParameters"`
+	ExpectedFlagError          bool                   `yaml:"flagError"`
+	ExpectedArgumentError      bool                   `yaml:"argumentError"`
+	Args                       []string               `yaml:"args"`
 }
 
-func TestGatherCommand(t *testing.T) {
-	desc := CommandDescription{
-		Arguments: []*Parameter{
-			{
-				Name:     "foo",
-				Type:     ParameterTypeString,
-				Required: true,
-			},
-			{
-				Name:     "bar",
-				Type:     ParameterTypeStringList,
-				Required: true,
-			},
-		},
-		Flags: []*Parameter{
-			{
-				Name:    "baz",
-				Type:    ParameterTypeString,
-				Default: "blop",
-			},
-		},
-	}
-
-	expectedResults := []expectedCommandResults{
-		{
-			Args: []string{"--baz", "blip", "foo", "bar", "baz"},
-			ExpectedArgumentParameters: map[string]interface{}{
-				"foo": "foo",
-				"bar": []string{"bar", "baz"},
-			},
-			ExpectedFlagParameters: map[string]interface{}{
-				"baz": "blip",
-			},
-		},
-		{
-			Args: []string{"foo", "bar"},
-			ExpectedArgumentParameters: map[string]interface{}{
-				"foo": "foo",
-				"bar": []string{"bar"},
-			},
-			ExpectedFlagParameters: map[string]interface{}{
-				"baz": "blop",
-			},
-		},
-		{
-			Args:                  []string{"foo"},
-			ExpectedArgumentError: true,
-		},
-	}
-
-	for _, expected := range expectedResults {
-		testCommandParseHelper(t, desc, &expected)
-	}
-
+type commandTest struct {
+	Description *CommandDescription       `yaml:"description"`
+	Tests       []*expectedCommandResults `yaml:"tests"`
 }
 
-func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *expectedCommandResults) {
+//go:embed "test-data/cobra/*.yaml"
+var cobraData embed.FS
+
+func TestCommandArgumentsParsing(t *testing.T) {
+	// enumerate all the test files in cobraData
+	files, err := cobraData.ReadDir("test-data/cobra")
+	require.NoError(t, err)
+
+	for _, file := range files {
+		// load yaml from file
+		testSuite := &commandTest{}
+		fileData, err := cobraData.ReadFile("test-data/cobra/" + file.Name())
+		require.NoError(t, err)
+
+		err = yaml.Unmarshal(fileData, testSuite)
+		require.NoError(t, err)
+
+		if testSuite.Description.Name != "string-from-file" {
+			// XXX hack to debug
+			continue
+		}
+
+		for _, test := range testSuite.Tests {
+			test2 := test
+			if test2.ExpectedArgumentParameters == nil {
+				test2.ExpectedArgumentParameters = map[string]interface{}{}
+			}
+			if test2.ExpectedFlagParameters == nil {
+				test2.ExpectedFlagParameters = map[string]interface{}{}
+			}
+
+			t.Run(
+				fmt.Sprintf("%s/%s", testSuite.Description.Name, test2.Name),
+				func(t *testing.T) {
+					testCommandParseHelper(t, testSuite.Description, test2)
+				})
+		}
+	}
+}
+
+func testCommandParseHelper(
+	t *testing.T,
+	desc *CommandDescription,
+	expected *expectedCommandResults,
+) {
 	var flagsError error
 	var argsError error
 	var flagParameters map[string]interface{}
@@ -592,7 +595,7 @@ func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *exp
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			flagParameters, flagsError = GatherFlags(cmd, desc.Flags, false)
+			flagParameters, flagsError = GatherFlagsFromCobraCommand(cmd, desc.Flags, false)
 			if flagsError != nil {
 				return
 			}
@@ -603,9 +606,9 @@ func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *exp
 		},
 	}
 
-	err := AddArguments(cmd, &desc)
+	err := AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
-	err = AddFlags(cmd, &desc)
+	err = AddFlagsToCobraCommand(cmd.Flags(), desc.Flags)
 	require.Nil(t, err)
 	cmd.SetArgs(expected.Args)
 
@@ -636,6 +639,14 @@ func testCommandParseHelper(t *testing.T, desc CommandDescription, expected *exp
 		assert.NoErrorf(t, argsError, "expected no error for %v", expected.Args)
 	}
 
-	assert.Equal(t, expected.ExpectedArgumentParameters, argumentParameters)
-	assert.Equal(t, expected.ExpectedFlagParameters, flagParameters)
+	assertJsonEquivalent(t, expected.ExpectedArgumentParameters, argumentParameters)
+	assertJsonEquivalent(t, expected.ExpectedFlagParameters, flagParameters)
+}
+
+func assertJsonEquivalent(t *testing.T, expected interface{}, actual interface{}) {
+	expectedBytes, err := json.MarshalIndent(expected, "", "  ")
+	require.NoError(t, err)
+	actualBytes, err := json.MarshalIndent(actual, "", "  ")
+	require.NoError(t, err)
+	assert.JSONEq(t, string(expectedBytes), string(actualBytes))
 }

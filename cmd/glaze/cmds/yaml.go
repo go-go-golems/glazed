@@ -90,7 +90,10 @@ var YamlCmd = &cobra.Command{
 
 func init() {
 	YamlCmd.Flags().SortFlags = false
-	cli.AddFlags(YamlCmd, cli.NewFlagsDefaults())
+	err := cli.AddFlags(YamlCmd, cli.NewFlagsDefaults())
+	if err != nil {
+		panic(err)
+	}
 
 	// json input options
 	YamlCmd.Flags().Bool("input-is-array", false, "Input is an array of objects")

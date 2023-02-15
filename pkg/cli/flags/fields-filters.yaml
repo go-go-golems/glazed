@@ -1,0 +1,14 @@
+- name: fields
+  type: stringList
+  help: Fields to include in the output
+  default:
+    - all
+
+- name: filter
+  type: stringList
+  help: Fields to remove from output
+
+- name: sort-columns
+  type: bool
+  help: Sort columns alphabetically
+  default: false

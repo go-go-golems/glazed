@@ -1,0 +1,5 @@
+- name: replace-file
+  type: string
+  help: File with replacements
+  default: ""
+

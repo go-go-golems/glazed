@@ -1,325 +1,15 @@
 package cli
 
 import (
-	"github.com/Masterminds/sprig"
+	_ "embed"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"os"
-	"regexp"
-	"strings"
-	"text/template"
 )
 
 // Helpers for cobra commands
-
-type OutputFlagsDefaults struct {
-	Output          string
-	OutputFile      string
-	TableFormat     string
-	WithHeaders     bool
-	CsvSeparator    string
-	OutputAsObjects bool
-	Flatten         bool
-	TemplateFile    string
-}
-
-func NewOutputFlagsDefaults() *OutputFlagsDefaults {
-	return &OutputFlagsDefaults{
-		Output:          "table",
-		OutputFile:      "",
-		TableFormat:     "ascii",
-		WithHeaders:     true,
-		CsvSeparator:    ",",
-		OutputAsObjects: false,
-		Flatten:         false,
-		TemplateFile:    "",
-	}
-}
-
-func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) {
-	cmd.PersistentFlags().StringP("output", "o", defaults.Output, "Output format (table, csv, tsv, json, yaml, sqlite, template)")
-	cmd.PersistentFlags().StringP("output-file", "f", defaults.OutputFile, "Output file")
-	cmd.PersistentFlags().String("template-file", defaults.TemplateFile, "Template file for template output")
-	cmd.PersistentFlags().StringSlice("template-data", []string{}, "Additional data for template output")
-
-	cmd.PersistentFlags().String("table-format", defaults.TableFormat, "Table format (ascii, markdown, html, csv, tsv)")
-	cmd.PersistentFlags().Bool("with-headers", defaults.WithHeaders, "Include headers in output (CSV, TSV)")
-	cmd.PersistentFlags().String("csv-separator", defaults.CsvSeparator, "CSV separator")
-
-	// json output flags
-	cmd.PersistentFlags().Bool("output-as-objects", defaults.OutputAsObjects, "Output as individual objects instead of JSON array")
-
-	// output processing
-	cmd.PersistentFlags().Bool("flatten", defaults.Flatten, "Flatten nested fields (after templating)")
-}
-
-func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
-	output := cmd.Flag("output").Value.String()
-	// TODO(manuel, 2022-11-21) Add support for output file / directory
-	_ = cmd.Flag("output-file").Value.String()
-	tableFormat := cmd.Flag("table-format").Value.String()
-	flattenInput, _ := cmd.Flags().GetBool("flatten")
-	outputAsObjects, _ := cmd.Flags().GetBool("output-as-objects")
-	withHeaders, _ := cmd.Flags().GetBool("with-headers")
-	csvSeparator, _ := cmd.Flags().GetString("csv-separator")
-	templateFile, _ := cmd.Flags().GetString("template-file")
-	templateData_, _ := cmd.Flags().GetStringSlice("template-data")
-	templateContent := ""
-
-	templateData, err := ParseCLIKeyValueData(templateData_)
-	if err != nil {
-		return nil, err
-	}
-
-	if output == "template" && templateFile == "" {
-		return nil, errors.New("template output requires a template file")
-	}
-	if templateFile != "" {
-		templateBytes, err := os.ReadFile(templateFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read template file")
-		}
-		templateContent = string(templateBytes)
-	}
-
-	return &OutputFormatterSettings{
-		Output:          output,
-		TableFormat:     tableFormat,
-		WithHeaders:     withHeaders,
-		OutputAsObjects: outputAsObjects,
-		FlattenObjects:  flattenInput,
-		CsvSeparator:    csvSeparator,
-		Template:        templateContent,
-		TemplateFormatterSettings: &TemplateFormatterSettings{
-			TemplateFuncMaps: []template.FuncMap{
-				sprig.TxtFuncMap(),
-				helpers.TemplateFuncs,
-			},
-			AdditionalData: templateData,
-		},
-	}, nil
-}
-
-type SelectFlagsDefaults struct {
-	Select         string
-	SelectTemplate string
-}
-
-func NewSelectFlagsDefaults() *SelectFlagsDefaults {
-	return &SelectFlagsDefaults{
-		Select:         "",
-		SelectTemplate: "",
-	}
-}
-
-func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) {
-	cmd.PersistentFlags().String("select", defaults.Select, "Select a single field and output as a single line")
-	cmd.PersistentFlags().String("select-template", defaults.SelectTemplate, "Output a single templated value for each row, on a single line")
-}
-
-func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
-	selectField, _ := cmd.Flags().GetString("select")
-	selectTemplate, _ := cmd.Flags().GetString("select-template")
-
-	return &SelectSettings{
-		SelectField:    selectField,
-		SelectTemplate: selectTemplate,
-	}, nil
-}
-
-type ReplaceFlagsDefaults struct {
-	// currently, only support loading replacements from a file
-	ReplaceFile string
-}
-
-func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
-	return &ReplaceFlagsDefaults{
-		ReplaceFile: "",
-	}
-}
-
-func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) {
-	cmd.PersistentFlags().String("replace-file", defaults.ReplaceFile, "File with replacements")
-}
-
-func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
-	replaceFile, _ := cmd.Flags().GetString("replace-file")
-
-	return &ReplaceSettings{
-		ReplaceFile: replaceFile,
-	}, nil
-}
-
-type RenameFlagsDefaults struct {
-	Rename       []string
-	RenameRegexp []string
-	RenameYaml   string
-}
-
-func NewRenameFlagsDefaults() *RenameFlagsDefaults {
-	return &RenameFlagsDefaults{
-		Rename:       []string{},
-		RenameRegexp: []string{},
-		RenameYaml:   "",
-	}
-}
-
-func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) {
-	cmd.PersistentFlags().StringSlice("rename", defaults.Rename, "Rename fields (list of oldName:newName)")
-	cmd.PersistentFlags().StringSlice("rename-regexp", defaults.RenameRegexp, "Rename fields using regular expressions (list of regex:newName)")
-	cmd.PersistentFlags().String("rename-yaml", defaults.RenameYaml, "Rename fields using a yaml file")
-}
-
-func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
-	renameFields, _ := cmd.Flags().GetStringSlice("rename")
-	renameRegexpFields, _ := cmd.Flags().GetStringSlice("rename-regexp")
-	renameYaml, _ := cmd.Flags().GetString("rename-yaml")
-
-	renamesFieldsMap := map[types.FieldName]types.FieldName{}
-	for _, renameField := range renameFields {
-		parts := strings.Split(renameField, ":")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename field: %s", renameField)
-		}
-		renamesFieldsMap[types.FieldName(parts[0])] = types.FieldName(parts[1])
-	}
-
-	regexpReplacements := middlewares.RegexpReplacements{}
-	for _, renameRegexpField := range renameRegexpFields {
-		parts := strings.Split(renameRegexpField, ":")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
-		}
-		re, err := regexp.Compile(parts[0])
-		if err != nil {
-			return nil, errors.Wrapf(err, "Invalid regexp: %s", parts[0])
-		}
-		regexpReplacements = append(regexpReplacements,
-			&middlewares.RegexpReplacement{Regexp: re, Replacement: parts[1]})
-	}
-
-	return &RenameSettings{
-		RenameFields:  renamesFieldsMap,
-		RenameRegexps: regexpReplacements,
-		YamlFile:      renameYaml,
-	}, nil
-}
-
-type TemplateFlagsDefaults struct {
-	Template        string
-	TemplateField   []string
-	UseRowTemplates bool
-}
-
-func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
-	return &TemplateFlagsDefaults{
-		Template:        "",
-		TemplateField:   nil,
-		UseRowTemplates: false,
-	}
-}
-
-func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) {
-	cmd.PersistentFlags().String("template", defaults.Template, "Go Template to use for single string")
-	cmd.PersistentFlags().StringSlice("template-field", defaults.TemplateField, "For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary")
-	cmd.PersistentFlags().Bool("use-row-templates", defaults.UseRowTemplates, "Use row templates instead of column templates")
-}
-
-func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
-	// templates get applied before flattening
-	templates := map[types.FieldName]string{}
-
-	templateArgument, _ := cmd.Flags().GetString("template")
-	if templateArgument != "" {
-		templates = map[types.FieldName]string{}
-		templates["_0"] = templateArgument
-	} else {
-		templateFields, _ := cmd.Flags().GetStringSlice("template-field")
-		kvs, err := ParseCLIKeyValueData(templateFields)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range kvs {
-			vString, ok := v.(string)
-			if !ok {
-				return nil, errors.Errorf("template-field %s is not a string", k)
-			}
-			templates[types.FieldName(k)] = vString
-		}
-	}
-
-	useRowTemplates, _ := cmd.Flags().GetBool("use-row-templates")
-
-	return &TemplateSettings{
-		Templates:       templates,
-		UseRowTemplates: useRowTemplates,
-		RenameSeparator: "_",
-	}, nil
-}
-
-// TODO(manuel, 2022-11-20) Make it easy for the developer to configure which flag they want
-// and which they don't
-
-type FieldsFilterFlagsDefaults struct {
-	Fields      string
-	Filter      string
-	SortColumns bool
-}
-
-func NewFieldsFilterFlagsDefaults() *FieldsFilterFlagsDefaults {
-	return &FieldsFilterFlagsDefaults{
-		Fields:      "",
-		Filter:      "",
-		SortColumns: false,
-	}
-}
-
-// AddFieldsFilterFlags adds the flags for the following middlewares to the cmd:
-// - FieldsFilterMiddleware
-// - SortColumnsMiddleware
-// - ReorderColumnOrderMiddleware
-func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefaults) {
-	defaultFieldHelp := defaults.Fields
-	if defaultFieldHelp == "" {
-		defaultFieldHelp = "all"
-	}
-	cmd.PersistentFlags().String("fields", defaults.Fields, "Fields to include in the output, default: "+defaultFieldHelp)
-	cmd.PersistentFlags().String("filter", defaults.Filter, "Fields to remove from output")
-	cmd.PersistentFlags().Bool("sort-columns", defaults.SortColumns, "Sort columns alphabetically")
-}
-
-func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
-	fieldStr := cmd.Flag("fields").Value.String()
-	filters := []string{}
-	fields := []string{}
-	if fieldStr != "" {
-		fields = strings.Split(fieldStr, ",")
-	}
-	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		filters = []string{}
-	} else {
-		filterStr := cmd.Flag("filter").Value.String()
-		if filterStr != "" {
-			filters = strings.Split(filterStr, ",")
-		}
-	}
-
-	sortColumns, err := cmd.Flags().GetBool("sort-columns")
-	if err != nil {
-		return nil, err
-	}
-
-	return &FieldsFilterSettings{
-		Fields:         fields,
-		Filters:        filters,
-		SortColumns:    sortColumns,
-		ReorderColumns: fields,
-	}, nil
-}
 
 type FlagsDefaults struct {
 	Output       *OutputFlagsDefaults
@@ -341,16 +31,36 @@ func NewFlagsDefaults() *FlagsDefaults {
 	}
 }
 
-func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) {
-	AddOutputFlags(cmd, defaults.Output)
-	AddSelectFlags(cmd, defaults.Select)
-	AddRenameFlags(cmd, defaults.Rename)
-	AddTemplateFlags(cmd, defaults.Template)
-	AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
-	AddReplaceFlags(cmd, defaults.Replace)
+func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
+	err := AddOutputFlags(cmd, defaults.Output)
+	if err != nil {
+		return err
+	}
+	err = AddSelectFlags(cmd, defaults.Select)
+	if err != nil {
+		return err
+	}
+	err = AddRenameFlags(cmd, defaults.Rename)
+	if err != nil {
+		return err
+	}
+	err = AddTemplateFlags(cmd, defaults.Template)
+	if err != nil {
+		return err
+	}
+	err = AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
+	if err != nil {
+		return err
+	}
+	err = AddReplaceFlags(cmd, defaults.Replace)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputFormatter, error) {
+func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.OutputFormatter, error) {
 	outputSettings, err := ParseOutputFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing output flags")
@@ -423,6 +133,6 @@ func SetupProcessor(cmd *cobra.Command) (*GlazeProcessor, formatters.OutputForma
 		middlewares_ = append(middlewares_, ogtm)
 	}
 
-	gp := NewGlazeProcessor(of, middlewares_)
+	gp := cmds.NewGlazeProcessor(of, middlewares_)
 	return gp, of, nil
 }

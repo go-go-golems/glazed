@@ -1,0 +1,17 @@
+description:
+  name: string-from-file
+  short: Test parsing a string from file
+  flags:
+    - name: s
+      type: stringFromFile
+      default: foobarfoobar
+tests:
+  - args: []
+    name: default
+    flagParameters:
+      s: foobarfoobar
+
+  - args: [ "--s", "test-data/inputs/01-string-from-file.txt" ]
+    name: file
+    flagParameters:
+      s: blopblop

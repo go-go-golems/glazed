@@ -1,0 +1,214 @@
+- name: string-flag
+  type: string
+  help: A string flag
+  default: "default"
+
+- name: string-flag-without-default
+  type: string
+  help: A string flag without a default value
+
+- name: string-flag-with-empty-default
+  type: string
+  help: A string flag with an empty default value
+  default: ""
+
+- name: int-flag
+  type: int
+  help: An int flag
+  default: 42
+
+- name: int-flag-without-default
+  type: int
+  help: An int flag without a default value
+
+- name: int-flag-with-empty-default
+  type: int
+  help: An int flag with an empty default value
+  default: 0
+
+#  ParameterTypeString         ParameterType = "string"
+#  ParameterTypeStringFromFile ParameterType = "stringFromFile"
+#
+#  // TODO (2023-02-07) It would be great to have "list of objects from file" here
+#  // See https://github.com/go-go-golems/glazed/issues/117
+#
+#  ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
+#  ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
+#  // ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
+#  ParameterTypeKeyValue    ParameterType = "keyValue"
+#  ParameterTypeInteger     ParameterType = "int"
+#  ParameterTypeFloat       ParameterType = "float"
+#  ParameterTypeBool        ParameterType = "bool"
+#  ParameterTypeDate        ParameterType = "date"
+#  ParameterTypeStringList  ParameterType = "stringList"
+#  ParameterTypeIntegerList ParameterType = "intList"
+#  ParameterTypeFloatList   ParameterType = "floatList"
+#  ParameterTypeChoice      ParameterType = "choice"
+
+- name: string-list-flag
+  type: stringList
+  help: A string list flag
+  default: ["default1", "default2"]
+
+- name: string-list-flag-without-default
+  type: stringList
+  help: A string list flag without a default value
+
+- name: string-list-flag-with-empty-default
+  type: stringList
+  help: A string list flag with an empty default value
+  default: []
+
+- name: int-list-flag
+  type: intList
+  help: An int list flag
+  default: [1, 2, 3]
+
+- name: int-list-flag-without-default
+  type: intList
+  help: An int list flag without a default value
+
+- name: int-list-flag-with-empty-default
+  type: intList
+  help: An int list flag with an empty default value
+  default: []
+
+- name: float-flag
+  type: float
+  help: A float flag
+  default: 42.42
+
+- name: float-flag-without-default
+  type: float
+  help: A float flag without a default value
+
+- name: float-flag-with-empty-default
+  type: float
+  help: A float flag with an empty default value
+  default: 0.0
+
+- name: float-list-flag
+  type: floatList
+  help: A float list flag
+  default: [1.1, 2.2, 3.3]
+
+- name: float-list-flag-without-default
+  type: floatList
+  help: A float list flag without a default value
+
+- name: float-list-flag-with-empty-default
+  type: floatList
+  help: A float list flag with an empty default value
+  default: []
+
+- name: date-flag
+  type: date
+  help: A date flag
+  default: "2021-01-01"
+
+- name: date-flag-without-default
+  type: date
+  help: A date flag without a default value
+
+- name: object-from-file-flag
+  type: objectFromFile
+  help: An object from file flag
+  default:
+    name: "default"
+    value: 42
+
+- name: object-from-file-flag-without-default
+  type: objectFromFile
+  help: An object from file flag without a default value
+
+- name: object-from-file-flag-with-empty-default
+  type: objectFromFile
+  help: An object from file flag with an empty default value
+  default: {}
+
+- name: object-list-from-file-flag
+  type: objectListFromFile
+  help: An object list from file flag
+  default:
+      - name: "default1"
+        value: 42
+      - name: "default2"
+        value: 43
+
+- name: object-list-from-file-flag-without-default
+  type: objectListFromFile
+  help: An object list from file flag without a default value
+
+- name: object-list-from-file-flag-with-empty-default
+  type: objectListFromFile
+  help: An object list from file flag with an empty default value
+  default: []
+
+- name: string-from-file-flag
+  type: stringFromFile
+  help: A string from file flag
+  default: "default"
+
+- name: string-from-file-flag-without-default
+  type: stringFromFile
+  help: A string from file flag without a default value
+
+- name: string-from-file-flag-with-empty-default
+  type: stringFromFile
+  help: A string from file flag with an empty default value
+  default: ""
+
+- name: string-list-from-file-flag
+  type: stringListFromFile
+  help: A string list from file flag
+  default: ["default1", "default2"]
+
+- name: string-list-from-file-flag-without-default
+  type: stringListFromFile
+  help: A string list from file flag without a default value
+
+- name: string-list-from-file-flag-with-empty-default
+  type: stringListFromFile
+  help: A string list from file flag with an empty default value
+  default: []
+
+- name: bool-flag
+  type: bool
+  help: A bool flag
+  default: true
+
+- name: bool-flag-without-default
+  type: bool
+  help: A bool flag without a default value
+
+- name: bool-flag-with-empty-default
+  type: bool
+  help: A bool flag with an empty default value
+  default: false
+
+- name: choice-flag
+  type: choice
+  help: A choice flag
+  default: "default"
+  choices: ["default", "choice1", "choice2"]
+
+- name: choice-flag-without-default
+  type: choice
+  help: A choice flag without a default value
+  choices: ["choice1", "choice2"]
+
+- name: key-value-flag
+  type: keyValue
+  help: A key-value flag
+  default:
+    key1: value1
+    key2: value2
+
+- name: key-value-flag-without-default
+  type: keyValue
+  help: A key-value flag without a default value
+
+- name: key-value-flag-with-empty-default
+  type: keyValue
+  help: A key-value flag with an empty default value
+  default: {}
