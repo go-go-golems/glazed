@@ -578,11 +578,16 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 
 	case ParameterTypeObjectFromFile:
 		fileName := v[0]
+		if fileName == "" {
+			return p.Default, nil
+		}
 		f, err := os.Open(fileName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
 		}
 
+		// TODO(manuel, 2023-02-13) Handle stdin
+		// See https://github.com/go-go-golems/glazed/issues/138
 		object := interface{}(nil)
 		if strings.HasSuffix(fileName, ".json") {
 			err = json.NewDecoder(f).Decode(&object)
@@ -600,6 +605,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 
 	case ParameterTypeObjectListFromFile:
 		fileName := v[0]
+		if fileName == "" {
+			return p.Default, nil
+		}
 		f, err := os.Open(fileName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
@@ -621,6 +629,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		return objectList, nil
 
 	case ParameterTypeKeyValue:
+		if len(v) == 0 {
+			return p.Default, nil
+		}
 		ret := map[string]interface{}{}
 		if len(v) == 1 && strings.HasPrefix(v[0], "@") {
 			// load from file
@@ -652,9 +663,13 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 				ret[parts[0]] = parts[1]
 			}
 		}
+		return ret, nil
 
 	case ParameterTypeStringFromFile:
 		fileName := v[0]
+		if fileName == "" {
+			return p.Default, nil
+		}
 		if fileName == "-" {
 			var b bytes.Buffer
 			_, err := io.Copy(&b, os.Stdin)

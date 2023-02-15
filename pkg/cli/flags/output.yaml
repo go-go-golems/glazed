@@ -1,7 +1,7 @@
 - name: output
   shortFlag: o
   type: choice
-  help: Output format (table, csv, tsv, json, yaml, sqlite, template)
+  help: Output format (table, csv, tsv, json, yaml, sqlite, template, markdown)
   default: table
   choices:
     - table
@@ -11,6 +11,7 @@
     - yaml
     - sqlite
     - template
+    - markdown
 
 - name: output-file
   shortFlag: f

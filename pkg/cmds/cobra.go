@@ -1,14 +1,11 @@
 package cmds
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/araddon/dateparse"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	flag "github.com/spf13/pflag"
-	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
@@ -467,120 +464,25 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 
 		switch parameter.Type {
 		case ParameterTypeObjectFromFile:
-			v, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, err
-			}
-			if v == "" {
-				parameters[parameter.Name] = parameter.Default
-				continue
-			}
-			// TODO(manuel, 2023-02-13) Handle stdin
-			// See https://github.com/go-go-golems/glazed/issues/138
-
-			if v == "-" {
-				return nil, errors.Errorf("Reading from stdin is not implemented yet")
-			}
-
-			// open file and parse it
-			data, err := os.ReadFile(v)
-			if err != nil {
-				return nil, err
-			}
-
-			// check file name for format
-			if strings.HasSuffix(v, ".json") {
-				var obj interface{}
-				err = json.Unmarshal(data, &obj)
-				if err != nil {
-					return nil, err
-				}
-				parameters[parameter.Name] = obj
-			} else if strings.HasSuffix(v, ".yaml") || strings.HasSuffix(v, ".yml") {
-				var obj interface{}
-				err = yaml.Unmarshal(data, &obj)
-				if err != nil {
-					return nil, err
-				}
-				parameters[parameter.Name] = obj
-			} else {
-				return nil, errors.Errorf("Cannot parse file %s: unknown file format", v)
-			}
-
+			fallthrough
 		case ParameterTypeObjectListFromFile:
-			v, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, err
-			}
-
-			if v == "" {
-				parameters[parameter.Name] = parameter.Default
-				continue
-			}
-
-			if v == "-" {
-				return nil, errors.Errorf("Reading from stdin is not implemented yet")
-			}
-
-			// open file and parse it
-			data, err := os.ReadFile(v)
-			if err != nil {
-				return nil, err
-			}
-
-			// check file name for format
-			if strings.HasSuffix(v, ".json") {
-				var obj []interface{}
-				err = json.Unmarshal(data, &obj)
-				if err != nil {
-					return nil, err
-				}
-				parameters[parameter.Name] = obj
-			} else if strings.HasSuffix(v, ".yaml") || strings.HasSuffix(v, ".yml") {
-				var obj []interface{}
-				err = yaml.Unmarshal(data, &obj)
-				if err != nil {
-					return nil, err
-				}
-				parameters[parameter.Name] = obj
-			} else {
-				return nil, errors.Errorf("Cannot parse file %s: unknown file format", v)
-			}
-
+			fallthrough
 		case ParameterTypeStringFromFile:
-			v, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, err
-			}
-
-			// print pwd
-			pwd, _ := os.Getwd()
-			fmt.Println(pwd)
-
-			if v == "" {
-				parameters[parameter.Name] = parameter.Default
-				continue
-			}
-
-			if v == "-" {
-				return nil, errors.Errorf("Reading from stdin is not implemented yet")
-			}
-
-			// open file and parse it
-			data, err := os.ReadFile(v)
-			if err != nil {
-				return nil, err
-			}
-			parameters[parameter.Name] = string(data)
-
+			fallthrough
 		case ParameterTypeString:
+			fallthrough
+		case ParameterTypeDate:
 			fallthrough
 		case ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
 			if err != nil {
 				return nil, err
 			}
-			parameters[parameter.Name] = v
+			v2, err := parameter.ParseParameter([]string{v})
+			if err != nil {
+				return nil, err
+			}
+			parameters[parameter.Name] = v2
 
 		case ParameterTypeFloat:
 			v, err := cmd.Flags().GetFloat64(flagName)
@@ -596,20 +498,6 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 			}
 			parameters[parameter.Name] = v
 
-		case ParameterTypeDate:
-			v, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, err
-			}
-			parsedDate, err := dateparse.ParseAny(v)
-			if err != nil {
-				parsedDate, err = naturaldate.Parse(v, time.Now())
-				if err != nil {
-					return nil, errors.Wrapf(err, "Could not parse date %s", v)
-				}
-			}
-			parameters[parameter.Name] = parsedDate
-
 		case ParameterTypeBool:
 			v, err := cmd.Flags().GetBool(flagName)
 			if err != nil {
@@ -617,27 +505,18 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 			}
 			parameters[parameter.Name] = v
 
+		case ParameterTypeStringList:
+			fallthrough
 		case ParameterTypeKeyValue:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
 				return nil, err
 			}
-			keyValueMap := map[string]string{}
-			for _, keyValue := range v {
-				parts := strings.SplitN(keyValue, ":", 2)
-				if len(parts) != 2 {
-					return nil, errors.Errorf("Invalid key value pair %s", keyValue)
-				}
-				keyValueMap[parts[0]] = parts[1]
-			}
-			parameters[parameter.Name] = keyValueMap
-
-		case ParameterTypeStringList:
-			v, err := cmd.Flags().GetStringSlice(flagName)
+			v2, err := parameter.ParseParameter(v)
 			if err != nil {
 				return nil, err
 			}
-			parameters[parameter.Name] = v
+			parameters[parameter.Name] = v2
 
 		case ParameterTypeIntegerList:
 			v, err := cmd.Flags().GetIntSlice(flagName)
