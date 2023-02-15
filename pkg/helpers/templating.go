@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"gopkg.in/yaml.v3"
+	html "html/template"
+	"io"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -424,7 +426,12 @@ func currency(i interface{}) string {
 		return ""
 	}
 }
-func RenderTemplate(tmpl *template.Template, data interface{}) (string, error) {
+
+type TemplateExecute interface {
+	Execute(wr io.Writer, data any) error
+}
+
+func RenderTemplate(tmpl TemplateExecute, data interface{}) (string, error) {
 	var buf bytes.Buffer
 	err := tmpl.Execute(&buf, data)
 	if err != nil {
@@ -443,6 +450,15 @@ func RenderTemplateString(tmpl string, data interface{}) (string, error) {
 	return RenderTemplate(t, data)
 }
 
+func RenderHtmlTemplateString(tmpl string, data interface{}) (string, error) {
+	t, err := CreateHtmlTemplate("template").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	return RenderTemplate(t, data)
+}
+
 func RenderTemplateFile(filename string, data interface{}) (string, error) {
 	t, err := CreateTemplate("template").ParseFiles(filename)
 	if err != nil {
@@ -454,5 +470,11 @@ func RenderTemplateFile(filename string, data interface{}) (string, error) {
 func CreateTemplate(name string) *template.Template {
 	return template.New(name).
 		Funcs(sprig.TxtFuncMap()).
+		Funcs(TemplateFuncs)
+}
+
+func CreateHtmlTemplate(name string) *html.Template {
+	return html.New(name).
+		Funcs(sprig.HtmlFuncMap()).
 		Funcs(TemplateFuncs)
 }
