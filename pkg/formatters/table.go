@@ -63,6 +63,8 @@ func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
 }
 
 func (tof *TableOutputFormatter) Output() (string, error) {
+	tof.Table.Finalize()
+
 	for _, middleware := range tof.middlewares {
 		newTable, err := middleware.Process(tof.Table)
 		if err != nil {

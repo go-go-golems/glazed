@@ -54,6 +54,8 @@ func (f *CSVOutputFormatter) SetColumnOrder(columns []types.FieldName) {
 }
 
 func (f *CSVOutputFormatter) Output() (string, error) {
+	f.Table.Finalize()
+
 	for _, middleware := range f.middlewares {
 		newTable, err := middleware.Process(f.Table)
 		if err != nil {

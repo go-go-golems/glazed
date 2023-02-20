@@ -34,6 +34,8 @@ func (J *JSONOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.Ta
 }
 
 func (J *JSONOutputFormatter) Output() (string, error) {
+	J.Table.Finalize()
+
 	for _, middleware := range J.middlewares {
 		newTable, err := middleware.Process(J.Table)
 		if err != nil {
