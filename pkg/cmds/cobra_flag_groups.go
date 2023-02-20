@@ -89,11 +89,11 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	flagToGroups := map[string][]string{}
 
 	localGroupedFlags[""] = &FlagGroupUsage{
-		Name:       "Other flags",
+		Name:       "Flags",
 		FlagUsages: []*FlagUsage{},
 	}
 	inheritedGroupedFlags[""] = &FlagGroupUsage{
-		Name:       "Other flags",
+		Name:       "flags",
 		FlagUsages: []*FlagUsage{},
 	}
 
@@ -147,6 +147,13 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		}
 	})
 
+	ret.LocalGroupUsages = []*FlagGroupUsage{
+		localGroupedFlags[""],
+	}
+	ret.InheritedGroupUsages = []*FlagGroupUsage{
+		inheritedGroupedFlags[""],
+	}
+
 	// now add them in sorted order
 	for _, group := range flagGroups {
 		if _, ok := localGroupedFlags[group.ID]; ok {
@@ -160,9 +167,6 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 			}
 		}
 	}
-
-	ret.LocalGroupUsages = append(ret.LocalGroupUsages, localGroupedFlags[""])
-	ret.InheritedGroupUsages = append(ret.InheritedGroupUsages, inheritedGroupedFlags[""])
 
 	// NOTE(manuel, 2023-02-20) This is where we should compute the necessary alignment indent for each group
 
@@ -292,6 +296,11 @@ func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 	returnGroups := []*FlagGroup{}
 	for _, group := range groups {
 		returnGroups = append(returnGroups, group)
+	}
+
+	if cmd.Parent() != nil {
+		parentGroups := GetFlagGroups(cmd.Parent())
+		returnGroups = append(returnGroups, parentGroups...)
 	}
 
 	// sort by order

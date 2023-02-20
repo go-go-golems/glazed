@@ -23,13 +23,14 @@ import (
 // Along with metadata (Name, Help) that is useful for help,
 // it also specifies a Type, a Default value and if it is Required.
 type ParameterDefinition struct {
-	Name      string        `yaml:"name"`
-	ShortFlag string        `yaml:"shortFlag,omitempty"`
-	Type      ParameterType `yaml:"type"`
-	Help      string        `yaml:"help,omitempty"`
-	Default   interface{}   `yaml:"default,omitempty"`
-	Choices   []string      `yaml:"choices,omitempty"`
-	Required  bool          `yaml:"required,omitempty"`
+	Name         string        `yaml:"name"`
+	ShortFlag    string        `yaml:"shortFlag,omitempty"`
+	Type         ParameterType `yaml:"type"`
+	Help         string        `yaml:"help,omitempty"`
+	Default      interface{}   `yaml:"default,omitempty"`
+	Choices      []string      `yaml:"choices,omitempty"`
+	Required     bool          `yaml:"required,omitempty"`
+	CommandGroup string        `yaml:"commandGroup,omitempty"`
 }
 
 func (p *ParameterDefinition) String() string {
