@@ -267,10 +267,14 @@ func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 		}
 
 		parts := strings.Split(k, ":")
-		groups[parts[1]] = &FlagGroup{
-			ID:    parts[2],
-			Name:  parts[3],
-			Flags: strings.Split(v, ","),
+		id := parts[2]
+		name := parts[3]
+
+		flags := strings.Split(v, ",")
+		groups[id] = &FlagGroup{
+			ID:    id,
+			Name:  name,
+			Flags: flags,
 		}
 	}
 

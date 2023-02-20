@@ -442,7 +442,11 @@ func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition)
 // by the user are returned (i.e. not the default values).
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
+func GatherFlagsFromCobraCommand(
+	cmd *cobra.Command,
+	params []*ParameterDefinition,
+	onlyProvided bool,
+) (map[string]interface{}, error) {
 	parameters := map[string]interface{}{}
 
 	for _, parameter := range params {
