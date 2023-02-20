@@ -3,6 +3,7 @@ package help
 import (
 	_ "embed"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/spf13/cobra"
 	"strings"
@@ -37,6 +38,8 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			ShowShortTopic:  true,
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
+		// TODO(manuel, 2023-02-19) Here is where we would compute grouped flags
+		// See #59
 		return renderCommandHelpPage(c, options, hs)
 	}
 
@@ -60,7 +63,8 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 
 	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
-	t.Funcs(helpers.TemplateFuncs)
+	t.Funcs(helpers.TemplateFuncs).Funcs(sprig.TxtFuncMap())
+
 	var tmpl string
 	if options.ListSections || noResultsFound {
 		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
