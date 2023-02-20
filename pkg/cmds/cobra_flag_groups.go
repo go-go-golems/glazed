@@ -169,6 +169,28 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	return ret
 }
 
+func isZeroValue(v flag.Value, defValue string) bool {
+	vType := v.Type()
+
+	switch vType {
+	case "string":
+		return defValue == ""
+	case "bool":
+		return defValue == "false"
+	case "int":
+		return defValue == "0"
+	case "stringSlice", "intSlice", "stringArray", "intArray":
+	default:
+		switch defValue {
+		case "0", "false", "", "[]", "map[]", "<nil>":
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
+}
 func getFlagUsage(f *flag.Flag) *FlagUsage {
 	if f.Hidden {
 		return nil
@@ -185,13 +207,9 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 		ret.FlagString = fmt.Sprintf("--%s", f.Name)
 	}
 
-	varname, usage := flag.UnquoteUsage(f)
-	if varname != "" {
-		ret.Help = fmt.Sprintf("%s %s", varname, usage)
-	} else {
-		ret.Help = usage
+	_, usage := flag.UnquoteUsage(f)
+	ret.Help = usage
 
-	}
 	if f.NoOptDefVal != "" {
 		switch f.Value.Type() {
 		case "string":
@@ -209,10 +227,13 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 		}
 	}
 
-	if f.Value.Type() == "string" {
-		ret.Default += fmt.Sprintf(" (default %q)", f.DefValue)
-	} else {
-		ret.Default += fmt.Sprintf(" (default %s)", f.DefValue)
+	if !isZeroValue(f.Value, f.DefValue) {
+		if f.Value.Type() == "string" {
+			ret.Default += fmt.Sprintf(" (default %q)", f.DefValue)
+		} else {
+			ret.Default += fmt.Sprintf(" (default %s)", f.DefValue)
+		}
+
 	}
 	if len(f.Deprecated) != 0 {
 		ret.Help += fmt.Sprintf(" (DEPRECATED: %s)", f.Deprecated)
