@@ -57,6 +57,15 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
 		return err
 	}
 
+	cmds.SetFlagGroupOrder(cmd, []string{
+		"output",
+		"select",
+		"template",
+		"fields-filter",
+		"rename",
+		"replace",
+	})
+
 	return nil
 }
 

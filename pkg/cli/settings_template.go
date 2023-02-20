@@ -64,6 +64,8 @@ func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error
 		return errors.Wrap(err, "Failed to add template flags to cobra command")
 	}
 
+	cmds.AddFlagGroupToCobraCommand(cmd, "template", "Glazed templating output", parameters)
+
 	return nil
 }
 

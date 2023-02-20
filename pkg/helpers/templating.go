@@ -65,8 +65,9 @@ var TemplateFuncs = template.FuncMap{
 
 	"currency": currency,
 
-	"padLeft":  padLeft,
-	"padRight": padRight,
+	"padLeft":   padLeft,
+	"padRight":  padRight,
+	"padCenter": padCenter,
 
 	"bold":          bold,
 	"underline":     underline,
@@ -77,6 +78,12 @@ var TemplateFuncs = template.FuncMap{
 
 	"toYaml":      toYaml,
 	"indentBlock": indentBlock,
+
+	"styleBold": styleBold,
+}
+
+func styleBold(s string) string {
+	return fmt.Sprintf("\033[1m%s\033[0m", s)
 }
 
 func toYaml(value interface{}) string {
@@ -124,12 +131,28 @@ func codeBlock(s string, lang string) string {
 	return fmt.Sprintf("```%s\n%s\n```", lang, s)
 }
 
-func padLeft(value string, length int) string {
+func padLeft(value string, length_ interface{}) string {
+	length, err := strconv.Atoi(fmt.Sprintf("%v", length_))
+	if err != nil {
+		panic(err)
+	}
 	return fmt.Sprintf("%*s", length, value)
 }
 
-func padRight(value string, length int) string {
+func padRight(value string, length_ interface{}) string {
+	length, err := strconv.Atoi(fmt.Sprintf("%v", length_))
+	if err != nil {
+		panic(err)
+	}
 	return fmt.Sprintf("%-*s", length, value)
+}
+
+func padCenter(value string, length_ interface{}) string {
+	length, err := strconv.Atoi(fmt.Sprintf("%v", length_))
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%*s%*s", (length+len(value))/2, value, (length-len(value))/2, "")
 }
 
 func add(a, b interface{}) interface{} {

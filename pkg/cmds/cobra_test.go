@@ -215,7 +215,7 @@ func TestParseDate(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		result, err := parseDate(testCase.Value)
+		result, err := ParseDate(testCase.Value)
 		require.Nil(t, err)
 		if !result.Equal(testCase.Result) {
 			t.Errorf("Expected %s to parse to %s, got %s", testCase.Value, testCase.Result, result)

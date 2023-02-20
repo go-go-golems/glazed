@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/spf13/cobra"
 	"strings"
@@ -85,7 +86,22 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	}
 	template.Must(t.Parse(tmpl))
 
+	flagGroupUsage := glazed_cobra.ComputeCommandFlagGroupUsage(c)
+	_ = flagGroupUsage
+
+	// really this is where we need to compute the max length, not on a group basis
+	maxLength := 0
+	for _, group := range flagGroupUsage.LocalGroupUsages {
+		for _, usage := range group.FlagUsages {
+			if len(usage.FlagString) > maxLength {
+				maxLength = len(usage.FlagString)
+			}
+		}
+	}
+
 	data["Command"] = c
+	data["FlagGroupUsage"] = flagGroupUsage
+	data["FlagUsageMaxLength"] = maxLength
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
 

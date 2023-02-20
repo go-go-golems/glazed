@@ -88,6 +88,8 @@ func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefault
 		return errors.Wrap(err, "Failed to add fields and filters flags to cobra command")
 	}
 
+	cmds.AddFlagGroupToCobraCommand(cmd, "fields-filters", "Glazed fields filtering", parameters)
+
 	return nil
 }
 

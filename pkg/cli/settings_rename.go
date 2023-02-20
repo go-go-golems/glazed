@@ -79,6 +79,8 @@ func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) error {
 		return err
 	}
 
+	cmds.AddFlagGroupToCobraCommand(cmd, "rename", "Glazed renaming ", parameters)
+
 	return nil
 }
 

@@ -137,6 +137,8 @@ func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
 		return errors.Wrap(err, "Failed to add output flags to cobra command")
 	}
 
+	cmds.AddFlagGroupToCobraCommand(cmd, "output", "Glazed output format", parameters)
+
 	return nil
 }
 
