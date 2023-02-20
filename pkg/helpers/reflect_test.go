@@ -227,7 +227,9 @@ func TestReflectMap(t *testing.T) {
 	require.Error(t, err)
 
 	// try with map[string][]string
-	err = SetReflectValue(mValue, map[string][]string{"hello": []string{"world"}})
+	err = SetReflectValue(mValue, map[string][]string{
+		"hello": {"world"},
+	})
 	require.Error(t, err)
 
 	// fail when convert an int
