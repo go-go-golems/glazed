@@ -389,16 +389,16 @@ func rpad(s string, padding int) string {
 	return fmt.Sprintf(t, s)
 }
 
-func replace(s, old, new string) string {
-	return strings.ReplaceAll(s, old, new)
+func replace(s, old, new_ string) string {
+	return strings.ReplaceAll(s, old, new_)
 }
 
-func replaceRegexp(s, old, new string) string {
+func replaceRegexp(s, old, new_ string) string {
 	re, err := regexp.Compile(old)
 	if err != nil {
 		return s
 	}
-	return re.ReplaceAllString(s, new)
+	return re.ReplaceAllString(s, new_)
 }
 
 func parseFloat(s string) float64 {

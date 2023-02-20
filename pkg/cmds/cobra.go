@@ -218,6 +218,8 @@ func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition)
 		ok := false
 
 		switch parameter.Type {
+		case ParameterTypeStringListFromFile:
+			fallthrough
 		case ParameterTypeStringFromFile:
 			fallthrough
 		case ParameterTypeObjectFromFile:
@@ -468,6 +470,8 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 		case ParameterTypeObjectListFromFile:
 			fallthrough
 		case ParameterTypeStringFromFile:
+			fallthrough
+		case ParameterTypeStringListFromFile:
 			fallthrough
 		case ParameterTypeString:
 			fallthrough
