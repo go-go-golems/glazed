@@ -32,6 +32,8 @@ func (Y *YAMLOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.Ta
 }
 
 func (Y *YAMLOutputFormatter) Output() (string, error) {
+	Y.Table.Finalize()
+
 	for _, middleware := range Y.middlewares {
 		newTable, err := middleware.Process(Y.Table)
 		if err != nil {

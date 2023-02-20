@@ -36,6 +36,8 @@ func (t *TemplateFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.Table
 }
 
 func (t *TemplateFormatter) Output() (string, error) {
+	t.Table.Finalize()
+
 	for _, middleware := range t.middlewares {
 		newTable, err := middleware.Process(t.Table)
 		if err != nil {
@@ -68,6 +70,10 @@ func (t *TemplateFormatter) Output() (string, error) {
 	return buf.String(), err
 }
 
+// NewTemplateOutputFormatter creates a new TemplateFormatter.
+//
+// TODO(manuel, 2023-02-19) This is quite an ugly constructor signature.
+// See: https://github.com/go-go-golems/glazed/issues/147
 func NewTemplateOutputFormatter(template string, templateFuncMaps []template.FuncMap, additionalData interface{}) *TemplateFormatter {
 	return &TemplateFormatter{
 		Template:         template,
