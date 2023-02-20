@@ -80,6 +80,7 @@ var JsonCmd = &cobra.Command{
 func init() {
 	JsonCmd.Flags().SortFlags = false
 	err := cli.AddFlags(JsonCmd, cli.NewFlagsDefaults())
+	JsonCmd.LocalFlags()
 	if err != nil {
 		panic(err)
 	}
