@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -123,6 +124,16 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			value.SetString("")
 		} else {
 			value.SetString(p.Default.(string))
+		}
+	case ParameterTypeStringListFromFile:
+		if p.Default == nil {
+			value.Set(reflect.ValueOf([]string{}))
+		} else {
+			list, b := helpers.CastList2[string, interface{}](p.Default)
+			if !b {
+				return errors.Errorf("default value for parameter %s is not a list of strings", p.Name)
+			}
+			value.Set(reflect.ValueOf(list))
 		}
 	case ParameterTypeObjectListFromFile:
 		if p.Default == nil {
@@ -327,6 +338,7 @@ const (
 
 	ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
 	ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
+	ParameterTypeStringListFromFile ParameterType = "stringListFromFile"
 
 	// ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
 	ParameterTypeKeyValue ParameterType = "keyValue"
@@ -353,6 +365,8 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 		return true
 	case ParameterTypeObjectFromFile:
 		return true
+	case ParameterTypeStringListFromFile:
+		return true
 	case ParameterTypeKeyValue:
 		return strings.HasPrefix(v, "@")
 	default:
@@ -363,6 +377,8 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 func IsListParameter(p ParameterType) bool {
 	//exhaustive:ignore
 	switch p {
+	case ParameterTypeStringListFromFile:
+		return true
 	case ParameterTypeStringList:
 		return true
 	case ParameterTypeIntegerList:
@@ -432,6 +448,8 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 			return errors.Wrapf(err2, "Default value for parameter %s is not a valid date: %v", p.Name, p.Default)
 		}
 
+	case ParameterTypeStringListFromFile:
+		fallthrough
 	case ParameterTypeStringList:
 		_, ok := p.Default.([]string)
 		if !ok {
@@ -575,6 +593,27 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as date", p.Name)
 		}
 		return parsedDate, nil
+
+	case ParameterTypeStringListFromFile:
+		fileName := v[0]
+		if fileName == "" {
+			return p.Default, nil
+		}
+		f, err := os.Open(fileName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+		}
+
+		ret := make([]string, 0)
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			ret = append(ret, scanner.Text())
+		}
+		if err = scanner.Err(); err != nil {
+			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+		}
+
+		return ret, nil
 
 	case ParameterTypeObjectFromFile:
 		fileName := v[0]

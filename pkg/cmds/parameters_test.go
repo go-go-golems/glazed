@@ -370,28 +370,28 @@ func TestSetValueFromDefaultStringFromFile(t *testing.T) {
 	assert.Equal(t, "", fl)
 }
 
-//	func TestSetValueFromDefaultStringListFromFile(t *testing.T) {
-//		stringListFromFileFlag := testParameterDefinitions["string-list-from-file-flag"]
-//
-//		fl := []string{"foo"}
-//		oValue := reflect.ValueOf(&fl).Elem()
-//
-//		err := stringListFromFileFlag.SetValueFromDefault(oValue)
-//		require.NoError(t, err)
-//		assert.Equal(t, []string{"default1", "default2"}, fl)
-//
-//		stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-without-default"]
-//		err = stringListFromFileFlag.SetValueFromDefault(oValue)
-//		require.NoError(t, err)
-//		assert.Equal(t, []string{}, fl)
-//
-//		fl = []string{"foo"}
-//
-//		stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-with-empty-default"]
-//		err = stringListFromFileFlag.SetValueFromDefault(oValue)
-//		require.NoError(t, err)
-//		assert.Equal(t, []string{}, fl)
-//	}
+func TestSetValueFromDefaultStringListFromFile(t *testing.T) {
+	stringListFromFileFlag := testParameterDefinitions["string-list-from-file-flag"]
+
+	fl := []string{"foo"}
+	oValue := reflect.ValueOf(&fl).Elem()
+
+	err := stringListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"default1", "default2"}, fl)
+
+	stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-without-default"]
+	err = stringListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []string{}, fl)
+
+	fl = []string{"foo"}
+
+	stringListFromFileFlag = testParameterDefinitions["string-list-from-file-flag-with-empty-default"]
+	err = stringListFromFileFlag.SetValueFromDefault(oValue)
+	require.NoError(t, err)
+	assert.Equal(t, []string{}, fl)
+}
 
 func TestSetValueFromDefaultKeyValue(t *testing.T) {
 	keyValueFlag := testParameterDefinitions["key-value-flag"]
