@@ -19,7 +19,17 @@
   - `{{rpad .Name .NamePadding }}` {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasSections}}
 
 ## Additional Topics:{{$sections := .Sections}}{{range $sections}}
-  - {{rpad .Slug .SlugPadding }} {{.Title}}{{end}}{{end}}{{with .Command}}{{if .HasAvailableLocalFlags}}
+  - {{rpad .Slug .SlugPadding }} {{.Title}}{{end}}{{end}}
+{{ if .FlagGroupUsage }}{{ with .FlagGroupUsage }}{{ range $group := .LocalGroupUsages }}
+## {{ $group.Name }}:
+{{ range $usage := $group.FlagUsages }}
+- {{ $usage }}{{ end }}
+{{ end }}{{range $group := .InheritedGroupUsages }}
+## Global {{ $group.Name }}:
+{{ range $usage := $group.FlagUsages }}
+- {{ $usage }}{{ end }}
+{{ end }}
+{{end}}{{else}}{{with .Command}}{{if .HasAvailableLocalFlags}}
 
 ## Flags:
 ```
@@ -29,7 +39,7 @@
 ## Global Flags:
 ```
 {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}
-```{{end}}{{if .HasHelpSubCommands}}
+```{{end}}{{end}}{{end}}{{with .Command}}{{if .HasHelpSubCommands}}
 
 ## Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   - {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}

@@ -95,7 +95,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			value.Set(reflect.ValueOf(time.Time{}))
 		} else {
 			s := p.Default.(string)
-			dateTime, err := parseDate(s)
+			dateTime, err := ParseDate(s)
 			if err != nil {
 				return errors.Wrapf(err, "error parsing default value for parameter %s", p.Name)
 			}
@@ -443,7 +443,7 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
 		}
 
-		_, err2 := parseDate(defaultValue)
+		_, err2 := ParseDate(defaultValue)
 		if err2 != nil {
 			return errors.Wrapf(err2, "Default value for parameter %s is not a valid date: %v", p.Name, p.Default)
 		}
@@ -588,7 +588,7 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		return choice, nil
 
 	case ParameterTypeDate:
-		parsedDate, err := parseDate(v[0])
+		parsedDate, err := ParseDate(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as date", p.Name)
 		}
@@ -752,7 +752,10 @@ func convertToStringList(value []interface{}) ([]string, error) {
 	return stringList, nil
 }
 
-func parseDate(value string) (time.Time, error) {
+// refTime is used to set a reference time for natural date parsing for unit test purposes
+var refTime *time.Time
+
+func ParseDate(value string) (time.Time, error) {
 	parsedDate, err := dateparse.ParseAny(value)
 	if err != nil {
 		refTime_ := time.Now()

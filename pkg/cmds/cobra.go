@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -9,7 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
-	"time"
 )
 
 // CobraCommand is a subset of Command than can be registered as a
@@ -21,9 +21,6 @@ type CobraCommand interface {
 	RunFromCobra(cmd *cobra.Command, args []string) error
 	BuildCobraCommand() (*cobra.Command, error)
 }
-
-// refTime is used to set a reference time for natural date parsing for unit test purposes
-var refTime *time.Time
 
 // GatherParametersFromCobraCommand takes a cobra command, an argument list as well as a description
 // of the sqleton command arguments, and returns a list of parsed parameters as a
@@ -305,7 +302,7 @@ func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition)
 					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
 				}
 
-				parsedDate, err2 := parseDate(defaultValue)
+				parsedDate, err2 := ParseDate(defaultValue)
 				if err2 != nil {
 					return err2
 				}
@@ -330,7 +327,10 @@ func AddFlagsToCobraCommand(flagSet *flag.FlagSet, flags []*ParameterDefinition)
 					}
 
 					// convert to string list
-					stringList, err = convertToStringList(defaultValue)
+					stringList, ok = helpers.CastList[string, interface{}](defaultValue)
+					if !ok {
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+					}
 				}
 
 				defaultValue = stringList
