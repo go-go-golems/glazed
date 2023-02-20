@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
-	cobra2 "github.com/go-go-golems/glazed/pkg/cmds"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/spf13/cobra"
 	"strings"
@@ -86,7 +86,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	}
 	template.Must(t.Parse(tmpl))
 
-	flagGroupUsage := cobra2.ComputeCommandFlagGroupUsage(c)
+	flagGroupUsage := glazed_cobra.ComputeCommandFlagGroupUsage(c)
 	_ = flagGroupUsage
 
 	data["Command"] = c

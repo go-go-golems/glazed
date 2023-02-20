@@ -22,12 +22,13 @@
   - {{rpad .Slug .SlugPadding }} {{.Title}}{{end}}{{end}}
 {{ if .FlagGroupUsage }}{{ with .FlagGroupUsage }}{{ range $group := .LocalGroupUsages }}
 ## {{ $group.Name }}:
-{{ range $usage := $group.FlagUsages }}
-- {{ $usage }}{{ end }}
+```{{ range $usage := $group.FlagUsages }}
+   {{ padLeft $usage.FlagString $group.MaxFlagLength }}    {{ $usage.Help }} {{$usage.Default}}{{ end }}
+```
 {{ end }}{{range $group := .InheritedGroupUsages }}
 ## Global {{ $group.Name }}:
 {{ range $usage := $group.FlagUsages }}
-- {{ $usage }}{{ end }}
+   {{ padLeft $usage.FlagString $group.MaxFlagLength }}    {{ $usage.Help }} {{$usage.Default}}{{ end }}
 {{ end }}
 {{end}}{{else}}{{with .Command}}{{if .HasAvailableLocalFlags}}
 

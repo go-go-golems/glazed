@@ -14,6 +14,12 @@ import (
 //
 // It limits us in the sense that we can't just get the full ParameterDefinition
 // here, but at least we can format our help a little bit more nicely.
+//
+// NOTE(manuel, 2023-02-20) This doesn't allow for hierarchical flag groups yet.
+// Let's see how this feels overall, and if this is something we want to add later on.
+// This is useful I think because subsystems such as glaze already pull in so many flags,
+// and it could be used in conjunction with renaming the actual flags used on the CLI
+// as more colisions are prone to happen.
 type FlagGroup struct {
 	ID    string
 	Name  string
@@ -21,16 +27,37 @@ type FlagGroup struct {
 	Order int
 }
 
+// FlagUsage is the structured information we want to show at help time.
+// Instead of rendering the full time, we leave how these things are formatted
+// all the way to the end, because for example aligning strings can only be done
+// at runtime since we don't know which other flags might have been added to the
+// one group.
+type FlagUsage struct {
+	ShortHand  string
+	Long       string
+	FlagString string
+	Help       string
+	Default    string
+}
+
 // FlagGroupUsage is used to render the help for a flag group.
 // It consists of the group Name for rendering purposes, and a single string per
 // flag in the group
 type FlagGroupUsage struct {
-	Name       string
-	FlagUsages []string
+	Name          string
+	FlagUsages    []*FlagUsage
+	MaxFlagLength int
 }
 
 func (f *FlagGroupUsage) String() string {
 	return fmt.Sprintf("FlagGroupUsage{Name: %s, FlagUsages: %v}", f.Name, len(f.FlagUsages))
+}
+
+func (f *FlagGroupUsage) AddFlagUsage(flag *FlagUsage) {
+	f.FlagUsages = append(f.FlagUsages, flag)
+	if len(flag.FlagString) > f.MaxFlagLength {
+		f.MaxFlagLength = len(flag.FlagString)
+	}
 }
 
 // CommandFlagGroupUsage is used to render the flags for an entire command.
@@ -63,22 +90,22 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 
 	localGroupedFlags[""] = &FlagGroupUsage{
 		Name:       "Other flags",
-		FlagUsages: []string{},
+		FlagUsages: []*FlagUsage{},
 	}
 	inheritedGroupedFlags[""] = &FlagGroupUsage{
 		Name:       "Other flags",
-		FlagUsages: []string{},
+		FlagUsages: []*FlagUsage{},
 	}
 
 	// get an overview of which flag to assign to whom
 	for _, group := range flagGroups {
 		localGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
-			FlagUsages: []string{},
+			FlagUsages: []*FlagUsage{},
 		}
 		inheritedGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
-			FlagUsages: []string{},
+			FlagUsages: []*FlagUsage{},
 		}
 
 		for _, flagName := range group.Flags {
@@ -91,26 +118,32 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	}
 
 	localFlags.VisitAll(func(f *flag.Flag) {
-		usageString := getFlagUsageString(f)
+		flagUsage := getFlagUsage(f)
+		if flagUsage == nil {
+			return
+		}
 
 		if groups, ok := flagToGroups[f.Name]; ok {
 			for _, group := range groups {
-				localGroupedFlags[group].FlagUsages = append(localGroupedFlags[group].FlagUsages, usageString)
+				localGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			localGroupedFlags[""].FlagUsages = append(localGroupedFlags[""].FlagUsages, usageString)
+			localGroupedFlags[""].AddFlagUsage(flagUsage)
 		}
 	})
 
 	inheritedFlags.VisitAll(func(f *flag.Flag) {
-		usageString := getFlagUsageString(f)
+		flagUsage := getFlagUsage(f)
+		if flagUsage == nil {
+			return
+		}
 
 		if groups, ok := flagToGroups[f.Name]; ok {
 			for _, group := range groups {
-				inheritedGroupedFlags[group].FlagUsages = append(inheritedGroupedFlags[group].FlagUsages, usageString)
+				inheritedGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			inheritedGroupedFlags[""].FlagUsages = append(inheritedGroupedFlags[""].FlagUsages, usageString)
+			inheritedGroupedFlags[""].AddFlagUsage(flagUsage)
 		}
 	})
 
@@ -131,55 +164,61 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	ret.LocalGroupUsages = append(ret.LocalGroupUsages, localGroupedFlags[""])
 	ret.InheritedGroupUsages = append(ret.InheritedGroupUsages, inheritedGroupedFlags[""])
 
+	// NOTE(manuel, 2023-02-20) This is where we should compute the necessary alignment indent for each group
+
 	return ret
 }
 
-func getFlagUsageString(f *flag.Flag) string {
+func getFlagUsage(f *flag.Flag) *FlagUsage {
 	if f.Hidden {
-		return ""
+		return nil
 	}
 
-	line := ""
+	ret := &FlagUsage{
+		Long: f.Name,
+	}
+
 	if f.Shorthand != "" && f.ShorthandDeprecated == "" {
-		line = fmt.Sprintf(".  **-%s**, **--%s**", f.Shorthand, f.Name)
+		ret.ShortHand = f.Shorthand
+		ret.FlagString = fmt.Sprintf("-%s, --%s", f.Shorthand, f.Name)
 	} else {
-		line = fmt.Sprintf(".      **--%s**", f.Name)
+		ret.FlagString = fmt.Sprintf("--%s", f.Name)
 	}
 
 	varname, usage := flag.UnquoteUsage(f)
 	if varname != "" {
-		line += " " + varname
+		ret.Help = fmt.Sprintf("%s %s", varname, usage)
+	} else {
+		ret.Help = usage
+
 	}
 	if f.NoOptDefVal != "" {
 		switch f.Value.Type() {
 		case "string":
-			line += fmt.Sprintf("[=\"%s\"]", f.NoOptDefVal)
+			ret.Default = fmt.Sprintf("[=\"%s\"]", f.NoOptDefVal)
 		case "bool":
 			if f.NoOptDefVal != "true" {
-				line += fmt.Sprintf("[=%s]", f.NoOptDefVal)
+				ret.Default = fmt.Sprintf("[=%s]", f.NoOptDefVal)
 			}
 		case "count":
 			if f.NoOptDefVal != "+1" {
-				line += fmt.Sprintf("[=%s]", f.NoOptDefVal)
+				ret.Default = fmt.Sprintf("[=%s]", f.NoOptDefVal)
 			}
 		default:
-			line += fmt.Sprintf("[=%s]", f.NoOptDefVal)
+			ret.Default = fmt.Sprintf("[=%s]", f.NoOptDefVal)
 		}
 	}
 
-	line += " "
-
-	line += usage
 	if f.Value.Type() == "string" {
-		line += fmt.Sprintf(" (default %q)", f.DefValue)
+		ret.Default += fmt.Sprintf(" (default %q)", f.DefValue)
 	} else {
-		line += fmt.Sprintf(" (default %s)", f.DefValue)
+		ret.Default += fmt.Sprintf(" (default %s)", f.DefValue)
 	}
 	if len(f.Deprecated) != 0 {
-		line += fmt.Sprintf(" (DEPRECATED: %s)", f.Deprecated)
+		ret.Help += fmt.Sprintf(" (DEPRECATED: %s)", f.Deprecated)
 	}
 
-	return line
+	return ret
 }
 
 func AddFlagGroupToCobraCommand(cmd *cobra.Command, id string, name string, flags []*ParameterDefinition) {
