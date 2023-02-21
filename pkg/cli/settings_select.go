@@ -11,16 +11,6 @@ import (
 //go:embed "flags/select.yaml"
 var selectFlagsYaml []byte
 
-var selectParameterLayer *cmds.ParameterLayer
-
-func init() {
-	var err error
-	selectParameterLayer, err = cmds.NewParameterLayerFromYAML(selectFlagsYaml)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize select parameter layer"))
-	}
-}
-
 type SelectSettings struct {
 	SelectField    string `glazed.parameter:"select"`
 	SelectTemplate string `glazed.parameter:"select-template"`
@@ -64,25 +54,43 @@ type SelectFlagsDefaults struct {
 	SelectTemplate string `glazed.parameter:"select-template"`
 }
 
-func NewSelectFlagsDefaults() *SelectFlagsDefaults {
-	s := &SelectFlagsDefaults{}
-	err := selectParameterLayer.InitializeStructFromDefaults(s)
+type SelectParameterLayer struct {
+	cmds.ParameterLayer
+	Settings *SelectSettings
+	Defaults *SelectFlagsDefaults
+}
+
+func NewSelectParameterLayer() (*SelectParameterLayer, error) {
+	ret := &SelectParameterLayer{}
+	err := ret.LoadFromYAML(selectFlagsYaml)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize select parameter layer")
+	}
+	ret.Defaults = &SelectFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(ret.Defaults)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize select flags defaults"))
 	}
 
-	return s
+	return ret, nil
 }
 
-func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) error {
-	return selectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+func (s *SelectParameterLayer) AddFlags(cmd *cobra.Command) error {
+	return s.AddFlagsToCobraCommand(cmd, s.Defaults)
 }
 
-func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
-	parameters, err := selectParameterLayer.ParseFlagsFromCobraCommand(cmd)
+func (s *SelectParameterLayer) ParseFlags(cmd *cobra.Command) error {
+	parameters, err := s.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return NewSelectSettingsFromParameters(parameters)
+	res, err := NewSelectSettingsFromParameters(parameters)
+	if err != nil {
+		return err
+	}
+
+	s.Settings = res
+
+	return nil
 }

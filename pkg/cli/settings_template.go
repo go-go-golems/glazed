@@ -19,16 +19,6 @@ type TemplateSettings struct {
 //go:embed "flags/template.yaml"
 var templateFlagsYaml []byte
 
-var templateParameterLayer *cmds.ParameterLayer
-
-func init() {
-	var err error
-	templateParameterLayer, err = cmds.NewParameterLayerFromYAML(templateFlagsYaml)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize template parameter layer"))
-	}
-}
-
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if tf.UseRowTemplates && len(tf.Templates) > 0 {
 		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
@@ -48,17 +38,35 @@ type TemplateFlagsDefaults struct {
 }
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
-	s := &TemplateFlagsDefaults{}
-	err := templateParameterLayer.InitializeStructFromDefaults(s)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize template flags defaults"))
+	return &TemplateFlagsDefaults{
+		UseRowTemplates: false,
 	}
-
-	return s
 }
 
-func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error {
-	return templateParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+type TemplateParameterLayer struct {
+	cmds.ParameterLayer
+	Settings *TemplateSettings
+	Defaults *TemplateFlagsDefaults
+}
+
+func NewTemplateParameterLayer() (*TemplateParameterLayer, error) {
+	ret := &TemplateParameterLayer{}
+	err := ret.LoadFromYAML(templateFlagsYaml)
+	if err != nil {
+		return nil, err
+	}
+	s := &TemplateFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(s)
+	if err != nil {
+		return nil, err
+	}
+	ret.Defaults = s
+
+	return ret, nil
+}
+
+func (t *TemplateParameterLayer) AddFlags(cmd *cobra.Command) error {
+	return t.AddFlagsToCobraCommand(cmd, t.Defaults)
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {
@@ -93,11 +101,18 @@ func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, 
 	}, nil
 }
 
-func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
-	parameters, err := templateParameterLayer.ParseFlagsFromCobraCommand(cmd)
+func (t *TemplateParameterLayer) ParseFlags(cmd *cobra.Command) error {
+	parameters, err := t.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return NewTemplateSettings(parameters)
+	ret, err := NewTemplateSettings(parameters)
+	if err != nil {
+		return err
+	}
+
+	t.Settings = ret
+
+	return nil
 }

@@ -83,7 +83,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddFlags(JsonCmd, g.NewFlagsDefaults())
+	err = g.AddFlags(JsonCmd)
 	if err != nil {
 		panic(err)
 	}

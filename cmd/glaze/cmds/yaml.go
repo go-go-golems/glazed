@@ -94,7 +94,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddFlags(YamlCmd, g.NewFlagsDefaults())
+	err = g.AddFlags(YamlCmd)
 	if err != nil {
 		panic(err)
 	}

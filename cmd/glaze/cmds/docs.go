@@ -53,7 +53,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = cli.AddTemplateFlags(DocsCmd, cli.NewTemplateFlagsDefaults())
+	err = gpl.TemplateParameterLayer.AddFlags(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

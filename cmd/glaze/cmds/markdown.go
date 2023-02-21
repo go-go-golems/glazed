@@ -393,7 +393,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddFlags(parseCmd, g.NewFlagsDefaults())
+	err = g.AddFlags(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -403,7 +403,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = g.AddFlags(splitByHeadingCmd, g.NewFlagsDefaults())
+	err = g.AddFlags(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}
