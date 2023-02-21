@@ -130,7 +130,7 @@ func (j *JsonCommand) BuildCobraCommand() (*cobra.Command, error) {
 				}
 			}
 
-			gp, of, err := cli.SetupProcessor(cmd)
+			gp, of, err := cli.SetupProcessor(ps)
 			cobra.CheckErr(err)
 
 			err = j.Run(ps, gp)

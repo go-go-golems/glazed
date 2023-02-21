@@ -18,7 +18,7 @@ var YamlCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateProcessorLegacy(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create Glaze processor: %v\n", err)
 			os.Exit(1)

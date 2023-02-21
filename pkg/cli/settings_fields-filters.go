@@ -26,7 +26,6 @@ type FieldsFilterFlagsDefaults struct {
 
 type FieldsFiltersParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *FieldsFilterSettings
 	Defaults *FieldsFilterFlagsDefaults
 }
 
@@ -51,31 +50,28 @@ func NewFieldsFiltersParameterLayer() (*FieldsFiltersParameterLayer, error) {
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddFlags(cmd *cobra.Command) error {
-	defaultFieldHelp := f.Defaults.Fields
-	if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
-		f.Defaults.Fields = []string{"all"}
+func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+	if defaults == nil {
+
+		defaultFieldHelp := f.Defaults.Fields
+		if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
+			f.Defaults.Fields = []string{"all"}
+		}
+		defaults = f.Defaults
 	}
-	return f.AddFlagsToCobraCommand(cmd, f.Defaults)
+	return f.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := f.ParseFlagsFromCobraCommand(cmd)
+func (f *FieldsFiltersParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
+	ps, err := f.ParameterLayerImpl.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
-	res, err := NewFieldsFilterSettings(ps)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create fields and filters settings from parameters")
-	}
-
 	// if fields were manually specified, clear whatever default filters we might have set
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		res.Filters = []string{}
+		ps["filter"] = []string{}
 	}
-
-	f.Settings = res
 
 	return ps, nil
 }

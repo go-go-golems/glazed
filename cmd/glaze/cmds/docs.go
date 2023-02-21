@@ -14,7 +14,7 @@ var DocsCmd = &cobra.Command{
 	Short: "Work with help documents",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateProcessorLegacy(cmd)
 		cobra.CheckErr(err)
 
 		for _, arg := range args {
@@ -49,11 +49,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.OutputParameterLayer.AddFlags(DocsCmd)
+	err = gpl.OutputParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.TemplateParameterLayer.AddFlags(DocsCmd)
+	err = gpl.TemplateParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func init() {
 		SortColumns: false,
 	}
 	gpl.FieldsFiltersParameterLayer.Defaults = defaults
-	err = gpl.FieldsFiltersParameterLayer.AddFlags(DocsCmd)
+	err = gpl.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
 	if err != nil {
 		panic(err)
 	}

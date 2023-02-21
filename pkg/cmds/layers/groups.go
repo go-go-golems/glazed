@@ -89,7 +89,7 @@ func (p *ParameterLayerImpl) AddFlag(flag *parameters.ParameterDefinition) {
 	p.Flags = append(p.Flags, flag)
 }
 
-// GetParameters returns a map that maps all parameters (flags and arguments) to their name.
+// GetParameterDefinitions returns a map that maps all parameters (flags and arguments) to their name.
 // I'm not sure if this is worth caching, but if we hook this up like something like
 // a lambda that might become more relevant.
 func (p *ParameterLayerImpl) GetParameterDefinitions() map[string]*parameters.ParameterDefinition {

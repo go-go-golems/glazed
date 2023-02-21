@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"os"
 )
 
@@ -40,7 +39,6 @@ type ReplaceFlagsDefaults struct {
 
 type ReplaceParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *ReplaceSettings
 	Defaults *ReplaceFlagsDefaults
 }
 
@@ -60,23 +58,6 @@ func NewReplaceParameterLayer() (*ReplaceParameterLayer, error) {
 	}
 
 	return ret, nil
-}
-
-func (r *ReplaceParameterLayer) AddFlags(cmd *cobra.Command) error {
-	return r.AddFlagsToCobraCommand(cmd, r.Defaults)
-}
-
-func (r *ReplaceParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := r.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Settings, err = NewReplaceSettingsFromParameters(ps)
-	if err != nil {
-		return nil, err
-	}
-	return ps, nil
 }
 
 func NewReplaceSettingsFromParameters(ps map[string]interface{}) (*ReplaceSettings, error) {

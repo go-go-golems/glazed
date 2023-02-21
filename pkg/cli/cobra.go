@@ -60,27 +60,27 @@ func (g *GlazedParameterLayers) InitializeStructFromDefaults(s interface{}) erro
 }
 
 func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	err := g.OutputParameterLayer.AddFlags(cmd)
+	err := g.OutputParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.SelectParameterLayer.AddFlags(cmd)
+	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.RenameParameterLayer.AddFlags(cmd)
+	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.TemplateParameterLayer.AddFlags(cmd)
+	err = g.TemplateParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.FieldsFiltersParameterLayer.AddFlags(cmd)
+	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.ReplaceParameterLayer.AddFlags(cmd)
+	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
@@ -98,39 +98,39 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defau
 }
 
 func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := g.OutputParameterLayer.ParseFlags(cmd)
+	ps, err := g.OutputParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	ps_, err := g.SelectParameterLayer.ParseFlags(cmd)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
-	ps_, err = g.RenameParameterLayer.ParseFlags(cmd)
+	ps_, err := g.SelectParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range ps_ {
 		ps[k] = v
 	}
-	ps_, err = g.TemplateParameterLayer.ParseFlags(cmd)
+	ps_, err = g.RenameParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range ps_ {
 		ps[k] = v
 	}
-	ps_, err = g.FieldsFiltersParameterLayer.ParseFlags(cmd)
+	ps_, err = g.TemplateParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range ps_ {
 		ps[k] = v
 	}
-	ps_, err = g.ReplaceParameterLayer.ParseFlags(cmd)
+	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -175,17 +175,35 @@ func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
 	}, nil
 }
 
-func (g *GlazedParameterLayers) CreateProcessor() (
+func SetupProcessor(ps map[string]interface{}) (
 	*cmds.GlazeProcessor,
 	formatters.OutputFormatter,
 	error,
 ) {
-	outputSettings := g.OutputParameterLayer.Settings
-	selectSettings := g.SelectParameterLayer.Settings
-	templateSettings := g.TemplateParameterLayer.Settings
-	fieldsFilterSettings := g.FieldsFiltersParameterLayer.Settings
-	renameSettings := g.RenameParameterLayer.Settings
-	replaceSettings := g.ReplaceParameterLayer.Settings
+	templateSettings, err := NewTemplateSettings(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	outputSettings, err := NewOutputFormatterSettings(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	selectSettings, err := NewSelectSettingsFromParameters(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	renameSettings, err := NewRenameSettingsFromParameters(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	fieldsFilterSettings, err := NewFieldsFilterSettings(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	replaceSettings, err := NewReplaceSettingsFromParameters(ps)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	outputSettings.UpdateWithSelectSettings(selectSettings)
 	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
@@ -234,24 +252,25 @@ func (g *GlazedParameterLayers) CreateProcessor() (
 	return gp, of, nil
 }
 
-func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.OutputFormatter, error) {
+// Deprecated: Use SetupProcessor instead, and create a proper glazed.Command for your command.
+// TODO(manuel, 2023-02-21): This is here to facilitate legacy linking, but really all commands
+// using this should move towards implementing a proper glazed.Command.
+// See #150 and for example JsonCmd in glaze
+// lint:ignore
+func CreateProcessorLegacy(cmd *cobra.Command) (
+	*cmds.GlazeProcessor,
+	formatters.OutputFormatter,
+	error,
+) {
 	gpl, err := NewGlazedParameterLayers()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// TODO(manuel, 2023-02-21) Remove this weird SetupProcessor logic
-	//
-	// See #150
-	//
-	// this is abit wonk, because we create the settings structures while parsing the flags,
-	// and the ncreate the processor from the settings, when really we should be creating the
-	// processor from the parameters themselves, which we could fairly easily do
-	// except for the weird regexp replace leftover
-	_, err = gpl.ParseFlagsFromCobraCommand(cmd)
+	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return gpl.CreateProcessor()
+	return SetupProcessor(ps)
 }

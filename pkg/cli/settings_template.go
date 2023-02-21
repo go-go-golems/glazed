@@ -45,7 +45,6 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 
 type TemplateParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *TemplateSettings
 	Defaults *TemplateFlagsDefaults
 }
 
@@ -65,8 +64,11 @@ func NewTemplateParameterLayer() (*TemplateParameterLayer, error) {
 	return ret, nil
 }
 
-func (t *TemplateParameterLayer) AddFlags(cmd *cobra.Command) error {
-	return t.AddFlagsToCobraCommand(cmd, t.Defaults)
+func (t *TemplateParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+	if defaults == nil {
+		defaults = t.Defaults
+	}
+	return t.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {
@@ -99,20 +101,4 @@ func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, 
 		UseRowTemplates: useRowTemplates,
 		RenameSeparator: "_",
 	}, nil
-}
-
-func (t *TemplateParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := t.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	ret, err := NewTemplateSettings(ps)
-	if err != nil {
-		return nil, err
-	}
-
-	t.Settings = ret
-
-	return ps, nil
 }

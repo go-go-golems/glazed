@@ -54,7 +54,6 @@ var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *RenameSettings
 	Defaults *RenameFlagsDefaults
 }
 
@@ -73,47 +72,50 @@ func NewRenameParameterLayer() (*RenameParameterLayer, error) {
 	return ret, nil
 }
 
-func (r *RenameParameterLayer) AddFlags(cmd *cobra.Command) error {
-	return r.AddFlagsToCobraCommand(cmd, r.Defaults)
+func (r *RenameParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, s interface{}) error {
+	if s == nil {
+		s = r.Defaults
+	}
+	return r.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, s)
 }
 
-func (r *RenameParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	renameFields, _ := cmd.Flags().GetStringSlice("rename")
-	renameRegexpFields, _ := cmd.Flags().GetStringSlice("rename-regexp")
-	renameYaml, _ := cmd.Flags().GetString("rename-yaml")
-
+func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings, error) {
+	renameFields, ok := ps["rename"].([]string)
+	if !ok {
+		return nil, errors.Errorf("Invalid rename fields")
+	}
 	renamesFieldsMap := map[types.FieldName]types.FieldName{}
 	for _, renameField := range renameFields {
 		parts := strings.Split(renameField, ":")
 		if len(parts) != 2 {
 			return nil, errors.Errorf("Invalid rename field: %s", renameField)
 		}
-		renamesFieldsMap[types.FieldName(parts[0])] = types.FieldName(parts[1])
+		renamesFieldsMap[parts[0]] = parts[1]
 	}
 
 	regexpReplacements := middlewares.RegexpReplacements{}
-	for _, renameRegexpField := range renameRegexpFields {
-		parts := strings.Split(renameRegexpField, ":")
-		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
-		}
-		re, err := regexp.Compile(parts[0])
+	renameRegexpFields, ok := ps["rename-regexp"].(map[string]string)
+	if !ok {
+		return nil, errors.Errorf("Invalid rename regexp fields")
+	}
+	for regex, replacement := range renameRegexpFields {
+		re, err := regexp.Compile(regex)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Invalid regexp: %s", parts[0])
+			return nil, errors.Wrapf(err, "Invalid regexp: %s", regex)
 		}
 		regexpReplacements = append(regexpReplacements,
-			&middlewares.RegexpReplacement{Regexp: re, Replacement: parts[1]})
+			&middlewares.RegexpReplacement{Regexp: re, Replacement: replacement})
 	}
 
-	r.Settings = &RenameSettings{
+	renameYaml, ok := ps["rename-yaml"].(string)
+	if !ok {
+		return nil, errors.Errorf("Invalid rename yaml")
+	}
+
+	return &RenameSettings{
 		RenameFields:  renamesFieldsMap,
 		RenameRegexps: regexpReplacements,
 		YamlFile:      renameYaml,
-	}
-
-	return map[string]interface{}{
-		"rename":        r.Settings.RenameFields,
-		"rename-regexp": r.Settings.RenameRegexps,
-		"rename-yaml":   r.Settings.YamlFile,
 	}, nil
+
 }

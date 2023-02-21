@@ -57,7 +57,6 @@ type SelectFlagsDefaults struct {
 
 type SelectParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *SelectSettings
 	Defaults *SelectFlagsDefaults
 }
 
@@ -76,22 +75,9 @@ func NewSelectParameterLayer() (*SelectParameterLayer, error) {
 	return ret, nil
 }
 
-func (s *SelectParameterLayer) AddFlags(cmd *cobra.Command) error {
-	return s.AddFlagsToCobraCommand(cmd, s.Defaults)
-}
-
-func (s *SelectParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := s.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
+func (s *SelectParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+	if defaults == nil {
+		defaults = s.Defaults
 	}
-
-	res, err := NewSelectSettingsFromParameters(ps)
-	if err != nil {
-		return nil, err
-	}
-
-	s.Settings = res
-
-	return ps, nil
+	return s.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }

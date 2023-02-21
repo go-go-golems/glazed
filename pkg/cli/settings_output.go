@@ -46,7 +46,6 @@ var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
 	layers.ParameterLayerImpl
-	Settings *OutputFormatterSettings
 	Defaults *OutputFlagsDefaults
 }
 
@@ -65,27 +64,11 @@ func NewOutputParameterLayer() (*OutputParameterLayer, error) {
 	return ret, nil
 }
 
-func (opl *OutputParameterLayer) AddFlags(cmd *cobra.Command) error {
-	return opl.AddFlagsToCobraCommand(cmd, opl.Defaults)
-}
-
-func (opl *OutputParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
-	// TODO(manuel, 2023-02-12): This is not enough, because the flags template-file is not handled properly by just parsing it into here
-	// Really what this should be parsed into is a defaults struct, and then loading that into the settings by hand
-	ps, err := opl.ParseFlagsFromCobraCommand(cmd)
-
-	if err != nil {
-		return nil, err
+func (opl *OutputParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, s interface{}) error {
+	if s == nil {
+		s = opl.Defaults
 	}
-
-	// TODO(manuel, 2023-02-21) This part should actually be outside of the cobra handling too
-	// See #150
-	opl.Settings, err = NewOutputFormatterSettings(ps)
-	if err != nil {
-		return nil, err
-	}
-
-	return ps, nil
+	return opl.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, s)
 }
 
 func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSettings, error) {

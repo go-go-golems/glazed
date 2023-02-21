@@ -13,7 +13,7 @@ func makeCommand(t *testing.T, defaults *TemplateFlagsDefaults) *cobra.Command {
 	require.NoError(t, err)
 	tpl.Defaults = defaults
 
-	err = tpl.AddFlags(cmd)
+	err = tpl.AddFlagsToCobraCommand(cmd, defaults)
 	require.NoError(t, err)
 
 	return cmd
@@ -27,10 +27,13 @@ func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string)
 	tpl, err := NewTemplateParameterLayer()
 	require.NoError(t, err)
 
-	_, err = tpl.ParseFlags(cmd)
+	ps, err := tpl.ParseFlagsFromCobraCommand(cmd)
 	require.NoError(t, err)
 
-	return tpl.Settings
+	settings, err := NewTemplateSettings(ps)
+	require.NoError(t, err)
+
+	return settings
 }
 
 func TestTemplateFlags(t *testing.T) {

@@ -17,3 +17,6 @@ linters:
     - nonamedreturns
     - predeclared
   fast: false
+issues:
+  exclude:
+    - 'SA1019: cli.CreateProcessorLegacy'
