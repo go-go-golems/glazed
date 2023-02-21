@@ -30,6 +30,7 @@ func NewJsonCommand() *JsonCommand {
 					"input-is-array",
 					parameters.ParameterTypeBool,
 					parameters.WithHelp("Input is an array of objects"),
+					parameters.WithDefault(false),
 				),
 			),
 			cmds.WithArguments(

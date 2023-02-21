@@ -94,17 +94,21 @@ func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings
 	}
 
 	regexpReplacements := middlewares.RegexpReplacements{}
-	renameRegexpFields, ok := ps["rename-regexp"].(map[string]string)
+	renameRegexpFields, ok := ps["rename-regexp"].(map[string]interface{})
 	if !ok {
 		return nil, errors.Errorf("Invalid rename regexp fields")
 	}
 	for regex, replacement := range renameRegexpFields {
+		replacement_, ok := replacement.(string)
+		if !ok {
+			return nil, errors.Errorf("Invalid rename regexp replacement: %s", replacement)
+		}
 		re, err := regexp.Compile(regex)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Invalid regexp: %s", regex)
 		}
 		regexpReplacements = append(regexpReplacements,
-			&middlewares.RegexpReplacement{Regexp: re, Replacement: replacement})
+			&middlewares.RegexpReplacement{Regexp: re, Replacement: replacement_})
 	}
 
 	renameYaml, ok := ps["rename-yaml"].(string)
