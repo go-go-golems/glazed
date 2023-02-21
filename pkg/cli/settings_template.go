@@ -19,11 +19,14 @@ type TemplateSettings struct {
 //go:embed "flags/template.yaml"
 var templateFlagsYaml []byte
 
-var templateFlagsParameters map[string]*cmds.ParameterDefinition
-var templateFlagsParametersList []*cmds.ParameterDefinition
+var templateParameterLayer *cmds.ParameterLayer
 
 func init() {
-	templateFlagsParameters, templateFlagsParametersList = cmds.InitFlagsFromYaml(templateFlagsYaml)
+	var err error
+	templateParameterLayer, err = cmds.NewParameterLayerFromYAML(templateFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize template parameter layer"))
+	}
 }
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
@@ -46,7 +49,7 @@ type TemplateFlagsDefaults struct {
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 	s := &TemplateFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, templateFlagsParameters)
+	err := templateParameterLayer.InitializeStructFromDefaults(s)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize template flags defaults"))
 	}
@@ -55,18 +58,7 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(templateFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "Failed to clone template flags parameters")
-	}
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "Failed to add template flags to cobra command")
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "template", "Glazed templating output", parameters)
-
-	return nil
+	return templateParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {
@@ -102,7 +94,7 @@ func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, 
 }
 
 func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, templateFlagsParametersList, false)
+	parameters, err := templateParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}

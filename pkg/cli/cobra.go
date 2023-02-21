@@ -64,12 +64,12 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
 	}
 
 	cmds.SetFlagGroupOrder(cmd, []string{
-		"output",
-		"select",
-		"template",
-		"fields-filter",
-		"rename",
-		"replace",
+		"glazed-output",
+		"glazed-select",
+		"glazed-template",
+		"glazed-fields-filter",
+		"glazed-rename",
+		"glazed-replace",
 	})
 
 	return nil

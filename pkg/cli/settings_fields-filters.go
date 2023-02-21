@@ -12,11 +12,14 @@ import (
 //go:embed "flags/fields-filters.yaml"
 var fieldsFiltersFlagsYaml []byte
 
-var fieldsFiltersFlagsParameters map[string]*cmds.ParameterDefinition
-var fieldsFiltersFlagsParametersList []*cmds.ParameterDefinition
+var fieldsFiltersParameterLayer *cmds.ParameterLayer
 
 func init() {
-	fieldsFiltersFlagsParameters, fieldsFiltersFlagsParametersList = cmds.InitFlagsFromYaml(fieldsFiltersFlagsYaml)
+	var err error
+	fieldsFiltersParameterLayer, err = cmds.NewParameterLayerFromYAML(fieldsFiltersFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize fields and filters parameter layer"))
+	}
 }
 
 type FieldsFilterSettings struct {
@@ -62,7 +65,7 @@ type FieldsFilterFlagsDefaults struct {
 
 func NewFieldsFilterFlagsDefaults() *FieldsFilterFlagsDefaults {
 	s := &FieldsFilterFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, fieldsFiltersFlagsParameters)
+	err := fieldsFiltersParameterLayer.InitializeStructFromDefaults(s)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize fields and filters flags defaults"))
 	}
@@ -79,22 +82,11 @@ func AddFieldsFilterFlags(cmd *cobra.Command, defaults *FieldsFilterFlagsDefault
 	if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
 		defaults.Fields = []string{"all"}
 	}
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(fieldsFiltersFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "Failed to clone fields and filters flags parameters")
-	}
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "Failed to add fields and filters flags to cobra command")
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "fields-filters", "Glazed fields filtering", parameters)
-
-	return nil
+	return fieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func ParseFieldsFilterFlags(cmd *cobra.Command) (*FieldsFilterSettings, error) {
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, fieldsFiltersFlagsParametersList, false)
+	parameters, err := fieldsFiltersParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}

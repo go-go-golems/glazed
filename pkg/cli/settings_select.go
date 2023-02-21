@@ -11,11 +11,14 @@ import (
 //go:embed "flags/select.yaml"
 var selectFlagsYaml []byte
 
-var selectFlagsParameters map[string]*cmds.ParameterDefinition
-var selectFlagsParametersList []*cmds.ParameterDefinition
+var selectParameterLayer *cmds.ParameterLayer
 
 func init() {
-	selectFlagsParameters, selectFlagsParametersList = cmds.InitFlagsFromYaml(selectFlagsYaml)
+	var err error
+	selectParameterLayer, err = cmds.NewParameterLayerFromYAML(selectFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize select parameter layer"))
+	}
 }
 
 type SelectSettings struct {
@@ -63,7 +66,7 @@ type SelectFlagsDefaults struct {
 
 func NewSelectFlagsDefaults() *SelectFlagsDefaults {
 	s := &SelectFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, selectFlagsParameters)
+	err := selectParameterLayer.InitializeStructFromDefaults(s)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize select flags defaults"))
 	}
@@ -72,23 +75,11 @@ func NewSelectFlagsDefaults() *SelectFlagsDefaults {
 }
 
 func AddSelectFlags(cmd *cobra.Command, defaults *SelectFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(selectFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "Failed to clone select flags parameters")
-	}
-
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "Failed to add select flags to cobra command")
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "select", "Glazed select a single field", parameters)
-
-	return nil
+	return selectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func ParseSelectFlags(cmd *cobra.Command) (*SelectSettings, error) {
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, selectFlagsParametersList, false)
+	parameters, err := selectParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}

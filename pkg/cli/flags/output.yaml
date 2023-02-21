@@ -1,4 +1,4 @@
-slug: output
+slug: glazed-output
 name: Glazed output format flags
 Description: |
   These are the flags used to configure the output format of the structured data processed 
