@@ -389,7 +389,11 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	err := cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	g, err := cli.NewGlazedParameterLayers()
+	if err != nil {
+		panic(err)
+	}
+	err = g.AddFlags(parseCmd, g.NewFlagsDefaults())
 	if err != nil {
 		panic(err)
 	}
@@ -399,7 +403,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	err = g.AddFlags(splitByHeadingCmd, g.NewFlagsDefaults())
 	if err != nil {
 		panic(err)
 	}

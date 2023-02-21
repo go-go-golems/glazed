@@ -20,15 +20,40 @@ type FlagsDefaults struct {
 	Replace      *ReplaceFlagsDefaults
 }
 
-func NewFlagsDefaults() *FlagsDefaults {
+type GlazedParameterLayers struct {
+	FieldsFiltersParameterLayer *FieldsFiltersParameterLayer
+	OutputParameterLayer        *OutputParameterLayer
+}
+
+func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
+	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	outputParameterLayer, err := NewOutputParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	return &GlazedParameterLayers{
+		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
+		OutputParameterLayer:        outputParameterLayer,
+	}, nil
+}
+
+func (g *GlazedParameterLayers) NewFlagsDefaults() *FlagsDefaults {
 	return &FlagsDefaults{
-		Output:       NewOutputFlagsDefaults(),
+		Output:       g.OutputParameterLayer.Defaults,
 		Select:       NewSelectFlagsDefaults(),
 		Rename:       NewRenameFlagsDefaults(),
 		Template:     NewTemplateFlagsDefaults(),
-		FieldsFilter: NewFieldsFilterFlagsDefaults(),
+		FieldsFilter: g.FieldsFiltersParameterLayer.Defaults,
 		Replace:      NewReplaceFlagsDefaults(),
 	}
+}
+
+type CobraParameterLayer interface {
+	AddFlags(cmd *cobra.Command) error
+	ParseFlags(cmd *cobra.Command) error
 }
 
 // AddFlags adds all the glazed processing layer flags to a cobra.Command
@@ -37,8 +62,8 @@ func NewFlagsDefaults() *FlagsDefaults {
 // As we are moving towards #150 we should do all of this through the parameter definitions instead.
 //
 // This could probably be modelled as something of a "Layer" class that can be added to a command.
-func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
-	err := AddOutputFlags(cmd, defaults.Output)
+func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
+	err := g.OutputParameterLayer.AddFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -54,7 +79,7 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
 	if err != nil {
 		return err
 	}
-	err = AddFieldsFilterFlags(cmd, defaults.FieldsFilter)
+	err = g.FieldsFiltersParameterLayer.AddFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -76,7 +101,12 @@ func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
 }
 
 func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.OutputFormatter, error) {
-	outputSettings, err := ParseOutputFlags(cmd)
+	g, err := NewGlazedParameterLayers()
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Error creating glazed parameter layers")
+	}
+
+	err = g.OutputParameterLayer.ParseFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing output flags")
 	}
@@ -86,7 +116,7 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 		return nil, nil, errors.Wrapf(err, "Error parsing template flags")
 	}
 
-	fieldsFilterSettings, err := ParseFieldsFilterFlags(cmd)
+	err = g.FieldsFiltersParameterLayer.ParseFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing fields filter flags")
 	}
@@ -95,8 +125,9 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing select flags")
 	}
+	outputSettings := g.OutputParameterLayer.Settings
 	outputSettings.UpdateWithSelectSettings(selectSettings)
-	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
+	g.FieldsFiltersParameterLayer.Settings.UpdateWithSelectSettings(selectSettings)
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
 	renameSettings, err := ParseRenameFlags(cmd)
@@ -132,7 +163,7 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 		mw := middlewares.NewFlattenObjectMiddleware()
 		of.AddTableMiddleware(mw)
 	}
-	fieldsFilterSettings.AddMiddlewares(of)
+	g.FieldsFiltersParameterLayer.Settings.AddMiddlewares(of)
 
 	err = replaceSettings.AddMiddlewares(of)
 	if err != nil {

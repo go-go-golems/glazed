@@ -41,7 +41,15 @@ var DocsCmd = &cobra.Command{
 
 func init() {
 	DocsCmd.Flags().SortFlags = false
-	err := cli.AddOutputFlags(DocsCmd, cli.NewOutputFlagsDefaults())
+	// This is an example of selective use of glazed parameter layers.
+	// If we extracted out the docts command into a cmds.Command, which we should
+	// in order to expose it as a REST API, all of this would not even be necessary,
+	// I think.
+	gpl, err := cli.NewGlazedParameterLayers()
+	if err != nil {
+		panic(err)
+	}
+	err = gpl.OutputParameterLayer.AddFlags(DocsCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +61,7 @@ func init() {
 	// TODO(2023-02-12, manuel) Overload settings could be loaded from YAML too
 	//
 	// See https://github.com/go-go-golems/glazed/issues/133
-	err = cli.AddFieldsFilterFlags(DocsCmd, &cli.FieldsFilterFlagsDefaults{
+	defaults := &cli.FieldsFilterFlagsDefaults{
 		Fields: []string{
 			"path",
 			"Title",
@@ -67,7 +75,9 @@ func init() {
 		},
 		Filter:      []string{},
 		SortColumns: false,
-	})
+	}
+	gpl.FieldsFiltersParameterLayer.Defaults = defaults
+	err = gpl.FieldsFiltersParameterLayer.AddFlags(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

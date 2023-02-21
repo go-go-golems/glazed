@@ -90,7 +90,11 @@ var YamlCmd = &cobra.Command{
 
 func init() {
 	YamlCmd.Flags().SortFlags = false
-	err := cli.AddFlags(YamlCmd, cli.NewFlagsDefaults())
+	g, err := cli.NewGlazedParameterLayers()
+	if err != nil {
+		panic(err)
+	}
+	err = g.AddFlags(YamlCmd, g.NewFlagsDefaults())
 	if err != nil {
 		panic(err)
 	}

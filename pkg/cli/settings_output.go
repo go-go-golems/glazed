@@ -29,6 +29,64 @@ type OutputFormatterSettings struct {
 	TemplateFormatterSettings *TemplateFormatterSettings
 }
 
+type OutputFlagsDefaults struct {
+	Output          string `glazed.parameter:"output"`
+	OutputFile      string `glazed.parameter:"output-file"`
+	TableFormat     string `glazed.parameter:"table-format"`
+	WithHeaders     bool   `glazed.parameter:"with-headers"`
+	CsvSeparator    string `glazed.parameter:"csv-separator"`
+	OutputAsObjects bool   `glazed.parameter:"output-as-objects"`
+	Flatten         bool   `glazed.parameter:"flatten"`
+	TemplateFile    string `glazed.parameter:"template-file"`
+}
+
+//go:embed "flags/output.yaml"
+var outputFlagsYaml []byte
+
+type OutputParameterLayer struct {
+	cmds.ParameterLayer
+	Settings *OutputFormatterSettings
+	Defaults *OutputFlagsDefaults
+}
+
+func NewOutputParameterLayer() (*OutputParameterLayer, error) {
+	ret := &OutputParameterLayer{}
+	err := ret.LoadFromYAML(outputFlagsYaml)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize output parameter layer")
+	}
+	ret.Defaults = &OutputFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(ret.Defaults)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize output flags defaults")
+	}
+
+	return ret, nil
+}
+
+func (opl *OutputParameterLayer) AddFlags(cmd *cobra.Command) error {
+	return opl.AddFlagsToCobraCommand(cmd, opl.Defaults)
+}
+
+func (opl *OutputParameterLayer) ParseFlags(cmd *cobra.Command) error {
+	// TODO(manuel, 2023-02-12): This is not enough, because the flags template-file is not handled properly by just parsing it into here
+	// Really what this should be parsed into is a defaults struct, and then loading that into the settings by hand
+	parameters, err := opl.ParseFlagsFromCobraCommand(cmd)
+
+	if err != nil {
+		return err
+	}
+
+	// TODO(manuel, 2023-02-21) This part should actually be outside of the cobra handling too
+	// See #150
+	opl.Settings, err = NewOutputFormatterSettings(parameters)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewOutputFormatterSettings(parameters map[string]interface{}) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
 	err := cmds.InitializeStructFromParameters(s, parameters)
@@ -93,54 +151,4 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	}
 
 	return of, nil
-}
-
-//go:embed "flags/output.yaml"
-var outputFlagsYaml []byte
-
-var outputParameterLayer *cmds.ParameterLayer
-
-func init() {
-	var err error
-	outputParameterLayer, err = cmds.NewParameterLayerFromYAML(outputFlagsYaml)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize output flags parameters"))
-	}
-}
-
-type OutputFlagsDefaults struct {
-	Output          string `glazed.parameter:"output"`
-	OutputFile      string `glazed.parameter:"output-file"`
-	TableFormat     string `glazed.parameter:"table-format"`
-	WithHeaders     bool   `glazed.parameter:"with-headers"`
-	CsvSeparator    string `glazed.parameter:"csv-separator"`
-	OutputAsObjects bool   `glazed.parameter:"output-as-objects"`
-	Flatten         bool   `glazed.parameter:"flatten"`
-	TemplateFile    string `glazed.parameter:"template-file"`
-}
-
-func NewOutputFlagsDefaults() *OutputFlagsDefaults {
-	s := &OutputFlagsDefaults{}
-	err := outputParameterLayer.InitializeStructFromDefaults(s)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize output flags defaults"))
-	}
-
-	return s
-}
-
-func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
-	return outputParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-}
-
-func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
-	// TODO(manuel, 2023-02-12): This is not enough, because the flags template-file is not handled properly by just parsing it into here
-	// Really what this should be parsed into is a defaults struct, and then loading that into the settings by hand
-	parameters, err := outputParameterLayer.ParseFlagsFromCobraCommand(cmd)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return NewOutputFormatterSettings(parameters)
 }

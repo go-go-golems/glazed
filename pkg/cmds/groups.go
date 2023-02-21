@@ -18,19 +18,27 @@ type ParameterLayer struct {
 	Flags       []*ParameterDefinition `yaml:"flags,omitempty"`
 }
 
-func NewParameterLayerFromYAML(s []byte) (*ParameterLayer, error) {
-	ret := &ParameterLayer{}
-
-	err := yaml.Unmarshal(s, ret)
+func (p *ParameterLayer) LoadFromYAML(s []byte) error {
+	err := yaml.Unmarshal(s, p)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	for _, p := range ret.Flags {
+	for _, p := range p.Flags {
 		err := p.CheckParameterDefaultValueValidity()
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
 		}
+	}
+
+	return nil
+}
+
+func NewParameterLayerFromYAML(s []byte) (*ParameterLayer, error) {
+	ret := &ParameterLayer{}
+	err := ret.LoadFromYAML(s)
+	if err != nil {
+		return nil, err
 	}
 
 	return ret, nil
