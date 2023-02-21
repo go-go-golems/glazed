@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
-	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/spf13/cobra"
 	"strings"

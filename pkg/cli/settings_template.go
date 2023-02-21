@@ -2,7 +2,7 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -44,7 +44,7 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 type TemplateParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *TemplateSettings
 	Defaults *TemplateFlagsDefaults
 }

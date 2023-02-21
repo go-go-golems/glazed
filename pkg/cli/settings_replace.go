@@ -2,7 +2,8 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
@@ -38,7 +39,7 @@ type ReplaceFlagsDefaults struct {
 }
 
 type ReplaceParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *ReplaceSettings
 	Defaults *ReplaceFlagsDefaults
 }
@@ -78,9 +79,9 @@ func (r *ReplaceParameterLayer) ParseFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func NewReplaceSettingsFromParameters(parameters map[string]interface{}) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromParameters(ps map[string]interface{}) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := cmds.InitializeStructFromParameters(s, parameters)
+	err := parameters.InitializeStructFromParameters(s, ps)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
 	}

@@ -2,7 +2,8 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
@@ -24,7 +25,7 @@ type FieldsFilterFlagsDefaults struct {
 }
 
 type FieldsFiltersParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *FieldsFilterSettings
 	Defaults *FieldsFilterFlagsDefaults
 }
@@ -79,9 +80,9 @@ func (f *FieldsFiltersParameterLayer) ParseFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func NewFieldsFilterSettings(parameters map[string]interface{}) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := cmds.InitializeStructFromParameters(s, parameters)
+	err := parameters.InitializeStructFromParameters(s, ps)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,8 @@ package cli
 import (
 	_ "embed"
 	"github.com/Masterminds/sprig"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -44,7 +45,7 @@ type OutputFlagsDefaults struct {
 var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *OutputFormatterSettings
 	Defaults *OutputFlagsDefaults
 }
@@ -87,9 +88,9 @@ func (opl *OutputParameterLayer) ParseFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func NewOutputFormatterSettings(parameters map[string]interface{}) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	err := cmds.InitializeStructFromParameters(s, parameters)
+	err := parameters.InitializeStructFromParameters(s, ps)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}

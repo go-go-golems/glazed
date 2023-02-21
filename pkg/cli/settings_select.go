@@ -2,7 +2,8 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -16,9 +17,9 @@ type SelectSettings struct {
 	SelectTemplate string `glazed.parameter:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(parameters map[string]interface{}) (*SelectSettings, error) {
+func NewSelectSettingsFromParameters(ps map[string]interface{}) (*SelectSettings, error) {
 	s := &SelectSettings{}
-	err := cmds.InitializeStructFromParameters(s, parameters)
+	err := parameters.InitializeStructFromParameters(s, ps)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize select settings from parameters")
 	}
@@ -55,7 +56,7 @@ type SelectFlagsDefaults struct {
 }
 
 type SelectParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *SelectSettings
 	Defaults *SelectFlagsDefaults
 }

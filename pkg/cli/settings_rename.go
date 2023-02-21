@@ -2,7 +2,7 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -53,7 +53,7 @@ type RenameFlagsDefaults struct {
 var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
-	cmds.ParameterLayer
+	layers.ParameterLayer
 	Settings *RenameSettings
 	Defaults *RenameFlagsDefaults
 }

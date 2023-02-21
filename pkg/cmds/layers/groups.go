@@ -1,6 +1,7 @@
-package cmds
+package layers
 
 import (
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -12,10 +13,25 @@ import (
 // pages.
 
 type ParameterLayer struct {
-	Name        string                 `yaml:"name"`
-	Slug        string                 `yaml:"slug"`
-	Description string                 `yaml:"description"`
-	Flags       []*ParameterDefinition `yaml:"flags,omitempty"`
+	Name        string                            `yaml:"name"`
+	Slug        string                            `yaml:"slug"`
+	Description string                            `yaml:"description"`
+	Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+}
+
+type ParameterLayerOptions func(*ParameterLayer)
+
+func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) *ParameterLayer {
+	ret := &ParameterLayer{
+		Slug: slug,
+		Name: name,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
 }
 
 func (p *ParameterLayer) LoadFromYAML(s []byte) error {
@@ -44,15 +60,15 @@ func NewParameterLayerFromYAML(s []byte) (*ParameterLayer, error) {
 	return ret, nil
 }
 
-func (p *ParameterLayer) AddFlag(flag *ParameterDefinition) {
+func (p *ParameterLayer) AddFlag(flag *parameters.ParameterDefinition) {
 	p.Flags = append(p.Flags, flag)
 }
 
 // GetParameters returns a map that maps all parameters (flags and arguments) to their name.
 // I'm not sure if this is worth caching, but if we hook this up like something like
 // a lambda that might become more relevant.
-func (p *ParameterLayer) GetParameters() map[string]*ParameterDefinition {
-	ret := map[string]*ParameterDefinition{}
+func (p *ParameterLayer) GetParameters() map[string]*parameters.ParameterDefinition {
+	ret := map[string]*parameters.ParameterDefinition{}
 	for _, f := range p.Flags {
 		ret[f.Name] = f
 	}
@@ -60,28 +76,28 @@ func (p *ParameterLayer) GetParameters() map[string]*ParameterDefinition {
 }
 
 func (p *ParameterLayer) InitializeStructFromDefaults(s interface{}) error {
-	parameters := p.GetParameters()
-	err := InitializeStructFromParameterDefinitions(s, parameters)
+	ps := p.GetParameters()
+	err := parameters.InitializeStructFromParameterDefinitions(s, ps)
 	return err
 }
 
 func (p *ParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	parameters, err := CloneParameterDefinitionsWithDefaultsStruct(p.Flags, defaults)
+	ps, err := parameters.CloneParameterDefinitionsWithDefaultsStruct(p.Flags, defaults)
 	if err != nil {
 		return err
 	}
 
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err = AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
+	err = parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), ps)
 	if err != nil {
 		return err
 	}
 
-	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, parameters)
+	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, ps)
 
 	return nil
 }
 
 func (p *ParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	return GatherFlagsFromCobraCommand(cmd, p.Flags, false)
+	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false)
 }

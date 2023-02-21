@@ -3,6 +3,7 @@ package cli
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
@@ -100,7 +101,7 @@ func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command) error {
 		return err
 	}
 
-	cmds.SetFlagGroupOrder(cmd, []string{
+	layers.SetFlagGroupOrder(cmd, []string{
 		"glazed-output",
 		"glazed-select",
 		"glazed-template",
