@@ -12,17 +12,15 @@ import (
 // Helpers for cobra commands
 
 type FlagsDefaults struct {
-	Output       *OutputFlagsDefaults
-	Select       *SelectFlagsDefaults
-	Rename       *RenameFlagsDefaults
-	Template     *TemplateFlagsDefaults
-	FieldsFilter *FieldsFilterFlagsDefaults
-	Replace      *ReplaceFlagsDefaults
+	Select   *SelectFlagsDefaults
+	Template *TemplateFlagsDefaults
 }
 
 type GlazedParameterLayers struct {
 	FieldsFiltersParameterLayer *FieldsFiltersParameterLayer
 	OutputParameterLayer        *OutputParameterLayer
+	RenameParameterLayer        *RenameParameterLayer
+	ReplaceParameterLayer       *ReplaceParameterLayer
 }
 
 func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
@@ -34,20 +32,26 @@ func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
 	if err != nil {
 		return nil, err
 	}
+	renameParameterLayer, err := NewRenameParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	replaceParameterLayer, err := NewReplaceParameterLayer()
+	if err != nil {
+		return nil, err
+	}
 	return &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
 		OutputParameterLayer:        outputParameterLayer,
+		RenameParameterLayer:        renameParameterLayer,
+		ReplaceParameterLayer:       replaceParameterLayer,
 	}, nil
 }
 
 func (g *GlazedParameterLayers) NewFlagsDefaults() *FlagsDefaults {
 	return &FlagsDefaults{
-		Output:       g.OutputParameterLayer.Defaults,
-		Select:       NewSelectFlagsDefaults(),
-		Rename:       NewRenameFlagsDefaults(),
-		Template:     NewTemplateFlagsDefaults(),
-		FieldsFilter: g.FieldsFiltersParameterLayer.Defaults,
-		Replace:      NewReplaceFlagsDefaults(),
+		Select:   NewSelectFlagsDefaults(),
+		Template: NewTemplateFlagsDefaults(),
 	}
 }
 
@@ -71,7 +75,7 @@ func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command, defaults *FlagsDefa
 	if err != nil {
 		return err
 	}
-	err = AddRenameFlags(cmd, defaults.Rename)
+	err = g.RenameParameterLayer.AddFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -83,7 +87,7 @@ func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command, defaults *FlagsDefa
 	if err != nil {
 		return err
 	}
-	err = AddReplaceFlags(cmd, defaults.Replace)
+	err = g.ReplaceParameterLayer.AddFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -130,12 +134,12 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 	g.FieldsFiltersParameterLayer.Settings.UpdateWithSelectSettings(selectSettings)
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	renameSettings, err := ParseRenameFlags(cmd)
+	err = g.RenameParameterLayer.ParseFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing rename flags")
 	}
 
-	replaceSettings, err := ParseReplaceFlags(cmd)
+	err = g.ReplaceParameterLayer.ParseFlags(cmd)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error parsing replace flags")
 	}
@@ -149,7 +153,7 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 	// for the following middlewares too.
 	// these following middlewares can create proper column names on their own
 	// when needed
-	err = renameSettings.AddMiddlewares(of)
+	err = g.RenameParameterLayer.Settings.AddMiddlewares(of)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
@@ -165,7 +169,7 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 	}
 	g.FieldsFiltersParameterLayer.Settings.AddMiddlewares(of)
 
-	err = replaceSettings.AddMiddlewares(of)
+	err = g.ReplaceParameterLayer.Settings.AddMiddlewares(of)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error adding replace middlewares")
 	}

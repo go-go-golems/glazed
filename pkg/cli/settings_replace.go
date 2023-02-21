@@ -10,19 +10,6 @@ import (
 	"os"
 )
 
-//go:embed "flags/replace.yaml"
-var replaceFlagsYaml []byte
-
-var replaceParameterLayer *cmds.ParameterLayer
-
-func init() {
-	var err error
-	replaceParameterLayer, err = cmds.NewParameterLayerFromYAML(replaceFlagsYaml)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize replace parameter layer"))
-	}
-}
-
 type ReplaceSettings struct {
 	ReplaceFile string `glazed.parameter:"replace-file"`
 }
@@ -50,27 +37,45 @@ type ReplaceFlagsDefaults struct {
 	ReplaceFile string `glazed.parameter:"replace-file"`
 }
 
-func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
-	ret := &ReplaceFlagsDefaults{}
-	err := replaceParameterLayer.InitializeStructFromDefaults(ret)
+type ReplaceParameterLayer struct {
+	cmds.ParameterLayer
+	Settings *ReplaceSettings
+	Defaults *ReplaceFlagsDefaults
+}
+
+//go:embed "flags/replace.yaml"
+var replaceFlagsYaml []byte
+
+func NewReplaceParameterLayer() (*ReplaceParameterLayer, error) {
+	ret := &ReplaceParameterLayer{}
+	err := ret.LoadFromYAML(replaceFlagsYaml)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	return ret
-}
-
-func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) error {
-	return replaceParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-}
-
-func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
-	parameters, err := replaceParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	ret.Defaults = &ReplaceFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(ret.Defaults)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewReplaceSettingsFromParameters(parameters)
+	return ret, nil
+}
+
+func (r *ReplaceParameterLayer) AddFlags(cmd *cobra.Command) error {
+	return r.AddFlagsToCobraCommand(cmd, r.Defaults)
+}
+
+func (r *ReplaceParameterLayer) ParseFlags(cmd *cobra.Command) error {
+	parameters, err := r.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	r.Settings, err = NewReplaceSettingsFromParameters(parameters)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewReplaceSettingsFromParameters(parameters map[string]interface{}) (*ReplaceSettings, error) {

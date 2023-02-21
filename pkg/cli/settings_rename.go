@@ -14,19 +14,6 @@ import (
 	"strings"
 )
 
-//go:embed "flags/rename.yaml"
-var renameFlagsYaml []byte
-
-var renameParameterLayer *cmds.ParameterLayer
-
-func init() {
-	var err error
-	renameParameterLayer, err = cmds.NewParameterLayerFromYAML(renameFlagsYaml)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize rename parameter layer"))
-	}
-}
-
 type RenameSettings struct {
 	RenameFields  map[types.FieldName]string
 	RenameRegexps middlewares.RegexpReplacements
@@ -62,21 +49,35 @@ type RenameFlagsDefaults struct {
 	RenameYaml   string            `glazed.parameter:"rename-yaml"`
 }
 
-func NewRenameFlagsDefaults() *RenameFlagsDefaults {
-	s := &RenameFlagsDefaults{}
-	err := renameParameterLayer.InitializeStructFromDefaults(s)
+//go:embed "flags/rename.yaml"
+var renameFlagsYaml []byte
+
+type RenameParameterLayer struct {
+	cmds.ParameterLayer
+	Settings *RenameSettings
+	Defaults *RenameFlagsDefaults
+}
+
+func NewRenameParameterLayer() (*RenameParameterLayer, error) {
+	ret := &RenameParameterLayer{}
+	err := ret.LoadFromYAML(renameFlagsYaml)
+	if err != nil {
+		return nil, err
+	}
+	ret.Defaults = &RenameFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(ret.Defaults)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize rename flags defaults"))
 	}
 
-	return s
+	return ret, nil
 }
 
-func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) error {
-	return renameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+func (r *RenameParameterLayer) AddFlags(cmd *cobra.Command) error {
+	return r.AddFlagsToCobraCommand(cmd, r.Defaults)
 }
 
-func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
+func (r *RenameParameterLayer) ParseFlags(cmd *cobra.Command) error {
 	renameFields, _ := cmd.Flags().GetStringSlice("rename")
 	renameRegexpFields, _ := cmd.Flags().GetStringSlice("rename-regexp")
 	renameYaml, _ := cmd.Flags().GetString("rename-yaml")
@@ -85,7 +86,7 @@ func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
 	for _, renameField := range renameFields {
 		parts := strings.Split(renameField, ":")
 		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename field: %s", renameField)
+			return errors.Errorf("Invalid rename field: %s", renameField)
 		}
 		renamesFieldsMap[types.FieldName(parts[0])] = types.FieldName(parts[1])
 	}
@@ -94,19 +95,21 @@ func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {
 	for _, renameRegexpField := range renameRegexpFields {
 		parts := strings.Split(renameRegexpField, ":")
 		if len(parts) != 2 {
-			return nil, errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
+			return errors.Errorf("Invalid rename-regexp field: %s", renameRegexpField)
 		}
 		re, err := regexp.Compile(parts[0])
 		if err != nil {
-			return nil, errors.Wrapf(err, "Invalid regexp: %s", parts[0])
+			return errors.Wrapf(err, "Invalid regexp: %s", parts[0])
 		}
 		regexpReplacements = append(regexpReplacements,
 			&middlewares.RegexpReplacement{Regexp: re, Replacement: parts[1]})
 	}
 
-	return &RenameSettings{
+	r.Settings = &RenameSettings{
 		RenameFields:  renamesFieldsMap,
 		RenameRegexps: regexpReplacements,
 		YamlFile:      renameYaml,
-	}, nil
+	}
+
+	return nil
 }
