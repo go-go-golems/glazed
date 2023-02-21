@@ -31,6 +31,12 @@ func NewFlagsDefaults() *FlagsDefaults {
 	}
 }
 
+// AddFlags adds all the glazed processing layer flags to a cobra.Command
+//
+// TODO(manuel, 2023-02-21) Interfacing directly with cobra to do glazed flags handling is deprecated
+// As we are moving towards #150 we should do all of this through the parameter definitions instead.
+//
+// This could probably be modelled as something of a "Layer" class that can be added to a command.
 func AddFlags(cmd *cobra.Command, defaults *FlagsDefaults) error {
 	err := AddOutputFlags(cmd, defaults.Output)
 	if err != nil {

@@ -544,6 +544,11 @@ func GatherFlagsFromCobraCommand(
 	return parameters, nil
 }
 
+// TODO(manuel, 2023-02-21) This is probably possible to do with just a plain command
+// If we can gather all the necessary parameter definitions for the command in one go
+// we can make registering to cobra just as generic as registering for other interfaces
+//
+// See #150
 func NewCobraCommand(s CobraCommand) (*cobra.Command, error) {
 	description := s.Description()
 	cmd := &cobra.Command{
