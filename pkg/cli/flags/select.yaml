@@ -1,10 +1,15 @@
-- name: select
-  type: string
-  help: Select a single field and output as a single line
-  default: ""
+slug: glazed-select
+name: Glazed select flags
+Description: |
+  These are the flags used to select fields in the structured data processed.
+flags:
+  - name: select
+    type: string
+    help: Select a single field and output as a single line
+    default: ""
 
-- name: select-template
-  type: string
-  help: Output a single templated value for each row, on a single line
-  default: ""
+  - name: select-template
+    type: string
+    help: Output a single templated value for each row, on a single line
+    default: ""
 

@@ -2,6 +2,8 @@ package cmds
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -16,27 +18,90 @@ import (
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
 type CommandDescription struct {
-	Name      string                 `yaml:"name"`
-	Short     string                 `yaml:"short"`
-	Long      string                 `yaml:"long,omitempty"`
-	Flags     []*ParameterDefinition `yaml:"flags,omitempty"`
-	Arguments []*ParameterDefinition `yaml:"arguments,omitempty"`
+	Name      string                            `yaml:"name"`
+	Short     string                            `yaml:"short"`
+	Long      string                            `yaml:"long,omitempty"`
+	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
+	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
 	Source string `yaml:",omitempty"`
 }
 
-type Command interface {
-	// NOTE(2023-02-07, manuel) This is not actually used either by sqleton or pinocchio
-	//
-	// The reason for this is that they implement CobraCommand, which calls
-	// RunFromCobra(cmd), and thus there is no need to actually implement Run() itself.
-	// All they use is the Description() call, so there might be a reason to split the
-	// interface into DescribedCommand and RunnableCommand, or so.
-	// I don't really feel fluent with golang interface architecturing yet.
+// Steal the builder API from https://github.com/bbkane/warg
 
-	Run(parameters map[string]interface{}, gp *GlazeProcessor) error
+type CommandDescriptionOption func(*CommandDescription)
+
+func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
+	ret := &CommandDescription{
+		Name: name,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func WithShort(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Short = s
+	}
+}
+
+func WithLong(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Long = s
+	}
+}
+
+func WithFlags(f ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Flags = append(c.Flags, f...)
+	}
+}
+
+func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Arguments = append(c.Arguments, a...)
+	}
+}
+
+func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layers = append(c.Layers, l...)
+	}
+}
+
+func WithParents(p ...string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Parents = p
+	}
+}
+
+func WithSource(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Source = s
+	}
+}
+
+type Command interface {
+	// Run is called to actually execute the command. There is no result type,
+	// that is actually up to the command. Most commands for now will print structured data
+	// to stdout, which is not ideal.
+	//
+	// See
+	//
+	// NOTE(manuel, 2023-02-21) Does a command always need a GlazeProcessor?
+	//
+	// If we allow it to be passed as a parameter, we can have the caller configure
+	// the formatter to our needs, even if many of the flags might actually be in the parameters
+	// list itself. This makes it easy to hook things up as always JSON when used in an API,
+	// for example?
+	Run(ps map[string]interface{}, gp *GlazeProcessor) error
 	Description() *CommandDescription
 }
 

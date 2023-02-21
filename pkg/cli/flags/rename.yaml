@@ -1,15 +1,20 @@
-- name: rename
-  type: stringList
-  help: Rename fields (list of oldName:newName)
-  default: []
+slug: glazed-rename
+name: Glazed rename flags
+Description: |
+  These are the flags used to rename fields in the structured data processed.
+flags:
+  - name: rename
+    type: stringList
+    help: Rename fields (list of oldName:newName)
+    default: []
 
-- name: rename-regexp
-  type: keyValue
-  help: Rename fields using regular expressions (list of regex:newName)
-  default: {}
+  - name: rename-regexp
+    type: keyValue
+    help: Rename fields using regular expressions (list of regex:newName)
+    default: {}
 
-- name: rename-yaml
-  type: string
-  help: Rename fields using a yaml file
-  default: ""
+  - name: rename-yaml
+    type: string
+    help: Rename fields using a yaml file
+    default: ""
 

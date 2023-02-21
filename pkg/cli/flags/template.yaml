@@ -1,15 +1,20 @@
-- name: template
-  type: string
-  help: Go Template to use for single string
-  default: ""
+slug: glazed-template
+name: Glazed template flags
+Description: |
+  These are the flags used to configure the template used to format the output of glazed.
+flags:
+  - name: template
+    type: string
+    help: Go Template to use for single string
+    default: ""
 
-- name: template-field
-  type: keyValue
-  help: For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary
-  default: {}
+  - name: template-field
+    type: keyValue
+    help: For table output, fieldName:template to create new fields, or @fileName to read field templates from a yaml dictionary
+    default: {}
 
-- name: use-row-templates
-  type: bool
-  help: Use row templates instead of column templates
-  default: false
+  - name: use-row-templates
+    type: bool
+    help: Use row templates instead of column templates
+    default: false
 

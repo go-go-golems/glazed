@@ -1,7 +1,8 @@
-package cmds
+package layers
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"sort"
@@ -246,7 +247,7 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 	return ret
 }
 
-func AddFlagGroupToCobraCommand(cmd *cobra.Command, id string, name string, flags []*ParameterDefinition) {
+func AddFlagGroupToCobraCommand(cmd *cobra.Command, id string, name string, flags []*parameters.ParameterDefinition) {
 	flagNames := []string{}
 	for _, flag := range flags {
 		flagNames = append(flagNames, flag.Name)

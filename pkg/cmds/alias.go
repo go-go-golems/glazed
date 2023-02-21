@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -47,8 +48,8 @@ func (a *CommandAlias) Description() *CommandDescription {
 		Name:      a.Name,
 		Short:     s.Short,
 		Long:      s.Long,
-		Flags:     []*ParameterDefinition{},
-		Arguments: []*ParameterDefinition{},
+		Flags:     []*parameters.ParameterDefinition{},
+		Arguments: []*parameters.ParameterDefinition{},
 	}
 
 	for _, flag := range s.Flags {

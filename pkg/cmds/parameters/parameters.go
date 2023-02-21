@@ -1,4 +1,4 @@
-package cmds
+package parameters
 
 import (
 	"bufio"
@@ -23,14 +23,13 @@ import (
 // Along with metadata (Name, Help) that is useful for help,
 // it also specifies a Type, a Default value and if it is Required.
 type ParameterDefinition struct {
-	Name         string        `yaml:"name"`
-	ShortFlag    string        `yaml:"shortFlag,omitempty"`
-	Type         ParameterType `yaml:"type"`
-	Help         string        `yaml:"help,omitempty"`
-	Default      interface{}   `yaml:"default,omitempty"`
-	Choices      []string      `yaml:"choices,omitempty"`
-	Required     bool          `yaml:"required,omitempty"`
-	CommandGroup string        `yaml:"commandGroup,omitempty"`
+	Name      string        `yaml:"name"`
+	ShortFlag string        `yaml:"shortFlag,omitempty"`
+	Type      ParameterType `yaml:"type"`
+	Help      string        `yaml:"help,omitempty"`
+	Default   interface{}   `yaml:"default,omitempty"`
+	Choices   []string      `yaml:"choices,omitempty"`
+	Required  bool          `yaml:"required,omitempty"`
 }
 
 func (p *ParameterDefinition) String() string {
@@ -46,6 +45,51 @@ func (p *ParameterDefinition) Copy() *ParameterDefinition {
 		Default:   p.Default,
 		Choices:   p.Choices,
 		Required:  p.Required,
+	}
+}
+
+type ParameterDefinitionOption func(*ParameterDefinition)
+
+func NewParameterDefinition(name string, parameterType ParameterType, options ...ParameterDefinitionOption) *ParameterDefinition {
+	ret := &ParameterDefinition{
+		Name: name,
+		Type: parameterType,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func WithHelp(help string) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.Help = help
+	}
+}
+
+func WithShortFlag(shortFlag string) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.ShortFlag = shortFlag
+	}
+}
+
+func WithDefault(defaultValue interface{}) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.Default = defaultValue
+	}
+}
+
+func WithChoices(choices []string) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.Choices = choices
+	}
+}
+
+func WithRequired(required bool) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.Required = required
 	}
 }
 
@@ -291,23 +335,26 @@ func CloneParameterDefinitionsWithDefaultsStruct(
 
 	// gather default by parameter name from s
 	defaults := map[string]reflect.Value{}
-	// check that s is indeed a pointer to a struct
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
-		return nil, errors.Errorf("s is not a pointer")
-	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
-		return nil, errors.Errorf("s is not a pointer to a struct")
-	}
-	st := reflect.TypeOf(s).Elem()
 
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		v, ok := field.Tag.Lookup("glazed.parameter")
-		if !ok {
-			continue
+	if s != nil {
+		// check that s is indeed a pointer to a struct
+		if reflect.TypeOf(s).Kind() != reflect.Ptr {
+			return nil, errors.Errorf("s is not a pointer")
 		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-		defaults[v] = value
+		if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+			return nil, errors.Errorf("s is not a pointer to a struct")
+		}
+		st := reflect.TypeOf(s).Elem()
+
+		for i := 0; i < st.NumField(); i++ {
+			field := st.Field(i)
+			v, ok := field.Tag.Lookup("glazed.parameter")
+			if !ok {
+				continue
+			}
+			value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+			defaults[v] = value
+		}
 	}
 
 	for i, p := range parameterList {

@@ -120,7 +120,7 @@ var parseCmd = &cobra.Command{
 	Short: "Parse markdown data as AST and process further",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateProcessorLegacy(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
@@ -310,7 +310,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Short: "Split a markdown file by heading",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateProcessorLegacy(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
@@ -389,7 +389,11 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	err := cli.AddFlags(parseCmd, cli.NewFlagsDefaults())
+	g, err := cli.NewGlazedParameterLayers()
+	if err != nil {
+		panic(err)
+	}
+	err = g.AddFlagsToCobraCommand(parseCmd, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -399,7 +403,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = cli.AddFlags(splitByHeadingCmd, cli.NewFlagsDefaults())
+	err = g.AddFlagsToCobraCommand(splitByHeadingCmd, nil)
 	if err != nil {
 		panic(err)
 	}

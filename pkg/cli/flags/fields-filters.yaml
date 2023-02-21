@@ -1,14 +1,20 @@
-- name: fields
-  type: stringList
-  help: Fields to include in the output
-  default:
-    - all
+slug: glazed-fields-filters
+name: Glazed fields and filters flags
+Description: |
+  These are the flags used to configure the fields and filters of the structured data processed 
+  through glazed. They allow the user to select which columns they want to see and in which order.
+flags:
+  - name: fields
+    type: stringList
+    help: Fields to include in the output
+    default:
+      - all
 
-- name: filter
-  type: stringList
-  help: Fields to remove from output
+  - name: filter
+    type: stringList
+    help: Fields to remove from output
 
-- name: sort-columns
-  type: bool
-  help: Sort columns alphabetically
-  default: false
+  - name: sort-columns
+    type: bool
+    help: Sort columns alphabetically
+    default: false

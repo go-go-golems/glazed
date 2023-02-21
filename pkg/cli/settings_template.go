@@ -2,7 +2,7 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -18,13 +18,6 @@ type TemplateSettings struct {
 
 //go:embed "flags/template.yaml"
 var templateFlagsYaml []byte
-
-var templateFlagsParameters map[string]*cmds.ParameterDefinition
-var templateFlagsParametersList []*cmds.ParameterDefinition
-
-func init() {
-	templateFlagsParameters, templateFlagsParametersList = cmds.InitFlagsFromYaml(templateFlagsYaml)
-}
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if tf.UseRowTemplates && len(tf.Templates) > 0 {
@@ -45,28 +38,37 @@ type TemplateFlagsDefaults struct {
 }
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
-	s := &TemplateFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, templateFlagsParameters)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize template flags defaults"))
+	return &TemplateFlagsDefaults{
+		UseRowTemplates: false,
 	}
-
-	return s
 }
 
-func AddTemplateFlags(cmd *cobra.Command, defaults *TemplateFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(templateFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "Failed to clone template flags parameters")
-	}
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "Failed to add template flags to cobra command")
-	}
+type TemplateParameterLayer struct {
+	layers.ParameterLayerImpl
+	Defaults *TemplateFlagsDefaults
+}
 
-	cmds.AddFlagGroupToCobraCommand(cmd, "template", "Glazed templating output", parameters)
+func NewTemplateParameterLayer() (*TemplateParameterLayer, error) {
+	ret := &TemplateParameterLayer{}
+	err := ret.LoadFromYAML(templateFlagsYaml)
+	if err != nil {
+		return nil, err
+	}
+	s := &TemplateFlagsDefaults{}
+	err = ret.InitializeStructFromDefaults(s)
+	if err != nil {
+		return nil, err
+	}
+	ret.Defaults = s
 
-	return nil
+	return ret, nil
+}
+
+func (t *TemplateParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+	if defaults == nil {
+		defaults = t.Defaults
+	}
+	return t.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {
@@ -99,13 +101,4 @@ func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, 
 		UseRowTemplates: useRowTemplates,
 		RenameSeparator: "_",
 	}, nil
-}
-
-func ParseTemplateFlags(cmd *cobra.Command) (*TemplateSettings, error) {
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, templateFlagsParametersList, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewTemplateSettings(parameters)
 }
