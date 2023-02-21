@@ -40,7 +40,8 @@ func init() {
 	helpCmd := help.NewCobraHelpCommand(helpSystem)
 	rootCmd.SetHelpCommand(helpCmd)
 
-	rootCmd.AddCommand(cmds.JsonCmd)
+	jsonCmd := cmds.NewJsonCommand()
+	rootCmd.AddCommand(jsonCmd.BuildCobraCommand())
 	rootCmd.AddCommand(cmds.YamlCmd)
 	rootCmd.AddCommand(cmds.DocsCmd)
 	rootCmd.AddCommand(cmds.MarkdownCmd)

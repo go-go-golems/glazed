@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
@@ -21,61 +22,44 @@ type GlazedParameterLayers struct {
 	TemplateParameterLayer      *TemplateParameterLayer
 }
 
-func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
-	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	outputParameterLayer, err := NewOutputParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	renameParameterLayer, err := NewRenameParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	replaceParameterLayer, err := NewReplaceParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	selectParameterLayer, err := NewSelectParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	templateParameterLayer, err := NewTemplateParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	return &GlazedParameterLayers{
-		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
-		OutputParameterLayer:        outputParameterLayer,
-		RenameParameterLayer:        renameParameterLayer,
-		ReplaceParameterLayer:       replaceParameterLayer,
-		SelectParameterLayer:        selectParameterLayer,
-		TemplateParameterLayer:      templateParameterLayer,
-	}, nil
+func (g *GlazedParameterLayers) AddFlag(flag *parameters.ParameterDefinition) {
+	panic("not supported me")
 }
 
-type CobraParameterLayer interface {
-	AddFlags(cmd *cobra.Command) error
-	ParseFlags(cmd *cobra.Command) error
+func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters.ParameterDefinition {
+	ret := make(map[string]*parameters.ParameterDefinition)
+	for k, v := range g.RenameParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	for k, v := range g.OutputParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	for k, v := range g.SelectParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	for k, v := range g.TemplateParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	for k, v := range g.FieldsFiltersParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	for k, v := range g.ReplaceParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
+	return ret
 }
 
-// AddFlags adds all the glazed processing layer flags to a cobra.Command
-//
-// TODO(manuel, 2023-02-21) Interfacing directly with cobra to do glazed flags handling is deprecated
-// As we are moving towards #150 we should do all of this through the parameter definitions instead.
-//
-// This could probably be modelled as something of a "Layer" class that can be added to a command.
-//
-// NOTE(manuel, 2023-02-21) It looks like this is basically a CobraParameterLayer too
-// So maybe there is something there, that entire libraries can just very easily provide collections of layers.
-// I don't think I need to do anything special here, actually.
-//
-// Actually, that is not true, I can to the SetupProcessor independent of the cobra parsing
-// by collecting all the settings necessary to create it from the results of calling
-// ParseFlags on the GlazedParameterLayers.
-func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command) error {
+func (g *GlazedParameterLayers) InitializeStructFromDefaults(s interface{}) error {
+	panic("implement me")
+}
+
+func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
 	err := g.OutputParameterLayer.AddFlags(cmd)
 	if err != nil {
 		return err
@@ -113,33 +97,82 @@ func (g *GlazedParameterLayers) AddFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func (g *GlazedParameterLayers) ParseFlags(cmd *cobra.Command) error {
-	err := g.OutputParameterLayer.ParseFlags(cmd)
+func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
+	ps, err := g.OutputParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = g.SelectParameterLayer.ParseFlags(cmd)
+	ps_, err := g.SelectParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = g.RenameParameterLayer.ParseFlags(cmd)
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.RenameParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = g.TemplateParameterLayer.ParseFlags(cmd)
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.TemplateParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = g.FieldsFiltersParameterLayer.ParseFlags(cmd)
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.FieldsFiltersParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = g.ReplaceParameterLayer.ParseFlags(cmd)
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.ReplaceParameterLayer.ParseFlags(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	return ps, nil
+}
 
+func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
+	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	outputParameterLayer, err := NewOutputParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	renameParameterLayer, err := NewRenameParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	replaceParameterLayer, err := NewReplaceParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	selectParameterLayer, err := NewSelectParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	templateParameterLayer, err := NewTemplateParameterLayer()
+	if err != nil {
+		return nil, err
+	}
+	return &GlazedParameterLayers{
+		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
+		OutputParameterLayer:        outputParameterLayer,
+		RenameParameterLayer:        renameParameterLayer,
+		ReplaceParameterLayer:       replaceParameterLayer,
+		SelectParameterLayer:        selectParameterLayer,
+		TemplateParameterLayer:      templateParameterLayer,
+	}, nil
 }
 
 func (g *GlazedParameterLayers) CreateProcessor() (
@@ -207,7 +240,15 @@ func SetupProcessor(cmd *cobra.Command) (*cmds.GlazeProcessor, formatters.Output
 		return nil, nil, err
 	}
 
-	err = gpl.ParseFlags(cmd)
+	// TODO(manuel, 2023-02-21) Remove this weird SetupProcessor logic
+	//
+	// See #150
+	//
+	// this is abit wonk, because we create the settings structures while parsing the flags,
+	// and the ncreate the processor from the settings, when really we should be creating the
+	// processor from the parameters themselves, which we could fairly easily do
+	// except for the weird regexp replace leftover
+	_, err = gpl.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, nil, err
 	}

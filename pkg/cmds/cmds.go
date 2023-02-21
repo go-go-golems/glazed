@@ -23,7 +23,7 @@ type CommandDescription struct {
 	Long      string                            `yaml:"long,omitempty"`
 	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
-	Layers    []*layers.ParameterLayer          `yaml:"layers,omitempty"`
+	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -34,50 +34,58 @@ type CommandDescription struct {
 
 type CommandDescriptionOption func(*CommandDescription)
 
-func NewCommandDescription(name string, options ...[]CommandDescriptionOption) *CommandDescription {
+func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
 	ret := &CommandDescription{
 		Name: name,
 	}
 
 	for _, o := range options {
-		for _, opt := range o {
-			opt(ret)
-		}
+		o(ret)
 	}
 
 	return ret
 }
 
-func (cd *CommandDescription) WithShort(short string) {
-	cd.Short = short
+func WithShort(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Short = s
+	}
 }
 
-func (cd *CommandDescription) WithLong(long string) {
-	cd.Long = long
+func WithLong(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Long = s
+	}
 }
 
-func (cd *CommandDescription) WithFlags(flags ...*parameters.ParameterDefinition) {
-	cd.Flags = append(cd.Flags, flags...)
+func WithFlags(f ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Flags = append(c.Flags, f...)
+	}
 }
 
-func (cd *CommandDescription) WithArguments(args ...*parameters.ParameterDefinition) {
-	cd.Arguments = append(cd.Arguments, args...)
+func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Arguments = append(c.Arguments, a...)
+	}
 }
 
-func (cd *CommandDescription) WithLayers(layers ...*layers.ParameterLayer) {
-	cd.Layers = append(cd.Layers, layers...)
+func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layers = append(c.Layers, l...)
+	}
 }
 
-func (cd *CommandDescription) AddLayer(layer *layers.ParameterLayer) {
-	cd.Layers = append(cd.Layers, layer)
+func WithParents(p ...string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Parents = p
+	}
 }
 
-func (cd *CommandDescription) WithParents(parents ...string) {
-	cd.Parents = parents
-}
-
-func (cd *CommandDescription) WithSource(source string) {
-	cd.Source = source
+func WithSource(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Source = s
+	}
 }
 
 type Command interface {
@@ -93,7 +101,7 @@ type Command interface {
 	// the formatter to our needs, even if many of the flags might actually be in the parameters
 	// list itself. This makes it easy to hook things up as always JSON when used in an API,
 	// for example?
-	Run(parameters map[string]interface{}, gp *GlazeProcessor) error
+	Run(ps map[string]interface{}, gp *GlazeProcessor) error
 	Description() *CommandDescription
 }
 

@@ -27,7 +27,7 @@ func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string)
 	tpl, err := NewTemplateParameterLayer()
 	require.NoError(t, err)
 
-	err = tpl.ParseFlags(cmd)
+	_, err = tpl.ParseFlags(cmd)
 	require.NoError(t, err)
 
 	return tpl.Settings

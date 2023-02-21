@@ -39,7 +39,7 @@ type ReplaceFlagsDefaults struct {
 }
 
 type ReplaceParameterLayer struct {
-	layers.ParameterLayer
+	layers.ParameterLayerImpl
 	Settings *ReplaceSettings
 	Defaults *ReplaceFlagsDefaults
 }
@@ -66,17 +66,17 @@ func (r *ReplaceParameterLayer) AddFlags(cmd *cobra.Command) error {
 	return r.AddFlagsToCobraCommand(cmd, r.Defaults)
 }
 
-func (r *ReplaceParameterLayer) ParseFlags(cmd *cobra.Command) error {
-	parameters, err := r.ParseFlagsFromCobraCommand(cmd)
+func (r *ReplaceParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
+	ps, err := r.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	r.Settings, err = NewReplaceSettingsFromParameters(parameters)
+	r.Settings, err = NewReplaceSettingsFromParameters(ps)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return ps, nil
 }
 
 func NewReplaceSettingsFromParameters(ps map[string]interface{}) (*ReplaceSettings, error) {

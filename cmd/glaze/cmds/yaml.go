@@ -94,7 +94,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddFlags(YamlCmd)
+	err = g.AddFlagsToCobraCommand(YamlCmd, nil)
 	if err != nil {
 		panic(err)
 	}

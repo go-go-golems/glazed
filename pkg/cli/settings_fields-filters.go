@@ -25,7 +25,7 @@ type FieldsFilterFlagsDefaults struct {
 }
 
 type FieldsFiltersParameterLayer struct {
-	layers.ParameterLayer
+	layers.ParameterLayerImpl
 	Settings *FieldsFilterSettings
 	Defaults *FieldsFilterFlagsDefaults
 }
@@ -59,15 +59,15 @@ func (f *FieldsFiltersParameterLayer) AddFlags(cmd *cobra.Command) error {
 	return f.AddFlagsToCobraCommand(cmd, f.Defaults)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseFlags(cmd *cobra.Command) error {
-	parameters, err := f.ParseFlagsFromCobraCommand(cmd)
+func (f *FieldsFiltersParameterLayer) ParseFlags(cmd *cobra.Command) (map[string]interface{}, error) {
+	ps, err := f.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
-		return errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
+		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
-	res, err := NewFieldsFilterSettings(parameters)
+	res, err := NewFieldsFilterSettings(ps)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create fields and filters settings from parameters")
+		return nil, errors.Wrap(err, "Failed to create fields and filters settings from parameters")
 	}
 
 	// if fields were manually specified, clear whatever default filters we might have set
@@ -77,7 +77,7 @@ func (f *FieldsFiltersParameterLayer) ParseFlags(cmd *cobra.Command) error {
 
 	f.Settings = res
 
-	return nil
+	return ps, nil
 }
 
 func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, error) {

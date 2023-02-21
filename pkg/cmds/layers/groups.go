@@ -12,17 +12,42 @@ import (
 // It also provides a location for a name, slug and description to be used in help
 // pages.
 
-type ParameterLayer struct {
+type ParameterLayer interface {
+	AddFlag(flag *parameters.ParameterDefinition)
+	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
+	InitializeStructFromDefaults(s interface{}) error
+	AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error
+	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+}
+
+type ParameterLayerImpl struct {
 	Name        string                            `yaml:"name"`
 	Slug        string                            `yaml:"slug"`
 	Description string                            `yaml:"description"`
 	Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 }
 
-type ParameterLayerOptions func(*ParameterLayer)
+func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var raw struct {
+		Name        string                            `yaml:"name"`
+		Slug        string                            `yaml:"slug"`
+		Description string                            `yaml:"description"`
+		Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+	}
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+	p.Name = raw.Name
+	p.Slug = raw.Slug
+	p.Description = raw.Description
+	p.Flags = raw.Flags
+	return nil
+}
 
-func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) *ParameterLayer {
-	ret := &ParameterLayer{
+type ParameterLayerOptions func(*ParameterLayerImpl)
+
+func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) *ParameterLayerImpl {
+	ret := &ParameterLayerImpl{
 		Slug: slug,
 		Name: name,
 	}
@@ -34,7 +59,7 @@ func NewParameterLayer(slug string, name string, options ...ParameterLayerOption
 	return ret
 }
 
-func (p *ParameterLayer) LoadFromYAML(s []byte) error {
+func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 	err := yaml.Unmarshal(s, p)
 	if err != nil {
 		return err
@@ -50,8 +75,8 @@ func (p *ParameterLayer) LoadFromYAML(s []byte) error {
 	return nil
 }
 
-func NewParameterLayerFromYAML(s []byte) (*ParameterLayer, error) {
-	ret := &ParameterLayer{}
+func NewParameterLayerFromYAML(s []byte) (*ParameterLayerImpl, error) {
+	ret := &ParameterLayerImpl{}
 	err := ret.LoadFromYAML(s)
 	if err != nil {
 		return nil, err
@@ -60,14 +85,14 @@ func NewParameterLayerFromYAML(s []byte) (*ParameterLayer, error) {
 	return ret, nil
 }
 
-func (p *ParameterLayer) AddFlag(flag *parameters.ParameterDefinition) {
+func (p *ParameterLayerImpl) AddFlag(flag *parameters.ParameterDefinition) {
 	p.Flags = append(p.Flags, flag)
 }
 
 // GetParameters returns a map that maps all parameters (flags and arguments) to their name.
 // I'm not sure if this is worth caching, but if we hook this up like something like
 // a lambda that might become more relevant.
-func (p *ParameterLayer) GetParameters() map[string]*parameters.ParameterDefinition {
+func (p *ParameterLayerImpl) GetParameterDefinitions() map[string]*parameters.ParameterDefinition {
 	ret := map[string]*parameters.ParameterDefinition{}
 	for _, f := range p.Flags {
 		ret[f.Name] = f
@@ -75,13 +100,13 @@ func (p *ParameterLayer) GetParameters() map[string]*parameters.ParameterDefinit
 	return ret
 }
 
-func (p *ParameterLayer) InitializeStructFromDefaults(s interface{}) error {
-	ps := p.GetParameters()
+func (p *ParameterLayerImpl) InitializeStructFromDefaults(s interface{}) error {
+	ps := p.GetParameterDefinitions()
 	err := parameters.InitializeStructFromParameterDefinitions(s, ps)
 	return err
 }
 
-func (p *ParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
 	ps, err := parameters.CloneParameterDefinitionsWithDefaultsStruct(p.Flags, defaults)
 	if err != nil {
 		return err
@@ -98,6 +123,6 @@ func (p *ParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults int
 	return nil
 }
 
-func (p *ParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
+func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
 	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false)
 }
