@@ -17,11 +17,14 @@ import (
 //go:embed "flags/rename.yaml"
 var renameFlagsYaml []byte
 
-var renameFlagsParameters map[string]*cmds.ParameterDefinition
-var renameFlagsParametersList []*cmds.ParameterDefinition
+var renameParameterLayer *cmds.ParameterLayer
 
 func init() {
-	renameFlagsParameters, renameFlagsParametersList = cmds.InitFlagsFromYaml(renameFlagsYaml)
+	var err error
+	renameParameterLayer, err = cmds.NewParameterLayerFromYAML(renameFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize rename parameter layer"))
+	}
 }
 
 type RenameSettings struct {
@@ -61,7 +64,7 @@ type RenameFlagsDefaults struct {
 
 func NewRenameFlagsDefaults() *RenameFlagsDefaults {
 	s := &RenameFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, renameFlagsParameters)
+	err := renameParameterLayer.InitializeStructFromDefaults(s)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize rename flags defaults"))
 	}
@@ -70,18 +73,7 @@ func NewRenameFlagsDefaults() *RenameFlagsDefaults {
 }
 
 func AddRenameFlags(cmd *cobra.Command, defaults *RenameFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(renameFlagsParametersList, defaults)
-	if err != nil {
-		return err
-	}
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return err
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "rename", "Glazed renaming ", parameters)
-
-	return nil
+	return renameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func ParseRenameFlags(cmd *cobra.Command) (*RenameSettings, error) {

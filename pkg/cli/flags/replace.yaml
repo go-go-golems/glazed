@@ -1,5 +1,10 @@
-- name: replace-file
-  type: string
-  help: File with replacements
-  default: ""
+slug: replace
+name: Glazed replace flags
+Description: |
+  These are the flags used to replace fields in the structured data processed.
+flags:
+  - name: replace-file
+    type: string
+    help: File with replacements
+    default: ""
 

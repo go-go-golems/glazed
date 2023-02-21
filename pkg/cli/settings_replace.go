@@ -13,11 +13,14 @@ import (
 //go:embed "flags/replace.yaml"
 var replaceFlagsYaml []byte
 
-var replaceFlagsParameters map[string]*cmds.ParameterDefinition
-var replaceFlagsParametersList []*cmds.ParameterDefinition
+var replaceParameterLayer *cmds.ParameterLayer
 
 func init() {
-	replaceFlagsParameters, replaceFlagsParametersList = cmds.InitFlagsFromYaml(replaceFlagsYaml)
+	var err error
+	replaceParameterLayer, err = cmds.NewParameterLayerFromYAML(replaceFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize replace parameter layer"))
+	}
 }
 
 type ReplaceSettings struct {
@@ -49,7 +52,7 @@ type ReplaceFlagsDefaults struct {
 
 func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
 	ret := &ReplaceFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(ret, replaceFlagsParameters)
+	err := replaceParameterLayer.InitializeStructFromDefaults(ret)
 	if err != nil {
 		panic(err)
 	}
@@ -58,28 +61,16 @@ func NewReplaceFlagsDefaults() *ReplaceFlagsDefaults {
 }
 
 func AddReplaceFlags(cmd *cobra.Command, defaults *ReplaceFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(replaceFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "failed to clone replace parameter definitions")
-	}
-
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "failed to add replace flags to cobra command")
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "replace", "Glazed replacing", parameters)
-	return nil
+	return replaceParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func ParseReplaceFlags(cmd *cobra.Command) (*ReplaceSettings, error) {
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, selectFlagsParametersList, false)
+	parameters, err := replaceParameterLayer.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	return NewReplaceSettingsFromParameters(parameters)
-
 }
 
 func NewReplaceSettingsFromParameters(parameters map[string]interface{}) (*ReplaceSettings, error) {
