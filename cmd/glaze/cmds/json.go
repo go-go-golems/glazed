@@ -103,7 +103,7 @@ func (j *JsonCommand) Description() *cmds.CommandDescription {
 	return j.description
 }
 
-func (j *JsonCommand) BuildCobraCommand() *cobra.Command {
+func (j *JsonCommand) BuildCobraCommand() (*cobra.Command, error) {
 	ret := &cobra.Command{
 		Use:   j.description.Name,
 		Short: j.description.Short,
@@ -146,15 +146,15 @@ func (j *JsonCommand) BuildCobraCommand() *cobra.Command {
 	ret.Flags().SortFlags = false
 	err := parameters.AddFlagsToCobraCommand(ret.PersistentFlags(), j.description.Flags)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	for _, layer := range j.description.Layers {
 		err = layer.AddFlagsToCobraCommand(ret, nil)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return ret
+	return ret, nil
 }
