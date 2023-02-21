@@ -1,52 +1,59 @@
-- name: output
-  shortFlag: o
-  type: choice
-  help: Output format (table, csv, tsv, json, yaml, sqlite, template, markdown)
-  default: table
-  choices:
-    - table
-    - csv
-    - tsv
-    - json
-    - yaml
-    - sqlite
-    - template
-    - markdown
+slug: output
+name: Glazed output format flags
+Description: |
+  These are the flags used to configure the output format of the structured data processed 
+  through glazed. It can be a structured file format like json or yaml, a database in sqlite,
+  a CSV file or a templated markdown or generic template file.
+flags:
+  - name: output
+    shortFlag: o
+    type: choice
+    help: Output format (table, csv, tsv, json, yaml, sqlite, template, markdown)
+    default: table
+    choices:
+      - table
+      - csv
+      - tsv
+      - json
+      - yaml
+      - sqlite
+      - template
+      - markdown
 
-- name: output-file
-  shortFlag: f
-  type: string
-  help: Output file
+  - name: output-file
+    shortFlag: f
+    type: string
+    help: Output file
 
-- name: template-file
-  type: string
-  help: Template file for template output
+  - name: template-file
+    type: string
+    help: Template file for template output
 
-- name: template-data
-  type: stringList
-  help: Additional data for template output
+  - name: template-data
+    type: stringList
+    help: Additional data for template output
 
-- name: table-format
-  type: string
-  help: Table format (ascii, markdown, html, csv, tsv)
-  default: "ascii"
+  - name: table-format
+    type: string
+    help: Table format (ascii, markdown, html, csv, tsv)
+    default: "ascii"
 
-- name: with-headers
-  type: bool
-  help: Include headers in output (CSV, TSV)
-  default: true
+  - name: with-headers
+    type: bool
+    help: Include headers in output (CSV, TSV)
+    default: true
 
-- name: csv-separator
-  type: string
-  help: CSV separator
-  default: ","
+  - name: csv-separator
+    type: string
+    help: CSV separator
+    default: ","
 
-- name: output-as-objects
-  type: bool
-  help: Output as individual objects instead of JSON array
-  default: false
+  - name: output-as-objects
+    type: bool
+    help: Output as individual objects instead of JSON array
+    default: false
 
-- name: flatten
-  type: bool
-  help: Flatten nested fields (after templating)
-  default: false
+  - name: flatten
+    type: bool
+    help: Flatten nested fields (after templating)
+    default: false

@@ -98,11 +98,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 //go:embed "flags/output.yaml"
 var outputFlagsYaml []byte
 
-var outputFlagsParameters map[string]*cmds.ParameterDefinition
-var outputFlagsParametersList []*cmds.ParameterDefinition
+var outputParameterLayer *cmds.ParameterLayer
 
 func init() {
-	outputFlagsParameters, outputFlagsParametersList = cmds.InitFlagsFromYaml(outputFlagsYaml)
+	var err error
+	outputParameterLayer, err = cmds.NewParameterLayerFromYAML(outputFlagsYaml)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to initialize output flags parameters"))
+	}
 }
 
 type OutputFlagsDefaults struct {
@@ -118,7 +121,7 @@ type OutputFlagsDefaults struct {
 
 func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 	s := &OutputFlagsDefaults{}
-	err := cmds.InitializeStructFromParameterDefinitions(s, outputFlagsParameters)
+	err := outputParameterLayer.InitializeStructFromDefaults(s)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize output flags defaults"))
 	}
@@ -127,25 +130,14 @@ func NewOutputFlagsDefaults() *OutputFlagsDefaults {
 }
 
 func AddOutputFlags(cmd *cobra.Command, defaults *OutputFlagsDefaults) error {
-	parameters, err := cmds.CloneParameterDefinitionsWithDefaultsStruct(outputFlagsParametersList, defaults)
-	if err != nil {
-		return errors.Wrap(err, "Failed to clone output flags parameters")
-	}
-
-	err = cmds.AddFlagsToCobraCommand(cmd.PersistentFlags(), parameters)
-	if err != nil {
-		return errors.Wrap(err, "Failed to add output flags to cobra command")
-	}
-
-	cmds.AddFlagGroupToCobraCommand(cmd, "output", "Glazed output format", parameters)
-
-	return nil
+	return outputParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func ParseOutputFlags(cmd *cobra.Command) (*OutputFormatterSettings, error) {
 	// TODO(manuel, 2023-02-12): This is not enough, because the flags template-file is not handled properly by just parsing it into here
 	// Really what this should be parsed into is a defaults struct, and then loading that into the settings by hand
-	parameters, err := cmds.GatherFlagsFromCobraCommand(cmd, outputFlagsParametersList, false)
+	parameters, err := outputParameterLayer.ParseFlagsFromCobraCommand(cmd)
+
 	if err != nil {
 		return nil, err
 	}
