@@ -92,7 +92,7 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), description.Flags)
+	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to add flags for command '%s'", description.Name)
 	}

@@ -291,6 +291,13 @@ func SetFlagGroupOrder(cmd *cobra.Command, order []string) {
 func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 	groups := map[string]*FlagGroup{}
 
+	if cmd.Parent() != nil {
+		parentGroups := GetFlagGroups(cmd.Parent())
+		for _, g := range parentGroups {
+			groups[g.ID] = g
+		}
+	}
+
 	for k, v := range cmd.Annotations {
 		if !strings.HasPrefix(k, "glazed:flag-group:") {
 			continue
@@ -322,11 +329,6 @@ func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 	returnGroups := []*FlagGroup{}
 	for _, group := range groups {
 		returnGroups = append(returnGroups, group)
-	}
-
-	if cmd.Parent() != nil {
-		parentGroups := GetFlagGroups(cmd.Parent())
-		returnGroups = append(returnGroups, parentGroups...)
 	}
 
 	// sort by order
