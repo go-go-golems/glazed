@@ -52,7 +52,7 @@ func NewReplaceParameterLayer() (*ReplaceParameterLayer, error) {
 		return nil, err
 	}
 	ret.Defaults = &ReplaceFlagsDefaults{}
-	err = ret.InitializeStructFromDefaults(ret.Defaults)
+	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
 	if err != nil {
 		return nil, err
 	}

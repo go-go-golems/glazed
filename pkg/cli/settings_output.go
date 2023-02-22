@@ -55,8 +55,22 @@ func NewOutputParameterLayer() (*OutputParameterLayer, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize output parameter layer")
 	}
+	// TODO(manuel, 2023-02-22) I'm really not sure what these defaults are about here
+	//
+	// The base idea is that you can update a layer with your own defaults before passing it downstream
+	// and that might be done with a struct that automatically gets loaded. That's useful
+	// because you can quickly overload stuff with things parsed from a yaml file
+	// (for example, the factory section in geppetto command yaml).
+	// But when configuring things specifically for certain verb, or by allowing overloads
+	// in command and layer definition, something like a ParameterDefinition.SetDefault() might work better
+	//
+	// In fact we might just be doing the opposite of what we should be doing here,
+	// which is actually initializing the parameter defaults from an (optional) default
+	// struct.
+	//
+	// See https://github.com/go-go-golems/glazed/issues/161
 	ret.Defaults = &OutputFlagsDefaults{}
-	err = ret.InitializeStructFromDefaults(ret.Defaults)
+	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize output flags defaults")
 	}

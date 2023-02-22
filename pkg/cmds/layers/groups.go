@@ -15,9 +15,13 @@ import (
 type ParameterLayer interface {
 	AddFlag(flag *parameters.ParameterDefinition)
 	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
-	InitializeStructFromDefaults(s interface{}) error
+	InitializeStructFromParameterDefaults(s interface{}) error
+	InitializeParameterDefaultsFromStruct(s interface{}) error
 	AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error
 	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+	GetName() string
+	GetSlug() string
+	GetDescription() string
 }
 
 type ParameterLayerImpl struct {
@@ -25,6 +29,18 @@ type ParameterLayerImpl struct {
 	Slug        string                            `yaml:"slug"`
 	Description string                            `yaml:"description"`
 	Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+}
+
+func (p *ParameterLayerImpl) GetName() string {
+	return p.Name
+}
+
+func (p *ParameterLayerImpl) GetSlug() string {
+	return p.Slug
+}
+
+func (p *ParameterLayerImpl) GetDescription() string {
+	return p.Description
 }
 
 func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -112,7 +128,36 @@ func (p *ParameterLayerImpl) GetParameterDefinitions() map[string]*parameters.Pa
 	return ret
 }
 
-func (p *ParameterLayerImpl) InitializeStructFromDefaults(s interface{}) error {
+// InitializeParameterDefaultsFromStruct initializes the `ParameterDefinition` of the layer,
+// which are often defined at compile time and loaded from a YAML file, with fresh
+// ones from the struct.
+// This is in some ways the opposite of `InitializeStructFromParameterDefaults`.
+// The struct fields of `defaults` with a struct tag of `glazed.parameter` are used
+// to initialize the `ParameterDefinition` with a matching name. If no matching
+// `ParameterDefinition` is found, an error is returned.
+func (p *ParameterLayerImpl) InitializeParameterDefaultsFromStruct(defaults interface{}) error {
+	// check if defaults is a nil pointer
+	if defaults == nil {
+		return nil
+	}
+	ps := p.GetParameterDefinitions()
+	err := parameters.InitializeParameterDefinitionsFromStruct(ps, defaults)
+	return err
+}
+
+func (p *ParameterLayerImpl) InitializeParameterDefinitionsFromParameters(
+	ps map[string]interface{},
+) error {
+	pds := p.GetParameterDefinitions()
+	err := parameters.InitializeParameterDefinitionsFromParameters(pds, ps)
+	return err
+
+}
+
+func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}) error {
+	if s == nil {
+		return nil
+	}
 	ps := p.GetParameterDefinitions()
 	err := parameters.InitializeStructFromParameterDefinitions(s, ps)
 	return err

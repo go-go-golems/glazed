@@ -94,19 +94,24 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 
 	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), description.Flags)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to add flags for command '%s'", description.Name)
 	}
 
 	for _, layer := range description.Layers {
 		err = layer.AddFlagsToCobraCommand(cmd, nil)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(
+				err,
+				"failed to add flags for command '%s' layer '%s'",
+				description.Name,
+				layer.GetSlug(),
+			)
 		}
 	}
 
 	err = parameters.AddArgumentsToCobraCommand(cmd, description.Arguments)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to add arguments for command '%s'", description.Name)
 	}
 
 	cmd.Flags().String("create-alias", "", "Create an alias for the query")
