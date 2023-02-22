@@ -138,6 +138,9 @@ func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
 
 	origRun := cmd.Run
 
+	cmd.Use = alias.Name
+	cmd.Short = fmt.Sprintf("Alias for %s", s.Description().Name)
+
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		for k, v := range alias.Flags {
 			if !cmd.Flags().Changed(k) {
