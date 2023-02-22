@@ -3,7 +3,6 @@ package cli
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -64,11 +63,11 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defau
 	if err != nil {
 		return err
 	}
-	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
-	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
@@ -76,7 +75,7 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defau
 	if err != nil {
 		return err
 	}
-	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
 	if err != nil {
 		return err
 	}
@@ -84,15 +83,6 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defau
 	if err != nil {
 		return err
 	}
-
-	layers.SetFlagGroupOrder(cmd, []string{
-		"glazed-output",
-		"glazed-select",
-		"glazed-template",
-		"glazed-fields-filter",
-		"glazed-rename",
-		"glazed-replace",
-	})
 
 	return nil
 }
@@ -250,27 +240,4 @@ func SetupProcessor(ps map[string]interface{}) (
 
 	gp := cmds.NewGlazeProcessor(of, middlewares_)
 	return gp, of, nil
-}
-
-// Deprecated: Use SetupProcessor instead, and create a proper glazed.Command for your command.
-// TODO(manuel, 2023-02-21): This is here to facilitate legacy linking, but really all commands
-// using this should move towards implementing a proper glazed.Command.
-// See #150 and for example JsonCmd in glaze
-// lint:ignore
-func CreateProcessorLegacy(cmd *cobra.Command) (
-	*cmds.GlazeProcessor,
-	formatters.OutputFormatter,
-	error,
-) {
-	gpl, err := NewGlazedParameterLayers()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return SetupProcessor(ps)
 }

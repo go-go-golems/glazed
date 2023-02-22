@@ -59,6 +59,18 @@ func NewParameterLayer(slug string, name string, options ...ParameterLayerOption
 	return ret
 }
 
+func WithDescription(description string) ParameterLayerOptions {
+	return func(p *ParameterLayerImpl) {
+		p.Description = description
+	}
+}
+
+func WithFlags(flags ...*parameters.ParameterDefinition) ParameterLayerOptions {
+	return func(p *ParameterLayerImpl) {
+		p.Flags = flags
+	}
+}
+
 func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 	err := yaml.Unmarshal(s, p)
 	if err != nil {

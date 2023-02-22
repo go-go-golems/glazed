@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -207,4 +208,39 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 	}
 
 	return nil
+}
+
+// CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
+// the glazed processing layer.
+//
+// If you are more serious about using glazed, consider using the `cmds.Command` and `parameters.ParameterDefinition`
+// abstraction to define your CLI applications, which allows you to use layers and other nice features
+// of the glazed ecosystem.
+//
+// If so, use SetupProcessor instead, and create a proper glazed.Command for your command.
+func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
+	*cmds.GlazeProcessor,
+	formatters.OutputFormatter,
+	error,
+) {
+	gpl, err := NewGlazedParameterLayers()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return SetupProcessor(ps)
+}
+
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+	gpl, err := NewGlazedParameterLayers()
+	if err != nil {
+		return err
+	}
+
+	return gpl.AddFlagsToCobraCommand(cmd, defaults)
 }
