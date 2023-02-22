@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -46,7 +47,7 @@ func NewJsonCommand() (*JsonCommand, error) {
 	}, nil
 }
 
-func (j *JsonCommand) Run(ps map[string]interface{}, gp *cmds.GlazeProcessor) error {
+func (j *JsonCommand) Run(ctx context.Context, ps map[string]interface{}, gp *cmds.GlazeProcessor) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {
 		return fmt.Errorf("input-is-array flag is not a bool")

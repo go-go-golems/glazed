@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -116,7 +118,17 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		gp, of, err := SetupProcessor(ps)
 		cobra.CheckErr(err)
 
-		err = s.Run(ps, gp)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		go func() {
+			err := helpers.CancelOnSignal(ctx, os.Interrupt, cancel)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+
+		err = s.Run(ctx, ps, gp)
 		cobra.CheckErr(err)
 
 		s, err := of.Output()

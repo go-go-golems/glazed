@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
@@ -25,11 +26,11 @@ func (a *CommandAlias) String() string {
 		a.Name, a.AliasFor, a.Parents, a.Source)
 }
 
-func (a *CommandAlias) Run(parameters map[string]interface{}, gp *GlazeProcessor) error {
+func (a *CommandAlias) Run(ctx context.Context, ps map[string]interface{}, gp *GlazeProcessor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run(parameters, gp)
+	return a.AliasedCommand.Run(ctx, ps, gp)
 }
 
 func (a *CommandAlias) IsValid() bool {

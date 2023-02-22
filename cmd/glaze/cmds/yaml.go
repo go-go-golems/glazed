@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -46,7 +47,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 	}, nil
 }
 
-func (y *YamlCommand) Run(ps map[string]interface{}, gp *cmds.GlazeProcessor) error {
+func (y *YamlCommand) Run(ctx context.Context, ps map[string]interface{}, gp *cmds.GlazeProcessor) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {
 		return fmt.Errorf("input-is-array flag is not a bool")
