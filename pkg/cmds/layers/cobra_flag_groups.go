@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -249,14 +250,38 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 
 func AddFlagGroupToCobraCommand(cmd *cobra.Command, id string, name string, flags []*parameters.ParameterDefinition) {
 	flagNames := []string{}
-	for _, flag := range flags {
-		flagNames = append(flagNames, flag.Name)
+	for _, f := range flags {
+		flagNames = append(flagNames, f.Name)
 	}
 
 	if cmd.Annotations == nil {
-		cmd.Annotations = map[string]string{}
+		cmd.Annotations = map[string]string{
+			"glazed:flag-group-order": "",
+			"glazed:flag-group-count": "0",
+		}
 	}
+
+	count_, ok := cmd.Annotations["glazed:flag-group-count"]
+	if !ok {
+		count_ = "0"
+	}
+	count, err := strconv.Atoi(count_)
+	if err != nil {
+		count = 0
+	}
+
+	order, ok := cmd.Annotations["glazed:flag-group-order"]
+	if !ok {
+		order = ""
+	}
+
 	cmd.Annotations[fmt.Sprintf("glazed:flag-group:%s:%s", id, name)] = strings.Join(flagNames, ",")
+
+	order = fmt.Sprintf("%s,%s", order, id)
+	cmd.Annotations["glazed:flag-group-order"] = order
+
+	count += 1
+	cmd.Annotations["glazed:flag-group-count"] = strconv.Itoa(count)
 }
 
 func SetFlagGroupOrder(cmd *cobra.Command, order []string) {

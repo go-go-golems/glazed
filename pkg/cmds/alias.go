@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 // CommandAlias defines a struct that should be able to define generic aliases
@@ -50,6 +49,7 @@ func (a *CommandAlias) Description() *CommandDescription {
 		Long:      s.Long,
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
+		Layers:    s.Layers,
 	}
 
 	for _, flag := range s.Flags {
@@ -66,7 +66,7 @@ func (a *CommandAlias) Description() *CommandDescription {
 		// Say, if an alias defines --fields id,name and then the user passes in --fields foo,bla
 		// on top, I remember there being some kind of conflict.
 		//
-		// See also the note in cobra.go about checking the argument count. This might all
+		// See also the note in glazed_layer.go about checking the argument count. This might all
 		// refer to overloading arguments, and not just flags. This seems to make sense given the
 		// talk about argument counts.
 		//
@@ -98,12 +98,4 @@ func (a *CommandAlias) Description() *CommandDescription {
 	}
 
 	return ret
-}
-
-func (a *CommandAlias) RunFromCobra(cmd *cobra.Command, args []string) error {
-	return a.AliasedCommand.(CobraCommand).RunFromCobra(cmd, args)
-}
-
-func (a *CommandAlias) BuildCobraCommand() (*cobra.Command, error) {
-	return NewCobraCommand(a)
 }

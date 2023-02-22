@@ -120,7 +120,7 @@ var parseCmd = &cobra.Command{
 	Short: "Parse markdown data as AST and process further",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.CreateProcessorLegacy(cmd)
+		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
@@ -310,7 +310,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Short: "Split a markdown file by heading",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.CreateProcessorLegacy(cmd)
+		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
