@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -101,7 +102,7 @@ type Command interface {
 	// the formatter to our needs, even if many of the flags might actually be in the parameters
 	// list itself. This makes it easy to hook things up as always JSON when used in an API,
 	// for example?
-	Run(ps map[string]interface{}, gp *GlazeProcessor) error
+	Run(ctx context.Context, ps map[string]interface{}, gp *GlazeProcessor) error
 	Description() *CommandDescription
 }
 
