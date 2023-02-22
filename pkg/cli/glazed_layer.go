@@ -21,6 +21,18 @@ type GlazedParameterLayers struct {
 	TemplateParameterLayer      *TemplateParameterLayer
 }
 
+func (g *GlazedParameterLayers) GetName() string {
+	return "Glazed Flags"
+}
+
+func (g *GlazedParameterLayers) GetSlug() string {
+	return "glazed"
+}
+
+func (g *GlazedParameterLayers) GetDescription() string {
+	return "Glazed flags"
+}
+
 func (g *GlazedParameterLayers) AddFlag(*parameters.ParameterDefinition) {
 	panic("not supported me")
 }
@@ -54,7 +66,7 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 	return ret
 }
 
-func (g *GlazedParameterLayers) InitializeStructFromDefaults(interface{}) error {
+func (g *GlazedParameterLayers) InitializeStructFromParameterDefaults(interface{}) error {
 	panic("implement me")
 }
 
@@ -128,6 +140,35 @@ func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (
 		ps[k] = v
 	}
 	return ps, nil
+}
+
+func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interface{}) error {
+	err := g.OutputParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.FieldsFiltersParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+
+	err = g.SelectParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.TemplateParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.RenameParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.ReplaceParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {

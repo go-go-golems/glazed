@@ -144,6 +144,11 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 		shortFlag := parameter.ShortFlag
 		ok := false
 
+		f := flagSet.Lookup(flagName)
+		if f != nil {
+			return errors.Errorf("Flag '%s' already exists", flagName)
+		}
+
 		switch parameter.Type {
 		case ParameterTypeStringListFromFile:
 			fallthrough
@@ -179,7 +184,7 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 			defaultValue := 0
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(int)
+				defaultValue, ok = helpers.CastInterfaceToInt[int](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, parameter.Default)
 				}
@@ -195,7 +200,7 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 			defaultValue := 0.0
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(float64)
+				defaultValue, ok = helpers.CastInterfaceToFloat[float64](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
 				}
@@ -314,7 +319,7 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 		case ParameterTypeIntegerList:
 			var defaultValue []int
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.([]int)
+				defaultValue, ok = helpers.CastInterfaceToIntList[int](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, parameter.Default)
 				}
@@ -329,7 +334,7 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 		case ParameterTypeFloatList:
 			var defaultValue []float64
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.([]float64)
+				defaultValue, ok = helpers.CastInterfaceToFloatList[float64](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
 				}

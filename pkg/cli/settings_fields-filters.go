@@ -43,7 +43,7 @@ func NewFieldsFiltersParameterLayer() (*FieldsFiltersParameterLayer, error) {
 		return nil, errors.Wrap(err, "Failed to initialize fields and filters parameter layer")
 	}
 	ret.Defaults = &FieldsFilterFlagsDefaults{}
-	err = ret.InitializeStructFromDefaults(ret.Defaults)
+	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
@@ -52,7 +52,6 @@ func NewFieldsFiltersParameterLayer() (*FieldsFiltersParameterLayer, error) {
 
 func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
 	if defaults == nil {
-
 		defaultFieldHelp := f.Defaults.Fields
 		if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
 			f.Defaults.Fields = []string{"all"}

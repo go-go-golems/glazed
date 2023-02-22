@@ -93,6 +93,157 @@ func WithRequired(required bool) ParameterDefinitionOption {
 	}
 }
 
+func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
+	switch p.Type {
+	case ParameterTypeString:
+		v, ok := i.(string)
+		if !ok {
+			return errors.Errorf("expected string for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeBool:
+		v, ok := i.(bool)
+		if !ok {
+			return errors.Errorf("expected bool for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeInteger:
+		v, ok := helpers.CastInterfaceToInt[int64](i)
+		if !ok {
+			return errors.Errorf("expected int64 for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeFloat:
+
+		v, ok := helpers.CastInterfaceToFloat[float64](i)
+		if !ok {
+			return errors.Errorf("expected float64 for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeStringList:
+		v, ok := helpers.CastList2[string, interface{}](i)
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeDate:
+		p.Default = i.(time.Time).Format(time.RFC3339)
+	case ParameterTypeIntegerList:
+		v, ok := helpers.CastInterfaceToIntList[int64](i)
+		if !ok {
+			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeFloatList:
+		v, ok := helpers.CastInterfaceToFloatList[float64](i)
+		if !ok {
+			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeChoice:
+		p.Default = i.(string)
+	case ParameterTypeStringFromFile:
+		p.Default = i.(string)
+	case ParameterTypeStringListFromFile:
+		v, ok := helpers.CastList2[string, interface{}](i)
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeKeyValue:
+		v, ok := helpers.CastInterfaceToStringMap[string, interface{}](i)
+		if !ok {
+			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeObjectFromFile:
+		v, ok := helpers.CastInterfaceToStringMap[interface{}, interface{}](i)
+		if !ok {
+			return errors.Errorf("expected object for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+	case ParameterTypeObjectListFromFile:
+		v, ok := helpers.CastList2[map[string]interface{}, interface{}](i)
+		if !ok {
+			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, i)
+		}
+		p.Default = v
+
+	}
+
+	return nil
+}
+
+func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
+	// check if value is pointer, do nothing if nil, otherwise dereference
+	if value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return nil
+		}
+		value = value.Elem()
+	}
+
+	switch p.Type {
+	case ParameterTypeString:
+		p.Default = value.String()
+	case ParameterTypeBool:
+		p.Default = value.Bool()
+	case ParameterTypeInteger:
+		p.Default = value.Int()
+	case ParameterTypeFloat:
+		p.Default = value.Float()
+	case ParameterTypeStringList:
+		v, ok := helpers.CastList2[string, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeDate:
+		p.Default = value.Interface().(time.Time).Format(time.RFC3339)
+	case ParameterTypeIntegerList:
+		v, ok := helpers.CastList2[int64, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeFloatList:
+		v, ok := helpers.CastList2[float64, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeChoice:
+		p.Default = value.String()
+	case ParameterTypeStringFromFile:
+		p.Default = value.String()
+	case ParameterTypeStringListFromFile:
+		v, ok := helpers.CastList2[string, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeKeyValue:
+		v, ok := helpers.CastInterfaceToStringMap[string, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeObjectFromFile:
+		v, ok := helpers.CastInterfaceToStringMap[interface{}, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected object for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	case ParameterTypeObjectListFromFile:
+		v, ok := helpers.CastList2[map[string]interface{}, interface{}](value.Interface())
+		if !ok {
+			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, value.Interface())
+		}
+		p.Default = v
+	}
+	return nil
+}
+
 // SetValueFromDefault assigns the default value of the ParameterDefinition to the given value.
 // If the Default value is nil, the value is set to the zero value of the type.
 //
@@ -218,6 +369,11 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	return nil
 }
 
+// InitializeStructFromParameterDefinitions initializes a struct from a map of parameter definitions.
+//
+// Each field in the struct annotated with tag `glazed.parameter` will be set to the default value of
+// the corresponding `ParameterDefinition`. If no `ParameterDefinition` is found for a field, an error
+// is returned.
 func InitializeStructFromParameterDefinitions(s interface{}, parameterDefinitions map[string]*ParameterDefinition) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
@@ -267,7 +423,68 @@ func InitializeStructFromParameterDefinitions(s interface{}, parameterDefinition
 	return nil
 }
 
-func InitializeStructFromParameters(s interface{}, parameters map[string]interface{}) error {
+// InitializeParameterDefinitionsFromStruct initializes a map of parameter definitions from a struct.
+// Each field in the struct annotated with tag `glazed.parameter` will be used to set
+// the default value of the corresponding definition in `parameterDefinitions`.
+// If no `ParameterDefinition` is found for a field, an error is returned.
+// This is the inverse of InitializeStructFromParameterDefinitions.
+func InitializeParameterDefinitionsFromStruct(
+	parameterDefinitions map[string]*ParameterDefinition,
+	s interface{},
+) error {
+	// check that s is indeed a pointer to a struct
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return errors.Errorf("s is not a pointer")
+	}
+	// check if nil
+	if reflect.ValueOf(s).IsNil() {
+		return nil
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return errors.Errorf("s is not a pointer to a struct")
+	}
+	st := reflect.TypeOf(s).Elem()
+
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		v, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+		parameter, ok := parameterDefinitions[v]
+		if !ok {
+			return errors.Errorf("unknown parameter %s", v)
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+
+		err := parameter.SetDefaultFromValue(value)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set default value for %s", v)
+		}
+	}
+
+	return nil
+}
+
+func InitializeParameterDefinitionsFromParameters(
+	parameterDefinitions map[string]*ParameterDefinition,
+	ps map[string]interface{},
+) error {
+	for k, v := range ps {
+		parameter, ok := parameterDefinitions[k]
+		if !ok {
+			return errors.Errorf("unknown parameter %s", k)
+		}
+		err := parameter.SetDefaultFromValue(reflect.ValueOf(v))
+		if err != nil {
+			return errors.Wrapf(err, "failed to set default value for %s", k)
+		}
+	}
+
+	return nil
+}
+
+func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
@@ -283,7 +500,7 @@ func InitializeStructFromParameters(s interface{}, parameters map[string]interfa
 		if !ok {
 			continue
 		}
-		v_, ok := parameters[v]
+		v_, ok := ps[v]
 		if !ok {
 			continue
 		}
@@ -293,19 +510,18 @@ func InitializeStructFromParameters(s interface{}, parameters map[string]interfa
 			elem := field.Type.Elem()
 			if value.IsNil() {
 				value.Set(reflect.New(elem))
-			} else {
-				//exhaustive:ignore
-				switch elem.Kind() {
-				case reflect.Struct:
-					err := InitializeStructFromParameters(value.Interface(), parameters)
-					if err != nil {
-						return errors.Wrapf(err, "failed to initialize struct for %s", v)
-					}
-				default:
-					err := helpers.SetReflectValue(value.Elem(), v_)
-					if err != nil {
-						return errors.Wrapf(err, "failed to set value for %s", v)
-					}
+			}
+			//exhaustive:ignore
+			switch elem.Kind() {
+			case reflect.Struct:
+				err := InitializeStructFromParameters(value.Interface(), ps)
+				if err != nil {
+					return errors.Wrapf(err, "failed to initialize struct for %s", v)
+				}
+			default:
+				err := helpers.SetReflectValue(value.Elem(), v_)
+				if err != nil {
+					return errors.Wrapf(err, "failed to set value for %s", v)
 				}
 			}
 
@@ -388,7 +604,8 @@ const (
 	ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
 	ParameterTypeStringListFromFile ParameterType = "stringListFromFile"
 
-	// ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
+	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
+	// or when beginning with @, a file with key-value options
 	ParameterTypeKeyValue ParameterType = "keyValue"
 
 	ParameterTypeInteger     ParameterType = "int"
@@ -468,13 +685,13 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeInteger:
-		_, ok := p.Default.(int)
+		_, ok := helpers.CastInterfaceToInt[int64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeFloat:
-		_, ok := p.Default.(float64)
+		_, ok := helpers.CastInterfaceToFloat[float64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, p.Default)
 		}
@@ -515,29 +732,15 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeIntegerList:
-		_, ok := p.Default.([]int)
+		_, ok := helpers.CastInterfaceToIntList[int64](p.Default)
 		if !ok {
-			defaultValue, ok := p.Default.([]interface{})
-			if !ok {
-				return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
-			}
-			_, ok = helpers.CastList[int, interface{}](defaultValue)
-			if !ok {
-				return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
-			}
+			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeFloatList:
-		_, ok := p.Default.([]float64)
+		_, ok := helpers.CastInterfaceToFloatList[float64](p.Default)
 		if !ok {
-			defaultValue, ok := p.Default.([]interface{})
-			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
-			}
-			_, ok = helpers.CastList[float64, interface{}](defaultValue)
-			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
-			}
+			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeChoice:

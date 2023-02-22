@@ -55,7 +55,7 @@ func NewTemplateParameterLayer() (*TemplateParameterLayer, error) {
 		return nil, err
 	}
 	s := &TemplateFlagsDefaults{}
-	err = ret.InitializeStructFromDefaults(s)
+	err = ret.InitializeStructFromParameterDefaults(s)
 	if err != nil {
 		return nil, err
 	}

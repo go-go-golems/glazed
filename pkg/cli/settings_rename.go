@@ -64,7 +64,7 @@ func NewRenameParameterLayer() (*RenameParameterLayer, error) {
 		return nil, err
 	}
 	ret.Defaults = &RenameFlagsDefaults{}
-	err = ret.InitializeStructFromDefaults(ret.Defaults)
+	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to initialize rename flags defaults"))
 	}
