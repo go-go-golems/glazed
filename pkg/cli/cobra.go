@@ -1,276 +1,210 @@
 package cli
 
 import (
-	_ "embed"
+	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
+	"os"
+	"strings"
 )
 
-// Helpers for cobra commands
-
-type GlazedParameterLayers struct {
-	FieldsFiltersParameterLayer *FieldsFiltersParameterLayer
-	OutputParameterLayer        *OutputParameterLayer
-	RenameParameterLayer        *RenameParameterLayer
-	ReplaceParameterLayer       *ReplaceParameterLayer
-	SelectParameterLayer        *SelectParameterLayer
-	TemplateParameterLayer      *TemplateParameterLayer
-}
-
-func (g *GlazedParameterLayers) AddFlag(flag *parameters.ParameterDefinition) {
-	panic("not supported me")
-}
-
-func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters.ParameterDefinition {
-	ret := make(map[string]*parameters.ParameterDefinition)
-	for k, v := range g.RenameParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.OutputParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.SelectParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.TemplateParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.FieldsFiltersParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.ReplaceParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	return ret
-}
-
-func (g *GlazedParameterLayers) InitializeStructFromDefaults(s interface{}) error {
-	panic("implement me")
-}
-
-func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	err := g.OutputParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-	err = g.TemplateParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
-	if err != nil {
-		return err
-	}
-
-	layers.SetFlagGroupOrder(cmd, []string{
-		"glazed-output",
-		"glazed-select",
-		"glazed-template",
-		"glazed-fields-filter",
-		"glazed-rename",
-		"glazed-replace",
-	})
-
-	return nil
-}
-
-func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := g.OutputParameterLayer.ParseFlagsFromCobraCommand(cmd)
+// GatherParametersFromCobraCommand takes a cobra command, an argument list as well as a description
+// of the command, and returns a list of parsed parameters as a
+// hashmap. It does so by parsing both the flags and the positional arguments.
+func GatherParametersFromCobraCommand(
+	cmd *cobra.Command,
+	description *cmds.CommandDescription,
+	args []string,
+) (map[string]interface{}, error) {
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false)
 	if err != nil {
 		return nil, err
 	}
-	ps_, err := g.SelectParameterLayer.ParseFlagsFromCobraCommand(cmd)
+
+	arguments, err := parameters.GatherArguments(args, description.Arguments, false)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+
+	layers := description.Layers
+	for _, layer := range layers {
+		layerFlags, err := layer.ParseFlagsFromCobraCommand(cmd)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse flags for layer")
+		}
+
+		for k, v := range layerFlags {
+			ps[k] = v
+		}
+	}
+
+	// merge parameters and arguments
+	// arguments take precedence over parameters
+	for k, v := range arguments {
 		ps[k] = v
 	}
-	ps_, err = g.RenameParameterLayer.ParseFlagsFromCobraCommand(cmd)
+
+	createAlias, err := cmd.Flags().GetString("create-alias")
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
+	if createAlias != "" {
+		alias := &cmds.CommandAlias{
+			Name:      createAlias,
+			AliasFor:  description.Name,
+			Arguments: args,
+			Flags:     map[string]string{},
+		}
+
+		cmd.Flags().Visit(func(flag *pflag.Flag) {
+			if flag.Name != "create-alias" {
+				alias.Flags[flag.Name] = flag.Value.String()
+			}
+		})
+
+		// marshal alias to yaml
+		sb := strings.Builder{}
+		encoder := yaml.NewEncoder(&sb)
+		err = encoder.Encode(alias)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(sb.String())
+		os.Exit(0)
 	}
-	ps_, err = g.TemplateParameterLayer.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
-	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
-	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+
 	return ps, nil
 }
 
-func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
-	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
+func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
+	description := s.Description()
+	cmd := &cobra.Command{
+		Use:   description.Name,
+		Short: description.Short,
+		Long:  description.Long,
+	}
+
+	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), description.Flags)
 	if err != nil {
 		return nil, err
 	}
-	outputParameterLayer, err := NewOutputParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	renameParameterLayer, err := NewRenameParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	replaceParameterLayer, err := NewReplaceParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	selectParameterLayer, err := NewSelectParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	templateParameterLayer, err := NewTemplateParameterLayer()
-	if err != nil {
-		return nil, err
-	}
-	return &GlazedParameterLayers{
-		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
-		OutputParameterLayer:        outputParameterLayer,
-		RenameParameterLayer:        renameParameterLayer,
-		ReplaceParameterLayer:       replaceParameterLayer,
-		SelectParameterLayer:        selectParameterLayer,
-		TemplateParameterLayer:      templateParameterLayer,
-	}, nil
-}
 
-func SetupProcessor(ps map[string]interface{}) (
-	*cmds.GlazeProcessor,
-	formatters.OutputFormatter,
-	error,
-) {
-	templateSettings, err := NewTemplateSettings(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-	outputSettings, err := NewOutputFormatterSettings(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-	selectSettings, err := NewSelectSettingsFromParameters(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-	renameSettings, err := NewRenameSettingsFromParameters(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-	fieldsFilterSettings, err := NewFieldsFilterSettings(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-	replaceSettings, err := NewReplaceSettingsFromParameters(ps)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	outputSettings.UpdateWithSelectSettings(selectSettings)
-	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
-	templateSettings.UpdateWithSelectSettings(selectSettings)
-
-	of, err := outputSettings.CreateOutputFormatter()
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error creating output formatter")
-	}
-
-	// rename middlewares run first because they are used to clean up column names
-	// for the following middlewares too.
-	// these following middlewares can create proper column names on their own
-	// when needed
-	err = renameSettings.AddMiddlewares(of)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding rename middlewares")
-	}
-
-	err = templateSettings.AddMiddlewares(of)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding template middlewares")
-	}
-
-	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
-		mw := middlewares.NewFlattenObjectMiddleware()
-		of.AddTableMiddleware(mw)
-	}
-	fieldsFilterSettings.AddMiddlewares(of)
-
-	err = replaceSettings.AddMiddlewares(of)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding replace middlewares")
-	}
-
-	var middlewares_ []middlewares.ObjectMiddleware
-	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
-		ogtm, err := middlewares.NewObjectGoTemplateMiddleware(templateSettings.Templates)
+	for _, layer := range description.Layers {
+		err = layer.AddFlagsToCobraCommand(cmd, nil)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Could not process template argument")
+			return nil, err
 		}
-		middlewares_ = append(middlewares_, ogtm)
 	}
 
-	gp := cmds.NewGlazeProcessor(of, middlewares_)
-	return gp, of, nil
+	err = parameters.AddArgumentsToCobraCommand(cmd, description.Arguments)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.Flags().String("create-alias", "", "Create an alias for the query")
+
+	cmd.Run = func(cmd *cobra.Command, args []string) {
+		ps, err := GatherParametersFromCobraCommand(cmd, description, args)
+		cobra.CheckErr(err)
+
+		gp, of, err := SetupProcessor(ps)
+		cobra.CheckErr(err)
+
+		err = s.Run(ps, gp)
+		cobra.CheckErr(err)
+
+		s, err := of.Output()
+		cobra.CheckErr(err)
+
+		fmt.Println(s)
+	}
+
+	return cmd, nil
 }
 
-// Deprecated: Use SetupProcessor instead, and create a proper glazed.Command for your command.
-// TODO(manuel, 2023-02-21): This is here to facilitate legacy linking, but really all commands
-// using this should move towards implementing a proper glazed.Command.
-// See #150 and for example JsonCmd in glaze
-// lint:ignore
-func CreateProcessorLegacy(cmd *cobra.Command) (
-	*cmds.GlazeProcessor,
-	formatters.OutputFormatter,
-	error,
-) {
-	gpl, err := NewGlazedParameterLayers()
+func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
+	s := alias.AliasedCommand
+
+	cmd, err := BuildCobraCommand(s)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, nil, err
+	origRun := cmd.Run
+
+	cmd.Run = func(cmd *cobra.Command, args []string) {
+		for k, v := range alias.Flags {
+			if !cmd.Flags().Changed(k) {
+				err = cmd.Flags().Set(k, v)
+				cobra.CheckErr(err)
+			}
+		}
+		if len(args) == 0 {
+			args = alias.Arguments
+		}
+		origRun(cmd, args)
 	}
 
-	return SetupProcessor(ps)
+	return cmd, nil
+}
+
+// findOrCreateParentCommand will create empty commands to anchor the passed in parents.
+func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.Command {
+	parentCmd := rootCmd
+	for _, parent := range parents {
+		subCmd, _, _ := parentCmd.Find([]string{parent})
+		if subCmd == nil || subCmd == parentCmd {
+			newParentCmd := &cobra.Command{
+				Use:   parent,
+				Short: fmt.Sprintf("All commands for %s", parent),
+			}
+			parentCmd.AddCommand(newParentCmd)
+			parentCmd = newParentCmd
+		} else {
+			parentCmd = subCmd
+		}
+	}
+	return parentCmd
+}
+
+func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, aliases []*cmds.CommandAlias) error {
+	commandsByName := map[string]cmds.Command{}
+
+	for _, command := range commands {
+		// find the proper subcommand, or create if it doesn't exist
+		description := command.Description()
+		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
+		cobraCommand, err := BuildCobraCommand(command)
+		if err != nil {
+			return err
+		}
+
+		parentCmd.AddCommand(cobraCommand)
+
+		path := strings.Join(append(description.Parents, description.Name), " ")
+		commandsByName[path] = command
+	}
+
+	for _, alias := range aliases {
+		path := strings.Join(alias.Parents, " ")
+		aliasedCommand, ok := commandsByName[path]
+		if !ok {
+			return errors.Errorf("Command %s not found for alias %s", path, alias.Name)
+		}
+		alias.AliasedCommand = aliasedCommand
+
+		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
+		cobraCommand, err := BuildCobraCommandAlias(alias)
+		if err != nil {
+			return err
+		}
+		parentCmd.AddCommand(cobraCommand)
+	}
+
+	return nil
 }

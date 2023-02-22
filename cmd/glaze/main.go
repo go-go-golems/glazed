@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
+	glazed_cmds "github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
 )
@@ -40,13 +41,25 @@ func init() {
 	helpCmd := help.NewCobraHelpCommand(helpSystem)
 	rootCmd.SetHelpCommand(helpCmd)
 
-	jsonCmd := cmds.NewJsonCommand()
-	command, err := jsonCmd.BuildCobraCommand()
+	jsonCmd, err := cmds.NewJsonCommand()
+	if err != nil {
+		panic(err)
+	}
+	command, err := glazed_cmds.BuildCobraCommand(jsonCmd)
 	if err != nil {
 		panic(err)
 	}
 	rootCmd.AddCommand(command)
-	rootCmd.AddCommand(cmds.YamlCmd)
+
+	yamlCmd, err := cmds.NewYamlCommand()
+	if err != nil {
+		panic(err)
+	}
+	command, err = glazed_cmds.BuildCobraCommand(yamlCmd)
+	if err != nil {
+		panic(err)
+	}
+	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
 	rootCmd.AddCommand(cmds.MarkdownCmd)
 }

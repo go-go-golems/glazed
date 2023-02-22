@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"os"
 )
 
@@ -15,10 +14,10 @@ type JsonCommand struct {
 	description *cmds.CommandDescription
 }
 
-func NewJsonCommand() *JsonCommand {
+func NewJsonCommand() (*JsonCommand, error) {
 	glazedParameterLayer, err := cli.NewGlazedParameterLayers()
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
 
 	return &JsonCommand{
@@ -44,7 +43,7 @@ func NewJsonCommand() *JsonCommand {
 				glazedParameterLayer,
 			),
 		),
-	}
+	}, nil
 }
 
 func (j *JsonCommand) Run(ps map[string]interface{}, gp *cmds.GlazeProcessor) error {
@@ -64,8 +63,7 @@ func (j *JsonCommand) Run(ps map[string]interface{}, gp *cmds.GlazeProcessor) er
 		}
 		f, err := os.Open(arg)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", arg, err)
-			os.Exit(1)
+			return errors.Wrapf(err, "Error opening file %s", arg)
 		}
 
 		if inputIsArray {
@@ -102,60 +100,4 @@ func (j *JsonCommand) Run(ps map[string]interface{}, gp *cmds.GlazeProcessor) er
 
 func (j *JsonCommand) Description() *cmds.CommandDescription {
 	return j.description
-}
-
-func (j *JsonCommand) BuildCobraCommand() (*cobra.Command, error) {
-	ret := &cobra.Command{
-		Use:   j.description.Name,
-		Short: j.description.Short,
-		Run: func(cmd *cobra.Command, args []string) {
-			flags := j.description.Flags
-			ps, err := parameters.GatherFlagsFromCobraCommand(cmd, flags, false)
-			cobra.CheckErr(err)
-
-			arguments := j.description.Arguments
-			arguments_, err := parameters.GatherArguments(args, arguments, false)
-			cobra.CheckErr(err)
-
-			for k, v := range arguments_ {
-				ps[k] = v
-			}
-
-			layers := j.description.Layers
-			for _, layer := range layers {
-				layerFlags, err := layer.ParseFlagsFromCobraCommand(cmd)
-				cobra.CheckErr(err)
-
-				for k, v := range layerFlags {
-					ps[k] = v
-				}
-			}
-
-			gp, of, err := cli.SetupProcessor(ps)
-			cobra.CheckErr(err)
-
-			err = j.Run(ps, gp)
-			cobra.CheckErr(err)
-
-			s, err := of.Output()
-			cobra.CheckErr(err)
-
-			fmt.Println(s)
-		},
-	}
-
-	ret.Flags().SortFlags = false
-	err := parameters.AddFlagsToCobraCommand(ret.PersistentFlags(), j.description.Flags)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, layer := range j.description.Layers {
-		err = layer.AddFlagsToCobraCommand(ret, nil)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return ret, nil
 }
