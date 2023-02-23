@@ -85,6 +85,7 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 	if len(s.Fields) == 1 && s.Fields[0] == "all" {
 		s.Fields = []string{}
 	}
+	s.ReorderColumns = s.Fields
 	return s, nil
 }
 
