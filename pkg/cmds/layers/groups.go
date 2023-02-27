@@ -11,19 +11,34 @@ import (
 // to group and describe all the parameter definitions that it uses.
 // It also provides a location for a name, slug and description to be used in help
 // pages.
-
 type ParameterLayer interface {
 	AddFlag(flag *parameters.ParameterDefinition)
 	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
+
 	InitializeStructFromParameterDefaults(s interface{}) error
 	InitializeParameterDefaultsFromStruct(s interface{}) error
-	AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error
-	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+
 	GetName() string
 	GetSlug() string
 	GetDescription() string
 }
 
+// ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer
+// specification. For example, it could be the result of parsing cobra command flags,
+// or a JSON body, or HTTP query parameters.
+type ParsedParameterLayer struct {
+	Layer      ParameterLayer
+	Parameters map[string]interface{}
+}
+
+type ParameterLayerParserFunc func() (*ParsedParameterLayer, error)
+
+type ParameterLayerParser interface {
+	RegisterParameterLayer(ParameterLayer) (ParameterLayerParserFunc, error)
+}
+
+// ParameterLayerImpl is a straight forward simple implementation of ParameterLayer
+// that can easily be reused in more complex implementations.
 type ParameterLayerImpl struct {
 	Name        string                            `yaml:"name"`
 	Slug        string                            `yaml:"slug"`
