@@ -6,7 +6,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 //go:embed "flags/select.yaml"
@@ -57,27 +56,15 @@ type SelectFlagsDefaults struct {
 
 type SelectParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *SelectFlagsDefaults
 }
 
-func NewSelectParameterLayer() (*SelectParameterLayer, error) {
+func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectParameterLayer, error) {
 	ret := &SelectParameterLayer{}
-	err := ret.LoadFromYAML(selectFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(selectFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize select parameter layer")
+		return nil, errors.Wrap(err, "Failed to create select parameter layer")
 	}
-	ret.Defaults = &SelectFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize select flags defaults"))
-	}
+	ret.ParameterLayerImpl = *layer
 
 	return ret, nil
-}
-
-func (s *SelectParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	if defaults == nil {
-		defaults = s.Defaults
-	}
-	return s.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }

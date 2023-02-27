@@ -3,6 +3,7 @@ package cli
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -31,6 +32,10 @@ func (g *GlazedParameterLayers) GetSlug() string {
 
 func (g *GlazedParameterLayers) GetDescription() string {
 	return "Glazed flags"
+}
+
+func (g *GlazedParameterLayers) GetPrefix() string {
+	return g.FieldsFiltersParameterLayer.GetPrefix()
 }
 
 func (g *GlazedParameterLayers) AddFlag(*parameters.ParameterDefinition) {
@@ -66,32 +71,28 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 	return ret
 }
 
-func (g *GlazedParameterLayers) InitializeStructFromParameterDefaults(interface{}) error {
-	panic("implement me")
-}
-
-func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	err := g.OutputParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error {
+	err := g.OutputParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.TemplateParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.TemplateParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd, defaults)
+	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -171,28 +172,28 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 	return nil
 }
 
-func NewGlazedParameterLayers() (*GlazedParameterLayers, error) {
-	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
+func NewGlazedParameterLayers(options ...layers.ParameterLayerOptions) (*GlazedParameterLayers, error) {
+	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}
-	outputParameterLayer, err := NewOutputParameterLayer()
+	outputParameterLayer, err := NewOutputParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}
-	renameParameterLayer, err := NewRenameParameterLayer()
+	renameParameterLayer, err := NewRenameParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}
-	replaceParameterLayer, err := NewReplaceParameterLayer()
+	replaceParameterLayer, err := NewReplaceParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}
-	selectParameterLayer, err := NewSelectParameterLayer()
+	selectParameterLayer, err := NewSelectParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}
-	templateParameterLayer, err := NewTemplateParameterLayer()
+	templateParameterLayer, err := NewTemplateParameterLayer(options...)
 	if err != nil {
 		return nil, err
 	}

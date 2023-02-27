@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
 	"regexp"
@@ -54,29 +53,16 @@ var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *RenameFlagsDefaults
 }
 
-func NewRenameParameterLayer() (*RenameParameterLayer, error) {
+func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenameParameterLayer, error) {
 	ret := &RenameParameterLayer{}
-	err := ret.LoadFromYAML(renameFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(renameFlagsYaml, options...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to create rename parameter layer")
 	}
-	ret.Defaults = &RenameFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
-	if err != nil {
-		panic(errors.Wrap(err, "Failed to initialize rename flags defaults"))
-	}
-
+	ret.ParameterLayerImpl = *layer
 	return ret, nil
-}
-
-func (r *RenameParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, s interface{}) error {
-	if s == nil {
-		s = r.Defaults
-	}
-	return r.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, s)
 }
 
 func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings, error) {

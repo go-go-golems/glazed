@@ -49,11 +49,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.OutputParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
+	err = gpl.OutputParameterLayer.AddFlagsToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.TemplateParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
+	err = gpl.TemplateParameterLayer.AddFlagsToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -76,8 +76,11 @@ func init() {
 		Filter:      []string{},
 		SortColumns: false,
 	}
-	gpl.FieldsFiltersParameterLayer.Defaults = defaults
-	err = gpl.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(DocsCmd, nil)
+	err = gpl.FieldsFiltersParameterLayer.InitializeParameterDefaultsFromStruct(defaults)
+	if err != nil {
+		panic(err)
+	}
+	err = gpl.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

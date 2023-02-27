@@ -33,7 +33,7 @@ type CobraParameterLayer interface {
 	// it gets registered here? Or should the parsers and registerers be outside,
 	// and generic enough to be able to process all the layers of a command without
 	// the command framework knowing about it. This seems to make more sense.
-	AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error
+	AddFlagsToCobraCommand(cmd *cobra.Command) error
 	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
 }
 
@@ -45,7 +45,7 @@ func (c *CobraParameterLayerParser) RegisterParameterLayer(layer ParameterLayer)
 		return nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
 	}
 
-	err := cobraLayer.AddFlagsToCobraCommand(c.Cmd, nil)
+	err := cobraLayer.AddFlagsToCobraCommand(c.Cmd)
 	if err != nil {
 		return nil, err
 	}

@@ -11,9 +11,10 @@ func makeCommand(t *testing.T, defaults *TemplateFlagsDefaults) *cobra.Command {
 	cmd := &cobra.Command{}
 	tpl, err := NewTemplateParameterLayer()
 	require.NoError(t, err)
-	tpl.Defaults = defaults
+	err = tpl.InitializeParameterDefaultsFromStruct(defaults)
+	require.NoError(t, err)
 
-	err = tpl.AddFlagsToCobraCommand(cmd, defaults)
+	err = tpl.AddFlagsToCobraCommand(cmd)
 	require.NoError(t, err)
 
 	return cmd

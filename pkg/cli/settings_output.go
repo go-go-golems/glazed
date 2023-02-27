@@ -9,7 +9,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"text/template"
 	"unicode/utf8"
 )
@@ -46,43 +45,17 @@ var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *OutputFlagsDefaults
 }
 
-func NewOutputParameterLayer() (*OutputParameterLayer, error) {
+func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputParameterLayer, error) {
 	ret := &OutputParameterLayer{}
-	err := ret.LoadFromYAML(outputFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(outputFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize output parameter layer")
+		return nil, err
 	}
-	// TODO(manuel, 2023-02-22) I'm really not sure what these defaults are about here
-	//
-	// The base idea is that you can update a layer with your own defaults before passing it downstream
-	// and that might be done with a struct that automatically gets loaded. That's useful
-	// because you can quickly overload stuff with things parsed from a yaml file
-	// (for example, the factory section in geppetto command yaml).
-	// But when configuring things specifically for certain verb, or by allowing overloads
-	// in command and layer definition, something like a ParameterDefinition.SetDefault() might work better
-	//
-	// In fact we might just be doing the opposite of what we should be doing here,
-	// which is actually initializing the parameter defaults from an (optional) default
-	// struct.
-	//
-	// See https://github.com/go-go-golems/glazed/issues/161
-	ret.Defaults = &OutputFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize output flags defaults")
-	}
+	ret.ParameterLayerImpl = *layer
 
 	return ret, nil
-}
-
-func (opl *OutputParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, s interface{}) error {
-	if s == nil {
-		s = opl.Defaults
-	}
-	return opl.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, s)
 }
 
 func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSettings, error) {

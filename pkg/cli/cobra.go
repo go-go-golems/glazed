@@ -349,11 +349,11 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
 	return SetupProcessor(ps)
 }
 
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command) error {
 	gpl, err := NewGlazedParameterLayers()
 	if err != nil {
 		return err
 	}
 
-	return gpl.AddFlagsToCobraCommand(cmd, defaults)
+	return gpl.AddFlagsToCobraCommand(cmd)
 }
