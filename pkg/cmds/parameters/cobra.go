@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"strings"
 )
 
@@ -378,6 +379,51 @@ func AddFlagsToCobraCommand(
 	}
 
 	return nil
+}
+
+func GatherFlagsFromViper(
+	params []*ParameterDefinition,
+	onlyProvided bool,
+	prefix string,
+) (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+
+	for _, p := range params {
+		flagName := prefix + p.Name
+		if !onlyProvided || viper.IsSet(flagName) {
+			//exhaustive:ignore
+			switch p.Type {
+			case ParameterTypeString:
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeInteger:
+				ret[p.Name] = viper.GetInt(flagName)
+			case ParameterTypeFloat:
+				ret[p.Name] = viper.GetFloat64(flagName)
+			case ParameterTypeBool:
+				ret[p.Name] = viper.GetBool(flagName)
+			case ParameterTypeStringList:
+				ret[p.Name] = viper.GetStringSlice(flagName)
+			case ParameterTypeIntegerList:
+				ret[p.Name] = viper.GetIntSlice(flagName)
+			case ParameterTypeKeyValue:
+				ret[p.Name] = viper.GetStringMapString(flagName)
+			case ParameterTypeStringListFromFile:
+				ret[p.Name] = viper.GetStringSlice(flagName)
+			case ParameterTypeStringFromFile:
+				// not sure if this is the best here, maybe it should be the filename?
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeChoice:
+				// probably should do some checking here
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeObjectFromFile:
+				ret[p.Name] = viper.GetStringMap(flagName)
+			default:
+				return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
+			}
+		}
+	}
+
+	return ret, nil
 }
 
 // GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
