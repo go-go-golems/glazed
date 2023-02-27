@@ -509,7 +509,7 @@ func testCommandParseHelper(
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.Flags, false)
+			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.Flags, false, "")
 			if flagsError != nil {
 				return
 			}
@@ -522,7 +522,7 @@ func testCommandParseHelper(
 
 	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
-	err = parameters.AddFlagsToCobraCommand(cmd.Flags(), desc.Flags)
+	err = parameters.AddFlagsToCobraCommand(cmd.Flags(), desc.Flags, "")
 	require.Nil(t, err)
 	cmd.SetArgs(expected.Args)
 

@@ -131,17 +131,26 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 // concept of what it means for a library user to overload the defaults handling
 // mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
 // an empty list or a list containing "all" should be treated the same.
-func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition) error {
+func AddFlagsToCobraCommand(
+	flagSet *pflag.FlagSet,
+	flags []*ParameterDefinition,
+	prefix string,
+
+) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
 		}
 
-		flagName := parameter.Name
+		flagName := prefix + parameter.Name
 		// replace _ with -
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 		shortFlag := parameter.ShortFlag
+		if prefix != "" {
+			// we don't allow shortflags if a prefix was given
+			shortFlag = ""
+		}
 		ok := false
 
 		f := flagSet.Lookup(flagName)
@@ -381,12 +390,13 @@ func GatherFlagsFromCobraCommand(
 	cmd *cobra.Command,
 	params []*ParameterDefinition,
 	onlyProvided bool,
+	prefix string,
 ) (map[string]interface{}, error) {
 	ps := map[string]interface{}{}
 
 	for _, parameter := range params {
 		// check if the flag is set
-		flagName := parameter.Name
+		flagName := prefix + parameter.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 
 		if !cmd.Flags().Changed(flagName) {

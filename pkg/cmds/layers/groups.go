@@ -218,7 +218,7 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 
 func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), p.Flags)
+	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), p.Flags, p.Prefix)
 	if err != nil {
 		return err
 	}
@@ -229,5 +229,5 @@ func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 }
 
 func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false)
+	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, p.Prefix)
 }

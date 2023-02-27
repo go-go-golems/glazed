@@ -31,7 +31,7 @@ func GatherParametersFromCobraCommand(
 	description *cmds.CommandDescription,
 	args []string,
 ) (map[string]interface{}, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false)
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false, "")
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags)
+	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to add flags for command '%s'", description.Name)
 	}
