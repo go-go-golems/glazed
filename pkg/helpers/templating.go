@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
-	"github.com/yargevad/filepathx"
+	"github.com/wesen/filepathx"
 	"gopkg.in/yaml.v3"
 	html "html/template"
 	"io"
