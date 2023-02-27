@@ -248,7 +248,12 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 	return ret
 }
 
-func AddFlagGroupToCobraCommand(cmd *cobra.Command, id string, name string, flags []*parameters.ParameterDefinition) {
+func AddFlagGroupToCobraCommand(
+	cmd *cobra.Command,
+	id string,
+	name string,
+	flags []*parameters.ParameterDefinition,
+) {
 	flagNames := []string{}
 	for _, f := range flags {
 		flagNames = append(flagNames, f.Name)

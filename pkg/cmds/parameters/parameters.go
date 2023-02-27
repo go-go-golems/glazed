@@ -845,78 +845,36 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 		return parsedDate, nil
 
+	case ParameterTypeObjectListFromFile:
+		fallthrough
+	case ParameterTypeObjectFromFile:
+		fallthrough
+	case ParameterTypeStringFromFile:
+		fallthrough
 	case ParameterTypeStringListFromFile:
 		fileName := v[0]
 		if fileName == "" {
 			return p.Default, nil
 		}
-		f, err := os.Open(fileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+		var f io.Reader
+		if fileName == "-" {
+			f = os.Stdin
+		} else {
+			f2, err := os.Open(fileName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+			}
+			defer f2.Close()
+
+			f = f2
 		}
 
-		ret := make([]string, 0)
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			ret = append(ret, scanner.Text())
-		}
-		if err = scanner.Err(); err != nil {
+		ret, err := p.ParseFromReader(f, fileName)
+		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
 		}
 
 		return ret, nil
-
-	case ParameterTypeObjectFromFile:
-		fileName := v[0]
-		if fileName == "" {
-			return p.Default, nil
-		}
-		f, err := os.Open(fileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
-		}
-
-		// TODO(manuel, 2023-02-13) Handle stdin
-		// See https://github.com/go-go-golems/glazed/issues/138
-		object := interface{}(nil)
-		if strings.HasSuffix(fileName, ".json") {
-			err = json.NewDecoder(f).Decode(&object)
-		} else if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
-			err = yaml.NewDecoder(f).Decode(&object)
-		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", fileName)
-		}
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", fileName)
-		}
-
-		return object, nil
-
-	case ParameterTypeObjectListFromFile:
-		fileName := v[0]
-		if fileName == "" {
-			return p.Default, nil
-		}
-		f, err := os.Open(fileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
-		}
-
-		objectList := []interface{}{}
-		if strings.HasSuffix(fileName, ".json") {
-			err = json.NewDecoder(f).Decode(&objectList)
-		} else if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
-			err = yaml.NewDecoder(f).Decode(&objectList)
-		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", fileName)
-		}
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", fileName)
-		}
-
-		return objectList, nil
 
 	case ParameterTypeKeyValue:
 		if len(v) == 0 {
@@ -927,19 +885,19 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			// load from file
 			templateDataFile := v[0][1:]
 
-			if strings.HasSuffix(templateDataFile, ".json") {
-				err := helpers.LoadJSONFile(templateDataFile, &ret)
-				if err != nil {
-					return nil, errors.Wrapf(err, "Error loading template data from file %s", templateDataFile)
-				}
-			} else if strings.HasSuffix(templateDataFile, ".yaml") || strings.HasSuffix(templateDataFile, ".yml") {
-				err := helpers.LoadYAMLFile(templateDataFile, &ret)
-				if err != nil {
-					return nil, errors.Wrapf(err, "Error loading template data from file %s", templateDataFile)
-				}
+			var f io.Reader
+			if templateDataFile == "-" {
+				f = os.Stdin
 			} else {
-				return nil, errors.Errorf("Unknown template data file format for file %s", templateDataFile)
+				f2, err := os.Open(templateDataFile)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Could not read file %s", templateDataFile)
+				}
+				defer f2.Close()
+				f = f2
 			}
+
+			return p.ParseFromReader(f, templateDataFile)
 		} else {
 			for _, arg := range v {
 				// TODO(2023-02-11): The separator could be stored in the parameter itself?
@@ -955,26 +913,6 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 		return ret, nil
 
-	case ParameterTypeStringFromFile:
-		fileName := v[0]
-		if fileName == "" {
-			return p.Default, nil
-		}
-		if fileName == "-" {
-			var b bytes.Buffer
-			_, err := io.Copy(&b, os.Stdin)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Could not read from stdin")
-			}
-			return b.String(), nil
-		}
-
-		bs, err := os.ReadFile(fileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
-		}
-		return string(bs), nil
-
 	case ParameterTypeFloatList:
 		floats := make([]float64, 0)
 		for _, arg := range v {
@@ -989,6 +927,82 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	}
 
 	return nil, errors.Errorf("Unknown parameter type %s", p.Type)
+}
+
+func (p *ParameterDefinition) ParseFromReader(f io.Reader, name string) (interface{}, error) {
+	var err error
+	//exhaustive:ignore
+	switch p.Type {
+	case ParameterTypeStringListFromFile:
+		ret := make([]string, 0)
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			ret = append(ret, scanner.Text())
+		}
+		if err = scanner.Err(); err != nil {
+			return nil, err
+		}
+
+		return ret, nil
+
+	case ParameterTypeObjectFromFile:
+		object := interface{}(nil)
+		if name == "-" || strings.HasSuffix(name, ".json") {
+			err = json.NewDecoder(f).Decode(&object)
+		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			err = yaml.NewDecoder(f).Decode(&object)
+		} else {
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+		}
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+		}
+
+		return object, nil
+
+	case ParameterTypeObjectListFromFile:
+		objectList := []interface{}{}
+		if name == "-" || strings.HasSuffix(name, ".json") {
+			err = json.NewDecoder(f).Decode(&objectList)
+		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			err = yaml.NewDecoder(f).Decode(&objectList)
+		} else {
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+		}
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+		}
+
+		return objectList, nil
+
+	case ParameterTypeKeyValue:
+		ret := interface{}(nil)
+		if name == "-" || strings.HasSuffix(name, ".json") {
+			err = json.NewDecoder(f).Decode(&ret)
+		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			err = yaml.NewDecoder(f).Decode(&ret)
+		} else {
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+		}
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+		}
+		return ret, nil
+
+	case ParameterTypeStringFromFile:
+		var b bytes.Buffer
+		_, err := io.Copy(&b, f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not read from stdin")
+		}
+		return b.String(), nil
+
+	default:
+		return nil, errors.New("Cannot parse from file for this parameter type")
+	}
 }
 
 func convertToStringList(value []interface{}) ([]string, error) {
