@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/pkg/errors"
+	"github.com/yargevad/filepathx"
 	"gopkg.in/yaml.v3"
 	html "html/template"
 	"io"
+	"io/fs"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -474,7 +477,7 @@ func RenderTemplateString(tmpl string, data interface{}) (string, error) {
 }
 
 func RenderHtmlTemplateString(tmpl string, data interface{}) (string, error) {
-	t, err := CreateHtmlTemplate("template").Parse(tmpl)
+	t, err := CreateHTMLTemplate("template").Parse(tmpl)
 	if err != nil {
 		return "", err
 	}
@@ -496,8 +499,74 @@ func CreateTemplate(name string) *template.Template {
 		Funcs(TemplateFuncs)
 }
 
-func CreateHtmlTemplate(name string) *html.Template {
+func CreateHTMLTemplate(name string) *html.Template {
 	return html.New(name).
 		Funcs(sprig.HtmlFuncMap()).
 		Funcs(TemplateFuncs)
+}
+
+// ParseFS will recursively glob for all the files matching the given patterns,
+// and load them into one big template (with sub-templates).
+// The globs use filepathx/glob, and support ** notation for recursive globbing.
+func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
+	listMap := make(map[string]struct{})
+	for _, p := range patterns {
+
+		list, err := filepathx.GlobFS(f, p)
+		if err != nil {
+			return err
+		}
+
+		for _, l := range list {
+			listMap[l] = struct{}{}
+		}
+	}
+
+	for filename := range listMap {
+		b, err := fs.ReadFile(f, filename)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read template %s", filename)
+		}
+
+		_, err = t.New(filename).
+			Funcs(sprig.TxtFuncMap()).
+			Funcs(TemplateFuncs).
+			Parse(string(b))
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse template %s", filename)
+		}
+	}
+
+	return nil
+}
+
+// ParseHTMLFS will recursively glob for all the files matching the given patterns,
+// and load them into one big template (with sub-templates).
+// It is the html.Template equivalent of ParseFS.
+//
+// The globs use filepathx/glob, and support ** notation for recursive globbing.
+func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) error {
+	list, err := filepathx.GlobFS(f, pattern)
+	if err != nil {
+		return err
+	}
+
+	for _, filename := range list {
+		b, err := fs.ReadFile(f, filename)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read template %s", filename)
+		}
+
+		// strip baseDir from filename
+		filename_ := strings.TrimPrefix(filename, baseDir)
+		_, err = t.New(filename_).
+			Funcs(sprig.HtmlFuncMap()).
+			Funcs(TemplateFuncs).
+			Parse(string(b))
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse template %s", filename)
+		}
+	}
+
+	return nil
 }
