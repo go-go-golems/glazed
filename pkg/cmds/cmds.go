@@ -111,7 +111,7 @@ type Command interface {
 	// for example?
 	Run(
 		ctx context.Context,
-		parsedLayers []*layers.ParsedParameterLayer,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
 		gp *GlazeProcessor,
 	) error

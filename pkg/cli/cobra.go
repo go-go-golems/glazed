@@ -95,12 +95,12 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		// into a big placeholder first
 		ps := map[string]interface{}{}
 
-		parsedLayers := []*layers.ParsedParameterLayer{}
+		parsedLayers := map[string]*layers.ParsedParameterLayer{}
 		for _, parser := range parserFuncs {
 			p, err := parser()
 			cobra.CheckErr(err)
 
-			parsedLayers = append(parsedLayers, p)
+			parsedLayers[p.Layer.GetSlug()] = p
 
 			// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
 			//

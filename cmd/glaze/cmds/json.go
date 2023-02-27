@@ -50,7 +50,7 @@ func NewJsonCommand() (*JsonCommand, error) {
 
 func (j *JsonCommand) Run(
 	ctx context.Context,
-	parsedLayers []*layers.ParsedParameterLayer,
+	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
 	gp *cmds.GlazeProcessor,
 ) error {

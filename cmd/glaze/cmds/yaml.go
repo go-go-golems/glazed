@@ -50,7 +50,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 
 func (y *YamlCommand) Run(
 	ctx context.Context,
-	parsedLayers []*layers.ParsedParameterLayer,
+	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
 	gp *cmds.GlazeProcessor,
 ) error {
