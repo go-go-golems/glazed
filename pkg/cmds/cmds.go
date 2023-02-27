@@ -106,6 +106,12 @@ type Command interface {
 	Description() *CommandDescription
 }
 
+type ExitWithoutGlazeError struct{}
+
+func (e *ExitWithoutGlazeError) Error() string {
+	return "Exit without glaze"
+}
+
 // YAMLCommandLoader is an interface that allows an application using the glazed
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
