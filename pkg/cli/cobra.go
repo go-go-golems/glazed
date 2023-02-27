@@ -58,36 +58,6 @@ func GatherParametersFromCobraCommand(
 		ps[k] = v
 	}
 
-	createAlias, err := cmd.Flags().GetString("create-alias")
-	if err != nil {
-		return nil, err
-	}
-	if createAlias != "" {
-		alias := &cmds.CommandAlias{
-			Name:      createAlias,
-			AliasFor:  description.Name,
-			Arguments: args,
-			Flags:     map[string]string{},
-		}
-
-		cmd.Flags().Visit(func(flag *pflag.Flag) {
-			if flag.Name != "create-alias" {
-				alias.Flags[flag.Name] = flag.Value.String()
-			}
-		})
-
-		// marshal alias to yaml
-		sb := strings.Builder{}
-		encoder := yaml.NewEncoder(&sb)
-		err = encoder.Encode(alias)
-		if err != nil {
-			return nil, err
-		}
-
-		fmt.Println(sb.String())
-		os.Exit(0)
-	}
-
 	return ps, nil
 }
 
@@ -140,8 +110,21 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 
 			cmd.Flags().Visit(func(flag *pflag.Flag) {
 				if flag.Name != "create-alias" {
-					fmt.Printf("flag: %s, value: %s, type: %s\n", flag.Name, flag.Value.String(), flag.Value.Type())
-					alias.Flags[flag.Name] = flag.Value.String()
+					switch flag.Value.Type() {
+					case "stringSlice":
+						slice, _ := cmd.Flags().GetStringSlice(flag.Name)
+						alias.Flags[flag.Name] = strings.Join(slice, ",")
+					case "intSlice":
+						slice, _ := cmd.Flags().GetIntSlice(flag.Name)
+						alias.Flags[flag.Name] = strings.Join(helpers.IntSliceToStringSlice(slice), ",")
+
+					case "floatSlice":
+						slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
+						alias.Flags[flag.Name] = strings.Join(helpers.Float64SliceToStringSlice(slice), ",")
+
+					default:
+						alias.Flags[flag.Name] = flag.Value.String()
+					}
 				}
 			})
 
