@@ -18,6 +18,13 @@ import (
 // GatherParametersFromCobraCommand takes a cobra command, an argument list as well as a description
 // of the command, and returns a list of parsed parameters as a
 // hashmap. It does so by parsing both the flags and the positional arguments.
+//
+// TODO(manuel, 2021-02-04) This function should return how a parameter was set
+// This would match warg's behaviour. It would also make it possible for us to
+// record if it was set from ENV, from the query, from default, frmo which config file,
+// etc...
+//
+// See https://github.com/go-go-golems/glazed/issues/172
 func GatherParametersFromCobraCommand(
 	cmd *cobra.Command,
 	description *cmds.CommandDescription,
@@ -114,11 +121,83 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		return nil, errors.Wrapf(err, "failed to add arguments for command '%s'", description.Name)
 	}
 
-	cmd.Flags().String("create-alias", "", "Create an alias for the query")
+	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
+	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		ps, err := GatherParametersFromCobraCommand(cmd, description, args)
 		cobra.CheckErr(err)
+
+		createCliAlias, err := cmd.Flags().GetString("create-alias")
+		cobra.CheckErr(err)
+		if createCliAlias != "" {
+			alias := &cmds.CommandAlias{
+				Name:      createCliAlias,
+				AliasFor:  description.Name,
+				Arguments: args,
+				Flags:     map[string]string{},
+			}
+
+			cmd.Flags().Visit(func(flag *pflag.Flag) {
+				if flag.Name != "create-alias" {
+					fmt.Printf("flag: %s, value: %s, type: %s\n", flag.Name, flag.Value.String(), flag.Value.Type())
+					alias.Flags[flag.Name] = flag.Value.String()
+				}
+			})
+
+			// marshal alias to yaml
+			sb := strings.Builder{}
+			encoder := yaml.NewEncoder(&sb)
+			err = encoder.Encode(alias)
+			cobra.CheckErr(err)
+
+			fmt.Println(sb.String())
+			os.Exit(0)
+		}
+
+		createNewCommand, _ := cmd.Flags().GetString("create-command")
+		// TODO(manuel, 2023-02-26) This only outputs the command description, not the actual command
+		// This is already helpful, but is really just half the story. To make this work
+		// generically, CreateNewCommand() should be part of the interface.
+		//
+		// See https://github.com/go-go-golems/glazed/issues/170
+		if createNewCommand != "" {
+			clonedArguments := []*parameters.ParameterDefinition{}
+			for _, arg := range description.Arguments {
+				newArg := arg.Copy()
+				v, ok := ps[arg.Name]
+				if ok {
+					newArg.Default = v
+				}
+				clonedArguments = append(clonedArguments, newArg)
+			}
+			clonedFlags := []*parameters.ParameterDefinition{}
+			for _, flag := range description.Flags {
+				newFlag := flag.Copy()
+				v, ok := ps[flag.Name]
+				if ok {
+					newFlag.Default = v
+				}
+				clonedFlags = append(clonedFlags, newFlag)
+			}
+
+			cmd := &cmds.CommandDescription{
+				Name:      createNewCommand,
+				Short:     description.Short,
+				Long:      description.Long,
+				Arguments: clonedArguments,
+				Flags:     clonedFlags,
+			}
+
+			// encode as yaml
+			sb := strings.Builder{}
+			encoder := yaml.NewEncoder(&sb)
+			err = encoder.Encode(cmd)
+			cobra.CheckErr(err)
+
+			fmt.Println(sb.String())
+			os.Exit(0)
+		}
 
 		gp, of, err := SetupProcessor(ps)
 		cobra.CheckErr(err)
