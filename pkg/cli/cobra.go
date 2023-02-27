@@ -196,6 +196,9 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		}()
 
 		err = s.Run(ctx, ps, gp)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			return
+		}
 		cobra.CheckErr(err)
 
 		s, err := of.Output()
