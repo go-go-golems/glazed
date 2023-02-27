@@ -49,14 +49,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.OutputParameterLayer.AddFlagsToCobraCommand(DocsCmd)
-	if err != nil {
-		panic(err)
-	}
-	err = gpl.TemplateParameterLayer.AddFlagsToCobraCommand(DocsCmd)
-	if err != nil {
-		panic(err)
-	}
 
 	// TODO(2023-02-12, manuel) Overload settings could be loaded from YAML too
 	//
@@ -80,7 +72,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = gpl.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(DocsCmd)
+
+	err = gpl.AddFlagsToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}
