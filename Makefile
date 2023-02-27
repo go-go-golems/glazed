@@ -2,7 +2,7 @@
 
 all: gifs
 
-VERSION=v0.2.15
+VERSION=v0.2.16
 
 TAPES=$(shell ls doc/vhs/*tape)
 gifs: $(TAPES)
