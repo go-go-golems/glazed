@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
@@ -30,7 +31,7 @@ func GatherParametersFromCobraCommand(
 	description *cmds.CommandDescription,
 	args []string,
 ) (map[string]interface{}, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false)
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false, "")
 	if err != nil {
 		return nil, err
 	}
@@ -38,18 +39,6 @@ func GatherParametersFromCobraCommand(
 	arguments, err := parameters.GatherArguments(args, description.Arguments, false)
 	if err != nil {
 		return nil, err
-	}
-
-	layers := description.Layers
-	for _, layer := range layers {
-		layerFlags, err := layer.ParseFlagsFromCobraCommand(cmd)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse flags for layer")
-		}
-
-		for k, v := range layerFlags {
-			ps[k] = v
-		}
 	}
 
 	// merge parameters and arguments
@@ -69,21 +58,28 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		Long:  description.Long,
 	}
 
-	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags)
+	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to add flags for command '%s'", description.Name)
 	}
 
+	// TODO(manuel, 2023-02-27) Not the right location to register generic layers
+	//
+	// This should be done outside of BuildCobraCommand, instead being a generic
+	// mechanism that would allow registering REST wrappers and the like.
+	//
+	// As is, why would cobra specific code need a generic interface
+	parserFuncs := []layers.ParameterLayerParserFunc{}
+
+	cobraParser := layers.NewCobraParameterLayerParser(cmd)
+
 	for _, layer := range description.Layers {
-		err = layer.AddFlagsToCobraCommand(cmd, nil)
+		parserFunc, err := cobraParser.RegisterParameterLayer(layer)
 		if err != nil {
-			return nil, errors.Wrapf(
-				err,
-				"failed to add flags for command '%s' layer '%s'",
-				description.Name,
-				layer.GetSlug(),
-			)
+			return nil, errors.Wrapf(err, "failed to register layer '%s'", layer.GetSlug())
 		}
+
+		parserFuncs = append(parserFuncs, parserFunc)
 	}
 
 	err = parameters.AddArgumentsToCobraCommand(cmd, description.Arguments)
@@ -95,8 +91,40 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		ps, err := GatherParametersFromCobraCommand(cmd, description, args)
+		// go over the layers / parser functions first, and collect the results
+		// into a big placeholder first
+		ps := map[string]interface{}{}
+
+		parsedLayers := map[string]*layers.ParsedParameterLayer{}
+		for _, parser := range parserFuncs {
+			p, err := parser()
+			cobra.CheckErr(err)
+
+			parsedLayers[p.Layer.GetSlug()] = p
+
+			// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
+			//
+			// the question is, is this even necessary? It is for a generic
+			// map[string]interface{} based approach, but in the future we might
+			// want to just pass in the parsed layers downstream
+			//
+			// See https://github.com/go-go-golems/glazed/issues/173
+			for k, v := range p.Parameters {
+				ps[k] = v
+			}
+		}
+
+		// This can be used to override layer arguments, not sure how useful
+		// that is or if it's something we want to actually forbid.
+		//
+		// This might not even be possible in the first place, because it would mean that
+		// we used cobra to register the same flag twice.
+		ps_, err := GatherParametersFromCobraCommand(cmd, description, args)
 		cobra.CheckErr(err)
+
+		for k, v := range ps_ {
+			ps[k] = v
+		}
 
 		createCliAlias, err := cmd.Flags().GetString("create-alias")
 		cobra.CheckErr(err)
@@ -195,7 +223,7 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 			}
 		}()
 
-		err = s.Run(ctx, ps, gp)
+		err = s.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return
 		}
@@ -321,11 +349,11 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
 	return SetupProcessor(ps)
 }
 
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command) error {
 	gpl, err := NewGlazedParameterLayers()
 	if err != nil {
 		return err
 	}
 
-	return gpl.AddFlagsToCobraCommand(cmd, defaults)
+	return gpl.AddFlagsToCobraCommand(cmd)
 }

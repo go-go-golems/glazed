@@ -11,23 +11,39 @@ import (
 // to group and describe all the parameter definitions that it uses.
 // It also provides a location for a name, slug and description to be used in help
 // pages.
-
 type ParameterLayer interface {
 	AddFlag(flag *parameters.ParameterDefinition)
 	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
-	InitializeStructFromParameterDefaults(s interface{}) error
+
 	InitializeParameterDefaultsFromStruct(s interface{}) error
-	AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error
-	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+
 	GetName() string
 	GetSlug() string
 	GetDescription() string
+	GetPrefix() string
 }
 
+// ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer
+// specification. For example, it could be the result of parsing cobra command flags,
+// or a JSON body, or HTTP query parameters.
+type ParsedParameterLayer struct {
+	Layer      ParameterLayer
+	Parameters map[string]interface{}
+}
+
+type ParameterLayerParserFunc func() (*ParsedParameterLayer, error)
+
+type ParameterLayerParser interface {
+	RegisterParameterLayer(ParameterLayer) (ParameterLayerParserFunc, error)
+}
+
+// ParameterLayerImpl is a straight forward simple implementation of ParameterLayer
+// that can easily be reused in more complex implementations.
 type ParameterLayerImpl struct {
 	Name        string                            `yaml:"name"`
 	Slug        string                            `yaml:"slug"`
 	Description string                            `yaml:"description"`
+	Prefix      string                            `yaml:"prefix"`
 	Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 }
 
@@ -41,6 +57,10 @@ func (p *ParameterLayerImpl) GetSlug() string {
 
 func (p *ParameterLayerImpl) GetDescription() string {
 	return p.Description
+}
+
+func (p *ParameterLayerImpl) GetPrefix() string {
+	return p.Prefix
 }
 
 func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -60,30 +80,52 @@ func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-type ParameterLayerOptions func(*ParameterLayerImpl)
+type ParameterLayerOptions func(*ParameterLayerImpl) error
 
-func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) *ParameterLayerImpl {
+func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) (*ParameterLayerImpl, error) {
 	ret := &ParameterLayerImpl{
 		Slug: slug,
 		Name: name,
 	}
 
 	for _, o := range options {
-		o(ret)
+		err := o(ret)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return ret
+	return ret, nil
+}
+
+func WithPrefix(prefix string) ParameterLayerOptions {
+	return func(p *ParameterLayerImpl) error {
+		p.Prefix = prefix
+		return nil
+	}
 }
 
 func WithDescription(description string) ParameterLayerOptions {
-	return func(p *ParameterLayerImpl) {
+	return func(p *ParameterLayerImpl) error {
 		p.Description = description
+		return nil
 	}
 }
 
+func WithDefaults(s interface{}) ParameterLayerOptions {
+	return func(p *ParameterLayerImpl) error {
+		return p.InitializeParameterDefaultsFromStruct(s)
+	}
+}
+
+// TODO(manuel, 2023-02-27) Might be worth making a struct defaults middleware
+//
+//
+
 func WithFlags(flags ...*parameters.ParameterDefinition) ParameterLayerOptions {
-	return func(p *ParameterLayerImpl) {
+	return func(p *ParameterLayerImpl) error {
 		p.Flags = flags
+		return nil
 	}
 }
 
@@ -103,11 +145,18 @@ func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 	return nil
 }
 
-func NewParameterLayerFromYAML(s []byte) (*ParameterLayerImpl, error) {
+func NewParameterLayerFromYAML(s []byte, options ...ParameterLayerOptions) (*ParameterLayerImpl, error) {
 	ret := &ParameterLayerImpl{}
 	err := ret.LoadFromYAML(s)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, o := range options {
+		err = o(ret)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return ret, nil
@@ -149,7 +198,7 @@ func (p *ParameterLayerImpl) InitializeParameterDefinitionsFromParameters(
 	ps map[string]interface{},
 ) error {
 	pds := p.GetParameterDefinitions()
-	err := parameters.InitializeParameterDefinitionsFromParameters(pds, ps)
+	err := parameters.InitializeParameterDefaultsFromParameters(pds, ps)
 	return err
 
 }
@@ -163,23 +212,22 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
-func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	ps, err := parameters.CloneParameterDefinitionsWithDefaultsStruct(p.Flags, defaults)
-	if err != nil {
-		return err
-	}
+// TODO(manuel, 2023-02-27) Is this function even necessary if we have the cobra / parameter layer parser construct
+//
+// See https://github.com/go-go-golems/glazed/issues/173
 
+func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err = parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), ps)
+	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), p.Flags, p.Prefix)
 	if err != nil {
 		return err
 	}
 
-	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, ps)
+	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags)
 
 	return nil
 }
 
 func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false)
+	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, p.Prefix)
 }

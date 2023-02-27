@@ -26,7 +26,6 @@ type FieldsFilterFlagsDefaults struct {
 
 type FieldsFiltersParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *FieldsFilterFlagsDefaults
 }
 
 type FieldsFilterSettings struct {
@@ -36,29 +35,35 @@ type FieldsFilterSettings struct {
 	ReorderColumns []string
 }
 
-func NewFieldsFiltersParameterLayer() (*FieldsFiltersParameterLayer, error) {
+func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*FieldsFiltersParameterLayer, error) {
 	ret := &FieldsFiltersParameterLayer{}
-	err := ret.LoadFromYAML(fieldsFiltersFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(fieldsFiltersFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize fields and filters parameter layer")
+		return nil, errors.Wrap(err, "Failed to create fields and filters parameter layer")
 	}
-	ret.Defaults = &FieldsFilterFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
-	}
+	ret.ParameterLayerImpl = *layer
+
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	if defaults == nil {
-		defaultFieldHelp := f.Defaults.Fields
-		if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
-			f.Defaults.Fields = []string{"all"}
-		}
-		defaults = f.Defaults
+func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command) error {
+	defaults := &FieldsFilterFlagsDefaults{}
+	err := f.ParameterLayerImpl.InitializeStructFromParameterDefaults(defaults)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
-	return f.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
+	// this is not very elegant, as a new way of doing defaults
+	defaultFieldHelp := defaults.Fields
+	if len(defaultFieldHelp) == 0 || (len(defaultFieldHelp) == 1 && defaultFieldHelp[0] == "") {
+		defaults.Fields = []string{"all"}
+	}
+	// this would be more elegant with a middleware for handling defaults, I think
+	err = f.ParameterLayerImpl.InitializeParameterDefaultsFromStruct(defaults)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
+	}
+
+	return f.ParameterLayerImpl.AddFlagsToCobraCommand(cmd)
 }
 
 func (f *FieldsFiltersParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {

@@ -90,11 +90,18 @@ func WithSource(s string) CommandDescriptionOption {
 }
 
 type Command interface {
-	// Run is called to actually execute the command. There is no result type,
-	// that is actually up to the command. Most commands for now will print structured data
-	// to stdout, which is not ideal.
+	// Run is called to actually execute the command.
 	//
-	// See
+	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
+	//
+	// The ps and GlazeProcessor calls could be replaced by a Command specific layer,
+	// which would allow the Command to parse into a specific struct. The GlazeProcessor
+	// is just something created by the passed in GlazeLayer anyway.
+	//
+	// When we are just left with building a convenience wrapper for Glaze based commands,
+	// instead of forcing it into the upstream interface.
+	//
+	// See https://github.com/go-go-golems/glazed/issues/173
 	//
 	// NOTE(manuel, 2023-02-21) Does a command always need a GlazeProcessor?
 	//
@@ -102,7 +109,12 @@ type Command interface {
 	// the formatter to our needs, even if many of the flags might actually be in the parameters
 	// list itself. This makes it easy to hook things up as always JSON when used in an API,
 	// for example?
-	Run(ctx context.Context, ps map[string]interface{}, gp *GlazeProcessor) error
+	Run(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+		gp *GlazeProcessor,
+	) error
 	Description() *CommandDescription
 }
 

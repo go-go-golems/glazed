@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"strings"
 )
 
@@ -131,17 +132,26 @@ func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvid
 // concept of what it means for a library user to overload the defaults handling
 // mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
 // an empty list or a list containing "all" should be treated the same.
-func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition) error {
+func AddFlagsToCobraCommand(
+	flagSet *pflag.FlagSet,
+	flags []*ParameterDefinition,
+	prefix string,
+
+) error {
 	for _, parameter := range flags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
 		}
 
-		flagName := parameter.Name
+		flagName := prefix + parameter.Name
 		// replace _ with -
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 		shortFlag := parameter.ShortFlag
+		if prefix != "" {
+			// we don't allow shortflags if a prefix was given
+			shortFlag = ""
+		}
 		ok := false
 
 		f := flagSet.Lookup(flagName)
@@ -371,6 +381,51 @@ func AddFlagsToCobraCommand(flagSet *pflag.FlagSet, flags []*ParameterDefinition
 	return nil
 }
 
+func GatherFlagsFromViper(
+	params []*ParameterDefinition,
+	onlyProvided bool,
+	prefix string,
+) (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+
+	for _, p := range params {
+		flagName := prefix + p.Name
+		if !onlyProvided || viper.IsSet(flagName) {
+			//exhaustive:ignore
+			switch p.Type {
+			case ParameterTypeString:
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeInteger:
+				ret[p.Name] = viper.GetInt(flagName)
+			case ParameterTypeFloat:
+				ret[p.Name] = viper.GetFloat64(flagName)
+			case ParameterTypeBool:
+				ret[p.Name] = viper.GetBool(flagName)
+			case ParameterTypeStringList:
+				ret[p.Name] = viper.GetStringSlice(flagName)
+			case ParameterTypeIntegerList:
+				ret[p.Name] = viper.GetIntSlice(flagName)
+			case ParameterTypeKeyValue:
+				ret[p.Name] = viper.GetStringMapString(flagName)
+			case ParameterTypeStringListFromFile:
+				ret[p.Name] = viper.GetStringSlice(flagName)
+			case ParameterTypeStringFromFile:
+				// not sure if this is the best here, maybe it should be the filename?
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeChoice:
+				// probably should do some checking here
+				ret[p.Name] = viper.GetString(flagName)
+			case ParameterTypeObjectFromFile:
+				ret[p.Name] = viper.GetStringMap(flagName)
+			default:
+				return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
+			}
+		}
+	}
+
+	return ret, nil
+}
+
 // GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
 // to the parameter description passed in params. The result is a map of parameter
 // names to parsed values. If onlyProvided is true, only parameters that are provided
@@ -381,12 +436,13 @@ func GatherFlagsFromCobraCommand(
 	cmd *cobra.Command,
 	params []*ParameterDefinition,
 	onlyProvided bool,
+	prefix string,
 ) (map[string]interface{}, error) {
 	ps := map[string]interface{}{}
 
 	for _, parameter := range params {
 		// check if the flag is set
-		flagName := parameter.Name
+		flagName := prefix + parameter.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 
 		if !cmd.Flags().Changed(flagName) {

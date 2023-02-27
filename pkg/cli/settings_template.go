@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 type TemplateSettings struct {
@@ -45,30 +44,17 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 
 type TemplateParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *TemplateFlagsDefaults
 }
 
-func NewTemplateParameterLayer() (*TemplateParameterLayer, error) {
+func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {
 	ret := &TemplateParameterLayer{}
-	err := ret.LoadFromYAML(templateFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(templateFlagsYaml, options...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to create template parameter layer")
 	}
-	s := &TemplateFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(s)
-	if err != nil {
-		return nil, err
-	}
-	ret.Defaults = s
+	ret.ParameterLayerImpl = *layer
 
 	return ret, nil
-}
-
-func (t *TemplateParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command, defaults interface{}) error {
-	if defaults == nil {
-		defaults = t.Defaults
-	}
-	return t.ParameterLayerImpl.AddFlagsToCobraCommand(cmd, defaults)
 }
 
 func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {

@@ -10,6 +10,57 @@ import (
 	"strings"
 )
 
+type CobraParameterLayerParser struct {
+	Cmd *cobra.Command
+}
+
+func NewCobraParameterLayerParser(cmd *cobra.Command) *CobraParameterLayerParser {
+	return &CobraParameterLayerParser{
+		Cmd: cmd,
+	}
+}
+
+type CobraParameterLayer interface {
+	// AddFlagsToCobraCommand adds all the flags defined in this layer to the given cobra command.
+	//
+	// NOTE(manuel, 2023-02-27) This can be moved to use that ParameterLayerParser API
+	// As I'm working out what it means to parse layers and use it to fill structs,
+	// and how defaults should be registered, it makes sense to move this out.
+	// Further more, defaults should probably be managed in the layer entirely, and
+	// thus not be shown in the interface here.
+	//
+	// Do we want to keep the parsers in the layer itself, so that when a command is registered,
+	// it gets registered here? Or should the parsers and registerers be outside,
+	// and generic enough to be able to process all the layers of a command without
+	// the command framework knowing about it. This seems to make more sense.
+	AddFlagsToCobraCommand(cmd *cobra.Command) error
+	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+}
+
+func (c *CobraParameterLayerParser) RegisterParameterLayer(layer ParameterLayer) (ParameterLayerParserFunc, error) {
+	// check that layer is a CobraParameterLayer
+	// if not, return an error
+	cobraLayer, ok := layer.(CobraParameterLayer)
+	if !ok {
+		return nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+	}
+
+	err := cobraLayer.AddFlagsToCobraCommand(c.Cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	return func() (*ParsedParameterLayer, error) {
+		// parse the flags from commands
+		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ParsedParameterLayer{Parameters: ps, Layer: layer}, nil
+	}, nil
+}
+
 // FlagGroup is a group of flags that can be added to a cobra command.
 // While we mostly deal with ParameterDefinitions, this uses strings
 // because it can be applied to any cobra flag in general.

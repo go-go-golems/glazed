@@ -39,23 +39,18 @@ type ReplaceFlagsDefaults struct {
 
 type ReplaceParameterLayer struct {
 	layers.ParameterLayerImpl
-	Defaults *ReplaceFlagsDefaults
 }
 
 //go:embed "flags/replace.yaml"
 var replaceFlagsYaml []byte
 
-func NewReplaceParameterLayer() (*ReplaceParameterLayer, error) {
+func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*ReplaceParameterLayer, error) {
 	ret := &ReplaceParameterLayer{}
-	err := ret.LoadFromYAML(replaceFlagsYaml)
+	layer, err := layers.NewParameterLayerFromYAML(replaceFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.Defaults = &ReplaceFlagsDefaults{}
-	err = ret.InitializeStructFromParameterDefaults(ret.Defaults)
-	if err != nil {
-		return nil, err
-	}
+	ret.ParameterLayerImpl = *layer
 
 	return ret, nil
 }
