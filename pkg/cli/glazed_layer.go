@@ -172,39 +172,122 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 	return nil
 }
 
-func NewGlazedParameterLayers(options ...layers.ParameterLayerOptions) (*GlazedParameterLayers, error) {
-	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer(options...)
+type GlazeParameterLayerOption func(*GlazedParameterLayers) error
+
+func WithOutputParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.OutputParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WithSelectParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.SelectParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WithTemplateParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.TemplateParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WithRenameParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.RenameParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WithReplaceParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.ReplaceParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WithFieldsFiltersParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.FieldsFiltersParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedParameterLayers, error) {
+	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	outputParameterLayer, err := NewOutputParameterLayer(options...)
+	outputParameterLayer, err := NewOutputParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	renameParameterLayer, err := NewRenameParameterLayer(options...)
+	renameParameterLayer, err := NewRenameParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	replaceParameterLayer, err := NewReplaceParameterLayer(options...)
+	replaceParameterLayer, err := NewReplaceParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	selectParameterLayer, err := NewSelectParameterLayer(options...)
+	selectParameterLayer, err := NewSelectParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	templateParameterLayer, err := NewTemplateParameterLayer(options...)
+	templateParameterLayer, err := NewTemplateParameterLayer()
 	if err != nil {
 		return nil, err
 	}
-	return &GlazedParameterLayers{
+	ret := &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
 		OutputParameterLayer:        outputParameterLayer,
 		RenameParameterLayer:        renameParameterLayer,
 		ReplaceParameterLayer:       replaceParameterLayer,
 		SelectParameterLayer:        selectParameterLayer,
 		TemplateParameterLayer:      templateParameterLayer,
-	}, nil
+	}
+
+	for _, option := range options {
+		err := option(ret)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ret, nil
 }
 
 func SetupProcessor(ps map[string]interface{}) (

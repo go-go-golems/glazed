@@ -38,7 +38,7 @@ type ReplaceFlagsDefaults struct {
 }
 
 type ReplaceParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 //go:embed "flags/replace.yaml"
@@ -50,7 +50,7 @@ func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*Replace
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 
 	return ret, nil
 }

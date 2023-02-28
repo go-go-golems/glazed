@@ -13,11 +13,6 @@ import (
 //go:embed "flags/fields-filters.yaml"
 var fieldsFiltersFlagsYaml []byte
 
-// TODO(manuel, 2022-11-20) Make it easy for the developer to configure which flag they want
-// and which they don't
-//
-// See https://github.com/go-go-golems/glazed/issues/130
-
 type FieldsFilterFlagsDefaults struct {
 	Fields      []string `glazed.parameter:"fields"`
 	Filter      []string `glazed.parameter:"filter"`
@@ -25,7 +20,7 @@ type FieldsFilterFlagsDefaults struct {
 }
 
 type FieldsFiltersParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 type FieldsFilterSettings struct {
@@ -41,7 +36,7 @@ func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*F
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create fields and filters parameter layer")
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 
 	return ret, nil
 }

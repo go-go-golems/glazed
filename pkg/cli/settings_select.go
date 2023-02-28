@@ -55,7 +55,7 @@ type SelectFlagsDefaults struct {
 }
 
 type SelectParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectParameterLayer, error) {
@@ -64,7 +64,7 @@ func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectPa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create select parameter layer")
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 
 	return ret, nil
 }

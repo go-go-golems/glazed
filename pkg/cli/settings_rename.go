@@ -52,7 +52,7 @@ type RenameFlagsDefaults struct {
 var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenameParameterLayer, error) {
@@ -61,7 +61,7 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create rename parameter layer")
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 	return ret, nil
 }
 

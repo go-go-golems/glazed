@@ -43,7 +43,7 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 type TemplateParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {
@@ -52,7 +52,7 @@ func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*Templa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create template parameter layer")
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 
 	return ret, nil
 }
