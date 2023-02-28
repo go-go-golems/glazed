@@ -31,6 +31,19 @@ type ParsedParameterLayer struct {
 	Parameters map[string]interface{}
 }
 
+// Clone returns a copy of the parsedParameterLayer with a fresh Parameters map.
+// However, neither the Layer nor the Parameters are deep copied.
+func (ppl *ParsedParameterLayer) Clone() *ParsedParameterLayer {
+	ret := &ParsedParameterLayer{
+		Layer:      ppl.Layer,
+		Parameters: make(map[string]interface{}),
+	}
+	for k, v := range ppl.Parameters {
+		ret.Parameters[k] = v
+	}
+	return ret
+}
+
 type ParameterLayerParserFunc func() (*ParsedParameterLayer, error)
 
 type ParameterLayerParser interface {
@@ -119,8 +132,6 @@ func WithDefaults(s interface{}) ParameterLayerOptions {
 }
 
 // TODO(manuel, 2023-02-27) Might be worth making a struct defaults middleware
-//
-//
 
 func WithFlags(flags ...*parameters.ParameterDefinition) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
@@ -212,13 +223,9 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
-// TODO(manuel, 2023-02-27) Is this function even necessary if we have the cobra / parameter layer parser construct
-//
-// See https://github.com/go-go-golems/glazed/issues/173
-
 func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err := parameters.AddFlagsToCobraCommand(cmd.PersistentFlags(), p.Flags, p.Prefix)
+	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), p.Flags, p.Prefix)
 	if err != nil {
 		return err
 	}
