@@ -113,7 +113,7 @@ type Command interface {
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
-		gp *GlazeProcessor,
+		gp Processor,
 	) error
 	Description() *CommandDescription
 }

@@ -6,6 +6,11 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
+type Processor interface {
+	ProcessInputObject(obj map[string]interface{}) error
+	OutputFormatter() formatters.OutputFormatter
+}
+
 type GlazeProcessor struct {
 	of  formatters.OutputFormatter
 	oms []middlewares.ObjectMiddleware
