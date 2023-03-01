@@ -39,7 +39,7 @@ brews:
   homepage: "https://github.com/go-go-golems/glazed"
   tap:
     owner: go-go-golems
-    name: go-go-homebrew
+    name: homebrew-go-go
     token: "{{ .Env.TAP_GITHUB_TOKEN }}"
 
 # modelines, feel free to remove those if you don't want/use them:
