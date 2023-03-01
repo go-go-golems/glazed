@@ -127,7 +127,13 @@ func WithDescription(description string) ParameterLayerOptions {
 
 func WithDefaults(s interface{}) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
-		return p.InitializeParameterDefaultsFromStruct(s)
+		// if s is a map[string]interface{} then we can just use that
+
+		if m, ok := s.(map[string]interface{}); ok {
+			return p.InitializeParameterDefaultsFromParameters(m)
+		} else {
+			return p.InitializeParameterDefaultsFromStruct(s)
+		}
 	}
 }
 
