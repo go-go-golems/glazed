@@ -33,6 +33,14 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+- name: glaze
+  description: "Glaze is a tool for converting structured data"
+  homepage: "https://github.com/go-go-golems/glazed"
+  tap:
+    owner: go-go-golems
+    name: go-go-homebrew
+    token: ${{ .Env.TAP_GITHUB_TOKEN }}
 
 # modelines, feel free to remove those if you don't want/use them:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
