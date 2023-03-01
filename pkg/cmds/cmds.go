@@ -47,6 +47,59 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	return ret
 }
 
+func (c *CommandDescription) Clone(cloneFlagsAndArguments bool, options ...CommandDescriptionOption) *CommandDescription {
+	// clone flags
+	flags := make([]*parameters.ParameterDefinition, len(c.Flags))
+	for i, f := range c.Flags {
+		if !cloneFlagsAndArguments {
+			flags[i] = f
+		} else {
+			flags[i] = f.Copy()
+		}
+	}
+
+	// clone arguments
+	arguments := make([]*parameters.ParameterDefinition, len(c.Arguments))
+	for i, a := range c.Arguments {
+		if !cloneFlagsAndArguments {
+			arguments[i] = a
+		} else {
+			arguments[i] = a.Copy()
+		}
+	}
+
+	// clone layers
+	layers_ := make([]layers.ParameterLayer, len(c.Layers))
+	copy(layers_, c.Layers)
+
+	// copy parents
+	parents := make([]string, len(c.Parents))
+	copy(parents, c.Parents)
+
+	ret := &CommandDescription{
+		Name:      c.Name,
+		Short:     c.Short,
+		Long:      c.Long,
+		Flags:     flags,
+		Arguments: arguments,
+		Layers:    layers_,
+		Parents:   parents,
+		Source:    c.Source,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func WithName(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Name = s
+	}
+}
+
 func WithShort(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Short = s
@@ -74,6 +127,48 @@ func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOptio
 func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers = append(c.Layers, l...)
+	}
+}
+
+func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+	outerLoop:
+		for _, l := range layers_ {
+			for i, ll := range c.Layers {
+				if ll.GetSlug() == l.GetSlug() {
+					c.Layers[i] = l
+					continue outerLoop
+				}
+			}
+		}
+	}
+}
+
+func WithReplaceFlags(flags ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+	outerLoop:
+		for _, f := range flags {
+			for i, ff := range c.Flags {
+				if ff.Name == f.Name {
+					c.Flags[i] = f
+					continue outerLoop
+				}
+			}
+		}
+	}
+}
+
+func WithReplaceArguments(args ...*parameters.ParameterDefinition) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+	outerLoop:
+		for _, a := range args {
+			for i, aa := range c.Arguments {
+				if aa.Name == a.Name {
+					c.Arguments[i] = a
+					continue outerLoop
+				}
+			}
+		}
 	}
 }
 
@@ -113,7 +208,7 @@ type Command interface {
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
-		gp *GlazeProcessor,
+		gp Processor,
 	) error
 	Description() *CommandDescription
 }
@@ -127,8 +222,8 @@ func (e *ExitWithoutGlazeError) Error() string {
 // YAMLCommandLoader is an interface that allows an application using the glazed
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
-	LoadCommandFromYAML(s io.Reader) ([]Command, error)
-	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
+	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]Command, error)
+	LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error)
 }
 
 // TODO(2023-02-09, manuel) We can probably implement the directory walking part in a couple of lines
@@ -142,10 +237,10 @@ type YAMLCommandLoader interface {
 //
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
-	LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error)
+	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
 }
 
-func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
+func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error) {
 	var alias CommandAlias
 	err := yaml.NewDecoder(s).Decode(&alias)
 	if err != nil {
@@ -154,6 +249,10 @@ func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 
 	if !alias.IsValid() {
 		return nil, errors.New("Invalid command alias")
+	}
+
+	for _, o := range options {
+		o(alias.Description())
 	}
 
 	return []*CommandAlias{&alias}, nil
@@ -183,7 +282,11 @@ func NewYAMLFSCommandLoader(
 	}
 }
 
-func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error) {
+func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
+	f fs.FS,
+	dir string,
+	options ...CommandDescriptionOption,
+) ([]Command, []*CommandAlias, error) {
 	var commands []Command
 	var aliases []*CommandAlias
 
@@ -198,7 +301,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 		}
 		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName)
+			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName, options...)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -227,7 +330,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 					}()
 
 					log.Debug().Str("file", fileName).Msg("Loading command from file")
-					commands, err := l.loader.LoadCommandFromYAML(file)
+					commands, err := l.loader.LoadCommandFromYAML(file, options...)
 					if err != nil {
 						return nil, err
 					}
@@ -257,7 +360,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string) ([]Command
 							}()
 
 							log.Debug().Str("file", fileName).Msg("Loading alias from file")
-							aliases, err := l.loader.LoadCommandAliasFromYAML(file)
+							aliases, err := l.loader.LoadCommandAliasFromYAML(file, options...)
 							if err != nil {
 								return nil, err
 							}

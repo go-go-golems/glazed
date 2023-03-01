@@ -11,8 +11,9 @@ type Row interface {
 }
 
 type Table struct {
-	Columns []FieldName
-	Rows    []Row
+	Columns   []FieldName
+	Rows      []Row
+	finalized bool
 }
 
 // Finalize is used to "close" a table after processing inputs into it.
@@ -20,6 +21,9 @@ type Table struct {
 // TODO(manuel, 2023-02-19) This is an ugly ugly method, and really the whole Table/middleware structure needs to be refactored
 // See https://github.com/go-go-golems/glazed/issues/146
 func (t *Table) Finalize() {
+	if t.finalized {
+		return
+	}
 	columnNames := map[FieldName]interface{}{}
 
 	for _, row := range t.Rows {
@@ -34,12 +38,14 @@ func (t *Table) Finalize() {
 	}
 
 	t.Columns = columns
+	t.finalized = true
 }
 
 func NewTable() *Table {
 	return &Table{
-		Columns: []FieldName{},
-		Rows:    []Row{},
+		Columns:   []FieldName{},
+		Rows:      []Row{},
+		finalized: false,
 	}
 }
 

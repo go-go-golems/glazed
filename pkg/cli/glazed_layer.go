@@ -363,6 +363,6 @@ func SetupProcessor(ps map[string]interface{}) (
 		middlewares_ = append(middlewares_, ogtm)
 	}
 
-	gp := cmds.NewGlazeProcessor(of, middlewares_)
+	gp := cmds.NewGlazeProcessor(of, middlewares_...)
 	return gp, of, nil
 }
