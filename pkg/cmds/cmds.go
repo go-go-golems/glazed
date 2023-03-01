@@ -237,10 +237,10 @@ type YAMLCommandLoader interface {
 //
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
-	LoadCommandsFromFS(f fs.FS, dir string) ([]Command, []*CommandAlias, error)
+	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
 }
 
-func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
+func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error) {
 	var alias CommandAlias
 	err := yaml.NewDecoder(s).Decode(&alias)
 	if err != nil {
@@ -249,6 +249,10 @@ func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 
 	if !alias.IsValid() {
 		return nil, errors.New("Invalid command alias")
+	}
+
+	for _, o := range options {
+		o(alias.Description())
 	}
 
 	return []*CommandAlias{&alias}, nil
@@ -297,7 +301,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 		}
 		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName)
+			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName, options...)
 			if err != nil {
 				return nil, nil, err
 			}
