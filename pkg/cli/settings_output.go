@@ -44,7 +44,7 @@ type OutputFlagsDefaults struct {
 var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
-	layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl
 }
 
 func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputParameterLayer, error) {
@@ -53,7 +53,7 @@ func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputPa
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = *layer
+	ret.ParameterLayerImpl = layer
 
 	return ret, nil
 }

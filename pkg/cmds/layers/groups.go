@@ -205,7 +205,7 @@ func (p *ParameterLayerImpl) InitializeParameterDefaultsFromStruct(defaults inte
 	return err
 }
 
-func (p *ParameterLayerImpl) InitializeParameterDefinitionsFromParameters(
+func (p *ParameterLayerImpl) InitializeParameterDefaultsFromParameters(
 	ps map[string]interface{},
 ) error {
 	pds := p.GetParameterDefinitions()
