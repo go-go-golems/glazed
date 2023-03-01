@@ -76,7 +76,10 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 	for _, layer := range description.Layers {
 		parserFunc, err := cobraParser.RegisterParameterLayer(layer)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to register layer '%s'", layer.GetSlug())
+			return nil, errors.Wrapf(err, "failed to register layer '%s' for command '%s' from %s",
+				layer.GetSlug(),
+				description.Name,
+				description.Source)
 		}
 
 		parserFuncs = append(parserFuncs, parserFunc)
