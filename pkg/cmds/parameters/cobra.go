@@ -390,36 +390,44 @@ func GatherFlagsFromViper(
 
 	for _, p := range params {
 		flagName := prefix + p.Name
-		if !onlyProvided || viper.IsSet(flagName) {
-			//exhaustive:ignore
-			switch p.Type {
-			case ParameterTypeString:
-				ret[p.Name] = viper.GetString(flagName)
-			case ParameterTypeInteger:
-				ret[p.Name] = viper.GetInt(flagName)
-			case ParameterTypeFloat:
-				ret[p.Name] = viper.GetFloat64(flagName)
-			case ParameterTypeBool:
-				ret[p.Name] = viper.GetBool(flagName)
-			case ParameterTypeStringList:
-				ret[p.Name] = viper.GetStringSlice(flagName)
-			case ParameterTypeIntegerList:
-				ret[p.Name] = viper.GetIntSlice(flagName)
-			case ParameterTypeKeyValue:
-				ret[p.Name] = viper.GetStringMapString(flagName)
-			case ParameterTypeStringListFromFile:
-				ret[p.Name] = viper.GetStringSlice(flagName)
-			case ParameterTypeStringFromFile:
-				// not sure if this is the best here, maybe it should be the filename?
-				ret[p.Name] = viper.GetString(flagName)
-			case ParameterTypeChoice:
-				// probably should do some checking here
-				ret[p.Name] = viper.GetString(flagName)
-			case ParameterTypeObjectFromFile:
-				ret[p.Name] = viper.GetStringMap(flagName)
-			default:
-				return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
+		if onlyProvided && !viper.IsSet(flagName) {
+			continue
+		}
+		if !onlyProvided && !viper.IsSet(flagName) {
+			if p.Default != nil {
+				ret[p.Name] = p.Default
 			}
+			continue
+		}
+
+		//exhaustive:ignore
+		switch p.Type {
+		case ParameterTypeString:
+			ret[p.Name] = viper.GetString(flagName)
+		case ParameterTypeInteger:
+			ret[p.Name] = viper.GetInt(flagName)
+		case ParameterTypeFloat:
+			ret[p.Name] = viper.GetFloat64(flagName)
+		case ParameterTypeBool:
+			ret[p.Name] = viper.GetBool(flagName)
+		case ParameterTypeStringList:
+			ret[p.Name] = viper.GetStringSlice(flagName)
+		case ParameterTypeIntegerList:
+			ret[p.Name] = viper.GetIntSlice(flagName)
+		case ParameterTypeKeyValue:
+			ret[p.Name] = viper.GetStringMapString(flagName)
+		case ParameterTypeStringListFromFile:
+			ret[p.Name] = viper.GetStringSlice(flagName)
+		case ParameterTypeStringFromFile:
+			// not sure if this is the best here, maybe it should be the filename?
+			ret[p.Name] = viper.GetString(flagName)
+		case ParameterTypeChoice:
+			// probably should do some checking here
+			ret[p.Name] = viper.GetString(flagName)
+		case ParameterTypeObjectFromFile:
+			ret[p.Name] = viper.GetStringMap(flagName)
+		default:
+			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
 		}
 	}
 
