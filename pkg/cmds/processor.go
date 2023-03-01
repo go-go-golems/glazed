@@ -20,7 +20,7 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 	return gp.of
 }
 
-func NewGlazeProcessor(of formatters.OutputFormatter, oms []middlewares.ObjectMiddleware) *GlazeProcessor {
+func NewGlazeProcessor(of formatters.OutputFormatter, oms ...middlewares.ObjectMiddleware) *GlazeProcessor {
 	ret := &GlazeProcessor{
 		of:  of,
 		oms: oms,
@@ -42,4 +42,23 @@ func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
 
 	gp.of.AddRow(&types.SimpleRow{Hash: obj})
 	return nil
+}
+
+// SimpleGlazeProcessor only collects the output and returns it as a types.Table
+type SimpleGlazeProcessor struct {
+	*GlazeProcessor
+	formatter *formatters.TableOutputFormatter
+}
+
+func NewSimpleGlazeProcessor(oms ...middlewares.ObjectMiddleware) *SimpleGlazeProcessor {
+	formatter := formatters.NewTableOutputFormatter("csv")
+	return &SimpleGlazeProcessor{
+		GlazeProcessor: NewGlazeProcessor(formatter, oms...),
+		formatter:      formatter,
+	}
+}
+
+func (gp *SimpleGlazeProcessor) GetTable() *types.Table {
+	gp.formatter.Table.Finalize()
+	return gp.formatter.Table
 }
