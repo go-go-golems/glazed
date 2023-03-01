@@ -62,4 +62,14 @@ func init() {
 	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
 	rootCmd.AddCommand(cmds.MarkdownCmd)
+
+	csvCmd, err := cmds.NewCsvCommand()
+	if err != nil {
+		panic(err)
+	}
+	command, err = glazed_cmds.BuildCobraCommand(csvCmd)
+	if err != nil {
+		panic(err)
+	}
+	rootCmd.AddCommand(command)
 }
