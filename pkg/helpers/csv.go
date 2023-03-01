@@ -6,8 +6,46 @@ import (
 	"strconv"
 )
 
-func ParseCSV(r io.Reader) ([]map[string]interface{}, error) {
+type ParseCSVOption func(*csv.Reader)
+
+func WithComma(c rune) ParseCSVOption {
+	return func(r *csv.Reader) {
+		r.Comma = c
+	}
+}
+
+func WithComment(c rune) ParseCSVOption {
+	return func(r *csv.Reader) {
+		r.Comment = c
+	}
+}
+
+func WithLazyQuotes(l bool) ParseCSVOption {
+	return func(r *csv.Reader) {
+		r.LazyQuotes = l
+	}
+}
+
+func WithTrimLeadingSpace(t bool) ParseCSVOption {
+	return func(r *csv.Reader) {
+		r.TrimLeadingSpace = t
+	}
+}
+
+func WithFieldsPerRecord(f int) ParseCSVOption {
+	return func(r *csv.Reader) {
+		r.FieldsPerRecord = f
+	}
+}
+
+func ParseCSV(r io.Reader, options ...ParseCSVOption) (
+	[]map[string]interface{}, error,
+) {
 	csvReader := csv.NewReader(r)
+
+	for _, o := range options {
+		o(csvReader)
+	}
 
 	// Read the header row of the CSV file to use as keys for the maps
 	header, err := csvReader.Read()
