@@ -33,6 +33,10 @@ func NewTSVOutputFormatter() *CSVOutputFormatter {
 	}
 }
 
+func (f *CSVOutputFormatter) GetTable() (*types.Table, error) {
+	return f.Table, nil
+}
+
 func (f *CSVOutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) {
 	f.middlewares = append(f.middlewares, m)
 }

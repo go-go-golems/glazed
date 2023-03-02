@@ -15,6 +15,10 @@ type TemplateFormatter struct {
 	AdditionalData   interface{}
 }
 
+func (t *TemplateFormatter) GetTable() (*types.Table, error) {
+	return t.Table, nil
+}
+
 func (t *TemplateFormatter) AddRow(row types.Row) {
 	t.Table.Rows = append(t.Table.Rows, row)
 }
