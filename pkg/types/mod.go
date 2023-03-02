@@ -24,6 +24,13 @@ func (t *Table) Finalize() {
 	if t.finalized {
 		return
 	}
+
+	existingColumns := map[FieldName]interface{}{}
+	for _, column := range t.Columns {
+		existingColumns[column] = nil
+	}
+
+	// append all the columns from all the rows into a map
 	columnNames := map[FieldName]interface{}{}
 
 	for _, row := range t.Rows {
@@ -32,12 +39,12 @@ func (t *Table) Finalize() {
 		}
 	}
 
-	columns := []FieldName{}
 	for key := range columnNames {
-		columns = append(columns, key)
+		if _, ok := existingColumns[key]; !ok {
+			t.Columns = append(t.Columns, key)
+		}
 	}
 
-	t.Columns = columns
 	t.finalized = true
 }
 
