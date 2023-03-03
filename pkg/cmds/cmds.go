@@ -223,7 +223,7 @@ func (e *ExitWithoutGlazeError) Error() string {
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
 	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]Command, error)
-	LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error)
+	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
 }
 
 // TODO(2023-02-09, manuel) We can probably implement the directory walking part in a couple of lines
@@ -240,7 +240,7 @@ type FSCommandLoader interface {
 	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
 }
 
-func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error) {
+func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 	var alias CommandAlias
 	err := yaml.NewDecoder(s).Decode(&alias)
 	if err != nil {
@@ -249,10 +249,6 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) 
 
 	if !alias.IsValid() {
 		return nil, errors.New("Invalid command alias")
-	}
-
-	for _, o := range options {
-		o(alias.Description())
 	}
 
 	return []*CommandAlias{&alias}, nil
@@ -360,7 +356,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 							}()
 
 							log.Debug().Str("file", fileName).Msg("Loading alias from file")
-							aliases, err := l.loader.LoadCommandAliasFromYAML(file, options...)
+							aliases, err := l.loader.LoadCommandAliasFromYAML(file)
 							if err != nil {
 								return nil, err
 							}
