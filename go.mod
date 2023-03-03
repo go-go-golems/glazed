@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/adrg/frontmatter v0.2.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/mattn/go-isatty v0.0.16
@@ -19,7 +20,6 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tj/go-naturaldate v1.3.0
-	github.com/wesen/filepathx v1.0.1-0.20230227021146-d1c2e34eff6e
 	github.com/yuin/goldmark v1.5.4
 	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
 	golang.org/x/sync v0.1.0

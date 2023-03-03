@@ -11,6 +11,10 @@ type YAMLOutputFormatter struct {
 	middlewares []middlewares.TableMiddleware
 }
 
+func (Y *YAMLOutputFormatter) GetTable() (*types.Table, error) {
+	return Y.Table, nil
+}
+
 func (Y *YAMLOutputFormatter) AddRow(row types.Row) {
 	Y.Table.Rows = append(Y.Table.Rows, row)
 }

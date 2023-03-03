@@ -13,6 +13,10 @@ type JSONOutputFormatter struct {
 	middlewares          []middlewares.TableMiddleware
 }
 
+func (J *JSONOutputFormatter) GetTable() (*types.Table, error) {
+	return J.Table, nil
+}
+
 func (J *JSONOutputFormatter) AddRow(row types.Row) {
 	J.Table.Rows = append(J.Table.Rows, row)
 }

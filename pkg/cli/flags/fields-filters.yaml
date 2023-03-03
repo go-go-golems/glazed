@@ -13,6 +13,7 @@ flags:
   - name: filter
     type: stringList
     help: Fields to remove from output
+    default: []
 
   - name: sort-columns
     type: bool

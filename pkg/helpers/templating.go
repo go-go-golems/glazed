@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/pkg/errors"
-	"github.com/wesen/filepathx"
 	"gopkg.in/yaml.v3"
 	html "html/template"
 	"io"
@@ -410,7 +410,12 @@ func stripNewlines(s string) string {
 }
 
 // rpad adds padding to the right of a string.
-func rpad(s string, padding int) string {
+func rpad(s string, padding_ interface{}) string {
+	padding, ok := CastInterfaceToInt[int](padding_)
+	if !ok {
+		panic("padding must be an int")
+	}
+
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
 }
@@ -507,12 +512,11 @@ func CreateHTMLTemplate(name string) *html.Template {
 
 // ParseFS will recursively glob for all the files matching the given patterns,
 // and load them into one big template (with sub-templates).
-// The globs use filepathx/glob, and support ** notation for recursive globbing.
+// The globs use bmatcuk/doublestar and support ** notation for recursive globbing.
 func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 	listMap := make(map[string]struct{})
 	for _, p := range patterns {
-
-		list, err := filepathx.GlobFS(f, p)
+		list, err := doublestar.FilepathGlob(p, doublestar.WithFilesOnly())
 		if err != nil {
 			return err
 		}
@@ -544,9 +548,14 @@ func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 // and load them into one big template (with sub-templates).
 // It is the html.Template equivalent of ParseFS.
 //
-// The globs use filepathx/glob, and support ** notation for recursive globbing.
+// The globs use bmatcuk/doublestar and support ** notation for recursive globbing.
 func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) error {
-	list, err := filepathx.GlobFS(f, pattern)
+	list := []string{}
+
+	err := doublestar.GlobWalk(f, pattern, func(path string, d fs.DirEntry) error {
+		list = append(list, path)
+		return nil
+	}, doublestar.WithFilesOnly())
 	if err != nil {
 		return err
 	}

@@ -43,6 +43,8 @@ type OutputFormatter interface {
 	AddTableMiddlewareInFront(m middlewares.TableMiddleware)
 	AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware)
 
+	GetTable() (*types.Table, error)
+
 	Output() (string, error)
 }
 
@@ -60,6 +62,10 @@ func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
 		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
 	}
+}
+
+func (tof *TableOutputFormatter) GetTable() (*types.Table, error) {
+	return tof.Table, nil
 }
 
 func (tof *TableOutputFormatter) Output() (string, error) {

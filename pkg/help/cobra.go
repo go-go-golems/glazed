@@ -26,6 +26,7 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
 
+		c.NamePadding()
 		cobra.CheckErr(renderCommandHelpPage(c, options, hs))
 	}
 
@@ -104,6 +105,15 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	data["FlagUsageMaxLength"] = maxLength
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
+
+	maxCommandNameLen := 0
+	for _, c := range c.Commands() {
+		if len(c.Name()) > maxCommandNameLen {
+			maxCommandNameLen = len(c.Name())
+		}
+	}
+
+	data["MaxCommandNameLen"] = maxCommandNameLen
 
 	s, err := RenderToMarkdown(t, data)
 	if err != nil {

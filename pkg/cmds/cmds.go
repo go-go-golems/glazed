@@ -178,9 +178,33 @@ func WithParents(p ...string) CommandDescriptionOption {
 	}
 }
 
+func WithPrependParents(p ...string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Parents = append(p, c.Parents...)
+	}
+}
+
+func WithStripParentsPrefix(prefixes []string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		toRemove := 0
+		for i, p := range c.Parents {
+			if i < len(prefixes) && p == prefixes[i] {
+				toRemove = i + 1
+			}
+		}
+		c.Parents = c.Parents[toRemove:]
+	}
+}
+
 func WithSource(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Source = s
+	}
+}
+
+func WithPrependSource(s string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Source = s + c.Source
 	}
 }
 
@@ -223,7 +247,7 @@ func (e *ExitWithoutGlazeError) Error() string {
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
 	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]Command, error)
-	LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error)
+	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
 }
 
 // TODO(2023-02-09, manuel) We can probably implement the directory walking part in a couple of lines
@@ -240,7 +264,7 @@ type FSCommandLoader interface {
 	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
 }
 
-func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]*CommandAlias, error) {
+func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 	var alias CommandAlias
 	err := yaml.NewDecoder(s).Decode(&alias)
 	if err != nil {
@@ -249,10 +273,6 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) 
 
 	if !alias.IsValid() {
 		return nil, errors.New("Invalid command alias")
-	}
-
-	for _, o := range options {
-		o(alias.Description())
 	}
 
 	return []*CommandAlias{&alias}, nil
@@ -265,9 +285,11 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...CommandDescriptionOption) 
 // See https://github.com/go-go-golems/glazed/issues/117
 
 type YAMLFSCommandLoader struct {
-	loader     YAMLCommandLoader
+	loader YAMLCommandLoader
+	// sourceName is a prefix prepended to give information about where each command comes from
 	sourceName string
-	cmdRoot    string
+	// rootDirectory is the root directory these commands will be loaded from
+	rootDirectory string
 }
 
 func NewYAMLFSCommandLoader(
@@ -276,9 +298,9 @@ func NewYAMLFSCommandLoader(
 	cmdRoot string,
 ) *YAMLFSCommandLoader {
 	return &YAMLFSCommandLoader{
-		loader:     loader,
-		sourceName: sourceName,
-		cmdRoot:    cmdRoot,
+		loader:        loader,
+		sourceName:    sourceName,
+		rootDirectory: cmdRoot,
 	}
 }
 
@@ -339,7 +361,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 					}
 					command := commands[0]
 
-					command.Description().Parents = getParentsFromDir(dir, l.cmdRoot)
+					command.Description().Parents = GetParentsFromDir(dir, l.rootDirectory)
 					command.Description().Source = l.sourceName + ":" + fileName
 
 					return command, err
@@ -360,7 +382,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 							}()
 
 							log.Debug().Str("file", fileName).Msg("Loading alias from file")
-							aliases, err := l.loader.LoadCommandAliasFromYAML(file, options...)
+							aliases, err := l.loader.LoadCommandAliasFromYAML(file)
 							if err != nil {
 								return nil, err
 							}
@@ -370,7 +392,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 							alias := aliases[0]
 							alias.Source = l.sourceName + ":" + fileName
 
-							alias.Parents = getParentsFromDir(dir, l.cmdRoot)
+							alias.Parents = GetParentsFromDir(dir, l.rootDirectory)
 
 							return alias, err
 						}()
@@ -392,11 +414,11 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 	return commands, aliases, nil
 }
 
-// getParentsFromDir is a helper function to simply return a list of parent verbs
+// GetParentsFromDir is a helper function to simply return a list of parent verbs
 // for applications loaded from declarative yaml files.
 // The directory structure mirrors the verb structure in cobra.
-func getParentsFromDir(dir string, cmdRoot string) []string {
-	// make sure both dir and cmdRoot have a trailing slash
+func GetParentsFromDir(dir string, cmdRoot string) []string {
+	// make sure both dir and rootDirectory have a trailing slash
 	if !strings.HasSuffix(dir, "/") {
 		dir += "/"
 	}
