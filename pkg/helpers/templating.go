@@ -410,7 +410,12 @@ func stripNewlines(s string) string {
 }
 
 // rpad adds padding to the right of a string.
-func rpad(s string, padding int) string {
+func rpad(s string, padding_ interface{}) string {
+	padding, ok := CastInterfaceToInt[int](padding_)
+	if !ok {
+		panic("padding must be an int")
+	}
+
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
 }
