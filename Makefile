@@ -2,8 +2,6 @@
 
 all: gifs
 
-VERSION=v0.2.27
-
 TAPES=$(shell ls doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
@@ -24,12 +22,18 @@ build:
 goreleaser:
 	goreleaser release --snapshot --rm-dist
 
-tag-release:
-	git tag ${VERSION}
+tag-major:
+	git tag $(shell svu major)
+
+tag-minor:
+	git tag $(shell svu minor)
+
+tag-patch:
+	git tag $(shell svu patch)
 
 release:
-	git push origin ${VERSION}
-	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/glazed@${VERSION}
+	git push --tags
+	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/glazed@$(shell svu current)
 
 exhaustive:
 	golangci-lint run -v --enable=exhaustive

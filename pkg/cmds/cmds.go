@@ -352,7 +352,11 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 					}()
 
 					log.Debug().Str("file", fileName).Msg("Loading command from file")
-					commands, err := l.loader.LoadCommandFromYAML(file, options...)
+					options_ := append([]CommandDescriptionOption{
+						WithSource(l.sourceName + ":" + fileName),
+						WithParents(GetParentsFromDir(dir, l.rootDirectory)...),
+					}, options...)
+					commands, err := l.loader.LoadCommandFromYAML(file, options_...)
 					if err != nil {
 						return nil, err
 					}
@@ -360,9 +364,6 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 						return nil, errors.New("Expected exactly one command")
 					}
 					command := commands[0]
-
-					command.Description().Parents = GetParentsFromDir(dir, l.rootDirectory)
-					command.Description().Source = l.sourceName + ":" + fileName
 
 					return command, err
 				}()
