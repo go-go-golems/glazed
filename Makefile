@@ -32,7 +32,7 @@ tag-patch:
 	git tag $(shell svu patch)
 
 release:
-	git push origin $(shell svu current)
+	git push --tags
 	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/glazed@$(shell svu current)
 
 exhaustive:
