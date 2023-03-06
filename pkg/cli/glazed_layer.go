@@ -295,6 +295,9 @@ func SetupProcessor(ps map[string]interface{}) (
 	formatters.OutputFormatter,
 	error,
 ) {
+	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
+	//
+	// See: https://github.com/go-go-golems/glazed/issues/199
 	templateSettings, err := NewTemplateSettings(ps)
 	if err != nil {
 		return nil, nil, err
@@ -320,13 +323,16 @@ func SetupProcessor(ps map[string]interface{}) (
 		return nil, nil, err
 	}
 
-	outputSettings.UpdateWithSelectSettings(selectSettings)
-	fieldsFilterSettings.UpdateWithSelectSettings(selectSettings)
+	var of formatters.OutputFormatter
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	of, err := outputSettings.CreateOutputFormatter()
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error creating output formatter")
+	if selectSettings.SelectField != "" {
+		of = formatters.NewSingleColumnFormatter(selectSettings.SelectField, selectSettings.SelectSeparator)
+	} else {
+		of, err = outputSettings.CreateOutputFormatter()
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Error creating output formatter")
+		}
 	}
 
 	// rename middlewares run first because they are used to clean up column names

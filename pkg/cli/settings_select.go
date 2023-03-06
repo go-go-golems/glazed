@@ -12,8 +12,9 @@ import (
 var selectFlagsYaml []byte
 
 type SelectSettings struct {
-	SelectField    string `glazed.parameter:"select"`
-	SelectTemplate string `glazed.parameter:"select-template"`
+	SelectField     string `glazed.parameter:"select"`
+	SelectSeparator string `glazed.parameter:"select-separator"`
+	SelectTemplate  string `glazed.parameter:"select-template"`
 }
 
 func NewSelectSettingsFromParameters(ps map[string]interface{}) (*SelectSettings, error) {
@@ -24,21 +25,6 @@ func NewSelectSettingsFromParameters(ps map[string]interface{}) (*SelectSettings
 	}
 
 	return s, nil
-}
-
-func (ofs *OutputFormatterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
-	if ss.SelectField != "" || ss.SelectTemplate != "" {
-		ofs.Output = "table"
-		ofs.TableFormat = "tsv"
-		ofs.FlattenObjects = true
-		ofs.WithHeaders = false
-	}
-}
-
-func (ffs *FieldsFilterSettings) UpdateWithSelectSettings(ss *SelectSettings) {
-	if ss.SelectField != "" {
-		ffs.Fields = []string{ss.SelectField}
-	}
 }
 
 func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
@@ -52,6 +38,7 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 type SelectFlagsDefaults struct {
 	Select         string `glazed.parameter:"select"`
 	SelectTemplate string `glazed.parameter:"select-template"`
+	Separator      string `glazed.parameter:"select-separator"`
 }
 
 type SelectParameterLayer struct {
