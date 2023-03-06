@@ -13,3 +13,8 @@ flags:
     help: Output a single templated value for each row, on a single line
     default: ""
 
+  - name: select-separator
+    type: string
+    help: Separator to use when a single selected column
+    default: "\n"
+
