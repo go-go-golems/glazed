@@ -1,6 +1,6 @@
 slug: glazed-rename
 name: Glazed rename flags
-Description: |
+description: |
   These are the flags used to rename fields in the structured data processed.
 flags:
   - name: rename

@@ -1,6 +1,6 @@
 slug: glazed-replace
 name: Glazed replace flags
-Description: |
+description: |
   These are the flags used to replace fields in the structured data processed.
 flags:
   - name: replace-file

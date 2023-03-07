@@ -1,6 +1,6 @@
 slug: glazed-output
 name: Glazed output format flags
-Description: |
+description: |
   These are the flags used to configure the output format of the structured data processed 
   through glazed. It can be a structured file format like json or yaml, a database in sqlite,
   a CSV file or a templated markdown or generic template file.

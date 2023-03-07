@@ -1,0 +1,24 @@
+slug: glazed-jq
+name: Glazed jq flags
+description: |
+  Glazed uses the https://github.com/itchyny/gojq library to provide functionality
+  to transform the incoming data using the jq query language.
+  
+  For more reference, see:
+  - the jq reference manual: https://stedolan.github.io/jq/manual/
+  - the jq cheatsheet: https://lzone.de/cheat-sheet/jq
+  
+  Examples of how to use jq, as well as tutorials, can be found at: 
+  - https://stedolan.github.io/jq/tutorial/
+  - https://www.baeldung.com/linux/jq-command-json
+  - https://schoeffm.github.io/posts/jq-by-example/
+flags:
+  - name: jq
+    type: string
+    help: jq query to apply to the data
+  - name: field-jq
+    type: keyValue
+    help: apply a jq query to a specific field
+  - name: jq-file
+    type: stringFromFile
+    help: jq query to apply to the data, read from a file
