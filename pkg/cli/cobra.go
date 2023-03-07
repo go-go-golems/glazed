@@ -221,7 +221,7 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 
 		go func() {
 			err := helpers.CancelOnSignal(ctx, os.Interrupt, cancel)
-			if err != nil {
+			if err != nil && err != context.Canceled {
 				fmt.Println(err)
 			}
 		}()
@@ -230,7 +230,9 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return
 		}
-		cobra.CheckErr(err)
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
 
 		s, err := of.Output()
 		cobra.CheckErr(err)
