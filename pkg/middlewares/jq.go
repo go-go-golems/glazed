@@ -30,24 +30,53 @@ func NewJqObjectMiddleware(
 	return ret, nil
 }
 
-func (jqm *JqObjectMiddleware) Process(object map[string]interface{}) (map[string]interface{}, error) {
+func (jqm *JqObjectMiddleware) Process(
+	object map[string]interface{},
+) ([]map[string]interface{}, error) {
+	ret := []map[string]interface{}{}
+
 	if jqm.query != nil {
 		iter := jqm.query.Run(object)
-		// See https://github.com/go-go-golems/glazed/issues/202
-		// A middleware should be able to produce multiple outputs rows
-		v, ok := iter.Next()
-		if !ok {
-			return nil, errors.New("no result")
-		}
 
-		if err, ok := v.(error); ok {
-			return nil, err
-		}
+		for {
+			v, ok := iter.Next()
+			if !ok {
+				break
+			}
 
-		object = v.(map[string]interface{})
+			if err, ok := v.(error); ok {
+				return nil, err
+			}
+
+			// if the result is an array, flatten it into ret
+			if array, ok := v.([]interface{}); ok {
+				for _, v := range array {
+					if err, ok := v.(error); ok {
+						return nil, err
+					}
+
+					object, ok := v.(map[string]interface{})
+					if !ok {
+						return nil, errors.Errorf("Expected object, got %T", v)
+					}
+					ret = append(ret, object)
+				}
+
+				continue
+			} else {
+				object, ok = v.(map[string]interface{})
+				if !ok {
+					return nil, errors.Errorf("Expected object, got %T", v)
+				}
+			}
+
+			ret = append(ret, object)
+		}
+	} else {
+		ret = append(ret, object)
 	}
 
-	return object, nil
+	return ret, nil
 }
 
 type JqTableMiddleware struct {

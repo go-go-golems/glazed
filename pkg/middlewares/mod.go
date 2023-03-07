@@ -10,19 +10,7 @@ type TableMiddleware interface {
 }
 
 type ObjectMiddleware interface {
-	// Process transforms each individual object
-	//
-	// TODO(manuel, 2022-11-20) Make the Process monadic, to return one or more new objects
-	// this way we can build filtering interfaces
-	//
-	// See https://github.com/go-go-golems/glazed/issues/202
-	//
-	// Although maybe this should just be the interface for a single object,
-	// which in our standard case would be all the rows at once.
-	// A single object JSON manipulation would be just a single "row"
-	//
-	// Furthermore, we could maybe use the `Row` type here instead of a map,
-	// although I am not sure how much we would impact efficiency, and maybe this is
-	// all premature.
-	Process(object map[string]interface{}) (map[string]interface{}, error)
+	// Process transforms each individual object. Each object can return multiple
+	// objects which will get processed individually downstream.
+	Process(object map[string]interface{}) ([]map[string]interface{}, error)
 }
