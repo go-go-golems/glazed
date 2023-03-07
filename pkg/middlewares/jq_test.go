@@ -58,7 +58,8 @@ func TestEmptyObjectMiddleware(t *testing.T) {
 	o := map[string]interface{}{"a": 1}
 	o2, err := m.Process(o)
 	assert.NoError(t, err)
-	assert.Equal(t, o, o2)
+	assert.Len(t, o2, 1)
+	assert.Equal(t, o, o2[0])
 }
 
 func TestSimpleJqConstant(t *testing.T) {
@@ -68,8 +69,9 @@ func TestSimpleJqConstant(t *testing.T) {
 	o := map[string]interface{}{"a": 1}
 	o2, err := m.Process(o)
 	assert.NoError(t, err)
+	assert.Len(t, o2, 1)
 	expected := map[string]interface{}{"a": 2}
-	assert.Equal(t, expected, o2)
+	assert.Equal(t, expected, o2[0])
 }
 
 func TestSimpleJqConstantArray(t *testing.T) {
@@ -80,7 +82,8 @@ func TestSimpleJqConstantArray(t *testing.T) {
 	o2, err := m.Process(o)
 	assert.NoError(t, err)
 	expected := map[string]interface{}{"a": []interface{}{2}}
-	assert.Equal(t, expected, o2)
+	assert.Len(t, o2, 1)
+	assert.Equal(t, expected, o2[0])
 }
 
 func TestSimpleJqExtractNestedArray(t *testing.T) {
@@ -91,7 +94,22 @@ func TestSimpleJqExtractNestedArray(t *testing.T) {
 	o2, err := m.Process(o)
 	assert.NoError(t, err)
 	expected := map[string]interface{}{"b": 2}
-	assert.Equal(t, expected, o2)
+	assert.Len(t, o2, 1)
+	assert.Equal(t, expected, o2[0])
+}
+
+func TestSimpleJqExtract(t *testing.T) {
+	m := createJqObjectMiddleware(t, ".f | map({field: .})")
+	require.NotNil(t, m.query)
+
+	table := createJqTestTable()
+	v2 := table.Rows[0].GetValues()
+	o2, err := m.Process(v2)
+	assert.NoError(t, err)
+	assert.Len(t, o2, 3)
+	assert.Equal(t, map[string]interface{}{"field": 1}, o2[0])
+	assert.Equal(t, map[string]interface{}{"field": 2}, o2[1])
+	assert.Equal(t, map[string]interface{}{"field": 3}, o2[2])
 }
 
 func TestSimpleJqTableConstant(t *testing.T) {

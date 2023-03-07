@@ -42,7 +42,7 @@ func NewObjectGoTemplateMiddleware(
 // Process will render each template for the input object and return an object with the newly created fields.
 //
 // TODO(manuel, 2022-11-21) This should allow merging the new results straight back
-func (rgtm *ObjectGoTemplateMiddleware) Process(object map[string]interface{}) (map[string]interface{}, error) {
+func (rgtm *ObjectGoTemplateMiddleware) Process(object map[string]interface{}) ([]map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
 	for key, tmpl := range rgtm.templates {
@@ -54,5 +54,5 @@ func (rgtm *ObjectGoTemplateMiddleware) Process(object map[string]interface{}) (
 		ret[key] = buf.String()
 	}
 
-	return ret, nil
+	return []map[string]interface{}{ret}, nil
 }
