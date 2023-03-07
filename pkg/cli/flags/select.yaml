@@ -1,6 +1,6 @@
 slug: glazed-select
 name: Glazed select flags
-Description: |
+description: |
   These are the flags used to select fields in the structured data processed.
 flags:
   - name: select

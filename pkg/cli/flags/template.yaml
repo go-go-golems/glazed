@@ -1,6 +1,6 @@
 slug: glazed-template
 name: Glazed template flags
-Description: |
+description: |
   These are the flags used to configure the template used to format the output of glazed.
 flags:
   - name: template

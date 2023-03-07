@@ -1,6 +1,6 @@
 slug: glazed-fields-filters
 name: Glazed fields and filters flags
-Description: |
+description: |
   These are the flags used to configure the fields and filters of the structured data processed 
   through glazed. They allow the user to select which columns they want to see and in which order.
 flags:

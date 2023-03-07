@@ -20,6 +20,7 @@ type GlazedParameterLayers struct {
 	ReplaceParameterLayer       *ReplaceParameterLayer
 	SelectParameterLayer        *SelectParameterLayer
 	TemplateParameterLayer      *TemplateParameterLayer
+	JqParameterLayer            *JqParameterLayer
 }
 
 func (g *GlazedParameterLayers) GetName() string {
@@ -68,6 +69,10 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 		ret[k] = v
 	}
 
+	for k, v := range g.JqParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
 	return ret
 }
 
@@ -93,6 +98,10 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error
 		return err
 	}
 	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd)
+	if err != nil {
+		return err
+	}
+	err = g.JqParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -140,6 +149,13 @@ func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (
 	for k, v := range ps_ {
 		ps[k] = v
 	}
+	ps_, err = g.JqParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
 	return ps, nil
 }
 
@@ -166,6 +182,10 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 		return err
 	}
 	err = g.ReplaceParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.JqParameterLayer.InitializeParameterDefaultsFromStruct(s)
 	if err != nil {
 		return err
 	}
@@ -246,6 +266,18 @@ func WithFieldsFiltersParameterLayerOptions(options ...layers.ParameterLayerOpti
 	}
 }
 
+func WithJqParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.JqParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedParameterLayers, error) {
 	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
 	if err != nil {
@@ -271,6 +303,10 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	if err != nil {
 		return nil, err
 	}
+	jqParameterLayer, err := NewJqParameterLayer()
+	if err != nil {
+		return nil, err
+	}
 	ret := &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
 		OutputParameterLayer:        outputParameterLayer,
@@ -278,6 +314,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 		ReplaceParameterLayer:       replaceParameterLayer,
 		SelectParameterLayer:        selectParameterLayer,
 		TemplateParameterLayer:      templateParameterLayer,
+		JqParameterLayer:            jqParameterLayer,
 	}
 
 	for _, option := range options {
@@ -319,6 +356,10 @@ func SetupProcessor(ps map[string]interface{}) (
 		return nil, nil, err
 	}
 	replaceSettings, err := NewReplaceSettingsFromParameters(ps)
+	if err != nil {
+		return nil, nil, err
+	}
+	jqSettings, err := NewJqSettingsFromParameters(ps)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -367,6 +408,19 @@ func SetupProcessor(ps map[string]interface{}) (
 			return nil, nil, errors.Wrapf(err, "Could not process template argument")
 		}
 		middlewares_ = append(middlewares_, ogtm)
+	}
+
+	jqObjectMiddleware, jqTableMiddleware, err := NewJqMiddlewaresFromSettings(jqSettings)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Could not create jq middlewares")
+	}
+
+	if jqObjectMiddleware != nil {
+		middlewares_ = append(middlewares_, jqObjectMiddleware)
+	}
+
+	if jqTableMiddleware != nil {
+		of.AddTableMiddleware(jqTableMiddleware)
 	}
 
 	gp := cmds.NewGlazeProcessor(of, middlewares_...)

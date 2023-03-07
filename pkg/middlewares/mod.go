@@ -15,6 +15,8 @@ type ObjectMiddleware interface {
 	// TODO(manuel, 2022-11-20) Make the Process monadic, to return one or more new objects
 	// this way we can build filtering interfaces
 	//
+	// See https://github.com/go-go-golems/glazed/issues/202
+	//
 	// Although maybe this should just be the interface for a single object,
 	// which in our standard case would be all the rows at once.
 	// A single object JSON manipulation would be just a single "row"
