@@ -20,7 +20,7 @@ build:
 	go build ./...
 
 goreleaser:
-	goreleaser release --snapshot --rm-dist
+	goreleaser release --skip-sign --snapshot --rm-dist
 
 tag-major:
 	git tag $(shell svu major)
