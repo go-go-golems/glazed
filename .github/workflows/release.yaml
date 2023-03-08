@@ -34,6 +34,7 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+          fingerprint: "909D3CF4F632B721F452DAD3259E023457F7167D"
 
       - name: List keys
         run: gpg -K
