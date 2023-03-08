@@ -52,6 +52,8 @@ brews:
 
 nfpms:
   -
+    id: packages
+
     vendor: GO GO GOLEMS
     homepage: https://github.com/go-go-golems/
     maintainer: Manuel Odendahl <wesen@ruinwesen.com>
@@ -83,6 +85,14 @@ nfpms:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
 
+publishers:
+  - name: fury.io
+    # by specifying `packages` id here goreleaser will only use this publisher
+    # with artifacts identified by this id
+    ids:
+      - packages
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/wesen/
 
 # modelines, feel free to remove those if you don't want/use them:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json

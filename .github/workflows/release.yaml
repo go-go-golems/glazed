@@ -50,6 +50,7 @@ jobs:
           COSIGN_PWD: ${{ secrets.COSIGN_PWD }}
           TAP_GITHUB_TOKEN: ${{ secrets.RELEASE_ACTION_PAT }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
 
           # Your GoReleaser Pro key, if you are using the 'goreleaser-pro'
           # distribution:
