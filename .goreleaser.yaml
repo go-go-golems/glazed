@@ -25,14 +25,22 @@ archives:
       amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
+
+signs:
+  - artifacts: checksum
+    # setup for github actions according to https://goreleaser.com/ci/actions/
+    args: [ "--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}" ]
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
+
 changelog:
   sort: asc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+
 brews:
 - name: glaze
   description: "Glaze is a tool for converting structured data"
@@ -41,6 +49,40 @@ brews:
     owner: go-go-golems
     name: homebrew-go-go-go
     token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+
+nfpms:
+  -
+    vendor: GO GO GOLEMS
+    homepage: https://github.com/go-go-golems/
+    maintainer: Manuel Odendahl <wesen@ruinwesen.com>
+
+    description: |-
+      Glaze is a tool to convert and process structured data.
+
+    license: MIT
+
+    # Formats to be generated.
+    formats:
+      - apk
+      - deb
+      - rpm
+
+    # Version Release.
+    release: 1
+
+    # Section.
+    section: default
+
+    # Priority.
+    priority: extra
+
+    # Custom configuration applied only to the Deb packager.
+    deb:
+      # Lintian overrides
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+
 
 # modelines, feel free to remove those if you don't want/use them:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
