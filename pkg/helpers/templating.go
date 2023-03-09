@@ -55,7 +55,6 @@ var TemplateFuncs = template.FuncMap{
 	"toUpper": strings.ToUpper,
 	"toLower": strings.ToLower,
 
-	"replace":       replace,
 	"replaceRegexp": replaceRegexp,
 
 	"add": add,
@@ -418,10 +417,6 @@ func rpad(s string, padding_ interface{}) string {
 
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
-}
-
-func replace(s, old, new_ string) string {
-	return strings.ReplaceAll(s, old, new_)
 }
 
 func replaceRegexp(s, old, new_ string) string {
