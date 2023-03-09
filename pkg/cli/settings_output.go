@@ -20,6 +20,8 @@ type TemplateFormatterSettings struct {
 
 type OutputFormatterSettings struct {
 	Output                    string `glazed.parameter:"output"`
+	OutputFile                string `glazed.parameter:"output-file"`
+	SheetName                 string `glazed.parameter:"sheet-name"`
 	TableFormat               string `glazed.parameter:"table-format"`
 	OutputAsObjects           bool   `glazed.parameter:"output-as-objects"`
 	FlattenObjects            bool   `glazed.parameter:"flatten"`
@@ -32,6 +34,7 @@ type OutputFormatterSettings struct {
 type OutputFlagsDefaults struct {
 	Output          string `glazed.parameter:"output"`
 	OutputFile      string `glazed.parameter:"output-file"`
+	SheetName       string `glazed.parameter:"sheet-name"`
 	TableFormat     string `glazed.parameter:"table-format"`
 	WithHeaders     bool   `glazed.parameter:"with-headers"`
 	CsvSeparator    string `glazed.parameter:"csv-separator"`
@@ -93,6 +96,15 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects)
 	} else if ofs.Output == "yaml" {
 		of = formatters.NewYAMLOutputFormatter()
+	} else if ofs.Output == "excel" {
+		if ofs.OutputFile == "" {
+			return nil, errors.New("output-file is required for excel output")
+		}
+		of = formatters.NewExcelOutputFormatter(
+			ofs.SheetName,
+			ofs.OutputFile,
+		)
+		of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := formatters.NewCSVOutputFormatter()

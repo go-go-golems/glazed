@@ -19,6 +19,7 @@ flags:
       - sqlite
       - template
       - markdown
+      - excel
 
   - name: output-file
     shortFlag: f
@@ -57,3 +58,8 @@ flags:
     type: bool
     help: Flatten nested fields (after templating)
     default: false
+
+  - name: sheet-name
+    type: string
+    help: Sheet name for Excel output
+    default: "Sheet1"
