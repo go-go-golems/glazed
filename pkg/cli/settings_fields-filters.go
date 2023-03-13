@@ -17,6 +17,7 @@ type FieldsFilterFlagsDefaults struct {
 	Fields      []string `glazed.parameter:"fields"`
 	Filter      []string `glazed.parameter:"filter"`
 	SortColumns bool     `glazed.parameter:"sort-columns"`
+	RemoveNulls bool     `glazed.parameter:"remove-nulls"`
 }
 
 type FieldsFiltersParameterLayer struct {
@@ -27,6 +28,7 @@ type FieldsFilterSettings struct {
 	Filters        []string `glazed.parameter:"filter"`
 	Fields         []string `glazed.parameter:"fields"`
 	SortColumns    bool     `glazed.parameter:"sort-columns"`
+	RemoveNulls    bool     `glazed.parameter:"remove-nulls"`
 	ReorderColumns []string
 }
 
@@ -91,6 +93,9 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 
 func (ffs *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
 	of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
+	if ffs.RemoveNulls {
+		of.AddTableMiddleware(middlewares.NewRemoveNullsMiddleware())
+	}
 	if ffs.SortColumns {
 		of.AddTableMiddleware(middlewares.NewSortColumnsMiddleware())
 	}
