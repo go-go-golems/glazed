@@ -19,3 +19,8 @@ flags:
     type: bool
     help: Sort columns alphabetically
     default: false
+
+  - name: remove-nulls
+    type: bool
+    help: Remove columns with null values
+    default: false

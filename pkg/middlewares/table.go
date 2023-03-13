@@ -168,6 +168,37 @@ func PreserveColumnOrder(oldColumns []types.FieldName, newColumns map[types.Fiel
 	return retColumns
 }
 
+type RemoveNullsMiddleware struct {
+}
+
+func NewRemoveNullsMiddleware() *RemoveNullsMiddleware {
+	return &RemoveNullsMiddleware{}
+}
+
+func (rnm *RemoveNullsMiddleware) Process(table *types.Table) (*types.Table, error) {
+	ret := &types.Table{
+		Columns: table.Columns,
+		Rows:    []types.Row{},
+	}
+
+	for _, row := range table.Rows {
+		values := row.GetValues()
+		newRow := types.SimpleRow{
+			Hash: map[types.FieldName]types.GenericCellValue{},
+		}
+
+		for key, value := range values {
+			if value != nil {
+				newRow.Hash[key] = value
+			}
+		}
+
+		ret.Rows = append(ret.Rows, &newRow)
+	}
+
+	return ret, nil
+}
+
 type FlattenObjectMiddleware struct {
 }
 
