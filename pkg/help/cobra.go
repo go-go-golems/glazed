@@ -100,7 +100,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 		}
 	}
 
-	data["Command"] = c
+	data["GlazeCommand"] = c
 	data["FlagGroupUsage"] = flagGroupUsage
 	data["FlagUsageMaxLength"] = maxLength
 	data["HelpCommand"] = options.HelpCommand

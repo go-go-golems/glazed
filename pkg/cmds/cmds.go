@@ -209,32 +209,31 @@ func WithPrependSource(s string) CommandDescriptionOption {
 }
 
 type Command interface {
+	Description() *CommandDescription
+}
+
+type GlazeCommand interface {
+	Command
 	// Run is called to actually execute the command.
 	//
 	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
 	//
-	// The ps and GlazeProcessor calls could be replaced by a Command specific layer,
-	// which would allow the Command to parse into a specific struct. The GlazeProcessor
+	// The ps and GlazeProcessor calls could be replaced by a GlazeCommand specific layer,
+	// which would allow the GlazeCommand to parse into a specific struct. The GlazeProcessor
 	// is just something created by the passed in GlazeLayer anyway.
 	//
 	// When we are just left with building a convenience wrapper for Glaze based commands,
 	// instead of forcing it into the upstream interface.
 	//
+	// https://github.com/go-go-golems/glazed/issues/217
+	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	//
-	// NOTE(manuel, 2023-02-21) Does a command always need a GlazeProcessor?
-	//
-	// If we allow it to be passed as a parameter, we can have the caller configure
-	// the formatter to our needs, even if many of the flags might actually be in the parameters
-	// list itself. This makes it easy to hook things up as always JSON when used in an API,
-	// for example?
 	Run(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
 		gp Processor,
 	) error
-	Description() *CommandDescription
 }
 
 type ExitWithoutGlazeError struct{}
@@ -246,7 +245,7 @@ func (e *ExitWithoutGlazeError) Error() string {
 // YAMLCommandLoader is an interface that allows an application using the glazed
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
-	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]Command, error)
+	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]GlazeCommand, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
 }
 
@@ -261,7 +260,7 @@ type YAMLCommandLoader interface {
 //
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
-	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
+	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]GlazeCommand, []*CommandAlias, error)
 }
 
 func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
@@ -308,8 +307,8 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 	f fs.FS,
 	dir string,
 	options ...CommandDescriptionOption,
-) ([]Command, []*CommandAlias, error) {
-	var commands []Command
+) ([]GlazeCommand, []*CommandAlias, error) {
+	var commands []GlazeCommand
 	var aliases []*CommandAlias
 
 	entries, err := fs.ReadDir(f, dir)
@@ -342,7 +341,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 			// See https://github.com/go-go-golems/glazed/issues/116
 			if strings.HasSuffix(entry.Name(), ".yml") ||
 				strings.HasSuffix(entry.Name(), ".yaml") {
-				command, err := func() (Command, error) {
+				command, err := func() (GlazeCommand, error) {
 					file, err := f.Open(fileName)
 					if err != nil {
 						return nil, errors.Wrapf(err, "Could not open file %s", fileName)

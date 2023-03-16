@@ -17,9 +17,9 @@ type CommandAlias struct {
 	Flags     map[string]string `yaml:"flags,omitempty"`
 	Arguments []string          `yaml:"arguments,omitempty"`
 
-	AliasedCommand Command  `yaml:",omitempty"`
-	Parents        []string `yaml:",omitempty"`
-	Source         string   `yaml:",omitempty"`
+	AliasedCommand GlazeCommand `yaml:",omitempty"`
+	Parents        []string     `yaml:",omitempty"`
+	Source         string       `yaml:",omitempty"`
 }
 
 func (a *CommandAlias) String() string {
