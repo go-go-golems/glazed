@@ -245,7 +245,7 @@ func (e *ExitWithoutGlazeError) Error() string {
 // YAMLCommandLoader is an interface that allows an application using the glazed
 // library to loader commands from YAML files.
 type YAMLCommandLoader interface {
-	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]GlazeCommand, error)
+	LoadCommandFromYAML(s io.Reader, options ...CommandDescriptionOption) ([]Command, error)
 	LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error)
 }
 
@@ -260,7 +260,7 @@ type YAMLCommandLoader interface {
 //
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
-	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]GlazeCommand, []*CommandAlias, error)
+	LoadCommandsFromFS(f fs.FS, dir string, options ...CommandDescriptionOption) ([]Command, []*CommandAlias, error)
 }
 
 func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
@@ -283,6 +283,13 @@ func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 //
 // See https://github.com/go-go-golems/glazed/issues/117
 
+// YAMLFSCommandLoader walks a FS and finds all yaml files, loading them using the passed
+// YAMLCommandLoader.
+//
+// It handles the following generic functionality:
+// - recursive FS walking
+// - setting SourceName for each command
+// - setting Parents for each command
 type YAMLFSCommandLoader struct {
 	loader YAMLCommandLoader
 	// sourceName is a prefix prepended to give information about where each command comes from
@@ -303,12 +310,17 @@ func NewYAMLFSCommandLoader(
 	}
 }
 
+// LoadCommandsFromFS walks the FS and loads all commands and command aliases found.
+//
+// TODO(manuel, 2023-03-16) Add loading of helpsystem files
+// See https://github.com/go-go-golems/glazed/issues/55
+// See https://github.com/go-go-golems/glazed/issues/218
 func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 	f fs.FS,
 	dir string,
 	options ...CommandDescriptionOption,
-) ([]GlazeCommand, []*CommandAlias, error) {
-	var commands []GlazeCommand
+) ([]Command, []*CommandAlias, error) {
+	var commands []Command
 	var aliases []*CommandAlias
 
 	entries, err := fs.ReadDir(f, dir)
@@ -335,13 +347,15 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 			// is that is actually not great for a more complex application like pinocchio which
 			// would benefit from loading applications from entire directories.
 			//
+			// This can of course be solved by providing a FSCommandLoader for directories.
+			//
 			// Similarly, we might want to store applications in a database, or generate them on the
 			// fly using some resources on the disk.
 			//
 			// See https://github.com/go-go-golems/glazed/issues/116
 			if strings.HasSuffix(entry.Name(), ".yml") ||
 				strings.HasSuffix(entry.Name(), ".yaml") {
-				command, err := func() (GlazeCommand, error) {
+				command, err := func() (Command, error) {
 					file, err := f.Open(fileName)
 					if err != nil {
 						return nil, errors.Wrapf(err, "Could not open file %s", fileName)
@@ -396,7 +410,6 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 
 							return alias, err
 						}()
-
 						if err != nil {
 							_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
 							continue

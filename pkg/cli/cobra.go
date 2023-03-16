@@ -313,7 +313,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeComma
 		path := strings.Join(alias.Parents, " ")
 		aliasedCommand, ok := commandsByName[path]
 		if !ok {
-			return errors.Errorf("GlazeCommand %s not found for alias %s", path, alias.Name)
+			return errors.Errorf("Command %s not found for alias %s", path, alias.Name)
 		}
 		alias.AliasedCommand = aliasedCommand
 
