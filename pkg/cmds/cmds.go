@@ -212,6 +212,22 @@ type Command interface {
 	Description() *CommandDescription
 }
 
+// NOTE(manuel, 2023-03-17) Future types of commands that we could need
+// - async emitting command (just strings, for example)
+// - async emitting structured log
+//   - async emitting of glaze rows (useful in general, and could be done with a special OutputFormatter, really)
+// - no output (just do it yourself)
+// - typed generic output structure (with error)
+
+type BareCommand interface {
+	Command
+	Run(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	)
+}
+
 type WriterCommand interface {
 	Command
 	RunIntoWriter(

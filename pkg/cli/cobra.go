@@ -50,84 +50,22 @@ func GatherParametersFromCobraCommand(
 	return ps, nil
 }
 
-func BuildCobraCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
+func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
 	description := s.Description()
-	cmd := &cobra.Command{
-		Use:   description.Name,
-		Short: description.Short,
-		Long:  description.Long,
-	}
 
-	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags, "")
+	cobraParser, err := NewCobraParserFromCommandDescription(description)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to add flags for command '%s'", description.Name)
+		return nil, err
 	}
 
-	// TODO(manuel, 2023-02-27) Not the right location to register generic layers
-	//
-	// This should be done outside of BuildCobraCommand, instead being a generic
-	// mechanism that would allow registering REST wrappers and the like.
-	//
-	// As is, why would cobra specific code need a generic interface
-	parserFuncs := []layers.ParameterLayerParserFunc{}
-
-	cobraParser := layers.NewCobraParameterLayerParser(cmd)
-
-	for _, layer := range description.Layers {
-		parserFunc, err := cobraParser.RegisterParameterLayer(layer)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to register layer '%s' for command '%s' from %s",
-				layer.GetSlug(),
-				description.Name,
-				description.Source)
-		}
-
-		parserFuncs = append(parserFuncs, parserFunc)
-	}
-
-	err = parameters.AddArgumentsToCobraCommand(cmd, description.Arguments)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to add arguments for command '%s'", description.Name)
-	}
+	cmd := cobraParser.Cmd
 
 	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		// go over the layers / parser functions first, and collect the results
-		// into a big placeholder first
-		ps := map[string]interface{}{}
-
-		parsedLayers := map[string]*layers.ParsedParameterLayer{}
-		for _, parser := range parserFuncs {
-			p, err := parser()
-			cobra.CheckErr(err)
-
-			parsedLayers[p.Layer.GetSlug()] = p
-
-			// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
-			//
-			// the question is, is this even necessary? It is for a generic
-			// map[string]interface{} based approach, but in the future we might
-			// want to just pass in the parsed layers downstream
-			//
-			// See https://github.com/go-go-golems/glazed/issues/173
-			for k, v := range p.Parameters {
-				ps[k] = v
-			}
-		}
-
-		// This can be used to override layer arguments, not sure how useful
-		// that is or if it's something we want to actually forbid.
-		//
-		// This might not even be possible in the first place, because it would mean that
-		// we used cobra to register the same flag twice.
-		ps_, err := GatherParametersFromCobraCommand(cmd, description, args)
+		parsedLayers, ps, err := cobraParser.Parse(args)
 		cobra.CheckErr(err)
-
-		for k, v := range ps_ {
-			ps[k] = v
-		}
 
 		createCliAlias, err := cmd.Flags().GetString("create-alias")
 		cobra.CheckErr(err)
@@ -249,7 +187,7 @@ func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
 		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
 	}
 
-	cmd, err := BuildCobraCommand(s)
+	cmd, err := BuildCobraCommandFromGlazeCommand(s)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +239,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeComma
 		// find the proper subcommand, or create if it doesn't exist
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
-		cobraCommand, err := BuildCobraCommand(command)
+		cobraCommand, err := BuildCobraCommandFromGlazeCommand(command)
 		if err != nil {
 			return err
 		}
@@ -364,4 +302,141 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command) error {
 	}
 
 	return gpl.AddFlagsToCobraCommand(cmd)
+}
+
+// CobraParser takes a CommandDescription, and hooks it up to a cobra command.
+// It can then be used to parse the cobra flags and arguments back into a
+// set of ParsedParameterLayer and a map[string]interface{} for the lose stuff.
+//
+// That command however doesn't have a Run method, which is left to the caller to implement.
+//
+// This returns a CobraParser that can be used to parse the registered layers
+// from the description.
+type CobraParser struct {
+	Cmd         *cobra.Command
+	description *cmds.CommandDescription
+	// parserFuncs keeps a list of closures that return a ParsedParameterLayer.
+	// NOTE(manuel, 2023-03-17) This seems a bit overengineered, but the thinking behind it is
+	// that depending on the frontend that a function provides (cobra, another CLI framework, REST, microservices),
+	// there would be a parser function that can extract the values for a specific layer. Those could
+	// potentially also be overriden by middlewares to do things like validation or masking.
+	// This is not really used right now (I think), and more of an experiment that will be worth revisiting.
+	parserFuncs []layers.ParameterLayerParserFunc
+}
+
+func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) (*CobraParser, error) {
+	cmd := &cobra.Command{
+		Use:   description.Name,
+		Short: description.Short,
+		Long:  description.Long,
+	}
+
+	ret := &CobraParser{
+		Cmd:         cmd,
+		description: description,
+		parserFuncs: []layers.ParameterLayerParserFunc{},
+	}
+
+	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, layer := range description.Layers {
+		err = ret.registerParameterLayer(layer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = parameters.AddArgumentsToCobraCommand(cmd, description.Arguments)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+type CobraParameterLayer interface {
+	// AddFlagsToCobraCommand adds all the flags defined in this layer to the given cobra command.
+	//
+	// NOTE(manuel, 2023-02-27) This can be moved to use that ParameterLayerParser API
+	// As I'm working out what it means to parse layers and use it to fill structs,
+	// and how defaults should be registered, it makes sense to move this out.
+	// Further more, defaults should probably be managed in the layer entirely, and
+	// thus not be shown in the interface here.
+	//
+	// Do we want to keep the parsers in the layer itself, so that when a command is registered,
+	// it gets registered here? Or should the parsers and registerers be outside,
+	// and generic enough to be able to process all the layers of a command without
+	// the command framework knowing about it. This seems to make more sense.
+	AddFlagsToCobraCommand(cmd *cobra.Command) error
+	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
+}
+
+func (c *CobraParser) registerParameterLayer(layer layers.ParameterLayer) error {
+	// check that layer is a CobraParameterLayer
+	// if not, return an error
+	cobraLayer, ok := layer.(CobraParameterLayer)
+	if !ok {
+		return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+	}
+
+	err := cobraLayer.AddFlagsToCobraCommand(c.Cmd)
+	if err != nil {
+		return err
+	}
+
+	parserFunc := func() (*layers.ParsedParameterLayer, error) {
+		// parse the flags from commands
+		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
+		if err != nil {
+			return nil, err
+		}
+
+		return &layers.ParsedParameterLayer{Parameters: ps, Layer: layer}, nil
+	}
+
+	c.parserFuncs = append(c.parserFuncs, parserFunc)
+
+	return nil
+}
+
+func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLayer, map[string]interface{}, error) {
+	parsedLayers := map[string]*layers.ParsedParameterLayer{}
+	ps := map[string]interface{}{}
+
+	for _, parser := range c.parserFuncs {
+		p, err := parser()
+		if err != nil {
+			return nil, nil, err
+		}
+		parsedLayers[p.Layer.GetSlug()] = p
+
+		// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
+		//
+		// the question is, is this even necessary? It is for a generic
+		// map[string]interface{} based approach, but in the future we might
+		// want to just pass in the parsed layers downstream
+		//
+		// See https://github.com/go-go-golems/glazed/issues/173
+		for k, v := range p.Parameters {
+			ps[k] = v
+		}
+	}
+
+	// This can be used to override layer arguments, not sure how useful
+	// that is or if it's something we want to actually forbid.
+	//
+	// This might not even be possible in the first place, because it would mean that
+	// we used cobra to register the same flag twice.
+	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args)
+	cobra.CheckErr(err)
+
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+
+	return parsedLayers, ps, nil
+
 }

@@ -45,7 +45,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	command, err := glazed_cmds.BuildCobraCommand(jsonCmd)
+	command, err := glazed_cmds.BuildCobraCommandFromGlazeCommand(jsonCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +55,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	command, err = glazed_cmds.BuildCobraCommand(yamlCmd)
+	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(yamlCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	command, err = glazed_cmds.BuildCobraCommand(csvCmd)
+	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(csvCmd)
 	if err != nil {
 		panic(err)
 	}
