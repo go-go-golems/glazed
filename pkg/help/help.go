@@ -6,6 +6,7 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"io/fs"
 	"path/filepath"
 	"sort"
@@ -364,6 +365,19 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 func (hs *HelpSystem) AddSection(section *Section) {
 	hs.Sections = append(hs.Sections, section)
 	section.HelpSystem = hs
+}
+
+func (hs *HelpSystem) SetupCobraRootCommand(cmd *cobra.Command) {
+	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+
+	cmd.SetHelpFunc(helpFunc)
+	cmd.SetUsageFunc(usageFunc)
+	cmd.SetHelpTemplate(helpTemplate)
+	cmd.SetUsageTemplate(usageTemplate)
+
+	helpCmd := NewCobraHelpCommand(hs)
+	cmd.SetHelpCommand(helpCmd)
 }
 
 type HelpError int

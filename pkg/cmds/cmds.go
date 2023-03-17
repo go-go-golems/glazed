@@ -350,87 +350,88 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 			}
 			commands = append(commands, subCommands...)
 			aliases = append(aliases, subAliases...)
-		} else {
-			// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
-			//
-			// One problem with the "commands from YAML" pattern being defined in glazed
-			// is that is actually not great for a more complex application like pinocchio which
-			// would benefit from loading applications from entire directories.
-			//
-			// This can of course be solved by providing a FSCommandLoader for directories.
-			//
-			// Similarly, we might want to store applications in a database, or generate them on the
-			// fly using some resources on the disk.
-			//
-			// See https://github.com/go-go-golems/glazed/issues/116
-			if strings.HasSuffix(entry.Name(), ".yml") ||
-				strings.HasSuffix(entry.Name(), ".yaml") {
-				command, err := func() (Command, error) {
-					file, err := f.Open(fileName)
-					if err != nil {
-						return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-					}
-					defer func() {
-						_ = file.Close()
-					}()
-
-					log.Debug().Str("file", fileName).Msg("Loading command from file")
-					options_ := append([]CommandDescriptionOption{
-						WithSource(l.sourceName + ":" + fileName),
-						WithParents(GetParentsFromDir(dir, l.rootDirectory)...),
-					}, options...)
-					commands, err := l.loader.LoadCommandFromYAML(file, options_...)
-					if err != nil {
-						return nil, err
-					}
-					if len(commands) != 1 {
-						return nil, errors.New("Expected exactly one command")
-					}
-					command := commands[0]
-
-					return command, err
+			continue
+		}
+		// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
+		//
+		// One problem with the "commands from YAML" pattern being defined in glazed
+		// is that is actually not great for a more complex application like pinocchio which
+		// would benefit from loading applications from entire directories.
+		//
+		// This can of course be solved by providing a FSCommandLoader for directories.
+		//
+		// Similarly, we might want to store applications in a database, or generate them on the
+		// fly using some resources on the disk.
+		//
+		// See https://github.com/go-go-golems/glazed/issues/116
+		if strings.HasSuffix(entry.Name(), ".yml") ||
+			strings.HasSuffix(entry.Name(), ".yaml") {
+			command, err := func() (Command, error) {
+				file, err := f.Open(fileName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Could not open file %s", fileName)
+				}
+				defer func() {
+					_ = file.Close()
 				}()
 
+				log.Debug().Str("file", fileName).Msg("Loading command from file")
+				options_ := append([]CommandDescriptionOption{
+					WithSource(l.sourceName + ":" + fileName),
+					WithParents(GetParentsFromDir(dir, l.rootDirectory)...),
+				}, options...)
+				commands, err := l.loader.LoadCommandFromYAML(file, options_...)
 				if err != nil {
-					// If the error was a yaml parsing error, then we try to load the YAML file
-					// again, but as an alias this time around. YAML / JSON parsing in golang
-					// definitely is a bit of an adventure.
-					if _, ok := err.(*yaml.TypeError); ok {
-						alias, err := func() (*CommandAlias, error) {
-							file, err := f.Open(fileName)
-							if err != nil {
-								return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-							}
-							defer func() {
-								_ = file.Close()
-							}()
-
-							log.Debug().Str("file", fileName).Msg("Loading alias from file")
-							aliases, err := l.loader.LoadCommandAliasFromYAML(file)
-							if err != nil {
-								return nil, err
-							}
-							if len(aliases) != 1 {
-								return nil, errors.New("Expected exactly one alias")
-							}
-							alias := aliases[0]
-							alias.Source = l.sourceName + ":" + fileName
-
-							alias.Parents = GetParentsFromDir(dir, l.rootDirectory)
-
-							return alias, err
-						}()
-						if err != nil {
-							_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
-							continue
-						} else {
-							aliases = append(aliases, alias)
-						}
-					}
-				} else {
-					commands = append(commands, command)
+					return nil, err
 				}
+				if len(commands) != 1 {
+					return nil, errors.New("Expected exactly one command")
+				}
+				command := commands[0]
+
+				return command, err
+			}()
+
+			if err != nil {
+				// If the error was a yaml parsing error, then we try to load the YAML file
+				// again, but as an alias this time around. YAML / JSON parsing in golang
+				// definitely is a bit of an adventure.
+				if _, ok := err.(*yaml.TypeError); ok {
+					alias, err := func() (*CommandAlias, error) {
+						file, err := f.Open(fileName)
+						if err != nil {
+							return nil, errors.Wrapf(err, "Could not open file %s", fileName)
+						}
+						defer func() {
+							_ = file.Close()
+						}()
+
+						log.Debug().Str("file", fileName).Msg("Loading alias from file")
+						aliases, err := l.loader.LoadCommandAliasFromYAML(file)
+						if err != nil {
+							return nil, err
+						}
+						if len(aliases) != 1 {
+							return nil, errors.New("Expected exactly one alias")
+						}
+						alias := aliases[0]
+						alias.Source = l.sourceName + ":" + fileName
+
+						alias.Parents = GetParentsFromDir(dir, l.rootDirectory)
+
+						return alias, err
+					}()
+					if err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
+						continue
+					} else {
+						aliases = append(aliases, alias)
+					}
+				}
+				continue
 			}
+
+			commands = append(commands, command)
 		}
 	}
 
