@@ -244,7 +244,10 @@ func BuildCobraCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
 }
 
 func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
-	s := alias.AliasedCommand
+	s, ok := alias.AliasedCommand.(cmds.GlazeCommand)
+	if !ok {
+		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
+	}
 
 	cmd, err := BuildCobraCommand(s)
 	if err != nil {

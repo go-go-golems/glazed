@@ -17,9 +17,9 @@ type CommandAlias struct {
 	Flags     map[string]string `yaml:"flags,omitempty"`
 	Arguments []string          `yaml:"arguments,omitempty"`
 
-	AliasedCommand GlazeCommand `yaml:",omitempty"`
-	Parents        []string     `yaml:",omitempty"`
-	Source         string       `yaml:",omitempty"`
+	AliasedCommand Command  `yaml:",omitempty"`
+	Parents        []string `yaml:",omitempty"`
+	Source         string   `yaml:",omitempty"`
 }
 
 func (a *CommandAlias) String() string {
@@ -36,7 +36,11 @@ func (a *CommandAlias) Run(
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run(ctx, parsedLayers, ps, gp)
+	glazeCommand, ok := a.AliasedCommand.(GlazeCommand)
+	if !ok {
+		return errors.New("aliased command is not a GlazeCommand")
+	}
+	return glazeCommand.Run(ctx, parsedLayers, ps, gp)
 }
 
 func (a *CommandAlias) IsValid() bool {
