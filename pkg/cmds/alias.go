@@ -36,7 +36,11 @@ func (a *CommandAlias) Run(
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
-	return a.AliasedCommand.Run(ctx, parsedLayers, ps, gp)
+	glazeCommand, ok := a.AliasedCommand.(GlazeCommand)
+	if !ok {
+		return errors.New("aliased command is not a GlazeCommand")
+	}
+	return glazeCommand.Run(ctx, parsedLayers, ps, gp)
 }
 
 func (a *CommandAlias) IsValid() bool {

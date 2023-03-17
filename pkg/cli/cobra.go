@@ -50,7 +50,7 @@ func GatherParametersFromCobraCommand(
 	return ps, nil
 }
 
-func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
+func BuildCobraCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
 	description := s.Description()
 	cmd := &cobra.Command{
 		Use:   description.Name,
@@ -244,7 +244,10 @@ func BuildCobraCommand(s cmds.Command) (*cobra.Command, error) {
 }
 
 func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
-	s := alias.AliasedCommand
+	s, ok := alias.AliasedCommand.(cmds.GlazeCommand)
+	if !ok {
+		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
+	}
 
 	cmd, err := BuildCobraCommand(s)
 	if err != nil {
@@ -291,8 +294,8 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, aliases []*cmds.CommandAlias) error {
-	commandsByName := map[string]cmds.Command{}
+func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeCommand, aliases []*cmds.CommandAlias) error {
+	commandsByName := map[string]cmds.GlazeCommand{}
 
 	for _, command := range commands {
 		// find the proper subcommand, or create if it doesn't exist
@@ -331,11 +334,11 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
 // the glazed processing layer.
 //
-// If you are more serious about using glazed, consider using the `cmds.Command` and `parameters.ParameterDefinition`
+// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `parameters.ParameterDefinition`
 // abstraction to define your CLI applications, which allows you to use layers and other nice features
 // of the glazed ecosystem.
 //
-// If so, use SetupProcessor instead, and create a proper glazed.Command for your command.
+// If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
 func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
 	*cmds.GlazeProcessor,
 	formatters.OutputFormatter,

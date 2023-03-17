@@ -209,32 +209,31 @@ func WithPrependSource(s string) CommandDescriptionOption {
 }
 
 type Command interface {
+	Description() *CommandDescription
+}
+
+type GlazeCommand interface {
+	Command
 	// Run is called to actually execute the command.
 	//
 	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
 	//
-	// The ps and GlazeProcessor calls could be replaced by a Command specific layer,
-	// which would allow the Command to parse into a specific struct. The GlazeProcessor
+	// The ps and GlazeProcessor calls could be replaced by a GlazeCommand specific layer,
+	// which would allow the GlazeCommand to parse into a specific struct. The GlazeProcessor
 	// is just something created by the passed in GlazeLayer anyway.
 	//
 	// When we are just left with building a convenience wrapper for Glaze based commands,
 	// instead of forcing it into the upstream interface.
 	//
+	// https://github.com/go-go-golems/glazed/issues/217
+	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	//
-	// NOTE(manuel, 2023-02-21) Does a command always need a GlazeProcessor?
-	//
-	// If we allow it to be passed as a parameter, we can have the caller configure
-	// the formatter to our needs, even if many of the flags might actually be in the parameters
-	// list itself. This makes it easy to hook things up as always JSON when used in an API,
-	// for example?
 	Run(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
 		gp Processor,
 	) error
-	Description() *CommandDescription
 }
 
 type ExitWithoutGlazeError struct{}
@@ -284,6 +283,13 @@ func LoadCommandAliasFromYAML(s io.Reader) ([]*CommandAlias, error) {
 //
 // See https://github.com/go-go-golems/glazed/issues/117
 
+// YAMLFSCommandLoader walks a FS and finds all yaml files, loading them using the passed
+// YAMLCommandLoader.
+//
+// It handles the following generic functionality:
+// - recursive FS walking
+// - setting SourceName for each command
+// - setting Parents for each command
 type YAMLFSCommandLoader struct {
 	loader YAMLCommandLoader
 	// sourceName is a prefix prepended to give information about where each command comes from
@@ -304,6 +310,11 @@ func NewYAMLFSCommandLoader(
 	}
 }
 
+// LoadCommandsFromFS walks the FS and loads all commands and command aliases found.
+//
+// TODO(manuel, 2023-03-16) Add loading of helpsystem files
+// See https://github.com/go-go-golems/glazed/issues/55
+// See https://github.com/go-go-golems/glazed/issues/218
 func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 	f fs.FS,
 	dir string,
@@ -335,6 +346,8 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 			// One problem with the "commands from YAML" pattern being defined in glazed
 			// is that is actually not great for a more complex application like pinocchio which
 			// would benefit from loading applications from entire directories.
+			//
+			// This can of course be solved by providing a FSCommandLoader for directories.
 			//
 			// Similarly, we might want to store applications in a database, or generate them on the
 			// fly using some resources on the disk.
@@ -397,7 +410,6 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 
 							return alias, err
 						}()
-
 						if err != nil {
 							_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
 							continue

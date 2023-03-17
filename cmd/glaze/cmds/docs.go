@@ -43,7 +43,7 @@ var DocsCmd = &cobra.Command{
 func init() {
 	DocsCmd.Flags().SortFlags = false
 	// This is an example of selective use of glazed parameter layers.
-	// If we extracted out the docs command into a cmds.Command, which we should
+	// If we extracted out the docs command into a cmds.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
 	gpl, err := cli.NewGlazedParameterLayers(
