@@ -212,6 +212,16 @@ type Command interface {
 	Description() *CommandDescription
 }
 
+type WriterCommand interface {
+	Command
+	RunIntoWriter(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+		w io.Writer,
+	) error
+}
+
 type GlazeCommand interface {
 	Command
 	// Run is called to actually execute the command.
