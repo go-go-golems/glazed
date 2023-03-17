@@ -1,0 +1,10 @@
+name: glaze-json-help
+path: glaze
+description: Show glaze json's help
+verbs: [json]
+flags:
+  - name: help
+    short: Ask for help
+    type: bool
+    value: true
+    noValue: true
