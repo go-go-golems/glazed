@@ -13,14 +13,10 @@ var rootCmd = &cobra.Command{
 	Short: "glaze is a tool to format structured data",
 }
 
-func main() {
-	_ = rootCmd.Execute()
-}
-
 //go:embed doc/*
 var docFS embed.FS
 
-func init() {
+func main() {
 	helpSystem := help.NewHelpSystem()
 	err := helpSystem.LoadSectionsFromFS(docFS, ".")
 	cobra.CheckErr(err)
@@ -58,4 +54,5 @@ func init() {
 		panic(err)
 	}
 	rootCmd.AddCommand(command)
+	_ = rootCmd.Execute()
 }
