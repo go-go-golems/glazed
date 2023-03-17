@@ -13,39 +13,21 @@ var rootCmd = &cobra.Command{
 	Short: "glaze is a tool to format structured data",
 }
 
-func main() {
-	_ = rootCmd.Execute()
-}
-
 //go:embed doc/*
 var docFS embed.FS
 
-func init() {
+func main() {
 	helpSystem := help.NewHelpSystem()
 	err := helpSystem.LoadSectionsFromFS(docFS, ".")
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 
-	helpFunc, usageFunc := help.GetCobraHelpUsageFuncs(helpSystem)
-	helpTemplate, usageTemplate := help.GetCobraHelpUsageTemplates(helpSystem)
-
-	_ = usageFunc
-	_ = usageTemplate
-
-	rootCmd.SetHelpFunc(helpFunc)
-	rootCmd.SetUsageFunc(usageFunc)
-	rootCmd.SetHelpTemplate(helpTemplate)
-	rootCmd.SetUsageTemplate(usageTemplate)
-
-	helpCmd := help.NewCobraHelpCommand(helpSystem)
-	rootCmd.SetHelpCommand(helpCmd)
+	helpSystem.SetupCobraRootCommand(rootCmd)
 
 	jsonCmd, err := cmds.NewJsonCommand()
 	if err != nil {
 		panic(err)
 	}
-	command, err := glazed_cmds.BuildCobraCommand(jsonCmd)
+	command, err := glazed_cmds.BuildCobraCommandFromGlazeCommand(jsonCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +37,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	command, err = glazed_cmds.BuildCobraCommand(yamlCmd)
+	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(yamlCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -67,9 +49,10 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	command, err = glazed_cmds.BuildCobraCommand(csvCmd)
+	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(csvCmd)
 	if err != nil {
 		panic(err)
 	}
 	rootCmd.AddCommand(command)
+	_ = rootCmd.Execute()
 }
