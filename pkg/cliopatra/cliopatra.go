@@ -43,7 +43,13 @@ type Program struct {
 	Description string `yaml:"description"`
 	// Env makes it possible to specify environment variables to set manually
 	Env map[string]string `yaml:"env,omitempty"`
-	// These Flags will be passed to the CLI tool
+
+	// TODO(manuel, 2023-03-16) Probably add RawFlags here, when we say quickly want to record a run.
+	// Of course, if we are using Command, we could have that render a more precisely described
+	// cliopatra file. But just capturing normal calls is nice too.
+
+	// These Flags will be passed to the CLI tool. This allows us to register
+	// flags with a type to cobra itself, when exposing this command again.
 	Flags []*Parameter `yaml:"flags,omitempty"`
 	// Args is an ordered list of Parameters. The Flag field is ignored.
 	Args []*Parameter `yaml:"args,omitempty"`
