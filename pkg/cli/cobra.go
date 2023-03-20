@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -50,7 +51,9 @@ func GatherParametersFromCobraCommand(
 	return ps, nil
 }
 
-func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
+type CobraRunFunc func(ctx context.Context, parsedLayers map[string]*layers.ParsedParameterLayer, ps map[string]interface{}) error
+
+func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
 	description := s.Description()
 
 	cobraParser, err := NewCobraParserFromCommandDescription(description)
@@ -151,9 +154,6 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 			os.Exit(0)
 		}
 
-		gp, of, err := SetupProcessor(ps)
-		cobra.CheckErr(err)
-
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
@@ -164,9 +164,54 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 			}
 		}()
 
+		err = run(ctx, parsedLayers, ps)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			os.Exit(0)
+		}
+
+	}
+
+	return cmd, nil
+}
+
+func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(s, func(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	) error {
+		buf := &bytes.Buffer{}
+		err := s.RunIntoWriter(ctx, parsedLayers, ps, buf)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			return nil
+		}
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
+
+		fmt.Println(buf.String())
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
+}
+
+func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(s, func(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	) error {
+		gp, of, err := SetupProcessor(ps)
+		cobra.CheckErr(err)
+
 		err = s.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			return
+			return nil
 		}
 		if err != context.Canceled {
 			cobra.CheckErr(err)
@@ -176,6 +221,11 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 		cobra.CheckErr(err)
 
 		fmt.Println(s)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return cmd, nil
