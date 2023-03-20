@@ -26,10 +26,25 @@ and skip the row if they are identical.
 
 ```
 ❯ glaze json misc/test-data/duplicates.json --input-is-array --remove-duplicates a,b,c --fields a,b,c
++---+---+---+
+| a | b | c |
++---+---+---+
+| 1 | 2 | 3 |
+| 7 | 5 | 9 |
+| 1 | 5 | 6 |
+| 1 | 2 | 3 |
++---+---+---+
 ```
 
 Or, only on a single column:
 
 ```
-❯ glaze yaml misc/test-data/duplicates.yaml --input-is-array --remove-duplicates a --fields a
+❯ glaze json misc/test-data/duplicates.json --input-is-array --remove-duplicates a --fields a
++---+---+---+
+| a | b | c |
++---+---+---+
+| 1 | 2 | 3 |
+| 7 | 5 | 9 |
+| 1 | 5 | 6 |
++---+---+---+
 ```
