@@ -143,6 +143,16 @@ func CastMapMember[To any](m map[string]interface{}, k string) (*To, bool) {
 	return &casted, true
 }
 
+func CastMapToInterfaceMap[From any](m map[string]From) map[string]interface{} {
+	ret := map[string]interface{}{}
+
+	for k, v := range m {
+		ret[k] = v
+	}
+
+	return ret
+}
+
 func CastInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
 	switch i := i.(type) {
 	case To:
