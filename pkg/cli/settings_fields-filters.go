@@ -14,10 +14,11 @@ import (
 var fieldsFiltersFlagsYaml []byte
 
 type FieldsFilterFlagsDefaults struct {
-	Fields      []string `glazed.parameter:"fields"`
-	Filter      []string `glazed.parameter:"filter"`
-	SortColumns bool     `glazed.parameter:"sort-columns"`
-	RemoveNulls bool     `glazed.parameter:"remove-nulls"`
+	Fields           []string `glazed.parameter:"fields"`
+	Filter           []string `glazed.parameter:"filter"`
+	SortColumns      bool     `glazed.parameter:"sort-columns"`
+	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
+	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
 }
 
 type FieldsFiltersParameterLayer struct {
@@ -25,11 +26,12 @@ type FieldsFiltersParameterLayer struct {
 }
 
 type FieldsFilterSettings struct {
-	Filters        []string `glazed.parameter:"filter"`
-	Fields         []string `glazed.parameter:"fields"`
-	SortColumns    bool     `glazed.parameter:"sort-columns"`
-	RemoveNulls    bool     `glazed.parameter:"remove-nulls"`
-	ReorderColumns []string
+	Filters          []string `glazed.parameter:"filter"`
+	Fields           []string `glazed.parameter:"fields"`
+	SortColumns      bool     `glazed.parameter:"sort-columns"`
+	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
+	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
+	ReorderColumns   []string
 }
 
 func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*FieldsFiltersParameterLayer, error) {
@@ -101,5 +103,8 @@ func (ffs *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
 	}
 	if len(ffs.ReorderColumns) > 0 {
 		of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
+	}
+	if len(ffs.RemoveDuplicates) > 0 {
+		of.AddTableMiddleware(middlewares.NewRemoveDuplicatesMiddleware(ffs.RemoveDuplicates...))
 	}
 }
