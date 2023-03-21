@@ -1,10 +1,11 @@
-package helpers
+package templating
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	html "html/template"
@@ -410,7 +411,7 @@ func stripNewlines(s string) string {
 
 // rpad adds padding to the right of a string.
 func rpad(s string, padding_ interface{}) string {
-	padding, ok := CastInterfaceToInt[int](padding_)
+	padding, ok := cast.CastInterfaceToInt[int](padding_)
 	if !ok {
 		panic("padding must be an int")
 	}

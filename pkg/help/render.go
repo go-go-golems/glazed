@@ -3,12 +3,12 @@ package help
 import (
 	_ "embed"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"os"
 	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/go-go-golems/glazed/pkg/helpers"
 	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/mattn/go-isatty"
 )
@@ -115,7 +115,7 @@ func (hs *HelpSystem) RenderTopicHelp(
 	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
 	t := template.New("topic")
-	t.Funcs(helpers.TemplateFuncs)
+	t.Funcs(templating.TemplateFuncs)
 	tmpl := HELP_TOPIC_TEMPLATE
 
 	if options.ShowShortTopic {

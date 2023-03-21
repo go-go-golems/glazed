@@ -2,7 +2,7 @@ package formatters
 
 import (
 	"github.com/Masterminds/sprig"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ func TestTemplateRenameEndToEnd(t *testing.T) {
 		tmpl,
 		[]template.FuncMap{
 			sprig.TxtFuncMap(),
-			helpers.TemplateFuncs,
+			templating.TemplateFuncs,
 		},
 		make(map[string]interface{}),
 	)

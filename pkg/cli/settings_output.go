@@ -6,7 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"text/template"
@@ -125,7 +125,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
 				TemplateFuncMaps: []template.FuncMap{
 					sprig.TxtFuncMap(),
-					helpers.TemplateFuncs,
+					templating.TemplateFuncs,
 				},
 				AdditionalData: make(map[string]interface{}),
 			}

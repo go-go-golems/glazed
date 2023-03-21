@@ -2,7 +2,7 @@ package parameters
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -194,7 +194,7 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0
 
 			if parameter.Default != nil {
-				defaultValue, ok = helpers.CastInterfaceToInt[int](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToInt[int](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, parameter.Default)
 				}
@@ -210,7 +210,7 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0.0
 
 			if parameter.Default != nil {
-				defaultValue, ok = helpers.CastFloatInterfaceToFloat[float64](parameter.Default)
+				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
 				}
@@ -272,7 +272,7 @@ func AddFlagsToCobraCommand(
 					}
 
 					// convert to string list
-					stringList, ok = helpers.CastList[string, interface{}](defaultValue)
+					stringList, ok = cast.CastList[string, interface{}](defaultValue)
 					if !ok {
 						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
 					}
@@ -329,7 +329,7 @@ func AddFlagsToCobraCommand(
 		case ParameterTypeIntegerList:
 			var defaultValue []int
 			if parameter.Default != nil {
-				defaultValue, ok = helpers.CastInterfaceToIntList[int](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToIntList[int](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, parameter.Default)
 				}
@@ -344,7 +344,7 @@ func AddFlagsToCobraCommand(
 		case ParameterTypeFloatList:
 			var defaultValue []float64
 			if parameter.Default != nil {
-				defaultValue, ok = helpers.CastInterfaceToFloatList[float64](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToFloatList[float64](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
 				}

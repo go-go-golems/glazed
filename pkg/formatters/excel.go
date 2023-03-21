@@ -2,7 +2,7 @@ package formatters
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/xuri/excelize/v2"
@@ -81,7 +81,7 @@ func (E *ExcelOutputFormatter) Output() (string, error) {
 	}
 
 	for j, col := range E.Table.Columns {
-		colIndex := helpers.ToAlphaString(j + 1)
+		colIndex := strings2.ToAlphaString(j + 1)
 		cellIndex := colIndex + "1"
 		rowKeyToColumn[col] = colIndex
 		err = f.SetCellValue(E.SheetName, cellIndex, col)

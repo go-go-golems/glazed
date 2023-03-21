@@ -1,7 +1,8 @@
-package helpers
+package reflect
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"reflect"
 )
 
@@ -176,7 +177,7 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 				return nil
 			}
 			if s, ok := v.([]interface{}); ok {
-				v2_, ok := CastList[string, interface{}](s)
+				v2_, ok := cast.CastList[string, interface{}](s)
 				if !ok {
 					return fmt.Errorf("cannot cast %T to []string", v)
 				}
@@ -236,7 +237,7 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 			}
 
 			if m, ok := v.(map[string]interface{}); ok {
-				v2_, ok := CastStringMap[string, interface{}](m)
+				v2_, ok := cast.CastStringMap[string, interface{}](m)
 				if !ok {
 					return fmt.Errorf("cannot cast %T to map[string]string", v)
 				}
@@ -251,7 +252,7 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 			}
 
 			if m, ok := v.(map[string]string); ok {
-				v2_, ok := CastStringMap[interface{}, string](m)
+				v2_, ok := cast.CastStringMap[interface{}, string](m)
 				if !ok {
 					return fmt.Errorf("cannot cast %T to map[string]interface{}", v)
 				}
@@ -270,9 +271,9 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 	}
 }
 
-func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error {
+func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) error {
 	if s, ok := v.([]int64); ok {
-		s2, ok := CastToNumberList[To, int64](s)
+		s2, ok := cast.CastToNumberList[To, int64](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -281,7 +282,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]int); ok {
-		s2, ok := CastToNumberList[To, int](s)
+		s2, ok := cast.CastToNumberList[To, int](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -290,7 +291,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]int8); ok {
-		s2, ok := CastToNumberList[To, int8](s)
+		s2, ok := cast.CastToNumberList[To, int8](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -299,7 +300,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]int16); ok {
-		s2, ok := CastToNumberList[To, int16](s)
+		s2, ok := cast.CastToNumberList[To, int16](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -308,7 +309,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]int32); ok {
-		s2, ok := CastToNumberList[To, int32](s)
+		s2, ok := cast.CastToNumberList[To, int32](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -317,7 +318,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]uint64); ok {
-		s2, ok := CastToNumberList[To, uint64](s)
+		s2, ok := cast.CastToNumberList[To, uint64](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -326,7 +327,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]uint); ok {
-		s2, ok := CastToNumberList[To, uint](s)
+		s2, ok := cast.CastToNumberList[To, uint](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -335,7 +336,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]uint8); ok {
-		s2, ok := CastToNumberList[To, uint8](s)
+		s2, ok := cast.CastToNumberList[To, uint8](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -344,7 +345,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]uint16); ok {
-		s2, ok := CastToNumberList[To, uint16](s)
+		s2, ok := cast.CastToNumberList[To, uint16](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -353,7 +354,7 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]uint32); ok {
-		s2, ok := CastToNumberList[To, uint32](s)
+		s2, ok := cast.CastToNumberList[To, uint32](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -362,11 +363,11 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	}
 
 	if s, ok := v.([]interface{}); ok {
-		v2_, ok := CastList[int, interface{}](s)
+		v2_, ok := cast.CastList[int, interface{}](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
-		v3_, ok := CastToNumberList[To, int](v2_)
+		v3_, ok := cast.CastToNumberList[To, int](v2_)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -377,9 +378,9 @@ func SetIntListReflectValue[To Number](value reflect.Value, v interface{}) error
 	return fmt.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
 }
 
-func SetFloatListReflectValue[To Number](value reflect.Value, v interface{}) error {
+func SetFloatListReflectValue[To cast.Number](value reflect.Value, v interface{}) error {
 	if s, ok := v.([]float64); ok {
-		s2, ok := CastToNumberList[To, float64](s)
+		s2, ok := cast.CastToNumberList[To, float64](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -388,7 +389,7 @@ func SetFloatListReflectValue[To Number](value reflect.Value, v interface{}) err
 	}
 
 	if s, ok := v.([]float32); ok {
-		s2, ok := CastToNumberList[To, float32](s)
+		s2, ok := cast.CastToNumberList[To, float32](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
@@ -397,11 +398,11 @@ func SetFloatListReflectValue[To Number](value reflect.Value, v interface{}) err
 	}
 
 	if s, ok := v.([]interface{}); ok {
-		v2_, ok := CastList[float64, interface{}](s)
+		v2_, ok := cast.CastList[float64, interface{}](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
-		v3_, ok := CastToNumberList[To, float64](v2_)
+		v3_, ok := cast.CastToNumberList[To, float64](v2_)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
