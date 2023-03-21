@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/adrg/frontmatter"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"io/fs"
@@ -90,15 +90,15 @@ type Section struct {
 }
 
 func (s *Section) IsForCommand(command string) bool {
-	return helpers.StringInSlice(command, s.Commands)
+	return strings2.StringInSlice(command, s.Commands)
 }
 
 func (s *Section) IsForFlag(flag string) bool {
-	return helpers.StringInSlice(flag, s.Flags)
+	return strings2.StringInSlice(flag, s.Flags)
 }
 
 func (s *Section) IsForTopic(topic string) bool {
-	return helpers.StringInSlice(topic, s.Topics)
+	return strings2.StringInSlice(topic, s.Topics)
 }
 
 // these should potentially be scoped by command
@@ -207,15 +207,15 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 	section.Content = string(rest)
 
 	if topics, ok := metaData["Topics"]; ok {
-		section.Topics = helpers.InterfaceToStringList(topics)
+		section.Topics = strings2.InterfaceToStringList(topics)
 	}
 
 	if flags, ok := metaData["Flags"]; ok {
-		section.Flags = helpers.InterfaceToStringList(flags)
+		section.Flags = strings2.InterfaceToStringList(flags)
 	}
 
 	if commands, ok := metaData["Commands"]; ok {
-		section.Commands = helpers.InterfaceToStringList(commands)
+		section.Commands = strings2.InterfaceToStringList(commands)
 	}
 
 	if isTopLevel, ok := metaData["IsTopLevel"]; ok {

@@ -1,6 +1,7 @@
-package helpers
+package reflect
 
 import (
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -392,7 +393,7 @@ func TestReflectFloatSlice(t *testing.T) {
 	testSetReflectFloatList[float32](t, reflect.ValueOf(&s2).Elem())
 }
 
-func testSetReflectIntList[T Number](t *testing.T, sValue reflect.Value) {
+func testSetReflectIntList[T cast.Number](t *testing.T, sValue reflect.Value) {
 	err := SetReflectValue(sValue, []int{1, 2})
 	require.NoError(t, err)
 	assert.Equal(t, []T{1, 2}, sValue.Interface())
@@ -448,7 +449,7 @@ func testSetReflectIntList[T Number](t *testing.T, sValue reflect.Value) {
 	require.Error(t, err)
 }
 
-func testSetReflectFloatList[T FloatNumber](t *testing.T, sValue reflect.Value) {
+func testSetReflectFloatList[T cast.FloatNumber](t *testing.T, sValue reflect.Value) {
 	err := SetReflectValue(sValue, []float64{1.1, 2.2})
 	require.NoError(t, err)
 	assert.InDeltaSlice(t, []T{1.1, 2.2}, sValue.Interface(), 0.01)

@@ -1,14 +1,16 @@
 package compare
 
-import "github.com/go-go-golems/glazed/pkg/helpers"
+import (
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+)
 
 func IsLowerThan(a, b interface{}) bool {
 	if IsOfNumberType(a) && IsOfNumberType(b) {
-		af, ok := helpers.CastNumberInterfaceToFloat[float64](a)
+		af, ok := cast.CastNumberInterfaceToFloat[float64](a)
 		if !ok {
 			return false
 		}
-		bf, ok := helpers.CastNumberInterfaceToFloat[float64](b)
+		bf, ok := cast.CastNumberInterfaceToFloat[float64](b)
 		if !ok {
 			return false
 		}

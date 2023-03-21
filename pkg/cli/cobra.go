@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
+	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -88,11 +89,11 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 						alias.Flags[flag.Name] = strings.Join(slice, ",")
 					case "intSlice":
 						slice, _ := cmd.Flags().GetIntSlice(flag.Name)
-						alias.Flags[flag.Name] = strings.Join(helpers.IntSliceToStringSlice(slice), ",")
+						alias.Flags[flag.Name] = strings.Join(strings2.IntSliceToStringSlice(slice), ",")
 
 					case "floatSlice":
 						slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
-						alias.Flags[flag.Name] = strings.Join(helpers.Float64SliceToStringSlice(slice), ",")
+						alias.Flags[flag.Name] = strings.Join(strings2.Float64SliceToStringSlice(slice), ",")
 
 					default:
 						alias.Flags[flag.Name] = flag.Value.String()

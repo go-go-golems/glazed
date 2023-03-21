@@ -2,7 +2,7 @@ package parameters
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"strings"
 )
@@ -67,7 +67,7 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
 		}
-		l, ok := helpers.CastInterfaceListToIntList[int64](v)
+		l, ok := cast.CastInterfaceListToIntList[int64](v)
 		if !ok {
 			return "", errors.Errorf("expected []int64, got %T", value)
 		}
@@ -82,7 +82,7 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
 		}
-		l, ok := helpers.CastInterfaceListToFloatList[float64](v)
+		l, ok := cast.CastInterfaceListToFloatList[float64](v)
 		if !ok {
 			return "", errors.Errorf("expected []float64, got %T", value)
 		}

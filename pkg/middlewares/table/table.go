@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -362,7 +362,7 @@ func NewRowGoTemplateMiddleware(
 	for columnName, templateString := range templateStrings {
 		tmpl, err := template.New("row").
 			Funcs(sprig.TxtFuncMap()).
-			Funcs(helpers.TemplateFuncs).
+			Funcs(templating.TemplateFuncs).
 			Parse(templateString)
 		if err != nil {
 			return nil, err

@@ -6,7 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/csv"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -102,12 +102,12 @@ func (c *CsvCommand) Run(
 	trimLeadingSpace, _ := ps["trim-leading-space"].(bool)
 	lazyQuotes, _ := ps["lazy-quotes"].(bool)
 
-	options := []helpers.ParseCSVOption{
-		helpers.WithComma(commaRune),
-		helpers.WithComment(commentRune),
-		helpers.WithFieldsPerRecord(fieldsPerRecord),
-		helpers.WithTrimLeadingSpace(trimLeadingSpace),
-		helpers.WithLazyQuotes(lazyQuotes),
+	options := []csv.ParseCSVOption{
+		csv.WithComma(commaRune),
+		csv.WithComment(commentRune),
+		csv.WithFieldsPerRecord(fieldsPerRecord),
+		csv.WithTrimLeadingSpace(trimLeadingSpace),
+		csv.WithLazyQuotes(lazyQuotes),
 	}
 
 	for _, arg := range inputFiles {
@@ -122,7 +122,7 @@ func (c *CsvCommand) Run(
 		}
 		defer f.Close()
 
-		s, err := helpers.ParseCSV(f, options...)
+		s, err := csv.ParseCSV(f, options...)
 		if err != nil {
 			return errors.Wrap(err, "could not parse CSV file")
 		}

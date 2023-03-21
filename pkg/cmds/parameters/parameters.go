@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/araddon/dateparse"
-	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
 	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
@@ -108,20 +109,20 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 		}
 		p.Default = v
 	case ParameterTypeInteger:
-		v, ok := helpers.CastInterfaceToInt[int64](i)
+		v, ok := cast.CastInterfaceToInt[int64](i)
 		if !ok {
 			return errors.Errorf("expected int64 for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeFloat:
 
-		v, ok := helpers.CastFloatInterfaceToFloat[float64](i)
+		v, ok := cast.CastFloatInterfaceToFloat[float64](i)
 		if !ok {
 			return errors.Errorf("expected float64 for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeStringList:
-		v, ok := helpers.CastList2[string, interface{}](i)
+		v, ok := cast.CastList2[string, interface{}](i)
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
 		}
@@ -129,13 +130,13 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 	case ParameterTypeDate:
 		p.Default = i.(time.Time).Format(time.RFC3339)
 	case ParameterTypeIntegerList:
-		v, ok := helpers.CastInterfaceToIntList[int64](i)
+		v, ok := cast.CastInterfaceToIntList[int64](i)
 		if !ok {
 			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeFloatList:
-		v, ok := helpers.CastInterfaceToFloatList[float64](i)
+		v, ok := cast.CastInterfaceToFloatList[float64](i)
 		if !ok {
 			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, i)
 		}
@@ -145,25 +146,25 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 	case ParameterTypeStringFromFile:
 		p.Default = i.(string)
 	case ParameterTypeStringListFromFile:
-		v, ok := helpers.CastList2[string, interface{}](i)
+		v, ok := cast.CastList2[string, interface{}](i)
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeKeyValue:
-		v, ok := helpers.CastInterfaceToStringMap[string, interface{}](i)
+		v, ok := cast.CastInterfaceToStringMap[string, interface{}](i)
 		if !ok {
 			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeObjectFromFile:
-		v, ok := helpers.CastInterfaceToStringMap[interface{}, interface{}](i)
+		v, ok := cast.CastInterfaceToStringMap[interface{}, interface{}](i)
 		if !ok {
 			return errors.Errorf("expected object for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
 	case ParameterTypeObjectListFromFile:
-		v, ok := helpers.CastList2[map[string]interface{}, interface{}](i)
+		v, ok := cast.CastList2[map[string]interface{}, interface{}](i)
 		if !ok {
 			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, i)
 		}
@@ -193,7 +194,7 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	case ParameterTypeFloat:
 		p.Default = value.Float()
 	case ParameterTypeStringList:
-		v, ok := helpers.CastList2[string, interface{}](value.Interface())
+		v, ok := cast.CastList2[string, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
 		}
@@ -201,13 +202,13 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	case ParameterTypeDate:
 		p.Default = value.Interface().(time.Time).Format(time.RFC3339)
 	case ParameterTypeIntegerList:
-		v, ok := helpers.CastList2[int64, interface{}](value.Interface())
+		v, ok := cast.CastList2[int64, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
 	case ParameterTypeFloatList:
-		v, ok := helpers.CastList2[float64, interface{}](value.Interface())
+		v, ok := cast.CastList2[float64, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, value.Interface())
 		}
@@ -217,25 +218,25 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	case ParameterTypeStringFromFile:
 		p.Default = value.String()
 	case ParameterTypeStringListFromFile:
-		v, ok := helpers.CastList2[string, interface{}](value.Interface())
+		v, ok := cast.CastList2[string, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
 	case ParameterTypeKeyValue:
-		v, ok := helpers.CastInterfaceToStringMap[string, interface{}](value.Interface())
+		v, ok := cast.CastInterfaceToStringMap[string, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
 	case ParameterTypeObjectFromFile:
-		v, ok := helpers.CastInterfaceToStringMap[interface{}, interface{}](value.Interface())
+		v, ok := cast.CastInterfaceToStringMap[interface{}, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected object for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
 	case ParameterTypeObjectListFromFile:
-		v, ok := helpers.CastList2[map[string]interface{}, interface{}](value.Interface())
+		v, ok := cast.CastList2[map[string]interface{}, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, value.Interface())
 		}
@@ -268,15 +269,15 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		}
 	case ParameterTypeInteger:
 		if p.Default == nil {
-			return helpers.SetReflectValue(value, 0)
+			return reflect2.SetReflectValue(value, 0)
 		} else {
-			return helpers.SetReflectValue(value, p.Default)
+			return reflect2.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeFloat:
 		if p.Default == nil {
-			return helpers.SetReflectValue(value, 0.0)
+			return reflect2.SetReflectValue(value, 0.0)
 		} else {
-			return helpers.SetReflectValue(value, p.Default)
+			return reflect2.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeStringList:
 		if p.Default == nil {
@@ -299,15 +300,15 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		}
 	case ParameterTypeIntegerList:
 		if p.Default == nil {
-			return helpers.SetReflectValue(value, []int64{})
+			return reflect2.SetReflectValue(value, []int64{})
 		} else {
-			return helpers.SetReflectValue(value, p.Default)
+			return reflect2.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeFloatList:
 		if p.Default == nil {
-			return helpers.SetReflectValue(value, []float64{})
+			return reflect2.SetReflectValue(value, []float64{})
 		} else {
-			return helpers.SetReflectValue(value, p.Default)
+			return reflect2.SetReflectValue(value, p.Default)
 		}
 	case ParameterTypeChoice:
 		if p.Default == nil {
@@ -325,7 +326,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]string{}))
 		} else {
-			list, b := helpers.CastList2[string, interface{}](p.Default)
+			list, b := cast.CastList2[string, interface{}](p.Default)
 			if !b {
 				return errors.Errorf("default value for parameter %s is not a list of strings", p.Name)
 			}
@@ -335,7 +336,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]map[string]interface{}{}))
 		} else {
-			list2, b := helpers.CastList2[map[string]interface{}, interface{}](p.Default)
+			list2, b := cast.CastList2[map[string]interface{}, interface{}](p.Default)
 			if !b {
 				return errors.Errorf("default value for parameter %s is not a list of maps", p.Name)
 			}
@@ -355,7 +356,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			if !ok {
 				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
 			}
-			v2, ok := helpers.CastStringMap[string, interface{}](v)
+			v2, ok := cast.CastStringMap[string, interface{}](v)
 			if !ok {
 				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
 			}
@@ -522,14 +523,14 @@ func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) er
 					return errors.Wrapf(err, "failed to initialize struct for %s", v)
 				}
 			default:
-				err := helpers.SetReflectValue(value.Elem(), v_)
+				err := reflect2.SetReflectValue(value.Elem(), v_)
 				if err != nil {
 					return errors.Wrapf(err, "failed to set value for %s", v)
 				}
 			}
 
 		} else {
-			err := helpers.SetReflectValue(value, v_)
+			err := reflect2.SetReflectValue(value, v_)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set value for %s", v)
 			}
@@ -641,13 +642,13 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeInteger:
-		_, ok := helpers.CastInterfaceToInt[int64](p.Default)
+		_, ok := cast.CastInterfaceToInt[int64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeFloat:
-		_, ok := helpers.CastFloatInterfaceToFloat[float64](p.Default)
+		_, ok := cast.CastFloatInterfaceToFloat[float64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, p.Default)
 		}
@@ -688,13 +689,13 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeIntegerList:
-		_, ok := helpers.CastInterfaceToIntList[int64](p.Default)
+		_, ok := cast.CastInterfaceToIntList[int64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
 		}
 
 	case ParameterTypeFloatList:
-		_, ok := helpers.CastInterfaceToFloatList[float64](p.Default)
+		_, ok := cast.CastInterfaceToFloatList[float64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
 		}
@@ -727,7 +728,7 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
 			}
 
-			_, ok = helpers.CastStringMap[string, interface{}](defaultValue)
+			_, ok = cast.CastStringMap[string, interface{}](defaultValue)
 			if !ok {
 				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
 			}
