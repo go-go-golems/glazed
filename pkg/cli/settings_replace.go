@@ -5,7 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -21,7 +21,7 @@ func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 			return err
 		}
 
-		mw, err := middlewares.NewReplaceMiddlewareFromYAML(b)
+		mw, err := table.NewReplaceMiddlewareFromYAML(b)
 		if err != nil {
 			return err
 		}

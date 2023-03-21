@@ -89,7 +89,7 @@ func CastInterfaceListToFloatList[To FloatNumber](list []interface{}) ([]To, boo
 	ret := []To{}
 
 	for _, item := range list {
-		f, ok := CastInterfaceToFloat[To](item)
+		f, ok := CastFloatInterfaceToFloat[To](item)
 		if !ok {
 			return ret, false
 		}
@@ -184,10 +184,45 @@ func CastInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
 	}
 }
 
-func CastInterfaceToFloat[To FloatNumber](i interface{}) (To, bool) {
+func CastFloatInterfaceToFloat[To FloatNumber](i interface{}) (To, bool) {
 	switch i := i.(type) {
 	case To:
 		return i, true
+	case float32:
+		return To(i), true
+	case float64:
+		return To(i), true
+	default:
+		return 0, false
+	}
+}
+
+func CastNumberInterfaceToFloat[To FloatNumber](i interface{}) (To, bool) {
+	switch i := i.(type) {
+	case To:
+		return i, true
+	case int:
+		return To(i), true
+	case int8:
+		return To(i), true
+	case int16:
+		return To(i), true
+	case int32:
+		return To(i), true
+	case int64:
+		return To(i), true
+	case uint:
+		return To(i), true
+	case uint8:
+		return To(i), true
+	case uint16:
+		return To(i), true
+	case uint32:
+		return To(i), true
+	case uint64:
+		return To(i), true
+	case uintptr:
+		return To(i), true
 	case float32:
 		return To(i), true
 	case float64:

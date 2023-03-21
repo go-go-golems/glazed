@@ -5,7 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -94,17 +94,17 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 }
 
 func (ffs *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
-	of.AddTableMiddleware(middlewares.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
+	of.AddTableMiddleware(table.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
 	if ffs.RemoveNulls {
-		of.AddTableMiddleware(middlewares.NewRemoveNullsMiddleware())
+		of.AddTableMiddleware(table.NewRemoveNullsMiddleware())
 	}
 	if ffs.SortColumns {
-		of.AddTableMiddleware(middlewares.NewSortColumnsMiddleware())
+		of.AddTableMiddleware(table.NewSortColumnsMiddleware())
 	}
 	if len(ffs.ReorderColumns) > 0 {
-		of.AddTableMiddleware(middlewares.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
+		of.AddTableMiddleware(table.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
 	}
 	if len(ffs.RemoveDuplicates) > 0 {
-		of.AddTableMiddleware(middlewares.NewRemoveDuplicatesMiddleware(ffs.RemoveDuplicates...))
+		of.AddTableMiddleware(table.NewRemoveDuplicatesMiddleware(ffs.RemoveDuplicates...))
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/object"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -391,7 +393,7 @@ func SetupProcessor(ps map[string]interface{}) (
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
-		mw := middlewares.NewFlattenObjectMiddleware()
+		mw := table.NewFlattenObjectMiddleware()
 		of.AddTableMiddleware(mw)
 	}
 	fieldsFilterSettings.AddMiddlewares(of)
@@ -403,7 +405,7 @@ func SetupProcessor(ps map[string]interface{}) (
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
-		ogtm, err := middlewares.NewObjectGoTemplateMiddleware(templateSettings.Templates)
+		ogtm, err := object.NewObjectGoTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Could not process template argument")
 		}

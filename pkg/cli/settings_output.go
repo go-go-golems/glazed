@@ -7,7 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"text/template"
 	"unicode/utf8"
@@ -104,7 +104,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			ofs.SheetName,
 			ofs.OutputFile,
 		)
-		of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := formatters.NewCSVOutputFormatter()
@@ -119,7 +119,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		} else {
 			of = formatters.NewTableOutputFormatter(ofs.TableFormat)
 		}
-		of.AddTableMiddleware(middlewares.NewFlattenObjectMiddleware())
+		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{

@@ -1,4 +1,4 @@
-package middlewares
+package table
 
 import (
 	"github.com/go-go-golems/glazed/pkg/types"
