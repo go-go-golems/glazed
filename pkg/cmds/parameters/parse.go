@@ -3,6 +3,7 @@ package parameters
 import (
 	"bufio"
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"github.com/araddon/dateparse"
 	"github.com/pkg/errors"
@@ -182,6 +183,48 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	return nil, errors.Errorf("Unknown parameter type %s", p.Type)
 }
 
+func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error) {
+	csvReader := csv.NewReader(f)
+	csvReader.FieldsPerRecord = -1
+	csvReader.TrimLeadingSpace = true
+
+	// check TSV
+	if strings.HasSuffix(filename, ".tsv") {
+		csvReader.Comma = '\t'
+	}
+
+	csvData, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not parse file %s", filename)
+	}
+	// check we have both headers and more than one line
+	if len(csvData) < 2 {
+		return nil, errors.Errorf("File %s does not contain a header line", filename)
+	}
+
+	// parse headers
+	headers := csvData[0]
+	// check we have at least one header
+	if len(headers) == 0 {
+		return nil, errors.Errorf("File %s does not contain a header line", filename)
+	}
+
+	// parse data
+	data := make([]interface{}, 0)
+	for _, line := range csvData[1:] {
+		if len(line) != len(headers) {
+			return nil, errors.Errorf("File %s contains a line with a different number of columns than the header", filename)
+		}
+		lineMap := make(map[string]interface{})
+		for i, header := range headers {
+			lineMap[header] = line[i]
+		}
+		data = append(data, lineMap)
+	}
+
+	return data, nil
+}
+
 func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (interface{}, error) {
 	var err error
 	//exhaustive:ignore
@@ -204,6 +247,15 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 			err = json.NewDecoder(f).Decode(&object)
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&object)
+		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
+			objects, err := parseObjectListFromCSV(f, filename)
+			if err != nil {
+				return nil, err
+			}
+			if len(objects) != 1 {
+				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
+			}
+			object = objects[0]
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}

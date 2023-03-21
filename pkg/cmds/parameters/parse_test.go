@@ -213,7 +213,7 @@ func TestParseStringListFromReader(t *testing.T) {
 	assert.Equal(t, []string{}, i)
 }
 
-func TestParseObjecFromFile(t *testing.T) {
+func TestParseObjectFromFile(t *testing.T) {
 	parameter := NewParameterDefinition("test", ParameterTypeObjectFromFile,
 		WithDefault(map[string]interface{}{"default": "default"}),
 	)
@@ -282,6 +282,20 @@ func TestParseObjecFromFile(t *testing.T) {
 	v, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, "test", v)
+
+	// now, one-line CSV with headers
+	reader = strings.NewReader(`test,test2
+test,test2`)
+	i, err = parameter.ParseFromReader(reader, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i)
+
+	// fail on 2 line CSV
+	reader = strings.NewReader(`test,test2
+test,test2
+test,test2`)
+	_, err = parameter.ParseFromReader(reader, "test.csv")
+	assert.Error(t, err)
 }
 
 func TestParseObjectListFromFile(t *testing.T) {
