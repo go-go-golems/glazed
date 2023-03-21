@@ -275,7 +275,11 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]string{}))
 		} else {
-			value.Set(reflect.ValueOf(p.Default.([]string)))
+			v_, ok := cast.CastList2[string, interface{}](p.Default)
+			if !ok {
+				return errors.Errorf("expected string list for parameter %s, got %T", p.Name, p.Default)
+			}
+			value.Set(reflect.ValueOf(v_))
 		}
 	case ParameterTypeDate:
 		// TODO(manuel, 2023-02-12) Not sure exactly if this should be fully parsed at this point, or left up to the flag
@@ -608,7 +612,12 @@ func IsListParameter(p ParameterType) bool {
 
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	// we can have no default
-	if p.Default == nil {
+	v := p.Default
+	return p.CheckValueValidity(v)
+}
+
+func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
@@ -616,80 +625,80 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	case ParameterTypeStringFromFile:
 		fallthrough
 	case ParameterTypeString:
-		_, ok := p.Default.(string)
+		_, ok := v.(string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
 		}
 
 	case ParameterTypeObjectListFromFile:
-		_, ok := p.Default.([]interface{})
+		_, ok := v.([]interface{})
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a list of objects: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a list of objects: %v", p.Name, v)
 		}
 
 	case ParameterTypeObjectFromFile:
-		_, ok := p.Default.(map[string]interface{})
+		_, ok := v.(map[string]interface{})
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an object: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not an object: %v", p.Name, v)
 		}
 
 	case ParameterTypeInteger:
-		_, ok := cast.CastInterfaceToInt[int64](p.Default)
+		_, ok := cast.CastInterfaceToInt[int64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, v)
 		}
 
 	case ParameterTypeFloat:
-		_, ok := cast.CastFloatInterfaceToFloat[float64](p.Default)
+		_, ok := cast.CastFloatInterfaceToFloat[float64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, v)
 		}
 
 	case ParameterTypeBool:
-		_, ok := p.Default.(bool)
+		_, ok := v.(bool)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a bool: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a bool: %v", p.Name, v)
 		}
 
 	case ParameterTypeDate:
-		defaultValue, ok := p.Default.(string)
+		defaultValue, ok := v.(string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
 		}
 
 		_, err2 := ParseDate(defaultValue)
 		if err2 != nil {
-			return errors.Wrapf(err2, "Default value for parameter %s is not a valid date: %v", p.Name, p.Default)
+			return errors.Wrapf(err2, "Default value for parameter %s is not a valid date: %v", p.Name, v)
 		}
 
 	case ParameterTypeStringListFromFile:
 		fallthrough
 	case ParameterTypeStringList:
-		_, ok := p.Default.([]string)
+		_, ok := v.([]string)
 		if !ok {
-			defaultValue, ok := p.Default.([]interface{})
+			defaultValue, ok := v.([]interface{})
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, p.Default)
+				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, v)
 			}
 
 			// convert to string list
 			fixedDefault, ok := cast.CastList[string, interface{}](defaultValue)
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, p.Default)
+				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, v)
 			}
-			p.Default = fixedDefault
+			_ = fixedDefault
 		}
 
 	case ParameterTypeIntegerList:
-		_, ok := cast.CastInterfaceToIntList[int64](p.Default)
+		_, ok := cast.CastInterfaceToIntList[int64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, v)
 		}
 
 	case ParameterTypeFloatList:
-		_, ok := cast.CastInterfaceToFloatList[float64](p.Default)
+		_, ok := cast.CastInterfaceToFloatList[float64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, v)
 		}
 
 	case ParameterTypeChoice:
@@ -697,9 +706,9 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		defaultValue, ok := p.Default.(string)
+		defaultValue, ok := v.(string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
 		}
 
 		found := false
@@ -709,20 +718,20 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 			}
 		}
 		if !found {
-			return errors.Errorf("Default value for parameter %s is not a valid choice: %v", p.Name, p.Default)
+			return errors.Errorf("Default value for parameter %s is not a valid choice: %v", p.Name, v)
 		}
 
 	case ParameterTypeKeyValue:
-		_, ok := p.Default.(map[string]string)
+		_, ok := v.(map[string]string)
 		if !ok {
-			defaultValue, ok := p.Default.(map[string]interface{})
+			defaultValue, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
+				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 
 			_, ok = cast.CastStringMap[string, interface{}](defaultValue)
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, p.Default)
+				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 		}
 	}

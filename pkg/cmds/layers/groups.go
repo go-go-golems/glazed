@@ -240,6 +240,11 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
+func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{}) (map[string]interface{}, error) {
+	ps := p.GetParameterDefinitions()
+	return parameters.GatherParametersFromMap(m, ps)
+}
+
 // AddFlagsToCobraCommand adds all flags of the layer to the given Cobra command.
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.

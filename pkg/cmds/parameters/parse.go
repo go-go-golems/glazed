@@ -371,3 +371,27 @@ func ParseDate(value string) (time.Time, error) {
 
 	return parsedDate, nil
 }
+
+func GatherParametersFromMap(m map[string]interface{}, ps map[string]*ParameterDefinition) (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+
+	for name, p := range ps {
+		v, ok := m[name]
+		if !ok {
+			if p.ShortFlag != "" {
+				v, ok = m[p.ShortFlag]
+			}
+			if !ok {
+				ret[name] = p.Default
+				continue
+			}
+		}
+		err := p.CheckValueValidity(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Invalid value for parameter %s", name)
+		}
+		ret[name] = v
+	}
+
+	return ret, nil
+}

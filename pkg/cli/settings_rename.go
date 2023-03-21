@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -66,9 +67,9 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 }
 
 func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings, error) {
-	renameFields, ok := ps["rename"].([]string)
+	renameFields, ok := cast.CastList2[string, interface{}](ps["rename"])
 	if !ok {
-		return nil, errors.Errorf("Invalid rename fields")
+		return nil, errors.Errorf("Invalid rename fields %s", ps["rename"])
 	}
 	renamesFieldsMap := map[types.FieldName]types.FieldName{}
 	for _, renameField := range renameFields {

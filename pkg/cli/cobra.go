@@ -69,7 +69,13 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		parsedLayers, ps, err := cobraParser.Parse(args)
-		cobra.CheckErr(err)
+		// show help if there is an error
+		if err != nil {
+			fmt.Println(err)
+			err := cmd.Help()
+			cobra.CheckErr(err)
+			os.Exit(1)
+		}
 
 		createCliAlias, err := cmd.Flags().GetString("create-alias")
 		cobra.CheckErr(err)
@@ -484,7 +490,9 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 	// This might not even be possible in the first place, because it would mean that
 	// we used cobra to register the same flag twice.
 	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args)
-	cobra.CheckErr(err)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	for k, v := range ps_ {
 		ps[k] = v

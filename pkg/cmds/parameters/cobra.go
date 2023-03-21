@@ -455,7 +455,7 @@ func GatherFlagsFromCobraCommand(
 
 		if !cmd.Flags().Changed(flagName) {
 			if parameter.Required {
-				return nil, errors.Errorf("ParameterDefinition %s is required", parameter.Name)
+				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
 			}
 
 			if parameter.Default == nil {
