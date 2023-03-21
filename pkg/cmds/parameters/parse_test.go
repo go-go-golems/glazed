@@ -211,6 +211,63 @@ func TestParseStringListFromReader(t *testing.T) {
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, i)
+
+	// try single column CSV with header
+	reader = strings.NewReader("test\ntest2\ntest3\ntest4")
+	i, err = parameter.ParseFromReader(reader, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"test2", "test3", "test4"}, i)
+
+	// test single string list json
+	reader = strings.NewReader(`["test","test2"]`)
+	i, err = parameter.ParseFromReader(reader, "test.json")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"test", "test2"}, i)
+
+	// fail single string
+	reader = strings.NewReader(`"test"`)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
+
+	// test fail int
+	reader = strings.NewReader(`1`)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
+
+	// test fail int list
+	reader = strings.NewReader(`[1,2]`)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
+
+	// test fail mixed list
+	reader = strings.NewReader(`["test",1]`)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
+
+	// test fail empty json
+	reader = strings.NewReader(`{}`)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
+
+	// test succeed empty list
+	reader = strings.NewReader(`[]`)
+	i, err = parameter.ParseFromReader(reader, "test.json")
+	require.NoError(t, err)
+	assert.Equal(t, []string{}, i)
+
+	// test yaml
+	reader = strings.NewReader(`- test
+- test2`)
+	i, err = parameter.ParseFromReader(reader, "test.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"test", "test2"}, i)
+
+	// test empty csv (just headers)
+	reader = strings.NewReader(`test`)
+	i, err = parameter.ParseFromReader(reader, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []string{}, i)
+
 }
 
 func TestParseObjectFromFile(t *testing.T) {

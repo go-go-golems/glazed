@@ -237,12 +237,35 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 	switch p.Type {
 	case ParameterTypeStringListFromFile:
 		ret := make([]string, 0)
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			ret = append(ret, scanner.Text())
-		}
-		if err = scanner.Err(); err != nil {
-			return nil, err
+
+		// check for json
+		if strings.HasSuffix(filename, ".json") {
+			err = json.NewDecoder(f).Decode(&ret)
+			if err != nil {
+				return nil, err
+			}
+			return ret, nil
+		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
+			err = yaml.NewDecoder(f).Decode(&ret)
+			if err != nil {
+				return nil, err
+			}
+			return ret, nil
+		} else {
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				ret = append(ret, scanner.Text())
+			}
+			if err = scanner.Err(); err != nil {
+				return nil, err
+			}
+			if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
+				if len(ret) == 0 {
+					return nil, errors.Errorf("File %s does not contain any lines", filename)
+				}
+				// remove headers
+				ret = ret[1:]
+			}
 		}
 
 		return ret, nil
