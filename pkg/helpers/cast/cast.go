@@ -129,20 +129,6 @@ func CastInterfaceToStringMap[To any, From any](m interface{}) (map[string]To, b
 	}
 }
 
-func CastMapMember[To any](m map[string]interface{}, k string) (*To, bool) {
-	v, ok := m[k]
-	if !ok {
-		return nil, false
-	}
-
-	casted, ok := v.(To)
-	if !ok {
-		return nil, false
-	}
-
-	return &casted, true
-}
-
 func CastMapToInterfaceMap[From any](m map[string]From) map[string]interface{} {
 	ret := map[string]interface{}{}
 
@@ -274,4 +260,32 @@ func CastInterfaceToFloatList[To FloatNumber](i interface{}) ([]To, bool) {
 	default:
 		return nil, false
 	}
+}
+
+func CastStringMap2[To any, From any](m interface{}) (map[string]To, bool) {
+	casted, ok := m.(map[string]From)
+	if !ok {
+		// try to cast to map[string]interface{}
+		casted2, ok := m.(map[string]interface{})
+		if !ok {
+			return map[string]To{}, false
+		}
+		return CastStringMap[To, interface{}](casted2)
+	}
+
+	return CastStringMap[To, From](casted)
+}
+
+func CastMapMember[To any](m map[string]interface{}, k string) (*To, bool) {
+	v, ok := m[k]
+	if !ok {
+		return nil, false
+	}
+
+	casted, ok := v.(To)
+	if !ok {
+		return nil, false
+	}
+
+	return &casted, true
 }

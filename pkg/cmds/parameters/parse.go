@@ -26,19 +26,28 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 
 	switch p.Type {
 	case ParameterTypeString:
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single string", p.Name)
+		}
 		return v[0], nil
 	case ParameterTypeInteger:
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single integer", p.Name)
+		}
 		i, err := strconv.Atoi(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as integer", p.Name)
 		}
 		return i, nil
 	case ParameterTypeFloat:
-		f, err := strconv.ParseFloat(v[0], 32)
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single float", p.Name)
+		}
+		f, err := strconv.ParseFloat(v[0], 64)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as float", p.Name)
 		}
-		return float32(f), nil
+		return f, nil
 	case ParameterTypeStringList:
 		return v, nil
 	case ParameterTypeIntegerList:
@@ -53,6 +62,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		return ints, nil
 
 	case ParameterTypeBool:
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single boolean", p.Name)
+		}
 		b, err := strconv.ParseBool(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as bool", p.Name)
@@ -60,6 +72,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		return b, nil
 
 	case ParameterTypeChoice:
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single choice", p.Name)
+		}
 		choice := v[0]
 		found := false
 		for _, c := range p.Choices {
@@ -167,7 +182,7 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	return nil, errors.Errorf("Unknown parameter type %s", p.Type)
 }
 
-func (p *ParameterDefinition) ParseFromReader(f io.Reader, name string) (interface{}, error) {
+func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (interface{}, error) {
 	var err error
 	//exhaustive:ignore
 	switch p.Type {
@@ -185,48 +200,48 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, name string) (interfa
 
 	case ParameterTypeObjectFromFile:
 		object := interface{}(nil)
-		if name == "-" || strings.HasSuffix(name, ".json") {
+		if filename == "-" || strings.HasSuffix(filename, ".json") {
 			err = json.NewDecoder(f).Decode(&object)
-		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&object)
 		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
 
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
 		}
 
 		return object, nil
 
 	case ParameterTypeObjectListFromFile:
 		objectList := []interface{}{}
-		if name == "-" || strings.HasSuffix(name, ".json") {
+		if filename == "-" || strings.HasSuffix(filename, ".json") {
 			err = json.NewDecoder(f).Decode(&objectList)
-		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&objectList)
 		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
 
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
 		}
 
 		return objectList, nil
 
 	case ParameterTypeKeyValue:
 		ret := interface{}(nil)
-		if name == "-" || strings.HasSuffix(name, ".json") {
+		if filename == "-" || strings.HasSuffix(filename, ".json") {
 			err = json.NewDecoder(f).Decode(&ret)
-		} else if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&ret)
 		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", name)
+			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
 
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", name)
+			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
 		}
 		return ret, nil
 
