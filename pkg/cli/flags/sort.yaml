@@ -6,4 +6,4 @@ flags:
   - name: sort-by
     type: stringList
     help: Sort by a field (default ASC, use -sort-by=-field for DESC)
-    default: ""
+    default: []
