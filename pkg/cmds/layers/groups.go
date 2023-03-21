@@ -240,6 +240,9 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
+// AddFlagsToCobraCommand adds all flags of the layer to the given Cobra command.
+// It also creates a flag group representing the layer and adds it to the command.
+// If the layer has a prefix, the flags are added with that prefix.
 func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
 	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), p.Flags, p.Prefix)
@@ -247,11 +250,17 @@ func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 		return err
 	}
 
-	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags)
+	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags, p.Prefix)
 
 	return nil
 }
 
+// ParseFlagsFromCobraCommand parses the flags of the layer from the given Cobra command.
+// If the layer has a prefix, the flags are parsed with that prefix (meaning, the prefix
+// is stripped from the flag names before they are added to the returned map).
+//
+// This will return a map containing the value (or default value) of each flag
+// of the layer.
 func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
 	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, p.Prefix)
 }

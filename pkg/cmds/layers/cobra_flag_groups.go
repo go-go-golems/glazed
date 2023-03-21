@@ -23,10 +23,11 @@ import (
 // and it could be used in conjunction with renaming the actual flags used on the CLI
 // as more colisions are prone to happen.
 type FlagGroup struct {
-	ID    string
-	Name  string
-	Flags []string
-	Order int
+	ID     string
+	Name   string
+	Prefix string
+	Flags  []string
+	Order  int
 }
 
 // FlagUsage is the structured information we want to show at help time.
@@ -76,6 +77,12 @@ func (c *CommandFlagGroupUsage) String() string {
 		len(c.LocalGroupUsages), len(c.InheritedGroupUsages))
 }
 
+// ComputeCommandFlagGroupUsage is used to compute the flag groups to be shown in the
+// usage help function.
+//
+// It is a fairly complex function that gathers all LocalFlags() and InheritedFlags()
+// from the cobra backend. It then iterated over the FlagGroups that have been added
+// through layers usually.
 func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	ret := &CommandFlagGroupUsage{}
 
@@ -99,7 +106,10 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		FlagUsages: []*FlagUsage{},
 	}
 
-	// get an overview of which flag to assign to whom
+	// Get an overview of which flag to assign to whom.
+	//
+	// Iterate over all the flag groups, and store which flag belongs to which group
+	// in flagToGroups.
 	for _, group := range flagGroups {
 		localGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
@@ -111,6 +121,8 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		}
 
 		for _, flagName := range group.Flags {
+			flagName = group.Prefix + flagName
+
 			// check if flagToGroups already has the flagName
 			if _, ok := flagToGroups[flagName]; !ok {
 				flagToGroups[flagName] = []string{}
@@ -119,6 +131,9 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		}
 	}
 
+	// Now visit all cobra flags, get their usage as defined when added to cobra
+	// (usually through the ParameterDefinition), and add them to the correct
+	// group.
 	localFlags.VisitAll(func(f *flag.Flag) {
 		flagUsage := getFlagUsage(f)
 		if flagUsage == nil {
@@ -134,6 +149,7 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		}
 	})
 
+	// Do the same for inherited flags.
 	inheritedFlags.VisitAll(func(f *flag.Flag) {
 		flagUsage := getFlagUsage(f)
 		if flagUsage == nil {
@@ -170,7 +186,8 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		}
 	}
 
-	// NOTE(manuel, 2023-02-20) This is where we should compute the necessary alignment indent for each group
+	// NOTE(manuel, 2023-02-20) This is where we should compute the necessary alignment indent
+	// for each group
 
 	return ret
 }
@@ -197,6 +214,10 @@ func isZeroValue(v flag.Value, defValue string) bool {
 
 	return false
 }
+
+// getFlagUsage returns the FlagUsage for a given flag.
+// It tries to do its best to transform the data that cobra provides about the
+// flag into a pleasantly human-readable string.
 func getFlagUsage(f *flag.Flag) *FlagUsage {
 	if f.Hidden {
 		return nil
@@ -248,11 +269,19 @@ func getFlagUsage(f *flag.Flag) *FlagUsage {
 	return ret
 }
 
+// AddFlagGroupToCobraCommand adds a flag group to a cobra command.
+// This is done by adding a set of annotations to the command:
+//   - glazed:flag-group-order: a comma-separated list of flag group IDs in the
+//     order they should be displayed
+//   - glazed:flag-group-count: the number of flag groups
+//   - glazed:flag-group:<id>:<name> - a list of the flag names in the group
+//   - glazed:flag-group-prefix:<id> - the prefix to use for the group
 func AddFlagGroupToCobraCommand(
 	cmd *cobra.Command,
 	id string,
 	name string,
 	flags []*parameters.ParameterDefinition,
+	prefix string,
 ) {
 	flagNames := []string{}
 	for _, f := range flags {
@@ -281,6 +310,9 @@ func AddFlagGroupToCobraCommand(
 	}
 
 	cmd.Annotations[fmt.Sprintf("glazed:flag-group:%s:%s", id, name)] = strings.Join(flagNames, ",")
+	if prefix != "" {
+		cmd.Annotations[fmt.Sprintf("glazed:flag-group-prefix:%s", id)] = prefix
+	}
 
 	order = fmt.Sprintf("%s,%s", order, id)
 	cmd.Annotations["glazed:flag-group-order"] = order
@@ -293,6 +325,15 @@ func SetFlagGroupOrder(cmd *cobra.Command, order []string) {
 	cmd.Annotations["glazed:flag-group-order"] = strings.Join(order, ",")
 }
 
+// GetFlagGroups returns a list of flag groups for the given command.
+// It does so by gathering all parents flag groups and then checking
+// for cobra Annotations of the form `glazed:flag-group:<id>:<name>`.
+//
+// The order of the groups is determined by the order of the ids
+// in the `glazed:flag-group-order` annotation.
+//
+// Finally, the `glazed:flag-group-prefix:<id>:<prefix>` annotation
+// is used to determine the prefix for the group.
 func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 	groups := map[string]*FlagGroup{}
 
@@ -327,6 +368,14 @@ func GetFlagGroups(cmd *cobra.Command) []*FlagGroup {
 			if groups[id] != nil {
 				groups[id].Order = i
 			}
+		}
+	}
+
+	// load the prefixes if present
+	for id, group := range groups {
+		prefixKey := fmt.Sprintf("glazed:flag-group-prefix:%s", id)
+		if cmd.Annotations[prefixKey] != "" {
+			group.Prefix = cmd.Annotations[prefixKey]
 		}
 	}
 

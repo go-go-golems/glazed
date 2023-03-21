@@ -467,6 +467,10 @@ func SetupProcessor(ps map[string]interface{}) (
 		of.AddTableMiddleware(jqTableMiddleware)
 	}
 
+	// NOTE(manuel, 2023-03-20): We need to figure out how to order middlewares, on the command line.
+	// This is not possible with cobra, which doesn't have ordering of flags, and adding that
+	// to the API that we currently use (which is a unordered hashmap, and parsed layers that lose the positioning)
+	// is not trivial.
 	sortSettings.AddMiddlewares(of)
 
 	gp := cmds.NewGlazeProcessor(of, middlewares_...)
