@@ -47,6 +47,14 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	return ret
 }
 
+func (c *CommandDescription) GetFlagMap() map[string]*parameters.ParameterDefinition {
+	ret := make(map[string]*parameters.ParameterDefinition)
+	for _, f := range c.Flags {
+		ret[f.Name] = f
+	}
+	return ret
+}
+
 func (c *CommandDescription) Clone(cloneFlagsAndArguments bool, options ...CommandDescriptionOption) *CommandDescription {
 	// clone flags
 	flags := make([]*parameters.ParameterDefinition, len(c.Flags))
