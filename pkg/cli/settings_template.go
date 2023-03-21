@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -20,7 +20,7 @@ var templateFlagsYaml []byte
 
 func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if tf.UseRowTemplates && len(tf.Templates) > 0 {
-		middleware, err := middlewares.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
+		middleware, err := table.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {
 			return err
 		}

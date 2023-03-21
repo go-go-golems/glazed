@@ -7,6 +7,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/object"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +23,7 @@ type GlazedParameterLayers struct {
 	SelectParameterLayer        *SelectParameterLayer
 	TemplateParameterLayer      *TemplateParameterLayer
 	JqParameterLayer            *JqParameterLayer
+	SortParameterLayer          *SortParameterLayer
 }
 
 func (g *GlazedParameterLayers) GetName() string {
@@ -73,6 +76,10 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 		ret[k] = v
 	}
 
+	for k, v := range g.SortParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
 	return ret
 }
 
@@ -102,6 +109,10 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error
 		return err
 	}
 	err = g.JqParameterLayer.AddFlagsToCobraCommand(cmd)
+	if err != nil {
+		return err
+	}
+	err = g.SortParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -156,6 +167,14 @@ func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (
 	for k, v := range ps_ {
 		ps[k] = v
 	}
+	ps_, err = g.SortParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+
 	return ps, nil
 }
 
@@ -186,6 +205,10 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 		return err
 	}
 	err = g.JqParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.SortParameterLayer.InitializeParameterDefaultsFromStruct(s)
 	if err != nil {
 		return err
 	}
@@ -278,6 +301,18 @@ func WithJqParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeP
 	}
 }
 
+func WithSortParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.SortParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedParameterLayers, error) {
 	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
 	if err != nil {
@@ -307,6 +342,10 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	if err != nil {
 		return nil, err
 	}
+	sortParameterLayer, err := NewSortParameterLayer()
+	if err != nil {
+		return nil, err
+	}
 	ret := &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
 		OutputParameterLayer:        outputParameterLayer,
@@ -315,6 +354,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 		SelectParameterLayer:        selectParameterLayer,
 		TemplateParameterLayer:      templateParameterLayer,
 		JqParameterLayer:            jqParameterLayer,
+		SortParameterLayer:          sortParameterLayer,
 	}
 
 	for _, option := range options {
@@ -363,6 +403,10 @@ func SetupProcessor(ps map[string]interface{}) (
 	if err != nil {
 		return nil, nil, err
 	}
+	sortSettings, err := NewSortSettingsFromParameters(ps)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	var of formatters.OutputFormatter
 	templateSettings.UpdateWithSelectSettings(selectSettings)
@@ -391,7 +435,7 @@ func SetupProcessor(ps map[string]interface{}) (
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
-		mw := middlewares.NewFlattenObjectMiddleware()
+		mw := table.NewFlattenObjectMiddleware()
 		of.AddTableMiddleware(mw)
 	}
 	fieldsFilterSettings.AddMiddlewares(of)
@@ -403,7 +447,7 @@ func SetupProcessor(ps map[string]interface{}) (
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
-		ogtm, err := middlewares.NewObjectGoTemplateMiddleware(templateSettings.Templates)
+		ogtm, err := object.NewObjectGoTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Could not process template argument")
 		}
@@ -422,6 +466,8 @@ func SetupProcessor(ps map[string]interface{}) (
 	if jqTableMiddleware != nil {
 		of.AddTableMiddleware(jqTableMiddleware)
 	}
+
+	sortSettings.AddMiddlewares(of)
 
 	gp := cmds.NewGlazeProcessor(of, middlewares_...)
 	return gp, of, nil

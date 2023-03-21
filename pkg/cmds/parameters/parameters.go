@@ -115,7 +115,7 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 		p.Default = v
 	case ParameterTypeFloat:
 
-		v, ok := helpers.CastInterfaceToFloat[float64](i)
+		v, ok := helpers.CastFloatInterfaceToFloat[float64](i)
 		if !ok {
 			return errors.Errorf("expected float64 for parameter %s, got %T", p.Name, i)
 		}
@@ -647,7 +647,7 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 		}
 
 	case ParameterTypeFloat:
-		_, ok := helpers.CastInterfaceToFloat[float64](p.Default)
+		_, ok := helpers.CastFloatInterfaceToFloat[float64](p.Default)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, p.Default)
 		}
@@ -820,7 +820,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "Could not read file %s", v[0])
 			}
-			defer f2.Close()
+			defer func(f2 *os.File) {
+				_ = f2.Close()
+			}(f2)
 
 			f = f2
 		}
@@ -849,7 +851,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 				if err != nil {
 					return nil, errors.Wrapf(err, "Could not read file %s", templateDataFile)
 				}
-				defer f2.Close()
+				defer func(f2 *os.File) {
+					_ = f2.Close()
+				}(f2)
 				f = f2
 			}
 

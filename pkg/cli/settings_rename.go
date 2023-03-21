@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -15,13 +15,13 @@ import (
 
 type RenameSettings struct {
 	RenameFields  map[types.FieldName]string
-	RenameRegexps middlewares.RegexpReplacements
+	RenameRegexps table.RegexpReplacements
 	YamlFile      string
 }
 
 func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if len(rs.RenameFields) > 0 || len(rs.RenameRegexps) > 0 {
-		of.AddTableMiddleware(middlewares.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
+		of.AddTableMiddleware(table.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
 	}
 
 	if rs.YamlFile != "" {
@@ -31,7 +31,7 @@ func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 		}
 		decoder := yaml.NewDecoder(f)
 
-		mw, err := middlewares.NewRenameColumnMiddlewareFromYAML(decoder)
+		mw, err := table.NewRenameColumnMiddlewareFromYAML(decoder)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings
 		renamesFieldsMap[parts[0]] = parts[1]
 	}
 
-	regexpReplacements := middlewares.RegexpReplacements{}
+	regexpReplacements := table.RegexpReplacements{}
 	renameRegexpFields, ok := ps["rename-regexp"].(map[string]interface{})
 	if !ok {
 		return nil, errors.Errorf("Invalid rename regexp fields")
@@ -94,7 +94,7 @@ func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings
 			return nil, errors.Wrapf(err, "Invalid regexp: %s", regex)
 		}
 		regexpReplacements = append(regexpReplacements,
-			&middlewares.RegexpReplacement{Regexp: re, Replacement: replacement_})
+			&table.RegexpReplacement{Regexp: re, Replacement: replacement_})
 	}
 
 	renameYaml, ok := ps["rename-yaml"].(string)

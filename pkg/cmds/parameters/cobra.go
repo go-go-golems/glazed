@@ -210,7 +210,7 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0.0
 
 			if parameter.Default != nil {
-				defaultValue, ok = helpers.CastInterfaceToFloat[float64](parameter.Default)
+				defaultValue, ok = helpers.CastFloatInterfaceToFloat[float64](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
 				}

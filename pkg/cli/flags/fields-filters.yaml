@@ -24,3 +24,8 @@ flags:
     type: bool
     help: Remove columns with null values
     default: false
+
+  - name: remove-duplicates
+    type: stringList
+    help: List of columns to consider for duplicate removal (requires results to be sorted)
+    default: []
