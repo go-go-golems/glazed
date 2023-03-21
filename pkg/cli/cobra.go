@@ -346,8 +346,10 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
 	return SetupProcessor(ps)
 }
 
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command) error {
-	gpl, err := NewGlazedParameterLayers()
+// AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
+// the glazed processing layer.
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...GlazeParameterLayerOption) error {
+	gpl, err := NewGlazedParameterLayers(options...)
 	if err != nil {
 		return err
 	}
