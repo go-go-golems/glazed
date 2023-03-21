@@ -247,7 +247,7 @@ func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 		return err
 	}
 
-	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags)
+	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags, p.Prefix)
 
 	return nil
 }
