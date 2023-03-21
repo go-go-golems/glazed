@@ -299,6 +299,15 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 			err = json.NewDecoder(f).Decode(&ret)
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&ret)
+		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
+			objects, err := parseObjectListFromCSV(f, filename)
+			if err != nil {
+				return nil, err
+			}
+			if len(objects) != 1 {
+				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
+			}
+			ret = objects[0]
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}

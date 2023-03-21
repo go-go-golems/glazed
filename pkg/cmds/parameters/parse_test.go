@@ -527,4 +527,10 @@ func TestParseKeyFromFile(t *testing.T) {
 	// fail on empty file
 	_, err = parseObjectFromReader(parameter, ``, "test.yaml")
 	assert.Error(t, err)
+
+	// try CSV
+	v, err = parseObjectFromReader(parameter, `test,test2
+test,test2`, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, v)
 }
