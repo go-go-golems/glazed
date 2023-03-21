@@ -197,6 +197,12 @@ func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not parse file %s", filename)
 	}
+
+	// if the file is entirely empty, return an empty list
+	if len(csvData) == 0 {
+		return []interface{}{}, nil
+	}
+
 	// check we have both headers and more than one line
 	if len(csvData) < 2 {
 		return nil, errors.Errorf("File %s does not contain a header line", filename)
@@ -272,6 +278,11 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 			err = json.NewDecoder(f).Decode(&objectList)
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&objectList)
+		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
+			objectList, err = parseObjectListFromCSV(f, filename)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}

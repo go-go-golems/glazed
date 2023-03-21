@@ -296,6 +296,37 @@ test,test2
 test,test2`)
 	_, err = parameter.ParseFromReader(reader, "test.csv")
 	assert.Error(t, err)
+
+	// fail on CSV without headers
+	reader = strings.NewReader(`test,test2`)
+	_, err = parameter.ParseFromReader(reader, "test.csv")
+	assert.Error(t, err)
+
+	// fail on empty CSV
+	reader = strings.NewReader(``)
+	_, err = parameter.ParseFromReader(reader, "test.csv")
+	assert.Error(t, err)
+
+	// test TSV
+	reader = strings.NewReader(`test	test2
+test	test2`)
+	i, err = parameter.ParseFromReader(reader, "test.tsv")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i)
+
+	// try numbers
+	reader = strings.NewReader(`test,test2
+1,2`)
+	i, err = parameter.ParseFromReader(reader, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i)
+
+	// try quoted numbers as strings
+	reader = strings.NewReader(`test,test2
+"1","2"`)
+	i, err = parameter.ParseFromReader(reader, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i)
 }
 
 func TestParseObjectListFromFile(t *testing.T) {
@@ -370,6 +401,34 @@ func TestParseObjectListFromFile(t *testing.T) {
 	_, err = parseObjectListFromReader(parameter, ``, "test.yaml")
 	assert.Error(t, err)
 
+	// test csv
+	v, err = parseObjectListFromReader(parameter, `test,test2
+test,test2`, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}}, v)
+
+	// test csv with 2 lines
+	v, err = parseObjectListFromReader(parameter, `test,test2
+test,test2
+test,test2`, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
+
+	// fail on CSV with no headers
+	_, err = parseObjectListFromReader(parameter, `test,test2`, "test.csv")
+	assert.Error(t, err)
+
+	// empty list on empty CSV
+	v, err = parseObjectListFromReader(parameter, ``, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{}, v)
+
+	// succeed on multiline CSV
+	v, err = parseObjectListFromReader(parameter, `test,test2
+test,test2
+test,test2`, "test.csv")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
 }
 
 func parseObjectListFromReader(parameter *ParameterDefinition, input string, fileName string) ([]map[string]interface{}, error) {
