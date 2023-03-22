@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
+	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -54,6 +56,18 @@ func GatherParametersFromCobraCommand(
 
 type CobraRunFunc func(ctx context.Context, parsedLayers map[string]*layers.ParsedParameterLayer, ps map[string]interface{}) error
 
+func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
+	var verbs []string
+	for cmd != nil {
+		verbs = append(verbs, cmd.Name())
+		cmd = cmd.Parent()
+	}
+
+	list.Reverse(verbs)
+
+	return verbs
+}
+
 func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
 	description := s.Description()
 
@@ -66,6 +80,7 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 
 	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
+	cmd.Flags().Bool("create-cliopatra", false, "Print the CLIopatra YAML for the command")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		parsedLayers, ps, err := cobraParser.Parse(args)
@@ -75,6 +90,31 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 			err := cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)
+		}
+
+		createCliopatra, err := cmd.Flags().GetBool("create-cliopatra")
+		cobra.CheckErr(err)
+
+		if createCliopatra {
+			verbs := GetVerbsFromCobraCommand(cmd)
+			if len(verbs) == 0 {
+				cobra.CheckErr(errors.New("could not get verbs from cobra command"))
+			}
+			p := cliopatra.NewProgramFromCapture(
+				s.Description(),
+				ps,
+				cliopatra.WithVerbs(verbs[1:]...),
+				cliopatra.WithName(verbs[0]),
+			)
+
+			// print as yaml
+			sb := strings.Builder{}
+			encoder := yaml.NewEncoder(&sb)
+			err = encoder.Encode(p)
+			cobra.CheckErr(err)
+
+			fmt.Println(sb.String())
+			os.Exit(0)
 		}
 
 		createCliAlias, err := cmd.Flags().GetString("create-alias")

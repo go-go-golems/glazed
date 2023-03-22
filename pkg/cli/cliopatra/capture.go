@@ -16,7 +16,7 @@ func NewProgramFromCapture(
 	description *cmds.CommandDescription,
 	ps map[string]interface{},
 	opts ...ProgramOption,
-) (*Program, error) {
+) *Program {
 	ret := &Program{
 		Name:        description.Name,
 		Description: description.Short,
@@ -46,7 +46,14 @@ func NewProgramFromCapture(
 				Value: v,
 			}
 
-			ret.Flags = append(ret.Flags, param)
+			// TODO(manuel, 2023-03-21) This would be easier if we knew why and from where something is set
+			//
+			// Right now we can only kind of guess, by doing some comparison.
+			//
+			// See https://github.com/go-go-golems/glazed/issues/239
+			if !p.IsEqualToDefault(v) {
+				ret.Flags = append(ret.Flags, param)
+			}
 		}
 	}
 
@@ -72,7 +79,9 @@ func NewProgramFromCapture(
 			Value: v,
 		}
 
-		ret.Flags = append(ret.Flags, param)
+		if !p.IsEqualToDefault(v) {
+			ret.Flags = append(ret.Flags, param)
+		}
 	}
 
 	for _, p := range description.Arguments {
@@ -92,12 +101,14 @@ func NewProgramFromCapture(
 			Value: v,
 		}
 
-		ret.Args = append(ret.Args, param)
+		if !p.IsEqualToDefault(v) {
+			ret.Args = append(ret.Args, param)
+		}
 	}
 
 	for _, opt := range opts {
 		opt(ret)
 	}
 
-	return ret, nil
+	return ret
 }

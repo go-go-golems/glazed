@@ -10,7 +10,7 @@ import (
 )
 
 func TestSingleFlag(t *testing.T) {
-	p, err := NewProgramFromCapture(
+	p := NewProgramFromCapture(
 		cmds.NewCommandDescription("test",
 			cmds.WithFlags(
 				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
@@ -20,7 +20,6 @@ func TestSingleFlag(t *testing.T) {
 			"test": "foobar",
 		},
 	)
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -42,17 +41,15 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 			),
 		),
 	)
-	p, err := NewProgramFromCapture(d, map[string]interface{}{})
-	require.NoError(t, err)
+	p := NewProgramFromCapture(d, map[string]interface{}{})
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
 	assert.Len(t, p.Flags, 0)
 
-	p, err = NewProgramFromCapture(d, map[string]interface{}{
+	p = NewProgramFromCapture(d, map[string]interface{}{
 		"test": "foobar2",
 	})
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -65,7 +62,7 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 }
 
 func TestTwoFlags(t *testing.T) {
-	p, err := NewProgramFromCapture(
+	p := NewProgramFromCapture(
 		cmds.NewCommandDescription("test",
 			cmds.WithFlags(
 				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
@@ -77,7 +74,6 @@ func TestTwoFlags(t *testing.T) {
 			"test2": "foobar2",
 		},
 	)
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -95,7 +91,7 @@ func TestTwoFlags(t *testing.T) {
 }
 
 func TestSingleArg(t *testing.T) {
-	p, err := NewProgramFromCapture(
+	p := NewProgramFromCapture(
 		cmds.NewCommandDescription("test",
 			cmds.WithArguments(
 				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
@@ -105,7 +101,6 @@ func TestSingleArg(t *testing.T) {
 			"test": "foobar",
 		},
 	)
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -118,7 +113,7 @@ func TestSingleArg(t *testing.T) {
 }
 
 func TestTwoArgsTwoFlags(t *testing.T) {
-	p, err := NewProgramFromCapture(
+	p := NewProgramFromCapture(
 		cmds.NewCommandDescription("test",
 			cmds.WithArguments(
 				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
@@ -136,7 +131,6 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 			"test4": "foobar4",
 		},
 	)
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -172,7 +166,7 @@ func TestSingleLayer(t *testing.T) {
 	)
 	require.NoError(t, err2)
 
-	p, err := NewProgramFromCapture(
+	p := NewProgramFromCapture(
 		cmds.NewCommandDescription("test",
 			cmds.WithLayers(
 				layer,
@@ -183,7 +177,6 @@ func TestSingleLayer(t *testing.T) {
 			"test2": "foobar2",
 		},
 	)
-	require.NoError(t, err)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
