@@ -29,7 +29,7 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return s, nil
 
 	case ParameterTypeKeyValue:
-		m, ok := value.(map[string]string)
+		m, ok := cast.CastInterfaceToStringMap[string, interface{}](value)
 		if !ok {
 			return "", errors.Errorf("expected map[string]string, got %T", value)
 		}
@@ -56,14 +56,14 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return "false", nil
 
 	case ParameterTypeStringList:
-		l, ok := value.([]string)
+		l, ok := cast.CastList2[string, interface{}](value)
 		if !ok {
 			return "", errors.Errorf("expected []string, got %T", value)
 		}
 		return strings.Join(l, ","), nil
 
 	case ParameterTypeIntegerList:
-		v, ok := value.([]interface{})
+		v, ok := cast.CastList2[interface{}, interface{}](value)
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
 		}
@@ -78,7 +78,7 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return strings.Join(s, ","), nil
 
 	case ParameterTypeFloatList:
-		v, ok := value.([]interface{})
+		v, ok := cast.CastList2[interface{}, interface{}](value)
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
 		}

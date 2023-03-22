@@ -1,6 +1,59 @@
 package cliopatra
 
-import "github.com/go-go-golems/glazed/pkg/cmds"
+import (
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/helpers/maps"
+)
+
+func getCliopatraFlag(
+	definitions []*parameters.ParameterDefinition,
+	ps map[string]interface{},
+	prefix string,
+) []*Parameter {
+	ret := []*Parameter{}
+
+	for _, p := range definitions {
+		name := prefix + p.Name
+		shortFlag := p.ShortFlag
+		flag := name
+
+		v, ok := ps[name]
+		if !ok {
+			flag = shortFlag
+			v, ok = ps[shortFlag]
+			if !ok {
+				continue
+			}
+		}
+
+		// NOTE(manuel, 2023-03-21) do we need to check for FromFile types? or is that covered by the value representation?
+		param := &Parameter{
+			Name:  name,
+			Short: p.Help,
+			Type:  p.Type,
+			Value: v,
+		}
+		if p.Type == parameters.ParameterTypeBool {
+			param.NoValue = true
+		}
+
+		if flag != name {
+			param.Flag = flag
+		}
+
+		// TODO(manuel, 2023-03-21) This would be easier if we knew why and from where something is set
+		//
+		// Right now we can only kind of guess, by doing some comparison.
+		//
+		// See https://github.com/go-go-golems/glazed/issues/239
+		if !p.IsEqualToDefault(v) {
+			ret = append(ret, param)
+		}
+	}
+
+	return ret
+}
 
 // NewProgramFromCapture is a helper function to help capture a cliopatra Program from
 // the description and the parameters map of a glazed command.
@@ -23,88 +76,11 @@ func NewProgramFromCapture(
 	}
 
 	for _, layer := range description.Layers {
-		for _, p := range layer.GetParameterDefinitions() {
-			name := layer.GetPrefix() + p.Name
-			shortFlag := p.ShortFlag
-			flag := name
-
-			v, ok := ps[name]
-			if !ok {
-				flag = shortFlag
-				v, ok = ps[shortFlag]
-				if !ok {
-					continue
-				}
-			}
-
-			// NOTE(manuel, 2023-03-21) do we need to check for FromFile types? or is that covered by the value representation?
-			param := &Parameter{
-				Name:  name,
-				Flag:  flag,
-				Short: p.Help,
-				Type:  p.Type,
-				Value: v,
-			}
-
-			// TODO(manuel, 2023-03-21) This would be easier if we knew why and from where something is set
-			//
-			// Right now we can only kind of guess, by doing some comparison.
-			//
-			// See https://github.com/go-go-golems/glazed/issues/239
-			if !p.IsEqualToDefault(v) {
-				ret.Flags = append(ret.Flags, param)
-			}
-		}
+		ret.Flags = append(ret.Flags, getCliopatraFlag(maps.GetValues(layer.GetParameterDefinitions()), ps, layer.GetPrefix())...)
 	}
 
-	for _, p := range description.Flags {
-		name := p.Name
-		shortFlag := p.ShortFlag
-		flag := name
-
-		v, ok := ps[name]
-		if !ok {
-			flag = shortFlag
-			v, ok = ps[shortFlag]
-			if !ok {
-				continue
-			}
-		}
-
-		param := &Parameter{
-			Name:  name,
-			Flag:  flag,
-			Short: p.Help,
-			Type:  p.Type,
-			Value: v,
-		}
-
-		if !p.IsEqualToDefault(v) {
-			ret.Flags = append(ret.Flags, param)
-		}
-	}
-
-	for _, p := range description.Arguments {
-		name := p.Name
-		flag := name
-
-		v, ok := ps[name]
-		if !ok {
-			continue
-		}
-
-		param := &Parameter{
-			Name:  name,
-			Flag:  flag,
-			Short: p.Help,
-			Type:  p.Type,
-			Value: v,
-		}
-
-		if !p.IsEqualToDefault(v) {
-			ret.Args = append(ret.Args, param)
-		}
-	}
+	ret.Flags = append(ret.Flags, getCliopatraFlag(description.Flags, ps, "")...)
+	ret.Args = getCliopatraFlag(description.Arguments, ps, "")
 
 	for _, opt := range opts {
 		opt(ret)

@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/fs"
@@ -335,6 +336,8 @@ func (p *Program) RunIntoWriter(
 		return err2
 	}
 
+	log.Debug().Str("path", path).Strs("args", args).Msg("running program")
+
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Env = []string{}
 	// copy current environment
@@ -342,6 +345,7 @@ func (p *Program) RunIntoWriter(
 	for k, v := range p.Env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
+	log.Trace().Strs("env", cmd.Env).Msg("environment")
 
 	if p.Stdin != "" {
 		cmd.Stdin = strings.NewReader(p.Stdin)
