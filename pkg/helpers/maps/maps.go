@@ -24,3 +24,13 @@ func StructToMap(i interface{}, lowerCaseKeys bool) map[string]interface{} {
 
 	return m
 }
+
+func GetValues[Key comparable, Value any](m map[Key]Value) []Value {
+	values := make([]Value, len(m))
+	i := 0
+	for _, v := range m {
+		values[i] = v
+		i++
+	}
+	return values
+}

@@ -86,6 +86,10 @@ func WithRequired(required bool) ParameterDefinitionOption {
 	}
 }
 
+func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
+	return reflect.DeepEqual(p.Default, i)
+}
+
 func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 	switch p.Type {
 	case ParameterTypeString:
