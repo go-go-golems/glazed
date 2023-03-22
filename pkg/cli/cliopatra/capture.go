@@ -75,6 +75,9 @@ func NewProgramFromCapture(
 		Description: description.Short,
 	}
 
+	// NOTE(manuel, 2023-03-21) Maybe we should add layers to the program capture too, to expose all the parameters
+	//
+	// See https://github.com/go-go-golems/cliopatra/issues/6
 	for _, layer := range description.Layers {
 		ret.Flags = append(ret.Flags, getCliopatraFlag(maps.GetValues(layer.GetParameterDefinitions()), ps, layer.GetPrefix())...)
 	}
