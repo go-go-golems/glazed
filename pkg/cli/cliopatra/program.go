@@ -50,7 +50,8 @@ func (p *Parameter) Clone() *Parameter {
 
 // Program describes a program to be executed by cliopatra.
 //
-// This can be used for golden tests by providing the
+// This can be used for golden tests by providing
+// and ExpectedStdout, ExpectedError, ExpectedStatusCode and ExpectedFiles.
 type Program struct {
 	Name        string   `yaml:"name"`
 	Path        string   `yaml:"path,omitempty"`

@@ -2,6 +2,16 @@ package cliopatra
 
 import "github.com/go-go-golems/glazed/pkg/cmds"
 
+// NewProgramFromCapture is a helper function to help capture a cliopatra Program from
+// the description and the parameters map of a glazed command.
+//
+// It will go over all the ParameterDefinition (from the layers, flags and arguments)
+// and will try to create the best cliopatra map it can. It tries to resolve the prefixes
+// of layered parameters.
+//
+// Values in the parameter map that are not present under the form of a ParameterDefinition
+// will not be added to the command, and should be added separately using the WithRawFlags
+// option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
 	ps map[string]interface{},
