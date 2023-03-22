@@ -1,9 +1,11 @@
 ---
-Title: Remove duplicates
-Slug: remove-duplicates
+Title: Create cliopatra YAML
+Slug: cliopatra-capture
 Short: |
   ```
-  glaze json misc/test-data/duplicates.json --input-is-array --remove-duplicates a,b,c --fields a,b,c
+    glaze yaml misc/test-data/test.yaml \
+        --input-is-array --rename baz:blop \
+        --create-cliopatra | tee /tmp/yaml-rename.yaml
   ```
 Topics:
 - cliopatra
