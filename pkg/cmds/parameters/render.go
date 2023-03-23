@@ -5,6 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 func RenderValue(type_ ParameterType, value interface{}) (string, error) {
@@ -13,20 +14,27 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		fallthrough
 	case ParameterTypeStringFromFile:
 		fallthrough
-	case ParameterTypeObjectListFromFile:
-		fallthrough
-	case ParameterTypeObjectFromFile:
-		fallthrough
-	case ParameterTypeStringListFromFile:
-		fallthrough
-	case ParameterTypeDate:
-		fallthrough
 	case ParameterTypeChoice:
 		s, ok := value.(string)
 		if !ok {
 			return "", errors.Errorf("expected string, got %T", value)
 		}
 		return s, nil
+
+	case ParameterTypeObjectListFromFile:
+		fallthrough
+	case ParameterTypeObjectFromFile:
+		return fmt.Sprintf("%v", value), nil
+
+	case ParameterTypeDate:
+		switch v := value.(type) {
+		case string:
+			return v, nil
+		case time.Time:
+			return v.Format(time.RFC3339), nil
+		default:
+			return "", errors.Errorf("expected string or time.Time, got %T", value)
+		}
 
 	case ParameterTypeKeyValue:
 		m, ok := cast.CastInterfaceToStringMap[string, interface{}](value)
@@ -40,10 +48,18 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return strings.Join(s, ","), nil
 
 	case ParameterTypeInteger:
-		return fmt.Sprintf("%d", value), nil
+		v, ok := cast.CastNumberInterfaceToInt[int64](value)
+		if !ok {
+			return "", errors.Errorf("expected int, got %T", value)
+		}
+		return fmt.Sprintf("%d", v), nil
 
 	case ParameterTypeFloat:
-		return fmt.Sprintf("%f", value), nil
+		v, ok := cast.CastNumberInterfaceToFloat[float64](value)
+		if !ok {
+			return "", errors.Errorf("expected float, got %T", v)
+		}
+		return fmt.Sprintf("%f", v), nil
 
 	case ParameterTypeBool:
 		v, ok := value.(bool)
@@ -55,6 +71,8 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		}
 		return "false", nil
 
+	case ParameterTypeStringListFromFile:
+		fallthrough
 	case ParameterTypeStringList:
 		l, ok := cast.CastList2[string, interface{}](value)
 		if !ok {
@@ -63,13 +81,9 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return strings.Join(l, ","), nil
 
 	case ParameterTypeIntegerList:
-		v, ok := cast.CastList2[interface{}, interface{}](value)
+		l, ok := cast.CastListToIntList2[int64](value)
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
-		}
-		l, ok := cast.CastInterfaceListToIntList[int64](v)
-		if !ok {
-			return "", errors.Errorf("expected []int64, got %T", value)
 		}
 		s := []string{}
 		for _, i := range l {
@@ -78,13 +92,9 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return strings.Join(s, ","), nil
 
 	case ParameterTypeFloatList:
-		v, ok := cast.CastList2[interface{}, interface{}](value)
+		l, ok := cast.CastListToFloatList2[float64](value)
 		if !ok {
 			return "", errors.Errorf("expected []interface{}, got %T", value)
-		}
-		l, ok := cast.CastInterfaceListToFloatList[float64](v)
-		if !ok {
-			return "", errors.Errorf("expected []float64, got %T", value)
 		}
 		s := []string{}
 		for _, i := range l {

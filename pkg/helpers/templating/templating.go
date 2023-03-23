@@ -411,7 +411,7 @@ func stripNewlines(s string) string {
 
 // rpad adds padding to the right of a string.
 func rpad(s string, padding_ interface{}) string {
-	padding, ok := cast.CastInterfaceToInt[int](padding_)
+	padding, ok := cast.CastNumberInterfaceToInt[int](padding_)
 	if !ok {
 		panic("padding must be an int")
 	}

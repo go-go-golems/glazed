@@ -105,7 +105,7 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 		}
 		p.Default = v
 	case ParameterTypeInteger:
-		v, ok := cast.CastInterfaceToInt[int64](i)
+		v, ok := cast.CastNumberInterfaceToInt[int64](i)
 		if !ok {
 			return errors.Errorf("expected int64 for parameter %s, got %T", p.Name, i)
 		}
@@ -647,7 +647,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		}
 
 	case ParameterTypeInteger:
-		_, ok := cast.CastInterfaceToInt[int64](v)
+		_, ok := cast.CastNumberInterfaceToInt[int64](v)
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, v)
 		}

@@ -194,7 +194,7 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0
 
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToInt[int](parameter.Default)
+				defaultValue, ok = cast.CastNumberInterfaceToInt[int](parameter.Default)
 				if !ok {
 					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, parameter.Default)
 				}
