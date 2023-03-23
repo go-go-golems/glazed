@@ -14,16 +14,17 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		fallthrough
 	case ParameterTypeStringFromFile:
 		fallthrough
-	case ParameterTypeObjectListFromFile:
-		fallthrough
-	case ParameterTypeObjectFromFile:
-		fallthrough
 	case ParameterTypeChoice:
 		s, ok := value.(string)
 		if !ok {
 			return "", errors.Errorf("expected string, got %T", value)
 		}
 		return s, nil
+
+	case ParameterTypeObjectListFromFile:
+		fallthrough
+	case ParameterTypeObjectFromFile:
+		return fmt.Sprintf("%v", value), nil
 
 	case ParameterTypeDate:
 		switch v := value.(type) {
