@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestRenderString(t *testing.T) {
@@ -75,4 +76,25 @@ func TestRenderFloat(t *testing.T) {
 	v, err = RenderValue(ParameterTypeFloatList, []float64{1.1})
 	require.NoError(t, err)
 	assert.Equal(t, "1.100000", v)
+}
+
+func TestRenderDate(t *testing.T) {
+	v, err := RenderValue(ParameterTypeDate, "2019-01-01")
+	require.NoError(t, err)
+	assert.Equal(t, "2019-01-01", v)
+
+	_, err = RenderValue(ParameterTypeDate, 1)
+	require.Error(t, err)
+
+	d, err := time.Parse("2006-01-02", "2019-01-01")
+	require.NoError(t, err)
+	v, err = RenderValue(ParameterTypeDate, d)
+	require.NoError(t, err)
+	assert.Equal(t, "2019-01-01T00:00:00Z", v)
+
+	t_, err := time.Parse("2006-01-02 15:04:05", "2019-01-01 12:00:00")
+	require.NoError(t, err)
+	v, err = RenderValue(ParameterTypeDate, t_)
+	require.NoError(t, err)
+	assert.Equal(t, "2019-01-01T12:00:00Z", v)
 }

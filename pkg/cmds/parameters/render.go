@@ -5,6 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 func RenderValue(type_ ParameterType, value interface{}) (string, error) {
@@ -17,14 +18,22 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		fallthrough
 	case ParameterTypeObjectFromFile:
 		fallthrough
-	case ParameterTypeDate:
-		fallthrough
 	case ParameterTypeChoice:
 		s, ok := value.(string)
 		if !ok {
 			return "", errors.Errorf("expected string, got %T", value)
 		}
 		return s, nil
+
+	case ParameterTypeDate:
+		switch v := value.(type) {
+		case string:
+			return v, nil
+		case time.Time:
+			return v.Format(time.RFC3339), nil
+		default:
+			return "", errors.Errorf("expected string or time.Time, got %T", value)
+		}
 
 	case ParameterTypeKeyValue:
 		m, ok := cast.CastInterfaceToStringMap[string, interface{}](value)
