@@ -80,7 +80,7 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 
 	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
-	cmd.Flags().Bool("create-cliopatra", false, "Print the CLIopatra YAML for the command")
+	cmd.Flags().String("create-cliopatra", "", "Print the CLIopatra YAML for the command")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		parsedLayers, ps, err := cobraParser.Parse(args)
@@ -92,10 +92,10 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 			os.Exit(1)
 		}
 
-		createCliopatra, err := cmd.Flags().GetBool("create-cliopatra")
+		createCliopatra, err := cmd.Flags().GetString("create-cliopatra")
 		cobra.CheckErr(err)
 
-		if createCliopatra {
+		if createCliopatra != "" {
 			verbs := GetVerbsFromCobraCommand(cmd)
 			if len(verbs) == 0 {
 				cobra.CheckErr(errors.New("could not get verbs from cobra command"))
@@ -104,7 +104,8 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 				s.Description(),
 				ps,
 				cliopatra.WithVerbs(verbs[1:]...),
-				cliopatra.WithName(verbs[0]),
+				cliopatra.WithName(createCliopatra),
+				cliopatra.WithPath(verbs[0]),
 			)
 
 			// print as yaml
@@ -338,7 +339,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeComma
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
 		cobraCommand, err := BuildCobraCommandFromGlazeCommand(command)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Error building command %s", description.Name)
 		}
 
 		parentCmd.AddCommand(cobraCommand)
