@@ -71,11 +71,42 @@ func CastToNumberList[To Number, From Number](list []From) ([]To, bool) {
 	return ret, true
 }
 
+func CastListToIntList2[To SignedInt | UnsignedInt](list interface{}) ([]To, bool) {
+	switch t := list.(type) {
+	case []interface{}:
+		return CastInterfaceListToIntList[To](t)
+	case []int:
+		return CastToNumberList[To, int](t)
+	case []int8:
+		return CastToNumberList[To, int8](t)
+	case []int16:
+		return CastToNumberList[To, int16](t)
+	case []int32:
+		return CastToNumberList[To, int32](t)
+	case []int64:
+		return CastToNumberList[To, int64](t)
+	case []uint:
+		return CastToNumberList[To, uint](t)
+	case []uint8:
+		return CastToNumberList[To, uint8](t)
+	case []uint16:
+		return CastToNumberList[To, uint16](t)
+	case []uint32:
+		return CastToNumberList[To, uint32](t)
+	case []uint64:
+		return CastToNumberList[To, uint64](t)
+	case []uintptr:
+		return CastToNumberList[To, uintptr](t)
+	default:
+		return []To{}, false
+	}
+}
+
 func CastInterfaceListToIntList[To SignedInt | UnsignedInt](list []interface{}) ([]To, bool) {
 	ret := []To{}
 
 	for _, item := range list {
-		f, ok := CastInterfaceToInt[To](item)
+		f, ok := CastNumberInterfaceToInt[To](item)
 		if !ok {
 			return ret, false
 		}
@@ -83,6 +114,19 @@ func CastInterfaceListToIntList[To SignedInt | UnsignedInt](list []interface{}) 
 	}
 
 	return ret, true
+}
+
+func CastListToFloatList2[To FloatNumber](list interface{}) ([]To, bool) {
+	switch t := list.(type) {
+	case []interface{}:
+		return CastInterfaceListToFloatList[To](t)
+	case []float32:
+		return CastToNumberList[To, float32](t)
+	case []float64:
+		return CastToNumberList[To, float64](t)
+	default:
+		return []To{}, false
+	}
 }
 
 func CastInterfaceListToFloatList[To FloatNumber](list []interface{}) ([]To, bool) {
@@ -139,7 +183,7 @@ func CastMapToInterfaceMap[From any](m map[string]From) map[string]interface{} {
 	return ret
 }
 
-func CastInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
+func CastNumberInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
 	switch i := i.(type) {
 	case To:
 		return i, true
