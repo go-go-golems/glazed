@@ -9,10 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -423,73 +421,4 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 		args = append(args, value_)
 	}
 	return args, nil
-}
-
-func LoadProgramsFromFS(f fs.FS, dir string) ([]*Program, error) {
-	programs := []*Program{}
-
-	entries, err := fs.ReadDir(f, dir)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not read dir %s", dir)
-	}
-	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), ".") {
-			continue
-		}
-
-		fileName := filepath.Join(dir, entry.Name())
-		if entry.IsDir() {
-			programs_, err := LoadProgramsFromFS(f, fileName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not load programs from dir %s", fileName)
-			}
-			programs = append(programs, programs_...)
-			continue
-		}
-
-		if strings.HasSuffix(entry.Name(), ".yaml") ||
-			strings.HasSuffix(entry.Name(), ".yml") {
-			file, err := f.Open(fileName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not open file %s", fileName)
-			}
-
-			defer func() {
-				_ = file.Close()
-			}()
-
-			program, err := NewProgramFromYAML(file)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not load program from file %s", fileName)
-			}
-
-			programs = append(programs, program)
-		}
-	}
-
-	return programs, nil
-}
-
-func LoadRepositories(repositories []string) (map[string]*Program, error) {
-	programs := map[string]*Program{}
-
-	for _, repository := range repositories {
-		_, err := os.Stat(repository)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not stat repository %s", repository)
-		}
-
-		programs_, err := LoadProgramsFromFS(os.DirFS(repository), ".")
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not load programs from repository %s", repository)
-		}
-
-		for _, program := range programs_ {
-			if _, ok := programs[program.Name]; ok {
-				return nil, fmt.Errorf("program %s already exists", program.Name)
-			}
-			programs[program.Name] = program
-		}
-	}
-	return programs, nil
 }
