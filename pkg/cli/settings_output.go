@@ -13,9 +13,10 @@ import (
 	"unicode/utf8"
 )
 
+// TemplateFormatterSettings is probably obsolete...
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
-	OutputFile       string
+	OutputFile       string                 `glazed.parameter:"output-file"`
 	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
 }
 
@@ -124,6 +125,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
+				OutputFile: ofs.OutputFile,
 				TemplateFuncMaps: []template.FuncMap{
 					sprig.TxtFuncMap(),
 					templating.TemplateFuncs,
@@ -131,11 +133,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = formatters.NewTemplateOutputFormatter(
-			ofs.Template,
-			ofs.TemplateFormatterSettings.TemplateFuncMaps,
-			ofs.TemplateFormatterSettings.AdditionalData,
-		)
+		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.TemplateFormatterSettings.OutputFile)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}

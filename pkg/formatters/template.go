@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/rs/zerolog/log"
+	"os"
 	"text/template"
 )
 
@@ -12,6 +14,7 @@ type TemplateFormatter struct {
 	Table            *types.Table
 	TemplateFuncMaps []template.FuncMap
 	middlewares      []middlewares.TableMiddleware
+	OutputFile       string
 	AdditionalData   interface{}
 }
 
@@ -71,16 +74,30 @@ func (t *TemplateFormatter) Output() (string, error) {
 
 	err = tmpl.Execute(&buf, data)
 
-	return buf.String(), err
+	if err != nil {
+		return "", err
+	}
+
+	if t.OutputFile != "" {
+		log.Debug().Str("file", t.OutputFile).Msg("Writing output to file")
+		err = os.WriteFile(t.OutputFile, buf.Bytes(), 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+
+	return buf.String(), nil
 }
 
 // NewTemplateOutputFormatter creates a new TemplateFormatter.
 //
 // TODO(manuel, 2023-02-19) This is quite an ugly constructor signature.
 // See: https://github.com/go-go-golems/glazed/issues/147
-func NewTemplateOutputFormatter(template string, templateFuncMaps []template.FuncMap, additionalData interface{}) *TemplateFormatter {
+func NewTemplateOutputFormatter(template string, templateFuncMaps []template.FuncMap, additionalData interface{}, outputFile string) *TemplateFormatter {
 	return &TemplateFormatter{
 		Template:         template,
+		OutputFile:       outputFile,
 		Table:            types.NewTable(),
 		TemplateFuncMaps: templateFuncMaps,
 		AdditionalData:   additionalData,
