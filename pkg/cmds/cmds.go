@@ -406,6 +406,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 				}, options...)
 				commands, err := l.loader.LoadCommandFromYAML(file, options_...)
 				if err != nil {
+					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err
 				}
 				if len(commands) != 1 {
@@ -433,6 +434,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(
 						log.Debug().Str("file", fileName).Msg("Loading alias from file")
 						aliases, err := l.loader.LoadCommandAliasFromYAML(file)
 						if err != nil {
+							log.Debug().Err(err).Str("file", fileName).Msg("Could not load alias from file")
 							return nil, err
 						}
 						if len(aliases) != 1 {

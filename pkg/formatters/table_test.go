@@ -9,7 +9,7 @@ import (
 )
 
 func TestTableRenameEndToEnd(t *testing.T) {
-	of := NewTableOutputFormatter("markdown")
+	of := NewTableOutputFormatter("markdown", "")
 	renames := map[string]string{
 		"a": "b",
 	}

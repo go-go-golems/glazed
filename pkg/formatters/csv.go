@@ -5,28 +5,33 @@ import (
 	"fmt"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/rs/zerolog/log"
+	"os"
 	"strings"
 )
 
 type CSVOutputFormatter struct {
 	Table       *types.Table
 	middlewares []middlewares2.TableMiddleware
+	OutputFile  string
 	WithHeaders bool
 	Separator   rune
 }
 
-func NewCSVOutputFormatter() *CSVOutputFormatter {
+func NewCSVOutputFormatter(outputFile string) *CSVOutputFormatter {
 	return &CSVOutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares2.TableMiddleware{},
+		OutputFile:  outputFile,
 		WithHeaders: true,
 		Separator:   ',',
 	}
 }
 
-func NewTSVOutputFormatter() *CSVOutputFormatter {
+func NewTSVOutputFormatter(outputFile string) *CSVOutputFormatter {
 	return &CSVOutputFormatter{
 		Table:       types.NewTable(),
+		OutputFile:  outputFile,
 		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   '\t',
@@ -100,6 +105,15 @@ func (f *CSVOutputFormatter) Output() (string, error) {
 
 	if err := w.Error(); err != nil {
 		return "", err
+	}
+
+	if f.OutputFile != "" {
+		log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
+		err := os.WriteFile(f.OutputFile, []byte(buf.String()), 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
 	}
 
 	return buf.String(), nil

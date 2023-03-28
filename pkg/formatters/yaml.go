@@ -3,11 +3,14 @@ package formatters
 import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
+	"os"
 )
 
 type YAMLOutputFormatter struct {
 	Table       *types.Table
+	OutputFile  string
 	middlewares []middlewares.TableMiddleware
 }
 
@@ -56,12 +59,23 @@ func (Y *YAMLOutputFormatter) Output() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if Y.OutputFile != "" {
+		log.Debug().Str("file", Y.OutputFile).Msg("Writing output to file")
+		err := os.WriteFile(Y.OutputFile, d, 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+
 	return string(d), nil
 }
 
-func NewYAMLOutputFormatter() *YAMLOutputFormatter {
+func NewYAMLOutputFormatter(outputFile string) *YAMLOutputFormatter {
 	return &YAMLOutputFormatter{
 		Table:       types.NewTable(),
+		OutputFile:  outputFile,
 		middlewares: []middlewares.TableMiddleware{},
 	}
 }

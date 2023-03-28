@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/rs/zerolog/log"
+	"os"
 )
 
 type JSONOutputFormatter struct {
 	OutputIndividualRows bool
+	OutputFile           string
 	Table                *types.Table
 	middlewares          []middlewares.TableMiddleware
 }
@@ -57,6 +60,16 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 			}
 			buf.Write(jsonBytes)
 		}
+
+		if J.OutputFile != "" {
+			log.Debug().Str("file", J.OutputFile).Msg("Writing output to file")
+			err := os.WriteFile(J.OutputFile, buf.Bytes(), 0644)
+			if err != nil {
+				return "", err
+			}
+			return "", nil
+		}
+
 		return buf.String(), nil
 	} else {
 		// TODO(manuel, 2022-11-21) We should build a custom JSONMarshal for Table
@@ -68,14 +81,25 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 		if err != nil {
 			return "", err
 		}
+
+		if J.OutputFile != "" {
+			log.Debug().Str("file", J.OutputFile).Msg("Writing output to file")
+			err := os.WriteFile(J.OutputFile, jsonBytes, 0644)
+			if err != nil {
+				return "", err
+			}
+			return "", nil
+		}
+
 		return string(jsonBytes), nil
 	}
 }
 
-func NewJSONOutputFormatter(outputAsObjects bool) *JSONOutputFormatter {
+func NewJSONOutputFormatter(outputAsObjects bool, outputFile string) *JSONOutputFormatter {
 	return &JSONOutputFormatter{
 		OutputIndividualRows: outputAsObjects,
 		Table:                types.NewTable(),
+		OutputFile:           outputFile,
 		middlewares:          []middlewares.TableMiddleware{},
 	}
 }

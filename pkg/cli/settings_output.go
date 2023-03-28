@@ -13,8 +13,10 @@ import (
 	"unicode/utf8"
 )
 
+// TemplateFormatterSettings is probably obsolete...
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
+	OutputFile       string                 `glazed.parameter:"output-file"`
 	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
 }
 
@@ -93,9 +95,9 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 
 	var of formatters.OutputFormatter
 	if ofs.Output == "json" {
-		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects)
+		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects, ofs.OutputFile)
 	} else if ofs.Output == "yaml" {
-		of = formatters.NewYAMLOutputFormatter()
+		of = formatters.NewYAMLOutputFormatter(ofs.OutputFile)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
@@ -107,22 +109,23 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
-			csvOf := formatters.NewCSVOutputFormatter()
+			csvOf := formatters.NewCSVOutputFormatter(ofs.OutputFile)
 			csvOf.WithHeaders = ofs.WithHeaders
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 			csvOf.Separator = r
 			of = csvOf
 		} else if ofs.TableFormat == "tsv" {
-			tsvOf := formatters.NewTSVOutputFormatter()
+			tsvOf := formatters.NewTSVOutputFormatter(ofs.OutputFile)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = formatters.NewTableOutputFormatter(ofs.TableFormat)
+			of = formatters.NewTableOutputFormatter(ofs.TableFormat, ofs.OutputFile)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
+				OutputFile: ofs.OutputFile,
 				TemplateFuncMaps: []template.FuncMap{
 					sprig.TxtFuncMap(),
 					templating.TemplateFuncs,
@@ -130,11 +133,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = formatters.NewTemplateOutputFormatter(
-			ofs.Template,
-			ofs.TemplateFormatterSettings.TemplateFuncMaps,
-			ofs.TemplateFormatterSettings.AdditionalData,
-		)
+		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.TemplateFormatterSettings.OutputFile)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}
