@@ -97,7 +97,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	if ofs.Output == "json" {
 		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects)
 	} else if ofs.Output == "yaml" {
-		of = formatters.NewYAMLOutputFormatter()
+		of = formatters.NewYAMLOutputFormatter(ofs.OutputFile)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
