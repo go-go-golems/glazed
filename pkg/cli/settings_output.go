@@ -119,7 +119,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = formatters.NewTableOutputFormatter(ofs.TableFormat)
+			of = formatters.NewTableOutputFormatter(ofs.TableFormat, ofs.OutputFile)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {

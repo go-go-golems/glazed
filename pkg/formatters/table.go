@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/rs/zerolog/log"
 	"github.com/scylladb/termtables"
+	"os"
 	"strings"
 )
 
@@ -54,11 +56,13 @@ type TableOutputFormatter struct {
 	Table       *types.Table
 	middlewares []middlewares.TableMiddleware
 	TableFormat string
+	OutputFile  string
 }
 
-func NewTableOutputFormatter(tableFormat string) *TableOutputFormatter {
+func NewTableOutputFormatter(tableFormat string, outputFile string) *TableOutputFormatter {
 	return &TableOutputFormatter{
 		Table:       types.NewTable(),
+		OutputFile:  outputFile,
 		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
 	}
@@ -114,7 +118,18 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 		table.AddRow(row_...)
 	}
 
-	return table.Render(), nil
+	s := table.Render()
+
+	if tof.OutputFile != "" {
+		log.Debug().Str("file", tof.OutputFile).Msg("Writing output to file")
+		err := os.WriteFile(tof.OutputFile, []byte(s), 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+
+	return s, nil
 }
 
 func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
