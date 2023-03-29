@@ -10,7 +10,7 @@ import (
 )
 
 func TestYAMLRenameEndToEnd(t *testing.T) {
-	of := NewYAMLOutputFormatter("")
+	of := NewYAMLOutputFormatter()
 	renames := map[string]string{
 		"a": "b",
 	}

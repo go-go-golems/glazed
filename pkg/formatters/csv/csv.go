@@ -18,24 +18,52 @@ type CSVOutputFormatter struct {
 	Separator   rune
 }
 
-func NewCSVOutputFormatter(outputFile string) *CSVOutputFormatter {
-	return &CSVOutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares2.TableMiddleware{},
-		OutputFile:  outputFile,
-		WithHeaders: true,
-		Separator:   ',',
+type CSVOutputFormatterOption func(*CSVOutputFormatter)
+
+func WithOutputFile(outputFile string) CSVOutputFormatterOption {
+	return func(f *CSVOutputFormatter) {
+		f.OutputFile = outputFile
 	}
 }
 
-func NewTSVOutputFormatter(outputFile string) *CSVOutputFormatter {
-	return &CSVOutputFormatter{
+func WithHeaders(withHeaders bool) CSVOutputFormatterOption {
+	return func(f *CSVOutputFormatter) {
+		f.WithHeaders = withHeaders
+	}
+}
+
+func WithSeparator(separator rune) CSVOutputFormatterOption {
+	return func(f *CSVOutputFormatter) {
+		f.Separator = separator
+	}
+}
+
+func NewCSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter {
+	f := &CSVOutputFormatter{
 		Table:       types.NewTable(),
-		OutputFile:  outputFile,
+		middlewares: []middlewares2.TableMiddleware{},
+		WithHeaders: true,
+		Separator:   ',',
+	}
+	for _, opt := range opts {
+		opt(f)
+	}
+	return f
+}
+
+func NewTSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter {
+	f := &CSVOutputFormatter{
+		Table:       types.NewTable(),
 		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   '\t',
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }
 
 func (f *CSVOutputFormatter) GetTable() (*types.Table, error) {

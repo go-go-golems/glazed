@@ -35,12 +35,6 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 	}
 }
 
-type SelectFlagsDefaults struct {
-	Select         string `glazed.parameter:"select"`
-	SelectTemplate string `glazed.parameter:"select-template"`
-	Separator      string `glazed.parameter:"select-separator"`
-}
-
 type SelectParameterLayer struct {
 	*layers.ParameterLayerImpl
 }

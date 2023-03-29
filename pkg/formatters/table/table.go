@@ -59,13 +59,26 @@ type TableOutputFormatter struct {
 	OutputFile  string
 }
 
-func NewTableOutputFormatter(tableFormat string, outputFile string) *TableOutputFormatter {
-	return &TableOutputFormatter{
+type TableOutputFormatterOption func(*TableOutputFormatter)
+
+func WithOutputFile(outputFile string) TableOutputFormatterOption {
+	return func(tof *TableOutputFormatter) {
+		tof.OutputFile = outputFile
+	}
+}
+
+func NewTableOutputFormatter(tableFormat string, opts ...TableOutputFormatterOption) *TableOutputFormatter {
+	f := &TableOutputFormatter{
 		Table:       types.NewTable(),
-		OutputFile:  outputFile,
 		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }
 
 func (tof *TableOutputFormatter) GetTable() (*types.Table, error) {

@@ -14,12 +14,26 @@ type SingleColumnFormatter struct {
 	middlewares []middlewares.TableMiddleware
 }
 
-func NewSingleColumnFormatter(column types.FieldName, separator string) *SingleColumnFormatter {
-	return &SingleColumnFormatter{
+type SingleColumnFormatterOption func(*SingleColumnFormatter)
+
+func WithSeparator(separator string) SingleColumnFormatterOption {
+	return func(f *SingleColumnFormatter) {
+		f.Separator = separator
+	}
+}
+
+func NewSingleColumnFormatter(column types.FieldName, opts ...SingleColumnFormatterOption) *SingleColumnFormatter {
+	f := &SingleColumnFormatter{
 		Table:     &types.Table{},
 		Column:    column,
-		Separator: separator,
+		Separator: "\n",
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }
 
 func (s *SingleColumnFormatter) AddRow(row types.Row) {

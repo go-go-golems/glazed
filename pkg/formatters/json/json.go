@@ -97,11 +97,29 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 
 type JSONOutputFormatterOption func(*JSONOutputFormatter)
 
-func NewJSONOutputFormatter(outputAsObjects bool, outputFile string) *JSONOutputFormatter {
-	return &JSONOutputFormatter{
-		OutputIndividualRows: outputAsObjects,
+func WithOutputIndividualRows(outputIndividualRows bool) JSONOutputFormatterOption {
+	return func(formatter *JSONOutputFormatter) {
+		formatter.OutputIndividualRows = outputIndividualRows
+	}
+}
+
+func WithOutputFile(file string) JSONOutputFormatterOption {
+	return func(formatter *JSONOutputFormatter) {
+		formatter.OutputFile = file
+	}
+}
+
+func NewJSONOutputFormatter(options ...JSONOutputFormatterOption) *JSONOutputFormatter {
+	ret := &JSONOutputFormatter{
+		OutputIndividualRows: false,
 		Table:                types.NewTable(),
-		OutputFile:           outputFile,
+		OutputFile:           "",
 		middlewares:          []middlewares.TableMiddleware{},
 	}
+
+	for _, option := range options {
+		option(ret)
+	}
+
+	return ret
 }

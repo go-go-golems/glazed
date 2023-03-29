@@ -125,11 +125,29 @@ func (E *ExcelOutputFormatter) Output() (string, error) {
 	return fmt.Sprintf("Output file created successfully at %s", E.OutputFile), nil
 }
 
-func NewExcelOutputFormatter(sheetName string, outputFile string) *ExcelOutputFormatter {
-	return &ExcelOutputFormatter{
-		SheetName:   sheetName,
-		OutputFile:  outputFile,
+type ExcelOutputFormatterOption func(*ExcelOutputFormatter)
+
+func WithSheetName(sheetName string) ExcelOutputFormatterOption {
+	return func(formatter *ExcelOutputFormatter) {
+		formatter.SheetName = sheetName
+	}
+}
+
+func WithOutputFile(outputFile string) ExcelOutputFormatterOption {
+	return func(formatter *ExcelOutputFormatter) {
+		formatter.OutputFile = outputFile
+	}
+}
+
+func NewExcelOutputFormatter(opts ...ExcelOutputFormatterOption) *ExcelOutputFormatter {
+	f := &ExcelOutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares.TableMiddleware{},
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }

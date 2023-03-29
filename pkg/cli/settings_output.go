@@ -89,31 +89,43 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormat
 
 	var of table2.OutputFormatter
 	if ofs.Output == "json" {
-		of = json.NewJSONOutputFormatter(ofs.OutputAsObjects, ofs.OutputFile)
+		of = json.NewJSONOutputFormatter(
+			json.WithOutputIndividualRows(ofs.OutputAsObjects),
+			json.WithOutputFile(ofs.OutputFile),
+		)
 	} else if ofs.Output == "yaml" {
-		of = yaml.NewYAMLOutputFormatter(ofs.OutputFile)
+		of = yaml.NewYAMLOutputFormatter(
+			yaml.WithYAMLOutputFile(ofs.OutputFile),
+		)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
 		}
 		of = excel.NewExcelOutputFormatter(
-			ofs.SheetName,
-			ofs.OutputFile,
+			excel.WithSheetName(ofs.SheetName),
+			excel.WithOutputFile(ofs.OutputFile),
 		)
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
-			csvOf := csv.NewCSVOutputFormatter(ofs.OutputFile)
+			csvOf := csv.NewCSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+			)
 			csvOf.WithHeaders = ofs.WithHeaders
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 			csvOf.Separator = r
 			of = csvOf
 		} else if ofs.TableFormat == "tsv" {
-			tsvOf := csv.NewTSVOutputFormatter(ofs.OutputFile)
+			tsvOf := csv.NewTSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+			)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = table2.NewTableOutputFormatter(ofs.TableFormat, ofs.OutputFile)
+			of = table2.NewTableOutputFormatter(
+				ofs.TableFormat,
+				table2.WithOutputFile(ofs.OutputFile),
+			)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
@@ -126,7 +138,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormat
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = template2.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.OutputFile)
+		of = template2.NewTemplateOutputFormatter(
+			ofs.Template,
+			template2.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
+			template2.WithAdditionalData(ofs.TemplateFormatterSettings.AdditionalData),
+			template2.WithOutputFile(ofs.OutputFile),
+		)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}

@@ -413,7 +413,10 @@ func SetupProcessor(ps map[string]interface{}) (
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
 	if selectSettings.SelectField != "" {
-		of = simple.NewSingleColumnFormatter(selectSettings.SelectField, selectSettings.SelectSeparator)
+		of = simple.NewSingleColumnFormatter(
+			selectSettings.SelectField,
+			simple.WithSeparator(selectSettings.SelectSeparator),
+		)
 	} else {
 		of, err = outputSettings.CreateOutputFormatter()
 		if err != nil {

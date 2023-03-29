@@ -57,7 +57,7 @@ type SimpleGlazeProcessor struct {
 }
 
 func NewSimpleGlazeProcessor(oms ...middlewares.ObjectMiddleware) *SimpleGlazeProcessor {
-	formatter := table.NewTableOutputFormatter("csv", "")
+	formatter := table.NewTableOutputFormatter("csv")
 	return &SimpleGlazeProcessor{
 		GlazeProcessor: NewGlazeProcessor(formatter, oms...),
 		formatter:      formatter,

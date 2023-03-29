@@ -11,7 +11,7 @@ import (
 )
 
 func TestCSVRenameEndToEnd(t *testing.T) {
-	of := NewCSVOutputFormatter("")
+	of := NewCSVOutputFormatter()
 	renames := map[string]string{
 		"a": "b",
 	}

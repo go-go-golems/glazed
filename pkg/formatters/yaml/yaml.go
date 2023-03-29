@@ -72,10 +72,23 @@ func (Y *YAMLOutputFormatter) Output() (string, error) {
 	return string(d), nil
 }
 
-func NewYAMLOutputFormatter(outputFile string) *YAMLOutputFormatter {
-	return &YAMLOutputFormatter{
+type YAMLOutputFormatterOption func(*YAMLOutputFormatter)
+
+func WithYAMLOutputFile(outputFile string) YAMLOutputFormatterOption {
+	return func(f *YAMLOutputFormatter) {
+		f.OutputFile = outputFile
+	}
+}
+
+func NewYAMLOutputFormatter(opts ...YAMLOutputFormatterOption) *YAMLOutputFormatter {
+	f := &YAMLOutputFormatter{
 		Table:       types.NewTable(),
-		OutputFile:  outputFile,
 		middlewares: []middlewares.TableMiddleware{},
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }

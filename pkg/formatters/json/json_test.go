@@ -10,7 +10,7 @@ import (
 )
 
 func TestJSONRenameEndToEnd(t *testing.T) {
-	of := NewJSONOutputFormatter(false, "")
+	of := NewJSONOutputFormatter()
 	renames := map[string]string{
 		"a": "b",
 	}

@@ -90,16 +90,40 @@ func (t *TemplateFormatter) Output() (string, error) {
 	return buf.String(), nil
 }
 
+type TemplateOutputFormatterOption func(*TemplateFormatter)
+
+func WithTemplateFuncMaps(templateFuncMaps []template.FuncMap) TemplateOutputFormatterOption {
+	return func(t *TemplateFormatter) {
+		t.TemplateFuncMaps = templateFuncMaps
+	}
+}
+
+func WithAdditionalData(additionalData interface{}) TemplateOutputFormatterOption {
+	return func(t *TemplateFormatter) {
+		t.AdditionalData = additionalData
+	}
+}
+
+func WithOutputFile(outputFile string) TemplateOutputFormatterOption {
+	return func(t *TemplateFormatter) {
+		t.OutputFile = outputFile
+	}
+}
+
 // NewTemplateOutputFormatter creates a new TemplateFormatter.
 //
 // TODO(manuel, 2023-02-19) This is quite an ugly constructor signature.
 // See: https://github.com/go-go-golems/glazed/issues/147
-func NewTemplateOutputFormatter(template string, templateFuncMaps []template.FuncMap, additionalData interface{}, outputFile string) *TemplateFormatter {
-	return &TemplateFormatter{
-		Template:         template,
-		OutputFile:       outputFile,
-		Table:            types.NewTable(),
-		TemplateFuncMaps: templateFuncMaps,
-		AdditionalData:   additionalData,
+func NewTemplateOutputFormatter(template string, opts ...TemplateOutputFormatterOption) *TemplateFormatter {
+	f := &TemplateFormatter{
+		Template:       template,
+		AdditionalData: map[string]interface{}{},
+		Table:          types.NewTable(),
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }

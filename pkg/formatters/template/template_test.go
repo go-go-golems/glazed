@@ -14,10 +14,11 @@ import (
 func TestTemplateRenameEndToEnd(t *testing.T) {
 	// template that gets rows[0].b
 	tmpl := `{{ (index .rows 0).b }}`
-	of := NewTemplateOutputFormatter(tmpl, []template.FuncMap{
-		sprig.TxtFuncMap(),
-		templating.TemplateFuncs,
-	}, make(map[string]interface{}), "")
+	of := NewTemplateOutputFormatter(tmpl,
+		WithTemplateFuncMaps([]template.FuncMap{
+			sprig.TxtFuncMap(),
+			templating.TemplateFuncs,
+		}))
 	renames := map[string]string{
 		"a": "b",
 	}
