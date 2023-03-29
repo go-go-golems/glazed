@@ -128,16 +128,23 @@ func (f *OutputFormatter) Output() (string, error) {
 			// get OutputFile basename and filetype
 			var outputFileName string
 			if f.OutputFileTemplate != "" {
-				t, err := templating.RenderTemplateString(f.OutputFileTemplate, row.GetValues())
+				data := map[string]interface{}{}
+				values := row.GetValues()
+
+				for k, v := range values {
+					data[k] = v
+				}
+				data["rowIndex"] = i
+				t, err := templating.RenderTemplateString(f.OutputFileTemplate, data)
 				if err != nil {
 					return "", err
 				}
 				outputFileName = t
 			} else {
-				baseName := filepath.Base(f.OutputFile)
 				fileType := filepath.Ext(f.OutputFile)
+				baseName := strings.TrimSuffix(f.OutputFile, fileType)
 
-				outputFileName = fmt.Sprintf("%s-%d.%s", baseName, i, fileType)
+				outputFileName = fmt.Sprintf("%s-%d%s", baseName, i, fileType)
 			}
 
 			buf, w, err := f.newCSVWriter()
@@ -156,12 +163,11 @@ func (f *OutputFormatter) Output() (string, error) {
 				return "", err
 			}
 
-			log.Debug().Str("file", outputFileName).Msg("Writing output to file")
 			err = os.WriteFile(outputFileName, []byte(buf.String()), 0644)
 			if err != nil {
 				return "", err
 			}
-			s += fmt.Sprintf("Written output to %s", outputFileName)
+			s += fmt.Sprintf("Written output to %s\n", outputFileName)
 		}
 
 		return s, nil
@@ -191,7 +197,7 @@ func (f *OutputFormatter) Output() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("Written output to %s", f.OutputFile), nil
+		return fmt.Sprintf("Written output to %s\n", f.OutputFile), nil
 	}
 
 	return buf.String(), nil
