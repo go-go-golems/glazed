@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
@@ -68,6 +69,47 @@ func (tof *OutputFormatter) Output() (string, error) {
 		tof.Table = newTable
 	}
 
+	if tof.OutputMultipleFiles {
+		if tof.OutputFileTemplate == "" && tof.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
+
+		s := ""
+
+		for i, row := range tof.Table.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(tof.OutputFile, tof.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
+			}
+
+			s_ := tof.makeTable([]types.Row{row})
+
+			err = os.WriteFile(outputFileName, []byte(s_), 0644)
+			if err != nil {
+				return "", err
+			}
+
+			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+		}
+
+		return s, nil
+	}
+
+	s := tof.makeTable(tof.Table.Rows)
+
+	if tof.OutputFile != "" {
+		log.Debug().Str("file", tof.OutputFile).Msg("Writing output to file")
+		err := os.WriteFile(tof.OutputFile, []byte(s), 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+
+	return s, nil
+}
+
+func (tof *OutputFormatter) makeTable(rows []types.Row) string {
 	table := termtables.CreateTable()
 
 	if tof.TableFormat == "markdown" {
@@ -82,7 +124,7 @@ func (tof *OutputFormatter) Output() (string, error) {
 		table.AddHeaders(column)
 	}
 
-	for _, row := range tof.Table.Rows {
+	for _, row := range rows {
 		var row_ []interface{}
 		values := row.GetValues()
 		for _, column := range tof.Table.Columns {
@@ -104,17 +146,7 @@ func (tof *OutputFormatter) Output() (string, error) {
 	}
 
 	s := table.Render()
-
-	if tof.OutputFile != "" {
-		log.Debug().Str("file", tof.OutputFile).Msg("Writing output to file")
-		err := os.WriteFile(tof.OutputFile, []byte(s), 0644)
-		if err != nil {
-			return "", err
-		}
-		return "", nil
-	}
-
-	return s, nil
+	return s
 }
 
 func (tof *OutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
