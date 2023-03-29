@@ -11,11 +11,13 @@ import (
 )
 
 type OutputFormatter struct {
-	Table       *types.Table
-	middlewares []middlewares2.TableMiddleware
-	OutputFile  string
-	WithHeaders bool
-	Separator   rune
+	Table               *types.Table
+	middlewares         []middlewares2.TableMiddleware
+	OutputFile          string
+	OutputFileTemplate  string
+	OutputMultipleFiles bool
+	WithHeaders         bool
+	Separator           rune
 }
 
 type OutputFormatterOption func(*OutputFormatter)
@@ -35,6 +37,18 @@ func WithHeaders(withHeaders bool) OutputFormatterOption {
 func WithSeparator(separator rune) OutputFormatterOption {
 	return func(f *OutputFormatter) {
 		f.Separator = separator
+	}
+}
+
+func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputFileTemplate = outputFileTemplate
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
 	}
 }
 

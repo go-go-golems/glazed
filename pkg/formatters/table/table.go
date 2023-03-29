@@ -11,10 +11,12 @@ import (
 )
 
 type OutputFormatter struct {
-	Table       *types.Table
-	middlewares []middlewares.TableMiddleware
-	TableFormat string
-	OutputFile  string
+	Table               *types.Table
+	OutputFileTemplate  string
+	OutputMultipleFiles bool
+	middlewares         []middlewares.TableMiddleware
+	TableFormat         string
+	OutputFile          string
 }
 
 type OutputFormatterOption func(*OutputFormatter)
@@ -22,6 +24,18 @@ type OutputFormatterOption func(*OutputFormatter)
 func WithOutputFile(outputFile string) OutputFormatterOption {
 	return func(tof *OutputFormatter) {
 		tof.OutputFile = outputFile
+	}
+}
+
+func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputFileTemplate = outputFileTemplate
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
 	}
 }
 

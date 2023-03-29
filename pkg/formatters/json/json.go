@@ -12,6 +12,8 @@ import (
 type OutputFormatter struct {
 	OutputIndividualRows bool
 	OutputFile           string
+	OutputFileTemplate   string
+	OutputMultipleFiles  bool
 	Table                *types.Table
 	middlewares          []middlewares.TableMiddleware
 }
@@ -106,6 +108,18 @@ func WithOutputIndividualRows(outputIndividualRows bool) OutputFormatterOption {
 func WithOutputFile(file string) OutputFormatterOption {
 	return func(formatter *OutputFormatter) {
 		formatter.OutputFile = file
+	}
+}
+
+func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputFileTemplate = outputFileTemplate
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
 	}
 }
 

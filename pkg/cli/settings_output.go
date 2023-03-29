@@ -93,10 +93,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),
 			json.WithOutputFile(ofs.OutputFile),
+			json.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			json.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else if ofs.Output == "yaml" {
 		of = yaml.NewOutputFormatter(
 			yaml.WithYAMLOutputFile(ofs.OutputFile),
+			yaml.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			yaml.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
@@ -105,12 +109,16 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		of = excel.NewOutputFormatter(
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
+			excel.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			excel.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := csv.NewCSVOutputFormatter(
 				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
 			)
 			csvOf.WithHeaders = ofs.WithHeaders
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
@@ -119,6 +127,8 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		} else if ofs.TableFormat == "tsv" {
 			tsvOf := csv.NewTSVOutputFormatter(
 				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
 			)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
@@ -126,6 +136,8 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			of = table2.NewOutputFormatter(
 				ofs.TableFormat,
 				table2.WithOutputFile(ofs.OutputFile),
+				table2.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				table2.WithOutputFileTemplate(ofs.OutputFileTemplate),
 			)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
@@ -144,6 +156,8 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			template2.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
 			template2.WithAdditionalData(ofs.TemplateFormatterSettings.AdditionalData),
 			template2.WithOutputFile(ofs.OutputFile),
+			template2.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			template2.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)

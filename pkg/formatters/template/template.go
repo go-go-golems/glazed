@@ -10,12 +10,14 @@ import (
 )
 
 type OutputFormatter struct {
-	Template         string
-	Table            *types.Table
-	TemplateFuncMaps []template.FuncMap
-	middlewares      []middlewares.TableMiddleware
-	OutputFile       string
-	AdditionalData   interface{}
+	Template            string
+	Table               *types.Table
+	TemplateFuncMaps    []template.FuncMap
+	OutputFileTemplate  string
+	OutputMultipleFiles bool
+	middlewares         []middlewares.TableMiddleware
+	OutputFile          string
+	AdditionalData      interface{}
 }
 
 func (t *OutputFormatter) GetTable() (*types.Table, error) {
@@ -107,6 +109,18 @@ func WithAdditionalData(additionalData interface{}) OutputFormatterOption {
 func WithOutputFile(outputFile string) OutputFormatterOption {
 	return func(t *OutputFormatter) {
 		t.OutputFile = outputFile
+	}
+}
+
+func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputFileTemplate = outputFileTemplate
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
 	}
 }
 

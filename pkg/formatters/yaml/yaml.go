@@ -9,9 +9,11 @@ import (
 )
 
 type OutputFormatter struct {
-	Table       *types.Table
-	OutputFile  string
-	middlewares []middlewares.TableMiddleware
+	Table               *types.Table
+	OutputFile          string
+	OutputFileTemplate  string
+	OutputMultipleFiles bool
+	middlewares         []middlewares.TableMiddleware
 }
 
 func (Y *OutputFormatter) GetTable() (*types.Table, error) {
@@ -77,6 +79,18 @@ type OutputFormatterOption func(*OutputFormatter)
 func WithYAMLOutputFile(outputFile string) OutputFormatterOption {
 	return func(f *OutputFormatter) {
 		f.OutputFile = outputFile
+	}
+}
+
+func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputFileTemplate = outputFileTemplate
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
 	}
 }
 
