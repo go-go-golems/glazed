@@ -8,7 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
@@ -377,7 +377,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeComma
 // If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
 func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
 	*cmds.GlazeProcessor,
-	formatters.OutputFormatter,
+	table.OutputFormatter,
 	error,
 ) {
 	gpl, err := NewGlazedParameterLayers()

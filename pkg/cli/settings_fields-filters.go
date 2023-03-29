@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
+	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -93,7 +93,7 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 	return s, nil
 }
 
-func (ffs *FieldsFilterSettings) AddMiddlewares(of formatters.OutputFormatter) {
+func (ffs *FieldsFilterSettings) AddMiddlewares(of table2.OutputFormatter) {
 	of.AddTableMiddleware(table.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
 	if ffs.RemoveNulls {
 		of.AddTableMiddleware(table.NewRemoveNullsMiddleware())

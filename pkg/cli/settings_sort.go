@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
+	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 )
@@ -41,7 +41,7 @@ func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParame
 	return ret, nil
 }
 
-func (s *SortFlagsSettings) AddMiddlewares(of formatters.OutputFormatter) {
+func (s *SortFlagsSettings) AddMiddlewares(of table2.OutputFormatter) {
 	if len(s.SortBy) == 0 {
 		return
 	}

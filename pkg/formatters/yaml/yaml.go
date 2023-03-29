@@ -1,4 +1,4 @@
-package formatters
+package yaml
 
 import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"

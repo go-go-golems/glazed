@@ -1,4 +1,4 @@
-package formatters
+package csv
 
 import (
 	"encoding/csv"

@@ -1,7 +1,6 @@
-package formatters
+package table
 
 import (
-	"encoding/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -9,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestJSONRenameEndToEnd(t *testing.T) {
-	of := NewJSONOutputFormatter(false, "")
+func TestTableRenameEndToEnd(t *testing.T) {
+	of := NewTableOutputFormatter("markdown", "")
 	renames := map[string]string{
 		"a": "b",
 	}
@@ -20,13 +19,5 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	// parse s
-	data := []map[string]interface{}{}
-	err = json.Unmarshal([]byte(s), &data)
-	require.NoError(t, err)
-	require.Len(t, data, 1)
-
-	// check if the rename worked
-	v, ok := data[0]["b"]
-	assert.True(t, ok)
-	assert.Equal(t, 1.0, v)
+	assert.Equal(t, "| b |\n| - |\n| 1 |\n", s)
 }

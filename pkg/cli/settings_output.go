@@ -5,7 +5,12 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/formatters/csv"
+	"github.com/go-go-golems/glazed/pkg/formatters/excel"
+	"github.com/go-go-golems/glazed/pkg/formatters/json"
+	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
+	template2 "github.com/go-go-golems/glazed/pkg/formatters/template"
+	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
@@ -22,6 +27,8 @@ type TemplateFormatterSettings struct {
 type OutputFormatterSettings struct {
 	Output                    string `glazed.parameter:"output"`
 	OutputFile                string `glazed.parameter:"output-file"`
+	OutputFileTemplate        string `glazed.parameter:"output-file-template"`
+	OutputMultipleFiles       bool   `glazed.parameter:"output-multiple-files"`
 	SheetName                 string `glazed.parameter:"sheet-name"`
 	TableFormat               string `glazed.parameter:"table-format"`
 	OutputAsObjects           bool   `glazed.parameter:"output-as-objects"`
@@ -65,7 +72,7 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 	return s, nil
 }
 
-func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
+func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormatter, error) {
 	if ofs.Output == "csv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
@@ -80,33 +87,33 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		ofs.TableFormat = "html"
 	}
 
-	var of formatters.OutputFormatter
+	var of table2.OutputFormatter
 	if ofs.Output == "json" {
-		of = formatters.NewJSONOutputFormatter(ofs.OutputAsObjects, ofs.OutputFile)
+		of = json.NewJSONOutputFormatter(ofs.OutputAsObjects, ofs.OutputFile)
 	} else if ofs.Output == "yaml" {
-		of = formatters.NewYAMLOutputFormatter(ofs.OutputFile)
+		of = yaml.NewYAMLOutputFormatter(ofs.OutputFile)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
 		}
-		of = formatters.NewExcelOutputFormatter(
+		of = excel.NewExcelOutputFormatter(
 			ofs.SheetName,
 			ofs.OutputFile,
 		)
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
-			csvOf := formatters.NewCSVOutputFormatter(ofs.OutputFile)
+			csvOf := csv.NewCSVOutputFormatter(ofs.OutputFile)
 			csvOf.WithHeaders = ofs.WithHeaders
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 			csvOf.Separator = r
 			of = csvOf
 		} else if ofs.TableFormat == "tsv" {
-			tsvOf := formatters.NewTSVOutputFormatter(ofs.OutputFile)
+			tsvOf := csv.NewTSVOutputFormatter(ofs.OutputFile)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = formatters.NewTableOutputFormatter(ofs.TableFormat, ofs.OutputFile)
+			of = table2.NewTableOutputFormatter(ofs.TableFormat, ofs.OutputFile)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
@@ -119,7 +126,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.OutputFile)
+		of = template2.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.OutputFile)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}

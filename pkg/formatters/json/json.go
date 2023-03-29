@@ -1,4 +1,4 @@
-package formatters
+package json
 
 import (
 	"bytes"
@@ -94,6 +94,8 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 		return string(jsonBytes), nil
 	}
 }
+
+type JSONOutputFormatterOption func(*JSONOutputFormatter)
 
 func NewJSONOutputFormatter(outputAsObjects bool, outputFile string) *JSONOutputFormatter {
 	return &JSONOutputFormatter{

@@ -1,4 +1,4 @@
-package formatters
+package excel
 
 import (
 	"fmt"

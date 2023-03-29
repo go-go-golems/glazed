@@ -1,17 +1,23 @@
-package formatters
+package template
 
 import (
-	"github.com/go-go-golems/glazed/pkg/helpers/csv"
+	"github.com/Masterminds/sprig"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strings"
 	"testing"
+	"text/template"
 )
 
-func TestCSVRenameEndToEnd(t *testing.T) {
-	of := NewCSVOutputFormatter("")
+func TestTemplateRenameEndToEnd(t *testing.T) {
+	// template that gets rows[0].b
+	tmpl := `{{ (index .rows 0).b }}`
+	of := NewTemplateOutputFormatter(tmpl, []template.FuncMap{
+		sprig.TxtFuncMap(),
+		templating.TemplateFuncs,
+	}, make(map[string]interface{}), "")
 	renames := map[string]string{
 		"a": "b",
 	}
@@ -20,10 +26,5 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	s, err := of.Output()
 	require.NoError(t, err)
 
-	data, err := csv.ParseCSV(strings.NewReader(s))
-	require.NoError(t, err)
-	require.Len(t, data, 1)
-	v, ok := data[0]["b"]
-	assert.True(t, ok)
-	assert.Equal(t, 1, v)
+	assert.Equal(t, `1`, s)
 }

@@ -1,4 +1,4 @@
-package formatters
+package template
 
 import (
 	"bytes"
