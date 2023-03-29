@@ -77,7 +77,14 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				doc, err := html.Parse(f)
 				cobra.CheckErr(err)
 
-				hsp := NewHTMLHeadingSplitParser(gp, []string{"span"})
+				removeTags, err := cmd.Flags().GetStringSlice("remove")
+				cobra.CheckErr(err)
+				splitTags, err := cmd.Flags().GetStringSlice("heading")
+				cobra.CheckErr(err)
+				extractTitle, err := cmd.Flags().GetBool("extract-title")
+				cobra.CheckErr(err)
+
+				hsp := NewHTMLSplitParser(gp, removeTags, splitTags, extractTitle)
 
 				_, err = hsp.ProcessNode(doc)
 				cobra.CheckErr(err)
@@ -89,9 +96,12 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				os.Exit(0)
 			}
 			fmt.Print(s)
-
 		},
 	}
+
+	extractCmd.Flags().StringSlice("heading", []string{"h1", "h2", "h3", "h4", "h5", "h6"}, "Heading tags to split on")
+	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
+	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
 
 	err = g.AddFlagsToCobraCommand(extractCmd)
 	if err != nil {

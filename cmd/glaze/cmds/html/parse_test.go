@@ -162,6 +162,60 @@ func TestTwoHeadersSomeTextBody(t *testing.T) {
 	assert.Equal(t, "<p>Some text</p>", gp.Objects[1]["Body"])
 }
 
+func TestTwoHeadersSomeTextNodes(t *testing.T) {
+
+	html_ := `
+<html>
+	<head>
+		<title>Foobar</title>
+	</head>
+	<body>
+		<h1>Header</h1>
+		<p>Some text</p>
+		<p>Some text2</p>
+		<p>Some text3</p>
+		<h2>Subheader</h2>
+		<p>Some text</p>
+	</body>
+</html>
+`
+
+	doc, err := html.Parse(strings.NewReader(html_))
+	require.NoError(t, err)
+
+	gp := NewTestProcessor()
+	hsp := NewHTMLHeadingSplitParser(gp, []string{})
+
+	n, err := hsp.ProcessNode(doc)
+	require.NoError(t, err)
+	assert.Nil(t, n)
+
+	assert.Equal(t, 2, len(gp.Objects))
+	assert.Equal(t, "Header", gp.Objects[0]["Title"])
+	assert.Equal(t, "h1", gp.Objects[0]["Tag"])
+	assert.Equal(t, "<p>Some text</p>\n\t\t<p>Some text2</p>\n\t\t<p>Some text3</p>", gp.Objects[0]["Body"])
+
+	assert.Equal(t, "Subheader", gp.Objects[1]["Title"])
+	assert.Equal(t, "h2", gp.Objects[1]["Tag"])
+	assert.Equal(t, "<p>Some text</p>", gp.Objects[1]["Body"])
+
+	gp = NewTestProcessor()
+	hsp = NewHTMLHeadingSplitParser(gp, []string{"p"})
+
+	n, err = hsp.ProcessNode(doc)
+	require.NoError(t, err)
+	assert.Nil(t, n)
+
+	assert.Equal(t, 2, len(gp.Objects))
+	assert.Equal(t, "Header", gp.Objects[0]["Title"])
+	assert.Equal(t, "h1", gp.Objects[0]["Tag"])
+	assert.Equal(t, "Some text\n\t\tSome text2\n\t\tSome text3", gp.Objects[0]["Body"])
+
+	assert.Equal(t, "Subheader", gp.Objects[1]["Title"])
+	assert.Equal(t, "h2", gp.Objects[1]["Tag"])
+	assert.Equal(t, "Some text", gp.Objects[1]["Body"])
+}
+
 func TestStripTags(t *testing.T) {
 	gp := NewTestProcessor()
 	html_ := `
@@ -194,4 +248,65 @@ func TestStripTags(t *testing.T) {
 	assert.Equal(t, "Subheader <strong>Foobar</strong>Test", gp.Objects[1]["Title"])
 	assert.Equal(t, "h2", gp.Objects[1]["Tag"])
 	assert.Equal(t, "Some text", gp.Objects[1]["Body"])
+}
+
+func TestSplitOtherTags(t *testing.T) {
+	gp := NewTestProcessor()
+	html_ := `
+<p>Foobar</p>
+<p>Test</p>
+`
+	doc, err := html.Parse(strings.NewReader(html_))
+	require.NoError(t, err)
+
+	hsp := NewHTMLSplitParser(gp, []string{"p"}, []string{"p"}, true)
+
+	n, err := hsp.ProcessNode(doc)
+	require.NoError(t, err)
+	assert.Nil(t, n)
+
+	assert.Equal(t, 2, len(gp.Objects))
+	assert.Equal(t, "Foobar", gp.Objects[0]["Title"])
+	assert.Equal(t, "p", gp.Objects[0]["Tag"])
+	assert.Equal(t, "Test", gp.Objects[1]["Title"])
+	assert.Equal(t, "p", gp.Objects[1]["Tag"])
+}
+
+func TestSplitOtherTagsWithoutTitle(t *testing.T) {
+	gp := NewTestProcessor()
+	html_ := `
+<p>Foobar</p>
+<p>Test</p>
+`
+	doc, err := html.Parse(strings.NewReader(html_))
+	require.NoError(t, err)
+
+	hsp := NewHTMLSplitParser(gp, []string{"p"}, []string{"p"}, false)
+
+	n, err := hsp.ProcessNode(doc)
+	require.NoError(t, err)
+	assert.Nil(t, n)
+
+	assert.Equal(t, 2, len(gp.Objects))
+	assert.Equal(t, "", gp.Objects[0]["Title"])
+	assert.Equal(t, "p", gp.Objects[0]["Tag"])
+	assert.Equal(t, "Foobar", gp.Objects[0]["Body"])
+	assert.Equal(t, "", gp.Objects[1]["Title"])
+	assert.Equal(t, "p", gp.Objects[1]["Tag"])
+	assert.Equal(t, "Test", gp.Objects[1]["Body"])
+
+	gp = NewTestProcessor()
+	hsp = NewHTMLSplitParser(gp, []string{}, []string{"p"}, false)
+
+	n, err = hsp.ProcessNode(doc)
+	require.NoError(t, err)
+	assert.Nil(t, n)
+
+	assert.Equal(t, 2, len(gp.Objects))
+	assert.Equal(t, "", gp.Objects[0]["Title"])
+	assert.Equal(t, "p", gp.Objects[0]["Tag"])
+	assert.Equal(t, "<p>Foobar</p>", gp.Objects[0]["Body"])
+	assert.Equal(t, "", gp.Objects[1]["Title"])
+	assert.Equal(t, "p", gp.Objects[1]["Tag"])
+	assert.Equal(t, "<p>Test</p>", gp.Objects[1]["Body"])
 }
