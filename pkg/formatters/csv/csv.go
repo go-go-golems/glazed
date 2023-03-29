@@ -3,12 +3,11 @@ package csv
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/helpers/templating"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -118,33 +117,12 @@ func (f *OutputFormatter) Output() (string, error) {
 	}
 
 	if f.OutputMultipleFiles {
-		if f.OutputFileTemplate == "" && f.OutputFile == "" {
-			return "", fmt.Errorf("neither output file or output file template is set")
-		}
-
 		s := ""
 
 		for i, row := range f.Table.Rows {
-			// get OutputFile basename and filetype
-			var outputFileName string
-			if f.OutputFileTemplate != "" {
-				data := map[string]interface{}{}
-				values := row.GetValues()
-
-				for k, v := range values {
-					data[k] = v
-				}
-				data["rowIndex"] = i
-				t, err := templating.RenderTemplateString(f.OutputFileTemplate, data)
-				if err != nil {
-					return "", err
-				}
-				outputFileName = t
-			} else {
-				fileType := filepath.Ext(f.OutputFile)
-				baseName := strings.TrimSuffix(f.OutputFile, fileType)
-
-				outputFileName = fmt.Sprintf("%s-%d%s", baseName, i, fileType)
+			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
 			}
 
 			buf, w, err := f.newCSVWriter()

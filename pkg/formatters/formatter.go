@@ -1,8 +1,12 @@
 package formatters
 
 import (
+	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"path/filepath"
+	"strings"
 )
 
 // This part of the library contains helper functionality to do output formatting
@@ -45,4 +49,29 @@ type OutputFormatter interface {
 	GetTable() (*types.Table, error)
 
 	Output() (string, error)
+}
+
+func ComputeOutputFilename(outputFile string, outputFileTemplate string, row types.Row, index int) (string, error) {
+	var outputFileName string
+	if outputFileTemplate != "" {
+		data := map[string]interface{}{}
+		values := row.GetValues()
+
+		for k, v := range values {
+			data[k] = v
+		}
+		data["rowIndex"] = index
+		t, err := templating.RenderTemplateString(outputFileTemplate, data)
+		if err != nil {
+			return "", err
+		}
+		outputFileName = t
+	} else {
+		fileType := filepath.Ext(outputFile)
+		baseName := strings.TrimSuffix(outputFile, fileType)
+
+		outputFileName = fmt.Sprintf("%s-%d%s", baseName, index, fileType)
+
+	}
+	return outputFileName, nil
 }

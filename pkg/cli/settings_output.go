@@ -88,6 +88,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		ofs.TableFormat = "html"
 	}
 
+	if ofs.OutputMultipleFiles {
+		if ofs.OutputFileTemplate == "" && ofs.OutputFile == "" {
+			return nil, errors.New("output-file or output-file-template is required for output-multiple-files")
+		}
+	}
+
 	var of formatters.OutputFormatter
 	if ofs.Output == "json" {
 		of = json.NewOutputFormatter(
@@ -106,11 +112,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
 		}
+		if ofs.OutputMultipleFiles {
+			return nil, errors.New("output-multiple-files is not supported for excel output")
+		}
 		of = excel.NewOutputFormatter(
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
-			excel.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-			excel.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {

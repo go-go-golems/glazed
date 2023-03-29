@@ -3,6 +3,8 @@ package json
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
@@ -51,6 +53,33 @@ func (f *OutputFormatter) Output() (string, error) {
 			return "", err
 		}
 		f.Table = newTable
+	}
+
+	if f.OutputMultipleFiles {
+		if f.OutputFileTemplate == "" && f.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
+
+		s := ""
+
+		for i, row := range f.Table.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
+			}
+
+			jsonBytes, err := json.MarshalIndent(row.GetValues(), "", "  ")
+			if err != nil {
+				return "", err
+			}
+			err = os.WriteFile(outputFileName, jsonBytes, 0644)
+			if err != nil {
+				return "", err
+			}
+			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+		}
+
+		return s, nil
 	}
 
 	if f.OutputIndividualRows {
