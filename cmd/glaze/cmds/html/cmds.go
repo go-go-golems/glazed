@@ -84,7 +84,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				extractTitle, err := cmd.Flags().GetBool("extract-title")
 				cobra.CheckErr(err)
 
-				hsp := NewHTMLSplitParser(gp, removeTags, splitTags, extractTitle)
+				hsp := NewHTMLSplitParser(gp, append(removeTags, splitTags...), splitTags, extractTitle)
 
 				_, err = hsp.ProcessNode(doc)
 				cobra.CheckErr(err)
