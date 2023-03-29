@@ -16,7 +16,6 @@ import (
 // TemplateFormatterSettings is probably obsolete...
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
-	OutputFile       string                 `glazed.parameter:"output-file"`
 	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
 }
 
@@ -31,18 +30,6 @@ type OutputFormatterSettings struct {
 	CsvSeparator              string `glazed.parameter:"csv-separator"`
 	Template                  string
 	TemplateFormatterSettings *TemplateFormatterSettings
-}
-
-type OutputFlagsDefaults struct {
-	Output          string `glazed.parameter:"output"`
-	OutputFile      string `glazed.parameter:"output-file"`
-	SheetName       string `glazed.parameter:"sheet-name"`
-	TableFormat     string `glazed.parameter:"table-format"`
-	WithHeaders     bool   `glazed.parameter:"with-headers"`
-	CsvSeparator    string `glazed.parameter:"csv-separator"`
-	OutputAsObjects bool   `glazed.parameter:"output-as-objects"`
-	Flatten         bool   `glazed.parameter:"flatten"`
-	TemplateFile    string `glazed.parameter:"template-file"`
 }
 
 //go:embed "flags/output.yaml"
@@ -125,7 +112,6 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
-				OutputFile: ofs.OutputFile,
 				TemplateFuncMaps: []template.FuncMap{
 					sprig.TxtFuncMap(),
 					templating.TemplateFuncs,
@@ -133,7 +119,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.TemplateFormatterSettings.OutputFile)
+		of = formatters.NewTemplateOutputFormatter(ofs.Template, ofs.TemplateFormatterSettings.TemplateFuncMaps, ofs.TemplateFormatterSettings.AdditionalData, ofs.OutputFile)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
 	}
