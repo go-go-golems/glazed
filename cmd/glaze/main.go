@@ -24,35 +24,28 @@ func main() {
 	helpSystem.SetupCobraRootCommand(rootCmd)
 
 	jsonCmd, err := cmds.NewJsonCommand()
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	command, err := glazed_cmds.BuildCobraCommandFromGlazeCommand(jsonCmd)
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
 	yamlCmd, err := cmds.NewYamlCommand()
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(yamlCmd)
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
 	rootCmd.AddCommand(cmds.MarkdownCmd)
 
 	csvCmd, err := cmds.NewCsvCommand()
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(csvCmd)
-	if err != nil {
-		panic(err)
-	}
+	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
+
+	htmlCommand, err := cmds.NewHTMLCommand()
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(htmlCommand)
+
 	_ = rootCmd.Execute()
 }
