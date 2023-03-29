@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-type TemplateFormatter struct {
+type OutputFormatter struct {
 	Template         string
 	Table            *types.Table
 	TemplateFuncMaps []template.FuncMap
@@ -18,31 +18,31 @@ type TemplateFormatter struct {
 	AdditionalData   interface{}
 }
 
-func (t *TemplateFormatter) GetTable() (*types.Table, error) {
+func (t *OutputFormatter) GetTable() (*types.Table, error) {
 	return t.Table, nil
 }
 
-func (t *TemplateFormatter) AddRow(row types.Row) {
+func (t *OutputFormatter) AddRow(row types.Row) {
 	t.Table.Rows = append(t.Table.Rows, row)
 }
 
-func (t *TemplateFormatter) SetColumnOrder(columnOrder []types.FieldName) {
+func (t *OutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
 	t.Table.Columns = columnOrder
 }
 
-func (t *TemplateFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
+func (t *OutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
 	t.middlewares = append(t.middlewares, m)
 }
 
-func (t *TemplateFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
+func (t *OutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
 	t.middlewares = append([]middlewares.TableMiddleware{m}, t.middlewares...)
 }
 
-func (t *TemplateFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
+func (t *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
 	t.middlewares = append(t.middlewares[:i], append([]middlewares.TableMiddleware{m}, t.middlewares[i:]...)...)
 }
 
-func (t *TemplateFormatter) Output() (string, error) {
+func (t *OutputFormatter) Output() (string, error) {
 	t.Table.Finalize()
 
 	for _, middleware := range t.middlewares {
@@ -90,32 +90,32 @@ func (t *TemplateFormatter) Output() (string, error) {
 	return buf.String(), nil
 }
 
-type TemplateOutputFormatterOption func(*TemplateFormatter)
+type OutputFormatterOption func(*OutputFormatter)
 
-func WithTemplateFuncMaps(templateFuncMaps []template.FuncMap) TemplateOutputFormatterOption {
-	return func(t *TemplateFormatter) {
+func WithTemplateFuncMaps(templateFuncMaps []template.FuncMap) OutputFormatterOption {
+	return func(t *OutputFormatter) {
 		t.TemplateFuncMaps = templateFuncMaps
 	}
 }
 
-func WithAdditionalData(additionalData interface{}) TemplateOutputFormatterOption {
-	return func(t *TemplateFormatter) {
+func WithAdditionalData(additionalData interface{}) OutputFormatterOption {
+	return func(t *OutputFormatter) {
 		t.AdditionalData = additionalData
 	}
 }
 
-func WithOutputFile(outputFile string) TemplateOutputFormatterOption {
-	return func(t *TemplateFormatter) {
+func WithOutputFile(outputFile string) OutputFormatterOption {
+	return func(t *OutputFormatter) {
 		t.OutputFile = outputFile
 	}
 }
 
-// NewTemplateOutputFormatter creates a new TemplateFormatter.
+// NewOutputFormatter creates a new OutputFormatter.
 //
 // TODO(manuel, 2023-02-19) This is quite an ugly constructor signature.
 // See: https://github.com/go-go-golems/glazed/issues/147
-func NewTemplateOutputFormatter(template string, opts ...TemplateOutputFormatterOption) *TemplateFormatter {
-	f := &TemplateFormatter{
+func NewOutputFormatter(template string, opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Template:       template,
 		AdditionalData: map[string]interface{}{},
 		Table:          types.NewTable(),

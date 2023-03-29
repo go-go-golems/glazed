@@ -5,6 +5,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
@@ -72,7 +73,7 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 	return s, nil
 }
 
-func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormatter, error) {
+func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
 	if ofs.Output == "csv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
@@ -87,21 +88,21 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormat
 		ofs.TableFormat = "html"
 	}
 
-	var of table2.OutputFormatter
+	var of formatters.OutputFormatter
 	if ofs.Output == "json" {
-		of = json.NewJSONOutputFormatter(
+		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),
 			json.WithOutputFile(ofs.OutputFile),
 		)
 	} else if ofs.Output == "yaml" {
-		of = yaml.NewYAMLOutputFormatter(
+		of = yaml.NewOutputFormatter(
 			yaml.WithYAMLOutputFile(ofs.OutputFile),
 		)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
 		}
-		of = excel.NewExcelOutputFormatter(
+		of = excel.NewOutputFormatter(
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
 		)
@@ -122,7 +123,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormat
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = table2.NewTableOutputFormatter(
+			of = table2.NewOutputFormatter(
 				ofs.TableFormat,
 				table2.WithOutputFile(ofs.OutputFile),
 			)
@@ -138,7 +139,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (table2.OutputFormat
 				AdditionalData: make(map[string]interface{}),
 			}
 		}
-		of = template2.NewTemplateOutputFormatter(
+		of = template2.NewOutputFormatter(
 			ofs.Template,
 			template2.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
 			template2.WithAdditionalData(ofs.TemplateFormatterSettings.AdditionalData),

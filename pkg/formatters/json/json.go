@@ -9,51 +9,51 @@ import (
 	"os"
 )
 
-type JSONOutputFormatter struct {
+type OutputFormatter struct {
 	OutputIndividualRows bool
 	OutputFile           string
 	Table                *types.Table
 	middlewares          []middlewares.TableMiddleware
 }
 
-func (J *JSONOutputFormatter) GetTable() (*types.Table, error) {
-	return J.Table, nil
+func (f *OutputFormatter) GetTable() (*types.Table, error) {
+	return f.Table, nil
 }
 
-func (J *JSONOutputFormatter) AddRow(row types.Row) {
-	J.Table.Rows = append(J.Table.Rows, row)
+func (f *OutputFormatter) AddRow(row types.Row) {
+	f.Table.Rows = append(f.Table.Rows, row)
 }
 
-func (f *JSONOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (J *JSONOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
-	J.middlewares = append(J.middlewares, mw)
+func (f *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
+	f.middlewares = append(f.middlewares, mw)
 }
 
-func (J *JSONOutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
-	J.middlewares = append([]middlewares.TableMiddleware{mw}, J.middlewares...)
+func (f *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+	f.middlewares = append([]middlewares.TableMiddleware{mw}, f.middlewares...)
 }
 
-func (J *JSONOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
-	J.middlewares = append(J.middlewares[:i], append([]middlewares.TableMiddleware{mw}, J.middlewares[i:]...)...)
+func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
 }
 
-func (J *JSONOutputFormatter) Output() (string, error) {
-	J.Table.Finalize()
+func (f *OutputFormatter) Output() (string, error) {
+	f.Table.Finalize()
 
-	for _, middleware := range J.middlewares {
-		newTable, err := middleware.Process(J.Table)
+	for _, middleware := range f.middlewares {
+		newTable, err := middleware.Process(f.Table)
 		if err != nil {
 			return "", err
 		}
-		J.Table = newTable
+		f.Table = newTable
 	}
 
-	if J.OutputIndividualRows {
+	if f.OutputIndividualRows {
 		var buf bytes.Buffer
-		for _, row := range J.Table.Rows {
+		for _, row := range f.Table.Rows {
 			jsonBytes, err := json.MarshalIndent(row.GetValues(), "", "  ")
 			if err != nil {
 				return "", err
@@ -61,9 +61,9 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 			buf.Write(jsonBytes)
 		}
 
-		if J.OutputFile != "" {
-			log.Debug().Str("file", J.OutputFile).Msg("Writing output to file")
-			err := os.WriteFile(J.OutputFile, buf.Bytes(), 0644)
+		if f.OutputFile != "" {
+			log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
+			err := os.WriteFile(f.OutputFile, buf.Bytes(), 0644)
 			if err != nil {
 				return "", err
 			}
@@ -74,7 +74,7 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 	} else {
 		// TODO(manuel, 2022-11-21) We should build a custom JSONMarshal for Table
 		var rows []map[string]interface{}
-		for _, row := range J.Table.Rows {
+		for _, row := range f.Table.Rows {
 			rows = append(rows, row.GetValues())
 		}
 		jsonBytes, err := json.MarshalIndent(rows, "", "  ")
@@ -82,9 +82,9 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 			return "", err
 		}
 
-		if J.OutputFile != "" {
-			log.Debug().Str("file", J.OutputFile).Msg("Writing output to file")
-			err := os.WriteFile(J.OutputFile, jsonBytes, 0644)
+		if f.OutputFile != "" {
+			log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
+			err := os.WriteFile(f.OutputFile, jsonBytes, 0644)
 			if err != nil {
 				return "", err
 			}
@@ -95,22 +95,22 @@ func (J *JSONOutputFormatter) Output() (string, error) {
 	}
 }
 
-type JSONOutputFormatterOption func(*JSONOutputFormatter)
+type OutputFormatterOption func(*OutputFormatter)
 
-func WithOutputIndividualRows(outputIndividualRows bool) JSONOutputFormatterOption {
-	return func(formatter *JSONOutputFormatter) {
+func WithOutputIndividualRows(outputIndividualRows bool) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
 		formatter.OutputIndividualRows = outputIndividualRows
 	}
 }
 
-func WithOutputFile(file string) JSONOutputFormatterOption {
-	return func(formatter *JSONOutputFormatter) {
+func WithOutputFile(file string) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
 		formatter.OutputFile = file
 	}
 }
 
-func NewJSONOutputFormatter(options ...JSONOutputFormatterOption) *JSONOutputFormatter {
-	ret := &JSONOutputFormatter{
+func NewOutputFormatter(options ...OutputFormatterOption) *OutputFormatter {
+	ret := &OutputFormatter{
 		OutputIndividualRows: false,
 		Table:                types.NewTable(),
 		OutputFile:           "",

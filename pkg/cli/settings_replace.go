@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"os"
@@ -14,7 +14,7 @@ type ReplaceSettings struct {
 	ReplaceFile string `glazed.parameter:"replace-file"`
 }
 
-func (rs *ReplaceSettings) AddMiddlewares(of table2.OutputFormatter) error {
+func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if rs.ReplaceFile != "" {
 		b, err := os.ReadFile(rs.ReplaceFile)
 		if err != nil {

@@ -5,8 +5,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/simple"
-	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -370,7 +370,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 
 func SetupProcessor(ps map[string]interface{}) (
 	*cmds.GlazeProcessor,
-	table2.OutputFormatter,
+	formatters.OutputFormatter,
 	error,
 ) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
@@ -409,7 +409,7 @@ func SetupProcessor(ps map[string]interface{}) (
 		return nil, nil, err
 	}
 
-	var of table2.OutputFormatter
+	var of formatters.OutputFormatter
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
 	if selectSettings.SelectField != "" {

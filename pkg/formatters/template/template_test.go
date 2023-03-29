@@ -14,7 +14,7 @@ import (
 func TestTemplateRenameEndToEnd(t *testing.T) {
 	// template that gets rows[0].b
 	tmpl := `{{ (index .rows 0).b }}`
-	of := NewTemplateOutputFormatter(tmpl,
+	of := NewOutputFormatter(tmpl,
 		WithTemplateFuncMaps([]template.FuncMap{
 			sprig.TxtFuncMap(),
 			templating.TemplateFuncs,

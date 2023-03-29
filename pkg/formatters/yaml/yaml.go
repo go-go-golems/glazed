@@ -8,37 +8,37 @@ import (
 	"os"
 )
 
-type YAMLOutputFormatter struct {
+type OutputFormatter struct {
 	Table       *types.Table
 	OutputFile  string
 	middlewares []middlewares.TableMiddleware
 }
 
-func (Y *YAMLOutputFormatter) GetTable() (*types.Table, error) {
+func (Y *OutputFormatter) GetTable() (*types.Table, error) {
 	return Y.Table, nil
 }
 
-func (Y *YAMLOutputFormatter) AddRow(row types.Row) {
+func (Y *OutputFormatter) AddRow(row types.Row) {
 	Y.Table.Rows = append(Y.Table.Rows, row)
 }
 
-func (f *YAMLOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (Y *YAMLOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
+func (Y *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
 	Y.middlewares = append(Y.middlewares, mw)
 }
 
-func (Y *YAMLOutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+func (Y *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
 	Y.middlewares = append([]middlewares.TableMiddleware{mw}, Y.middlewares...)
 }
 
-func (Y *YAMLOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+func (Y *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
 	Y.middlewares = append(Y.middlewares[:i], append([]middlewares.TableMiddleware{mw}, Y.middlewares[i:]...)...)
 }
 
-func (Y *YAMLOutputFormatter) Output() (string, error) {
+func (Y *OutputFormatter) Output() (string, error) {
 	Y.Table.Finalize()
 
 	for _, middleware := range Y.middlewares {
@@ -72,16 +72,16 @@ func (Y *YAMLOutputFormatter) Output() (string, error) {
 	return string(d), nil
 }
 
-type YAMLOutputFormatterOption func(*YAMLOutputFormatter)
+type OutputFormatterOption func(*OutputFormatter)
 
-func WithYAMLOutputFile(outputFile string) YAMLOutputFormatterOption {
-	return func(f *YAMLOutputFormatter) {
+func WithYAMLOutputFile(outputFile string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
 		f.OutputFile = outputFile
 	}
 }
 
-func NewYAMLOutputFormatter(opts ...YAMLOutputFormatterOption) *YAMLOutputFormatter {
-	f := &YAMLOutputFormatter{
+func NewOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares.TableMiddleware{},
 	}

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type CSVOutputFormatter struct {
+type OutputFormatter struct {
 	Table       *types.Table
 	middlewares []middlewares2.TableMiddleware
 	OutputFile  string
@@ -18,28 +18,28 @@ type CSVOutputFormatter struct {
 	Separator   rune
 }
 
-type CSVOutputFormatterOption func(*CSVOutputFormatter)
+type OutputFormatterOption func(*OutputFormatter)
 
-func WithOutputFile(outputFile string) CSVOutputFormatterOption {
-	return func(f *CSVOutputFormatter) {
+func WithOutputFile(outputFile string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
 		f.OutputFile = outputFile
 	}
 }
 
-func WithHeaders(withHeaders bool) CSVOutputFormatterOption {
-	return func(f *CSVOutputFormatter) {
+func WithHeaders(withHeaders bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
 		f.WithHeaders = withHeaders
 	}
 }
 
-func WithSeparator(separator rune) CSVOutputFormatterOption {
-	return func(f *CSVOutputFormatter) {
+func WithSeparator(separator rune) OutputFormatterOption {
+	return func(f *OutputFormatter) {
 		f.Separator = separator
 	}
 }
 
-func NewCSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter {
-	f := &CSVOutputFormatter{
+func NewCSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
@@ -51,8 +51,8 @@ func NewCSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter
 	return f
 }
 
-func NewTSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter {
-	f := &CSVOutputFormatter{
+func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
@@ -66,31 +66,31 @@ func NewTSVOutputFormatter(opts ...CSVOutputFormatterOption) *CSVOutputFormatter
 	return f
 }
 
-func (f *CSVOutputFormatter) GetTable() (*types.Table, error) {
+func (f *OutputFormatter) GetTable() (*types.Table, error) {
 	return f.Table, nil
 }
 
-func (f *CSVOutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) {
+func (f *OutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) {
 	f.middlewares = append(f.middlewares, m)
 }
 
-func (f *CSVOutputFormatter) AddTableMiddlewareInFront(m middlewares2.TableMiddleware) {
+func (f *OutputFormatter) AddTableMiddlewareInFront(m middlewares2.TableMiddleware) {
 	f.middlewares = append([]middlewares2.TableMiddleware{m}, f.middlewares...)
 }
 
-func (f *CSVOutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares2.TableMiddleware) {
+func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares2.TableMiddleware) {
 	f.middlewares = append(f.middlewares[:i], append([]middlewares2.TableMiddleware{m}, f.middlewares[i:]...)...)
 }
 
-func (f *CSVOutputFormatter) AddRow(row types.Row) {
+func (f *OutputFormatter) AddRow(row types.Row) {
 	f.Table.Rows = append(f.Table.Rows, row)
 }
 
-func (f *CSVOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (f *CSVOutputFormatter) Output() (string, error) {
+func (f *OutputFormatter) Output() (string, error) {
 	f.Table.Finalize()
 
 	for _, middleware := range f.middlewares {

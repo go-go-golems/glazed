@@ -1,7 +1,7 @@
 package html
 
 import (
-	"github.com/go-go-golems/glazed/pkg/formatters/table"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -14,7 +14,7 @@ import (
 
 type TestProcessor struct {
 	Objects   []map[string]interface{}
-	formatter table.OutputFormatter
+	formatter formatters.OutputFormatter
 }
 
 func NewTestProcessor() *TestProcessor {
@@ -53,7 +53,7 @@ func (t *TestProcessor) ProcessInputObject(obj map[string]interface{}) error {
 	return nil
 }
 
-func (t *TestProcessor) OutputFormatter() table.OutputFormatter {
+func (t *TestProcessor) OutputFormatter() formatters.OutputFormatter {
 	return nil
 }
 

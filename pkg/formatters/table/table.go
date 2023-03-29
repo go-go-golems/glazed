@@ -10,65 +10,23 @@ import (
 	"strings"
 )
 
-// This part of the library contains helper functionality to do output formatting
-// for data.
-//
-// We want to do the following:
-//    - print a Table with a header
-//    - print the Table as csv
-//    - render raw data as json
-//    - render data as sqlite (potentially into multiple tables)
-//    - support multiple tables
-//        - transform tree like structures into flattened tables
-//    - make it easy for the user to add data
-//    - make it easy for the user to specify filters and fields
-//    - provide a middleware like structure to chain filters and transformers
-//    - provide a way to add documentation to the output / data schema
-//    - support go templating
-//    - load formatting values from a config file
-//    - streaming functionality (i.e., output as values come in)
-//
-// Advanced functionality:
-//    - excel output
-//    - pager and search
-//    - highlight certain values
-//    - filter the input structure / output structure using a jq like query language
-
-type OutputFormatter interface {
-	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
-	AddRow(row types.Row)
-
-	SetColumnOrder(columnOrder []types.FieldName)
-
-	// AddTableMiddleware adds a middleware at the end of the processing list
-	AddTableMiddleware(m middlewares.TableMiddleware)
-	AddTableMiddlewareInFront(m middlewares.TableMiddleware)
-	AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware)
-
-	GetTable() (*types.Table, error)
-
-	Output() (string, error)
-}
-
-// The following is all geared towards tabulated output
-
-type TableOutputFormatter struct {
+type OutputFormatter struct {
 	Table       *types.Table
 	middlewares []middlewares.TableMiddleware
 	TableFormat string
 	OutputFile  string
 }
 
-type TableOutputFormatterOption func(*TableOutputFormatter)
+type OutputFormatterOption func(*OutputFormatter)
 
-func WithOutputFile(outputFile string) TableOutputFormatterOption {
-	return func(tof *TableOutputFormatter) {
+func WithOutputFile(outputFile string) OutputFormatterOption {
+	return func(tof *OutputFormatter) {
 		tof.OutputFile = outputFile
 	}
 }
 
-func NewTableOutputFormatter(tableFormat string, opts ...TableOutputFormatterOption) *TableOutputFormatter {
-	f := &TableOutputFormatter{
+func NewOutputFormatter(tableFormat string, opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
@@ -81,11 +39,11 @@ func NewTableOutputFormatter(tableFormat string, opts ...TableOutputFormatterOpt
 	return f
 }
 
-func (tof *TableOutputFormatter) GetTable() (*types.Table, error) {
+func (tof *OutputFormatter) GetTable() (*types.Table, error) {
 	return tof.Table, nil
 }
 
-func (tof *TableOutputFormatter) Output() (string, error) {
+func (tof *OutputFormatter) Output() (string, error) {
 	tof.Table.Finalize()
 
 	for _, middleware := range tof.middlewares {
@@ -145,22 +103,22 @@ func (tof *TableOutputFormatter) Output() (string, error) {
 	return s, nil
 }
 
-func (tof *TableOutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
+func (tof *OutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
 	tof.middlewares = append(tof.middlewares, m)
 }
 
-func (tof *TableOutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
+func (tof *OutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
 	tof.middlewares = append([]middlewares.TableMiddleware{m}, tof.middlewares...)
 }
 
-func (tof *TableOutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
+func (tof *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
 	tof.middlewares = append(tof.middlewares[:i], append([]middlewares.TableMiddleware{m}, tof.middlewares[i:]...)...)
 }
 
-func (tof *TableOutputFormatter) AddRow(row types.Row) {
+func (tof *OutputFormatter) AddRow(row types.Row) {
 	tof.Table.Rows = append(tof.Table.Rows, row)
 }
 
-func (tof *TableOutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
+func (tof *OutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
 	tof.Table.Columns = columnOrder
 }

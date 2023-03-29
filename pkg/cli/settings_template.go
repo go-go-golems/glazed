@@ -3,7 +3,7 @@ package cli
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -18,7 +18,7 @@ type TemplateSettings struct {
 //go:embed "flags/template.yaml"
 var templateFlagsYaml []byte
 
-func (tf *TemplateSettings) AddMiddlewares(of table2.OutputFormatter) error {
+func (tf *TemplateSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 	if tf.UseRowTemplates && len(tf.Templates) > 0 {
 		middleware, err := table.NewRowGoTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {
