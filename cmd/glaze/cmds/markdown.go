@@ -311,10 +311,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
-			os.Exit(1)
-		}
+		cobra.CheckErr(err)
 
 		level, _ := cmd.Flags().GetInt("level")
 		keepEmptyHeadings, _ := cmd.Flags().GetBool("keep-empty-headings")
@@ -378,9 +375,9 @@ var splitByHeadingCmd = &cobra.Command{
 		_ = gp
 
 		s, err := of.Output()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
-			os.Exit(1)
+		cobra.CheckErr(err)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			os.Exit(0)
 		}
 		fmt.Print(s)
 

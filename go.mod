@@ -24,6 +24,7 @@ require (
 	github.com/xuri/excelize/v2 v2.7.0
 	github.com/yuin/goldmark v1.5.4
 	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
+	golang.org/x/net v0.5.0
 	gopkg.in/errgo.v2 v2.1.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -72,7 +73,6 @@ require (
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/tools v0.4.0 // indirect
