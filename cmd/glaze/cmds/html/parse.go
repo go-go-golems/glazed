@@ -1,7 +1,6 @@
 package html
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"golang.org/x/net/html"
 	"strings"
@@ -56,8 +55,6 @@ func (hsp *HTMLSplitParser) shouldRemove(n *html.Node) bool {
 	return false
 }
 
-var depth = 0
-
 // ProcessNode extracts the content below a header tag and sends it to the GlazeProcessor.
 // It extracts the header tag content as Title, and the following siblings until the next header tag is
 // encountered as body.
@@ -67,19 +64,10 @@ var depth = 0
 func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 	data := n.Data
 	_ = data
-	indent := strings.Repeat(" ", depth)
-
-	fmt.Printf("%s Processing node %s (%s)\n", indent, n.Data, htmlNodeTypeToString(n.Type))
-	depth++
-	defer func() {
-		depth--
-		fmt.Printf("%s Done processing node %s (%s)\n", indent, n.Data, htmlNodeTypeToString(n.Type))
-	}()
 
 	next := n.NextSibling
 
 	if n.Type == html.ElementNode && hsp.shouldSplit(n) {
-		fmt.Printf("%s Processing split node %s (%s)\n", indent, n.Data, htmlNodeTypeToString(n.Type))
 		var c *html.Node
 		var title = ""
 		var body strings.Builder
@@ -113,27 +101,22 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 
 		next = c
 	} else {
-		fmt.Printf("%s Processing first child of %s (%s): %v\n", indent, n.Data, htmlNodeTypeToString(n.Type), n.FirstChild)
 		if n.FirstChild != nil {
-			next, err := hsp.ProcessNode(n.FirstChild)
+			_, err := hsp.ProcessNode(n.FirstChild)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Printf("%s Done processing first child of %s (%s): next: %v\n", indent, n.Data, htmlNodeTypeToString(n.Type), next)
 		}
 	}
 
 	for next != nil {
-		fmt.Printf("%s Processing next sibling %s (%s)\n", indent, next.Data, htmlNodeTypeToString(next.Type))
 		var err error
-		fmt.Printf("%s Processing next sub node %s (%s)\n", indent, next.Data, htmlNodeTypeToString(next.Type))
 
 		current := next
 		next, err = hsp.ProcessNode(current)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("%s Done processing next sibling %s (%s): %v\n", indent, current.Data, htmlNodeTypeToString(current.Type), next)
 
 		if next == nil {
 			break
