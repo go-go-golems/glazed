@@ -3,10 +3,12 @@ package csv
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -115,31 +117,65 @@ func (f *OutputFormatter) Output() (string, error) {
 		f.Table = newTable
 	}
 
-	// create a buffer writer
-	buf := strings.Builder{}
-	w := csv.NewWriter(&buf)
-	w.Comma = f.Separator
+	if f.OutputMultipleFiles {
+		if f.OutputFileTemplate == "" && f.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
 
-	var err error
-	if f.WithHeaders {
-		err = w.Write(f.Table.Columns)
+		s := ""
+
+		for i, row := range f.Table.Rows {
+			// get OutputFile basename and filetype
+			var outputFileName string
+			if f.OutputFileTemplate != "" {
+				t, err := templating.RenderTemplateString(f.OutputFileTemplate, row.GetValues())
+				if err != nil {
+					return "", err
+				}
+				outputFileName = t
+			} else {
+				baseName := filepath.Base(f.OutputFile)
+				fileType := filepath.Ext(f.OutputFile)
+
+				outputFileName = fmt.Sprintf("%s-%d.%s", baseName, i, fileType)
+			}
+
+			buf, w, err := f.newCSVWriter()
+			if err != nil {
+				return "", err
+			}
+
+			err = f.writeRow(row, w)
+			if err != nil {
+				return "", err
+			}
+
+			w.Flush()
+
+			if err := w.Error(); err != nil {
+				return "", err
+			}
+
+			log.Debug().Str("file", outputFileName).Msg("Writing output to file")
+			err = os.WriteFile(outputFileName, []byte(buf.String()), 0644)
+			if err != nil {
+				return "", err
+			}
+			s += fmt.Sprintf("Written output to %s", outputFileName)
+		}
+
+		return s, nil
 	}
+
+	buf, w, err := f.newCSVWriter()
 	if err != nil {
 		return "", err
 	}
 
 	for _, row := range f.Table.Rows {
-		values := []string{}
-		for _, column := range f.Table.Columns {
-			if v, ok := row.GetValues()[column]; ok {
-				values = append(values, fmt.Sprintf("%v", v))
-			} else {
-				values = append(values, "")
-			}
-		}
-		err := w.Write(values)
-		if err != nil {
-			return "", err
+		err2 := f.writeRow(row, w)
+		if err2 != nil {
+			return "", err2
 		}
 	}
 
@@ -155,8 +191,37 @@ func (f *OutputFormatter) Output() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "", nil
+		return fmt.Sprintf("Written output to %s", f.OutputFile), nil
 	}
 
 	return buf.String(), nil
+}
+
+func (f *OutputFormatter) newCSVWriter() (*strings.Builder, *csv.Writer, error) {
+	// create a buffer writer
+	buf := strings.Builder{}
+	w := csv.NewWriter(&buf)
+	w.Comma = f.Separator
+
+	var err error
+	if f.WithHeaders {
+		err = w.Write(f.Table.Columns)
+	}
+	return &buf, w, err
+}
+
+func (f *OutputFormatter) writeRow(row types.Row, w *csv.Writer) error {
+	values := []string{}
+	for _, column := range f.Table.Columns {
+		if v, ok := row.GetValues()[column]; ok {
+			values = append(values, fmt.Sprintf("%v", v))
+		} else {
+			values = append(values, "")
+		}
+	}
+	err := w.Write(values)
+	if err != nil {
+		return err
+	}
+	return nil
 }
