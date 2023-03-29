@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
+	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	glazed_cmds "github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ func main() {
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
-	htmlCommand, err := cmds.NewHTMLCommand()
+	htmlCommand, err := html.NewHTMLCommand()
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(htmlCommand)
 
