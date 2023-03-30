@@ -159,3 +159,20 @@ d: "&lkjsld"
 	actualYAML := Clean(inputYAML)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
+
+func TestQuotedStrings(t *testing.T) {
+	inputYAML := `
+title: "Evergreen Trees - The Tree Center"
+meta_title: "Buy Evergreen Trees Online - Create Year-Round Privacy and Beauty | The Tree Center"
+meta_description: "Shop a variety of evergreen trees that stay green all year at The Tree Center. Create year-round privacy and beauty with our selection of evergreen trees. Find the perfect evergreen for your garden today!"
+`
+
+	expectedYAML := `
+title: "Evergreen Trees - The Tree Center"
+meta_title: "Buy Evergreen Trees Online - Create Year-Round Privacy and Beauty | The Tree Center"
+meta_description: "Shop a variety of evergreen trees that stay green all year at The Tree Center. Create year-round privacy and beauty with our selection of evergreen trees. Find the perfect evergreen for your garden today!"
+`
+
+	actualYAML := Clean(inputYAML)
+	assert.Equal(t, expectedYAML, actualYAML)
+}
