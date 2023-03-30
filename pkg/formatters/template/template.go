@@ -2,9 +2,10 @@ package template
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/rs/zerolog/log"
 	"os"
 	"text/template"
 )
@@ -64,6 +65,44 @@ func (t *OutputFormatter) Output() (string, error) {
 		return "", err
 	}
 
+	if t.OutputMultipleFiles {
+		if t.OutputFileTemplate == "" && t.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
+
+		s := ""
+
+		for i, row := range t.Table.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(t.OutputFile, t.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
+			}
+
+			var buf bytes.Buffer
+			tableData := []map[types.FieldName]interface{}{row.GetValues()}
+
+			data := map[string]interface{}{
+				"rows": tableData,
+				"data": t.AdditionalData,
+			}
+
+			err = tmpl.Execute(&buf, data)
+
+			if err != nil {
+				return "", err
+			}
+
+			err = os.WriteFile(outputFileName, buf.Bytes(), 0644)
+			if err != nil {
+				return "", err
+			}
+
+			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+		}
+
+		return s, nil
+	}
+
 	var buf bytes.Buffer
 	var tableData []map[types.FieldName]interface{}
 	for _, row := range t.Table.Rows {
@@ -81,7 +120,6 @@ func (t *OutputFormatter) Output() (string, error) {
 	}
 
 	if t.OutputFile != "" {
-		log.Debug().Str("file", t.OutputFile).Msg("Writing output to file")
 		err = os.WriteFile(t.OutputFile, buf.Bytes(), 0644)
 		if err != nil {
 			return "", err

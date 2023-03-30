@@ -40,8 +40,8 @@ flags:
     default: false
 
   - name: template-data
-    type: stringList
-    help: Additional data for template output
+    type: objectFromFile
+    help: Additional data for template output, in JSON/CSV/YAML format
 
   - name: table-format
     type: string

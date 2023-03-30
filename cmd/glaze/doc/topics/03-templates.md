@@ -148,13 +148,13 @@ The template is rendered with an object that has a `rows` field.
 
 ```
 
-Additional data can be provided using the `--template-data` argument,
-either as `:` separated pairs, themselves separated by commas,
-or by providing a json or yaml file using a path preceded by a `@`.
+Additional data can be provided using the `--template-data` argument
+which should point to a JSON/CSV/YAML file containing the data to be 
+loaded.
 
 ``` 
 ❯ glaze json misc/test-data/[123].json \
-    --template-data @misc/test-data/book.json \
+    --template-data misc/test-data/book.json \
     --template-file misc/template-file-example2.tmpl.md \
     --output template
 # The Raven
@@ -178,34 +178,6 @@ Author: Edgar Allan Poe
 - a: 100
 ```
 
-or 
-
-``` 
-❯ glaze json misc/test-data/[123].json \
-     --template-data "author:J.R.R Tolkien,title:The Lord of the Rings" \
-     --template-file misc/template-file-example2.tmpl.md \
-     --output template
-# The Lord of the Rings
-
-Author: J.R.R Tolkien
-
-
-## Row 2
-
-- c: [3 4 5]
-- a: 1
-  
-## Row 20
-
-- c: [30 40 50]
-- a: 10
-  
-## Row 200
-
-- c: [300]
-- a: 100
-  %       
-  ```
 
 ## Templating functions
 

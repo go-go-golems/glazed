@@ -22,21 +22,21 @@ import (
 // TemplateFormatterSettings is probably obsolete...
 type TemplateFormatterSettings struct {
 	TemplateFuncMaps []template.FuncMap
-	AdditionalData   map[string]interface{} `glazed.parameter:"template-data"`
 }
 
 type OutputFormatterSettings struct {
-	Output                    string `glazed.parameter:"output"`
-	OutputFile                string `glazed.parameter:"output-file"`
-	OutputFileTemplate        string `glazed.parameter:"output-file-template"`
-	OutputMultipleFiles       bool   `glazed.parameter:"output-multiple-files"`
-	SheetName                 string `glazed.parameter:"sheet-name"`
-	TableFormat               string `glazed.parameter:"table-format"`
-	OutputAsObjects           bool   `glazed.parameter:"output-as-objects"`
-	FlattenObjects            bool   `glazed.parameter:"flatten"`
-	WithHeaders               bool   `glazed.parameter:"with-headers"`
-	CsvSeparator              string `glazed.parameter:"csv-separator"`
-	Template                  string
+	Output                    string                 `glazed.parameter:"output"`
+	OutputFile                string                 `glazed.parameter:"output-file"`
+	OutputFileTemplate        string                 `glazed.parameter:"output-file-template"`
+	OutputMultipleFiles       bool                   `glazed.parameter:"output-multiple-files"`
+	SheetName                 string                 `glazed.parameter:"sheet-name"`
+	TableFormat               string                 `glazed.parameter:"table-format"`
+	OutputAsObjects           bool                   `glazed.parameter:"output-as-objects"`
+	FlattenObjects            bool                   `glazed.parameter:"flatten"`
+	WithHeaders               bool                   `glazed.parameter:"with-headers"`
+	CsvSeparator              string                 `glazed.parameter:"csv-separator"`
+	Template                  string                 `glazed.parameter:"template-file"`
+	TemplateData              map[string]interface{} `glazed.parameter:"template-data"`
 	TemplateFormatterSettings *TemplateFormatterSettings
 }
 
@@ -155,13 +155,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 					sprig.TxtFuncMap(),
 					templating.TemplateFuncs,
 				},
-				AdditionalData: make(map[string]interface{}),
 			}
 		}
 		of = template2.NewOutputFormatter(
 			ofs.Template,
 			template2.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
-			template2.WithAdditionalData(ofs.TemplateFormatterSettings.AdditionalData),
+			template2.WithAdditionalData(ofs.TemplateData),
 			template2.WithOutputFile(ofs.OutputFile),
 			template2.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			template2.WithOutputFileTemplate(ofs.OutputFileTemplate),
