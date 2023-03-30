@@ -416,6 +416,9 @@ func SetupProcessor(ps map[string]interface{}) (
 		of = simple.NewSingleColumnFormatter(
 			selectSettings.SelectField,
 			simple.WithSeparator(selectSettings.SelectSeparator),
+			simple.WithOutputFile(outputSettings.OutputFile),
+			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
+			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
 		)
 	} else {
 		of, err = outputSettings.CreateOutputFormatter()

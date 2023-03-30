@@ -93,7 +93,6 @@ func (f *OutputFormatter) Output() (string, error) {
 		}
 
 		if f.OutputFile != "" {
-			log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
 			err := os.WriteFile(f.OutputFile, buf.Bytes(), 0644)
 			if err != nil {
 				return "", err
