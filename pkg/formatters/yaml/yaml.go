@@ -1,6 +1,8 @@
 package yaml
 
 import (
+	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
@@ -16,45 +18,72 @@ type OutputFormatter struct {
 	middlewares         []middlewares.TableMiddleware
 }
 
-func (Y *OutputFormatter) GetTable() (*types.Table, error) {
-	return Y.Table, nil
+func (f *OutputFormatter) GetTable() (*types.Table, error) {
+	return f.Table, nil
 }
 
-func (Y *OutputFormatter) AddRow(row types.Row) {
-	Y.Table.Rows = append(Y.Table.Rows, row)
+func (f *OutputFormatter) AddRow(row types.Row) {
+	f.Table.Rows = append(f.Table.Rows, row)
 }
 
 func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (Y *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
-	Y.middlewares = append(Y.middlewares, mw)
+func (f *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
+	f.middlewares = append(f.middlewares, mw)
 }
 
-func (Y *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
-	Y.middlewares = append([]middlewares.TableMiddleware{mw}, Y.middlewares...)
+func (f *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+	f.middlewares = append([]middlewares.TableMiddleware{mw}, f.middlewares...)
 }
 
-func (Y *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
-	Y.middlewares = append(Y.middlewares[:i], append([]middlewares.TableMiddleware{mw}, Y.middlewares[i:]...)...)
+func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
 }
 
-func (Y *OutputFormatter) Output() (string, error) {
-	Y.Table.Finalize()
+func (f *OutputFormatter) Output() (string, error) {
+	f.Table.Finalize()
 
-	for _, middleware := range Y.middlewares {
-		newTable, err := middleware.Process(Y.Table)
+	for _, middleware := range f.middlewares {
+		newTable, err := middleware.Process(f.Table)
 		if err != nil {
 			return "", err
 		}
-		Y.Table = newTable
+		f.Table = newTable
+	}
+
+	if f.OutputMultipleFiles {
+		if f.OutputFileTemplate == "" && f.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
+
+		s := ""
+
+		for i, row := range f.Table.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
+			}
+
+			d, err := yaml.Marshal(row.GetValues())
+			if err != nil {
+				return "", err
+			}
+
+			err = os.WriteFile(outputFileName, d, 0644)
+			if err != nil {
+				return "", err
+			}
+			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+		}
+
+		return s, nil
 	}
 
 	var rows []map[string]interface{}
-	for _, row := range Y.Table.Rows {
+	for _, row := range f.Table.Rows {
 		rows = append(rows, row.GetValues())
-
 	}
 
 	d, err := yaml.Marshal(rows)
@@ -62,9 +91,9 @@ func (Y *OutputFormatter) Output() (string, error) {
 		return "", err
 	}
 
-	if Y.OutputFile != "" {
-		log.Debug().Str("file", Y.OutputFile).Msg("Writing output to file")
-		err := os.WriteFile(Y.OutputFile, d, 0644)
+	if f.OutputFile != "" {
+		log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
+		err := os.WriteFile(f.OutputFile, d, 0644)
 		if err != nil {
 			return "", err
 		}
