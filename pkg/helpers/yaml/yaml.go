@@ -48,7 +48,7 @@ func Clean(s string) string {
 			parts := strings.Split(line, ":")
 			if len(parts) > 2 {
 				key := parts[0]
-				value := strings.TrimSpace(parts[1] + ":" + parts[2])
+				value := strings.TrimSpace(strings.Join(parts[1:], ":"))
 
 				// check if value is a quoted string
 				if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") ||
@@ -63,6 +63,13 @@ func Clean(s string) string {
 			} else if len(parts) == 2 {
 				key := parts[0]
 				value := strings.TrimSpace(parts[1])
+
+				// check if value is a quoted string
+				if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") ||
+					strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+					ret = append(ret, line)
+					continue
+				}
 
 				// check if this is the start of a multine string
 				if strings.HasPrefix(value, "|") {
