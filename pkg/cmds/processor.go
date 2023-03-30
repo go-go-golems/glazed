@@ -47,7 +47,9 @@ func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
 		currentObjects = nextObjects
 	}
 
-	gp.of.AddRow(&types.SimpleRow{Hash: obj})
+	for _, obj := range currentObjects {
+		gp.of.AddRow(&types.SimpleRow{Hash: obj})
+	}
 	return nil
 }
 
