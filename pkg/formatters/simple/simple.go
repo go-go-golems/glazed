@@ -2,16 +2,21 @@ package simple
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"os"
 	"strings"
 )
 
 type SingleColumnFormatter struct {
-	Table       *types.Table
-	Column      types.FieldName
-	Separator   string
-	middlewares []middlewares.TableMiddleware
+	Table               *types.Table
+	Column              types.FieldName
+	OutputFile          string
+	OutputFileTemplate  string
+	OutputMultipleFiles bool
+	Separator           string
+	middlewares         []middlewares.TableMiddleware
 }
 
 type SingleColumnFormatterOption func(*SingleColumnFormatter)
@@ -19,6 +24,24 @@ type SingleColumnFormatterOption func(*SingleColumnFormatter)
 func WithSeparator(separator string) SingleColumnFormatterOption {
 	return func(f *SingleColumnFormatter) {
 		f.Separator = separator
+	}
+}
+
+func WithOutputFileTemplate(template string) SingleColumnFormatterOption {
+	return func(f *SingleColumnFormatter) {
+		f.OutputFileTemplate = template
+	}
+}
+
+func WithOutputMultipleFiles(outputMultipleFiles bool) SingleColumnFormatterOption {
+	return func(f *SingleColumnFormatter) {
+		f.OutputMultipleFiles = outputMultipleFiles
+	}
+}
+
+func WithOutputFile(outputFile string) SingleColumnFormatterOption {
+	return func(f *SingleColumnFormatter) {
+		f.OutputFile = outputFile
 	}
 }
 
@@ -71,12 +94,47 @@ func (s *SingleColumnFormatter) Output() (string, error) {
 		s.Table = newTable
 	}
 
+	if s.OutputMultipleFiles {
+		if s.OutputFileTemplate == "" && s.OutputFile == "" {
+			return "", fmt.Errorf("neither output file or output file template is set")
+		}
+
+		ret := ""
+
+		for i, row := range s.Table.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(s.OutputFile, s.OutputFileTemplate, row, i)
+			if err != nil {
+				return "", err
+			}
+
+			if s_, ok := row.GetValues()[s.Column]; ok {
+				v := fmt.Sprintf("%v", s_)
+				err = os.WriteFile(outputFileName, []byte(v), 0644)
+				if err != nil {
+					return "", err
+				}
+				ret += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+			}
+		}
+
+		return ret, nil
+
+	}
 	buf := strings.Builder{}
 
 	for _, row := range s.Table.Rows {
 		if value, ok := row.GetValues()[s.Column]; ok {
 			buf.WriteString(fmt.Sprintf("%v%s", value, s.Separator))
 		}
+	}
+
+	if s.OutputFile != "" {
+		v := buf.String()
+		err := os.WriteFile(s.OutputFile, []byte(v), 0644)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
 	}
 
 	return buf.String(), nil
