@@ -11,7 +11,8 @@ import (
 )
 
 type ReplaceSettings struct {
-	ReplaceFile string `glazed.parameter:"replace-file"`
+	ReplaceFile string            `glazed.parameter:"replace-file"`
+	AddFields   map[string]string `glazed.parameter:"add-fields"`
 }
 
 func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
@@ -29,12 +30,12 @@ func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 		of.AddTableMiddleware(mw)
 	}
 
-	return nil
-}
+	if len(rs.AddFields) > 0 {
+		mw := table.NewAddFieldMiddleware(rs.AddFields)
+		of.AddTableMiddleware(mw)
+	}
 
-type ReplaceFlagsDefaults struct {
-	// currently, only support loading replacements from a file
-	ReplaceFile string `glazed.parameter:"replace-file"`
+	return nil
 }
 
 type ReplaceParameterLayer struct {
