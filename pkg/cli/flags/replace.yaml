@@ -7,4 +7,7 @@ flags:
     type: string
     help: File with replacements
     default: ""
-
+  - name: add-fields
+    type: keyValue
+    help: Add a constant field to the output
+    default: {}
