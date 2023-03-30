@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
@@ -53,11 +54,11 @@ func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
 // SimpleGlazeProcessor only collects the output and returns it as a types.Table
 type SimpleGlazeProcessor struct {
 	*GlazeProcessor
-	formatter *formatters.TableOutputFormatter
+	formatter *table.OutputFormatter
 }
 
 func NewSimpleGlazeProcessor(oms ...middlewares.ObjectMiddleware) *SimpleGlazeProcessor {
-	formatter := formatters.NewTableOutputFormatter("csv", "")
+	formatter := table.NewOutputFormatter("csv")
 	return &SimpleGlazeProcessor{
 		GlazeProcessor: NewGlazeProcessor(formatter, oms...),
 		formatter:      formatter,

@@ -1,16 +1,24 @@
-package formatters
+package template
 
 import (
-	"encoding/json"
+	"github.com/Masterminds/sprig"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"text/template"
 )
 
-func TestJSONRenameEndToEnd(t *testing.T) {
-	of := NewJSONOutputFormatter(false, "")
+func TestTemplateRenameEndToEnd(t *testing.T) {
+	// template that gets rows[0].b
+	tmpl := `{{ (index .rows 0).b }}`
+	of := NewOutputFormatter(tmpl,
+		WithTemplateFuncMaps([]template.FuncMap{
+			sprig.TxtFuncMap(),
+			templating.TemplateFuncs,
+		}))
 	renames := map[string]string{
 		"a": "b",
 	}
@@ -19,14 +27,5 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 	s, err := of.Output()
 	require.NoError(t, err)
 
-	// parse s
-	data := []map[string]interface{}{}
-	err = json.Unmarshal([]byte(s), &data)
-	require.NoError(t, err)
-	require.Len(t, data, 1)
-
-	// check if the rename worked
-	v, ok := data[0]["b"]
-	assert.True(t, ok)
-	assert.Equal(t, 1.0, v)
+	assert.Equal(t, `1`, s)
 }

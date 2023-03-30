@@ -1,16 +1,16 @@
-package formatters
+package json
 
 import (
+	"encoding/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 	"testing"
 )
 
-func TestYAMLRenameEndToEnd(t *testing.T) {
-	of := NewYAMLOutputFormatter("")
+func TestJSONRenameEndToEnd(t *testing.T) {
+	of := NewOutputFormatter()
 	renames := map[string]string{
 		"a": "b",
 	}
@@ -21,12 +21,12 @@ func TestYAMLRenameEndToEnd(t *testing.T) {
 
 	// parse s
 	data := []map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(s), &data)
+	err = json.Unmarshal([]byte(s), &data)
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 
 	// check if the rename worked
 	v, ok := data[0]["b"]
 	assert.True(t, ok)
-	assert.Equal(t, 1, v)
+	assert.Equal(t, 1.0, v)
 }

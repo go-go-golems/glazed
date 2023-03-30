@@ -30,9 +30,18 @@ flags:
     type: stringFromFile
     help: Template file for template output
 
+  - name: output-file-template
+    type: string
+    help: Template for output file name
+
+  - name: output-multiple-files
+    type: bool
+    help: Output multiple files, using the output-file-template if present, otherwise just output-file + index
+    default: false
+
   - name: template-data
-    type: stringList
-    help: Additional data for template output
+    type: objectFromFile
+    help: Additional data for template output, in JSON/CSV/YAML format
 
   - name: table-format
     type: string

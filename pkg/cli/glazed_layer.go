@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/formatters/simple"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -412,7 +413,10 @@ func SetupProcessor(ps map[string]interface{}) (
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
 	if selectSettings.SelectField != "" {
-		of = formatters.NewSingleColumnFormatter(selectSettings.SelectField, selectSettings.SelectSeparator)
+		of = simple.NewSingleColumnFormatter(
+			selectSettings.SelectField,
+			simple.WithSeparator(selectSettings.SelectSeparator),
+		)
 	} else {
 		of, err = outputSettings.CreateOutputFormatter()
 		if err != nil {

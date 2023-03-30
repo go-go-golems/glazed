@@ -1,4 +1,4 @@
-package formatters
+package excel
 
 import (
 	"fmt"
@@ -9,38 +9,38 @@ import (
 	"strings"
 )
 
-type ExcelOutputFormatter struct {
+type OutputFormatter struct {
 	SheetName   string
 	OutputFile  string
 	Table       *types.Table
 	middlewares []middlewares.TableMiddleware
 }
 
-func (E *ExcelOutputFormatter) GetTable() (*types.Table, error) {
+func (E *OutputFormatter) GetTable() (*types.Table, error) {
 	return E.Table, nil
 }
 
-func (E *ExcelOutputFormatter) AddRow(row types.Row) {
+func (E *OutputFormatter) AddRow(row types.Row) {
 	E.Table.Rows = append(E.Table.Rows, row)
 }
 
-func (E *ExcelOutputFormatter) SetColumnOrder(columns []types.FieldName) {
+func (E *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	E.Table.Columns = columns
 }
 
-func (E *ExcelOutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
+func (E *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
 	E.middlewares = append(E.middlewares, mw)
 }
 
-func (E *ExcelOutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
+func (E *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
 	E.middlewares = append([]middlewares.TableMiddleware{mw}, E.middlewares...)
 }
 
-func (E *ExcelOutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
+func (E *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
 	E.middlewares = append(E.middlewares[:i], append([]middlewares.TableMiddleware{mw}, E.middlewares[i:]...)...)
 }
 
-func (E *ExcelOutputFormatter) Output() (string, error) {
+func (E *OutputFormatter) Output() (string, error) {
 	E.Table.Finalize()
 
 	for _, middleware := range E.middlewares {
@@ -125,11 +125,29 @@ func (E *ExcelOutputFormatter) Output() (string, error) {
 	return fmt.Sprintf("Output file created successfully at %s", E.OutputFile), nil
 }
 
-func NewExcelOutputFormatter(sheetName string, outputFile string) *ExcelOutputFormatter {
-	return &ExcelOutputFormatter{
-		SheetName:   sheetName,
-		OutputFile:  outputFile,
+type OutputFormatterOption func(*OutputFormatter)
+
+func WithSheetName(sheetName string) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
+		formatter.SheetName = sheetName
+	}
+}
+
+func WithOutputFile(outputFile string) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
+		formatter.OutputFile = outputFile
+	}
+}
+
+func NewOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
+	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares.TableMiddleware{},
 	}
+
+	for _, opt := range opts {
+		opt(f)
+	}
+
+	return f
 }

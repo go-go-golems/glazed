@@ -1,4 +1,4 @@
-package formatters
+package table
 
 import (
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestTableRenameEndToEnd(t *testing.T) {
-	of := NewTableOutputFormatter("markdown", "")
+	of := NewOutputFormatter("markdown")
 	renames := map[string]string{
 		"a": "b",
 	}
