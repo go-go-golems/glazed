@@ -1,0 +1,11 @@
+a: 1
+b: 
+- 2
+- 3
+- d: 2
+  e: fourbe: courbevoie
+  f: |
+    - 4
+    - 5: 234234
+    foobar
+  g: 2

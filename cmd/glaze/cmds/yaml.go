@@ -7,9 +7,13 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	"io"
 	"os"
+	"strings"
 )
 
 type YamlCommand struct {
@@ -31,6 +35,12 @@ func NewYamlCommand() (*YamlCommand, error) {
 					"input-is-array",
 					parameters.ParameterTypeBool,
 					parameters.WithHelp("Input is an array of objects"),
+					parameters.WithDefault(false),
+				),
+				parameters.NewParameterDefinition(
+					"sanitize",
+					parameters.ParameterTypeBool,
+					parameters.WithHelp("Sanitize input (very hacky, meant for LLM cleanup)"),
 					parameters.WithDefault(false),
 				),
 			),
@@ -59,6 +69,11 @@ func (y *YamlCommand) Run(
 		return fmt.Errorf("input-is-array flag is not a bool")
 	}
 
+	sanitize, ok := ps["sanitize"].(bool)
+	if !ok {
+		return fmt.Errorf("sanitize flag is not a bool")
+	}
+
 	inputFiles, ok := ps["input-files"].([]string)
 	if !ok {
 		return fmt.Errorf("input-files is not a string list")
@@ -68,10 +83,23 @@ func (y *YamlCommand) Run(
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}
-		f, err := os.Open(arg)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", arg, err)
-			os.Exit(1)
+		var f io.Reader
+		var err error
+
+		if sanitize {
+			// read in file
+			data, err := os.ReadFile(arg)
+			cobra.CheckErr(err)
+
+			cleanData := yaml2.Clean(string(data))
+			f = strings.NewReader(cleanData)
+		} else {
+			f, err = os.Open(arg)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", arg, err)
+				os.Exit(1)
+			}
+			defer f.(*os.File).Close()
 		}
 
 		if inputIsArray {

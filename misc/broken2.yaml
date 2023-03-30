@@ -1,0 +1,6 @@
+```
+a: 1
+b: 'foobar: blabla'
+c: |
+   foobar: foobar
+d: &lkjsld
