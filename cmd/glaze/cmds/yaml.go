@@ -59,8 +59,8 @@ func NewYamlCommand() (*YamlCommand, error) {
 }
 
 func (y *YamlCommand) Run(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
+	_ context.Context,
+	_ map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
 	gp cmds.Processor,
 ) error {
@@ -99,13 +99,19 @@ func (y *YamlCommand) Run(
 				_, _ = fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", arg, err)
 				os.Exit(1)
 			}
-			defer f.(*os.File).Close()
+			defer func(file *os.File) {
+				_ = file.Close()
+			}(f.(*os.File))
 		}
 
 		if inputIsArray {
 			data := make([]map[string]interface{}, 0)
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
+				// check for EOF
+				if err == io.EOF {
+					return nil
+				}
 				return errors.Wrapf(err, "Error decoding file %s as array", arg)
 			}
 
@@ -122,6 +128,10 @@ func (y *YamlCommand) Run(
 			data := make(map[string]interface{})
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
+				// check for EOF
+				if err == io.EOF {
+					return nil
+				}
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
 			err = gp.ProcessInputObject(data)
