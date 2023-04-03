@@ -513,19 +513,31 @@ func GatherFlagsFromCobraCommand(
 			ps[parameter.Name] = v
 
 		case ParameterTypeStringList:
-			fallthrough
+			v, err := cmd.Flags().GetStringSlice(flagName)
+			if err != nil {
+				return nil, err
+			}
+			ps[parameter.Name] = v
+
 		case ParameterTypeKeyValue:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
 				return nil, err
 			}
-			v2, err := parameter.ParseParameter(v)
-			if err != nil {
-				return nil, err
+
+			// if it was changed and is empty, then skip setting from default
+			if cmd.Flags().Changed(flagName) && len(v) == 0 {
+				ps[parameter.Name] = map[string]string{}
+			} else {
+				v2, err := parameter.ParseParameter(v)
+				if err != nil {
+					return nil, err
+				}
+				ps[parameter.Name] = v2
 			}
-			ps[parameter.Name] = v2
 
 		case ParameterTypeIntegerList:
+			// NOTE(manuel, 2023-04-01) Do we not check for default here?
 			v, err := cmd.Flags().GetIntSlice(flagName)
 			if err != nil {
 				return nil, err
@@ -533,6 +545,7 @@ func GatherFlagsFromCobraCommand(
 			ps[parameter.Name] = v
 
 		case ParameterTypeFloatList:
+			// NOTE(manuel, 2023-04-01) Do we not check for default here?
 			v, err := cmd.Flags().GetFloat64Slice(flagName)
 			if err != nil {
 				return nil, err
