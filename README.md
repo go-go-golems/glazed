@@ -293,29 +293,30 @@ Write a tiny command line tool:
 - generate a random table
 - output it using glazed
 
-## Examples
+## Features
 
 ### Output formats
 
 - json [x]
-- yaml - #19
+- yaml - [x]
 - csv [x]
 - ascii [x]
 - markdown [x]
 - html [x]
+- excel [x]
 
 ### File output
 
-- Single file output - #4
-- Multi file output - #4
+- Single file output - [x]
+- Multi file output - [x]
 
 ### Flattening structures
 
-- json to rows
+- json to rows [x]
 
 ### Filtering columns
 
-- filters and fields
+- filters and fields [x]
 
 ### Go template support
 
@@ -357,10 +358,6 @@ Write a tiny command line tool:
 - viper integration
 - calibrate from config files - #17
 
-### Schema documentation
-
-- show how to load different schemas
-
 ## The glaze tool
 
 ### Installation
@@ -375,22 +372,6 @@ Run the `glaze` CLI by using `go run ./cmd/glaze`.
 - cut / ascii - #16
 - sqlite / SQL - #20
 - binary parser
-
-### Output flags
-
-## Current RFCs
-
-I keep a list of the current planned features as RFC documents.
-
-- [01 - Flag helpers](doc/rfcs/drafts/01_2022-11-13_flag-helpers.md)
-- [02 - Multi-file output](doc/rfcs/drafts/02_2022-11-13_multi-file-output.md)
-- [03 - SQLite output](doc/rfcs/drafts/03_2022-11-13_sqlite-output.md)
-- [04 - Configuration files](doc/rfcs/drafts/04_2022-11-13_configuration-file.md)
-- [05 - Glaze CLI tool](doc/rfcs/done/05_2022-11-19_glaze-cli-tool.md)
-
-## General brainstorm
-
-- documentation for each subsystem
 
 ## Future ideas
 
@@ -416,7 +397,6 @@ I keep a list of the current planned features as RFC documents.
 
 #### Transformation
 
-- add jq support
 - search engine  / autocompletion based on known schema
   - use query language to create hyperlinks in output
 
@@ -429,14 +409,10 @@ I keep a list of the current planned features as RFC documents.
 - add support for serving over HTTP
   - API server to render local data
   - HTML frontend
-- serve a local SQL database? meh...
-  - useful if you want the user to modify the DB? why not just output sqlite
 - cloud / network API output forms, for example to store something in s3 or other databases
   - SQL
   - dynamodb
   - s3
-- do we want some kind of transformation DSL / configuration DSL to do
-  more complicated things? Definitely not at first, before having the use case for it.
 - hyperlinked schema definitions
 - collect metadata and event logs to what led to the creation of the data itself
 
