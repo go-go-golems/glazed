@@ -11,11 +11,12 @@ import (
 )
 
 type OutputFormatter struct {
-	Table               *types.Table
-	OutputFile          string
-	OutputFileTemplate  string
-	OutputMultipleFiles bool
-	middlewares         []middlewares.TableMiddleware
+	Table                *types.Table
+	OutputFile           string
+	OutputFileTemplate   string
+	OutputMultipleFiles  bool
+	OutputIndividualRows bool
+	middlewares          []middlewares.TableMiddleware
 }
 
 func (f *OutputFormatter) GetTable() (*types.Table, error) {
@@ -81,26 +82,60 @@ func (f *OutputFormatter) Output() (string, error) {
 		return s, nil
 	}
 
-	var rows []map[string]interface{}
-	for _, row := range f.Table.Rows {
-		rows = append(rows, row.GetValues())
-	}
+	if f.OutputIndividualRows {
+		if len(f.Table.Rows) > 1 {
+			return "", fmt.Errorf("output individual rows is set but there are multiple rows in the table")
+		}
 
-	d, err := yaml.Marshal(rows)
-	if err != nil {
-		return "", err
-	}
+		if len(f.Table.Rows) == 0 {
+			if f.OutputFile != "" {
+				err := os.WriteFile(f.OutputFile, []byte{}, 0644)
+				if err != nil {
+					return "", err
+				}
 
-	if f.OutputFile != "" {
-		log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
-		err := os.WriteFile(f.OutputFile, d, 0644)
+				return "Empty table, an empty file was created", nil
+			}
+			return "", nil
+		}
+
+		d, err := yaml.Marshal(f.Table.Rows[0].GetValues())
 		if err != nil {
 			return "", err
 		}
-		return "", nil
+
+		if f.OutputFile != "" {
+			err := os.WriteFile(f.OutputFile, d, 0644)
+			if err != nil {
+				return "", err
+			}
+			return "", nil
+		}
+
+		return string(d), nil
+	} else {
+		var rows []map[string]interface{}
+		for _, row := range f.Table.Rows {
+			rows = append(rows, row.GetValues())
+		}
+
+		d, err := yaml.Marshal(rows)
+		if err != nil {
+			return "", err
+		}
+
+		if f.OutputFile != "" {
+			log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
+			err := os.WriteFile(f.OutputFile, d, 0644)
+			if err != nil {
+				return "", err
+			}
+			return "", nil
+		}
+
+		return string(d), nil
 	}
 
-	return string(d), nil
 }
 
 type OutputFormatterOption func(*OutputFormatter)
@@ -120,6 +155,12 @@ func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
 func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
 	return func(f *OutputFormatter) {
 		f.OutputMultipleFiles = outputMultipleFiles
+	}
+}
+
+func WithOutputIndividualRows(outputIndividualRows bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.OutputIndividualRows = outputIndividualRows
 	}
 }
 

@@ -107,6 +107,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			yaml.WithYAMLOutputFile(ofs.OutputFile),
 			yaml.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			yaml.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
 		)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
