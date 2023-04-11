@@ -120,16 +120,18 @@ func (s *SingleColumnFormatter) Output() (string, error) {
 		return ret, nil
 
 	}
-	buf := strings.Builder{}
+
+	strs := []string{}
 
 	for _, row := range s.Table.Rows {
 		if value, ok := row.GetValues()[s.Column]; ok {
-			buf.WriteString(fmt.Sprintf("%v%s", value, s.Separator))
+			strs = append(strs, fmt.Sprintf("%v", value))
 		}
 	}
 
+	v := strings.Join(strs, s.Separator)
+
 	if s.OutputFile != "" {
-		v := buf.String()
 		err := os.WriteFile(s.OutputFile, []byte(v), 0644)
 		if err != nil {
 			return "", err
@@ -137,5 +139,5 @@ func (s *SingleColumnFormatter) Output() (string, error) {
 		return "", nil
 	}
 
-	return buf.String(), nil
+	return v, nil
 }
