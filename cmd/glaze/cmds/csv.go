@@ -110,6 +110,9 @@ func (c *CsvCommand) Run(
 		csv.WithLazyQuotes(lazyQuotes),
 	}
 
+	finalHeaders := []string{}
+	seenHeaders := map[string]interface{}{}
+
 	for _, arg := range inputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
@@ -122,7 +125,7 @@ func (c *CsvCommand) Run(
 		}
 		defer f.Close()
 
-		s, err := csv.ParseCSV(f, options...)
+		header, s, err := csv.ParseCSV(f, options...)
 		if err != nil {
 			return errors.Wrap(err, "could not parse CSV file")
 		}
@@ -133,7 +136,22 @@ func (c *CsvCommand) Run(
 				return errors.Wrap(err, "could not process CSV row")
 			}
 		}
+
+		// append headers to finalHeaders, only if they don't exist yet
+		for _, h := range header {
+			if _, ok := seenHeaders[h]; !ok {
+				finalHeaders = append(finalHeaders, h)
+				seenHeaders[h] = nil
+			}
+		}
 	}
+
+	table, err := gp.OutputFormatter().GetTable()
+	if err != nil {
+		return errors.Wrap(err, "could not get table")
+	}
+
+	table.Columns = finalHeaders
 
 	return nil
 }
