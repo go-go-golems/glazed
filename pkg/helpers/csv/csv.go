@@ -39,7 +39,9 @@ func WithFieldsPerRecord(f int) ParseCSVOption {
 }
 
 func ParseCSV(r io.Reader, options ...ParseCSVOption) (
-	[]map[string]interface{}, error,
+	[]string,
+	[]map[string]interface{},
+	error,
 ) {
 	csvReader := csv.NewReader(r)
 
@@ -50,7 +52,7 @@ func ParseCSV(r io.Reader, options ...ParseCSVOption) (
 	// Read the header row of the CSV file to use as keys for the maps
 	header, err := csvReader.Read()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var data []map[string]interface{}
@@ -62,7 +64,7 @@ func ParseCSV(r io.Reader, options ...ParseCSVOption) (
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Create a new map to store the row data
@@ -86,5 +88,5 @@ func ParseCSV(r io.Reader, options ...ParseCSVOption) (
 		data = append(data, rowData)
 	}
 
-	return data, nil
+	return header, data, nil
 }

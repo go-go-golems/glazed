@@ -20,7 +20,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	s, err := of.Output()
 	require.NoError(t, err)
 
-	data, err := csv.ParseCSV(strings.NewReader(s))
+	_, data, err := csv.ParseCSV(strings.NewReader(s))
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 	v, ok := data[0]["b"]
