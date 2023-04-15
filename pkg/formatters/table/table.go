@@ -44,7 +44,9 @@ type OutputFormatter struct {
 	middlewares         []middlewares.TableMiddleware
 	TableFormat         string
 	TableStyle          table.Style
+	TableStyleFile      string
 	OutputFile          string
+	PrintTableStyle     bool
 }
 
 type OutputFormatterOption func(*OutputFormatter)
@@ -73,6 +75,20 @@ func WithTableStyle(tableStyle string) OutputFormatterOption {
 			f.TableStyle = style
 		} else {
 			log.Warn().Msgf("Table style %s not found, using default", tableStyle)
+		}
+	}
+}
+
+func WithTableStyleFile(tableStyleFile string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		f.TableStyleFile = tableStyleFile
+	}
+}
+
+func WithPrintTableStyle(printTableStyle bool) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		if printTableStyle {
+			f.PrintTableStyle = printTableStyle
 		}
 	}
 }
@@ -120,7 +136,10 @@ func (tof *OutputFormatter) Output() (string, error) {
 				return "", err
 			}
 
-			s_ := tof.makeTable([]types.Row{row})
+			s_, err := tof.makeTable([]types.Row{row})
+			if err != nil {
+				return "", err
+			}
 
 			err = os.WriteFile(outputFileName, []byte(s_), 0644)
 			if err != nil {
@@ -133,7 +152,10 @@ func (tof *OutputFormatter) Output() (string, error) {
 		return s, nil
 	}
 
-	s := tof.makeTable(tof.Table.Rows)
+	s, err := tof.makeTable(tof.Table.Rows)
+	if err != nil {
+		return "", err
+	}
 
 	if tof.OutputFile != "" {
 		log.Debug().Str("file", tof.OutputFile).Msg("Writing output to file")
@@ -147,7 +169,7 @@ func (tof *OutputFormatter) Output() (string, error) {
 	return s, nil
 }
 
-func (tof *OutputFormatter) makeTable(rows []types.Row) string {
+func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
 	t := table.NewWriter()
 
 	headers, _ := cast.CastList[interface{}](tof.Table.Columns)
@@ -166,12 +188,32 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) string {
 	}
 
 	if tof.TableFormat == "markdown" {
-		return t.RenderMarkdown()
+		return t.RenderMarkdown(), nil
 	} else if tof.TableFormat == "html" {
-		return t.RenderHTML()
+		return t.RenderHTML(), nil
 	} else {
-		t.SetStyle(tof.TableStyle)
-		return t.Render()
+		if tof.TableStyleFile != "" {
+			f, err := os.Open(tof.TableStyleFile)
+			if err != nil {
+				return "", err
+			}
+			style, err := styleFromYAML(f)
+			if err != nil {
+				return "", err
+			}
+			t.SetStyle(*style)
+		} else {
+			t.SetStyle(tof.TableStyle)
+		}
+		if tof.PrintTableStyle {
+			buf := strings.Builder{}
+			err := styleToYAML(&buf, prettyStyleToStyle(t.Style()))
+			if err != nil {
+				return "", err
+			}
+			return buf.String(), nil
+		}
+		return t.Render(), nil
 	}
 }
 

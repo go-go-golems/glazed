@@ -9,7 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
-	table_formmater "github.com/go-go-golems/glazed/pkg/formatters/table"
+	table_formatter "github.com/go-go-golems/glazed/pkg/formatters/table"
 	template_formatter "github.com/go-go-golems/glazed/pkg/formatters/template"
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
@@ -32,6 +32,8 @@ type OutputFormatterSettings struct {
 	SheetName                 string                 `glazed.parameter:"sheet-name"`
 	TableFormat               string                 `glazed.parameter:"table-format"`
 	TableStyle                string                 `glazed.parameter:"table-style"`
+	TableStyleFile            string                 `glazed.parameter:"table-style-file"`
+	PrintTableStyle           bool                   `glazed.parameter:"print-table-style"`
 	OutputAsObjects           bool                   `glazed.parameter:"output-as-objects"`
 	FlattenObjects            bool                   `glazed.parameter:"flatten"`
 	WithHeaders               bool                   `glazed.parameter:"with-headers"`
@@ -142,12 +144,14 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = table_formmater.NewOutputFormatter(
+			of = table_formatter.NewOutputFormatter(
 				ofs.TableFormat,
-				table_formmater.WithOutputFile(ofs.OutputFile),
-				table_formmater.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				table_formmater.WithOutputFileTemplate(ofs.OutputFileTemplate),
-				table_formmater.WithTableStyle(ofs.TableStyle),
+				table_formatter.WithOutputFile(ofs.OutputFile),
+				table_formatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				table_formatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				table_formatter.WithTableStyle(ofs.TableStyle),
+				table_formatter.WithTableStyleFile(ofs.TableStyleFile),
+				table_formatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
