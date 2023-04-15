@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -121,7 +122,7 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 		createCliAlias, err := cmd.Flags().GetString("create-alias")
 		cobra.CheckErr(err)
 		if createCliAlias != "" {
-			alias := &cmds.CommandAlias{
+			alias := &alias.CommandAlias{
 				Name:      createCliAlias,
 				AliasFor:  description.Name,
 				Arguments: args,
@@ -279,7 +280,7 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 	return cmd, nil
 }
 
-func BuildCobraCommandAlias(alias *cmds.CommandAlias) (*cobra.Command, error) {
+func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 	s, ok := alias.AliasedCommand.(cmds.GlazeCommand)
 	if !ok {
 		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
@@ -330,7 +331,7 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeCommand, aliases []*cmds.CommandAlias) error {
+func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeCommand, aliases []*alias.CommandAlias) error {
 	commandsByName := map[string]cmds.GlazeCommand{}
 
 	for _, command := range commands {
