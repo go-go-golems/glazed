@@ -48,6 +48,31 @@ flags:
     help: Table format (ascii, markdown, html, csv, tsv)
     default: "ascii"
 
+  - name: table-style
+    type: choice
+    help: Pretty table style
+    default: "default"
+    choices:
+      - default
+      - bold
+      - bright
+      - dark
+      - black-on-blue
+      - black-on-cyan
+      - black-on-green
+      - black-on-magenta
+      - black-on-yellow
+      - black-on-red
+      - blue-on-black
+      - cyan-on-black
+      - green-on-black
+      - magenta-on-black
+      - red-on-black
+      - yellow-on-black
+      - double
+      - light
+      - rounded
+
   - name: with-headers
     type: bool
     help: Include headers in output (CSV, TSV)

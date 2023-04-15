@@ -9,8 +9,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
-	table2 "github.com/go-go-golems/glazed/pkg/formatters/table"
-	template2 "github.com/go-go-golems/glazed/pkg/formatters/template"
+	table_formmater "github.com/go-go-golems/glazed/pkg/formatters/table"
+	template_formatter "github.com/go-go-golems/glazed/pkg/formatters/template"
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -31,6 +31,7 @@ type OutputFormatterSettings struct {
 	OutputMultipleFiles       bool                   `glazed.parameter:"output-multiple-files"`
 	SheetName                 string                 `glazed.parameter:"sheet-name"`
 	TableFormat               string                 `glazed.parameter:"table-format"`
+	TableStyle                string                 `glazed.parameter:"table-style"`
 	OutputAsObjects           bool                   `glazed.parameter:"output-as-objects"`
 	FlattenObjects            bool                   `glazed.parameter:"flatten"`
 	WithHeaders               bool                   `glazed.parameter:"with-headers"`
@@ -141,11 +142,12 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
 		} else {
-			of = table2.NewOutputFormatter(
+			of = table_formmater.NewOutputFormatter(
 				ofs.TableFormat,
-				table2.WithOutputFile(ofs.OutputFile),
-				table2.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				table2.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				table_formmater.WithOutputFile(ofs.OutputFile),
+				table_formmater.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				table_formmater.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				table_formmater.WithTableStyle(ofs.TableStyle),
 			)
 		}
 		of.AddTableMiddleware(table.NewFlattenObjectMiddleware())
@@ -158,13 +160,13 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 				},
 			}
 		}
-		of = template2.NewOutputFormatter(
+		of = template_formatter.NewOutputFormatter(
 			ofs.Template,
-			template2.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
-			template2.WithAdditionalData(ofs.TemplateData),
-			template2.WithOutputFile(ofs.OutputFile),
-			template2.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-			template2.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			template_formatter.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
+			template_formatter.WithAdditionalData(ofs.TemplateData),
+			template_formatter.WithOutputFile(ofs.OutputFile),
+			template_formatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			template_formatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else {
 		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
