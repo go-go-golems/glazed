@@ -12,12 +12,38 @@ import (
 	"strings"
 )
 
+var (
+	TableStyles = map[string]table.Style{
+		"default": table.StyleDefault,
+		"bold":    table.StyleBold,
+
+		"bright":           table.StyleColoredBright,
+		"dark":             table.StyleColoredDark,
+		"black-on-blue":    table.StyleColoredBlackOnBlueWhite,
+		"black-on-cyan":    table.StyleColoredBlackOnCyanWhite,
+		"black-on-green":   table.StyleColoredBlackOnGreenWhite,
+		"black-on-magenta": table.StyleColoredBlackOnMagentaWhite,
+		"black-on-yellow":  table.StyleColoredBlackOnYellowWhite,
+		"black-on-red":     table.StyleColoredBlackOnRedWhite,
+		"blue-on-black":    table.StyleColoredBlueWhiteOnBlack,
+		"cyan-on-black":    table.StyleColoredCyanWhiteOnBlack,
+		"green-on-black":   table.StyleColoredGreenWhiteOnBlack,
+		"magenta-on-black": table.StyleColoredMagentaWhiteOnBlack,
+		"red-on-black":     table.StyleColoredRedWhiteOnBlack,
+		"yellow-on-black":  table.StyleColoredYellowWhiteOnBlack,
+		"double":           table.StyleDouble,
+		"light":            table.StyleLight,
+		"rounded":          table.StyleRounded,
+	}
+)
+
 type OutputFormatter struct {
 	Table               *types.Table
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
 	middlewares         []middlewares.TableMiddleware
 	TableFormat         string
+	TableStyle          table.Style
 	OutputFile          string
 }
 
@@ -41,11 +67,22 @@ func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
 	}
 }
 
+func WithTableStyle(tableStyle string) OutputFormatterOption {
+	return func(f *OutputFormatter) {
+		if style, ok := TableStyles[tableStyle]; ok {
+			f.TableStyle = style
+		} else {
+			log.Warn().Msgf("Table style %s not found, using default", tableStyle)
+		}
+	}
+}
+
 func NewOutputFormatter(tableFormat string, opts ...OutputFormatterOption) *OutputFormatter {
 	f := &OutputFormatter{
 		Table:       types.NewTable(),
 		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
+		TableStyle:  table.StyleDefault,
 	}
 
 	for _, opt := range opts {
@@ -133,6 +170,7 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) string {
 	} else if tof.TableFormat == "html" {
 		return t.RenderHTML()
 	} else {
+		t.SetStyle(tof.TableStyle)
 		return t.Render()
 	}
 }
