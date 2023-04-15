@@ -73,6 +73,15 @@ flags:
       - light
       - rounded
 
+  - name: table-style-file
+    type: string
+    help: Pretty table style file (YAML)
+
+  - name: print-table-style
+    type: bool
+    help: Print the table style and exit
+    default: false
+
   - name: with-headers
     type: bool
     help: Include headers in output (CSV, TSV)
