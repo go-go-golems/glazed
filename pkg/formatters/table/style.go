@@ -140,6 +140,16 @@ var colorStringToColor = map[Color]text.Color{
 	"bg-magenta": text.BgMagenta,
 	"bg-cyan":    text.BgCyan,
 	"bg-white":   text.BgWhite,
+
+	// Background Hi-Intensity colors
+	"bg-hi-black":   text.BgHiBlack,
+	"bg-hi-red":     text.BgHiRed,
+	"bg-hi-green":   text.BgHiGreen,
+	"bg-hi-yellow":  text.BgHiYellow,
+	"bg-hi-blue":    text.BgHiBlue,
+	"bg-hi-magenta": text.BgHiMagenta,
+	"bg-hi-cyan":    text.BgHiCyan,
+	"bg-hi-white":   text.BgHiWhite,
 }
 
 func styleFromYAML(r io.Reader) (*table.Style, error) {
