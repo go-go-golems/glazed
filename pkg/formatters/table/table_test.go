@@ -19,5 +19,5 @@ func TestTableRenameEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	// parse s
-	assert.Equal(t, "| b |\n| - |\n| 1 |\n", s)
+	assert.Equal(t, "| b |\n| --- |\n| 1 |", s)
 }
