@@ -97,3 +97,52 @@ The go-pretty library supports a wide variety of styles. You can use the `--tabl
 │ 100 │ 200 │ 300        │     │     │
 ╰─────┴─────┴────────────┴─────┴─────╯
 ```
+
+Pretty styles can be loaded from YAML files. To get a starting point, use the --print-table-style option:
+
+``` 
+❯ glaze json --table-style light --print-table-style misc/test-data/1.json | tee /tmp/light.yaml
+name: StyleLight
+box:
+    bottom-left: └
+    bottom-right: ┘
+    bottom-separator: ┴
+    left: │
+    left-separator: ├
+    middle-horizontal: ─
+    middle-separator: ┼
+    middle-vertical: │
+    padding-left: ' '
+    padding-right: ' '
+    page-separator: "\n"
+    right: │
+    right-separator: ┤
+    top-left: ┌
+    top-right: ┐
+    top-separator: ┬
+    unfinished-row: ' ≈'
+color: {}
+format:
+    footer: upper
+    header: upper
+    row: default
+options:
+    draw-border: true
+    separate-columns: true
+    separate-footer: true
+    separate-header: true
+title:
+    align: default
+    format: default
+```
+
+You can then reuse that style:
+
+```
+❯ glaze json --table-style-file /tmp/light.yaml misc/test-data/1.json                     
+┌───┬───┬─────────┬─────┬─────┐
+│ A │ B │ C       │ D.E │ D.F │
+├───┼───┼─────────┼─────┼─────┤
+│ 1 │ 2 │ 3, 4, 5 │ 6   │ 7   │
+└───┴───┴─────────┴─────┴─────┘
+```
