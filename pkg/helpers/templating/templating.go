@@ -40,6 +40,10 @@ import (
 //
 //
 // 2022-12-03 - Manuel Odendahl - Removed deprecated template functions
+// 2023-02-02 - Manuel Odendahl - Added a decent amount of new functions, at which point I have a hard time
+//                 	              remembering which ones are new and which ones are from cobra.
+//                                With the addition of sprig templates, most of the cobra if not all of the cobra
+//                                template functions can be removed.
 
 // TemplateFuncs provides helpers for the standard cobra usage and help templates
 var TemplateFuncs = template.FuncMap{
