@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -19,6 +20,43 @@ import (
 type YAMLCommandLoader interface {
 	LoadCommandFromYAML(s io.Reader, options ...cmds.CommandDescriptionOption) ([]cmds.Command, error)
 	LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error)
+}
+
+type ReaderCommandLoader interface {
+	LoadCommandsFromReader(r io.Reader, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, error)
+}
+
+type YAMLReaderCommandLoader struct {
+	YAMLCommandLoader
+}
+
+func YAMLReaderCommandLoaderFromYAMLCommandLoader(loader YAMLCommandLoader) *YAMLReaderCommandLoader {
+	return &YAMLReaderCommandLoader{
+		YAMLCommandLoader: loader,
+	}
+}
+
+func (l *YAMLReaderCommandLoader) LoadCommandsFromReader(r io.Reader, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, error) {
+	bytes, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	br := strings.NewReader(string(bytes))
+	cmds_, err := l.LoadCommandFromYAML(br, options...)
+	if err != nil {
+		br = strings.NewReader(string(bytes))
+		aliases, err := l.LoadCommandAliasFromYAML(br, aliasOptions...)
+		if err != nil {
+			return nil, err
+		}
+		aliases_, b := cast.CastList[cmds.Command](aliases)
+		if !b {
+			return nil, errors.New("could not cast aliases to commands")
+		}
+		return aliases_, nil
+	}
+
+	return cmds_, nil
 }
 
 // FSCommandLoader is an interface that describes the most generic loader type,
@@ -100,7 +138,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 		// See https://github.com/go-go-golems/glazed/issues/116
 		if strings.HasSuffix(entry.Name(), ".yml") ||
 			strings.HasSuffix(entry.Name(), ".yaml") {
-			command, err := func() (cmds.Command, error) {
+			commands_, err := func() ([]cmds.Command, error) {
 				file, err := f.Open(fileName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "Could not open file %s", fileName)
@@ -114,17 +152,16 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 					cmds.WithSource(fileName),
 					cmds.WithParents(GetParentsFromDir(dir)...),
 				}, options...)
-				commands, err := l.loader.LoadCommandFromYAML(file, options_...)
+				commands_, err := l.loader.LoadCommandFromYAML(file, options_...)
 				if err != nil {
 					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err
 				}
-				if len(commands) != 1 {
+				if len(commands_) != 1 {
 					return nil, errors.New("Expected exactly one command")
 				}
-				command := commands[0]
 
-				return command, err
+				return commands_, err
 			}()
 
 			if err != nil {
@@ -171,7 +208,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 				continue
 			}
 
-			commands = append(commands, command)
+			commands = append(commands, commands_...)
 		}
 	}
 
