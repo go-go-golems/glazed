@@ -14,6 +14,11 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 		return fmt.Errorf("cannot set reflect.Value")
 	}
 
+	if v == nil {
+		value.Set(reflect.Zero(value.Type()))
+		return nil
+	}
+
 	//exhaustive:ignore
 	switch value.Kind() {
 	case reflect.String:
