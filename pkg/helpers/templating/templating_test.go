@@ -11,6 +11,7 @@ import (
 //go:embed test-templates
 var templates embed.FS
 
+// This example shows how to use ParseFS to load templates from a fs.FS.
 func ExampleParseFS_basicUsage() {
 	tmpl := template.New("main")
 	err := ParseFS(tmpl, templates, "test-templates/**/*.tmpl")
@@ -30,6 +31,8 @@ func ExampleParseFS_basicUsage() {
 	// Template content...
 }
 
+// This example shows how to use ParseFS to load templates from a fs.FS with multiple patterns.
+// This allows for the targeted loading of multiple subdirectories, for example.
 func ExampleParseFS_multiplePatterns() {
 	tmpl := template.New("main")
 	err := ParseFS(tmpl, templates, "test-templates/partials/**/*.tmpl", "test-templates/layouts/**/*.tmpl")
