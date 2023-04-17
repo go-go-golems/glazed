@@ -223,6 +223,29 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 	return cmd, nil
 }
 
+func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(c, func(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	) error {
+		err := c.Run(ctx, parsedLayers, ps)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			return nil
+		}
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
+}
+
 func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommand(s, func(
 		ctx context.Context,

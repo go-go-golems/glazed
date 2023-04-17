@@ -148,6 +148,8 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
 		Layers:    s.Layers,
+		Parents:   a.Parents,
+		Source:    a.Source,
 	}
 
 	for _, flag := range s.Flags {

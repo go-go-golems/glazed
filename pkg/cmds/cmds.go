@@ -225,7 +225,7 @@ type BareCommand interface {
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
-	)
+	) error
 }
 
 type WriterCommand interface {
