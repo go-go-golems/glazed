@@ -15,7 +15,7 @@ var DocsCmd = &cobra.Command{
 	Short: "Work with help documents",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		for _, arg := range args {
@@ -34,7 +34,7 @@ var DocsCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		s, err := of.Output()
+		s, err := gp.OutputFormatter().Output()
 		cobra.CheckErr(err)
 		fmt.Print(s)
 	},

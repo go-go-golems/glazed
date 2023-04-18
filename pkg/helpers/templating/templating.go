@@ -512,6 +512,7 @@ func CreateHTMLTemplate(name string) *html.Template {
 
 // ParseFS will recursively glob for all the files matching the given patterns,
 // and load them into one big template (with sub-templates).
+//
 // The globs use bmatcuk/doublestar and support ** notation for recursive globbing.
 func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 	listMap := make(map[string]struct{})
@@ -549,6 +550,9 @@ func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 // It is the html.Template equivalent of ParseFS.
 //
 // The globs use bmatcuk/doublestar and support ** notation for recursive globbing.
+//
+// NOTE(manuel, 2023-04-18) Interestingly, we have a baseDir parameter here but only one pattern
+// However, the text.template version supports multiple patterns, but has no basedir. Maybe unify?
 func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) error {
 	list := []string{}
 
@@ -568,6 +572,7 @@ func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) erro
 
 		// strip baseDir from filename
 		filename_ := strings.TrimPrefix(filename, baseDir)
+		filename_ = strings.TrimPrefix(filename_, "/")
 		_, err = t.New(filename_).
 			Funcs(sprig.HtmlFuncMap()).
 			Funcs(TemplateFuncs).

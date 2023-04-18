@@ -368,45 +368,41 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupProcessor(ps map[string]interface{}) (
-	*cmds.GlazeProcessor,
-	formatters.OutputFormatter,
-	error,
-) {
+func SetupProcessor(ps map[string]interface{}) (*cmds.GlazeProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
 	templateSettings, err := NewTemplateSettings(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	outputSettings, err := NewOutputFormatterSettings(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	selectSettings, err := NewSelectSettingsFromParameters(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	renameSettings, err := NewRenameSettingsFromParameters(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	fieldsFilterSettings, err := NewFieldsFilterSettings(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	replaceSettings, err := NewReplaceSettingsFromParameters(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	jqSettings, err := NewJqSettingsFromParameters(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	sortSettings, err := NewSortSettingsFromParameters(ps)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var of formatters.OutputFormatter
@@ -423,7 +419,7 @@ func SetupProcessor(ps map[string]interface{}) (
 	} else {
 		of, err = outputSettings.CreateOutputFormatter()
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error creating output formatter")
+			return nil, errors.Wrapf(err, "Error creating output formatter")
 		}
 	}
 
@@ -433,12 +429,12 @@ func SetupProcessor(ps map[string]interface{}) (
 	// when needed
 	err = renameSettings.AddMiddlewares(of)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding rename middlewares")
+		return nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
 
 	err = templateSettings.AddMiddlewares(of)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding template middlewares")
+		return nil, errors.Wrapf(err, "Error adding template middlewares")
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
@@ -449,21 +445,21 @@ func SetupProcessor(ps map[string]interface{}) (
 
 	err = replaceSettings.AddMiddlewares(of)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error adding replace middlewares")
+		return nil, errors.Wrapf(err, "Error adding replace middlewares")
 	}
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
 		ogtm, err := object.NewObjectGoTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Could not process template argument")
+			return nil, errors.Wrapf(err, "Could not process template argument")
 		}
 		middlewares_ = append(middlewares_, ogtm)
 	}
 
 	jqObjectMiddleware, jqTableMiddleware, err := NewJqMiddlewaresFromSettings(jqSettings)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Could not create jq middlewares")
+		return nil, errors.Wrapf(err, "Could not create jq middlewares")
 	}
 
 	if jqObjectMiddleware != nil {
@@ -481,5 +477,5 @@ func SetupProcessor(ps map[string]interface{}) (
 	sortSettings.AddMiddlewares(of)
 
 	gp := cmds.NewGlazeProcessor(of, middlewares_...)
-	return gp, of, nil
+	return gp, nil
 }

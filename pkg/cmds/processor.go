@@ -32,6 +32,11 @@ func NewGlazeProcessor(of formatters.OutputFormatter, oms ...middlewares.ObjectM
 
 // TODO(2022-12-18, manuel) we should actually make it possible to order the columns
 // https://github.com/go-go-golems/glazed/issues/56
+
+// ProcessInputObject takes an input object and processes it through the object middleware
+// chain.
+//
+// The final output is added to the output formatter as a single row.
 func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
 	currentObjects := []map[string]interface{}{obj}
 
