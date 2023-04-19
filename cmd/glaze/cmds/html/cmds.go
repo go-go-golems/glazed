@@ -20,7 +20,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Parse HTML",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
@@ -38,7 +38,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			s, err := of.Output()
+			s, err := gp.OutputFormatter().Output()
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
@@ -63,7 +63,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Extract HTML from sections",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
@@ -90,7 +90,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			s, err := of.Output()
+			s, err := gp.OutputFormatter().Output()
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)

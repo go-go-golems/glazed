@@ -3,6 +3,7 @@ package cmds
 import (
 	"context"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"io"
 )
@@ -14,6 +15,7 @@ type CommandDescription struct {
 	Name      string                            `yaml:"name"`
 	Short     string                            `yaml:"short"`
 	Long      string                            `yaml:"long,omitempty"`
+	Layout    *layout.Layout                    `yaml:"layout,omitempty"`
 	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
 	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
@@ -127,6 +129,12 @@ func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOptio
 func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers = append(c.Layers, l...)
+	}
+}
+
+func WithLayout(l *layout.Layout) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layout = l
 	}
 }
 
