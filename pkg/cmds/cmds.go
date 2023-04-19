@@ -14,6 +14,7 @@ type CommandDescription struct {
 	Name      string                            `yaml:"name"`
 	Short     string                            `yaml:"short"`
 	Long      string                            `yaml:"long,omitempty"`
+	Layout    [][]string                        `yaml:"layout,omitempty"`
 	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
 	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
@@ -127,6 +128,12 @@ func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOptio
 func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers = append(c.Layers, l...)
+	}
+}
+
+func WithLayout(l [][]string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layout = l
 	}
 }
 
