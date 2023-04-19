@@ -66,6 +66,12 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single boolean", p.Name)
 		}
+		if v[0] == "on" {
+			return true, nil
+		}
+		if v[0] == "off" {
+			return false, nil
+		}
 		b, err := strconv.ParseBool(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as bool", p.Name)
