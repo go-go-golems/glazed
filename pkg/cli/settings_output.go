@@ -68,11 +68,6 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}
 
-	// if template-file is set, use it for Template
-	_, ok := ps["template-file"]
-	if ok {
-		s.Template = ps["template-file"].(string)
-	}
 	return s, nil
 }
 
