@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 	"unicode"
 )
 
@@ -83,10 +84,25 @@ var TemplateFuncs = template.FuncMap{
 	"code":          code,
 	"codeBlock":     codeBlock,
 
+	"toDate": toDate,
+
 	"toYaml":      toYaml,
 	"indentBlock": indentBlock,
 
 	"styleBold": styleBold,
+}
+
+func toDate(s interface{}) (string, error) {
+	//exhaustive:ignore
+	switch v := s.(type) {
+	case string:
+		// keep only yyyy-mm-dd
+		return strings.Split(v, "T")[0], nil
+	case time.Time:
+		return v.Format("2006-01-02"), nil
+	default:
+		return "", errors.Errorf("cannot convert %v to date", v)
+	}
 }
 
 func styleBold(s string) string {
