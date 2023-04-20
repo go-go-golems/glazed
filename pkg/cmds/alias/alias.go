@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -21,6 +22,7 @@ type CommandAlias struct {
 	AliasFor  string            `yaml:"aliasFor"`
 	Flags     map[string]string `yaml:"flags,omitempty"`
 	Arguments []string          `yaml:"arguments,omitempty"`
+	Layout    []*layout.Section `yaml:"layout,omitempty"`
 
 	AliasedCommand cmds.Command `yaml:",omitempty"`
 	Parents        []string     `yaml:",omitempty"`
@@ -141,15 +143,22 @@ func (a *CommandAlias) IsValid() bool {
 // depending on where they come from.
 func (a *CommandAlias) Description() *cmds.CommandDescription {
 	s := a.AliasedCommand.Description()
+	layout_ := a.Layout
+	if layout_ == nil {
+		layout_ = s.Layout.Sections
+	}
 	ret := &cmds.CommandDescription{
 		Name:      a.Name,
 		Short:     s.Short,
 		Long:      s.Long,
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
-		Layers:    s.Layers,
-		Parents:   a.Parents,
-		Source:    a.Source,
+		Layout: &layout.Layout{
+			Sections: layout_,
+		},
+		Layers:  s.Layers,
+		Parents: a.Parents,
+		Source:  a.Source,
 	}
 
 	for _, flag := range s.Flags {
