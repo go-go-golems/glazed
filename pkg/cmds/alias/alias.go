@@ -161,10 +161,22 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 	for _, argument := range s.Arguments {
 		newArgument := argument.Copy()
 
-		// NOTE(2023-02-07, manuel) I don't fully understand what this is referring to anymore,
-		// but I remember struggling with this in the context of setting and overriding default values.
-		// Say, if an alias defines --fields id,name and then the user passes in --fields foo,bla
-		// on top, I remember there being some kind of conflict.
+		// ## Parsing the overloaded strings to actual types to store as flag defaults
+		//
+		// NOTE(2023-04-20) We can't easily return overloaded flags and arguments as defaults in the CommandDescription
+		//
+		// This was created before layers being a thing, so that the overloads are not really type specific.
+		// This is a problem already when capturing the aliases, but it should be much easier now.
+		//
+		// For now, we still use strings, and as such need the overloading of an alias to be caught at the primitive
+		// parsing step (cobra for CLI, HTTP parsers for parka).
+		//
+		// See https://github.com/go-go-golems/glazed/issues/287
+		//
+		// For now, parka handling takes an explicit list of defaults in its parser functions,
+		// which might not be the worst idea for overloading things at registration time either.
+
+		// ## Handling argument count
 		//
 		// See also the note in glazed_layer.go about checking the argument count. This might all
 		// refer to overloading arguments, and not just flags. This seems to make sense given the
