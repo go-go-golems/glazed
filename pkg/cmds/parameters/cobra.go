@@ -525,12 +525,21 @@ func GatherFlagsFromCobraCommand(
 			}
 			ps[parameter.Name] = v
 
+		case ParameterTypeObjectListFromFiles:
+			fallthrough
 		case ParameterTypeStringFromFiles:
 			fallthrough
 		case ParameterTypeStringListFromFiles:
-			fallthrough
-		case ParameterTypeObjectListFromFiles:
-			fallthrough
+			v, err := cmd.Flags().GetStringSlice(flagName)
+			if err != nil {
+				return nil, err
+			}
+			v2, err := parameter.ParseParameter(v)
+			if err != nil {
+				return nil, err
+			}
+			ps[parameter.Name] = v2
+
 		case ParameterTypeStringList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
