@@ -101,38 +101,63 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 		return parsedDate, nil
 
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
-		fallthrough
+		ret := []interface{}{}
+		for _, fileName := range v {
+			l, err := parseFromFileName(fileName, p)
+			if err != nil {
+				return nil, err
+			}
+			lObj, ok := l.([]interface{})
+			if !ok {
+				return nil, errors.Errorf("Could not parse file %s as list of objects", fileName)
+			}
+
+			ret = append(ret, lObj...)
+		}
+		return ret, nil
+
 	case ParameterTypeObjectFromFile:
-		fallthrough
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single file name", p.Name)
+		}
+		return parseFromFileName(v[0], p)
+
 	case ParameterTypeStringFromFile:
 		fallthrough
-	case ParameterTypeStringListFromFile:
-		fileName := v[0]
-		if fileName == "" {
-			return p.Default, nil
-		}
-		var f io.Reader
-		if fileName == "-" {
-			f = os.Stdin
-		} else {
-			f2, err := os.Open(fileName)
+	case ParameterTypeStringFromFiles:
+		res := strings.Builder{}
+		for _, fileName := range v {
+			s, err := parseFromFileName(fileName, p)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+				return nil, err
 			}
-			defer func(f2 *os.File) {
-				_ = f2.Close()
-			}(f2)
-
-			f = f2
+			sObj, ok := s.(string)
+			if !ok {
+				return nil, errors.Errorf("Could not parse file %s as string", fileName)
+			}
+			res.WriteString(sObj)
 		}
+		return res.String(), nil
 
-		ret, err := p.ParseFromReader(f, fileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+	case ParameterTypeStringListFromFiles:
+		fallthrough
+	case ParameterTypeStringListFromFile:
+		res := []string{}
+		for _, fileName := range v {
+			s, err := parseFromFileName(fileName, p)
+			if err != nil {
+				return nil, err
+			}
+			sObj, ok := s.([]string)
+			if !ok {
+				return nil, errors.Errorf("Could not parse file %s as string list", fileName)
+			}
+			res = append(res, sObj...)
 		}
-
-		return ret, nil
+		return res, nil
 
 	case ParameterTypeKeyValue:
 		if len(v) == 0 {
@@ -189,6 +214,33 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	return nil, errors.Errorf("Unknown parameter type %s", p.Type)
 }
 
+func parseFromFileName(fileName string, p *ParameterDefinition) (interface{}, error) {
+	if fileName == "" {
+		return p.Default, nil
+	}
+	var f io.Reader
+	if fileName == "-" {
+		f = os.Stdin
+	} else {
+		f2, err := os.Open(fileName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not read file %s", fileName)
+		}
+		defer func(f2 *os.File) {
+			_ = f2.Close()
+		}(f2)
+
+		f = f2
+	}
+
+	ret, err := p.ParseFromReader(f, fileName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not read file %s", fileName)
+	}
+
+	return ret, nil
+}
+
 func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error) {
 	csvReader := csv.NewReader(f)
 	csvReader.FieldsPerRecord = -1
@@ -237,10 +289,15 @@ func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error)
 	return data, nil
 }
 
+// ParseFromReader parses a single element for the type from the reader.
+// In the case of parameters taking multiple files, this needs to be called for each file
+// and merged at the caller level.
 func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (interface{}, error) {
 	var err error
 	//exhaustive:ignore
 	switch p.Type {
+	case ParameterTypeStringListFromFiles:
+		fallthrough
 	case ParameterTypeStringListFromFile:
 		ret := make([]string, 0)
 
@@ -301,26 +358,10 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 
 		return object, nil
 
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
-		objectList := []interface{}{}
-		if filename == "-" || strings.HasSuffix(filename, ".json") {
-			err = json.NewDecoder(f).Decode(&objectList)
-		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
-			err = yaml.NewDecoder(f).Decode(&objectList)
-		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
-			objectList, err = parseObjectListFromCSV(f, filename)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
-		}
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
-		}
-
-		return objectList, nil
+		return parseObjectListFromReader(f, filename)
 
 	case ParameterTypeKeyValue:
 		ret := interface{}(nil)
@@ -346,6 +387,8 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 		}
 		return ret, nil
 
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeStringFromFile:
 		var b bytes.Buffer
 		_, err := io.Copy(&b, f)
@@ -357,6 +400,50 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 	default:
 		return nil, errors.New("Cannot parse from file for this parameter type")
 	}
+}
+
+func parseObjectListFromReader(f io.Reader, filename string) (interface{}, error) {
+	objectList := []interface{}{}
+	var object interface{}
+	if filename == "-" || strings.HasSuffix(filename, ".json") {
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return nil, err
+		}
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&objectList)
+		// if err, try again with single object
+		if err != nil {
+			err = json.NewDecoder(bytes.NewReader(b)).Decode(&object)
+			if err != nil {
+				return nil, err
+			}
+			objectList = []interface{}{object}
+		}
+	} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return nil, err
+		}
+		err = yaml.NewDecoder(bytes.NewReader(b)).Decode(&objectList)
+		// if err, try again with single object
+		if err != nil {
+			err = yaml.NewDecoder(bytes.NewReader(b)).Decode(&object)
+			if err != nil {
+				return nil, err
+			}
+			objectList = []interface{}{object}
+		}
+	} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
+		var err error
+		objectList, err = parseObjectListFromCSV(f, filename)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
+	}
+
+	return objectList, nil
 }
 
 // refTime is used to set a reference time for natural date parsing for unit test purposes

@@ -175,6 +175,19 @@ func AddFlagsToCobraCommand(
 				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
+		case ParameterTypeStringListFromFiles:
+			fallthrough
+		case ParameterTypeStringFromFiles:
+			fallthrough
+		case ParameterTypeObjectListFromFiles:
+			defaultValue := []string{}
+
+			if parameter.ShortFlag != "" {
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+			} else {
+				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
+			}
+
 		case ParameterTypeString:
 			defaultValue := ""
 
@@ -512,6 +525,12 @@ func GatherFlagsFromCobraCommand(
 			}
 			ps[parameter.Name] = v
 
+		case ParameterTypeStringFromFiles:
+			fallthrough
+		case ParameterTypeStringListFromFiles:
+			fallthrough
+		case ParameterTypeObjectListFromFiles:
+			fallthrough
 		case ParameterTypeStringList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {

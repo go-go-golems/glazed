@@ -391,104 +391,105 @@ func TestParseObjectListFromFile(t *testing.T) {
 		WithDefault([]map[string]interface{}{{"default": "default"}}),
 	)
 
-	v, err := parseObjectListFromReader(parameter, `[{"test":"test"}]`, "test.json")
+	v, err := parseObjectListFromString(parameter, `[{"test":"test"}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// two elements
-	v, err = parseObjectListFromReader(parameter, `[{"test":"test"},{"test2":"test2"}]`, "test.json")
+	v, err = parseObjectListFromString(parameter, `[{"test":"test"},{"test2":"test2"}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
 
-	_, err = parseObjectListFromReader(parameter, `{"test":"test"`, "test.json")
+	_, err = parseObjectListFromString(parameter, `{"test":"test"`, "test.json")
 	assert.Error(t, err)
 
-	v, err = parseObjectListFromReader(parameter, `[{"test":{"test":"test"}}]`, "test.json")
+	v, err = parseObjectListFromString(parameter, `[{"test":{"test":"test"}}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": map[string]interface{}{"test": "test"}}}, v)
 
 	// succeed on empty list
-	v, err = parseObjectListFromReader(parameter, `[]`, "test.json")
+	v, err = parseObjectListFromString(parameter, `[]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectListFromReader(parameter, ``, "test.json")
+	_, err = parseObjectListFromString(parameter, ``, "test.json")
 	assert.Error(t, err)
 
 	// fail on toplevel list of string
-	_, err = parseObjectListFromReader(parameter, `["test"]`, "test.json")
+	_, err = parseObjectListFromString(parameter, `["test"]`, "test.json")
 	assert.Error(t, err)
 
 	// now yaml
-	v, err = parseObjectListFromReader(parameter, `- test: test`, "test.yaml")
+	v, err = parseObjectListFromString(parameter, `- test: test`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
-	v, err = parseObjectListFromReader(parameter, `- test: test`, "test.yml")
+	v, err = parseObjectListFromString(parameter, `- test: test`, "test.yml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// two elements
-	v, err = parseObjectListFromReader(parameter, `- test: test
+	v, err = parseObjectListFromString(parameter, `- test: test
 - test2: test2`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
 
 	// nested object
-	v, err = parseObjectListFromReader(parameter, `- test: {test: test}`, "test.yaml")
+	v, err = parseObjectListFromString(parameter, `- test: {test: test}`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": map[string]interface{}{"test": "test"}}}, v)
 
 	// fail on toplevel list of strings
-	_, err = parseObjectListFromReader(parameter, `- test
+	_, err = parseObjectListFromString(parameter, `- test
 - test2`, "test.yaml")
 	assert.Error(t, err)
 
 	// fail on toplevel object
-	_, err = parseObjectListFromReader(parameter, `test: test`, "test.yaml")
-	assert.Error(t, err)
+	v, err = parseObjectListFromString(parameter, `test: test`, "test.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// succeed on empty list
-	v, err = parseObjectListFromReader(parameter, `[]`, "test.yaml")
+	v, err = parseObjectListFromString(parameter, `[]`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectListFromReader(parameter, ``, "test.yaml")
+	_, err = parseObjectListFromString(parameter, ``, "test.yaml")
 	assert.Error(t, err)
 
 	// test csv
-	v, err = parseObjectListFromReader(parameter, `test,test2
+	v, err = parseObjectListFromString(parameter, `test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}}, v)
 
 	// test csv with 2 lines
-	v, err = parseObjectListFromReader(parameter, `test,test2
+	v, err = parseObjectListFromString(parameter, `test,test2
 test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
 
 	// fail on CSV with no headers
-	_, err = parseObjectListFromReader(parameter, `test,test2`, "test.csv")
+	_, err = parseObjectListFromString(parameter, `test,test2`, "test.csv")
 	assert.Error(t, err)
 
 	// empty list on empty CSV
-	v, err = parseObjectListFromReader(parameter, ``, "test.csv")
+	v, err = parseObjectListFromString(parameter, ``, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// succeed on multiline CSV
-	v, err = parseObjectListFromReader(parameter, `test,test2
+	v, err = parseObjectListFromString(parameter, `test,test2
 test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
 }
 
-func parseObjectListFromReader(parameter *ParameterDefinition, input string, fileName string) ([]map[string]interface{}, error) {
+func parseObjectListFromString(parameter *ParameterDefinition, input string, fileName string) ([]map[string]interface{}, error) {
 	reader := strings.NewReader(input)
 	i, err := parameter.ParseFromReader(reader, fileName)
 	if err != nil {
@@ -501,7 +502,7 @@ func parseObjectListFromReader(parameter *ParameterDefinition, input string, fil
 	return v, nil
 }
 
-func parseObjectFromReader(parameter *ParameterDefinition, input string, fileName string) (map[string]interface{}, error) {
+func parseObjectFromString(parameter *ParameterDefinition, input string, fileName string) (map[string]interface{}, error) {
 	reader := strings.NewReader(input)
 	i, err := parameter.ParseFromReader(reader, fileName)
 	if err != nil {
@@ -542,52 +543,165 @@ func TestParseKeyFromFile(t *testing.T) {
 	)
 
 	// from json
-	v, err := parseObjectFromReader(parameter, `{"test":"test"}`, "test.json")
+	v, err := parseObjectFromString(parameter, `{"test":"test"}`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test"}, v)
 
-	v, err = parseObjectFromReader(parameter, `{"test":1}`, "test.json")
+	v, err = parseObjectFromString(parameter, `{"test":1}`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": 1.0}, v)
 
-	v, err = parseObjectFromReader(parameter, `{"test":["test"]}`, "test.json")
+	v, err = parseObjectFromString(parameter, `{"test":["test"]}`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": []interface{}{"test"}}, v)
 
 	// succeed on empty dict
-	v, err = parseObjectFromReader(parameter, `{}`, "test.json")
+	v, err = parseObjectFromString(parameter, `{}`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectFromReader(parameter, ``, "test.json")
+	_, err = parseObjectFromString(parameter, ``, "test.json")
 	assert.Error(t, err)
 
 	// yaml now
-	v, err = parseObjectFromReader(parameter, `test: test`, "test.yaml")
+	v, err = parseObjectFromString(parameter, `test: test`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test"}, v)
 
-	v, err = parseObjectFromReader(parameter, `test: 1`, "test.yaml")
+	v, err = parseObjectFromString(parameter, `test: 1`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": 1}, v)
 
-	v, err = parseObjectFromReader(parameter, `test: ["test"]`, "test.yaml")
+	v, err = parseObjectFromString(parameter, `test: ["test"]`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": []interface{}{"test"}}, v)
 
 	// succeed on empty dict
-	v, err = parseObjectFromReader(parameter, `{}`, "test.yaml")
+	v, err = parseObjectFromString(parameter, `{}`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectFromReader(parameter, ``, "test.yaml")
+	_, err = parseObjectFromString(parameter, ``, "test.yaml")
 	assert.Error(t, err)
 
 	// try CSV
-	v, err = parseObjectFromReader(parameter, `test,test2
+	v, err = parseObjectFromString(parameter, `test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, v)
+}
+
+func TestParseStringFromFileRealFile(t *testing.T) {
+	parameter := NewParameterDefinition("test", ParameterTypeStringFromFile,
+		WithDefault("default"),
+	)
+
+	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, "string1\n", v)
+
+	parameter = NewParameterDefinition("test", ParameterTypeStringFromFiles,
+		WithDefault("default"),
+	)
+	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, "string1\n", v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, "string1\nstring2\n", v)
+}
+
+func TestParseStringListFromFileRealFile(t *testing.T) {
+	parameter := NewParameterDefinition("test", ParameterTypeStringListFromFile,
+		WithDefault([]string{"default"}),
+	)
+
+	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"string1"}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"stringList1", "stringList2"}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"stringList1", "stringList2", "stringList3", "stringList4"}, v)
+
+	parameter = NewParameterDefinition("test", ParameterTypeStringListFromFiles,
+		WithDefault("default"),
+	)
+	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"string1"}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"string1", "string2"}, v)
+}
+
+func TestParseObjectListFromFileRealFile(t *testing.T) {
+	parameter := NewParameterDefinition("test", ParameterTypeObjectListFromFile,
+		WithDefault([]interface{}{}),
+	)
+
+	v, err := parameter.ParseParameter([]string{"test-data/object.json"})
+	require.NoError(t, err)
+	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/objectList.json"})
+	require.NoError(t, err)
+	assert.Equal(t,
+		[]interface{}{
+			map[string]interface{}{"name": "objectList1", "type": "object"},
+			map[string]interface{}{"name": "objectList2", "type": "object"},
+		}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/objectList3.csv"})
+	require.NoError(t, err)
+	assert.Equal(t,
+		[]interface{}{
+			map[string]interface{}{"name": "objectList5", "type": "object"},
+			map[string]interface{}{"name": "objectList6", "type": "object"},
+		}, v)
+
+	parameter = NewParameterDefinition("test", ParameterTypeObjectListFromFiles,
+		WithDefault([]interface{}{}),
+	)
+
+	v, err = parameter.ParseParameter([]string{"test-data/object.json"})
+	require.NoError(t, err)
+	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v)
+
+	v, err = parameter.ParseParameter([]string{"test-data/object.json", "test-data/object2.json"})
+	require.NoError(t, err)
+	assert.Equal(t,
+		[]interface{}{
+			map[string]interface{}{"name": "object1", "type": "object"},
+			map[string]interface{}{"name": "object2", "type": "object"},
+		},
+		v)
+
+	v, err = parameter.ParseParameter([]string{
+		"test-data/objectList.json",
+		"test-data/objectList2.yaml",
+		"test-data/object.json",
+		"test-data/object2.json",
+		"test-data/objectList3.csv"})
+	require.NoError(t, err)
+	assert.Equal(t,
+		[]interface{}{
+			map[string]interface{}{"name": "objectList1", "type": "object"},
+			map[string]interface{}{"name": "objectList2", "type": "object"},
+			map[string]interface{}{"name": "objectList3", "type": "object"},
+			map[string]interface{}{"name": "objectList4", "type": "object"},
+			map[string]interface{}{"name": "object1", "type": "object"},
+			map[string]interface{}{"name": "object2", "type": "object"},
+			map[string]interface{}{"name": "objectList5", "type": "object"},
+			map[string]interface{}{"name": "objectList6", "type": "object"},
+		},
+		v)
 }
