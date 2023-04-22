@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -21,6 +22,7 @@ type CommandAlias struct {
 	AliasFor  string            `yaml:"aliasFor"`
 	Flags     map[string]string `yaml:"flags,omitempty"`
 	Arguments []string          `yaml:"arguments,omitempty"`
+	Layout    []*layout.Section `yaml:"layout,omitempty"`
 
 	AliasedCommand cmds.Command `yaml:",omitempty"`
 	Parents        []string     `yaml:",omitempty"`
@@ -141,15 +143,22 @@ func (a *CommandAlias) IsValid() bool {
 // depending on where they come from.
 func (a *CommandAlias) Description() *cmds.CommandDescription {
 	s := a.AliasedCommand.Description()
+	layout_ := a.Layout
+	if layout_ == nil {
+		layout_ = s.Layout.Sections
+	}
 	ret := &cmds.CommandDescription{
 		Name:      a.Name,
 		Short:     s.Short,
 		Long:      s.Long,
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
-		Layers:    s.Layers,
-		Parents:   a.Parents,
-		Source:    a.Source,
+		Layout: &layout.Layout{
+			Sections: layout_,
+		},
+		Layers:  s.Layers,
+		Parents: a.Parents,
+		Source:  a.Source,
 	}
 
 	for _, flag := range s.Flags {
@@ -161,10 +170,22 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 	for _, argument := range s.Arguments {
 		newArgument := argument.Copy()
 
-		// NOTE(2023-02-07, manuel) I don't fully understand what this is referring to anymore,
-		// but I remember struggling with this in the context of setting and overriding default values.
-		// Say, if an alias defines --fields id,name and then the user passes in --fields foo,bla
-		// on top, I remember there being some kind of conflict.
+		// ## Parsing the overloaded strings to actual types to store as flag defaults
+		//
+		// NOTE(2023-04-20) We can't easily return overloaded flags and arguments as defaults in the CommandDescription
+		//
+		// This was created before layers being a thing, so that the overloads are not really type specific.
+		// This is a problem already when capturing the aliases, but it should be much easier now.
+		//
+		// For now, we still use strings, and as such need the overloading of an alias to be caught at the primitive
+		// parsing step (cobra for CLI, HTTP parsers for parka).
+		//
+		// See https://github.com/go-go-golems/glazed/issues/287
+		//
+		// For now, parka handling takes an explicit list of defaults in its parser functions,
+		// which might not be the worst idea for overloading things at registration time either.
+
+		// ## Handling argument count
 		//
 		// See also the note in glazed_layer.go about checking the argument count. This might all
 		// refer to overloading arguments, and not just flags. This seems to make sense given the

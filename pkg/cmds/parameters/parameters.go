@@ -139,8 +139,12 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 		p.Default = v
 	case ParameterTypeChoice:
 		p.Default = i.(string)
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeStringFromFile:
 		p.Default = i.(string)
+	case ParameterTypeStringListFromFiles:
+		fallthrough
 	case ParameterTypeStringListFromFile:
 		v, ok := cast.CastList2[string, interface{}](i)
 		if !ok {
@@ -159,6 +163,8 @@ func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
 			return errors.Errorf("expected object for parameter %s, got %T", p.Name, i)
 		}
 		p.Default = v
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
 		v, ok := cast.CastList2[map[string]interface{}, interface{}](i)
 		if !ok {
@@ -189,12 +195,18 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 		p.Default = value.Int()
 	case ParameterTypeFloat:
 		p.Default = value.Float()
+
+	case ParameterTypeStringListFromFiles:
+		fallthrough
+	case ParameterTypeStringListFromFile:
+		fallthrough
 	case ParameterTypeStringList:
 		v, ok := cast.CastList2[string, interface{}](value.Interface())
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
+
 	case ParameterTypeDate:
 		p.Default = value.Interface().(time.Time).Format(time.RFC3339)
 	case ParameterTypeIntegerList:
@@ -209,16 +221,13 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
+
 	case ParameterTypeChoice:
 		p.Default = value.String()
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeStringFromFile:
 		p.Default = value.String()
-	case ParameterTypeStringListFromFile:
-		v, ok := cast.CastList2[string, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
 	case ParameterTypeKeyValue:
 		v, ok := cast.CastInterfaceToStringMap[string, interface{}](value.Interface())
 		if !ok {
@@ -231,6 +240,9 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 			return errors.Errorf("expected object for parameter %s, got %T", p.Name, value.Interface())
 		}
 		p.Default = v
+
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
 		v, ok := cast.CastList2[map[string]interface{}, interface{}](value.Interface())
 		if !ok {
@@ -316,12 +328,16 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 		} else {
 			value.SetString(p.Default.(string))
 		}
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeStringFromFile:
 		if p.Default == nil {
 			value.SetString("")
 		} else {
 			value.SetString(p.Default.(string))
 		}
+	case ParameterTypeStringListFromFiles:
+		fallthrough
 	case ParameterTypeStringListFromFile:
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]string{}))
@@ -332,6 +348,8 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 			}
 			value.Set(reflect.ValueOf(list))
 		}
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
 		if p.Default == nil {
 			value.Set(reflect.ValueOf([]map[string]interface{}{}))
@@ -549,7 +567,8 @@ const (
 	//
 	// See https://github.com/go-go-golems/glazed/issues/137
 
-	ParameterTypeStringFromFile ParameterType = "stringFromFile"
+	ParameterTypeStringFromFile  ParameterType = "stringFromFile"
+	ParameterTypeStringFromFiles ParameterType = "stringFromFiles"
 
 	// TODO (2023-02-07) It would be great to have "list of objects from file" here
 	// See https://github.com/go-go-golems/glazed/issues/117
@@ -557,9 +576,11 @@ const (
 	// - string (potentially from file if starting with @)
 	// - string/int/float list from file is another useful type
 
-	ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
-	ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
-	ParameterTypeStringListFromFile ParameterType = "stringListFromFile"
+	ParameterTypeObjectListFromFile  ParameterType = "objectListFromFile"
+	ParameterTypeObjectListFromFiles ParameterType = "objectListFromFiles"
+	ParameterTypeObjectFromFile      ParameterType = "objectFromFile"
+	ParameterTypeStringListFromFile  ParameterType = "stringListFromFile"
+	ParameterTypeStringListFromFiles ParameterType = "stringListFromFiles"
 
 	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
 	// or when beginning with @, a file with key-value options
@@ -589,6 +610,12 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 		return true
 	case ParameterTypeStringListFromFile:
 		return true
+	case ParameterTypeObjectListFromFiles:
+		return true
+	case ParameterTypeStringListFromFiles:
+		return true
+	case ParameterTypeStringFromFiles:
+		return true
 	case ParameterTypeKeyValue:
 		return strings.HasPrefix(v, "@")
 	default:
@@ -599,7 +626,11 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 func IsListParameter(p ParameterType) bool {
 	//exhaustive:ignore
 	switch p {
-	case ParameterTypeStringListFromFile:
+	case ParameterTypeObjectListFromFiles:
+		return true
+	case ParameterTypeStringListFromFiles:
+		return true
+	case ParameterTypeStringFromFiles:
 		return true
 	case ParameterTypeStringList:
 		return true
@@ -628,6 +659,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	switch p.Type {
 	case ParameterTypeStringFromFile:
 		fallthrough
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeString:
 		_, ok := v.(string)
 		if !ok {
@@ -635,6 +668,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		}
 
 	case ParameterTypeObjectListFromFile:
+		fallthrough
+	case ParameterTypeObjectListFromFiles:
 		_, ok := v.([]interface{})
 		if !ok {
 			return errors.Errorf("Default value for parameter %s is not a list of objects: %v", p.Name, v)
@@ -676,6 +711,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		}
 
 	case ParameterTypeStringListFromFile:
+		fallthrough
+	case ParameterTypeStringListFromFiles:
 		fallthrough
 	case ParameterTypeStringList:
 		_, ok := v.([]string)

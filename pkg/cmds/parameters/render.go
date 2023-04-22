@@ -14,6 +14,8 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		fallthrough
 	case ParameterTypeStringFromFile:
 		fallthrough
+	case ParameterTypeStringFromFiles:
+		fallthrough
 	case ParameterTypeChoice:
 		s, ok := value.(string)
 		if !ok {
@@ -21,6 +23,8 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		}
 		return s, nil
 
+	case ParameterTypeObjectListFromFiles:
+		fallthrough
 	case ParameterTypeObjectListFromFile:
 		fallthrough
 	case ParameterTypeObjectFromFile:
@@ -71,6 +75,8 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		}
 		return "false", nil
 
+	case ParameterTypeStringListFromFiles:
+		fallthrough
 	case ParameterTypeStringListFromFile:
 		fallthrough
 	case ParameterTypeStringList:
