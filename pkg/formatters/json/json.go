@@ -32,6 +32,8 @@ func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
+// TODO(manuel: 2023-04-25) This could actually all be cleaned up with OutputFormatterOption
+
 func (f *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
 	f.middlewares = append(f.middlewares, mw)
 }
@@ -148,6 +150,12 @@ func WithOutputFileTemplate(outputFileTemplate string) OutputFormatterOption {
 func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
 	return func(f *OutputFormatter) {
 		f.OutputMultipleFiles = outputMultipleFiles
+	}
+}
+
+func WithTable(table *types.Table) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
+		formatter.Table = table
 	}
 }
 

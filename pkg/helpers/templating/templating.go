@@ -586,6 +586,10 @@ func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) erro
 			return errors.Wrapf(err, "failed to read template %s", filename)
 		}
 
+		// skip files that don't start with baseDir
+		if !strings.HasPrefix(filename, baseDir) {
+			continue
+		}
 		// strip baseDir from filename
 		filename_ := strings.TrimPrefix(filename, baseDir)
 		filename_ = strings.TrimPrefix(filename_, "/")

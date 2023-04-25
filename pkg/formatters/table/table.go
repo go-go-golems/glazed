@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/text"
 	"github.com/rs/zerolog/log"
 	"os"
 	"strings"
@@ -101,6 +102,10 @@ func NewOutputFormatter(tableFormat string, opts ...OutputFormatterOption) *Outp
 		TableStyle:  table.StyleDefault,
 	}
 
+	// avoid setting everything to uppercase
+	f.TableStyle.Format.Header = text.FormatDefault
+	f.TableStyle.Format.Footer = text.FormatDefault
+
 	for _, opt := range opts {
 		opt(f)
 	}
@@ -173,6 +178,7 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
 	t := table.NewWriter()
 
 	headers, _ := cast.CastList[interface{}](tof.Table.Columns)
+
 	t.AppendHeader(headers)
 	for _, row := range rows {
 		values := row.GetValues()
@@ -204,6 +210,9 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
 			t.SetStyle(*style)
 		} else {
 			t.SetStyle(tof.TableStyle)
+
+			t.Style().Format.Footer = text.FormatDefault
+			t.Style().Format.Header = text.FormatDefault
 		}
 		if tof.PrintTableStyle {
 			buf := strings.Builder{}
