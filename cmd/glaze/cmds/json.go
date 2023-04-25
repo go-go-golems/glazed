@@ -30,7 +30,7 @@ func NewJsonCommand() (*JsonCommand, error) {
 				parameters.NewParameterDefinition(
 					"input-is-array",
 					parameters.ParameterTypeBool,
-					parameters.WithHelp("Input is an array of objects"),
+					parameters.WithHelp("Input is an array of objects (multiple files will be concatenated)"),
 					parameters.WithDefault(false),
 				),
 			),
