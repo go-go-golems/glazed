@@ -353,19 +353,35 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.GlazeCommand, aliases []*alias.CommandAlias) error {
-	commandsByName := map[string]cmds.GlazeCommand{}
+func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, aliases []*alias.CommandAlias) error {
+	commandsByName := map[string]cmds.Command{}
 
 	for _, command := range commands {
 		// find the proper subcommand, or create if it doesn't exist
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
-		cobraCommand, err := BuildCobraCommandFromGlazeCommand(command)
+
+		var cobraCommand *cobra.Command
+		var err error
+		switch c := command.(type) {
+		case cmds.BareCommand:
+			cobraCommand, err = BuildCobraCommandFromBareCommand(c)
+
+		case cmds.WriterCommand:
+			cobraCommand, err = BuildCobraCommandFromWriterCommand(c)
+
+		case cmds.GlazeCommand:
+			cobraCommand, err = BuildCobraCommandFromGlazeCommand(c)
+
+		default:
+			return errors.Errorf("Unknown command type %T", c)
+		}
 		if err != nil {
 			return errors.Wrapf(err, "Error building command %s", description.Name)
 		}
 
 		parentCmd.AddCommand(cobraCommand)
+		commandsByName[description.Name] = command
 
 		path := strings.Join(append(description.Parents, description.Name), " ")
 		commandsByName[path] = command
