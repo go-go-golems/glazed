@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/ugorji/go/codec"
 	"io"
 	"os"
 )
@@ -108,20 +109,45 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 
 		return nil
 	} else {
-		// TODO(manuel, 2022-11-21) We should build a custom JSONMarshal for Table
-		var rows []map[string]interface{}
-		for _, row := range f.Table.Rows {
-			rows = append(rows, row.GetValues())
+		jh := &codec.JsonHandle{
+			Indent: 2,
 		}
-		encoder := json.NewEncoder(w)
-		encoder.SetIndent("", "  ")
-		err := encoder.Encode(rows)
+		enc := codec.NewEncoder(w, jh)
+
+		// Write the opening bracket for the array
+		_, err := w.Write([]byte("[\n"))
 		if err != nil {
 			return err
 		}
 
-		return nil
+		rowCount := len(f.Table.Rows)
+		for i, row := range f.Table.Rows {
+			// Reset the encoder to avoid memory leaks
+			enc.Reset(w)
+
+			// Encode each element in the array
+			err = enc.Encode(row.GetValues())
+			if err != nil {
+				return err
+			}
+
+			// Write a comma between elements, except for the last element
+			if i < rowCount-1 {
+				_, err = w.Write([]byte(",\n"))
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// Write the closing bracket for the array
+		_, err = w.Write([]byte("]\n"))
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 type OutputFormatterOption func(*OutputFormatter)
