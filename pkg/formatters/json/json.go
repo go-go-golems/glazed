@@ -120,7 +120,6 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 			return err
 		}
 
-		// TODO(manuel, 2022-11-21) We should build a custom JSONMarshal for Table
 		rowCount := len(f.Table.Rows)
 		for i, row := range f.Table.Rows {
 			// Reset the encoder to avoid memory leaks
