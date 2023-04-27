@@ -6,8 +6,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"io"
 	"os"
-	"strings"
 )
 
 type SingleColumnFormatter struct {
@@ -84,61 +84,65 @@ func (s *SingleColumnFormatter) GetTable() (*types.Table, error) {
 	return s.Table, nil
 }
 
-func (s *SingleColumnFormatter) Output(context.Context) (string, error) {
+func (s *SingleColumnFormatter) Output(ctx context.Context, w io.Writer) error {
 	s.Table.Finalize()
 
 	for _, middleware := range s.middlewares {
 		newTable, err := middleware.Process(s.Table)
 		if err != nil {
-			return "", err
+			return err
 		}
 		s.Table = newTable
 	}
 
 	if s.OutputMultipleFiles {
 		if s.OutputFileTemplate == "" && s.OutputFile == "" {
-			return "", fmt.Errorf("neither output file or output file template is set")
+			return fmt.Errorf("neither output file or output file template is set")
 		}
-
-		ret := ""
 
 		for i, row := range s.Table.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(s.OutputFile, s.OutputFileTemplate, row, i)
 			if err != nil {
-				return "", err
+				return err
 			}
 
 			if s_, ok := row.GetValues()[s.Column]; ok {
 				v := fmt.Sprintf("%v", s_)
 				err = os.WriteFile(outputFileName, []byte(v), 0644)
 				if err != nil {
-					return "", err
+					return err
 				}
-				ret += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+				_, _ = fmt.Fprintf(w, "Wrote output to %s\n", outputFileName)
 			}
 		}
 
-		return ret, nil
+		return nil
 
 	}
-
-	strs := []string{}
-
-	for _, row := range s.Table.Rows {
-		if value, ok := row.GetValues()[s.Column]; ok {
-			strs = append(strs, fmt.Sprintf("%v", value))
-		}
-	}
-
-	v := strings.Join(strs, s.Separator)
 
 	if s.OutputFile != "" {
-		err := os.WriteFile(s.OutputFile, []byte(v), 0644)
+		f_, err := os.Create(s.OutputFile)
 		if err != nil {
-			return "", err
+			return err
 		}
-		return "", nil
+
+		w = f_
 	}
 
-	return v, nil
+	for i, row := range s.Table.Rows {
+		if value, ok := row.GetValues()[s.Column]; ok {
+			_, err := fmt.Fprintf(w, "%v", value)
+			if err != nil {
+				return err
+			}
+			if i < len(s.Table.Rows)-1 {
+				_, err := fmt.Fprintf(w, "%s", s.Separator)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }

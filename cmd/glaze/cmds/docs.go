@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -35,9 +34,8 @@ var DocsCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output(ctx)
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		cobra.CheckErr(err)
-		fmt.Print(s)
 	},
 }
 

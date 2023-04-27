@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
 	"testing"
@@ -22,8 +23,8 @@ func BenchmarkSimpleGlazeProcessor(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = gp.ProcessInputObject(ctx, data)
 	}
-	s, _ := gp.OutputFormatter().Output(ctx)
-	_ = s
+	buf := &bytes.Buffer{}
+	_ = gp.OutputFormatter().Output(ctx, buf)
 }
 
 func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
@@ -42,6 +43,6 @@ func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = gp.ProcessInputObject(ctx, data)
 	}
-	s, _ := gp.OutputFormatter().Output(ctx)
-	_ = s
+	buf := &bytes.Buffer{}
+	_ = gp.OutputFormatter().Output(ctx, buf)
 }

@@ -164,12 +164,11 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		s, err := gp.OutputFormatter().Output(ctx)
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Print(s)
 	},
 }
 
@@ -380,12 +379,11 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		s, err := gp.OutputFormatter().Output(ctx)
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		cobra.CheckErr(err)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
-		fmt.Print(s)
 
 	},
 }

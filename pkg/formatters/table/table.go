@@ -10,6 +10,7 @@ import (
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/rs/zerolog/log"
+	"io"
 	"os"
 	"strings"
 )
@@ -118,64 +119,67 @@ func (tof *OutputFormatter) GetTable() (*types.Table, error) {
 	return tof.Table, nil
 }
 
-func (tof *OutputFormatter) Output(context.Context) (string, error) {
+func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	tof.Table.Finalize()
 
 	for _, middleware := range tof.middlewares {
 		newTable, err := middleware.Process(tof.Table)
 		if err != nil {
-			return "", err
+			return err
 		}
 		tof.Table = newTable
 	}
 
 	if tof.OutputMultipleFiles {
 		if tof.OutputFileTemplate == "" && tof.OutputFile == "" {
-			return "", fmt.Errorf("neither output file or output file template is set")
+			return fmt.Errorf("neither output file or output file template is set")
 		}
-
-		s := ""
 
 		for i, row := range tof.Table.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(tof.OutputFile, tof.OutputFileTemplate, row, i)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			s_, err := tof.makeTable([]types.Row{row})
+			f_, err := os.Create(outputFileName)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			err = os.WriteFile(outputFileName, []byte(s_), 0644)
+			err = tof.makeTable([]types.Row{row}, f_)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+			_, _ = fmt.Fprintf(w, "Wrote output to %s\n", outputFileName)
 		}
 
-		return s, nil
-	}
-
-	s, err := tof.makeTable(tof.Table.Rows)
-	if err != nil {
-		return "", err
+		return nil
 	}
 
 	if tof.OutputFile != "" {
-		log.Debug().Str("file", tof.OutputFile).Msg("Writing output to file")
-		err := os.WriteFile(tof.OutputFile, []byte(s), 0644)
+		f_, err := os.Create(tof.OutputFile)
 		if err != nil {
-			return "", err
+			return err
 		}
-		return "", nil
+		err = tof.makeTable(tof.Table.Rows, f_)
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(w, "Wrote output to %s\n", tof.OutputFile)
+		return nil
 	}
 
-	return s, nil
+	err := tof.makeTable(tof.Table.Rows, w)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
+func (tof *OutputFormatter) makeTable(rows []types.Row, w io.Writer) error {
 	t := table.NewWriter()
 
 	headers, _ := cast.CastList[interface{}](tof.Table.Columns)
@@ -195,18 +199,28 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
 	}
 
 	if tof.TableFormat == "markdown" {
-		return t.RenderMarkdown(), nil
+		s := t.RenderMarkdown()
+		_, err := w.Write([]byte(s))
+		if err != nil {
+			return err
+		}
+		return nil
 	} else if tof.TableFormat == "html" {
-		return t.RenderHTML(), nil
+		html := t.RenderHTML()
+		_, err := w.Write([]byte(html))
+		if err != nil {
+			return err
+		}
+		return nil
 	} else {
 		if tof.TableStyleFile != "" {
 			f, err := os.Open(tof.TableStyleFile)
 			if err != nil {
-				return "", err
+				return err
 			}
 			style, err := styleFromYAML(f)
 			if err != nil {
-				return "", err
+				return err
 			}
 			t.SetStyle(*style)
 		} else {
@@ -216,14 +230,18 @@ func (tof *OutputFormatter) makeTable(rows []types.Row) (string, error) {
 			t.Style().Format.Header = text.FormatDefault
 		}
 		if tof.PrintTableStyle {
-			buf := strings.Builder{}
-			err := styleToYAML(&buf, prettyStyleToStyle(t.Style()))
+			err := styleToYAML(w, prettyStyleToStyle(t.Style()))
 			if err != nil {
-				return "", err
+				return err
 			}
-			return buf.String(), nil
+			return nil
 		}
-		return t.Render(), nil
+		render := t.Render()
+		_, err := w.Write([]byte(render))
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

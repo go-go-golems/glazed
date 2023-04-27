@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"bytes"
 	"context"
 	"github.com/go-go-golems/glazed/pkg/helpers/csv"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -19,10 +20,11 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
 	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
 	ctx := context.Background()
-	s, err := of.Output(ctx)
+	buf := &bytes.Buffer{}
+	err := of.Output(ctx, buf)
 	require.NoError(t, err)
 
-	_, data, err := csv.ParseCSV(strings.NewReader(s))
+	_, data, err := csv.ParseCSV(strings.NewReader(buf.String()))
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 	v, ok := data[0]["b"]

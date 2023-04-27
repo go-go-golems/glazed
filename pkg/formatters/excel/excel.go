@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/xuri/excelize/v2"
+	"io"
 	"strings"
 )
 
@@ -41,13 +42,13 @@ func (E *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	E.middlewares = append(E.middlewares[:i], append([]middlewares.TableMiddleware{mw}, E.middlewares[i:]...)...)
 }
 
-func (E *OutputFormatter) Output(context.Context) (string, error) {
+func (E *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	E.Table.Finalize()
 
 	for _, middleware := range E.middlewares {
 		newTable, err := middleware.Process(E.Table)
 		if err != nil {
-			return "", err
+			return err
 		}
 		E.Table = newTable
 	}
@@ -61,7 +62,7 @@ func (E *OutputFormatter) Output(context.Context) (string, error) {
 
 	sheetIndex, err := f.NewSheet(E.SheetName)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	rowKeyToColumn := make(map[string]string)
@@ -78,7 +79,7 @@ func (E *OutputFormatter) Output(context.Context) (string, error) {
 		},
 	})
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	for j, col := range E.Table.Columns {
@@ -87,12 +88,12 @@ func (E *OutputFormatter) Output(context.Context) (string, error) {
 		rowKeyToColumn[col] = colIndex
 		err = f.SetCellValue(E.SheetName, cellIndex, col)
 		if err != nil {
-			return "", err
+			return err
 		}
 
 		err = f.SetCellStyle(E.SheetName, cellIndex, cellIndex, headerStyle)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 
@@ -112,7 +113,7 @@ func (E *OutputFormatter) Output(context.Context) (string, error) {
 			}
 
 			if err != nil {
-				return "", err
+				return err
 			}
 		}
 	}
@@ -120,10 +121,12 @@ func (E *OutputFormatter) Output(context.Context) (string, error) {
 	f.SetActiveSheet(sheetIndex)
 
 	if err := f.SaveAs(E.OutputFile); err != nil {
-		return "", err
+		return err
 	}
 
-	return fmt.Sprintf("Output file created successfully at %s", E.OutputFile), nil
+	_, _ = fmt.Fprintf(w, "Output file created successfully at %s", E.OutputFile)
+
+	return nil
 }
 
 type OutputFormatterOption func(*OutputFormatter)

@@ -1,7 +1,6 @@
 package html
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/spf13/cobra"
@@ -40,12 +39,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output(ctx)
+			err = gp.OutputFormatter().Output(ctx, os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
-			fmt.Print(s)
 		},
 	}
 
@@ -94,12 +92,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output(ctx)
+			err = gp.OutputFormatter().Output(ctx, os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
-			fmt.Print(s)
 		},
 	}
 

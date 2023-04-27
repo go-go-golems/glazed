@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
+	"io"
 	"strings"
 	"testing"
 )
@@ -45,8 +46,8 @@ func (t TestFormatter) GetTable() (*types.Table, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (t TestFormatter) Output(context.Context) (string, error) {
-	return "", nil
+func (t TestFormatter) Output(context.Context, io.Writer) error {
+	return nil
 }
 
 func (t *TestProcessor) ProcessInputObject(ctx context.Context, obj map[string]interface{}) error {

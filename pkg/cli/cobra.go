@@ -272,8 +272,8 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, e
 	return cmd, nil
 }
 
-func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(s, func(
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(cmd_, func(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
@@ -281,7 +281,7 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 		gp, err := SetupProcessor(ps)
 		cobra.CheckErr(err)
 
-		err = s.Run(ctx, parsedLayers, ps, gp)
+		err = cmd_.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return nil
 		}
@@ -289,10 +289,8 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output(ctx)
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		cobra.CheckErr(err)
-
-		fmt.Println(s)
 		return nil
 	})
 
