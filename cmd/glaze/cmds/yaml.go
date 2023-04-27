@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -62,7 +63,7 @@ func (y *YamlCommand) Run(
 	_ context.Context,
 	_ map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp cmds.Processor,
+	gp processor.Processor,
 ) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {

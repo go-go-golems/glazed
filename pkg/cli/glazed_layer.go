@@ -2,7 +2,6 @@ package cli
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -10,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -368,7 +368,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupProcessor(ps map[string]interface{}) (*cmds.GlazeProcessor, error) {
+func SetupProcessor(ps map[string]interface{}) (*processor.GlazeProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
@@ -476,6 +476,6 @@ func SetupProcessor(ps map[string]interface{}) (*cmds.GlazeProcessor, error) {
 	// is not trivial.
 	sortSettings.AddMiddlewares(of)
 
-	gp := cmds.NewGlazeProcessor(of, middlewares_...)
+	gp := processor.NewGlazeProcessor(of, middlewares_...)
 	return gp, nil
 }

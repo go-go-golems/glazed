@@ -1,4 +1,4 @@
-package cmds
+package processor
 
 import (
 	"github.com/go-go-golems/glazed/pkg/formatters"

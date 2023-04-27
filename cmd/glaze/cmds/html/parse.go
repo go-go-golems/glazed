@@ -1,7 +1,7 @@
 package html
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"golang.org/x/net/html"
 	"strings"
 )
@@ -10,13 +10,13 @@ import (
 // When encountering one of the tags in splitTags, it extracts the content below the tag as Title
 // (if extractTitle is true) and the following siblings until the next split tag is encountered as body.
 type HTMLSplitParser struct {
-	gp           cmds.Processor
+	gp           processor.Processor
 	removeTags   []string
 	splitTags    []string
 	extractTitle bool
 }
 
-func NewHTMLSplitParser(gp cmds.Processor, removeTags, splitTags []string, extractTitle bool) *HTMLSplitParser {
+func NewHTMLSplitParser(gp processor.Processor, removeTags, splitTags []string, extractTitle bool) *HTMLSplitParser {
 	return &HTMLSplitParser{
 		gp:           gp,
 		removeTags:   removeTags,
@@ -27,7 +27,7 @@ func NewHTMLSplitParser(gp cmds.Processor, removeTags, splitTags []string, extra
 
 // NewHTMLHeadingSplitParser creates a new HTMLSplitParser that splits the document into sections
 // and keeps the titles, by splitting at h1, h2, h3...
-func NewHTMLHeadingSplitParser(gp cmds.Processor, removeTags []string) *HTMLSplitParser {
+func NewHTMLHeadingSplitParser(gp processor.Processor, removeTags []string) *HTMLSplitParser {
 	tags := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
 	removeTags = append(removeTags, tags...)
 	return NewHTMLSplitParser(gp, removeTags, tags, true)
@@ -177,7 +177,7 @@ func htmlNodeTypeToString(t html.NodeType) string {
 	}
 }
 
-func outputNodesDepthFirst(doc *html.Node, gp *cmds.GlazeProcessor) error {
+func outputNodesDepthFirst(doc *html.Node, gp *processor.GlazeProcessor) error {
 	attributes := make([]htmlAttribute, 0, len(doc.Attr))
 	for _, attr := range doc.Attr {
 		attributes = append(attributes, htmlAttribute{
