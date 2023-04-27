@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -121,6 +122,8 @@ var parseCmd = &cobra.Command{
 	Short: "Parse markdown data as AST and process further",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+
 		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
@@ -150,9 +153,9 @@ var parseCmd = &cobra.Command{
 			cobra.CheckErr(err)
 
 			if parser_ == "simple" {
-				err = simpleLinearize(md, s, gp)
+				err = simpleLinearize(ctx, md, s, gp)
 			} else if parser_ == "split" {
-				err = splitByHeading(md, s, gp)
+				err = splitByHeading(ctx, md, s, gp)
 			} else {
 				cobra.CheckErr(errors.Newf("unknown parser: %s", parser_))
 			}
@@ -161,7 +164,7 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		s, err := gp.OutputFormatter().Output()
+		s, err := gp.OutputFormatter().Output(ctx)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
 			os.Exit(1)
@@ -185,7 +188,7 @@ var parseCmd = &cobra.Command{
 //		    }
 //
 // ]
-func splitByHeading(md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
+func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -245,7 +248,7 @@ func splitByHeading(md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor
 	// fold the headings
 
 	for _, elt := range outputStack {
-		err = gp.ProcessInputObject(elt)
+		err = gp.ProcessInputObject(ctx, elt)
 		if err != nil {
 			return err
 		}
@@ -258,7 +261,7 @@ func splitByHeading(md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor
 // simpleLinearize is a simple walker that will linearize the blocks encountered,
 // and filter out the Document and Text blocks
 // to avoid duplicates, for a very simple document.
-func simpleLinearize(md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
+func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -297,7 +300,7 @@ func simpleLinearize(md goldmark.Markdown, s []byte, gp *processor.GlazeProcesso
 	}
 
 	for _, elt := range outputStack {
-		err = gp.ProcessInputObject(elt)
+		err = gp.ProcessInputObject(ctx, elt)
 		if err != nil {
 			return err
 		}
@@ -311,6 +314,8 @@ var splitByHeadingCmd = &cobra.Command{
 	Short: "Split a markdown file by heading",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+
 		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
@@ -350,7 +355,7 @@ var splitByHeadingCmd = &cobra.Command{
 						"heading": currentTitle,
 						"content": strings.Trim(strings.Join(current, "\n"), " \n\t"),
 					}
-					err = gp.ProcessInputObject(row)
+					err = gp.ProcessInputObject(ctx, row)
 					cobra.CheckErr(err)
 
 					currentTitle = ""
@@ -375,7 +380,7 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		s, err := gp.OutputFormatter().Output()
+		s, err := gp.OutputFormatter().Output(ctx)
 		cobra.CheckErr(err)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)

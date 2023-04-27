@@ -1,6 +1,7 @@
 package simple
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -83,7 +84,7 @@ func (s *SingleColumnFormatter) GetTable() (*types.Table, error) {
 	return s.Table, nil
 }
 
-func (s *SingleColumnFormatter) Output() (string, error) {
+func (s *SingleColumnFormatter) Output(context.Context) (string, error) {
 	s.Table.Finalize()
 
 	for _, middleware := range s.middlewares {

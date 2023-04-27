@@ -1,6 +1,7 @@
 package html
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"golang.org/x/net/html"
 	"strings"
@@ -61,7 +62,7 @@ func (hsp *HTMLSplitParser) shouldRemove(n *html.Node) bool {
 //
 // It returns the next node to be parsed (because we need to split a certain amount of
 // sibling nodes).
-func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
+func (hsp *HTMLSplitParser) ProcessNode(ctx context.Context, n *html.Node) (*html.Node, error) {
 	data := n.Data
 	_ = data
 
@@ -94,7 +95,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		}
 		row["Body"] = strings.TrimSpace(body.String())
 
-		err := hsp.gp.ProcessInputObject(row)
+		err := hsp.gp.ProcessInputObject(ctx, row)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +103,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		next = c
 	} else {
 		if n.FirstChild != nil {
-			_, err := hsp.ProcessNode(n.FirstChild)
+			_, err := hsp.ProcessNode(ctx, n.FirstChild)
 			if err != nil {
 				return nil, err
 			}
@@ -113,7 +114,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		var err error
 
 		current := next
-		next, err = hsp.ProcessNode(current)
+		next, err = hsp.ProcessNode(ctx, current)
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +178,7 @@ func htmlNodeTypeToString(t html.NodeType) string {
 	}
 }
 
-func outputNodesDepthFirst(doc *html.Node, gp *processor.GlazeProcessor) error {
+func outputNodesDepthFirst(ctx context.Context, doc *html.Node, gp *processor.GlazeProcessor) error {
 	attributes := make([]htmlAttribute, 0, len(doc.Attr))
 	for _, attr := range doc.Attr {
 		attributes = append(attributes, htmlAttribute{
@@ -195,13 +196,13 @@ func outputNodesDepthFirst(doc *html.Node, gp *processor.GlazeProcessor) error {
 		"Attributes": attributes,
 	}
 
-	err := gp.ProcessInputObject(obj)
+	err := gp.ProcessInputObject(ctx, obj)
 	if err != nil {
 		return err
 	}
 
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
-		err = outputNodesDepthFirst(c, gp)
+		err = outputNodesDepthFirst(ctx, c, gp)
 		if err != nil {
 			return err
 		}

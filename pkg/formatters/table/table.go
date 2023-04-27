@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
@@ -117,7 +118,7 @@ func (tof *OutputFormatter) GetTable() (*types.Table, error) {
 	return tof.Table, nil
 }
 
-func (tof *OutputFormatter) Output() (string, error) {
+func (tof *OutputFormatter) Output(context.Context) (string, error) {
 	tof.Table.Finalize()
 
 	for _, middleware := range tof.middlewares {

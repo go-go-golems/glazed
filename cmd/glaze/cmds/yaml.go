@@ -60,7 +60,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 }
 
 func (y *YamlCommand) Run(
-	_ context.Context,
+	ctx context.Context,
 	_ map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
 	gp processor.Processor,
@@ -118,7 +118,7 @@ func (y *YamlCommand) Run(
 
 			i := 1
 			for _, d := range data {
-				err = gp.ProcessInputObject(d)
+				err = gp.ProcessInputObject(ctx, d)
 				if err != nil {
 					return errors.Wrapf(err, "Error processing row %d of file %s as object", i, arg)
 				}
@@ -135,7 +135,7 @@ func (y *YamlCommand) Run(
 				}
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
-			err = gp.ProcessInputObject(data)
+			err = gp.ProcessInputObject(ctx, data)
 			if err != nil {
 				return errors.Wrapf(err, "Error processing file %s as object", arg)
 			}

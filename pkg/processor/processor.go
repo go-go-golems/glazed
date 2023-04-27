@@ -1,14 +1,17 @@
 package processor
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/table"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
+// TODO(manuel, 2023-04-27) This is probably a good location for With* constructors for middlewares
+
 type Processor interface {
-	ProcessInputObject(obj map[string]interface{}) error
+	ProcessInputObject(ctx context.Context, obj map[string]interface{}) error
 	OutputFormatter() formatters.OutputFormatter
 }
 
@@ -37,7 +40,7 @@ func NewGlazeProcessor(of formatters.OutputFormatter, oms ...middlewares.ObjectM
 // chain.
 //
 // The final output is added to the output formatter as a single row.
-func (gp *GlazeProcessor) ProcessInputObject(obj map[string]interface{}) error {
+func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj map[string]interface{}) error {
 	currentObjects := []map[string]interface{}{obj}
 
 	for _, om := range gp.oms {

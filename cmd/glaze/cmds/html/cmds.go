@@ -20,6 +20,8 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Parse HTML",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := cmd.Context()
+
 			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
@@ -34,11 +36,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				doc, err := html.Parse(f)
 				cobra.CheckErr(err)
 
-				err = outputNodesDepthFirst(doc, gp)
+				err = outputNodesDepthFirst(ctx, doc, gp)
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output()
+			s, err := gp.OutputFormatter().Output(ctx)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
@@ -63,6 +65,8 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Extract HTML from sections",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := cmd.Context()
+
 			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
@@ -86,11 +90,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 
 				hsp := NewHTMLSplitParser(gp, append(removeTags, splitTags...), splitTags, extractTitle)
 
-				_, err = hsp.ProcessNode(doc)
+				_, err = hsp.ProcessNode(ctx, doc)
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output()
+			s, err := gp.OutputFormatter().Output(ctx)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)

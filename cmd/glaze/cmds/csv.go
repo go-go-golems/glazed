@@ -132,7 +132,7 @@ func (c *CsvCommand) Run(
 		}
 
 		for _, row := range s {
-			err = gp.ProcessInputObject(row)
+			err = gp.ProcessInputObject(ctx, row)
 			if err != nil {
 				return errors.Wrap(err, "could not process CSV row")
 			}

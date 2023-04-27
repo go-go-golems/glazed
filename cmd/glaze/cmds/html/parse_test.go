@@ -1,6 +1,7 @@
 package html
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -44,11 +45,11 @@ func (t TestFormatter) GetTable() (*types.Table, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (t TestFormatter) Output() (string, error) {
+func (t TestFormatter) Output(context.Context) (string, error) {
 	return "", nil
 }
 
-func (t *TestProcessor) ProcessInputObject(obj map[string]interface{}) error {
+func (t *TestProcessor) ProcessInputObject(ctx context.Context, obj map[string]interface{}) error {
 	t.Objects = append(t.Objects, obj)
 	return nil
 }
@@ -66,7 +67,9 @@ func TestSimpleHeaderParse(t *testing.T) {
 
 	hsp := NewHTMLHeadingSplitParser(gp, []string{})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -84,7 +87,9 @@ func TestTwoHeadersParse(t *testing.T) {
 
 	hsp := NewHTMLHeadingSplitParser(gp, []string{})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -115,7 +120,8 @@ func TestTwoHeadersBody(t *testing.T) {
 
 	hsp := NewHTMLHeadingSplitParser(gp, []string{})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -148,7 +154,8 @@ func TestTwoHeadersSomeTextBody(t *testing.T) {
 
 	hsp := NewHTMLHeadingSplitParser(gp, []string{})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -186,7 +193,8 @@ func TestTwoHeadersSomeTextNodes(t *testing.T) {
 	gp := NewTestProcessor()
 	hsp := NewHTMLHeadingSplitParser(gp, []string{})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -202,7 +210,7 @@ func TestTwoHeadersSomeTextNodes(t *testing.T) {
 	gp = NewTestProcessor()
 	hsp = NewHTMLHeadingSplitParser(gp, []string{"p"})
 
-	n, err = hsp.ProcessNode(doc)
+	n, err = hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -236,7 +244,9 @@ func TestStripTags(t *testing.T) {
 
 	hsp := NewHTMLHeadingSplitParser(gp, []string{"span", "p"})
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -261,7 +271,8 @@ func TestSplitOtherTags(t *testing.T) {
 
 	hsp := NewHTMLSplitParser(gp, []string{"p"}, []string{"p"}, true)
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -283,7 +294,8 @@ func TestSplitOtherTagsWithoutTitle(t *testing.T) {
 
 	hsp := NewHTMLSplitParser(gp, []string{"p"}, []string{"p"}, false)
 
-	n, err := hsp.ProcessNode(doc)
+	ctx := context.Background()
+	n, err := hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 
@@ -298,7 +310,7 @@ func TestSplitOtherTagsWithoutTitle(t *testing.T) {
 	gp = NewTestProcessor()
 	hsp = NewHTMLSplitParser(gp, []string{}, []string{"p"}, false)
 
-	n, err = hsp.ProcessNode(doc)
+	n, err = hsp.ProcessNode(ctx, doc)
 	require.NoError(t, err)
 	assert.Nil(t, n)
 

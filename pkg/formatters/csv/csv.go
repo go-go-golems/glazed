@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -105,7 +106,7 @@ func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (f *OutputFormatter) Output() (string, error) {
+func (f *OutputFormatter) Output(ctx context.Context) (string, error) {
 	f.Table.Finalize()
 
 	for _, middleware := range f.middlewares {

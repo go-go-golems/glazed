@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -45,7 +46,7 @@ func (t *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMi
 	t.middlewares = append(t.middlewares[:i], append([]middlewares.TableMiddleware{m}, t.middlewares[i:]...)...)
 }
 
-func (t *OutputFormatter) Output() (string, error) {
+func (t *OutputFormatter) Output(context.Context) (string, error) {
 	t.Table.Finalize()
 
 	for _, middleware := range t.middlewares {

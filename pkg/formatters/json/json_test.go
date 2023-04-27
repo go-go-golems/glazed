@@ -1,6 +1,7 @@
 package json
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -16,7 +17,8 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 	}
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
 	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
-	s, err := of.Output()
+	ctx := context.Background()
+	s, err := of.Output(ctx)
 	require.NoError(t, err)
 
 	// parse s

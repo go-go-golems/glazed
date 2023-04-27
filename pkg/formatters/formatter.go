@@ -1,6 +1,7 @@
 package formatters
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -48,7 +49,7 @@ type OutputFormatter interface {
 
 	GetTable() (*types.Table, error)
 
-	Output() (string, error)
+	Output(ctx context.Context) (string, error)
 }
 
 func ComputeOutputFilename(outputFile string, outputFileTemplate string, row types.Row, index int) (string, error) {

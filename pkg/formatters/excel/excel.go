@@ -1,6 +1,7 @@
 package excel
 
 import (
+	"context"
 	"fmt"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -40,7 +41,7 @@ func (E *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	E.middlewares = append(E.middlewares[:i], append([]middlewares.TableMiddleware{mw}, E.middlewares[i:]...)...)
 }
 
-func (E *OutputFormatter) Output() (string, error) {
+func (E *OutputFormatter) Output(context.Context) (string, error) {
 	E.Table.Finalize()
 
 	for _, middleware := range E.middlewares {

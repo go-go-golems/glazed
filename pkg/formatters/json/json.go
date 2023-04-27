@@ -2,6 +2,7 @@ package json
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -46,7 +47,7 @@ func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
 }
 
-func (f *OutputFormatter) Output() (string, error) {
+func (f *OutputFormatter) Output(context.Context) (string, error) {
 	f.Table.Finalize()
 
 	for _, middleware := range f.middlewares {
