@@ -1,12 +1,13 @@
 package yaml
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
+	"io"
 	"os"
 )
 
@@ -43,99 +44,87 @@ func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
 }
 
-func (f *OutputFormatter) Output() (string, error) {
+func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	f.Table.Finalize()
 
 	for _, middleware := range f.middlewares {
 		newTable, err := middleware.Process(f.Table)
 		if err != nil {
-			return "", err
+			return err
 		}
 		f.Table = newTable
 	}
 
 	if f.OutputMultipleFiles {
 		if f.OutputFileTemplate == "" && f.OutputFile == "" {
-			return "", fmt.Errorf("neither output file or output file template is set")
+			return fmt.Errorf("neither output file or output file template is set")
 		}
-
-		s := ""
 
 		for i, row := range f.Table.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			d, err := yaml.Marshal(row.GetValues())
+			f_, err := os.Create(outputFileName)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			err = os.WriteFile(outputFileName, d, 0644)
+			encoder := yaml.NewEncoder(f_)
+			err = encoder.Encode(row.GetValues())
 			if err != nil {
-				return "", err
+				f_.Close()
+				return err
 			}
-			s += fmt.Sprintf("Wrote output to %s\n", outputFileName)
+
+			_, _ = fmt.Fprintf(w, "Wrote output to %s\n", outputFileName)
+			f_.Close()
 		}
 
-		return s, nil
+		return nil
 	}
 
 	if f.OutputIndividualRows {
 		if len(f.Table.Rows) > 1 {
-			return "", fmt.Errorf("output individual rows is set but there are multiple rows in the table")
-		}
-
-		if len(f.Table.Rows) == 0 {
-			if f.OutputFile != "" {
-				err := os.WriteFile(f.OutputFile, []byte{}, 0644)
-				if err != nil {
-					return "", err
-				}
-
-				return "Empty table, an empty file was created", nil
-			}
-			return "", nil
-		}
-
-		d, err := yaml.Marshal(f.Table.Rows[0].GetValues())
-		if err != nil {
-			return "", err
+			return fmt.Errorf("output individual rows is set but there are multiple rows in the table")
 		}
 
 		if f.OutputFile != "" {
-			err := os.WriteFile(f.OutputFile, d, 0644)
+			f_, err := os.Create(f.OutputFile)
 			if err != nil {
-				return "", err
+				return err
 			}
-			return "", nil
+			w = f_
+			defer f_.Close()
+
+			if len(f.Table.Rows) == 0 {
+				_, _ = fmt.Fprintln(w, "Empty table, an empty file was created")
+				return nil
+			}
 		}
 
-		return string(d), nil
+		encoder := yaml.NewEncoder(w)
+		err := encoder.Encode(f.Table.Rows[0].GetValues())
+		if err != nil {
+			return err
+		}
+
+		return nil
 	} else {
 		var rows []map[string]interface{}
 		for _, row := range f.Table.Rows {
 			rows = append(rows, row.GetValues())
 		}
 
-		d, err := yaml.Marshal(rows)
+		encoder := yaml.NewEncoder(w)
+		err := encoder.Encode(rows)
 		if err != nil {
-			return "", err
+			return err
 		}
 
-		if f.OutputFile != "" {
-			log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
-			err := os.WriteFile(f.OutputFile, d, 0644)
-			if err != nil {
-				return "", err
-			}
-			return "", nil
-		}
-
-		return string(d), nil
+		return nil
 	}
-
 }
 
 type OutputFormatterOption func(*OutputFormatter)

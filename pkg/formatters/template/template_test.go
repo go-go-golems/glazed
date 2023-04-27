@@ -1,6 +1,8 @@
 package template
 
 import (
+	"bytes"
+	"context"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
@@ -24,8 +26,10 @@ func TestTemplateRenameEndToEnd(t *testing.T) {
 	}
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
 	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
-	s, err := of.Output()
+	ctx := context.Background()
+	buf := &bytes.Buffer{}
+	err := of.Output(ctx, buf)
 	require.NoError(t, err)
 
-	assert.Equal(t, `1`, s)
+	assert.Equal(t, `1`, buf.String())
 }

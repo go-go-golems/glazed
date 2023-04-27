@@ -19,6 +19,9 @@ build:
 	go generate ./...
 	go build ./...
 
+bench:
+	go test -bench=./... -benchmem
+
 goreleaser:
 	goreleaser release --skip-sign --snapshot --rm-dist
 

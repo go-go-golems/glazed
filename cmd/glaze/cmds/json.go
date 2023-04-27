@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -52,7 +53,7 @@ func (j *JsonCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp cmds.Processor,
+	gp processor.Processor,
 ) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {
@@ -82,7 +83,7 @@ func (j *JsonCommand) Run(
 
 			i := 1
 			for _, d := range data {
-				err = gp.ProcessInputObject(d)
+				err = gp.ProcessInputObject(ctx, d)
 				if err != nil {
 					return errors.Wrapf(err, "Error processing row %d of file %s as object", i, arg)
 				}
@@ -95,7 +96,7 @@ func (j *JsonCommand) Run(
 			if err != nil {
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
-			err = gp.ProcessInputObject(data)
+			err = gp.ProcessInputObject(ctx, data)
 			if err != nil {
 				return errors.Wrapf(err, "Error processing file %s as object", arg)
 			}

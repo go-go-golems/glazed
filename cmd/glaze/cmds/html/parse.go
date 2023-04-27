@@ -1,7 +1,8 @@
 package html
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds"
+	"context"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"golang.org/x/net/html"
 	"strings"
 )
@@ -10,13 +11,13 @@ import (
 // When encountering one of the tags in splitTags, it extracts the content below the tag as Title
 // (if extractTitle is true) and the following siblings until the next split tag is encountered as body.
 type HTMLSplitParser struct {
-	gp           cmds.Processor
+	gp           processor.Processor
 	removeTags   []string
 	splitTags    []string
 	extractTitle bool
 }
 
-func NewHTMLSplitParser(gp cmds.Processor, removeTags, splitTags []string, extractTitle bool) *HTMLSplitParser {
+func NewHTMLSplitParser(gp processor.Processor, removeTags, splitTags []string, extractTitle bool) *HTMLSplitParser {
 	return &HTMLSplitParser{
 		gp:           gp,
 		removeTags:   removeTags,
@@ -27,7 +28,7 @@ func NewHTMLSplitParser(gp cmds.Processor, removeTags, splitTags []string, extra
 
 // NewHTMLHeadingSplitParser creates a new HTMLSplitParser that splits the document into sections
 // and keeps the titles, by splitting at h1, h2, h3...
-func NewHTMLHeadingSplitParser(gp cmds.Processor, removeTags []string) *HTMLSplitParser {
+func NewHTMLHeadingSplitParser(gp processor.Processor, removeTags []string) *HTMLSplitParser {
 	tags := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
 	removeTags = append(removeTags, tags...)
 	return NewHTMLSplitParser(gp, removeTags, tags, true)
@@ -61,7 +62,7 @@ func (hsp *HTMLSplitParser) shouldRemove(n *html.Node) bool {
 //
 // It returns the next node to be parsed (because we need to split a certain amount of
 // sibling nodes).
-func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
+func (hsp *HTMLSplitParser) ProcessNode(ctx context.Context, n *html.Node) (*html.Node, error) {
 	data := n.Data
 	_ = data
 
@@ -94,7 +95,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		}
 		row["Body"] = strings.TrimSpace(body.String())
 
-		err := hsp.gp.ProcessInputObject(row)
+		err := hsp.gp.ProcessInputObject(ctx, row)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +103,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		next = c
 	} else {
 		if n.FirstChild != nil {
-			_, err := hsp.ProcessNode(n.FirstChild)
+			_, err := hsp.ProcessNode(ctx, n.FirstChild)
 			if err != nil {
 				return nil, err
 			}
@@ -113,7 +114,7 @@ func (hsp *HTMLSplitParser) ProcessNode(n *html.Node) (*html.Node, error) {
 		var err error
 
 		current := next
-		next, err = hsp.ProcessNode(current)
+		next, err = hsp.ProcessNode(ctx, current)
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +178,7 @@ func htmlNodeTypeToString(t html.NodeType) string {
 	}
 }
 
-func outputNodesDepthFirst(doc *html.Node, gp *cmds.GlazeProcessor) error {
+func outputNodesDepthFirst(ctx context.Context, doc *html.Node, gp *processor.GlazeProcessor) error {
 	attributes := make([]htmlAttribute, 0, len(doc.Attr))
 	for _, attr := range doc.Attr {
 		attributes = append(attributes, htmlAttribute{
@@ -195,13 +196,13 @@ func outputNodesDepthFirst(doc *html.Node, gp *cmds.GlazeProcessor) error {
 		"Attributes": attributes,
 	}
 
-	err := gp.ProcessInputObject(obj)
+	err := gp.ProcessInputObject(ctx, obj)
 	if err != nil {
 		return err
 	}
 
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
-		err = outputNodesDepthFirst(c, gp)
+		err = outputNodesDepthFirst(ctx, c, gp)
 		if err != nil {
 			return err
 		}

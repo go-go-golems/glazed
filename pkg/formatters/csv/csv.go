@@ -1,14 +1,14 @@
 package csv
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/rs/zerolog/log"
+	"io"
 	"os"
-	"strings"
 )
 
 type OutputFormatter struct {
@@ -105,93 +105,98 @@ func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
 	f.Table.Columns = columns
 }
 
-func (f *OutputFormatter) Output() (string, error) {
+func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 	f.Table.Finalize()
 
 	for _, middleware := range f.middlewares {
 		newTable, err := middleware.Process(f.Table)
 		if err != nil {
-			return "", err
+			return err
 		}
 		f.Table = newTable
 	}
 
 	if f.OutputMultipleFiles {
-		s := ""
-
 		for i, row := range f.Table.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			buf, w, err := f.newCSVWriter()
+			f_, err := os.Create(outputFileName)
 			if err != nil {
-				return "", err
+				return err
 			}
+			defer f_.Close()
 
-			err = f.writeRow(row, w)
+			csvWriter, err := f.newCSVWriter(f_)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			w.Flush()
-
-			if err := w.Error(); err != nil {
-				return "", err
-			}
-
-			err = os.WriteFile(outputFileName, []byte(buf.String()), 0644)
+			err = f.writeRow(row, csvWriter)
 			if err != nil {
-				return "", err
+				return err
 			}
-			s += fmt.Sprintf("Written output to %s\n", outputFileName)
+
+			csvWriter.Flush()
+
+			if err := csvWriter.Error(); err != nil {
+				return err
+			}
+
+			_, _ = fmt.Fprintf(w_, "Written output to %s\n", outputFileName)
 		}
 
-		return s, nil
+		return nil
 	}
 
-	buf, w, err := f.newCSVWriter()
-	if err != nil {
-		return "", err
+	var csvWriter *csv.Writer
+	if f.OutputFile != "" {
+		f_, err := os.Create(f.OutputFile)
+		if err != nil {
+			return err
+		}
+		defer f_.Close()
+
+		csvWriter, err = f.newCSVWriter(w_)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		csvWriter, err = f.newCSVWriter(w_)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, row := range f.Table.Rows {
-		err2 := f.writeRow(row, w)
+		err2 := f.writeRow(row, csvWriter)
 		if err2 != nil {
-			return "", err2
+			return err2
 		}
 	}
 
-	w.Flush()
+	csvWriter.Flush()
 
-	if err := w.Error(); err != nil {
-		return "", err
+	if err := csvWriter.Error(); err != nil {
+		return err
 	}
 
-	if f.OutputFile != "" {
-		log.Debug().Str("file", f.OutputFile).Msg("Writing output to file")
-		err := os.WriteFile(f.OutputFile, []byte(buf.String()), 0644)
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("Written output to %s\n", f.OutputFile), nil
-	}
-
-	return buf.String(), nil
+	return nil
 }
 
-func (f *OutputFormatter) newCSVWriter() (*strings.Builder, *csv.Writer, error) {
+func (f *OutputFormatter) newCSVWriter(w_ io.Writer) (*csv.Writer, error) {
 	// create a buffer writer
-	buf := strings.Builder{}
-	w := csv.NewWriter(&buf)
+	w := csv.NewWriter(w_)
 	w.Comma = f.Separator
 
 	var err error
 	if f.WithHeaders {
 		err = w.Write(f.Table.Columns)
 	}
-	return &buf, w, err
+	return w, err
 }
 
 func (f *OutputFormatter) writeRow(row types.Row, w *csv.Writer) error {

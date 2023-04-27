@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
+	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -271,8 +272,8 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, e
 	return cmd, nil
 }
 
-func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(s, func(
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(cmd_, func(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
@@ -280,7 +281,7 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 		gp, err := SetupProcessor(ps)
 		cobra.CheckErr(err)
 
-		err = s.Run(ctx, parsedLayers, ps, gp)
+		err = cmd_.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return nil
 		}
@@ -288,10 +289,8 @@ func BuildCobraCommandFromGlazeCommand(s cmds.GlazeCommand) (*cobra.Command, err
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output()
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		cobra.CheckErr(err)
-
-		fmt.Println(s)
 		return nil
 	})
 
@@ -415,7 +414,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 //
 // If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
 func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
-	*cmds.GlazeProcessor,
+	*processor.GlazeProcessor,
 	error,
 ) {
 	gpl, err := NewGlazedParameterLayers()

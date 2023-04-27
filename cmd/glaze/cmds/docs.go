@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -15,6 +14,7 @@ var DocsCmd = &cobra.Command{
 	Short: "Work with help documents",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
@@ -30,13 +30,12 @@ var DocsCmd = &cobra.Command{
 
 			metaData["path"] = arg
 
-			err = gp.ProcessInputObject(metaData)
+			err = gp.ProcessInputObject(ctx, metaData)
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output()
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
 		cobra.CheckErr(err)
-		fmt.Print(s)
 	},
 }
 

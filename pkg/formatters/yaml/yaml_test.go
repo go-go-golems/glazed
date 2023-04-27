@@ -1,6 +1,8 @@
 package yaml
 
 import (
+	"bytes"
+	"context"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -16,12 +18,14 @@ func TestYAMLRenameEndToEnd(t *testing.T) {
 	}
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
 	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
-	s, err := of.Output()
+	ctx := context.Background()
+	buf := bytes.Buffer{}
+	err := of.Output(ctx, &buf)
 	require.NoError(t, err)
 
 	// parse s
 	data := []map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(s), &data)
+	err = yaml.Unmarshal(buf.Bytes(), &data)
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 

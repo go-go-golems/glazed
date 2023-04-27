@@ -1,7 +1,6 @@
 package html
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/spf13/cobra"
@@ -20,6 +19,8 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Parse HTML",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := cmd.Context()
+
 			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
@@ -34,16 +35,15 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				doc, err := html.Parse(f)
 				cobra.CheckErr(err)
 
-				err = outputNodesDepthFirst(doc, gp)
+				err = outputNodesDepthFirst(ctx, doc, gp)
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output()
+			err = gp.OutputFormatter().Output(ctx, os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
-			fmt.Print(s)
 		},
 	}
 
@@ -63,6 +63,8 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Short: "Extract HTML from sections",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := cmd.Context()
+
 			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
@@ -86,16 +88,15 @@ func NewHTMLCommand() (*cobra.Command, error) {
 
 				hsp := NewHTMLSplitParser(gp, append(removeTags, splitTags...), splitTags, extractTitle)
 
-				_, err = hsp.ProcessNode(doc)
+				_, err = hsp.ProcessNode(ctx, doc)
 				cobra.CheckErr(err)
 			}
 
-			s, err := gp.OutputFormatter().Output()
+			err = gp.OutputFormatter().Output(ctx, os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
-			fmt.Print(s)
 		},
 	}
 
