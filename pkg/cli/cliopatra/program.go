@@ -375,7 +375,12 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 			flag_ = "--" + flag.Name
 		}
 		if flag.NoValue {
-			args = append(args, flag_)
+			if flag.Type != parameters.ParameterTypeBool {
+				return nil, fmt.Errorf("flag %s is not a bool flag, only bool flags can be noValue", flag.Name)
+			}
+			if flag.Value.(bool) {
+				args = append(args, flag_)
+			}
 			continue
 		}
 
