@@ -700,14 +700,16 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		}
 
 	case ParameterTypeDate:
-		defaultValue, ok := v.(string)
-		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
-		}
-
-		_, err2 := ParseDate(defaultValue)
-		if err2 != nil {
-			return errors.Wrapf(err2, "Default value for parameter %s is not a valid date: %v", p.Name, v)
+		switch v_ := v.(type) {
+		case string:
+			_, err := ParseDate(v_)
+			if err != nil {
+				return errors.Wrapf(err, "Default value for parameter %s is not a valid date: %v", p.Name, v)
+			}
+		case time.Time:
+			return nil
+		default:
+			return errors.Errorf("Default value for parameter %s is not a valid date: %v", p.Name, v)
 		}
 
 	case ParameterTypeStringListFromFile:
