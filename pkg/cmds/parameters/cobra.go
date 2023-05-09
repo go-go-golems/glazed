@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"strings"
+	"time"
 )
 
 // AddArgumentsToCobraCommand adds the arguments (not the flags) of a CommandDescription to a cobra command
@@ -255,16 +256,19 @@ func AddFlagsToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(string)
-				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
+				switch v_ := parameter.Default.(type) {
+				case string:
+					_, err2 := ParseDate(v_)
+					if err2 != nil {
+						return err2
+					}
+					defaultValue = v_
+				case time.Time:
+					// nothing to do
+					defaultValue = v_.Format("2006-01-02")
+				default:
+					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, parameter.Default)
 				}
-
-				parsedDate, err2 := ParseDate(defaultValue)
-				if err2 != nil {
-					return err2
-				}
-				_ = parsedDate
 			}
 
 			if parameter.ShortFlag != "" {
