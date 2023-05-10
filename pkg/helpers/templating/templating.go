@@ -569,15 +569,20 @@ func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 //
 // NOTE(manuel, 2023-04-18) Interestingly, we have a baseDir parameter here but only one pattern
 // However, the text.template version supports multiple patterns, but has no basedir. Maybe unify?
-func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) error {
+func ParseHTMLFS(t *html.Template, f fs.FS, patterns []string, baseDir string) error {
 	list := []string{}
 
-	err := doublestar.GlobWalk(f, pattern, func(path string, d fs.DirEntry) error {
-		list = append(list, path)
-		return nil
-	}, doublestar.WithFilesOnly())
-	if err != nil {
-		return err
+	for _, pattern := range patterns {
+		err := doublestar.GlobWalk(f, pattern, func(path string, d fs.DirEntry) error {
+			if !strings.HasPrefix(path, baseDir) {
+				return nil
+			}
+			list = append(list, path)
+			return nil
+		}, doublestar.WithFilesOnly())
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, filename := range list {
@@ -586,10 +591,6 @@ func ParseHTMLFS(t *html.Template, f fs.FS, pattern string, baseDir string) erro
 			return errors.Wrapf(err, "failed to read template %s", filename)
 		}
 
-		// skip files that don't start with baseDir
-		if !strings.HasPrefix(filename, baseDir) {
-			continue
-		}
 		// strip baseDir from filename
 		filename_ := strings.TrimPrefix(filename, baseDir)
 		filename_ = strings.TrimPrefix(filename_, "/")
