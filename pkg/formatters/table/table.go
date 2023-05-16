@@ -236,7 +236,7 @@ func (tof *OutputFormatter) makeTable(rows []types.Row, w io.Writer) error {
 			}
 			return nil
 		}
-		render := t.Render()
+		render := t.Render() + "\n"
 		_, err := w.Write([]byte(render))
 		if err != nil {
 			return err
