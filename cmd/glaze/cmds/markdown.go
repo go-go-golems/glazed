@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -390,7 +391,7 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	g, err := cli.NewGlazedParameterLayers()
+	g, err := settings.NewGlazedParameterLayers()
 	if err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package cli
+package settings
 
 import (
 	"github.com/spf13/cobra"
