@@ -1,4 +1,4 @@
-package cli
+package settings
 
 import (
 	_ "embed"

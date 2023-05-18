@@ -13,6 +13,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -272,36 +273,7 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, e
 	return cmd, nil
 }
 
-func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(cmd_, func(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		ps map[string]interface{},
-	) error {
-		gp, err := SetupProcessor(ps)
-		cobra.CheckErr(err)
-
-		err = cmd_.Run(ctx, parsedLayers, ps, gp)
-		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			return nil
-		}
-		if err != context.Canceled {
-			cobra.CheckErr(err)
-		}
-
-		err = gp.OutputFormatter().Output(ctx, os.Stdout)
-		cobra.CheckErr(err)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
-}
-
-func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
+func BuildCobraGlazeCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 	s, ok := alias.AliasedCommand.(cmds.GlazeCommand)
 	if !ok {
 		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
@@ -395,7 +367,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 		alias.AliasedCommand = aliasedCommand
 
 		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
-		cobraCommand, err := BuildCobraCommandAlias(alias)
+		cobraCommand, err := BuildCobraGlazeCommandAlias(alias)
 		if err != nil {
 			return err
 		}
@@ -403,42 +375,6 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 	}
 
 	return nil
-}
-
-// CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
-// the glazed processing layer.
-//
-// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `parameters.ParameterDefinition`
-// abstraction to define your CLI applications, which allows you to use layers and other nice features
-// of the glazed ecosystem.
-//
-// If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
-func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
-	*processor.GlazeProcessor,
-	error,
-) {
-	gpl, err := NewGlazedParameterLayers()
-	if err != nil {
-		return nil, err
-	}
-
-	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	return SetupProcessor(ps)
-}
-
-// AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
-// the glazed processing layer.
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...GlazeParameterLayerOption) error {
-	gpl, err := NewGlazedParameterLayers(options...)
-	if err != nil {
-		return err
-	}
-
-	return gpl.AddFlagsToCobraCommand(cmd)
 }
 
 // CobraParser takes a CommandDescription, and hooks it up to a cobra command.
@@ -578,4 +514,69 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 
 	return parsedLayers, ps, nil
 
+}
+
+// CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
+// the glazed processing layer.
+//
+// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `parameters.ParameterDefinition`
+// abstraction to define your CLI applications, which allows you to use layers and other nice features
+// of the glazed ecosystem.
+//
+// If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
+func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
+	*processor.GlazeProcessor,
+	error,
+) {
+	gpl, err := settings.NewGlazedParameterLayers()
+	if err != nil {
+		return nil, err
+	}
+
+	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	return settings.SetupProcessor(ps)
+}
+
+// AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
+// the glazed processing layer.
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeParameterLayerOption) error {
+	gpl, err := settings.NewGlazedParameterLayers(options...)
+	if err != nil {
+		return err
+	}
+
+	return gpl.AddFlagsToCobraCommand(cmd)
+}
+
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(cmd_, func(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	) error {
+		gp, err := settings.SetupProcessor(ps)
+		cobra.CheckErr(err)
+
+		err = cmd_.Run(ctx, parsedLayers, ps, gp)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			return nil
+		}
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
+
+		err = gp.OutputFormatter().Output(ctx, os.Stdout)
+		cobra.CheckErr(err)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
 }

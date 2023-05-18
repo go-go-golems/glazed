@@ -4,7 +4,7 @@ import (
 	"embed"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
-	glazed_cmds "github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
 )
@@ -26,13 +26,13 @@ func main() {
 
 	jsonCmd, err := cmds.NewJsonCommand()
 	cobra.CheckErr(err)
-	command, err := glazed_cmds.BuildCobraCommandFromGlazeCommand(jsonCmd)
+	command, err := cli.BuildCobraCommandFromGlazeCommand(jsonCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
 	yamlCmd, err := cmds.NewYamlCommand()
 	cobra.CheckErr(err)
-	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(yamlCmd)
+	command, err = cli.BuildCobraCommandFromGlazeCommand(yamlCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
@@ -40,7 +40,7 @@ func main() {
 
 	csvCmd, err := cmds.NewCsvCommand()
 	cobra.CheckErr(err)
-	command, err = glazed_cmds.BuildCobraCommandFromGlazeCommand(csvCmd)
+	command, err = cli.BuildCobraCommandFromGlazeCommand(csvCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 

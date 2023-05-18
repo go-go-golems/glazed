@@ -5,6 +5,7 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -45,10 +46,10 @@ func init() {
 	// If we extracted out the docs command into a cmds.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
-	gpl, err := cli.NewGlazedParameterLayers(
-		cli.WithFieldsFiltersParameterLayerOptions(
+	gpl, err := settings.NewGlazedParameterLayers(
+		settings.WithFieldsFiltersParameterLayerOptions(
 			layers.WithDefaults(
-				&cli.FieldsFilterFlagsDefaults{
+				&settings.FieldsFilterFlagsDefaults{
 					Fields: []string{
 						"path",
 						"Title",
