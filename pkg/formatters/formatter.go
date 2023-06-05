@@ -86,9 +86,9 @@ func ComputeOutputFilename(outputFile string, outputFileTemplate string, row typ
 func StartFormatIntoChannel[T interface{ ~string }](
 	ctx context.Context,
 	formatter OutputFormatter,
-) <-chan T {
+) <-chan string {
 	reader, writer := io.Pipe()
-	c := make(chan T)
+	c := make(chan string)
 
 	eg, ctx2 := errgroup.WithContext(ctx)
 
@@ -107,7 +107,7 @@ func StartFormatIntoChannel[T interface{ ~string }](
 					return err
 				}
 
-				c <- T(buf[:n])
+				c <- string(T(buf[:n]))
 			}
 		}
 	})
