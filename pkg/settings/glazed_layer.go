@@ -368,7 +368,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupProcessor(ps map[string]interface{}) (*processor.GlazeProcessor, error) {
+func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcessorOption) (*processor.GlazeProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
@@ -476,6 +476,8 @@ func SetupProcessor(ps map[string]interface{}) (*processor.GlazeProcessor, error
 	// is not trivial.
 	sortSettings.AddMiddlewares(of)
 
-	gp := processor.NewGlazeProcessor(of, middlewares_...)
+	options_ := append(options, processor.WithAppendObjectMiddleware(middlewares_...))
+
+	gp := processor.NewGlazeProcessor(of, options_...)
 	return gp, nil
 }

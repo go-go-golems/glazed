@@ -11,6 +11,7 @@ import (
 	html "html/template"
 	"io"
 	"io/fs"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -573,6 +574,7 @@ func ParseHTMLFS(t *html.Template, f fs.FS, patterns []string, baseDir string) e
 	list := []string{}
 
 	for _, pattern := range patterns {
+		pattern = filepath.Join(baseDir, pattern)
 		err := doublestar.GlobWalk(f, pattern, func(path string, d fs.DirEntry) error {
 			if !strings.HasPrefix(path, baseDir) {
 				return nil

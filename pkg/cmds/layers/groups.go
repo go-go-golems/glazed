@@ -44,6 +44,14 @@ func (ppl *ParsedParameterLayer) Clone() *ParsedParameterLayer {
 	return ret
 }
 
+// MergeParameters merges the other ParsedParameterLayer into this one, overwriting any
+// existing values. This doesn't replace the actual Layer pointer.
+func (ppl *ParsedParameterLayer) MergeParameters(other *ParsedParameterLayer) {
+	for k, v := range other.Parameters {
+		ppl.Parameters[k] = v
+	}
+}
+
 // ParameterLayerParserFunc is a type meant to represent closures capturing some "complex" process
 // by which a ParsedParameterLayer can be produced, for example parsing a layer out of a cobra.Command
 // after flags were registered (see CobraParser).

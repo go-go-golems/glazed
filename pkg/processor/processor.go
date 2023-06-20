@@ -24,10 +24,34 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 	return gp.of
 }
 
-func NewGlazeProcessor(of formatters.OutputFormatter, oms ...middlewares.ObjectMiddleware) *GlazeProcessor {
+type GlazeProcessorOption func(*GlazeProcessor)
+
+func WithAppendObjectMiddleware(om ...middlewares.ObjectMiddleware) GlazeProcessorOption {
+	return func(gp *GlazeProcessor) {
+		gp.oms = append(gp.oms, om...)
+	}
+}
+
+func WithPrependObjectMiddleware(om ...middlewares.ObjectMiddleware) GlazeProcessorOption {
+	return func(gp *GlazeProcessor) {
+		gp.oms = append(om, gp.oms...)
+	}
+}
+
+func WithOutputFormatter(of formatters.OutputFormatter) GlazeProcessorOption {
+	return func(gp *GlazeProcessor) {
+		gp.of = of
+	}
+}
+
+func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorOption) *GlazeProcessor {
 	ret := &GlazeProcessor{
 		of:  of,
-		oms: oms,
+		oms: []middlewares.ObjectMiddleware{},
+	}
+
+	for _, option := range options {
+		option(ret)
 	}
 
 	return ret
@@ -67,10 +91,10 @@ type SimpleGlazeProcessor struct {
 	formatter *table.OutputFormatter
 }
 
-func NewSimpleGlazeProcessor(oms ...middlewares.ObjectMiddleware) *SimpleGlazeProcessor {
+func NewSimpleGlazeProcessor(options ...GlazeProcessorOption) *SimpleGlazeProcessor {
 	formatter := table.NewOutputFormatter("csv")
 	return &SimpleGlazeProcessor{
-		GlazeProcessor: NewGlazeProcessor(formatter, oms...),
+		GlazeProcessor: NewGlazeProcessor(formatter, options...),
 		formatter:      formatter,
 	}
 }
