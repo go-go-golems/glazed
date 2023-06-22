@@ -67,6 +67,13 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 }
 
 func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings, error) {
+	if ps["rename"] == nil {
+		return &RenameSettings{
+			RenameFields:  map[types.FieldName]string{},
+			RenameRegexps: table.RegexpReplacements{},
+		}, nil
+	}
+
 	renameFields, ok := cast.CastList2[string, interface{}](ps["rename"])
 	if !ok {
 		return nil, errors.Errorf("Invalid rename fields %s", ps["rename"])
