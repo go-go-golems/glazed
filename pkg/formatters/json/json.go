@@ -47,6 +47,10 @@ func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
 }
 
+func (f *OutputFormatter) ContentType() string {
+	return "application/json"
+}
+
 func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	f.Table.Finalize()
 
@@ -78,10 +82,10 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 			encoder.SetIndent("", "  ")
 			err = encoder.Encode(row.GetValues())
 			if err != nil {
-				f_.Close()
+				_ = f_.Close()
 				return err
 			}
-			f_.Close()
+			_ = f_.Close()
 			_, _ = fmt.Fprintf(w, "Wrote output to %s\n", outputFileName)
 		}
 
@@ -93,7 +97,9 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		defer f_.Close()
+		defer func(f_ *os.File) {
+			_ = f_.Close()
+		}(f_)
 		w = f_
 	}
 

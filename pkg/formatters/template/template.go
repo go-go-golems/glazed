@@ -128,6 +128,10 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
+func (f *OutputFormatter) ContentType() string {
+	return "text/plain"
+}
+
 type OutputFormatterOption func(*OutputFormatter)
 
 func WithTemplateFuncMaps(templateFuncMaps []template.FuncMap) OutputFormatterOption {

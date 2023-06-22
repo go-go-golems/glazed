@@ -27,6 +27,10 @@ func NewTestProcessor() *TestProcessor {
 
 type TestFormatter struct{}
 
+func (t TestFormatter) ContentType() string {
+	return "text/plain"
+}
+
 func (t TestFormatter) AddRow(row types.Row) {
 }
 

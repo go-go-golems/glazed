@@ -129,6 +129,10 @@ func (E *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
+func (f *OutputFormatter) ContentType() string {
+	return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+}
+
 type OutputFormatterOption func(*OutputFormatter)
 
 func WithSheetName(sheetName string) OutputFormatterOption {

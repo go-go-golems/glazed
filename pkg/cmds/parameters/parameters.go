@@ -782,7 +782,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	return nil
 }
 
-func InitFlagsFromYaml(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
+func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
 	flags := make(map[string]*ParameterDefinition)
 	flagList := make([]*ParameterDefinition, 0)
 

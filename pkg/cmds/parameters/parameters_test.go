@@ -16,7 +16,7 @@ var testParameterDefinitions map[string]*ParameterDefinition
 var testParameterDefinitionsList []*ParameterDefinition
 
 func init() {
-	testParameterDefinitions, testParameterDefinitionsList = InitFlagsFromYaml(testFlagsYaml)
+	testParameterDefinitions, testParameterDefinitionsList = LoadParameterDefinitionsFromYAML(testFlagsYaml)
 }
 
 func TestSetValueFromDefaultInt(t *testing.T) {
