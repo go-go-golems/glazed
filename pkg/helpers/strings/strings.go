@@ -55,3 +55,15 @@ func ToAlphaString(n int) string {
 	// otherwise, we need to recursively call ToAlphaString with the quotient and add the corresponding letter
 	return ToAlphaString(quotient) + string(rune('A'+remainder))
 }
+
+func UniqueStrings(s []string) []string {
+	unique := make(map[string]bool)
+	for _, item := range s {
+		unique[item] = true
+	}
+	var result []string
+	for item := range unique {
+		result = append(result, item)
+	}
+	return result
+}
