@@ -21,6 +21,13 @@ type OutputFormatter struct {
 	Separator           rune
 }
 
+func (f *OutputFormatter) ContentType() string {
+	if f.Separator == '\t' {
+		return "text/tab-separated-values"
+	}
+	return "text/csv"
+}
+
 type OutputFormatterOption func(*OutputFormatter)
 
 func WithOutputFile(outputFile string) OutputFormatterOption {

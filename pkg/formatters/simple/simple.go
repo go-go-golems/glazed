@@ -60,6 +60,10 @@ func NewSingleColumnFormatter(column types.FieldName, opts ...SingleColumnFormat
 	return f
 }
 
+func (s *SingleColumnFormatter) ContentType() string {
+	return "text/plain"
+}
+
 func (s *SingleColumnFormatter) AddRow(row types.Row) {
 	s.Table.Rows = append(s.Table.Rows, row)
 }

@@ -53,6 +53,8 @@ type OutputFormatter interface {
 	GetTable() (*types.Table, error)
 
 	Output(ctx context.Context, w io.Writer) error
+
+	ContentType() string
 }
 
 func ComputeOutputFilename(outputFile string, outputFileTemplate string, row types.Row, index int) (string, error) {

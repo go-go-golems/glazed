@@ -127,6 +127,10 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	}
 }
 
+func (f *OutputFormatter) ContentType() string {
+	return "application/yaml"
+}
+
 type OutputFormatterOption func(*OutputFormatter)
 
 func WithYAMLOutputFile(outputFile string) OutputFormatterOption {

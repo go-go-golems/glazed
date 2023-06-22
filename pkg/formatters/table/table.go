@@ -115,6 +115,17 @@ func NewOutputFormatter(tableFormat string, opts ...OutputFormatterOption) *Outp
 	return f
 }
 
+func (tof *OutputFormatter) ContentType() string {
+	switch tof.TableFormat {
+	case "csv":
+		return "text/csv"
+	case "html":
+		return "text/html"
+	default:
+		return "text/plain"
+	}
+}
+
 func (tof *OutputFormatter) GetTable() (*types.Table, error) {
 	return tof.Table, nil
 }
