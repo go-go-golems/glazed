@@ -31,11 +31,12 @@ func NewJqObjectMiddleware(
 }
 
 func (jqm *JqObjectMiddleware) Process(
-	object map[string]interface{},
-) ([]map[string]interface{}, error) {
-	ret := []map[string]interface{}{}
+	object types.MapRow,
+) ([]types.MapRow, error) {
+	ret := []types.MapRow{}
 
 	if jqm.query != nil {
+		// TODO(manuel, 2023-06-25) Transform to map before passing to jq
 		iter := jqm.query.Run(object)
 
 		for {
@@ -44,33 +45,32 @@ func (jqm *JqObjectMiddleware) Process(
 				break
 			}
 
-			if err, ok := v.(error); ok {
-				return nil, err
-			}
+			switch v_ := v.(type) {
+			case error:
+				return nil, v_
 
-			// if the result is an array, flatten it into ret
-			if array, ok := v.([]interface{}); ok {
-				for _, v := range array {
-					if err, ok := v.(error); ok {
-						return nil, err
-					}
-
-					object, ok := v.(map[string]interface{})
-					if !ok {
+			case []interface{}:
+				for _, v := range v_ {
+					switch v_ := v.(type) {
+					case error:
+						return nil, v_
+					case map[string]interface{}:
+						ret = append(ret, types.NewMapRowFromMap(v_))
+					case types.MapRow:
+						ret = append(ret, v_)
+					default:
 						return nil, errors.Errorf("Expected object, got %T", v)
 					}
-					ret = append(ret, object)
 				}
 
 				continue
-			} else {
-				object, ok = v.(map[string]interface{})
-				if !ok {
-					return nil, errors.Errorf("Expected object, got %T", v)
-				}
-			}
+			case types.MapRow:
+				ret = append(ret, v_)
 
-			ret = append(ret, object)
+			case map[string]interface{}:
+				ret = append(ret, types.NewMapRowFromMap(v_))
+
+			}
 		}
 	} else {
 		ret = append(ret, object)
@@ -114,13 +114,14 @@ func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) 
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
+			Hash: types.NewMapRow(),
 		}
 
-		for rowField, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			rowField, value := pair.Key, pair.Value
 			query, ok := jqm.fieldQueries[rowField]
 			if !ok {
-				newRow.Hash[rowField] = value
+				newRow.Hash.Set(rowField, value)
 				continue
 			}
 
@@ -139,7 +140,7 @@ func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) 
 					return nil, err
 				}
 
-				newRow.Hash[rowField] = v
+				newRow.Hash.Set(rowField, v)
 			}
 		}
 

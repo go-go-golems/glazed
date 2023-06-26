@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -75,7 +76,7 @@ func (j *JsonCommand) Run(
 		}
 
 		if inputIsArray {
-			data := make([]map[string]interface{}, 0)
+			data := make([]types.MapRow, 0)
 			err = json.NewDecoder(f).Decode(&data)
 			if err != nil {
 				return errors.Wrapf(err, "Error decoding file %s as array", arg)
@@ -91,7 +92,7 @@ func (j *JsonCommand) Run(
 			}
 		} else {
 			// read json file
-			data := make(map[string]interface{})
+			data := types.NewMapRow()
 			err = json.NewDecoder(f).Decode(&data)
 			if err != nil {
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)

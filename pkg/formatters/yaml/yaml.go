@@ -112,7 +112,7 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 
 		return nil
 	} else {
-		var rows []map[string]interface{}
+		var rows []types.MapRow
 		for _, row := range f.Table.Rows {
 			rows = append(rows, row.GetValues())
 		}

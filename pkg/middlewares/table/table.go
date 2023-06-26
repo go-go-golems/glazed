@@ -70,11 +70,13 @@ func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, er
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
+			Hash: types.NewMapRow(),
 		}
 
 	NextRow:
-		for rowField, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			rowField, value := pair.Key, pair.Value
+
 			// skip all of this if we already filtered that field
 			if _, ok := newColumns[rowField]; !ok {
 				exactMatchFound := false
@@ -137,7 +139,7 @@ func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, er
 				}
 			}
 
-			newRow.Hash[rowField] = value
+			newRow.Hash.Set(rowField, value)
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)
@@ -184,12 +186,13 @@ func (rnm *RemoveNullsMiddleware) Process(table *types.Table) (*types.Table, err
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
+			Hash: types.NewMapRow(),
 		}
 
-		for key, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			key, value := pair.Key, pair.Value
 			if value != nil {
-				newRow.Hash[key] = value
+				newRow.Hash.Set(key, value)
 			}
 		}
 
@@ -221,8 +224,8 @@ func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, e
 			Hash: newValues,
 		}
 
-		for key := range newValues {
-			newColumns[key] = nil
+		for pair := newValues.Oldest(); pair != nil; pair = pair.Next() {
+			newColumns[pair.Key] = nil
 		}
 		ret.Rows = append(ret.Rows, &newRow)
 	}
@@ -233,16 +236,19 @@ func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, e
 }
 
 func FlattenMapIntoColumns(rows types.MapRow) types.MapRow {
-	ret := types.MapRow{}
+	ret := types.NewMapRow()
 
-	for key, value := range rows {
+	for pair := rows.Oldest(); pair != nil; pair = pair.Next() {
+		key, value := pair.Key, pair.Value
 		switch v := value.(type) {
 		case types.MapRow:
-			for k, v := range FlattenMapIntoColumns(v) {
-				ret[fmt.Sprintf("%s.%s", key, k)] = v
+			newColumns := FlattenMapIntoColumns(v)
+			for pair_ := newColumns.Oldest(); pair_ != nil; pair_ = pair_.Next() {
+				k, v := pair_.Key, pair_.Value
+				ret.Set(fmt.Sprintf("%s.%s", key, k), v)
 			}
 		default:
-			ret[key] = v
+			ret.Set(key, v)
 		}
 	}
 
@@ -398,7 +404,9 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 
 		templateValues := map[string]interface{}{}
 
-		for key, value := range newRow.Hash {
+		for pair := newRow.Hash.Oldest(); pair != nil; pair = pair.Next() {
+			key, value := pair.Key, pair.Value
+
 			if rgtm.RenameSeparator != "" {
 				if _, ok := columnRenames[key]; !ok {
 					columnRenames[key] = strings.ReplaceAll(key, ".", rgtm.RenameSeparator)
@@ -425,7 +433,7 @@ func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, 
 				newColumns[columnName] = nil
 				ret.Columns = append(ret.Columns, columnName)
 			}
-			newRow.Hash[columnName] = s
+			newRow.Hash.Set(columnName, s)
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)
@@ -579,16 +587,17 @@ func (r *RenameColumnMiddleware) Process(table *types.Table) (*types.Table, erro
 	// whatever, we'll address efficient renames later
 	for _, row := range table.Rows {
 		newRow := &types.SimpleRow{
-			Hash: map[types.FieldName]interface{}{},
+			Hash: types.NewMapRow(),
 		}
 		values := row.GetValues()
-		for key, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			key, value := pair.Key, pair.Value
 			newKey, ok := renamedColumns[key]
 			if !ok {
 				// skip, it means columns were overwritten in the rename
 				continue
 			}
-			newRow.Hash[newKey] = value
+			newRow.Hash.Set(newKey, value)
 		}
 		ret.Rows = append(ret.Rows, newRow)
 	}

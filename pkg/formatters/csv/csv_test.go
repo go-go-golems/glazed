@@ -18,7 +18,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 		"a": "b",
 	}
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
-	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
+	of.AddRow(&types.SimpleRow{Hash: types.NewMapRow(types.MRP("a", 1))})
 	ctx := context.Background()
 	buf := &bytes.Buffer{}
 	err := of.Output(ctx, buf)

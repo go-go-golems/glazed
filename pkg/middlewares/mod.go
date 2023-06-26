@@ -12,5 +12,5 @@ type TableMiddleware interface {
 type ObjectMiddleware interface {
 	// Process transforms each individual object. Each object can return multiple
 	// objects which will get processed individually downstream.
-	Process(object map[string]interface{}) ([]map[string]interface{}, error)
+	Process(object types.MapRow) ([]types.MapRow, error)
 }

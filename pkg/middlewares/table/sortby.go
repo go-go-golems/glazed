@@ -68,11 +68,13 @@ func (s *SortByMiddleware) Process(table *types.Table) (*types.Table, error) {
 		rowB := ret.Rows[j].GetValues()
 
 		for _, column := range s.columns {
-			if rowA[column.name] == rowB[column.name] {
+			v, ok := rowA.Get(column.name)
+			v2, ok2 := rowB.Get(column.name)
+			if ok == ok2 && v == v2 {
 				continue
 			}
 
-			if compare.IsLowerThan(rowA[column.name], rowB[column.name]) {
+			if compare.IsLowerThan(v, v2) {
 				return column.asc
 			} else {
 				return !column.asc

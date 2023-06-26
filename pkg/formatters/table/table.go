@@ -201,7 +201,7 @@ func (tof *OutputFormatter) makeTable(rows []types.Row, w io.Writer) error {
 		var row_ []interface{}
 		for _, column := range tof.Table.Columns {
 			s := ""
-			if v, ok := values[column]; ok {
+			if v, ok := values.Get(column); ok {
 				s = valueToString(v)
 			}
 			row_ = append(row_, s)

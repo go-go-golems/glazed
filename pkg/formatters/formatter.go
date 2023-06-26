@@ -63,7 +63,8 @@ func ComputeOutputFilename(outputFile string, outputFileTemplate string, row typ
 		data := map[string]interface{}{}
 		values := row.GetValues()
 
-		for k, v := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			k, v := pair.Key, pair.Value
 			data[k] = v
 		}
 		data["rowIndex"] = index

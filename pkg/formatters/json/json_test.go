@@ -17,7 +17,8 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 		"a": "b",
 	}
 	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
-	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
+	obj := types.NewMapRow(types.MRP("a", 1))
+	of.AddRow(&types.SimpleRow{Hash: obj})
 	ctx := context.Background()
 	buf := &bytes.Buffer{}
 	err := of.Output(ctx, buf)
@@ -25,13 +26,13 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 
 	s := buf.String()
 	// parse s
-	data := []map[string]interface{}{}
+	data := []types.MapRow{}
 	err = json.Unmarshal([]byte(s), &data)
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 
 	// check if the rename worked
-	v, ok := data[0]["b"]
+	v, ok := data[0].Get("b")
 	assert.True(t, ok)
 	assert.Equal(t, 1.0, v)
 }

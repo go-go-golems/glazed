@@ -20,12 +20,13 @@ func (a *AddFieldMiddleware) Process(table *types.Table) (*types.Table, error) {
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
-		newValues := make(map[types.FieldName]types.GenericCellValue)
-		for key, value := range values {
-			newValues[key] = value
+		newValues := types.NewMapRow()
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			key, value := pair.Key, pair.Value
+			newValues.Set(key, value)
 		}
 		for key, value := range a.Fields {
-			newValues[key] = value
+			newValues.Set(key, value)
 		}
 		ret.Rows = append(ret.Rows, &types.SimpleRow{Hash: newValues})
 	}

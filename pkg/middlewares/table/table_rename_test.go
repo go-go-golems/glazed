@@ -1,8 +1,8 @@
 package table
 
 import (
+	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -24,10 +24,10 @@ func TestSingleRename(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["foobar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "foobar")
 }
 
 func TestRenameTwoFieldColumns(t *testing.T) {
@@ -44,10 +44,10 @@ func TestRenameTwoFieldColumns(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["qux"])
-	assert.Equal(t, 3, rowMap["foobar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "qux")
+	assert2.EqualMapRowValue(t, 3, rowMap, "foobar")
 }
 
 func TestRenameOverrideColumn(t *testing.T) {
@@ -63,9 +63,9 @@ func TestRenameOverrideColumn(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Equal(t, 1, rowMap["foobar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Nil(t, rowMap["foo"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.EqualMapRowValue(t, 1, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
 
 }
 
@@ -85,10 +85,10 @@ func TestRenameRegexpSimpleMatch(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["foobar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "foobar")
 }
 
 func TestRenameRegexpDoubleMatch(t *testing.T) {
@@ -107,11 +107,11 @@ func TestRenameRegexpDoubleMatch(t *testing.T) {
 	rowMap := row.GetValues()
 
 	// here, f.. should match both fields
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["barbar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "barbar")
 }
 
 func TestRenameRegexpOrderedMatch(t *testing.T) {
@@ -138,12 +138,12 @@ func TestRenameRegexpOrderedMatch(t *testing.T) {
 
 	// it's going to be hard to test that these will happen in the right
 	// order as it really depends on the map
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["bar2"])
-	assert.Nil(t, rowMap["bar3"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["foobar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "bar2")
+	assert2.NilMapRowValue(t, rowMap, "bar3")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "foobar")
 }
 
 func createTestTable() *types.Table {
@@ -156,11 +156,11 @@ func createTestTable() *types.Table {
 		Rows: []types.Row{},
 	}
 	table.Rows = append(table.Rows, &types.SimpleRow{
-		Hash: types.MapRow{
-			"foo":    1,
-			"baz":    2,
-			"foobar": 3,
-		},
+		Hash: types.NewMapRow(
+			types.MRP("foo", 1),
+			types.MRP("baz", 2),
+			types.MRP("foobar", 3),
+		),
 	})
 
 	return &table
@@ -185,12 +185,12 @@ func TestBothFieldAndRegexpRenames(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["baz"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["qux"])
-	assert.Equal(t, 3, rowMap["bar2bar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "baz")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "qux")
+	assert2.EqualMapRowValue(t, 3, rowMap, "bar2bar")
 }
 
 func TestParseFromYAML(t *testing.T) {
@@ -211,11 +211,11 @@ renames:
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["baz"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["qux"])
-	assert.Equal(t, 3, rowMap["foobar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "qux")
+	assert2.EqualMapRowValue(t, 3, rowMap, "foobar")
 }
 
 func TestParseRegexpFromYAML(t *testing.T) {
@@ -238,12 +238,12 @@ regexpRenames:
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["baz"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar2"])
-	assert.Equal(t, 2, rowMap["qux"])
-	assert.Equal(t, 3, rowMap["barbar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "baz")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar2")
+	assert2.EqualMapRowValue(t, 2, rowMap, "qux")
+	assert2.EqualMapRowValue(t, 3, rowMap, "barbar")
 }
 
 func TestParseBothFromYAML(t *testing.T) {
@@ -269,12 +269,12 @@ regexpRenames:
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["baz"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["qux"])
-	assert.Equal(t, 3, rowMap["barbar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "baz")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "qux")
+	assert2.EqualMapRowValue(t, 3, rowMap, "barbar")
 }
 
 func TestRegexpCaptureGroupRename(t *testing.T) {
@@ -292,11 +292,11 @@ func TestRegexpCaptureGroupRename(t *testing.T) {
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["barbar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "barbar")
 }
 
 func TestRegexpCaptureGroupRenameFromYAML(t *testing.T) {
@@ -317,9 +317,9 @@ regexpRenames:
 	row := newTable.Rows[0].(*types.SimpleRow)
 	rowMap := row.GetValues()
 
-	assert.Nil(t, rowMap["foo"])
-	assert.Nil(t, rowMap["foobar"])
-	assert.Equal(t, 1, rowMap["bar"])
-	assert.Equal(t, 2, rowMap["baz"])
-	assert.Equal(t, 3, rowMap["barbar"])
+	assert2.NilMapRowValue(t, rowMap, "foo")
+	assert2.NilMapRowValue(t, rowMap, "foobar")
+	assert2.EqualMapRowValue(t, 1, rowMap, "bar")
+	assert2.EqualMapRowValue(t, 2, rowMap, "baz")
+	assert2.EqualMapRowValue(t, 3, rowMap, "barbar")
 }

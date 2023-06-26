@@ -110,7 +110,9 @@ func (s *SingleColumnFormatter) Output(ctx context.Context, w io.Writer) error {
 				return err
 			}
 
-			if s_, ok := row.GetValues()[s.Column]; ok {
+			values := row.GetValues()
+
+			if s_, ok := values.Get(s.Column); ok {
 				v := fmt.Sprintf("%v", s_)
 				err = os.WriteFile(outputFileName, []byte(v), 0644)
 				if err != nil {
@@ -134,7 +136,7 @@ func (s *SingleColumnFormatter) Output(ctx context.Context, w io.Writer) error {
 	}
 
 	for i, row := range s.Table.Rows {
-		if value, ok := row.GetValues()[s.Column]; ok {
+		if value, ok := row.GetValues().Get(s.Column); ok {
 			_, err := fmt.Fprintf(w, "%v", value)
 			if err != nil {
 				return err

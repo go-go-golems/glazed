@@ -81,11 +81,14 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 			if err != nil {
 				return err
 			}
-			defer f_.Close()
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
 
-			tableData := []map[types.FieldName]interface{}{row.GetValues()}
+			tableData := []types.MapRow{row.GetValues()}
 
 			data := map[string]interface{}{
+				// TODO(manuel, 2023-06-25) Convert to normal maps for templating
 				"rows": tableData,
 				"data": t.AdditionalData,
 			}
@@ -101,11 +104,12 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		return nil
 	}
 
-	var tableData []map[types.FieldName]interface{}
+	var tableData []types.MapRow
 	for _, row := range t.Table.Rows {
 		tableData = append(tableData, row.GetValues())
 	}
 	data := map[string]interface{}{
+		// TODO(manuel, 2023-06-25) Convert to normal maps for templating
 		"rows": tableData,
 		"data": t.AdditionalData,
 	}
@@ -115,7 +119,9 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		defer f_.Close()
+		defer func(f_ *os.File) {
+			_ = f_.Close()
+		}(f_)
 
 		w = f_
 	}

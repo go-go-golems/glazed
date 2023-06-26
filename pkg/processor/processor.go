@@ -11,7 +11,7 @@ import (
 // TODO(manuel, 2023-04-27) This is probably a good location for With* constructors for middlewares
 
 type Processor interface {
-	ProcessInputObject(ctx context.Context, obj map[string]interface{}) error
+	ProcessInputObject(ctx context.Context, obj types.MapRow) error
 	OutputFormatter() formatters.OutputFormatter
 }
 
@@ -64,11 +64,11 @@ func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorO
 // chain.
 //
 // The final output is added to the output formatter as a single row.
-func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj map[string]interface{}) error {
-	currentObjects := []map[string]interface{}{obj}
+func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj types.MapRow) error {
+	currentObjects := []types.MapRow{obj}
 
 	for _, om := range gp.oms {
-		nextObjects := []map[string]interface{}{}
+		nextObjects := []types.MapRow{}
 		for _, obj := range currentObjects {
 			objs, err := om.Process(obj)
 			if err != nil {

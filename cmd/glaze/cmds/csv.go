@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/csv"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -124,7 +125,9 @@ func (c *CsvCommand) Run(
 		if err != nil {
 			return errors.Wrap(err, "could not open file")
 		}
-		defer f.Close()
+		defer func(f *os.File) {
+			_ = f.Close()
+		}(f)
 
 		header, s, err := csv.ParseCSV(f, options...)
 		if err != nil {
@@ -132,7 +135,7 @@ func (c *CsvCommand) Run(
 		}
 
 		for _, row := range s {
-			err = gp.ProcessInputObject(ctx, row)
+			err = gp.ProcessInputObject(ctx, types.NewMapRowFromMapWithColumns(row, header))
 			if err != nil {
 				return errors.Wrap(err, "could not process CSV row")
 			}

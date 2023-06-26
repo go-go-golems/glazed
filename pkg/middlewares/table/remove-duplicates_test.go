@@ -1,6 +1,7 @@
 package table
 
 import (
+	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,11 +13,11 @@ func createRemoveDuplicatesTables(rows [][]int) *types.Table {
 	ret.Rows = []types.Row{}
 	for _, row := range rows {
 		ret.Rows = append(ret.Rows, &types.SimpleRow{
-			Hash: map[string]interface{}{
-				"a": row[0],
-				"b": row[1],
-				"c": row[2],
-			},
+			Hash: types.NewMapRow(
+				types.MRP("a", row[0]),
+				types.MRP("b", row[1]),
+				types.MRP("c", row[2]),
+			),
 		})
 	}
 
@@ -44,9 +45,9 @@ func TestRemoveDuplicatesSingle(t *testing.T) {
 
 	require.Equal(t, 1, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 }
 
 func TestRemoveDuplicatesTwoDifferent(t *testing.T) {
@@ -61,13 +62,13 @@ func TestRemoveDuplicatesTwoDifferent(t *testing.T) {
 
 	require.Equal(t, 2, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
-	require.Equal(t, 5, row["b"])
-	require.Equal(t, 6, row["c"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualMapRowValue(t, 5, row, "b")
+	assert2.EqualMapRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSame(t *testing.T) {
@@ -82,9 +83,9 @@ func TestRemoveDuplicatesTwoSame(t *testing.T) {
 
 	require.Equal(t, 1, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSameOneDifferent(t *testing.T) {
@@ -100,13 +101,13 @@ func TestRemoveDuplicatesTwoSameOneDifferent(t *testing.T) {
 
 	require.Equal(t, 2, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
-	require.Equal(t, 5, row["b"])
-	require.Equal(t, 6, row["c"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualMapRowValue(t, 5, row, "b")
+	assert2.EqualMapRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoTimesTwoSame(t *testing.T) {
@@ -123,13 +124,13 @@ func TestRemoveDuplicatesTwoTimesTwoSame(t *testing.T) {
 
 	require.Equal(t, 2, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
-	require.Equal(t, 5, row["b"])
-	require.Equal(t, 6, row["c"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualMapRowValue(t, 5, row, "b")
+	assert2.EqualMapRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoTimesTwoSameOneDifferent(t *testing.T) {
@@ -147,17 +148,17 @@ func TestRemoveDuplicatesTwoTimesTwoSameOneDifferent(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
-	require.Equal(t, 5, row["b"])
-	require.Equal(t, 6, row["c"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualMapRowValue(t, 5, row, "b")
+	assert2.EqualMapRowValue(t, 6, row, "c")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 7, row["a"])
-	require.Equal(t, 8, row["b"])
-	require.Equal(t, 9, row["c"])
+	assert2.EqualMapRowValue(t, 7, row, "a")
+	assert2.EqualMapRowValue(t, 8, row, "b")
+	assert2.EqualMapRowValue(t, 9, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSameWithTwoColumns(t *testing.T) {
@@ -172,7 +173,7 @@ func TestRemoveDuplicatesTwoSameWithTwoColumns(t *testing.T) {
 
 	require.Equal(t, 1, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
-	require.Equal(t, 3, row["c"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
 }

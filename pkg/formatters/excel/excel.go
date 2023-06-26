@@ -42,7 +42,7 @@ func (E *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableM
 	E.middlewares = append(E.middlewares[:i], append([]middlewares.TableMiddleware{mw}, E.middlewares[i:]...)...)
 }
 
-func (E *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
+func (E *OutputFormatter) Output(_ context.Context, w io.Writer) error {
 	E.Table.Finalize()
 
 	for _, middleware := range E.middlewares {
@@ -100,7 +100,11 @@ func (E *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	for i, row := range E.Table.Rows {
 		vals := row.GetValues()
 		for _, j := range E.Table.Columns {
-			val := vals[j]
+			val, present := vals.Get(j)
+			if !present {
+				continue
+			}
+
 			colIndex := rowKeyToColumn[j]
 			cellIndex := colIndex + fmt.Sprint(i+2)
 

@@ -1,6 +1,7 @@
 package table
 
 import (
+	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,11 +13,11 @@ func createSortByTables(rows [][]interface{}) *types.Table {
 	ret.Rows = []types.Row{}
 	for _, row := range rows {
 		ret.Rows = append(ret.Rows, &types.SimpleRow{
-			Hash: map[string]interface{}{
-				"a": row[0],
-				"b": row[1],
-				"c": row[2],
-			},
+			Hash: types.NewMapRow(
+				types.MRP("a", row[0]),
+				types.MRP("b", row[1]),
+				types.MRP("c", row[2]),
+			),
 		})
 	}
 
@@ -37,11 +38,11 @@ func TestSortByMiddlewareSingleIntColumn(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 7, row["a"])
+	assert2.EqualMapRowValue(t, 7, row, "a")
 }
 
 func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
@@ -58,11 +59,11 @@ func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 7, row["a"])
+	assert2.EqualMapRowValue(t, 7, row, "a")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 4, row["a"])
+	assert2.EqualMapRowValue(t, 4, row, "a")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 1, row["a"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
 }
 
 func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
@@ -79,11 +80,11 @@ func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, "a", row["a"])
+	assert2.EqualMapRowValue(t, "a", row, "a")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, "b", row["a"])
+	assert2.EqualMapRowValue(t, "b", row, "a")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, "c", row["a"])
+	assert2.EqualMapRowValue(t, "c", row, "a")
 }
 
 func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
@@ -100,11 +101,11 @@ func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, "c", row["a"])
+	assert2.EqualMapRowValue(t, "c", row, "a")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, "b", row["a"])
+	assert2.EqualMapRowValue(t, "b", row, "a")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, "a", row["a"])
+	assert2.EqualMapRowValue(t, "a", row, "a")
 
 }
 
@@ -123,17 +124,17 @@ func TestSortByMiddlewareTwoColumns(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 3, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 3, row, "b")
 	row = newtable.Rows[3].GetValues()
-	require.Equal(t, 2, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 2, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
@@ -151,17 +152,17 @@ func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 2, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 2, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 3, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 3, row, "b")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
 	row = newtable.Rows[3].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
@@ -179,17 +180,17 @@ func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0].GetValues()
-	require.Equal(t, 2, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 2, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 	row = newtable.Rows[1].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 1, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 1, row, "b")
 	row = newtable.Rows[2].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 2, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
 	row = newtable.Rows[3].GetValues()
-	require.Equal(t, 1, row["a"])
-	require.Equal(t, 3, row["b"])
+	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualMapRowValue(t, 3, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDescSecond(t *testing.T) {

@@ -18,7 +18,7 @@ func (r *RemoveDuplicatesMiddleware) Process(table *types.Table) (*types.Table, 
 		Rows:    make([]types.Row, 0),
 	}
 
-	var previousRowValues map[types.FieldName]types.GenericCellValue
+	var previousRowValues types.MapRow
 
 	for _, row := range table.Rows {
 		values := row.GetValues()
@@ -26,7 +26,9 @@ func (r *RemoveDuplicatesMiddleware) Process(table *types.Table) (*types.Table, 
 			// check if the values are the same
 			same := true
 			for _, column := range r.columns {
-				if values[column] != previousRowValues[column] {
+				v, ok := values.Get(column)
+				v2, ok2 := previousRowValues.Get(column)
+				if ok != ok2 || v != v2 {
 					same = false
 					break
 				}

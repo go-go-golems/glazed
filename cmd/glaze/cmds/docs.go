@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -31,7 +32,10 @@ var DocsCmd = &cobra.Command{
 
 			metaData["path"] = arg
 
-			err = gp.ProcessInputObject(ctx, metaData)
+			// TODO(manuel, 2023-06-25) It would be nice to unmarshal the YAML to an orderedmap
+			// See https://github.com/go-go-golems/glazed/issues/305
+			row := types.NewMapRowFromMap(metaData)
+			err = gp.ProcessInputObject(ctx, row)
 			cobra.CheckErr(err)
 		}
 

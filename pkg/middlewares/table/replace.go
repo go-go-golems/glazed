@@ -203,13 +203,15 @@ NextRow:
 	for _, row := range table.Rows {
 		values := row.GetValues()
 		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
+			Hash: types.NewMapRow(),
 		}
 
-		for rowField, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			rowField, value := pair.Key, pair.Value
+
 			s, ok := value.(string)
 			if !ok {
-				newRow.Hash[rowField] = value
+				newRow.Hash.Set(rowField, value)
 				continue
 			}
 
@@ -233,7 +235,7 @@ NextRow:
 				s = regexReplacement.Regexp.ReplaceAllString(s, regexReplacement.Replacement)
 			}
 
-			newRow.Hash[rowField] = s
+			newRow.Hash.Set(rowField, s)
 		}
 
 		ret.Rows = append(ret.Rows, &newRow)

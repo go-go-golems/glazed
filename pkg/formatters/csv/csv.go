@@ -134,7 +134,9 @@ func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 			if err != nil {
 				return err
 			}
-			defer f_.Close()
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
 
 			csvWriter, err := f.newCSVWriter(f_)
 			if err != nil {
@@ -164,7 +166,9 @@ func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 		if err != nil {
 			return err
 		}
-		defer f_.Close()
+		defer func(f_ *os.File) {
+			_ = f_.Close()
+		}(f_)
 
 		csvWriter, err = f.newCSVWriter(w_)
 		if err != nil {
@@ -209,7 +213,7 @@ func (f *OutputFormatter) newCSVWriter(w_ io.Writer) (*csv.Writer, error) {
 func (f *OutputFormatter) writeRow(row types.Row, w *csv.Writer) error {
 	values := []string{}
 	for _, column := range f.Table.Columns {
-		if v, ok := row.GetValues()[column]; ok {
+		if v, ok := row.GetValues().Get(column); ok {
 			values = append(values, fmt.Sprintf("%v", v))
 		} else {
 			values = append(values, "")
