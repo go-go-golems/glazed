@@ -37,7 +37,11 @@ func (jqm *JqObjectMiddleware) Process(
 
 	if jqm.query != nil {
 		// TODO(manuel, 2023-06-25) Transform to map before passing to jq
-		iter := jqm.query.Run(object)
+		m := map[string]interface{}{}
+		for pair := object.Oldest(); pair != nil; pair = pair.Next() {
+			m[pair.Key] = pair.Value
+		}
+		iter := jqm.query.Run(m)
 
 		for {
 			v, ok := iter.Next()
