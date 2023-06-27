@@ -22,7 +22,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/tj/go-naturaldate v1.3.0
 	github.com/ugorji/go/codec v1.2.11
-	github.com/wk8/go-ordered-map/v2 v2.1.7
+	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/xuri/excelize/v2 v2.7.0
 	github.com/yuin/goldmark v1.5.4
 	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
