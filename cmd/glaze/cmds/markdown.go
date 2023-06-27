@@ -338,10 +338,7 @@ var splitByHeadingCmd = &cobra.Command{
 				f, err := os.Open(arg)
 				cobra.CheckErr(err)
 				defer func(f *os.File) {
-					err := f.Close()
-					if err != nil {
-
-					}
+					_ = f.Close()
 				}(f)
 
 				s := bufio.NewScanner(f)
