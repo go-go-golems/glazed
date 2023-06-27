@@ -569,7 +569,10 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 			cobra.CheckErr(err)
 		}
 
-		err = gp.OutputFormatter().Output(ctx, os.Stdout)
+		err = gp.Processor().FinalizeTable(ctx)
+		cobra.CheckErr(err)
+
+		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
 		cobra.CheckErr(err)
 		return nil
 	})

@@ -34,11 +34,13 @@ var DocsCmd = &cobra.Command{
 
 			// TODO(manuel, 2023-06-25) It would be nice to unmarshal the YAML to an orderedmap
 			// See https://github.com/go-go-golems/glazed/issues/305
-			err = gp.ProcessInputObject(ctx, metaData)
+			err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: metaData})
 			cobra.CheckErr(err)
 		}
 
-		err = gp.OutputFormatter().Output(ctx, os.Stdout)
+		err = gp.Processor().FinalizeTable(ctx)
+		cobra.CheckErr(err)
+		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
 		cobra.CheckErr(err)
 	},
 }

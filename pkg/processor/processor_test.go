@@ -23,10 +23,15 @@ func BenchmarkSimpleGlazeProcessor(b *testing.B) {
 		types.MRP("phone", "+351 123 456 789"),
 	)
 	for i := 0; i < b.N; i++ {
-		_ = gp.ProcessInputObject(ctx, data)
+		_ = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: data})
 	}
 	buf := &bytes.Buffer{}
-	_ = gp.OutputFormatter().Output(ctx, buf)
+	err := gp.Processor().FinalizeTable(ctx)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	_ = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), buf)
 }
 
 func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
@@ -44,8 +49,12 @@ func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
 		types.MRP("phone", "+351 123 456 789"),
 	)
 	for i := 0; i < b.N; i++ {
-		_ = gp.ProcessInputObject(ctx, data)
+		_ = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: data})
 	}
 	buf := &bytes.Buffer{}
-	_ = gp.OutputFormatter().Output(ctx, buf)
+	err := gp.Processor().FinalizeTable(ctx)
+	if err != nil {
+		b.Fatal(err)
+	}
+	_ = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), buf)
 }

@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,7 @@ func TestRemoveDuplicatesEmpty(t *testing.T) {
 	removeDuplicatesMiddleware := NewRemoveDuplicatesMiddleware("a", "b", "c")
 
 	table := createRemoveDuplicatesTables([][]int{})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(newtable.Rows))
@@ -40,7 +41,7 @@ func TestRemoveDuplicatesSingle(t *testing.T) {
 	table := createRemoveDuplicatesTables([][]int{
 		{1, 2, 3},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))
@@ -57,7 +58,7 @@ func TestRemoveDuplicatesTwoDifferent(t *testing.T) {
 		{1, 2, 3},
 		{4, 5, 6},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -78,7 +79,7 @@ func TestRemoveDuplicatesTwoSame(t *testing.T) {
 		{1, 2, 3},
 		{1, 2, 3},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))
@@ -96,7 +97,7 @@ func TestRemoveDuplicatesTwoSameOneDifferent(t *testing.T) {
 		{1, 2, 3},
 		{4, 5, 6},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -119,7 +120,7 @@ func TestRemoveDuplicatesTwoTimesTwoSame(t *testing.T) {
 		{4, 5, 6},
 		{4, 5, 6},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -143,7 +144,7 @@ func TestRemoveDuplicatesTwoTimesTwoSameOneDifferent(t *testing.T) {
 		{4, 5, 6},
 		{7, 8, 9},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
@@ -168,7 +169,7 @@ func TestRemoveDuplicatesTwoSameWithTwoColumns(t *testing.T) {
 		{1, 2, 3},
 		{1, 2, 4},
 	})
-	newtable, err := removeDuplicatesMiddleware.Process(table)
+	newtable, err := removeDuplicatesMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))

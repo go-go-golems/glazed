@@ -3,8 +3,8 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -20,9 +20,9 @@ type RenameSettings struct {
 	YamlFile      string
 }
 
-func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
+func (rs *RenameSettings) AddMiddlewares(processor *middlewares.Processor) error {
 	if len(rs.RenameFields) > 0 || len(rs.RenameRegexps) > 0 {
-		of.AddTableMiddleware(table.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
+		processor.AddTableMiddleware(table.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
 	}
 
 	if rs.YamlFile != "" {
@@ -37,7 +37,7 @@ func (rs *RenameSettings) AddMiddlewares(of formatters.OutputFormatter) error {
 			return err
 		}
 
-		of.AddTableMiddleware(mw)
+		processor.AddTableMiddleware(mw)
 	}
 
 	return nil

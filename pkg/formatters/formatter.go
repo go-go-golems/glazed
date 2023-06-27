@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -40,20 +39,7 @@ import (
 // The following is all geared towards tabulated output
 
 type OutputFormatter interface {
-	// TODO(manuel, 2022-11-12) We need to be able to output to a directory / to a stream / to multiple files
-	AddRow(row types.Row)
-
-	SetColumnOrder(columnOrder []types.FieldName)
-
-	// AddTableMiddleware adds a middleware at the end of the processing list
-	AddTableMiddleware(m middlewares.TableMiddleware)
-	AddTableMiddlewareInFront(m middlewares.TableMiddleware)
-	AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware)
-
-	GetTable() (*types.Table, error)
-
-	Output(ctx context.Context, w io.Writer) error
-
+	Output(ctx context.Context, table *types.Table, w io.Writer) error
 	ContentType() string
 }
 
@@ -88,6 +74,7 @@ func ComputeOutputFilename(outputFile string, outputFileTemplate string, row typ
 // into HTML when serving.
 func StartFormatIntoChannel[T interface{ ~string }](
 	ctx context.Context,
+	table *types.Table,
 	formatter OutputFormatter,
 ) <-chan T {
 	reader, writer := io.Pipe()
@@ -116,10 +103,12 @@ func StartFormatIntoChannel[T interface{ ~string }](
 	})
 
 	eg.Go(func() error {
-		err := formatter.Output(ctx2, writer)
-		defer writer.Close()
+		err := formatter.Output(ctx2, table, writer)
+		defer func(writer *io.PipeWriter) {
+			_ = writer.Close()
+		}(writer)
 		if err != nil {
-			writer.CloseWithError(err)
+			_ = writer.CloseWithError(err)
 			return err
 		}
 		return nil

@@ -10,6 +10,10 @@ func (t *Table) AddRows(rows ...Row) {
 	// TODO(manuel, 2023-06-27) Update the Columns field when adding rows
 	// This might be not very efficient, but it's not like computing it all at the end is great too.
 	// This might be something that could be set as an option.
+	for _, row := range rows {
+		columns := row.GetFields()
+		t.SetColumnOrder(columns)
+	}
 	t.Rows = append(t.Rows, rows...)
 }
 
@@ -24,9 +28,7 @@ func (t *Table) SetColumnOrder(columns []FieldName) {
 	columnsToAppend := []FieldName{}
 
 	for _, column := range columns {
-		if _, ok := existingColumns[column]; ok {
-			delete(existingColumns, column)
-		}
+		delete(existingColumns, column)
 	}
 
 	for _, column := range t.Columns {
@@ -36,35 +38,6 @@ func (t *Table) SetColumnOrder(columns []FieldName) {
 	}
 
 	t.Columns = append(columns, columnsToAppend...)
-}
-
-// Finalize is used to "close" a table after processing inputs into it.
-// This combines the column names from all the rows with the column names already set to have them all in order.
-//
-// TODO(manuel, 2023-02-19) This is an ugly ugly method, and really the whole Table/middleware structure needs to be refactored
-// See https://github.com/go-go-golems/glazed/issues/146
-func (t *Table) Finalize() {
-	if t.finalized {
-		return
-	}
-
-	// create a hash to quickly check if we already have the column
-	existingColumns := map[FieldName]interface{}{}
-	for _, column := range t.Columns {
-		existingColumns[column] = nil
-	}
-
-	// WARN(manuel, 2023-06-25) This is really inefficient
-	for _, row := range t.Rows {
-		for _, field := range row.GetFields() {
-			if _, ok := existingColumns[field]; !ok {
-				t.Columns = append(t.Columns, field)
-				existingColumns[field] = nil
-			}
-		}
-	}
-
-	t.finalized = true
 }
 
 func NewTable() *Table {

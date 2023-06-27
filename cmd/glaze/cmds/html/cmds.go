@@ -40,7 +40,10 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.OutputFormatter().Output(ctx, os.Stdout)
+			err = gp.Processor().FinalizeTable(ctx)
+			cobra.CheckErr(err)
+
+			err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
@@ -75,7 +78,9 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				}
 				f, err := os.Open(arg)
 				cobra.CheckErr(err)
-				defer f.Close()
+				defer func(f *os.File) {
+					_ = f.Close()
+				}(f)
 
 				doc, err := html.Parse(f)
 				cobra.CheckErr(err)
@@ -93,7 +98,10 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.OutputFormatter().Output(ctx, os.Stdout)
+			err = gp.Processor().FinalizeTable(ctx)
+			cobra.CheckErr(err)
+
+			err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
@@ -31,14 +32,15 @@ func NewJqObjectMiddleware(
 }
 
 func (jqm *JqObjectMiddleware) Process(
-	object types.MapRow,
-) ([]types.MapRow, error) {
-	ret := []types.MapRow{}
+	ctx context.Context,
+	object types.Row,
+) ([]types.Row, error) {
+	ret := []types.Row{}
 
 	if jqm.query != nil {
 		// TODO(manuel, 2023-06-25) Transform to map before passing to jq
 		m := map[string]interface{}{}
-		for pair := object.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := object.GetValues().Oldest(); pair != nil; pair = pair.Next() {
 			m[pair.Key] = pair.Value
 		}
 		iter := jqm.query.Run(m)
@@ -59,9 +61,9 @@ func (jqm *JqObjectMiddleware) Process(
 					case error:
 						return nil, v_
 					case map[string]interface{}:
-						ret = append(ret, types.NewMapRowFromMap(v_))
+						ret = append(ret, &types.SimpleRow{Hash: types.NewMapRowFromMap(v_)})
 					case types.MapRow:
-						ret = append(ret, v_)
+						ret = append(ret, &types.SimpleRow{Hash: v_})
 					default:
 						return nil, errors.Errorf("Expected object, got %T", v)
 					}
@@ -69,10 +71,10 @@ func (jqm *JqObjectMiddleware) Process(
 
 				continue
 			case types.MapRow:
-				ret = append(ret, v_)
+				ret = append(ret, &types.SimpleRow{Hash: v_})
 
 			case map[string]interface{}:
-				ret = append(ret, types.NewMapRowFromMap(v_))
+				ret = append(ret, &types.SimpleRow{Hash: types.NewMapRowFromMap(v_)})
 
 			}
 		}
@@ -107,7 +109,7 @@ func NewJqTableMiddleware(
 	return ret, nil
 }
 
-func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (jqm *JqTableMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},

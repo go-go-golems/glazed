@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
@@ -41,10 +40,8 @@ var (
 )
 
 type OutputFormatter struct {
-	Table               *types.Table
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
-	middlewares         []middlewares.TableMiddleware
 	TableFormat         string
 	TableStyle          table.Style
 	TableStyleFile      string
@@ -98,8 +95,6 @@ func WithPrintTableStyle(printTableStyle bool) OutputFormatterOption {
 
 func NewOutputFormatter(tableFormat string, opts ...OutputFormatterOption) *OutputFormatter {
 	f := &OutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares.TableMiddleware{},
 		TableFormat: tableFormat,
 		TableStyle:  table.StyleDefault,
 	}
@@ -126,27 +121,13 @@ func (tof *OutputFormatter) ContentType() string {
 	}
 }
 
-func (tof *OutputFormatter) GetTable() (*types.Table, error) {
-	return tof.Table, nil
-}
-
-func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
-	tof.Table.Finalize()
-
-	for _, middleware := range tof.middlewares {
-		newTable, err := middleware.Process(tof.Table)
-		if err != nil {
-			return err
-		}
-		tof.Table = newTable
-	}
-
+func (tof *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if tof.OutputMultipleFiles {
 		if tof.OutputFileTemplate == "" && tof.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")
 		}
 
-		for i, row := range tof.Table.Rows {
+		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(tof.OutputFile, tof.OutputFileTemplate, row, i)
 			if err != nil {
 				return err
@@ -157,7 +138,7 @@ func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 				return err
 			}
 
-			err = tof.makeTable([]types.Row{row}, f_)
+			err = tof.makeTable(table_, []types.Row{row}, f_)
 			if err != nil {
 				return err
 			}
@@ -173,7 +154,7 @@ func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		err = tof.makeTable(tof.Table.Rows, f_)
+		err = tof.makeTable(table_, table_.Rows, f_)
 		if err != nil {
 			return err
 		}
@@ -182,7 +163,7 @@ func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		return nil
 	}
 
-	err := tof.makeTable(tof.Table.Rows, w)
+	err := tof.makeTable(table_, table_.Rows, w)
 	if err != nil {
 		return err
 	}
@@ -190,16 +171,16 @@ func (tof *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (tof *OutputFormatter) makeTable(rows []types.Row, w io.Writer) error {
+func (tof *OutputFormatter) makeTable(table_ *types.Table, rows []types.Row, w io.Writer) error {
 	t := table.NewWriter()
 
-	headers, _ := cast.CastList[interface{}](tof.Table.Columns)
+	headers, _ := cast.CastList[interface{}](table_.Columns)
 
 	t.AppendHeader(headers)
 	for _, row := range rows {
 		values := row.GetValues()
 		var row_ []interface{}
-		for _, column := range tof.Table.Columns {
+		for _, column := range table_.Columns {
 			s := ""
 			if v, ok := values.Get(column); ok {
 				s = valueToString(v)
@@ -274,24 +255,4 @@ func valueToString(v types.GenericCellValue) string {
 		s = fmt.Sprintf("%v", v)
 	}
 	return s
-}
-
-func (tof *OutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
-	tof.middlewares = append(tof.middlewares, m)
-}
-
-func (tof *OutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
-	tof.middlewares = append([]middlewares.TableMiddleware{m}, tof.middlewares...)
-}
-
-func (tof *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
-	tof.middlewares = append(tof.middlewares[:i], append([]middlewares.TableMiddleware{m}, tof.middlewares[i:]...)...)
-}
-
-func (tof *OutputFormatter) AddRow(row types.Row) {
-	tof.Table.Rows = append(tof.Table.Rows, row)
-}
-
-func (tof *OutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
-	tof.Table.Columns = columnOrder
 }

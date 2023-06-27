@@ -43,6 +43,8 @@ type Row interface {
 	GetValues() MapRow
 }
 
+// TODO(manuel, 2023-06-27) We actually don't need this at all, we can just define GetFields() on MapRow directly
+
 type SimpleRow struct {
 	Hash MapRow
 }

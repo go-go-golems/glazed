@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/xuri/excelize/v2"
 	"io"
@@ -12,47 +11,11 @@ import (
 )
 
 type OutputFormatter struct {
-	SheetName   string
-	OutputFile  string
-	Table       *types.Table
-	middlewares []middlewares.TableMiddleware
+	SheetName  string
+	OutputFile string
 }
 
-func (E *OutputFormatter) GetTable() (*types.Table, error) {
-	return E.Table, nil
-}
-
-func (E *OutputFormatter) AddRow(row types.Row) {
-	E.Table.Rows = append(E.Table.Rows, row)
-}
-
-func (E *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
-	E.Table.Columns = columns
-}
-
-func (E *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
-	E.middlewares = append(E.middlewares, mw)
-}
-
-func (E *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
-	E.middlewares = append([]middlewares.TableMiddleware{mw}, E.middlewares...)
-}
-
-func (E *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
-	E.middlewares = append(E.middlewares[:i], append([]middlewares.TableMiddleware{mw}, E.middlewares[i:]...)...)
-}
-
-func (E *OutputFormatter) Output(_ context.Context, w io.Writer) error {
-	E.Table.Finalize()
-
-	for _, middleware := range E.middlewares {
-		newTable, err := middleware.Process(E.Table)
-		if err != nil {
-			return err
-		}
-		E.Table = newTable
-	}
-
+func (E *OutputFormatter) Output(_ context.Context, table_ *types.Table, w io.Writer) error {
 	f := excelize.NewFile()
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -82,7 +45,7 @@ func (E *OutputFormatter) Output(_ context.Context, w io.Writer) error {
 		return err
 	}
 
-	for j, col := range E.Table.Columns {
+	for j, col := range table_.Columns {
 		colIndex := strings2.ToAlphaString(j + 1)
 		cellIndex := colIndex + "1"
 		rowKeyToColumn[col] = colIndex
@@ -97,9 +60,9 @@ func (E *OutputFormatter) Output(_ context.Context, w io.Writer) error {
 		}
 	}
 
-	for i, row := range E.Table.Rows {
+	for i, row := range table_.Rows {
 		vals := row.GetValues()
-		for _, j := range E.Table.Columns {
+		for _, j := range table_.Columns {
 			val, present := vals.Get(j)
 			if !present {
 				continue
@@ -152,10 +115,7 @@ func WithOutputFile(outputFile string) OutputFormatterOption {
 }
 
 func NewOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
-	f := &OutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares.TableMiddleware{},
-	}
+	f := &OutputFormatter{}
 
 	for _, opt := range opts {
 		opt(f)

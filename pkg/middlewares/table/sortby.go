@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/helpers/compare"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"sort"
@@ -51,7 +52,7 @@ func NewSortByMiddlewareFromColumns(columns ...string) *SortByMiddleware {
 	return ret
 }
 
-func (s *SortByMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (s *SortByMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: table.Columns,
 		Rows:    make([]types.Row, 0),

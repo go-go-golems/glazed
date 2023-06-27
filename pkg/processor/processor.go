@@ -11,13 +11,18 @@ import (
 // TODO(manuel, 2023-04-27) This is probably a good location for With* constructors for middlewares
 
 type Processor interface {
-	ProcessInputObject(ctx context.Context, obj types.MapRow) error
+	ProcessInputObject(ctx context.Context, obj types.Row) error
 	OutputFormatter() formatters.OutputFormatter
+	Processor() *middlewares.Processor
 }
 
 type GlazeProcessor struct {
-	of  formatters.OutputFormatter
-	oms []middlewares.ObjectMiddleware
+	of        formatters.OutputFormatter
+	processor *middlewares.Processor
+}
+
+func (gp *GlazeProcessor) Processor() *middlewares.Processor {
+	return gp.processor
 }
 
 func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
@@ -26,28 +31,22 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 
 type GlazeProcessorOption func(*GlazeProcessor)
 
-func WithAppendObjectMiddleware(om ...middlewares.ObjectMiddleware) GlazeProcessorOption {
-	return func(gp *GlazeProcessor) {
-		gp.oms = append(gp.oms, om...)
-	}
-}
-
-func WithPrependObjectMiddleware(om ...middlewares.ObjectMiddleware) GlazeProcessorOption {
-	return func(gp *GlazeProcessor) {
-		gp.oms = append(om, gp.oms...)
-	}
-}
-
 func WithOutputFormatter(of formatters.OutputFormatter) GlazeProcessorOption {
 	return func(gp *GlazeProcessor) {
 		gp.of = of
 	}
 }
 
+func WithMiddlewareProcessor(processor *middlewares.Processor) GlazeProcessorOption {
+	return func(gp *GlazeProcessor) {
+		gp.processor = processor
+	}
+}
+
 func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorOption) *GlazeProcessor {
 	ret := &GlazeProcessor{
-		of:  of,
-		oms: []middlewares.ObjectMiddleware{},
+		of:        of,
+		processor: middlewares.NewProcessor(),
 	}
 
 	for _, option := range options {
@@ -64,23 +63,10 @@ func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorO
 // chain.
 //
 // The final output is added to the output formatter as a single row.
-func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj types.MapRow) error {
-	currentObjects := []types.MapRow{obj}
-
-	for _, om := range gp.oms {
-		nextObjects := []types.MapRow{}
-		for _, obj := range currentObjects {
-			objs, err := om.Process(obj)
-			if err != nil {
-				return err
-			}
-			nextObjects = append(nextObjects, objs...)
-		}
-		currentObjects = nextObjects
-	}
-
-	for _, obj := range currentObjects {
-		gp.of.AddRow(&types.SimpleRow{Hash: obj})
+func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj types.Row) error {
+	err := gp.processor.AddRow(ctx, obj)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -99,7 +85,10 @@ func NewSimpleGlazeProcessor(options ...GlazeProcessorOption) *SimpleGlazeProces
 	}
 }
 
-func (gp *SimpleGlazeProcessor) GetTable() *types.Table {
-	gp.formatter.Table.Finalize()
-	return gp.formatter.Table
+func (gp *SimpleGlazeProcessor) GetTable(ctx context.Context) (*types.Table, error) {
+	err := gp.processor.FinalizeTable(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return gp.processor.Table, nil
 }

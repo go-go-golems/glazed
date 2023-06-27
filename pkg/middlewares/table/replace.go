@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -191,7 +192,7 @@ func NewReplaceMiddlewareFromYAML(b []byte) (*ReplaceMiddleware, error) {
 	return NewReplaceMiddleware(replacements, regexReplacements, regexSkips, skips), nil
 }
 
-func (r *ReplaceMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (r *ReplaceMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},

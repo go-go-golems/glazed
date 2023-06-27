@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func TestSingleSkip(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(table)
+	newtable, err := replaceMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))
@@ -71,7 +72,7 @@ func TestSingleReplacement(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := replacementMiddleware.Process(table)
+	newtable, err := replacementMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -102,7 +103,7 @@ func TestTwoSkips(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(table)
+	newtable, err := replaceMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(newtable.Rows))
@@ -128,7 +129,7 @@ func TestTwoColumnSkips(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := mw.Process(table)
+	newtable, err := mw.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(newtable.Rows))
@@ -150,7 +151,7 @@ func TestSingleRegexpSkip(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(table)
+	newtable, err := replaceMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))
@@ -167,7 +168,7 @@ func TestSingleRegexpSkip(t *testing.T) {
 		},
 	}
 
-	newtable, err = replaceMiddleware.Process(table)
+	newtable, err = replaceMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))
@@ -197,7 +198,7 @@ func TestTwoReplacements(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := rep.Process(table)
+	newtable, err := rep.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -226,7 +227,7 @@ func TestSingleRegexpReplacement(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := rep.Process(table)
+	newtable, err := rep.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -256,7 +257,7 @@ func TestSingleRegexpCaptureReplacement(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := rep.Process(table)
+	newtable, err := rep.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -292,7 +293,7 @@ func TestRegexpAndSkip(t *testing.T) {
 	)
 
 	table := createReplaceTestTable()
-	newtable, err := rep.Process(table)
+	newtable, err := rep.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(newtable.Rows))

@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,7 @@ func TestSingleRename(t *testing.T) {
 	mw := NewFieldRenameColumnMiddleware(renameTable)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 
 	require.Nil(t, ret)
 
@@ -38,7 +39,7 @@ func TestRenameTwoFieldColumns(t *testing.T) {
 	mw := NewFieldRenameColumnMiddleware(renameTable)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -57,7 +58,7 @@ func TestRenameOverrideColumn(t *testing.T) {
 	mw := NewFieldRenameColumnMiddleware(renameTable)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -79,7 +80,7 @@ func TestRenameRegexpSimpleMatch(t *testing.T) {
 	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -100,7 +101,7 @@ func TestRenameRegexpDoubleMatch(t *testing.T) {
 	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -130,7 +131,7 @@ func TestRenameRegexpOrderedMatch(t *testing.T) {
 	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -179,7 +180,7 @@ func TestBothFieldAndRegexpRenames(t *testing.T) {
 	mw := NewRenameColumnMiddleware(renameTable, rrs)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -205,7 +206,7 @@ renames:
 
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -232,7 +233,7 @@ regexpRenames:
 
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -263,7 +264,7 @@ regexpRenames:
 
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -286,7 +287,7 @@ func TestRegexpCaptureGroupRename(t *testing.T) {
 	mw := NewRegexpRenameColumnMiddleware(rrs)
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)
@@ -311,7 +312,7 @@ regexpRenames:
 
 	table := createTestTable()
 
-	newTable, ret := mw.Process(table)
+	newTable, ret := mw.Process(context.Background(), table)
 	require.Nil(t, ret)
 
 	row := newTable.Rows[0].(*types.SimpleRow)

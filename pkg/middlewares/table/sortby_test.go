@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func TestSortByMiddlewareSingleIntColumn(t *testing.T) {
 		{4, 5, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
@@ -54,7 +55,7 @@ func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
 		{4, 5, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
@@ -75,7 +76,7 @@ func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
 		{"b", 5, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
@@ -96,7 +97,7 @@ func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
 		{"b", 5, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
@@ -119,7 +120,7 @@ func TestSortByMiddlewareTwoColumns(t *testing.T) {
 		{2, 1, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
@@ -147,7 +148,7 @@ func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
 		{2, 1, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
@@ -175,7 +176,7 @@ func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
 		{2, 1, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
@@ -203,7 +204,7 @@ func TestSortByMiddlewareTwoColumnsDescSecond(t *testing.T) {
 		{2, 1, 6},
 	})
 
-	newtable, err := sortByMiddleware.Process(table)
+	newtable, err := sortByMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))

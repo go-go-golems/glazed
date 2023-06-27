@@ -4,20 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
 )
 
 type SingleColumnFormatter struct {
-	Table               *types.Table
 	Column              types.FieldName
 	OutputFile          string
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
 	Separator           string
-	middlewares         []middlewares.TableMiddleware
 }
 
 type SingleColumnFormatterOption func(*SingleColumnFormatter)
@@ -48,7 +45,6 @@ func WithOutputFile(outputFile string) SingleColumnFormatterOption {
 
 func NewSingleColumnFormatter(column types.FieldName, opts ...SingleColumnFormatterOption) *SingleColumnFormatter {
 	f := &SingleColumnFormatter{
-		Table:     &types.Table{},
 		Column:    column,
 		Separator: "\n",
 	}
@@ -64,47 +60,13 @@ func (s *SingleColumnFormatter) ContentType() string {
 	return "text/plain"
 }
 
-func (s *SingleColumnFormatter) AddRow(row types.Row) {
-	s.Table.Rows = append(s.Table.Rows, row)
-}
-
-func (s *SingleColumnFormatter) SetColumnOrder(columnOrder []types.FieldName) {
-	s.Table.Columns = columnOrder
-}
-
-func (s *SingleColumnFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
-	s.middlewares = append(s.middlewares, m)
-}
-
-func (s *SingleColumnFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
-	s.middlewares = append([]middlewares.TableMiddleware{m}, s.middlewares...)
-}
-
-func (s *SingleColumnFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
-	s.middlewares = append(s.middlewares[:i], append([]middlewares.TableMiddleware{m}, s.middlewares[i:]...)...)
-}
-
-func (s *SingleColumnFormatter) GetTable() (*types.Table, error) {
-	return s.Table, nil
-}
-
-func (s *SingleColumnFormatter) Output(ctx context.Context, w io.Writer) error {
-	s.Table.Finalize()
-
-	for _, middleware := range s.middlewares {
-		newTable, err := middleware.Process(s.Table)
-		if err != nil {
-			return err
-		}
-		s.Table = newTable
-	}
-
+func (s *SingleColumnFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if s.OutputMultipleFiles {
 		if s.OutputFileTemplate == "" && s.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")
 		}
 
-		for i, row := range s.Table.Rows {
+		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(s.OutputFile, s.OutputFileTemplate, row, i)
 			if err != nil {
 				return err
@@ -135,13 +97,13 @@ func (s *SingleColumnFormatter) Output(ctx context.Context, w io.Writer) error {
 		w = f_
 	}
 
-	for i, row := range s.Table.Rows {
+	for i, row := range table_.Rows {
 		if value, ok := row.GetValues().Get(s.Column); ok {
 			_, err := fmt.Fprintf(w, "%v", value)
 			if err != nil {
 				return err
 			}
-			if i < len(s.Table.Rows)-1 {
+			if i < len(table_.Rows)-1 {
 				_, err := fmt.Fprintf(w, "%s", s.Separator)
 				if err != nil {
 					return err

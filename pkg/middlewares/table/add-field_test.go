@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func TestSingleAddField(t *testing.T) {
 	})
 
 	table := createAddFieldTestTable()
-	newtable, err := addFieldMiddleware.Process(table)
+	newtable, err := addFieldMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))
@@ -57,7 +58,7 @@ func TestMultipleAddField(t *testing.T) {
 	})
 
 	table := createAddFieldTestTable()
-	newtable, err := addFieldMiddleware.Process(table)
+	newtable, err := addFieldMiddleware.Process(context.Background(), table)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(newtable.Rows))

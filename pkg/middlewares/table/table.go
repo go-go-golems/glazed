@@ -2,6 +2,7 @@ package table
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
@@ -54,7 +55,7 @@ func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterM
 	}
 }
 
-func (ffm *FieldsFilterMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},
@@ -177,7 +178,7 @@ func NewRemoveNullsMiddleware() *RemoveNullsMiddleware {
 	return &RemoveNullsMiddleware{}
 }
 
-func (rnm *RemoveNullsMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (rnm *RemoveNullsMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: table.Columns,
 		Rows:    []types.Row{},
@@ -209,7 +210,7 @@ func NewFlattenObjectMiddleware() *FlattenObjectMiddleware {
 	return &FlattenObjectMiddleware{}
 }
 
-func (fom *FlattenObjectMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (fom *FlattenObjectMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},
@@ -265,7 +266,7 @@ func NewPreserveColumnOrderMiddleware(columns []types.FieldName) *PreserveColumn
 	}
 }
 
-func (scm *PreserveColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (scm *PreserveColumnOrderMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	columnHash := map[types.FieldName]interface{}{}
 	for _, column := range scm.columns {
 		columnHash[column] = nil
@@ -285,7 +286,7 @@ func NewReorderColumnOrderMiddleware(columns []types.FieldName) *ReorderColumnOr
 	}
 }
 
-func (scm *ReorderColumnOrderMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (scm *ReorderColumnOrderMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	existingColumns := map[types.FieldName]interface{}{}
 	for _, column := range table.Columns {
 		existingColumns[column] = nil
@@ -334,7 +335,7 @@ func NewSortColumnsMiddleware() *SortColumnsMiddleware {
 	return &SortColumnsMiddleware{}
 }
 
-func (scm *SortColumnsMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (scm *SortColumnsMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	sort.Strings(table.Columns)
 	return table, nil
 }
@@ -382,7 +383,7 @@ func NewRowGoTemplateMiddleware(
 	}, nil
 }
 
-func (rgtm *RowGoTemplateMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (rgtm *RowGoTemplateMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},
@@ -568,7 +569,7 @@ columnLoop:
 	return orderedColumns, columnRenames
 }
 
-func (r *RenameColumnMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (r *RenameColumnMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	orderedColumns, renamedColumns := r.RenameColumns(table.Columns)
 
 	ret := &types.Table{

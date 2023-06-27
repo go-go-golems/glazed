@@ -135,7 +135,7 @@ func (c *CsvCommand) Run(
 		}
 
 		for _, row := range s {
-			err = gp.ProcessInputObject(ctx, types.NewMapRowFromMapWithColumns(row, header))
+			err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: types.NewMapRowFromMapWithColumns(row, header)})
 			if err != nil {
 				return errors.Wrap(err, "could not process CSV row")
 			}
@@ -150,11 +150,11 @@ func (c *CsvCommand) Run(
 		}
 	}
 
-	table, err := gp.OutputFormatter().GetTable()
+	err := gp.Processor().FinalizeTable(ctx)
 	if err != nil {
-		return errors.Wrap(err, "could not get table")
+		return errors.Wrap(err, "could not finalize table")
 	}
-
+	table := gp.Processor().GetTable()
 	table.Columns = finalHeaders
 
 	return nil

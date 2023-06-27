@@ -2,6 +2,7 @@ package object
 
 import (
 	"bytes"
+	"context"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -42,17 +43,22 @@ func NewObjectGoTemplateMiddleware(
 // Process will render each template for the input object and return an object with the newly created fields.
 //
 // TODO(manuel, 2022-11-21) This should allow merging the new results straight back
-func (rgtm *ObjectGoTemplateMiddleware) Process(object types.MapRow) ([]types.MapRow, error) {
+func (rgtm *ObjectGoTemplateMiddleware) Process(ctx context.Context, object types.Row) ([]types.Row, error) {
 	ret := types.NewMapRow()
 
 	for key, tmpl := range rgtm.templates {
 		var buf bytes.Buffer
-		err := tmpl.Execute(&buf, object)
+		m := map[string]interface{}{}
+
+		for pair := object.GetValues().Oldest(); pair != nil; pair = pair.Next() {
+			m[pair.Key] = pair.Value
+		}
+		err := tmpl.Execute(&buf, m)
 		if err != nil {
 			return nil, err
 		}
 		ret.Set(key, buf.String())
 	}
 
-	return []types.MapRow{ret}, nil
+	return []types.Row{&types.SimpleRow{Hash: ret}}, nil
 }

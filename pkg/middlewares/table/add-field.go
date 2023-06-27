@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
@@ -12,7 +13,7 @@ func NewAddFieldMiddleware(fields map[string]string) *AddFieldMiddleware {
 	return &AddFieldMiddleware{Fields: fields}
 }
 
-func (a *AddFieldMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (a *AddFieldMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: table.Columns,
 		Rows:    make([]types.Row, 0),

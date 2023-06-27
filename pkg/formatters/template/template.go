@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
@@ -13,50 +12,14 @@ import (
 
 type OutputFormatter struct {
 	Template            string
-	Table               *types.Table
 	TemplateFuncMaps    []template.FuncMap
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
-	middlewares         []middlewares.TableMiddleware
 	OutputFile          string
 	AdditionalData      interface{}
 }
 
-func (t *OutputFormatter) GetTable() (*types.Table, error) {
-	return t.Table, nil
-}
-
-func (t *OutputFormatter) AddRow(row types.Row) {
-	t.Table.Rows = append(t.Table.Rows, row)
-}
-
-func (t *OutputFormatter) SetColumnOrder(columnOrder []types.FieldName) {
-	t.Table.Columns = columnOrder
-}
-
-func (t *OutputFormatter) AddTableMiddleware(m middlewares.TableMiddleware) {
-	t.middlewares = append(t.middlewares, m)
-}
-
-func (t *OutputFormatter) AddTableMiddlewareInFront(m middlewares.TableMiddleware) {
-	t.middlewares = append([]middlewares.TableMiddleware{m}, t.middlewares...)
-}
-
-func (t *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares.TableMiddleware) {
-	t.middlewares = append(t.middlewares[:i], append([]middlewares.TableMiddleware{m}, t.middlewares[i:]...)...)
-}
-
-func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
-	t.Table.Finalize()
-
-	for _, middleware := range t.middlewares {
-		newTable, err := middleware.Process(t.Table)
-		if err != nil {
-			return err
-		}
-		t.Table = newTable
-	}
-
+func (t *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	t2 := template.New("template")
 	for _, templateFuncMap := range t.TemplateFuncMaps {
 		t2 = t2.Funcs(templateFuncMap)
@@ -71,7 +34,7 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 			return fmt.Errorf("neither output file or output file template is set")
 		}
 
-		for i, row := range t.Table.Rows {
+		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(t.OutputFile, t.OutputFileTemplate, row, i)
 			if err != nil {
 				return err
@@ -106,7 +69,7 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 
 	var tableData []map[string]interface{}
 
-	for _, row := range t.Table.Rows {
+	for _, row := range table_.Rows {
 		values := row.GetValues()
 		m := make(map[string]interface{})
 
@@ -186,7 +149,6 @@ func NewOutputFormatter(template string, opts ...OutputFormatterOption) *OutputF
 	f := &OutputFormatter{
 		Template:       template,
 		AdditionalData: map[string]interface{}{},
-		Table:          types.NewTable(),
 	}
 
 	for _, opt := range opts {

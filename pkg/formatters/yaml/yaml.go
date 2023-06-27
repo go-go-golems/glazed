@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -12,55 +11,19 @@ import (
 )
 
 type OutputFormatter struct {
-	Table                *types.Table
 	OutputFile           string
 	OutputFileTemplate   string
 	OutputMultipleFiles  bool
 	OutputIndividualRows bool
-	middlewares          []middlewares.TableMiddleware
 }
 
-func (f *OutputFormatter) GetTable() (*types.Table, error) {
-	return f.Table, nil
-}
-
-func (f *OutputFormatter) AddRow(row types.Row) {
-	f.Table.Rows = append(f.Table.Rows, row)
-}
-
-func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
-	f.Table.Columns = columns
-}
-
-func (f *OutputFormatter) AddTableMiddleware(mw middlewares.TableMiddleware) {
-	f.middlewares = append(f.middlewares, mw)
-}
-
-func (f *OutputFormatter) AddTableMiddlewareInFront(mw middlewares.TableMiddleware) {
-	f.middlewares = append([]middlewares.TableMiddleware{mw}, f.middlewares...)
-}
-
-func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, mw middlewares.TableMiddleware) {
-	f.middlewares = append(f.middlewares[:i], append([]middlewares.TableMiddleware{mw}, f.middlewares[i:]...)...)
-}
-
-func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
-	f.Table.Finalize()
-
-	for _, middleware := range f.middlewares {
-		newTable, err := middleware.Process(f.Table)
-		if err != nil {
-			return err
-		}
-		f.Table = newTable
-	}
-
+func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if f.OutputMultipleFiles {
 		if f.OutputFileTemplate == "" && f.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")
 		}
 
-		for i, row := range f.Table.Rows {
+		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
 			if err != nil {
 				return err
@@ -88,7 +51,7 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 	}
 
 	if f.OutputIndividualRows {
-		if len(f.Table.Rows) > 1 {
+		if len(table_.Rows) > 1 {
 			return fmt.Errorf("output individual rows is set but there are multiple rows in the table")
 		}
 
@@ -102,14 +65,14 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 				_ = f_.Close()
 			}(f_)
 
-			if len(f.Table.Rows) == 0 {
+			if len(table_.Rows) == 0 {
 				_, _ = fmt.Fprintln(w, "Empty table, an empty file was created")
 				return nil
 			}
 		}
 
 		encoder := yaml.NewEncoder(w)
-		err := encoder.Encode(f.Table.Rows[0].GetValues())
+		err := encoder.Encode(table_.Rows[0].GetValues())
 		if err != nil {
 			return err
 		}
@@ -117,7 +80,7 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		return nil
 	} else {
 		var rows []types.MapRow
-		for _, row := range f.Table.Rows {
+		for _, row := range table_.Rows {
 			rows = append(rows, row.GetValues())
 		}
 
@@ -162,10 +125,7 @@ func WithOutputIndividualRows(outputIndividualRows bool) OutputFormatterOption {
 }
 
 func NewOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
-	f := &OutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares.TableMiddleware{},
-	}
+	f := &OutputFormatter{}
 
 	for _, opt := range opts {
 		opt(f)
