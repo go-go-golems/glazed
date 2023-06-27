@@ -43,49 +43,6 @@ type Row interface {
 	GetValues() MapRow
 }
 
-type Table struct {
-	Columns   []FieldName
-	Rows      []Row
-	finalized bool
-}
-
-// Finalize is used to "close" a table after processing inputs into it.
-// This combines the column names from all the rows with the column names already set to have them all in order.
-//
-// TODO(manuel, 2023-02-19) This is an ugly ugly method, and really the whole Table/middleware structure needs to be refactored
-// See https://github.com/go-go-golems/glazed/issues/146
-func (t *Table) Finalize() {
-	if t.finalized {
-		return
-	}
-
-	// create a hash to quickly check if we already have the column
-	existingColumns := map[FieldName]interface{}{}
-	for _, column := range t.Columns {
-		existingColumns[column] = nil
-	}
-
-	// WARN(manuel, 2023-06-25) This is really inefficient
-	for _, row := range t.Rows {
-		for _, field := range row.GetFields() {
-			if _, ok := existingColumns[field]; !ok {
-				t.Columns = append(t.Columns, field)
-				existingColumns[field] = nil
-			}
-		}
-	}
-
-	t.finalized = true
-}
-
-func NewTable() *Table {
-	return &Table{
-		Columns:   []FieldName{},
-		Rows:      []Row{},
-		finalized: false,
-	}
-}
-
 type SimpleRow struct {
 	Hash MapRow
 }
