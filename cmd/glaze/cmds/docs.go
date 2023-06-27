@@ -25,17 +25,16 @@ var DocsCmd = &cobra.Command{
 			s, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			var metaData map[string]interface{}
+			var metaData types.MapRow
 			inputReader := bytes.NewReader(s)
 			_, err = frontmatter.Parse(inputReader, &metaData)
 			cobra.CheckErr(err)
 
-			metaData["path"] = arg
+			metaData.Set("path", arg)
 
 			// TODO(manuel, 2023-06-25) It would be nice to unmarshal the YAML to an orderedmap
 			// See https://github.com/go-go-golems/glazed/issues/305
-			row := types.NewMapRowFromMap(metaData)
-			err = gp.ProcessInputObject(ctx, row)
+			err = gp.ProcessInputObject(ctx, metaData)
 			cobra.CheckErr(err)
 		}
 

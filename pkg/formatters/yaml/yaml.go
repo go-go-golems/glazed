@@ -71,15 +71,17 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 				return err
 			}
 
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
+
 			encoder := yaml.NewEncoder(f_)
 			err = encoder.Encode(row.GetValues())
 			if err != nil {
-				f_.Close()
 				return err
 			}
 
 			_, _ = fmt.Fprintf(w, "Wrote output to %s\n", outputFileName)
-			f_.Close()
 		}
 
 		return nil
@@ -96,7 +98,9 @@ func (f *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 				return err
 			}
 			w = f_
-			defer f_.Close()
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
 
 			if len(f.Table.Rows) == 0 {
 				_, _ = fmt.Fprintln(w, "Empty table, an empty file was created")
