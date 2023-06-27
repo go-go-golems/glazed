@@ -104,9 +104,17 @@ func (t *OutputFormatter) Output(ctx context.Context, w io.Writer) error {
 		return nil
 	}
 
-	var tableData []types.MapRow
+	var tableData []map[string]interface{}
+
 	for _, row := range t.Table.Rows {
-		tableData = append(tableData, row.GetValues())
+		values := row.GetValues()
+		m := make(map[string]interface{})
+
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			m[pair.Key] = pair.Value
+		}
+
+		tableData = append(tableData, m)
 	}
 	data := map[string]interface{}{
 		// TODO(manuel, 2023-06-25) Convert to normal maps for templating
