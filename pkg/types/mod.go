@@ -11,14 +11,14 @@ type GenericCellValue = interface{}
 type Row = *orderedmap.OrderedMap[FieldName, GenericCellValue]
 type MapRowPair = orderedmap.Pair[FieldName, GenericCellValue]
 
-func NewMapRow(initialData ...MapRowPair) Row {
+func NewRow(initialData ...MapRowPair) Row {
 	return orderedmap.New[FieldName, GenericCellValue](
 		orderedmap.WithInitialData(initialData...),
 	)
 }
 
 func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
-	ret := NewMapRow()
+	ret := NewRow()
 
 	// get keys of hash and sorted them
 	sortedKeys := []FieldName{}
@@ -34,7 +34,7 @@ func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
 }
 
 func NewMapRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
-	ret := NewMapRow()
+	ret := NewRow()
 	for _, column := range columns {
 		v, ok := hash[column]
 		if !ok {

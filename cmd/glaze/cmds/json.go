@@ -92,7 +92,7 @@ func (j *JsonCommand) Run(
 			}
 		} else {
 			// read json file
-			data := types.NewMapRow()
+			data := types.NewRow()
 			err = json.NewDecoder(f).Decode(&data)
 			if err != nil {
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)

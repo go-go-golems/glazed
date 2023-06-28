@@ -19,7 +19,7 @@ func (fom *FlattenObjectMiddleware) Process(ctx context.Context, row types.Row) 
 }
 
 func FlattenRow(row types.Row) types.Row {
-	ret := types.NewMapRow()
+	ret := types.NewRow()
 
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		key, value := pair.Key, pair.Value

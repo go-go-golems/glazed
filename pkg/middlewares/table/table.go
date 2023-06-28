@@ -11,58 +11,6 @@ import (
 	"text/template"
 )
 
-type ReorderColumnOrderMiddleware struct {
-	columns []types.FieldName
-}
-
-func NewReorderColumnOrderMiddleware(columns []types.FieldName) *ReorderColumnOrderMiddleware {
-	return &ReorderColumnOrderMiddleware{
-		columns: columns,
-	}
-}
-
-func (scm *ReorderColumnOrderMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
-	existingColumns := map[types.FieldName]interface{}{}
-	for _, column := range table.Columns {
-		existingColumns[column] = nil
-	}
-
-	seenColumns := map[types.FieldName]interface{}{}
-	newColumns := []types.FieldName{}
-
-	for _, column := range scm.columns {
-		if strings.HasSuffix(column, ".") {
-			for _, existingColumn := range table.Columns {
-				if strings.HasPrefix(existingColumn, column) {
-					if _, ok := seenColumns[existingColumn]; !ok {
-						newColumns = append(newColumns, existingColumn)
-						seenColumns[existingColumn] = nil
-					}
-				}
-			}
-		} else {
-			if _, ok := seenColumns[column]; !ok {
-				if _, ok := existingColumns[column]; ok {
-					newColumns = append(newColumns, column)
-					seenColumns[column] = nil
-				}
-			}
-
-		}
-	}
-
-	for column := range existingColumns {
-		if _, ok := seenColumns[column]; !ok {
-			newColumns = append(newColumns, column)
-			seenColumns[column] = nil
-		}
-	}
-
-	table.Columns = newColumns
-
-	return table, nil
-}
-
 type SortColumnsMiddleware struct {
 }
 

@@ -14,7 +14,7 @@ func createSortByTables(rows [][]interface{}) *types.Table {
 	ret.Rows = []types.Row{}
 	for _, row := range rows {
 		ret.Rows = append(ret.Rows,
-			types.NewMapRow(
+			types.NewRow(
 				types.MRP("a", row[0]),
 				types.MRP("b", row[1]),
 				types.MRP("c", row[2]),

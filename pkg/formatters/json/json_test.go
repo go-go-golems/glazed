@@ -17,7 +17,7 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 	renames := map[string]string{
 		"a": "b",
 	}
-	obj := types.NewMapRow(types.MRP("a", 1))
+	obj := types.NewRow(types.MRP("a", 1))
 	ctx := context.Background()
 
 	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))

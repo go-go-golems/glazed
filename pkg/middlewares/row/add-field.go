@@ -14,7 +14,7 @@ func NewAddFieldMiddleware(fields map[string]string) *AddFieldMiddleware {
 }
 
 func (a *AddFieldMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
-	newValues := types.NewMapRow()
+	newValues := types.NewRow()
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		key, value := pair.Key, pair.Value
 		newValues.Set(key, value)

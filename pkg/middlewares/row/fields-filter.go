@@ -55,7 +55,7 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, row types.Row) (
 		return []types.Row{row}, nil
 	}
 
-	newRow := types.NewMapRow()
+	newRow := types.NewRow()
 
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		rowField, value := pair.Key, pair.Value

@@ -155,7 +155,7 @@ func createTestRows() []types.Row {
 		Rows: []types.Row{},
 	}
 	table.Rows = append(table.Rows,
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("foo", 1),
 			types.MRP("baz", 2),
 			types.MRP("foobar", 3),

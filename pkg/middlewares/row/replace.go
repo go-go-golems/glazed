@@ -193,7 +193,7 @@ func NewReplaceMiddlewareFromYAML(b []byte) (*ReplaceMiddleware, error) {
 }
 
 func (r *ReplaceMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
-	newRow := types.NewMapRow()
+	newRow := types.NewRow()
 
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		rowField, value := pair.Key, pair.Value

@@ -129,7 +129,7 @@ func (y *YamlCommand) Run(
 			}
 		} else {
 			// read json file
-			data := types.NewMapRow()
+			data := types.NewRow()
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
 				// check for EOF

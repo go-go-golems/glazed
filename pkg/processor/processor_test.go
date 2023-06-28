@@ -12,7 +12,7 @@ import (
 func BenchmarkSimpleGlazeProcessor(b *testing.B) {
 	ctx := context.Background()
 	gp := NewSimpleGlazeProcessor()
-	data := types.NewMapRow(
+	data := types.NewRow(
 		types.MRP("name", "Manuel Manuel"),
 		types.MRP("age", 30),
 		types.MRP("job", "Software Engineer"),
@@ -38,7 +38,7 @@ func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
 	ctx := context.Background()
 
 	gp := NewGlazeProcessor(json.NewOutputFormatter())
-	data := types.NewMapRow(
+	data := types.NewRow(
 		types.MRP("name", "Manuel Manuel"),
 		types.MRP("age", 30),
 		types.MRP("job", "Software Engineer"),

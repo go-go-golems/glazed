@@ -119,7 +119,7 @@ func (jqm *JqTableMiddleware) Process(ctx context.Context, table *types.Table) (
 
 	for _, row := range table.Rows {
 		values := row
-		newRow := types.NewMapRow()
+		newRow := types.NewRow()
 
 		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
 			rowField, value := pair.Key, pair.Value

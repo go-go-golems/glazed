@@ -10,7 +10,7 @@ import (
 )
 
 func TestFlattenNoNestedObjects(t *testing.T) {
-	row := types.NewMapRow(
+	row := types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 	)
@@ -24,7 +24,7 @@ func TestFlattenNoNestedObjects(t *testing.T) {
 }
 
 func TestFlattenSingleNestedObject(t *testing.T) {
-	row := types.NewMapRow(
+	row := types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c", map[string]interface{}{
@@ -37,7 +37,7 @@ func TestFlattenSingleNestedObject(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewMapRow(
+	assert2.EqualMapRows(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.d", "value3"),
@@ -45,7 +45,7 @@ func TestFlattenSingleNestedObject(t *testing.T) {
 }
 
 func TestFlattenTwoObjects(t *testing.T) {
-	row := types.NewMapRow(
+	row := types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c", map[string]interface{}{
@@ -62,7 +62,7 @@ func TestFlattenTwoObjects(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewMapRow(
+	assert2.EqualMapRows(t, types.NewRow(
 		types.MRP("a", "value1"),
 
 		types.MRP("b", "value2"),
@@ -73,7 +73,7 @@ func TestFlattenTwoObjects(t *testing.T) {
 }
 
 func TestNestedMapInterface(t *testing.T) {
-	row := types.NewMapRow(
+	row := types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c", map[string]interface{}{
@@ -90,7 +90,7 @@ func TestNestedMapInterface(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewMapRow(
+	assert2.EqualMapRows(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.a", "value4"),
@@ -100,10 +100,10 @@ func TestNestedMapInterface(t *testing.T) {
 }
 
 func TestNestedMapInterfaceRow(t *testing.T) {
-	row := types.NewMapRow(
+	row := types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
-		types.MRP("c", types.NewMapRow(
+		types.MRP("c", types.NewRow(
 			types.MRP("d", "value3"),
 			types.MRP("a", "value4"),
 			types.MRP("e", map[string]interface{}{
@@ -118,7 +118,7 @@ func TestNestedMapInterfaceRow(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewMapRow(
+	assert2.EqualMapRows(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.d", "value3"),

@@ -13,7 +13,7 @@ func NewRemoveNullsMiddleware() *RemoveNullsMiddleware {
 }
 
 func (rnm *RemoveNullsMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
-	newRow := types.NewMapRow()
+	newRow := types.NewRow()
 
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		key, value := pair.Key, pair.Value

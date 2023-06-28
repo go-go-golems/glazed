@@ -84,7 +84,7 @@ func (hsp *HTMLSplitParser) ProcessNode(ctx context.Context, n *html.Node) (*htm
 
 		// TODO(manuel, 2023-03-29) We should add a level attribute here
 
-		row := types.NewMapRow(
+		row := types.NewRow(
 			types.MRP("Tag", n.Data),
 			types.MRP("Title", title),
 		)
@@ -189,7 +189,7 @@ func outputNodesDepthFirst(ctx context.Context, doc *html.Node, gp *processor.Gl
 		})
 	}
 
-	obj := types.NewMapRow(
+	obj := types.NewRow(
 		types.MRP("Type", htmlNodeTypeToString(doc.Type)),
 		types.MRP("Atom", doc.DataAtom),
 		types.MRP("Data", doc.Data),

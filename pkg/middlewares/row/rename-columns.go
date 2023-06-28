@@ -127,7 +127,7 @@ func (r *RenameColumnMiddleware) renameColumn(
 }
 
 func (r *RenameColumnMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
-	newRow := types.NewMapRow()
+	newRow := types.NewRow()
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		newRow.Set(r.renameColumn(pair.Key), pair.Value)
 	}

@@ -209,7 +209,7 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 	// fuck my brain can't deal with stacks right now lol, i need paper
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
-			elt := types.NewMapRow(
+			elt := types.NewRow(
 				types.MRP("kind", node.Kind().String()),
 				types.MRP("text", string(node.Text(s))),
 			)
@@ -284,7 +284,7 @@ func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp *pr
 	outputStack := []outputElement{}
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
-			elt := types.NewMapRow(
+			elt := types.NewRow(
 				types.MRP("kind", node.Kind().String()),
 				types.MRP("text", string(node.Text(s))),
 			)
@@ -360,7 +360,7 @@ var splitByHeadingCmd = &cobra.Command{
 						return
 					}
 
-					row := types.NewMapRow(
+					row := types.NewRow(
 						types.MRP("heading", currentTitle),
 						types.MRP("content", strings.Trim(strings.Join(current, "\n"), " \n\t")),
 					)

@@ -9,17 +9,17 @@ import (
 
 func createFieldsFilterTestRows() []types.Row {
 	return []types.Row{
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("a", 1),
 			types.MRP("b", 2),
 			types.MRP("c", 3),
 		),
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("a", 4),
 			types.MRP("b", 5),
 			types.MRP("c", 6),
 		),
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("a", 7),
 			types.MRP("b", 8),
 			types.MRP("c", 9),

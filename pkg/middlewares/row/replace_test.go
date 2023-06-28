@@ -11,11 +11,11 @@ import (
 
 func createReplaceTestRows() []types.Row {
 	return []types.Row{
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("field1", "skip"),
 			types.MRP("field2", "value2"),
 		),
-		types.NewMapRow(
+		types.NewRow(
 			types.MRP("field1", "value1"),
 			types.MRP("field2", "value3 blabla"),
 		),

@@ -44,7 +44,7 @@ func NewObjectGoTemplateMiddleware(
 //
 // TODO(manuel, 2022-11-21) This should allow merging the new results straight back
 func (rgtm *ObjectGoTemplateMiddleware) Process(ctx context.Context, object types.Row) ([]types.Row, error) {
-	ret := types.NewMapRow()
+	ret := types.NewRow()
 
 	for key, tmpl := range rgtm.templates {
 		var buf bytes.Buffer

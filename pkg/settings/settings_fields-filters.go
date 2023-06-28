@@ -103,7 +103,7 @@ func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.Processor) {
 		p_.AddTableMiddleware(table.NewSortColumnsMiddleware())
 	}
 	if len(ffs.ReorderColumns) > 0 {
-		p_.AddTableMiddleware(table.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
+		p_.AddRowMiddleware(row.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))
 	}
 	if len(ffs.RemoveDuplicates) > 0 {
 		p_.AddRowMiddleware(row.NewRemoveDuplicatesMiddleware(ffs.RemoveDuplicates...))
