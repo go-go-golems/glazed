@@ -6,7 +6,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -100,7 +99,7 @@ func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.Processor) {
 		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())
 	}
 	if ffs.SortColumns {
-		p_.AddTableMiddleware(table.NewSortColumnsMiddleware())
+		p_.AddTableMiddleware(row.NewSortColumnsMiddleware())
 	}
 	if len(ffs.ReorderColumns) > 0 {
 		p_.AddRowMiddleware(row.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))

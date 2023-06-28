@@ -6,22 +6,9 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"sort"
 	"strings"
 	"text/template"
 )
-
-type SortColumnsMiddleware struct {
-}
-
-func NewSortColumnsMiddleware() *SortColumnsMiddleware {
-	return &SortColumnsMiddleware{}
-}
-
-func (scm *SortColumnsMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
-	sort.Strings(table.Columns)
-	return table, nil
-}
 
 type RowGoTemplateMiddleware struct {
 	templates map[types.FieldName]*template.Template
