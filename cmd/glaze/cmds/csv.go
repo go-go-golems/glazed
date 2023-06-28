@@ -81,7 +81,7 @@ func (c *CsvCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.Processor,
+	gp processor.TableProcessor,
 ) error {
 	inputFiles, ok := ps["input-files"].([]string)
 	if !ok {

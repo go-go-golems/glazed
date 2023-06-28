@@ -54,7 +54,7 @@ func (j *JsonCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.Processor,
+	gp processor.TableProcessor,
 ) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {

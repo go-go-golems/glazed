@@ -70,7 +70,7 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 	return s, nil
 }
 
-func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
+func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.TableOutputFormatter, error) {
 	if ofs.Output == "csv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
@@ -91,7 +91,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFo
 		}
 	}
 
-	var of formatters.OutputFormatter
+	var of formatters.TableOutputFormatter
 	if ofs.Output == "json" {
 		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),

@@ -16,7 +16,7 @@ import (
 
 type TestProcessor struct {
 	Objects   []types.Row
-	formatter formatters.OutputFormatter
+	formatter formatters.TableOutputFormatter
 	processor *middlewares.Processor
 }
 
@@ -54,7 +54,7 @@ func (t *TestProcessor) AddRow(ctx context.Context, obj types.Row) error {
 	return nil
 }
 
-func (t *TestProcessor) OutputFormatter() formatters.OutputFormatter {
+func (t *TestProcessor) OutputFormatter() formatters.TableOutputFormatter {
 	return nil
 }
 

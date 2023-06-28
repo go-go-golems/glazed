@@ -64,7 +64,7 @@ func (y *YamlCommand) Run(
 	ctx context.Context,
 	_ map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.Processor,
+	gp processor.TableProcessor,
 ) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {

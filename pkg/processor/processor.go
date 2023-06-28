@@ -8,9 +8,9 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
-type Processor interface {
+type TableProcessor interface {
 	AddRow(ctx context.Context, obj types.Row) error
-	OutputFormatter() formatters.OutputFormatter
+	OutputFormatter() formatters.TableOutputFormatter
 	Finalize(ctx context.Context) error
 	GetTable() *types.Table
 }
@@ -38,16 +38,16 @@ type Processor interface {
 // through the row middlewares.
 type GlazeProcessor struct {
 	*middlewares.Processor
-	of formatters.OutputFormatter
+	of formatters.TableOutputFormatter
 }
 
-func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
+func (gp *GlazeProcessor) OutputFormatter() formatters.TableOutputFormatter {
 	return gp.of
 }
 
 type GlazeProcessorOption func(*GlazeProcessor)
 
-func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorOption) (*GlazeProcessor, error) {
+func NewGlazeProcessor(of formatters.TableOutputFormatter, options ...GlazeProcessorOption) (*GlazeProcessor, error) {
 	ret := &GlazeProcessor{
 		of:        of,
 		Processor: middlewares.NewProcessor(),

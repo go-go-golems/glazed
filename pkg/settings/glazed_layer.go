@@ -407,7 +407,7 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	var of formatters.OutputFormatter
+	var of formatters.TableOutputFormatter
 	if selectSettings.SelectField != "" {
 		of = simple.NewSingleColumnFormatter(
 			selectSettings.SelectField,

@@ -267,7 +267,7 @@ type GlazeCommand interface {
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
-		gp processor.Processor,
+		gp processor.TableProcessor,
 	) error
 }
 
