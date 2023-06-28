@@ -9,6 +9,9 @@ import (
 )
 
 type TableProcessor interface {
+	// TODO(manuel, 2023-06-28) There is some cleanup to be done on those Processor APIs
+	AddRowMiddleware(mw ...middlewares.RowMiddleware)
+
 	AddRow(ctx context.Context, obj types.Row) error
 	OutputFormatter() formatters.TableOutputFormatter
 	Finalize(ctx context.Context) error

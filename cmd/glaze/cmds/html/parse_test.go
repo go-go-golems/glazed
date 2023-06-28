@@ -20,6 +20,9 @@ type TestProcessor struct {
 	processor *middlewares.Processor
 }
 
+func (t *TestProcessor) AddRowMiddleware(mw ...middlewares.RowMiddleware) {
+}
+
 func (t *TestProcessor) Finalize(ctx context.Context) error {
 	return t.processor.Finalize(ctx)
 }
