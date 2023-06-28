@@ -80,9 +80,7 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 		return nil
 	} else {
 		var rows []types.Row
-		for _, row := range table_.Rows {
-			rows = append(rows, row)
-		}
+		rows = append(rows, table_.Rows...)
 
 		encoder := yaml.NewEncoder(w)
 		err := encoder.Encode(rows)
