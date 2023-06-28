@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/ugorji/go/codec"
 	"io"
@@ -16,6 +17,10 @@ type OutputFormatter struct {
 	OutputFile           string
 	OutputFileTemplate   string
 	OutputMultipleFiles  bool
+}
+
+func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	return nil
 }
 
 func (f *OutputFormatter) ContentType() string {

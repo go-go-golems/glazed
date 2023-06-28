@@ -20,6 +20,14 @@ type TestProcessor struct {
 	processor *middlewares.Processor
 }
 
+func (t *TestProcessor) Finalize(ctx context.Context) error {
+	return t.processor.Finalize(ctx)
+}
+
+func (t *TestProcessor) GetTable() *types.Table {
+	return t.processor.GetTable()
+}
+
 func NewTestProcessor() *TestProcessor {
 	return &TestProcessor{
 		formatter: &TestFormatter{},
@@ -28,6 +36,10 @@ func NewTestProcessor() *TestProcessor {
 }
 
 type TestFormatter struct{}
+
+func (t TestFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	return nil
+}
 
 func (t TestFormatter) ContentType() string {
 	return "text/plain"

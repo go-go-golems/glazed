@@ -150,11 +150,11 @@ func (c *CsvCommand) Run(
 		}
 	}
 
-	err := gp.Processor().FinalizeTable(ctx)
+	err := gp.Finalize(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not finalize table")
 	}
-	table := gp.Processor().GetTable()
+	table := gp.GetTable()
 	table.Columns = finalHeaders
 
 	return nil

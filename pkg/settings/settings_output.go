@@ -13,8 +13,6 @@ import (
 	template_formatter "github.com/go-go-golems/glazed/pkg/formatters/template"
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
 	"text/template"
 	"unicode/utf8"
@@ -72,7 +70,7 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 	return s, nil
 }
 
-func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewares.Processor) (formatters.OutputFormatter, error) {
+func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.OutputFormatter, error) {
 	if ofs.Output == "csv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
@@ -119,7 +117,6 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
 		)
-		mwProcessor.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := csv.NewCSVOutputFormatter(
@@ -150,7 +147,6 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 				table_formatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
-		mwProcessor.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{

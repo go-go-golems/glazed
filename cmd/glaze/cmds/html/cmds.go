@@ -40,10 +40,10 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.Processor().FinalizeTable(ctx)
+			err = gp.Finalize(ctx)
 			cobra.CheckErr(err)
 
-			err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
+			err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
@@ -98,10 +98,10 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.Processor().FinalizeTable(ctx)
+			err = gp.Finalize(ctx)
 			cobra.CheckErr(err)
 
-			err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
+			err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
 			cobra.CheckErr(err)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)

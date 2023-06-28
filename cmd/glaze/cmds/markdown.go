@@ -166,10 +166,10 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.Processor().FinalizeTable(ctx)
+		err = gp.Finalize(ctx)
 		cobra.CheckErr(err)
 
-		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
+		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
@@ -389,10 +389,10 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.Processor().FinalizeTable(ctx)
+		err = gp.Finalize(ctx)
 		cobra.CheckErr(err)
 
-		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
+		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}

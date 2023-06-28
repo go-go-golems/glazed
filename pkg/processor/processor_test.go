@@ -5,13 +5,15 @@ import (
 	"context"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 // BenchmarkSimpleGlazeProcessor benchmarks the simple glaze processor with no middlewares, and CSV output.
 func BenchmarkSimpleGlazeProcessor(b *testing.B) {
 	ctx := context.Background()
-	gp := NewSimpleGlazeProcessor()
+	gp, err := NewSimpleGlazeProcessor()
+	require.NoError(b, err)
 	data := types.NewRow(
 		types.MRP("name", "Manuel Manuel"),
 		types.MRP("age", 30),
@@ -26,18 +28,20 @@ func BenchmarkSimpleGlazeProcessor(b *testing.B) {
 		_ = gp.ProcessInputObject(ctx, data)
 	}
 	buf := &bytes.Buffer{}
-	err := gp.Processor().FinalizeTable(ctx)
+	err = gp.Finalize(ctx)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	_ = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), buf)
+	_ = gp.OutputFormatter().Output(ctx, gp.GetTable(), buf)
 }
 
 func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
 	ctx := context.Background()
 
-	gp := NewGlazeProcessor(json.NewOutputFormatter())
+	gp, err := NewGlazeProcessor(json.NewOutputFormatter())
+	require.NoError(b, err)
+
 	data := types.NewRow(
 		types.MRP("name", "Manuel Manuel"),
 		types.MRP("age", 30),
@@ -52,9 +56,7 @@ func BenchmarkGlazeProcessor_JSONOutputFormatter(b *testing.B) {
 		_ = gp.ProcessInputObject(ctx, data)
 	}
 	buf := &bytes.Buffer{}
-	err := gp.Processor().FinalizeTable(ctx)
-	if err != nil {
-		b.Fatal(err)
-	}
-	_ = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), buf)
+	err = gp.Finalize(ctx)
+	require.NoError(b, err)
+	_ = gp.OutputFormatter().Output(ctx, gp.GetTable(), buf)
 }

@@ -23,7 +23,7 @@ func TestTableRenameEndToEnd(t *testing.T) {
 	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
 	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
-	err = p_.FinalizeTable(ctx)
+	err = p_.Finalize(ctx)
 	require.NoError(t, err)
 
 	buf := &bytes.Buffer{}

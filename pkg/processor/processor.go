@@ -11,16 +11,34 @@ import (
 type Processor interface {
 	ProcessInputObject(ctx context.Context, obj types.Row) error
 	OutputFormatter() formatters.OutputFormatter
-	Processor() *middlewares.Processor
+	Finalize(ctx context.Context) error
+	GetTable() *types.Table
 }
 
+// GlazeProcessor is a simple wrapper around a middlewares.Processor that also handles
+// an OutputFormatter.
+//
+// NOTE(manuel, 2023-06-28) At the end of tackling the big refactor of both ordered map rows
+// and a new row middleware concept, and introducing the dedicated middlewares.Processor,
+// this interface seems a bit unnecessary / confusing.
+//
+// https://github.com/go-go-golems/glazed/issues/310
+//
+// Because I am planning to add streaming output so that we can cut down on memory usage in sqleton,
+// I might revisit this and find a better way to:
+// - connect a middleares processor to an output formatter
+//   - for example, an output formatter could actually be a final middleware step
+//   - streaming output formatters could be registered as a row middleware (and we could have multiple
+//     streaming row level output formatters for debugging and monitoring purposes)
+//   - normal output formatters could be registered as a table middleware that gets called once the entire
+//     input has been processed.
+//
+// Approaching everything as middlewares would allow us to work long running glazed commands,
+// and if no TableMiddleware is registered, we can discard values altogether after they've been run
+// through the row middlewares.
 type GlazeProcessor struct {
-	of        formatters.OutputFormatter
-	processor *middlewares.Processor
-}
-
-func (gp *GlazeProcessor) Processor() *middlewares.Processor {
-	return gp.processor
+	*middlewares.Processor
+	of formatters.OutputFormatter
 }
 
 func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
@@ -29,44 +47,39 @@ func (gp *GlazeProcessor) OutputFormatter() formatters.OutputFormatter {
 
 type GlazeProcessorOption func(*GlazeProcessor)
 
-func WithMiddlewareProcessor(processor *middlewares.Processor) GlazeProcessorOption {
-	return func(gp *GlazeProcessor) {
-		gp.processor = processor
-	}
-}
-
-func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorOption) *GlazeProcessor {
+func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorOption) (*GlazeProcessor, error) {
 	ret := &GlazeProcessor{
 		of:        of,
-		processor: middlewares.NewProcessor(),
+		Processor: middlewares.NewProcessor(),
 	}
 
 	for _, option := range options {
 		option(ret)
 	}
 
-	return ret
+	err := of.RegisterMiddlewares(ret.Processor)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 // ProcessInputObject takes an input object and processes it through the object middleware
 // chain.
 func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj types.Row) error {
-	err := gp.processor.AddRow(ctx, obj)
+	err := gp.AddRow(ctx, obj)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func NewSimpleGlazeProcessor(options ...GlazeProcessorOption) *GlazeProcessor {
-	formatter := table.NewOutputFormatter("csv")
-	return NewGlazeProcessor(formatter, options...)
+func (gp *GlazeProcessor) Finalize(ctx context.Context) error {
+	return gp.Processor.Finalize(ctx)
 }
 
-func (gp *GlazeProcessor) GetTable(ctx context.Context) (*types.Table, error) {
-	err := gp.processor.FinalizeTable(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return gp.processor.Table, nil
+func NewSimpleGlazeProcessor(options ...GlazeProcessorOption) (*GlazeProcessor, error) {
+	formatter := table.NewOutputFormatter("csv")
+	return NewGlazeProcessor(formatter, options...)
 }

@@ -407,29 +407,48 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	mwProcessor := middlewares.NewProcessor()
+	var of formatters.OutputFormatter
+	if selectSettings.SelectField != "" {
+		of = simple.NewSingleColumnFormatter(
+			selectSettings.SelectField,
+			simple.WithSeparator(selectSettings.SelectSeparator),
+			simple.WithOutputFile(outputSettings.OutputFile),
+			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
+			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
+		)
+	} else {
+		of, err = outputSettings.CreateOutputFormatter()
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error creating output formatter")
+		}
+	}
+
+	gp, err := processor.NewGlazeProcessor(of)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error creating glaze processor")
+	}
 
 	// rename middlewares run first because they are used to clean up column names
 	// for the following middlewares too.
 	// these following middlewares can create proper column names on their own
 	// when needed
-	err = renameSettings.AddMiddlewares(mwProcessor)
+	err = renameSettings.AddMiddlewares(gp.Processor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
 
-	err = templateSettings.AddMiddlewares(mwProcessor)
+	err = templateSettings.AddMiddlewares(gp.Processor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding template middlewares")
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
 		mw := row.NewFlattenObjectMiddleware()
-		mwProcessor.AddRowMiddlewareInFront(mw)
+		gp.AddRowMiddlewareInFront(mw)
 	}
-	fieldsFilterSettings.AddMiddlewares(mwProcessor)
+	fieldsFilterSettings.AddMiddlewares(gp.Processor)
 
-	err = replaceSettings.AddMiddlewares(mwProcessor)
+	err = replaceSettings.AddMiddlewares(gp.Processor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding replace middlewares")
 	}
@@ -453,33 +472,16 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 	}
 
 	if jqTableMiddleware != nil {
-		mwProcessor.AddTableMiddleware(jqTableMiddleware)
+		gp.AddTableMiddleware(jqTableMiddleware)
 	}
 
 	// NOTE(manuel, 2023-03-20): We need to figure out how to order middlewares, on the command line.
 	// This is not possible with cobra, which doesn't have ordering of flags, and adding that
 	// to the API that we currently use (which is a unordered hashmap, and parsed layers that lose the positioning)
 	// is not trivial.
-	sortSettings.AddMiddlewares(mwProcessor)
+	sortSettings.AddMiddlewares(gp.Processor)
 
-	mwProcessor.AddObjectMiddleware(middlewares_...)
+	gp.AddObjectMiddleware(middlewares_...)
 
-	var of formatters.OutputFormatter
-	if selectSettings.SelectField != "" {
-		of = simple.NewSingleColumnFormatter(
-			selectSettings.SelectField,
-			simple.WithSeparator(selectSettings.SelectSeparator),
-			simple.WithOutputFile(outputSettings.OutputFile),
-			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
-			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
-		)
-	} else {
-		of, err = outputSettings.CreateOutputFormatter(mwProcessor)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error creating output formatter")
-		}
-	}
-
-	gp := processor.NewGlazeProcessor(of, processor.WithMiddlewareProcessor(mwProcessor))
 	return gp, nil
 }

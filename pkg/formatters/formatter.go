@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -39,6 +40,14 @@ import (
 // The following is all geared towards tabulated output
 
 type OutputFormatter interface {
+	// RegisterMiddlewares allows individual OutputFormatters to register middlewares that might be
+	// necessary for them to do the proper output. For example, table and excel output require
+	// flattening the row objects before output.
+	//
+	// TODO(manuel, 2023-06-28) We could add the indication if this output formatter can stream here
+	// Not all output formatters should have to take a full table, but could instead output a single row
+	RegisterMiddlewares(mw *middlewares.Processor) error
+
 	Output(ctx context.Context, table *types.Table, w io.Writer) error
 	ContentType() string
 }

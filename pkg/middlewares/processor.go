@@ -67,7 +67,7 @@ func (p *Processor) GetTable() *types.Table {
 	return p.Table
 }
 
-func (p *Processor) FinalizeTable(ctx context.Context) error {
+func (p *Processor) Finalize(ctx context.Context) error {
 	for _, tm := range p.TableMiddlewares {
 		table, err := tm.Process(ctx, p.Table)
 		if err != nil {
