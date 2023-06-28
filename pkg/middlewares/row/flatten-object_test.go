@@ -20,7 +20,7 @@ func TestFlattenNoNestedObjects(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, row, newRows[0])
+	assert2.EqualRow(t, row, newRows[0])
 }
 
 func TestFlattenSingleNestedObject(t *testing.T) {
@@ -37,7 +37,7 @@ func TestFlattenSingleNestedObject(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.d", "value3"),
@@ -62,7 +62,7 @@ func TestFlattenTwoObjects(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1"),
 
 		types.MRP("b", "value2"),
@@ -90,7 +90,7 @@ func TestNestedMapInterface(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.a", "value4"),
@@ -118,7 +118,7 @@ func TestNestedMapInterfaceRow(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c.d", "value3"),

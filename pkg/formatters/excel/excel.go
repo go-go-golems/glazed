@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/xuri/excelize/v2"
 	"io"
@@ -13,6 +15,11 @@ import (
 type OutputFormatter struct {
 	SheetName  string
 	OutputFile string
+}
+
+func (E *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
 }
 
 func (E *OutputFormatter) Output(_ context.Context, table_ *types.Table, w io.Writer) error {

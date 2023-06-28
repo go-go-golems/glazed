@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
@@ -47,6 +49,11 @@ type OutputFormatter struct {
 	TableStyleFile      string
 	OutputFile          string
 	PrintTableStyle     bool
+}
+
+func (tof *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
 }
 
 type OutputFormatterOption func(*OutputFormatter)

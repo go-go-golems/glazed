@@ -81,7 +81,7 @@ func (c *CsvCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.Processor,
+	gp processor.TableProcessor,
 ) error {
 	inputFiles, ok := ps["input-files"].([]string)
 	if !ok {
@@ -135,7 +135,7 @@ func (c *CsvCommand) Run(
 		}
 
 		for _, row := range s {
-			err = gp.ProcessInputObject(ctx, types.NewRowFromMapWithColumns(row, header))
+			err = gp.AddRow(ctx, types.NewRowFromMapWithColumns(row, header))
 			if err != nil {
 				return errors.Wrap(err, "could not process CSV row")
 			}
@@ -150,11 +150,11 @@ func (c *CsvCommand) Run(
 		}
 	}
 
-	err := gp.Processor().FinalizeTable(ctx)
+	err := gp.Finalize(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not finalize table")
 	}
-	table := gp.Processor().GetTable()
+	table := gp.GetTable()
 	table.Columns = finalHeaders
 
 	return nil

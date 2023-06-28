@@ -16,8 +16,19 @@ import (
 
 type TestProcessor struct {
 	Objects   []types.Row
-	formatter formatters.OutputFormatter
+	formatter formatters.TableOutputFormatter
 	processor *middlewares.Processor
+}
+
+func (t *TestProcessor) AddRowMiddleware(mw ...middlewares.RowMiddleware) {
+}
+
+func (t *TestProcessor) Finalize(ctx context.Context) error {
+	return t.processor.Finalize(ctx)
+}
+
+func (t *TestProcessor) GetTable() *types.Table {
+	return t.processor.GetTable()
 }
 
 func NewTestProcessor() *TestProcessor {
@@ -29,6 +40,10 @@ func NewTestProcessor() *TestProcessor {
 
 type TestFormatter struct{}
 
+func (t TestFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	return nil
+}
+
 func (t TestFormatter) ContentType() string {
 	return "text/plain"
 }
@@ -37,12 +52,12 @@ func (t TestFormatter) Output(context.Context, *types.Table, io.Writer) error {
 	return nil
 }
 
-func (t *TestProcessor) ProcessInputObject(ctx context.Context, obj types.Row) error {
+func (t *TestProcessor) AddRow(ctx context.Context, obj types.Row) error {
 	t.Objects = append(t.Objects, obj)
 	return nil
 }
 
-func (t *TestProcessor) OutputFormatter() formatters.OutputFormatter {
+func (t *TestProcessor) OutputFormatter() formatters.TableOutputFormatter {
 	return nil
 }
 
@@ -66,8 +81,8 @@ func TestSimpleHeaderParse(t *testing.T) {
 	assert.Nil(t, n)
 
 	require.Equal(t, 1, len(gp.Objects))
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
 }
 
 func TestTwoHeadersParse(t *testing.T) {
@@ -87,11 +102,11 @@ func TestTwoHeadersParse(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
 
-	assert2.EqualMapRowValue(t, "Subheader", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Subheader", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
 }
 
 func TestTwoHeadersBody(t *testing.T) {
@@ -121,11 +136,11 @@ func TestTwoHeadersBody(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
 
-	assert2.EqualMapRowValue(t, "Subheader", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Subheader", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
 }
 
 func TestTwoHeadersSomeTextBody(t *testing.T) {
@@ -157,13 +172,13 @@ func TestTwoHeadersSomeTextBody(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Some text</p>", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "<p>Some text</p>", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "Subheader", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Some text</p>", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "Subheader", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "<p>Some text</p>", gp.Objects[1], "Body")
 }
 
 func TestTwoHeadersSomeTextNodes(t *testing.T) {
@@ -197,13 +212,13 @@ func TestTwoHeadersSomeTextNodes(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Some text</p>\n\t\t<p>Some text2</p>\n\t\t<p>Some text3</p>", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "<p>Some text</p>\n\t\t<p>Some text2</p>\n\t\t<p>Some text3</p>", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "Subheader", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Some text</p>", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "Subheader", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "<p>Some text</p>", gp.Objects[1], "Body")
 
 	gp = NewTestProcessor()
 	hsp = NewHTMLHeadingSplitParser(gp, []string{"p"})
@@ -214,13 +229,13 @@ func TestTwoHeadersSomeTextNodes(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "Some text\n\t\tSome text2\n\t\tSome text3", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Some text\n\t\tSome text2\n\t\tSome text3", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "Subheader", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "Some text", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "Subheader", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Some text", gp.Objects[1], "Body")
 }
 
 func TestStripTags(t *testing.T) {
@@ -251,13 +266,13 @@ func TestStripTags(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Header", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "h1", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "Some text<b>Foobar</b> <strong>Test</strong>", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "Header", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "h1", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Some text<b>Foobar</b> <strong>Test</strong>", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "Subheader <strong>Foobar</strong>Test", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "h2", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "Some text", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "Subheader <strong>Foobar</strong>Test", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "h2", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Some text", gp.Objects[1], "Body")
 }
 
 func TestSplitOtherTags(t *testing.T) {
@@ -278,11 +293,11 @@ func TestSplitOtherTags(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "Foobar", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Foobar", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[0], "Tag")
 
-	assert2.EqualMapRowValue(t, "Test", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Test", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[1], "Tag")
 }
 
 func TestSplitOtherTagsWithoutTitle(t *testing.T) {
@@ -303,13 +318,13 @@ func TestSplitOtherTagsWithoutTitle(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "Foobar", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "Foobar", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "Test", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "Test", gp.Objects[1], "Body")
 
 	gp = NewTestProcessor()
 	hsp = NewHTMLSplitParser(gp, []string{}, []string{"p"}, false)
@@ -320,11 +335,11 @@ func TestSplitOtherTagsWithoutTitle(t *testing.T) {
 
 	assert.Equal(t, 2, len(gp.Objects))
 
-	assert2.EqualMapRowValue(t, "", gp.Objects[0], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[0], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Foobar</p>", gp.Objects[0], "Body")
+	assert2.EqualRowValue(t, "", gp.Objects[0], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[0], "Tag")
+	assert2.EqualRowValue(t, "<p>Foobar</p>", gp.Objects[0], "Body")
 
-	assert2.EqualMapRowValue(t, "", gp.Objects[1], "Title")
-	assert2.EqualMapRowValue(t, "p", gp.Objects[1], "Tag")
-	assert2.EqualMapRowValue(t, "<p>Test</p>", gp.Objects[1], "Body")
+	assert2.EqualRowValue(t, "", gp.Objects[1], "Title")
+	assert2.EqualRowValue(t, "p", gp.Objects[1], "Tag")
+	assert2.EqualRowValue(t, "<p>Test</p>", gp.Objects[1], "Body")
 }

@@ -45,9 +45,9 @@ func TestRemoveDuplicatesSingle(t *testing.T) {
 
 	require.Equal(t, 1, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 }
 
 func TestRemoveDuplicatesTwoDifferent(t *testing.T) {
@@ -62,13 +62,13 @@ func TestRemoveDuplicatesTwoDifferent(t *testing.T) {
 
 	require.Equal(t, 2, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
-	assert2.EqualMapRowValue(t, 5, row, "b")
-	assert2.EqualMapRowValue(t, 6, row, "c")
+	assert2.EqualRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 5, row, "b")
+	assert2.EqualRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSame(t *testing.T) {
@@ -83,9 +83,9 @@ func TestRemoveDuplicatesTwoSame(t *testing.T) {
 
 	require.Equal(t, 1, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSameOneDifferent(t *testing.T) {
@@ -101,13 +101,13 @@ func TestRemoveDuplicatesTwoSameOneDifferent(t *testing.T) {
 
 	require.Equal(t, 2, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
-	assert2.EqualMapRowValue(t, 5, row, "b")
-	assert2.EqualMapRowValue(t, 6, row, "c")
+	assert2.EqualRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 5, row, "b")
+	assert2.EqualRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoTimesTwoSame(t *testing.T) {
@@ -124,13 +124,13 @@ func TestRemoveDuplicatesTwoTimesTwoSame(t *testing.T) {
 
 	require.Equal(t, 2, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
-	assert2.EqualMapRowValue(t, 5, row, "b")
-	assert2.EqualMapRowValue(t, 6, row, "c")
+	assert2.EqualRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 5, row, "b")
+	assert2.EqualRowValue(t, 6, row, "c")
 }
 
 func TestRemoveDuplicatesTwoTimesTwoSameOneDifferent(t *testing.T) {
@@ -148,17 +148,17 @@ func TestRemoveDuplicatesTwoTimesTwoSameOneDifferent(t *testing.T) {
 
 	require.Equal(t, 3, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
-	assert2.EqualMapRowValue(t, 5, row, "b")
-	assert2.EqualMapRowValue(t, 6, row, "c")
+	assert2.EqualRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 5, row, "b")
+	assert2.EqualRowValue(t, 6, row, "c")
 	row = newRows[2]
-	assert2.EqualMapRowValue(t, 7, row, "a")
-	assert2.EqualMapRowValue(t, 8, row, "b")
-	assert2.EqualMapRowValue(t, 9, row, "c")
+	assert2.EqualRowValue(t, 7, row, "a")
+	assert2.EqualRowValue(t, 8, row, "b")
+	assert2.EqualRowValue(t, 9, row, "c")
 }
 
 func TestRemoveDuplicatesTwoSameWithTwoColumns(t *testing.T) {
@@ -173,7 +173,7 @@ func TestRemoveDuplicatesTwoSameWithTwoColumns(t *testing.T) {
 
 	require.Equal(t, 1, len(newRows))
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
-	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 3, row, "c")
 }

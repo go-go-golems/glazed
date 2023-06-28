@@ -33,14 +33,14 @@ func TestSingleAddField(t *testing.T) {
 	require.Equal(t, 2, len(finalRows))
 
 	row := finalRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
-	assert2.EqualMapRowValue(t, "value3", row, "field3")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "value3", row, "field3")
 
 	row = finalRows[1]
-	assert2.EqualMapRowValue(t, "value1", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
-	assert2.EqualMapRowValue(t, "value3", row, "field3")
+	assert2.EqualRowValue(t, "value1", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "value3", row, "field3")
 }
 
 func processRows(rm middlewares.RowMiddleware, rows []types.Row) ([]types.Row, error) {
@@ -69,14 +69,14 @@ func TestMultipleAddField(t *testing.T) {
 	require.Equal(t, 2, len(finalRows))
 
 	row := finalRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
-	assert2.EqualMapRowValue(t, "value3", row, "field3")
-	assert2.EqualMapRowValue(t, "value4", row, "field4")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "value3", row, "field3")
+	assert2.EqualRowValue(t, "value4", row, "field4")
 
 	row = finalRows[1]
-	assert2.EqualMapRowValue(t, "value1", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
-	assert2.EqualMapRowValue(t, "value3", row, "field3")
-	assert2.EqualMapRowValue(t, "value4", row, "field4")
+	assert2.EqualRowValue(t, "value1", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "value3", row, "field3")
+	assert2.EqualRowValue(t, "value4", row, "field4")
 }

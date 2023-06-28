@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
@@ -17,6 +18,10 @@ type OutputFormatter struct {
 	OutputMultipleFiles bool
 	OutputFile          string
 	AdditionalData      interface{}
+}
+
+func (t *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	return nil
 }
 
 func (t *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {

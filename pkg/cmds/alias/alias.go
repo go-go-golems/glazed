@@ -121,7 +121,7 @@ func (a *CommandAlias) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.Processor,
+	gp processor.TableProcessor,
 ) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")

@@ -43,8 +43,8 @@ func TestSingleSkip(t *testing.T) {
 	require.Equal(t, 1, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "value1", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "value1", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestSingleReplacement(t *testing.T) {
@@ -69,11 +69,11 @@ func TestSingleReplacement(t *testing.T) {
 	require.Equal(t, 2, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, "replaced", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "replaced", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestTwoSkips(t *testing.T) {
@@ -148,8 +148,8 @@ func TestSingleRegexpSkip(t *testing.T) {
 	require.Equal(t, 1, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "value1", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "value1", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 
 	replaceMiddleware.RegexSkips = map[types.FieldName][]*RegexpSkip{
 		"field1": {
@@ -165,8 +165,8 @@ func TestSingleRegexpSkip(t *testing.T) {
 	require.Equal(t, 1, len(newRows))
 
 	row = newRows[0]
-	assert2.EqualMapRowValue(t, "value1", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "value1", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestTwoReplacements(t *testing.T) {
@@ -195,11 +195,11 @@ func TestTwoReplacements(t *testing.T) {
 	require.Equal(t, 2, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, "replaced replaced2", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "replaced replaced2", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestSingleRegexpReplacement(t *testing.T) {
@@ -224,12 +224,12 @@ func TestSingleRegexpReplacement(t *testing.T) {
 	require.Equal(t, 2, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
 
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, "replaced", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "replaced", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestSingleRegexpCaptureReplacement(t *testing.T) {
@@ -254,12 +254,12 @@ func TestSingleRegexpCaptureReplacement(t *testing.T) {
 	require.Equal(t, 2, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "skip", row, "field1")
-	assert2.EqualMapRowValue(t, "value2", row, "field2")
+	assert2.EqualRowValue(t, "skip", row, "field1")
+	assert2.EqualRowValue(t, "value2", row, "field2")
 
 	row = newRows[1]
-	assert2.EqualMapRowValue(t, "replacedalue", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "replacedalue", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestRegexpAndSkip(t *testing.T) {
@@ -290,8 +290,8 @@ func TestRegexpAndSkip(t *testing.T) {
 	require.Equal(t, 1, len(newRows))
 
 	row := newRows[0]
-	assert2.EqualMapRowValue(t, "replaced", row, "field1")
-	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
+	assert2.EqualRowValue(t, "replaced", row, "field1")
+	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 }
 
 func TestReplaceMiddlewareFromYAML(t *testing.T) {

@@ -25,7 +25,7 @@ func TestSimpleTemplate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, newRows, 1)
 
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1-value2"),
 		types.MRP("b", "value2"),
 		types.MRP("c", "value3"),
@@ -50,7 +50,7 @@ func TestSimpleDoubleTemplate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, newRows, 1)
 
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1-value2"),
 		types.MRP("b", "value1-value2"),
 		types.MRP("c", "value3"),
@@ -75,7 +75,7 @@ func TestSimpleDoubleTemplateDifferentOrder(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, newRows, 1)
 
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("b", "value1-value2"),
 		types.MRP("a", "value1-value2"),
 		types.MRP("c", "value3"),
@@ -100,7 +100,7 @@ func TestSimpleDoubleTemplateWithDot(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, newRows, 1)
 
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("b.d", "value1-value2"),
 		types.MRP("a", "value1-value2"),
 		types.MRP("c", "value3"),
@@ -124,7 +124,7 @@ func TestSimpleTemplateRow(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, newRows, 1)
 
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1-value2"),
 		types.MRP("b", "value2"),
 		types.MRP("c", "value3"),

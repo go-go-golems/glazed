@@ -1,9 +1,11 @@
 package formatters
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -38,8 +40,28 @@ import (
 
 // The following is all geared towards tabulated output
 
-type OutputFormatter interface {
+// TableOutputFormatter is an output formatter that requires an entire table to be computed up
+// front before it can be output.
+//
+// NOTE(manuel, 2023-06-28) Since this is actually the first type of Formatter that was implemented,
+// it is the current de facto standard. RowOutputFormatter has been added later and is thus not
+// in wide spread use.
+type TableOutputFormatter interface {
+	// RegisterMiddlewares allows individual OutputFormatters to register middlewares that might be
+	// necessary for them to do the proper output. For example, table and excel output require
+	// flattening the row objects before output.
+	//
+	// TODO(manuel, 2023-06-28) We could add the indication if this output formatter can stream here
+	// Not all output formatters should have to take a full table, but could instead output a single row
+	RegisterMiddlewares(mw *middlewares.Processor) error
+
 	Output(ctx context.Context, table *types.Table, w io.Writer) error
+	ContentType() string
+}
+
+type RowOutputFormatter interface {
+	RegisterMiddlewares(mw *middlewares.Processor) error
+	Output(ctx context.Context, row types.Row, w io.Writer) error
 	ContentType() string
 }
 
@@ -74,13 +96,13 @@ func ComputeOutputFilename(
 	return outputFileName, nil
 }
 
-// StartFormatIntoChannel outputs the data from an OutputFormatter into a channel.
+// StartFormatIntoChannel outputs the data from an TableOutputFormatter into a channel.
 // This is useful to render a table into a stream, for example when rendering larger outputs
 // into HTML when serving.
 func StartFormatIntoChannel[T interface{ ~string }](
 	ctx context.Context,
 	table *types.Table,
-	formatter OutputFormatter,
+	formatter TableOutputFormatter,
 ) <-chan T {
 	reader, writer := io.Pipe()
 	c := make(chan T)
@@ -129,4 +151,71 @@ func StartFormatIntoChannel[T interface{ ~string }](
 	}()
 
 	return c
+}
+
+func StreamRows(
+	ctx context.Context,
+	formatter RowOutputFormatter,
+	inputChannel <-chan types.Row,
+	outputChannel <-chan string,
+) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+
+		case row, ok := <-inputChannel:
+			if !ok {
+				return nil
+			}
+
+			var buf bytes.Buffer
+			err := formatter.Output(ctx, row, &buf)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// StartStreamRows starts a background goroutine that returns two channels. The first
+// channel is used to send rows to the background goroutine, the second channel is used
+// to receive the formatted output.
+//
+// This background goroutine will close the output channel when it is done.
+func StartStreamRows[T interface{ ~string }](
+	ctx context.Context,
+	formatter RowOutputFormatter,
+) (chan<- types.Row, <-chan T) {
+	// the inputChannel is buffered, so that a slow output stream still allows
+	// the producer to move forward, to avoid having both latencies queue
+	inputChannel := make(chan types.Row, 100)
+	outputChannel := make(chan T)
+
+	eg, ctx2 := errgroup.WithContext(ctx)
+
+	eg.Go(func() error {
+		defer close(outputChannel)
+
+		for {
+			select {
+			case <-ctx2.Done():
+				return nil
+
+			case row, ok := <-inputChannel:
+				if !ok {
+					return nil
+				}
+				var buf bytes.Buffer
+				err := formatter.Output(ctx2, row, &buf)
+				if err != nil {
+					return err
+				}
+
+				outputChannel <- T(buf.String())
+			}
+		}
+	})
+
+	return inputChannel, outputChannel
 }

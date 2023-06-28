@@ -5,6 +5,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
@@ -16,6 +18,11 @@ type OutputFormatter struct {
 	OutputMultipleFiles bool
 	WithHeaders         bool
 	Separator           rune
+}
+
+func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
 }
 
 func (f *OutputFormatter) ContentType() string {

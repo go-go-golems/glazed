@@ -2,7 +2,9 @@ package types
 
 import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"reflect"
 	"sort"
+	"strings"
 )
 
 type TableName = string
@@ -45,8 +47,36 @@ func NewRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []Fie
 	return ret
 }
 
+func NewRowFromStruct(i interface{}, lowerCaseKeys bool) Row {
+	val := reflect.ValueOf(i)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	t := val.Type()
+	row := NewRow()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		name := field.Name
+		if lowerCaseKeys {
+			name = strings.ToLower(name)
+		}
+		row.Set(name, val.Field(i).Interface())
+	}
+
+	return row
+}
+
 func MRP(key FieldName, value GenericCellValue) MapRowPair {
 	return orderedmap.Pair[FieldName, GenericCellValue]{Key: key, Value: value}
+}
+
+func RowToMap(om Row) map[string]interface{} {
+	ret := make(map[string]interface{})
+	for pair := om.Oldest(); pair != nil; pair = pair.Next() {
+		ret[pair.Key] = pair.Value
+	}
+	return ret
 }
 
 func GetFields(om Row) []FieldName {

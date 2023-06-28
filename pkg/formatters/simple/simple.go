@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
@@ -15,6 +16,10 @@ type SingleColumnFormatter struct {
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
 	Separator           string
+}
+
+func (s *SingleColumnFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+	return nil
 }
 
 type SingleColumnFormatterOption func(*SingleColumnFormatter)
