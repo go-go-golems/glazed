@@ -39,11 +39,11 @@ func TestSortByMiddlewareSingleIntColumn(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 1, row, "a")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 4, row, "a")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, 7, row, "a")
+	assert2.EqualRowValue(t, 7, row, "a")
 }
 
 func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
@@ -60,11 +60,11 @@ func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, 7, row, "a")
+	assert2.EqualRowValue(t, 7, row, "a")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, 4, row, "a")
+	assert2.EqualRowValue(t, 4, row, "a")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 1, row, "a")
 }
 
 func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
@@ -81,11 +81,11 @@ func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, "a", row, "a")
+	assert2.EqualRowValue(t, "a", row, "a")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, "b", row, "a")
+	assert2.EqualRowValue(t, "b", row, "a")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, "c", row, "a")
+	assert2.EqualRowValue(t, "c", row, "a")
 }
 
 func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
@@ -102,11 +102,11 @@ func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
 
 	require.Equal(t, 3, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, "c", row, "a")
+	assert2.EqualRowValue(t, "c", row, "a")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, "b", row, "a")
+	assert2.EqualRowValue(t, "b", row, "a")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, "a", row, "a")
+	assert2.EqualRowValue(t, "a", row, "a")
 
 }
 
@@ -125,17 +125,17 @@ func TestSortByMiddlewareTwoColumns(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 3, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 3, row, "b")
 	row = newtable.Rows[3]
-	assert2.EqualMapRowValue(t, 2, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 2, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
@@ -153,17 +153,17 @@ func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, 2, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 2, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 3, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 3, row, "b")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
 	row = newtable.Rows[3]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
@@ -181,17 +181,17 @@ func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
 
 	require.Equal(t, 4, len(newtable.Rows))
 	row := newtable.Rows[0]
-	assert2.EqualMapRowValue(t, 2, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 2, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 	row = newtable.Rows[1]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 1, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 1, row, "b")
 	row = newtable.Rows[2]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 2, row, "b")
 	row = newtable.Rows[3]
-	assert2.EqualMapRowValue(t, 1, row, "a")
-	assert2.EqualMapRowValue(t, 3, row, "b")
+	assert2.EqualRowValue(t, 1, row, "a")
+	assert2.EqualRowValue(t, 3, row, "b")
 }
 
 func TestSortByMiddlewareTwoColumnsDescSecond(t *testing.T) {

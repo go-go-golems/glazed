@@ -35,9 +35,9 @@ func TestNoFieldsFilter(t *testing.T) {
 	finalRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 	require.Len(t, finalRows, 3)
-	assert2.EqualMapRowValues(t, rows[0], map[string]interface{}{"a": 1, "b": 2, "c": 3})
-	assert2.EqualMapRowValues(t, rows[1], map[string]interface{}{"a": 4, "b": 5, "c": 6})
-	assert2.EqualMapRowValues(t, rows[2], map[string]interface{}{"a": 7, "b": 8, "c": 9, "d": 10})
+	assert2.EqualRowValues(t, rows[0], map[string]interface{}{"a": 1, "b": 2, "c": 3})
+	assert2.EqualRowValues(t, rows[1], map[string]interface{}{"a": 4, "b": 5, "c": 6})
+	assert2.EqualRowValues(t, rows[2], map[string]interface{}{"a": 7, "b": 8, "c": 9, "d": 10})
 }
 
 func TestFieldsA(t *testing.T) {
@@ -47,9 +47,9 @@ func TestFieldsA(t *testing.T) {
 	finalRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 	require.Len(t, finalRows, 3)
-	assert2.EqualMapRowValues(t, rows[0], map[string]interface{}{"a": 1})
-	assert2.EqualMapRowValues(t, rows[1], map[string]interface{}{"a": 4})
-	assert2.EqualMapRowValues(t, rows[2], map[string]interface{}{"a": 7})
+	assert2.EqualRowValues(t, rows[0], map[string]interface{}{"a": 1})
+	assert2.EqualRowValues(t, rows[1], map[string]interface{}{"a": 4})
+	assert2.EqualRowValues(t, rows[2], map[string]interface{}{"a": 7})
 }
 
 func TestFieldsBD(t *testing.T) {
@@ -59,9 +59,9 @@ func TestFieldsBD(t *testing.T) {
 	finalRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 	require.Len(t, finalRows, 3)
-	assert2.EqualMapRowValues(t, rows[0], map[string]interface{}{"b": 2})
-	assert2.EqualMapRowValues(t, rows[1], map[string]interface{}{"b": 5})
-	assert2.EqualMapRowValues(t, rows[2], map[string]interface{}{"b": 8, "d": 10})
+	assert2.EqualRowValues(t, rows[0], map[string]interface{}{"b": 2})
+	assert2.EqualRowValues(t, rows[1], map[string]interface{}{"b": 5})
+	assert2.EqualRowValues(t, rows[2], map[string]interface{}{"b": 8, "d": 10})
 }
 
 func TestFilterA(t *testing.T) {
@@ -71,9 +71,9 @@ func TestFilterA(t *testing.T) {
 	finalRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 	require.Len(t, finalRows, 3)
-	assert2.EqualMapRowValues(t, rows[0], map[string]interface{}{"b": 2, "c": 3})
-	assert2.EqualMapRowValues(t, rows[1], map[string]interface{}{"b": 5, "c": 6})
-	assert2.EqualMapRowValues(t, rows[2], map[string]interface{}{"b": 8, "c": 9, "d": 10})
+	assert2.EqualRowValues(t, rows[0], map[string]interface{}{"b": 2, "c": 3})
+	assert2.EqualRowValues(t, rows[1], map[string]interface{}{"b": 5, "c": 6})
+	assert2.EqualRowValues(t, rows[2], map[string]interface{}{"b": 8, "c": 9, "d": 10})
 }
 
 func TestFilterBD(t *testing.T) {
@@ -83,7 +83,7 @@ func TestFilterBD(t *testing.T) {
 	finalRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 	require.Len(t, finalRows, 3)
-	assert2.EqualMapRowValues(t, rows[0], map[string]interface{}{"a": 1, "c": 3})
-	assert2.EqualMapRowValues(t, rows[1], map[string]interface{}{"a": 4, "c": 6})
-	assert2.EqualMapRowValues(t, rows[2], map[string]interface{}{"a": 7, "c": 9})
+	assert2.EqualRowValues(t, rows[0], map[string]interface{}{"a": 1, "c": 3})
+	assert2.EqualRowValues(t, rows[1], map[string]interface{}{"a": 4, "c": 6})
+	assert2.EqualRowValues(t, rows[2], map[string]interface{}{"a": 7, "c": 9})
 }

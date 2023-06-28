@@ -6,18 +6,18 @@ import (
 	"testing"
 )
 
-func EqualMapRowValue(t *testing.T, expected interface{}, obj types.Row, key string) {
+func EqualRowValue(t *testing.T, expected interface{}, obj types.Row, key string) {
 	v, ok := obj.Get(key)
 	assert.True(t, ok)
 	assert.Equal(t, expected, v)
 }
 
-func NilMapRowValue(t *testing.T, obj types.Row, key string) {
+func NilRowValue(t *testing.T, obj types.Row, key string) {
 	_, ok := obj.Get(key)
 	assert.False(t, ok)
 }
 
-func EqualMapRows(t *testing.T, expected types.Row, actual types.Row) {
+func EqualRow(t *testing.T, expected types.Row, actual types.Row) {
 	assert.Equal(t, expected.Len(), actual.Len())
 
 	// test one side
@@ -29,7 +29,15 @@ func EqualMapRows(t *testing.T, expected types.Row, actual types.Row) {
 	}
 }
 
-func EqualMapRowValues(t *testing.T, obj types.Row, values map[types.FieldName]types.GenericCellValue) {
+func EqualRows(t *testing.T, expected []types.Row, actual []types.Row) {
+	assert.Equal(t, len(expected), len(actual))
+
+	for i := range expected {
+		EqualRow(t, expected[i], actual[i])
+	}
+}
+
+func EqualRowValues(t *testing.T, obj types.Row, values map[types.FieldName]types.GenericCellValue) {
 	for k, v := range values {
 		v_, ok := obj.Get(k)
 		assert.True(t, ok)
@@ -37,7 +45,7 @@ func EqualMapRowValues(t *testing.T, obj types.Row, values map[types.FieldName]t
 	}
 }
 
-func EqualMapRowMap(t *testing.T, expected map[types.FieldName]types.GenericCellValue, actual types.Row) {
+func EqualRowMap(t *testing.T, expected map[types.FieldName]types.GenericCellValue, actual types.Row) {
 	// test one side
 	for k, v := range expected {
 		v_, ok := actual.Get(k)

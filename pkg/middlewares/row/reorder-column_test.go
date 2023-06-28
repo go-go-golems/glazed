@@ -22,7 +22,7 @@ func TestSimpleReorder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("c", "value3"),
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
@@ -43,7 +43,7 @@ func TestSimpleReorderNotAllColumns(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("c", "value3"),
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
@@ -65,7 +65,7 @@ func TestReorderDot(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("c.d", "value3"),
 		types.MRP("c.e", "value4"),
 		types.MRP("a", "value1"),
@@ -89,7 +89,7 @@ func TestReorderDotOverride(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("c.e", "value4"),
 		types.MRP("a", "value1"),
 		types.MRP("c.d", "value3"),

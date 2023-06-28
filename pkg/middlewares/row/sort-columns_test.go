@@ -20,7 +20,7 @@ func TestSimpleSortColumns(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, newRows, 1)
-	assert2.EqualMapRows(t, types.NewRow(
+	assert2.EqualRow(t, types.NewRow(
 		types.MRP("a", "value1"),
 		types.MRP("b", "value2"),
 		types.MRP("c", "value3"),
