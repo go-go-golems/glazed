@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"golang.org/x/net/html"
 	"strings"
 )
@@ -83,17 +84,17 @@ func (hsp *HTMLSplitParser) ProcessNode(ctx context.Context, n *html.Node) (*htm
 
 		// TODO(manuel, 2023-03-29) We should add a level attribute here
 
-		row := map[string]interface{}{
-			"Tag":   n.Data,
-			"Title": title,
-		}
+		row := types.NewRow(
+			types.MRP("Tag", n.Data),
+			types.MRP("Title", title),
+		)
 		for c = n.NextSibling; c != nil; c = c.NextSibling {
 			if c.Type == html.ElementNode && hsp.shouldSplit(c) {
 				break
 			}
 			hsp.extractTextHelper(c, &body)
 		}
-		row["Body"] = strings.TrimSpace(body.String())
+		row.Set("Body", strings.TrimSpace(body.String()))
 
 		err := hsp.gp.ProcessInputObject(ctx, row)
 		if err != nil {
@@ -188,13 +189,13 @@ func outputNodesDepthFirst(ctx context.Context, doc *html.Node, gp *processor.Gl
 		})
 	}
 
-	obj := map[string]interface{}{
-		"Type":       htmlNodeTypeToString(doc.Type),
-		"Atom":       doc.DataAtom,
-		"Data":       doc.Data,
-		"Namespace":  doc.Namespace,
-		"Attributes": attributes,
-	}
+	obj := types.NewRow(
+		types.MRP("Type", htmlNodeTypeToString(doc.Type)),
+		types.MRP("Atom", doc.DataAtom),
+		types.MRP("Data", doc.Data),
+		types.MRP("Namespace", doc.Namespace),
+		types.MRP("Attributes", attributes),
+	)
 
 	err := gp.ProcessInputObject(ctx, obj)
 	if err != nil {

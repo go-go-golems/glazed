@@ -5,7 +5,8 @@ import (
 	"context"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,11 +25,17 @@ func TestTemplateRenameEndToEnd(t *testing.T) {
 	renames := map[string]string{
 		"a": "b",
 	}
-	of.AddTableMiddleware(&table.RenameColumnMiddleware{Renames: renames})
-	of.AddRow(&types.SimpleRow{Hash: map[string]interface{}{"a": 1}})
+	obj := types.NewRow(types.MRP("a", 1))
 	ctx := context.Background()
+
+	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
+	err := p_.AddRow(ctx, obj)
+	require.NoError(t, err)
+	err = p_.FinalizeTable(ctx)
+	require.NoError(t, err)
+
 	buf := &bytes.Buffer{}
-	err := of.Output(ctx, buf)
+	err = of.Output(ctx, p_.GetTable(), buf)
 	require.NoError(t, err)
 
 	assert.Equal(t, `1`, buf.String())

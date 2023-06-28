@@ -9,6 +9,7 @@ import (
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -106,7 +107,9 @@ func (y *YamlCommand) Run(
 		}
 
 		if inputIsArray {
-			data := make([]map[string]interface{}, 0)
+			// TODO(manuel, 2023-06-25) We should implement an unmarshaller for maprow from yaml
+			// See https://github.com/go-go-golems/glazed/issues/305
+			data := make([]types.Row, 0)
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
 				// check for EOF
@@ -126,7 +129,7 @@ func (y *YamlCommand) Run(
 			}
 		} else {
 			// read json file
-			data := make(map[string]interface{})
+			data := types.NewRow()
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
 				// check for EOF

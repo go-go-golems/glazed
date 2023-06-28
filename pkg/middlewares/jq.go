@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
@@ -31,12 +32,18 @@ func NewJqObjectMiddleware(
 }
 
 func (jqm *JqObjectMiddleware) Process(
-	object map[string]interface{},
-) ([]map[string]interface{}, error) {
-	ret := []map[string]interface{}{}
+	ctx context.Context,
+	object types.Row,
+) ([]types.Row, error) {
+	ret := []types.Row{}
 
 	if jqm.query != nil {
-		iter := jqm.query.Run(object)
+		// TODO(manuel, 2023-06-25) Transform to map before passing to jq
+		m := map[string]interface{}{}
+		for pair := object.Oldest(); pair != nil; pair = pair.Next() {
+			m[pair.Key] = pair.Value
+		}
+		iter := jqm.query.Run(m)
 
 		for {
 			v, ok := iter.Next()
@@ -44,33 +51,32 @@ func (jqm *JqObjectMiddleware) Process(
 				break
 			}
 
-			if err, ok := v.(error); ok {
-				return nil, err
-			}
+			switch v_ := v.(type) {
+			case error:
+				return nil, v_
 
-			// if the result is an array, flatten it into ret
-			if array, ok := v.([]interface{}); ok {
-				for _, v := range array {
-					if err, ok := v.(error); ok {
-						return nil, err
-					}
-
-					object, ok := v.(map[string]interface{})
-					if !ok {
+			case []interface{}:
+				for _, v := range v_ {
+					switch v_ := v.(type) {
+					case error:
+						return nil, v_
+					case map[string]interface{}:
+						ret = append(ret, types.NewRowFromMap(v_))
+					case types.Row:
+						ret = append(ret, v_)
+					default:
 						return nil, errors.Errorf("Expected object, got %T", v)
 					}
-					ret = append(ret, object)
 				}
 
 				continue
-			} else {
-				object, ok = v.(map[string]interface{})
-				if !ok {
-					return nil, errors.Errorf("Expected object, got %T", v)
-				}
-			}
+			case types.Row:
+				ret = append(ret, v_)
 
-			ret = append(ret, object)
+			case map[string]interface{}:
+				ret = append(ret, types.NewRowFromMap(v_))
+
+			}
 		}
 	} else {
 		ret = append(ret, object)
@@ -103,7 +109,7 @@ func NewJqTableMiddleware(
 	return ret, nil
 }
 
-func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (jqm *JqTableMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: []types.FieldName{},
 		Rows:    []types.Row{},
@@ -112,15 +118,14 @@ func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) 
 	ret.Columns = append(ret.Columns, table.Columns...)
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
-		}
+		values := row
+		newRow := types.NewRow()
 
-		for rowField, value := range values {
+		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+			rowField, value := pair.Key, pair.Value
 			query, ok := jqm.fieldQueries[rowField]
 			if !ok {
-				newRow.Hash[rowField] = value
+				newRow.Set(rowField, value)
 				continue
 			}
 
@@ -139,11 +144,11 @@ func (jqm *JqTableMiddleware) Process(table *types.Table) (*types.Table, error) 
 					return nil, err
 				}
 
-				newRow.Hash[rowField] = v
+				newRow.Set(rowField, v)
 			}
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil

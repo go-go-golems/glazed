@@ -12,7 +12,7 @@ glaze json misc/test-data/[123].json --filter d.e
 
 glaze json --input-is-array misc/test-data/rows.json --output yaml
 glaze yaml misc/test-data/[123].yaml
-glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d_f}}'
+glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d.f}}'
 glaze json misc/test-data/[123].json --template '{{.a}}-{{.b}}: {{.d_f}}' \
   --use-row-templates --fields a,_0 \
   --output csv

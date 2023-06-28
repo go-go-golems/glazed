@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -15,24 +15,24 @@ type ReplaceSettings struct {
 	AddFields   map[string]string `glazed.parameter:"add-fields"`
 }
 
-func (rs *ReplaceSettings) AddMiddlewares(of formatters.OutputFormatter) error {
+func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.Processor) error {
 	if rs.ReplaceFile != "" {
 		b, err := os.ReadFile(rs.ReplaceFile)
 		if err != nil {
 			return err
 		}
 
-		mw, err := table.NewReplaceMiddlewareFromYAML(b)
+		mw, err := row.NewReplaceMiddlewareFromYAML(b)
 		if err != nil {
 			return err
 		}
 
-		of.AddTableMiddleware(mw)
+		of.AddRowMiddleware(mw)
 	}
 
 	if len(rs.AddFields) > 0 {
-		mw := table.NewAddFieldMiddleware(rs.AddFields)
-		of.AddTableMiddleware(mw)
+		mw := row.NewAddFieldMiddleware(rs.AddFields)
+		of.AddRowMiddleware(mw)
 	}
 
 	return nil

@@ -5,15 +5,12 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"os"
 )
 
 type OutputFormatter struct {
-	Table               *types.Table
-	middlewares         []middlewares2.TableMiddleware
 	OutputFile          string
 	OutputFileTemplate  string
 	OutputMultipleFiles bool
@@ -62,8 +59,6 @@ func WithOutputMultipleFiles(outputMultipleFiles bool) OutputFormatterOption {
 
 func NewCSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	f := &OutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   ',',
 	}
@@ -75,8 +70,6 @@ func NewCSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 
 func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	f := &OutputFormatter{
-		Table:       types.NewTable(),
-		middlewares: []middlewares2.TableMiddleware{},
 		WithHeaders: true,
 		Separator:   '\t',
 	}
@@ -88,43 +81,9 @@ func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	return f
 }
 
-func (f *OutputFormatter) GetTable() (*types.Table, error) {
-	return f.Table, nil
-}
-
-func (f *OutputFormatter) AddTableMiddleware(m middlewares2.TableMiddleware) {
-	f.middlewares = append(f.middlewares, m)
-}
-
-func (f *OutputFormatter) AddTableMiddlewareInFront(m middlewares2.TableMiddleware) {
-	f.middlewares = append([]middlewares2.TableMiddleware{m}, f.middlewares...)
-}
-
-func (f *OutputFormatter) AddTableMiddlewareAtIndex(i int, m middlewares2.TableMiddleware) {
-	f.middlewares = append(f.middlewares[:i], append([]middlewares2.TableMiddleware{m}, f.middlewares[i:]...)...)
-}
-
-func (f *OutputFormatter) AddRow(row types.Row) {
-	f.Table.Rows = append(f.Table.Rows, row)
-}
-
-func (f *OutputFormatter) SetColumnOrder(columns []types.FieldName) {
-	f.Table.Columns = columns
-}
-
-func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
-	f.Table.Finalize()
-
-	for _, middleware := range f.middlewares {
-		newTable, err := middleware.Process(f.Table)
-		if err != nil {
-			return err
-		}
-		f.Table = newTable
-	}
-
+func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w_ io.Writer) error {
 	if f.OutputMultipleFiles {
-		for i, row := range f.Table.Rows {
+		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
 			if err != nil {
 				return err
@@ -134,14 +93,16 @@ func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 			if err != nil {
 				return err
 			}
-			defer f_.Close()
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
 
-			csvWriter, err := f.newCSVWriter(f_)
+			csvWriter, err := f.newCSVWriter(table_.Columns, f_)
 			if err != nil {
 				return err
 			}
 
-			err = f.writeRow(row, csvWriter)
+			err = f.writeRow(table_.Columns, row, csvWriter)
 			if err != nil {
 				return err
 			}
@@ -164,22 +125,24 @@ func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 		if err != nil {
 			return err
 		}
-		defer f_.Close()
+		defer func(f_ *os.File) {
+			_ = f_.Close()
+		}(f_)
 
-		csvWriter, err = f.newCSVWriter(w_)
+		csvWriter, err = f.newCSVWriter(table_.Columns, w_)
 		if err != nil {
 			return err
 		}
 	} else {
 		var err error
-		csvWriter, err = f.newCSVWriter(w_)
+		csvWriter, err = f.newCSVWriter(table_.Columns, w_)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, row := range f.Table.Rows {
-		err2 := f.writeRow(row, csvWriter)
+	for _, row := range table_.Rows {
+		err2 := f.writeRow(table_.Columns, row, csvWriter)
 		if err2 != nil {
 			return err2
 		}
@@ -194,22 +157,22 @@ func (f *OutputFormatter) Output(ctx context.Context, w_ io.Writer) error {
 	return nil
 }
 
-func (f *OutputFormatter) newCSVWriter(w_ io.Writer) (*csv.Writer, error) {
+func (f *OutputFormatter) newCSVWriter(columns []types.FieldName, w_ io.Writer) (*csv.Writer, error) {
 	// create a buffer writer
 	w := csv.NewWriter(w_)
 	w.Comma = f.Separator
 
 	var err error
 	if f.WithHeaders {
-		err = w.Write(f.Table.Columns)
+		err = w.Write(columns)
 	}
 	return w, err
 }
 
-func (f *OutputFormatter) writeRow(row types.Row, w *csv.Writer) error {
+func (f *OutputFormatter) writeRow(columns []types.FieldName, row types.Row, w *csv.Writer) error {
 	values := []string{}
-	for _, column := range f.Table.Columns {
-		if v, ok := row.GetValues()[column]; ok {
+	for _, column := range columns {
+		if v, ok := row.Get(column); ok {
 			values = append(values, fmt.Sprintf("%v", v))
 		} else {
 			values = append(values, "")

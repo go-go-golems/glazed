@@ -1,73 +1,58 @@
 package types
 
+import (
+	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"sort"
+)
+
 type TableName = string
 type FieldName = string
 type GenericCellValue = interface{}
-type MapRow = map[FieldName]GenericCellValue
+type Row = *orderedmap.OrderedMap[FieldName, GenericCellValue]
+type MapRowPair = orderedmap.Pair[FieldName, GenericCellValue]
 
-type Row interface {
-	GetFields() []FieldName
-	GetValues() MapRow
+func NewRow(initialData ...MapRowPair) Row {
+	return orderedmap.New[FieldName, GenericCellValue](
+		orderedmap.WithInitialData(initialData...),
+	)
 }
 
-type Table struct {
-	Columns   []FieldName
-	Rows      []Row
-	finalized bool
-}
+func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
+	ret := NewRow()
 
-// Finalize is used to "close" a table after processing inputs into it.
-//
-// TODO(manuel, 2023-02-19) This is an ugly ugly method, and really the whole Table/middleware structure needs to be refactored
-// See https://github.com/go-go-golems/glazed/issues/146
-func (t *Table) Finalize() {
-	if t.finalized {
-		return
+	// get keys of hash and sorted them
+	sortedKeys := []FieldName{}
+	for k := range hash {
+		sortedKeys = append(sortedKeys, k)
 	}
+	sort.Strings(sortedKeys)
 
-	existingColumns := map[FieldName]interface{}{}
-	for _, column := range t.Columns {
-		existingColumns[column] = nil
-	}
-
-	// append all the columns from all the rows into a map
-	columnNames := map[FieldName]interface{}{}
-
-	for _, row := range t.Rows {
-		for _, field := range row.GetFields() {
-			columnNames[field] = nil
-		}
-	}
-
-	for key := range columnNames {
-		if _, ok := existingColumns[key]; !ok {
-			t.Columns = append(t.Columns, key)
-		}
-	}
-
-	t.finalized = true
-}
-
-func NewTable() *Table {
-	return &Table{
-		Columns:   []FieldName{},
-		Rows:      []Row{},
-		finalized: false,
-	}
-}
-
-type SimpleRow struct {
-	Hash MapRow
-}
-
-func (sr *SimpleRow) GetFields() []FieldName {
-	ret := []FieldName{}
-	for key := range sr.Hash {
-		ret = append(ret, key)
+	for _, k := range sortedKeys {
+		ret.Set(k, hash[k])
 	}
 	return ret
 }
 
-func (sr *SimpleRow) GetValues() MapRow {
-	return sr.Hash
+func NewRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
+	ret := NewRow()
+	for _, column := range columns {
+		v, ok := hash[column]
+		if !ok {
+			continue
+		}
+		ret.Set(column, v)
+	}
+	return ret
+}
+
+func MRP(key FieldName, value GenericCellValue) MapRowPair {
+	return orderedmap.Pair[FieldName, GenericCellValue]{Key: key, Value: value}
+}
+
+func GetFields(om Row) []FieldName {
+	ret := []FieldName{}
+	for pair := om.Oldest(); pair != nil; pair = pair.Next() {
+		ret = append(ret, pair.Key)
+	}
+	return ret
 }

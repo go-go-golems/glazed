@@ -8,7 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/simple"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -405,52 +405,38 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 		return nil, err
 	}
 
-	var of formatters.OutputFormatter
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	if selectSettings.SelectField != "" {
-		of = simple.NewSingleColumnFormatter(
-			selectSettings.SelectField,
-			simple.WithSeparator(selectSettings.SelectSeparator),
-			simple.WithOutputFile(outputSettings.OutputFile),
-			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
-			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
-		)
-	} else {
-		of, err = outputSettings.CreateOutputFormatter()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error creating output formatter")
-		}
-	}
+	mwProcessor := middlewares.NewProcessor()
 
 	// rename middlewares run first because they are used to clean up column names
 	// for the following middlewares too.
 	// these following middlewares can create proper column names on their own
 	// when needed
-	err = renameSettings.AddMiddlewares(of)
+	err = renameSettings.AddMiddlewares(mwProcessor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
 
-	err = templateSettings.AddMiddlewares(of)
+	err = templateSettings.AddMiddlewares(mwProcessor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding template middlewares")
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
-		mw := table.NewFlattenObjectMiddleware()
-		of.AddTableMiddleware(mw)
+		mw := row.NewFlattenObjectMiddleware()
+		mwProcessor.AddRowMiddlewareInFront(mw)
 	}
-	fieldsFilterSettings.AddMiddlewares(of)
+	fieldsFilterSettings.AddMiddlewares(mwProcessor)
 
-	err = replaceSettings.AddMiddlewares(of)
+	err = replaceSettings.AddMiddlewares(mwProcessor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding replace middlewares")
 	}
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
-		ogtm, err := object.NewObjectGoTemplateMiddleware(templateSettings.Templates)
+		ogtm, err := object.NewTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not process template argument")
 		}
@@ -467,17 +453,33 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 	}
 
 	if jqTableMiddleware != nil {
-		of.AddTableMiddleware(jqTableMiddleware)
+		mwProcessor.AddTableMiddleware(jqTableMiddleware)
 	}
 
 	// NOTE(manuel, 2023-03-20): We need to figure out how to order middlewares, on the command line.
 	// This is not possible with cobra, which doesn't have ordering of flags, and adding that
 	// to the API that we currently use (which is a unordered hashmap, and parsed layers that lose the positioning)
 	// is not trivial.
-	sortSettings.AddMiddlewares(of)
+	sortSettings.AddMiddlewares(mwProcessor)
 
-	options_ := append(options, processor.WithAppendObjectMiddleware(middlewares_...))
+	mwProcessor.AddObjectMiddleware(middlewares_...)
 
-	gp := processor.NewGlazeProcessor(of, options_...)
+	var of formatters.OutputFormatter
+	if selectSettings.SelectField != "" {
+		of = simple.NewSingleColumnFormatter(
+			selectSettings.SelectField,
+			simple.WithSeparator(selectSettings.SelectSeparator),
+			simple.WithOutputFile(outputSettings.OutputFile),
+			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
+			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
+		)
+	} else {
+		of, err = outputSettings.CreateOutputFormatter(mwProcessor)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error creating output formatter")
+		}
+	}
+
+	gp := processor.NewGlazeProcessor(of, processor.WithMiddlewareProcessor(mwProcessor))
 	return gp, nil
 }

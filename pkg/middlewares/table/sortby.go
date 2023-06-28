@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/helpers/compare"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"sort"
@@ -51,7 +52,7 @@ func NewSortByMiddlewareFromColumns(columns ...string) *SortByMiddleware {
 	return ret
 }
 
-func (s *SortByMiddleware) Process(table *types.Table) (*types.Table, error) {
+func (s *SortByMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
 	ret := &types.Table{
 		Columns: table.Columns,
 		Rows:    make([]types.Row, 0),
@@ -64,15 +65,17 @@ func (s *SortByMiddleware) Process(table *types.Table) (*types.Table, error) {
 	}
 
 	sort.Slice(ret.Rows, func(i, j int) bool {
-		rowA := ret.Rows[i].GetValues()
-		rowB := ret.Rows[j].GetValues()
+		rowA := ret.Rows[i]
+		rowB := ret.Rows[j]
 
 		for _, column := range s.columns {
-			if rowA[column.name] == rowB[column.name] {
+			v, ok := rowA.Get(column.name)
+			v2, ok2 := rowB.Get(column.name)
+			if ok == ok2 && v == v2 {
 				continue
 			}
 
-			if compare.IsLowerThan(rowA[column.name], rowB[column.name]) {
+			if compare.IsLowerThan(v, v2) {
 				return column.asc
 			} else {
 				return !column.asc

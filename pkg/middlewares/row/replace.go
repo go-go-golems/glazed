@@ -1,6 +1,7 @@
-package table
+package row
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -191,53 +192,40 @@ func NewReplaceMiddlewareFromYAML(b []byte) (*ReplaceMiddleware, error) {
 	return NewReplaceMiddleware(replacements, regexReplacements, regexSkips, skips), nil
 }
 
-func (r *ReplaceMiddleware) Process(table *types.Table) (*types.Table, error) {
-	ret := &types.Table{
-		Columns: []types.FieldName{},
-		Rows:    []types.Row{},
-	}
+func (r *ReplaceMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
+	newRow := types.NewRow()
 
-	ret.Columns = append(ret.Columns, table.Columns...)
+	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
+		rowField, value := pair.Key, pair.Value
 
-NextRow:
-	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: map[types.FieldName]types.GenericCellValue{},
+		s, ok := value.(string)
+		if !ok {
+			newRow.Set(rowField, value)
+			continue
 		}
 
-		for rowField, value := range values {
-			s, ok := value.(string)
-			if !ok {
-				newRow.Hash[rowField] = value
-				continue
+		for _, skip := range r.Skips[rowField] {
+			if strings.Contains(s, skip.Pattern) {
+				return nil, nil
 			}
-
-			for _, skip := range r.Skips[rowField] {
-				if strings.Contains(s, skip.Pattern) {
-					continue NextRow
-				}
-			}
-
-			for _, regexSkip := range r.RegexSkips[rowField] {
-				if regexSkip.Regexp.MatchString(s) {
-					continue NextRow
-				}
-			}
-
-			for _, replacement := range r.Replacements[rowField] {
-				s = strings.ReplaceAll(s, replacement.Pattern, replacement.Replacement)
-			}
-
-			for _, regexReplacement := range r.RegexReplacements[rowField] {
-				s = regexReplacement.Regexp.ReplaceAllString(s, regexReplacement.Replacement)
-			}
-
-			newRow.Hash[rowField] = s
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		for _, regexSkip := range r.RegexSkips[rowField] {
+			if regexSkip.Regexp.MatchString(s) {
+				return nil, nil
+			}
+		}
+
+		for _, replacement := range r.Replacements[rowField] {
+			s = strings.ReplaceAll(s, replacement.Pattern, replacement.Replacement)
+		}
+
+		for _, regexReplacement := range r.RegexReplacements[rowField] {
+			s = regexReplacement.Regexp.ReplaceAllString(s, regexReplacement.Replacement)
+		}
+
+		newRow.Set(rowField, s)
 	}
 
-	return ret, nil
+	return []types.Row{newRow}, nil
 }

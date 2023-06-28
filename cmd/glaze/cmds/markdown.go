@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -111,7 +112,7 @@ func addExtensionFlags(cmd *cobra.Command) {
 // - a simple one that just prints a linearized version of the AST
 // - a version with a nested DOM-like structure
 
-type outputElement = map[string]interface{}
+type outputElement = types.Row
 
 var MarkdownCmd = &cobra.Command{
 	Use:   "markdown",
@@ -165,10 +166,12 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.OutputFormatter().Output(ctx, os.Stdout)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error rendering output: %s\n", err)
-			os.Exit(1)
+		err = gp.Processor().FinalizeTable(ctx)
+		cobra.CheckErr(err)
+
+		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			os.Exit(0)
 		}
 	},
 }
@@ -206,14 +209,14 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 	// fuck my brain can't deal with stacks right now lol, i need paper
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
-			elt := outputElement{
-				"kind": node.Kind().String(),
-				"text": string(node.Text(s)),
-			}
+			elt := types.NewRow(
+				types.MRP("kind", node.Kind().String()),
+				types.MRP("text", string(node.Text(s))),
+			)
 			switch node.Kind() {
 			case ast.KindHeading:
-				elt["level"] = node.(*ast.Heading).Level
-				elt["children"] = []outputElement{}
+				elt.Set("level", node.(*ast.Heading).Level)
+				elt.Set("children", []outputElement{})
 			}
 			parseStack = append(parseStack, elt)
 		} else {
@@ -221,7 +224,8 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 			parseStack = parseStack[:len(parseStack)-1]
 
 			// skip Text and Document
-			if top["kind"] == "Text" || top["kind"] == "Document" {
+			topKind, _ := top.Get("kind")
+			if topKind == "Text" || topKind == "Document" {
 				return ast.WalkContinue, nil
 			}
 
@@ -231,8 +235,11 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 			// in a second pass
 			if len(outputStack) > 0 {
 				outputTop := outputStack[len(outputStack)-1]
-				if outputTop["kind"] == "Heading" && top["kind"] != "Heading" {
-					outputTop["children"] = append(outputTop["children"].([]outputElement), top)
+				outputTopKind, _ := outputTop.Get("kind")
+
+				if outputTopKind == "Heading" && topKind != "Heading" {
+					children, _ := outputTop.Get("children")
+					outputTop.Set("children", append(children.([]outputElement), top))
 					return ast.WalkContinue, nil
 				}
 			}
@@ -277,10 +284,10 @@ func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp *pr
 	outputStack := []outputElement{}
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
-			elt := outputElement{
-				"kind": node.Kind().String(),
-				"text": string(node.Text(s)),
-			}
+			elt := types.NewRow(
+				types.MRP("kind", node.Kind().String()),
+				types.MRP("text", string(node.Text(s))),
+			)
 			parseStack = append(parseStack, elt)
 		} else {
 			switch node.Kind() {
@@ -332,7 +339,9 @@ var splitByHeadingCmd = &cobra.Command{
 				}
 				f, err := os.Open(arg)
 				cobra.CheckErr(err)
-				defer f.Close()
+				defer func(f *os.File) {
+					_ = f.Close()
+				}(f)
 
 				s := bufio.NewScanner(f)
 				var currentTitle string
@@ -351,10 +360,10 @@ var splitByHeadingCmd = &cobra.Command{
 						return
 					}
 
-					row := map[string]interface{}{
-						"heading": currentTitle,
-						"content": strings.Trim(strings.Join(current, "\n"), " \n\t"),
-					}
+					row := types.NewRow(
+						types.MRP("heading", currentTitle),
+						types.MRP("content", strings.Trim(strings.Join(current, "\n"), " \n\t")),
+					)
 					err = gp.ProcessInputObject(ctx, row)
 					cobra.CheckErr(err)
 
@@ -380,8 +389,10 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.OutputFormatter().Output(ctx, os.Stdout)
+		err = gp.Processor().FinalizeTable(ctx)
 		cobra.CheckErr(err)
+
+		err = gp.OutputFormatter().Output(ctx, gp.Processor().GetTable(), os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}

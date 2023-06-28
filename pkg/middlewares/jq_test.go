@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"context"
+	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,28 +27,24 @@ func createJqTestTable() *types.Table {
 	return &types.Table{
 		Columns: []types.FieldName{},
 		Rows: []types.Row{
-			&types.SimpleRow{
-				Hash: map[string]interface{}{
-					"a": 1,
-					"b": 2,
-					"c": map[string]interface{}{
-						"d": 3,
-					},
-					"e": "hello",
-					"f": []interface{}{1, 2, 3},
-				},
-			},
-			&types.SimpleRow{
-				Hash: map[string]interface{}{
-					"a": 11,
-					"c": map[string]interface{}{
-						"d": 13,
-						"e": 12,
-					},
-					"e": "foobar",
-					"f": []interface{}{1, 4, 2, 3},
-				},
-			},
+			types.NewRow(
+				types.MRP("a", 1),
+				types.MRP("b", 2),
+				types.MRP("c", map[string]interface{}{
+					"d": 3,
+				}),
+				types.MRP("e", "hello"),
+				types.MRP("f", []interface{}{1, 2, 3}),
+			),
+			types.NewRow(
+				types.MRP("a", 11),
+				types.MRP("c", map[string]interface{}{
+					"d": 13,
+					"e": 12,
+				}),
+				types.MRP("e", "foobar"),
+				types.MRP("f", []interface{}{1, 4, 2, 3}),
+			),
 		},
 	}
 }
@@ -55,61 +53,66 @@ func TestEmptyObjectMiddleware(t *testing.T) {
 	m := createJqObjectMiddleware(t, "")
 	require.Nil(t, m.query)
 
-	o := map[string]interface{}{"a": 1}
-	o2, err := m.Process(o)
-	assert.NoError(t, err)
+	ctx := context.Background()
+	obj := types.NewRow(types.MRP("a", 1))
+	o2, err := m.Process(ctx, obj)
+	require.NoError(t, err)
 	assert.Len(t, o2, 1)
-	assert.Equal(t, o, o2[0])
+	assert2.EqualMapRows(t, obj, o2[0])
 }
 
 func TestSimpleJqConstant(t *testing.T) {
 	m := createJqObjectMiddleware(t, "{a: 2}")
 	require.NotNil(t, m.query)
 
-	o := map[string]interface{}{"a": 1}
-	o2, err := m.Process(o)
-	assert.NoError(t, err)
+	ctx := context.Background()
+	o := types.NewRow(types.MRP("a", 1))
+	o2, err := m.Process(ctx, o)
+	require.NoError(t, err)
 	assert.Len(t, o2, 1)
-	expected := map[string]interface{}{"a": 2}
-	assert.Equal(t, expected, o2[0])
+	expected := types.NewRow(types.MRP("a", 2))
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqConstantArray(t *testing.T) {
 	m := createJqObjectMiddleware(t, "{a: [2]}")
 	require.NotNil(t, m.query)
 
-	o := map[string]interface{}{"a": 1}
-	o2, err := m.Process(o)
-	assert.NoError(t, err)
-	expected := map[string]interface{}{"a": []interface{}{2}}
+	ctx := context.Background()
+	o := types.NewRow(types.MRP("a", 1))
+	o2, err := m.Process(ctx, o)
+	require.NoError(t, err)
+	expected := types.NewRow(types.MRP("a", []interface{}{2}))
 	assert.Len(t, o2, 1)
-	assert.Equal(t, expected, o2[0])
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqExtractNestedArray(t *testing.T) {
 	m := createJqObjectMiddleware(t, ".a[0]")
 	require.NotNil(t, m.query)
 
-	o := map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": 2}}}
-	o2, err := m.Process(o)
-	assert.NoError(t, err)
-	expected := map[string]interface{}{"b": 2}
+	ctx := context.Background()
+	o := types.NewRow(types.MRP("a", []interface{}{map[string]interface{}{"b": 2}}))
+	o2, err := m.Process(ctx, o)
+	require.NoError(t, err)
+	expected := types.NewRow(types.MRP("b", 2))
 	assert.Len(t, o2, 1)
-	assert.Equal(t, expected, o2[0])
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqExtract(t *testing.T) {
 	m := createJqObjectMiddleware(t, ".f | map({field: .})")
 	require.NotNil(t, m.query)
 
+	ctx := context.Background()
 	table := createJqTestTable()
-	v2 := table.Rows[0].GetValues()
-	o2, err := m.Process(v2)
-	assert.NoError(t, err)
+	v2 := table.Rows[0]
+	o2, err := m.Process(ctx, v2)
+	require.NoError(t, err)
 	assert.Len(t, o2, 3)
-	assert.Equal(t, map[string]interface{}{"field": 1}, o2[0])
-	assert.Equal(t, map[string]interface{}{"field": 2}, o2[1])
-	assert.Equal(t, map[string]interface{}{"field": 3}, o2[2])
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 1}, o2[0])
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 2}, o2[1])
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 3}, o2[2])
 }
 
 func TestSimpleJqTableConstant(t *testing.T) {
@@ -117,17 +120,20 @@ func TestSimpleJqTableConstant(t *testing.T) {
 	require.NotNil(t, m)
 	require.NotEmpty(t, m.fieldQueries)
 
+	ctx := context.Background()
 	table := createJqTestTable()
-	t2, err := m.Process(table)
-	assert.NoError(t, err)
+	t2, err := m.Process(ctx, table)
+	require.NoError(t, err)
 
-	row := t2.Rows[0].GetValues()
-	assert.Equal(t, 2, row["a"])
-	assert.Equal(t, 2, row["b"])
-	assert.Equal(t, map[string]interface{}{"d": 3}, row["c"])
-
-	assert.Equal(t, "hello", row["e"])
-	assert.Equal(t, []interface{}{1, 2, 3}, row["f"])
+	row := t2.Rows[0]
+	v, ok := row.Get("a")
+	assert.True(t, ok)
+	assert.Equal(t, 2, v)
+	assert2.EqualMapRowValue(t, 2, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, map[string]interface{}{"d": 3}, row, "c")
+	assert2.EqualMapRowValue(t, "hello", row, "e")
+	assert2.EqualMapRowValue(t, []interface{}{1, 2, 3}, row, "f")
 }
 
 func TestSimpleJqTableTwoFields(t *testing.T) {
@@ -135,15 +141,15 @@ func TestSimpleJqTableTwoFields(t *testing.T) {
 	require.NotNil(t, m)
 	require.NotEmpty(t, m.fieldQueries)
 
+	ctx := context.Background()
 	table := createJqTestTable()
-	t2, err := m.Process(table)
-	assert.NoError(t, err)
+	t2, err := m.Process(ctx, table)
+	require.NoError(t, err)
 
-	row := t2.Rows[0].GetValues()
-	assert.Equal(t, 2, row["a"])
-	assert.Equal(t, 2, row["b"])
-	assert.Equal(t, 3, row["c"])
-
-	assert.Equal(t, "hello", row["e"])
-	assert.Equal(t, []interface{}{1, 2, 3}, row["f"])
+	row := t2.Rows[0]
+	assert2.EqualMapRowValue(t, 2, row, "a")
+	assert2.EqualMapRowValue(t, 2, row, "b")
+	assert2.EqualMapRowValue(t, 3, row, "c")
+	assert2.EqualMapRowValue(t, "hello", row, "e")
+	assert2.EqualMapRowValue(t, []interface{}{1, 2, 3}, row, "f")
 }
