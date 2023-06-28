@@ -1,7 +1,6 @@
-package table
+package row
 
 import (
-	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
@@ -16,13 +15,11 @@ func TestSingleRename(t *testing.T) {
 		"foo": "bar",
 	}
 	mw := NewFieldRenameColumnMiddleware(renameTable)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.EqualMapRowValue(t, 1, row, "bar")
 	assert2.EqualMapRowValue(t, 2, row, "baz")
@@ -35,12 +32,11 @@ func TestRenameTwoFieldColumns(t *testing.T) {
 		"baz": "qux",
 	}
 	mw := NewFieldRenameColumnMiddleware(renameTable)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.EqualMapRowValue(t, 1, row, "bar")
 	assert2.EqualMapRowValue(t, 2, row, "qux")
@@ -52,14 +48,31 @@ func TestRenameOverrideColumn(t *testing.T) {
 		"foo": "foobar",
 	}
 	mw := NewFieldRenameColumnMiddleware(renameTable)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
-	assert2.EqualMapRowValue(t, 1, row, "foobar")
+	// we get 3 because our keys are ordered now, and foobar comes last, thus overwriting the renamed foo
+	assert2.EqualMapRowValue(t, 3, row, "foobar")
+	assert2.EqualMapRowValue(t, 2, row, "baz")
+
+}
+
+func TestRenameOverrideColumnLast(t *testing.T) {
+	renameTable := map[types.FieldName]types.FieldName{
+		"foobar": "foo",
+	}
+	mw := NewFieldRenameColumnMiddleware(renameTable)
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
+
+	row := newRows[0]
+	assert2.NilMapRowValue(t, row, "foobar")
+	// the renamed foobar -> foo now overwrites the original foo value
+	assert2.EqualMapRowValue(t, 3, row, "foo")
 	assert2.EqualMapRowValue(t, 2, row, "baz")
 
 }
@@ -72,12 +85,11 @@ func TestRenameRegexpSimpleMatch(t *testing.T) {
 	})
 
 	mw := NewRegexpRenameColumnMiddleware(rrs)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.EqualMapRowValue(t, 1, row, "bar")
 	assert2.EqualMapRowValue(t, 2, row, "baz")
@@ -91,12 +103,11 @@ func TestRenameRegexpDoubleMatch(t *testing.T) {
 	})
 
 	mw := NewRegexpRenameColumnMiddleware(rrs)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	// here, f.. should match both fields
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "foobar")
@@ -119,12 +130,11 @@ func TestRenameRegexpOrderedMatch(t *testing.T) {
 	})
 
 	mw := NewRegexpRenameColumnMiddleware(rrs)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.NoError(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	// it's going to be hard to test that these will happen in the right
 	// order as it really depends on the map
 	assert2.NilMapRowValue(t, row, "foo")
@@ -135,7 +145,7 @@ func TestRenameRegexpOrderedMatch(t *testing.T) {
 	assert2.EqualMapRowValue(t, 3, row, "foobar")
 }
 
-func createTestTable() *types.Table {
+func createTestRows() []types.Row {
 	table := types.Table{
 		Columns: []types.FieldName{
 			"foo",
@@ -152,7 +162,7 @@ func createTestTable() *types.Table {
 		),
 	)
 
-	return &table
+	return table.Rows
 }
 
 func TestBothFieldAndRegexpRenames(t *testing.T) {
@@ -166,12 +176,12 @@ func TestBothFieldAndRegexpRenames(t *testing.T) {
 	})
 
 	mw := NewRenameColumnMiddleware(renameTable, rrs)
-	table := createTestTable()
+	rows := createTestRows()
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "baz")
 	assert2.NilMapRowValue(t, row, "foobar")
@@ -190,12 +200,12 @@ renames:
 	mw, err := NewRenameColumnMiddlewareFromYAML(decoder)
 	require.Nil(t, err)
 
-	table := createTestTable()
+	rows := createTestRows()
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "baz")
 	assert2.EqualMapRowValue(t, 1, row, "bar")
@@ -215,12 +225,11 @@ regexpRenames:
 	mw, err := NewRenameColumnMiddlewareFromYAML(decoder)
 	require.Nil(t, err)
 
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "baz")
 	assert2.NilMapRowValue(t, row, "foobar")
@@ -244,12 +253,11 @@ regexpRenames:
 	mw, err := NewRenameColumnMiddlewareFromYAML(decoder)
 	require.Nil(t, err)
 
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "baz")
 	assert2.NilMapRowValue(t, row, "foobar")
@@ -265,12 +273,11 @@ func TestRegexpCaptureGroupRename(t *testing.T) {
 	})
 
 	mw := NewRegexpRenameColumnMiddleware(rrs)
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "foobar")
 	assert2.EqualMapRowValue(t, 1, row, "bar")
@@ -288,12 +295,11 @@ regexpRenames:
 	mw, err := NewRenameColumnMiddlewareFromYAML(decoder)
 	require.Nil(t, err)
 
-	table := createTestTable()
+	rows := createTestRows()
+	newRows, err := processRows(mw, rows)
+	require.Nil(t, err)
 
-	newTable, ret := mw.Process(context.Background(), table)
-	require.Nil(t, ret)
-
-	row := newTable.Rows[0]
+	row := newRows[0]
 	assert2.NilMapRowValue(t, row, "foo")
 	assert2.NilMapRowValue(t, row, "foobar")
 	assert2.EqualMapRowValue(t, 1, row, "bar")

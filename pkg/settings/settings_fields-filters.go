@@ -97,7 +97,7 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.Processor) {
 	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
 	if ffs.RemoveNulls {
-		p_.AddTableMiddleware(table.NewRemoveNullsMiddleware())
+		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())
 	}
 	if ffs.SortColumns {
 		p_.AddTableMiddleware(table.NewSortColumnsMiddleware())

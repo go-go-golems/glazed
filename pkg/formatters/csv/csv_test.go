@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/go-go-golems/glazed/pkg/helpers/csv"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,9 +18,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	renames := map[string]string{
 		"a": "b",
 	}
-	p_ := middlewares.NewProcessor(middlewares.WithTableMiddleware(&table.RenameColumnMiddleware{
-		Renames: renames,
-	}))
+	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
 	ctx := context.Background()
 	err := p_.AddRow(ctx, types.NewMapRow(types.MRP("a", 1)))
 	require.NoError(t, err)

@@ -2,7 +2,6 @@ package row
 
 import (
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +25,7 @@ func createReplaceTestRows() []types.Row {
 func TestSingleSkip(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -58,7 +57,7 @@ func TestSingleReplacement(t *testing.T) {
 				},
 			},
 		},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{},
 	)
@@ -80,7 +79,7 @@ func TestSingleReplacement(t *testing.T) {
 func TestTwoSkips(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -104,7 +103,7 @@ func TestTwoSkips(t *testing.T) {
 func TestTwoColumnSkips(t *testing.T) {
 	mw := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -131,7 +130,7 @@ func TestTwoColumnSkips(t *testing.T) {
 func TestSingleRegexpSkip(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{
 			"field1": {
 				&RegexpSkip{
@@ -184,7 +183,7 @@ func TestTwoReplacements(t *testing.T) {
 				},
 			},
 		},
-		map[types.FieldName][]*table.RegexpReplacement{},
+		map[types.FieldName][]*RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{},
 	)
@@ -206,9 +205,9 @@ func TestTwoReplacements(t *testing.T) {
 func TestSingleRegexpReplacement(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{
+		map[types.FieldName][]*RegexpReplacement{
 			"field1": {
-				&table.RegexpReplacement{
+				&RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v.*1$"),
 					Replacement: "replaced",
 				},
@@ -236,9 +235,9 @@ func TestSingleRegexpReplacement(t *testing.T) {
 func TestSingleRegexpCaptureReplacement(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{
+		map[types.FieldName][]*RegexpReplacement{
 			"field1": {
-				&table.RegexpReplacement{
+				&RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v(.*)1$"),
 					Replacement: "replaced$1",
 				},
@@ -266,9 +265,9 @@ func TestSingleRegexpCaptureReplacement(t *testing.T) {
 func TestRegexpAndSkip(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*table.RegexpReplacement{
+		map[types.FieldName][]*RegexpReplacement{
 			"field1": {
-				&table.RegexpReplacement{
+				&RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v.*1$"),
 					Replacement: "replaced",
 				},

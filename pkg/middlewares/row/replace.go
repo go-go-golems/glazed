@@ -2,7 +2,6 @@ package row
 
 import (
 	"context"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -30,14 +29,14 @@ type RegexpSkip struct {
 
 type ReplaceMiddleware struct {
 	Replacements      map[types.FieldName][]*Replacement
-	RegexReplacements map[types.FieldName][]*table.RegexpReplacement
+	RegexReplacements map[types.FieldName][]*RegexpReplacement
 	RegexSkips        map[types.FieldName][]*RegexpSkip
 	Skips             map[types.FieldName][]*Skip
 }
 
 func NewReplaceMiddleware(
 	replacements map[types.FieldName][]*Replacement,
-	regexReplacements map[types.FieldName][]*table.RegexpReplacement,
+	regexReplacements map[types.FieldName][]*RegexpReplacement,
 	regexSkips map[types.FieldName][]*RegexpSkip,
 	skips map[types.FieldName][]*Skip,
 ) *ReplaceMiddleware {
@@ -57,7 +56,7 @@ func NewReplaceMiddlewareFromYAML(b []byte) (*ReplaceMiddleware, error) {
 	}
 
 	replacements := make(map[types.FieldName][]*Replacement)
-	regexReplacements := make(map[types.FieldName][]*table.RegexpReplacement)
+	regexReplacements := make(map[types.FieldName][]*RegexpReplacement)
 	regexSkips := make(map[types.FieldName][]*RegexpSkip)
 	skips := make(map[types.FieldName][]*Skip)
 
@@ -140,7 +139,7 @@ func NewReplaceMiddlewareFromYAML(b []byte) (*ReplaceMiddleware, error) {
 
 						regexReplacements[types.FieldName(fieldName)] = append(
 							regexReplacements[types.FieldName(fieldName)],
-							&table.RegexpReplacement{Regexp: re, Replacement: replacement})
+							&RegexpReplacement{Regexp: re, Replacement: replacement})
 					}
 
 				}

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ func TestTableRenameEndToEnd(t *testing.T) {
 	obj := types.NewMapRow(types.MRP("a", 1))
 	ctx := context.Background()
 
-	p_ := middlewares.NewProcessor(middlewares.WithTableMiddleware(&table.RenameColumnMiddleware{Renames: renames}))
+	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
 	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
 	err = p_.FinalizeTable(ctx)
