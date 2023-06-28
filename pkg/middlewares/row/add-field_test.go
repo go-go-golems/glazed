@@ -1,17 +1,16 @@
-package table
+package row
 
 import (
 	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func createAddFieldTestTable() *types.Table {
-	ret := types.NewTable()
-	ret.Columns = []types.FieldName{"field1", "field2"}
-	ret.Rows = []types.Row{
+func createAddFieldTestRows() []types.Row {
+	return []types.Row{
 		types.NewMapRow(
 			types.MRP("field1", "skip"),
 			types.MRP("field2", "value2"),
@@ -21,8 +20,6 @@ func createAddFieldTestTable() *types.Table {
 			types.MRP("field2", "value3 blabla"),
 		),
 	}
-
-	return ret
 }
 
 func TestSingleAddField(t *testing.T) {
@@ -30,21 +27,33 @@ func TestSingleAddField(t *testing.T) {
 		"field3": "value3",
 	})
 
-	table := createAddFieldTestTable()
-	newtable, err := addFieldMiddleware.Process(context.Background(), table)
+	rows := createAddFieldTestRows()
+	finalRows, err := processRows(addFieldMiddleware, rows)
 	require.NoError(t, err)
+	require.Equal(t, 2, len(finalRows))
 
-	require.Equal(t, 2, len(newtable.Rows))
-
-	row := newtable.Rows[0]
+	row := finalRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
 	assert2.EqualMapRowValue(t, "value3", row, "field3")
 
-	row = newtable.Rows[1]
+	row = finalRows[1]
 	assert2.EqualMapRowValue(t, "value1", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 	assert2.EqualMapRowValue(t, "value3", row, "field3")
+}
+
+func processRows(rm middlewares.RowMiddleware, rows []types.Row) ([]types.Row, error) {
+	finalRows := make([]types.Row, 0)
+	for _, row := range rows {
+		rows_, err := rm.Process(context.Background(), row)
+		if err != nil {
+			return nil, err
+		}
+		finalRows = append(finalRows, rows_...)
+	}
+
+	return finalRows, nil
 }
 
 func TestMultipleAddField(t *testing.T) {
@@ -53,19 +62,19 @@ func TestMultipleAddField(t *testing.T) {
 		"field4": "value4",
 	})
 
-	table := createAddFieldTestTable()
-	newtable, err := addFieldMiddleware.Process(context.Background(), table)
+	rows := createAddFieldTestRows()
+	finalRows, err := processRows(addFieldMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(newtable.Rows))
+	require.Equal(t, 2, len(finalRows))
 
-	row := newtable.Rows[0]
+	row := finalRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
 	assert2.EqualMapRowValue(t, "value3", row, "field3")
 	assert2.EqualMapRowValue(t, "value4", row, "field4")
 
-	row = newtable.Rows[1]
+	row = finalRows[1]
 	assert2.EqualMapRowValue(t, "value1", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 	assert2.EqualMapRowValue(t, "value3", row, "field3")
