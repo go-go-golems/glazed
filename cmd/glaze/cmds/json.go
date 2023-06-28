@@ -76,7 +76,7 @@ func (j *JsonCommand) Run(
 		}
 
 		if inputIsArray {
-			data := make([]types.MapRow, 0)
+			data := make([]types.Row, 0)
 			err = json.NewDecoder(f).Decode(&data)
 			if err != nil {
 				return errors.Wrapf(err, "Error decoding file %s as array", arg)
@@ -84,7 +84,7 @@ func (j *JsonCommand) Run(
 
 			i := 1
 			for _, d := range data {
-				err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: d})
+				err = gp.ProcessInputObject(ctx, d)
 				if err != nil {
 					return errors.Wrapf(err, "Error processing row %d of file %s as object", i, arg)
 				}
@@ -98,7 +98,7 @@ func (j *JsonCommand) Run(
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
 
-			err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: data})
+			err = gp.ProcessInputObject(ctx, data)
 			if err != nil {
 				return errors.Wrapf(err, "Error processing file %s as object", arg)
 			}

@@ -41,7 +41,7 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 
 			encoder := json.NewEncoder(f_)
 			encoder.SetIndent("", "  ")
-			err = encoder.Encode(row.GetValues())
+			err = encoder.Encode(row)
 			if err != nil {
 				_ = f_.Close()
 				return err
@@ -68,7 +68,7 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 		for _, row := range table_.Rows {
 			encoder := json.NewEncoder(w)
 			encoder.SetIndent("", "  ")
-			err := encoder.Encode(row.GetValues())
+			err := encoder.Encode(row)
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 			enc.Reset(w)
 
 			// Encode each element in the array
-			err = enc.Encode(row.GetValues())
+			err = enc.Encode(row)
 			if err != nil {
 				return err
 			}

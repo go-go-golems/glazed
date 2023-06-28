@@ -21,7 +21,7 @@ func TestTableRenameEndToEnd(t *testing.T) {
 	ctx := context.Background()
 
 	p_ := middlewares.NewProcessor(middlewares.WithTableMiddleware(&table.RenameColumnMiddleware{Renames: renames}))
-	err := p_.AddRow(ctx, &types.SimpleRow{Hash: obj})
+	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
 	err = p_.FinalizeTable(ctx)
 	require.NoError(t, err)

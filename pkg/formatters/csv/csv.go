@@ -172,7 +172,7 @@ func (f *OutputFormatter) newCSVWriter(columns []types.FieldName, w_ io.Writer) 
 func (f *OutputFormatter) writeRow(columns []types.FieldName, row types.Row, w *csv.Writer) error {
 	values := []string{}
 	for _, column := range columns {
-		if v, ok := row.GetValues().Get(column); ok {
+		if v, ok := row.Get(column); ok {
 			values = append(values, fmt.Sprintf("%v", v))
 		} else {
 			values = append(values, "")

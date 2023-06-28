@@ -11,7 +11,7 @@ func (t *Table) AddRows(rows ...Row) {
 	// This might be not very efficient, but it's not like computing it all at the end is great too.
 	// This might be something that could be set as an option.
 	for _, row := range rows {
-		columns := row.GetFields()
+		columns := GetFields(row)
 		t.SetColumnOrder(columns)
 	}
 	t.Rows = append(t.Rows, rows...)

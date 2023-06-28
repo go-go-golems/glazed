@@ -21,7 +21,7 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 	ctx := context.Background()
 
 	p_ := middlewares.NewProcessor(middlewares.WithTableMiddleware(&table.RenameColumnMiddleware{Renames: renames}))
-	err := p_.AddRow(ctx, &types.SimpleRow{Hash: obj})
+	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
 	err = p_.FinalizeTable(ctx)
 	require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestJSONRenameEndToEnd(t *testing.T) {
 
 	s := buf.String()
 	// parse s
-	data := []types.MapRow{}
+	data := []types.Row{}
 	err = json.Unmarshal([]byte(s), &data)
 	require.NoError(t, err)
 	require.Len(t, data, 1)

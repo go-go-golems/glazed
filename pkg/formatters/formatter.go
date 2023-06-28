@@ -43,11 +43,16 @@ type OutputFormatter interface {
 	ContentType() string
 }
 
-func ComputeOutputFilename(outputFile string, outputFileTemplate string, row types.Row, index int) (string, error) {
+func ComputeOutputFilename(
+	outputFile string,
+	outputFileTemplate string,
+	row types.Row,
+	index int,
+) (string, error) {
 	var outputFileName string
 	if outputFileTemplate != "" {
 		data := map[string]interface{}{}
-		values := row.GetValues()
+		values := row
 
 		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
 			k, v := pair.Key, pair.Value

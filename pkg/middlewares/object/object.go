@@ -50,7 +50,7 @@ func (rgtm *ObjectGoTemplateMiddleware) Process(ctx context.Context, object type
 		var buf bytes.Buffer
 		m := map[string]interface{}{}
 
-		for pair := object.GetValues().Oldest(); pair != nil; pair = pair.Next() {
+		for pair := object.Oldest(); pair != nil; pair = pair.Next() {
 			m[pair.Key] = pair.Value
 		}
 		err := tmpl.Execute(&buf, m)
@@ -60,5 +60,5 @@ func (rgtm *ObjectGoTemplateMiddleware) Process(ctx context.Context, object type
 		ret.Set(key, buf.String())
 	}
 
-	return []types.Row{&types.SimpleRow{Hash: ret}}, nil
+	return []types.Row{ret}, nil
 }

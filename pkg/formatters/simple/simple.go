@@ -72,9 +72,7 @@ func (s *SingleColumnFormatter) Output(ctx context.Context, table_ *types.Table,
 				return err
 			}
 
-			values := row.GetValues()
-
-			if s_, ok := values.Get(s.Column); ok {
+			if s_, ok := row.Get(s.Column); ok {
 				v := fmt.Sprintf("%v", s_)
 				err = os.WriteFile(outputFileName, []byte(v), 0644)
 				if err != nil {
@@ -98,7 +96,7 @@ func (s *SingleColumnFormatter) Output(ctx context.Context, table_ *types.Table,
 	}
 
 	for i, row := range table_.Rows {
-		if value, ok := row.GetValues().Get(s.Column); ok {
+		if value, ok := row.Get(s.Column); ok {
 			_, err := fmt.Fprintf(w, "%v", value)
 			if err != nil {
 				return err

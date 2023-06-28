@@ -22,7 +22,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 		Renames: renames,
 	}))
 	ctx := context.Background()
-	err := p_.AddRow(ctx, &types.SimpleRow{Hash: types.NewMapRow(types.MRP("a", 1))})
+	err := p_.AddRow(ctx, types.NewMapRow(types.MRP("a", 1)))
 	require.NoError(t, err)
 
 	err = p_.FinalizeTable(ctx)

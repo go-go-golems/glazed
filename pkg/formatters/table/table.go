@@ -178,11 +178,10 @@ func (tof *OutputFormatter) makeTable(table_ *types.Table, rows []types.Row, w i
 
 	t.AppendHeader(headers)
 	for _, row := range rows {
-		values := row.GetValues()
 		var row_ []interface{}
 		for _, column := range table_.Columns {
 			s := ""
-			if v, ok := values.Get(column); ok {
+			if v, ok := row.Get(column); ok {
 				s = valueToString(v)
 			}
 			row_ = append(row_, s)

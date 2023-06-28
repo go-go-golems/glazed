@@ -40,7 +40,7 @@ func (jqm *JqObjectMiddleware) Process(
 	if jqm.query != nil {
 		// TODO(manuel, 2023-06-25) Transform to map before passing to jq
 		m := map[string]interface{}{}
-		for pair := object.GetValues().Oldest(); pair != nil; pair = pair.Next() {
+		for pair := object.Oldest(); pair != nil; pair = pair.Next() {
 			m[pair.Key] = pair.Value
 		}
 		iter := jqm.query.Run(m)
@@ -61,20 +61,20 @@ func (jqm *JqObjectMiddleware) Process(
 					case error:
 						return nil, v_
 					case map[string]interface{}:
-						ret = append(ret, &types.SimpleRow{Hash: types.NewMapRowFromMap(v_)})
-					case types.MapRow:
-						ret = append(ret, &types.SimpleRow{Hash: v_})
+						ret = append(ret, types.NewMapRowFromMap(v_))
+					case types.Row:
+						ret = append(ret, v_)
 					default:
 						return nil, errors.Errorf("Expected object, got %T", v)
 					}
 				}
 
 				continue
-			case types.MapRow:
-				ret = append(ret, &types.SimpleRow{Hash: v_})
+			case types.Row:
+				ret = append(ret, v_)
 
 			case map[string]interface{}:
-				ret = append(ret, &types.SimpleRow{Hash: types.NewMapRowFromMap(v_)})
+				ret = append(ret, types.NewMapRowFromMap(v_))
 
 			}
 		}
@@ -118,16 +118,14 @@ func (jqm *JqTableMiddleware) Process(ctx context.Context, table *types.Table) (
 	ret.Columns = append(ret.Columns, table.Columns...)
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: types.NewMapRow(),
-		}
+		values := row
+		newRow := types.NewMapRow()
 
 		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
 			rowField, value := pair.Key, pair.Value
 			query, ok := jqm.fieldQueries[rowField]
 			if !ok {
-				newRow.Hash.Set(rowField, value)
+				newRow.Set(rowField, value)
 				continue
 			}
 
@@ -146,11 +144,11 @@ func (jqm *JqTableMiddleware) Process(ctx context.Context, table *types.Table) (
 					return nil, err
 				}
 
-				newRow.Hash.Set(rowField, v)
+				newRow.Set(rowField, v)
 			}
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil

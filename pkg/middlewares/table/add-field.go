@@ -20,16 +20,15 @@ func (a *AddFieldMiddleware) Process(ctx context.Context, table *types.Table) (*
 	}
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
 		newValues := types.NewMapRow()
-		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 			key, value := pair.Key, pair.Value
 			newValues.Set(key, value)
 		}
 		for key, value := range a.Fields {
 			newValues.Set(key, value)
 		}
-		ret.Rows = append(ret.Rows, &types.SimpleRow{Hash: newValues})
+		ret.Rows = append(ret.Rows, newValues)
 	}
 
 	for key := range a.Fields {

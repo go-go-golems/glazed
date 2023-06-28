@@ -69,10 +69,8 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, table *types.Tab
 	}
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: types.NewMapRow(),
-		}
+		values := row
+		newRow := types.NewMapRow()
 
 	NextRow:
 		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
@@ -140,10 +138,10 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, table *types.Tab
 				}
 			}
 
-			newRow.Hash.Set(rowField, value)
+			newRow.Set(rowField, value)
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	ret.Columns = PreserveColumnOrder(table.Columns, newColumns)
@@ -185,19 +183,16 @@ func (rnm *RemoveNullsMiddleware) Process(ctx context.Context, table *types.Tabl
 	}
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: types.NewMapRow(),
-		}
+		newRow := types.NewMapRow()
 
-		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 			key, value := pair.Key, pair.Value
 			if value != nil {
-				newRow.Hash.Set(key, value)
+				newRow.Set(key, value)
 			}
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil
@@ -219,16 +214,13 @@ func (fom *FlattenObjectMiddleware) Process(ctx context.Context, table *types.Ta
 	newColumns := map[types.FieldName]interface{}{}
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newValues := FlattenMapIntoColumns(values)
-		newRow := types.SimpleRow{
-			Hash: newValues,
-		}
+		newValues := FlattenMapIntoColumns(row)
+		newRow := newValues
 
 		for pair := newValues.Oldest(); pair != nil; pair = pair.Next() {
 			newColumns[pair.Key] = nil
 		}
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	ret.Columns = PreserveColumnOrder(table.Columns, newColumns)
@@ -236,13 +228,13 @@ func (fom *FlattenObjectMiddleware) Process(ctx context.Context, table *types.Ta
 	return ret, nil
 }
 
-func FlattenMapIntoColumns(rows types.MapRow) types.MapRow {
+func FlattenMapIntoColumns(rows types.Row) types.Row {
 	ret := types.NewMapRow()
 
 	for pair := rows.Oldest(); pair != nil; pair = pair.Next() {
 		key, value := pair.Key, pair.Value
 		switch v := value.(type) {
-		case types.MapRow:
+		case types.Row:
 			newColumns := FlattenMapIntoColumns(v)
 			for pair_ := newColumns.Oldest(); pair_ != nil; pair_ = pair_.Next() {
 				k, v := pair_.Key, pair_.Value
@@ -399,13 +391,11 @@ func (rgtm *RowGoTemplateMiddleware) Process(ctx context.Context, table *types.T
 	}
 
 	for _, row := range table.Rows {
-		newRow := types.SimpleRow{
-			Hash: row.GetValues(),
-		}
+		newRow := row
 
 		templateValues := map[string]interface{}{}
 
-		for pair := newRow.Hash.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := newRow.Oldest(); pair != nil; pair = pair.Next() {
 			key, value := pair.Key, pair.Value
 
 			if rgtm.RenameSeparator != "" {
@@ -434,10 +424,10 @@ func (rgtm *RowGoTemplateMiddleware) Process(ctx context.Context, table *types.T
 				newColumns[columnName] = nil
 				ret.Columns = append(ret.Columns, columnName)
 			}
-			newRow.Hash.Set(columnName, s)
+			newRow.Set(columnName, s)
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil
@@ -587,18 +577,15 @@ func (r *RenameColumnMiddleware) Process(ctx context.Context, table *types.Table
 	// this really requires us to copy most of the maps.
 	// whatever, we'll address efficient renames later
 	for _, row := range table.Rows {
-		newRow := &types.SimpleRow{
-			Hash: types.NewMapRow(),
-		}
-		values := row.GetValues()
-		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+		newRow := types.NewMapRow()
+		for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 			key, value := pair.Key, pair.Value
 			newKey, ok := renamedColumns[key]
 			if !ok {
 				// skip, it means columns were overwritten in the rename
 				continue
 			}
-			newRow.Hash.Set(newKey, value)
+			newRow.Set(newKey, value)
 		}
 		ret.Rows = append(ret.Rows, newRow)
 	}

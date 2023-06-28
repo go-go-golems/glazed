@@ -21,15 +21,14 @@ func (r *RemoveDuplicatesMiddleware) Process(ctx context.Context, table *types.T
 		Rows:    make([]types.Row, 0),
 	}
 
-	var previousRowValues types.MapRow
+	var previousRowValues types.Row
 
 	for _, row := range table.Rows {
-		values := row.GetValues()
 		if previousRowValues != nil {
 			// check if the values are the same
 			same := true
 			for _, column := range r.columns {
-				v, ok := values.Get(column)
+				v, ok := row.Get(column)
 				v2, ok2 := previousRowValues.Get(column)
 				if ok != ok2 || v != v2 {
 					same = false
@@ -41,7 +40,7 @@ func (r *RemoveDuplicatesMiddleware) Process(ctx context.Context, table *types.T
 			}
 		}
 		ret.Rows = append(ret.Rows, row)
-		previousRowValues = values
+		previousRowValues = row
 	}
 
 	return ret, nil

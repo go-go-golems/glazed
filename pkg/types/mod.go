@@ -5,16 +5,16 @@ import orderedmap "github.com/wk8/go-ordered-map/v2"
 type TableName = string
 type FieldName = string
 type GenericCellValue = interface{}
-type MapRow = *orderedmap.OrderedMap[FieldName, GenericCellValue]
+type Row = *orderedmap.OrderedMap[FieldName, GenericCellValue]
 type MapRowPair = orderedmap.Pair[FieldName, GenericCellValue]
 
-func NewMapRow(initialData ...MapRowPair) MapRow {
+func NewMapRow(initialData ...MapRowPair) Row {
 	return orderedmap.New[FieldName, GenericCellValue](
 		orderedmap.WithInitialData(initialData...),
 	)
 }
 
-func NewMapRowFromMap(hash map[FieldName]GenericCellValue) MapRow {
+func NewMapRowFromMap(hash map[FieldName]GenericCellValue) Row {
 	ret := NewMapRow()
 	for k, v := range hash {
 		ret.Set(k, v)
@@ -22,7 +22,7 @@ func NewMapRowFromMap(hash map[FieldName]GenericCellValue) MapRow {
 	return ret
 }
 
-func NewMapRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) MapRow {
+func NewMapRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
 	ret := NewMapRow()
 	for _, column := range columns {
 		v, ok := hash[column]
@@ -38,26 +38,10 @@ func MRP(key FieldName, value GenericCellValue) MapRowPair {
 	return orderedmap.Pair[FieldName, GenericCellValue]{Key: key, Value: value}
 }
 
-type Row interface {
-	GetFields() []FieldName
-	GetValues() MapRow
-}
-
-// TODO(manuel, 2023-06-27) We actually don't need this at all, we can just define GetFields() on MapRow directly
-
-type SimpleRow struct {
-	Hash MapRow
-}
-
-func (sr *SimpleRow) GetFields() []FieldName {
+func GetFields(om Row) []FieldName {
 	ret := []FieldName{}
-	om := sr.Hash
 	for pair := om.Oldest(); pair != nil; pair = pair.Next() {
 		ret = append(ret, pair.Key)
 	}
 	return ret
-}
-
-func (sr *SimpleRow) GetValues() MapRow {
-	return sr.Hash
 }

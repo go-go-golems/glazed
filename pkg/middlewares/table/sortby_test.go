@@ -13,13 +13,13 @@ func createSortByTables(rows [][]interface{}) *types.Table {
 	ret.Columns = []types.FieldName{"a", "b", "c"}
 	ret.Rows = []types.Row{}
 	for _, row := range rows {
-		ret.Rows = append(ret.Rows, &types.SimpleRow{
-			Hash: types.NewMapRow(
+		ret.Rows = append(ret.Rows,
+			types.NewMapRow(
 				types.MRP("a", row[0]),
 				types.MRP("b", row[1]),
 				types.MRP("c", row[2]),
 			),
-		})
+		)
 	}
 
 	return ret
@@ -38,11 +38,11 @@ func TestSortByMiddlewareSingleIntColumn(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, 1, row, "a")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, 4, row, "a")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, 7, row, "a")
 }
 
@@ -59,11 +59,11 @@ func TestSortByMiddlewareSingleIntColumnDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, 7, row, "a")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, 4, row, "a")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 }
 
@@ -80,11 +80,11 @@ func TestSortByMiddlewareSingleStringColumn(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, "a", row, "a")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, "b", row, "a")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, "c", row, "a")
 }
 
@@ -101,11 +101,11 @@ func TestSortByMiddlewareSingleStringColumnDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, "c", row, "a")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, "b", row, "a")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, "a", row, "a")
 
 }
@@ -124,16 +124,16 @@ func TestSortByMiddlewareTwoColumns(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 2, row, "b")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 3, row, "b")
-	row = newtable.Rows[3].GetValues()
+	row = newtable.Rows[3]
 	assert2.EqualMapRowValue(t, 2, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
 }
@@ -152,16 +152,16 @@ func TestSortByMiddlewareTwoColumnsDesc(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, 2, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 3, row, "b")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 2, row, "b")
-	row = newtable.Rows[3].GetValues()
+	row = newtable.Rows[3]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
 }
@@ -180,16 +180,16 @@ func TestSortByMiddlewareTwoColumnsDescFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 4, len(newtable.Rows))
-	row := newtable.Rows[0].GetValues()
+	row := newtable.Rows[0]
 	assert2.EqualMapRowValue(t, 2, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
-	row = newtable.Rows[1].GetValues()
+	row = newtable.Rows[1]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 1, row, "b")
-	row = newtable.Rows[2].GetValues()
+	row = newtable.Rows[2]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 2, row, "b")
-	row = newtable.Rows[3].GetValues()
+	row = newtable.Rows[3]
 	assert2.EqualMapRowValue(t, 1, row, "a")
 	assert2.EqualMapRowValue(t, 3, row, "b")
 }

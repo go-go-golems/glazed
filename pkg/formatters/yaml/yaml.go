@@ -39,7 +39,7 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 			}(f_)
 
 			encoder := yaml.NewEncoder(f_)
-			err = encoder.Encode(row.GetValues())
+			err = encoder.Encode(row)
 			if err != nil {
 				return err
 			}
@@ -72,16 +72,16 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 		}
 
 		encoder := yaml.NewEncoder(w)
-		err := encoder.Encode(table_.Rows[0].GetValues())
+		err := encoder.Encode(table_.Rows[0])
 		if err != nil {
 			return err
 		}
 
 		return nil
 	} else {
-		var rows []types.MapRow
+		var rows []types.Row
 		for _, row := range table_.Rows {
-			rows = append(rows, row.GetValues())
+			rows = append(rows, row)
 		}
 
 		encoder := yaml.NewEncoder(w)

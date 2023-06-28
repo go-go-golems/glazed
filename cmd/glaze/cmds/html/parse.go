@@ -96,7 +96,7 @@ func (hsp *HTMLSplitParser) ProcessNode(ctx context.Context, n *html.Node) (*htm
 		}
 		row.Set("Body", strings.TrimSpace(body.String()))
 
-		err := hsp.gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: row})
+		err := hsp.gp.ProcessInputObject(ctx, row)
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +197,7 @@ func outputNodesDepthFirst(ctx context.Context, doc *html.Node, gp *processor.Gl
 		types.MRP("Attributes", attributes),
 	)
 
-	err := gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: obj})
+	err := gp.ProcessInputObject(ctx, obj)
 	if err != nil {
 		return err
 	}

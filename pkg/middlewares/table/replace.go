@@ -202,17 +202,14 @@ func (r *ReplaceMiddleware) Process(ctx context.Context, table *types.Table) (*t
 
 NextRow:
 	for _, row := range table.Rows {
-		values := row.GetValues()
-		newRow := types.SimpleRow{
-			Hash: types.NewMapRow(),
-		}
+		newRow := types.NewMapRow()
 
-		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 			rowField, value := pair.Key, pair.Value
 
 			s, ok := value.(string)
 			if !ok {
-				newRow.Hash.Set(rowField, value)
+				newRow.Set(rowField, value)
 				continue
 			}
 
@@ -236,10 +233,10 @@ NextRow:
 				s = regexReplacement.Regexp.ReplaceAllString(s, regexReplacement.Replacement)
 			}
 
-			newRow.Hash.Set(rowField, s)
+			newRow.Set(rowField, s)
 		}
 
-		ret.Rows = append(ret.Rows, &newRow)
+		ret.Rows = append(ret.Rows, newRow)
 	}
 
 	return ret, nil

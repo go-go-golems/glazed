@@ -48,7 +48,7 @@ func (t *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 				_ = f_.Close()
 			}(f_)
 
-			tableData := []types.MapRow{row.GetValues()}
+			tableData := []types.Row{row}
 
 			data := map[string]interface{}{
 				// TODO(manuel, 2023-06-25) Convert to normal maps for templating
@@ -70,10 +70,9 @@ func (t *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.
 	var tableData []map[string]interface{}
 
 	for _, row := range table_.Rows {
-		values := row.GetValues()
 		m := make(map[string]interface{})
 
-		for pair := values.Oldest(); pair != nil; pair = pair.Next() {
+		for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 			m[pair.Key] = pair.Value
 		}
 

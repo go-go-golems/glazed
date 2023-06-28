@@ -65,8 +65,8 @@ func (s *SortByMiddleware) Process(ctx context.Context, table *types.Table) (*ty
 	}
 
 	sort.Slice(ret.Rows, func(i, j int) bool {
-		rowA := ret.Rows[i].GetValues()
-		rowB := ret.Rows[j].GetValues()
+		rowA := ret.Rows[i]
+		rowB := ret.Rows[j]
 
 		for _, column := range s.columns {
 			v, ok := rowA.Get(column.name)

@@ -61,9 +61,8 @@ func (E *OutputFormatter) Output(_ context.Context, table_ *types.Table, w io.Wr
 	}
 
 	for i, row := range table_.Rows {
-		vals := row.GetValues()
 		for _, j := range table_.Columns {
-			val, present := vals.Get(j)
+			val, present := row.Get(j)
 			if !present {
 				continue
 			}

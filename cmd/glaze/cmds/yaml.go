@@ -109,7 +109,7 @@ func (y *YamlCommand) Run(
 		if inputIsArray {
 			// TODO(manuel, 2023-06-25) We should implement an unmarshaller for maprow from yaml
 			// See https://github.com/go-go-golems/glazed/issues/305
-			data := make([]types.MapRow, 0)
+			data := make([]types.Row, 0)
 			err = yaml.NewDecoder(f).Decode(&data)
 			if err != nil {
 				// check for EOF
@@ -121,7 +121,7 @@ func (y *YamlCommand) Run(
 
 			i := 1
 			for _, d := range data {
-				err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: d})
+				err = gp.ProcessInputObject(ctx, d)
 				if err != nil {
 					return errors.Wrapf(err, "Error processing row %d of file %s as object", i, arg)
 				}
@@ -138,7 +138,7 @@ func (y *YamlCommand) Run(
 				}
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
-			err = gp.ProcessInputObject(ctx, &types.SimpleRow{Hash: data})
+			err = gp.ProcessInputObject(ctx, data)
 			if err != nil {
 				return errors.Wrapf(err, "Error processing file %s as object", arg)
 			}

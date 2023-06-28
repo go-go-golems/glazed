@@ -27,28 +27,24 @@ func createJqTestTable() *types.Table {
 	return &types.Table{
 		Columns: []types.FieldName{},
 		Rows: []types.Row{
-			&types.SimpleRow{
-				Hash: types.NewMapRow(
-					types.MRP("a", 1),
-					types.MRP("b", 2),
-					types.MRP("c", map[string]interface{}{
-						"d": 3,
-					}),
-					types.MRP("e", "hello"),
-					types.MRP("f", []interface{}{1, 2, 3}),
-				),
-			},
-			&types.SimpleRow{
-				Hash: types.NewMapRow(
-					types.MRP("a", 11),
-					types.MRP("c", map[string]interface{}{
-						"d": 13,
-						"e": 12,
-					}),
-					types.MRP("e", "foobar"),
-					types.MRP("f", []interface{}{1, 4, 2, 3}),
-				),
-			},
+			types.NewMapRow(
+				types.MRP("a", 1),
+				types.MRP("b", 2),
+				types.MRP("c", map[string]interface{}{
+					"d": 3,
+				}),
+				types.MRP("e", "hello"),
+				types.MRP("f", []interface{}{1, 2, 3}),
+			),
+			types.NewMapRow(
+				types.MRP("a", 11),
+				types.MRP("c", map[string]interface{}{
+					"d": 13,
+					"e": 12,
+				}),
+				types.MRP("e", "foobar"),
+				types.MRP("f", []interface{}{1, 4, 2, 3}),
+			),
 		},
 	}
 }
@@ -59,10 +55,10 @@ func TestEmptyObjectMiddleware(t *testing.T) {
 
 	ctx := context.Background()
 	obj := types.NewMapRow(types.MRP("a", 1))
-	o2, err := m.Process(ctx, &types.SimpleRow{Hash: obj})
+	o2, err := m.Process(ctx, obj)
 	require.NoError(t, err)
 	assert.Len(t, o2, 1)
-	assert2.EqualMapRows(t, obj, o2[0].GetValues())
+	assert2.EqualMapRows(t, obj, o2[0])
 }
 
 func TestSimpleJqConstant(t *testing.T) {
@@ -71,11 +67,11 @@ func TestSimpleJqConstant(t *testing.T) {
 
 	ctx := context.Background()
 	o := types.NewMapRow(types.MRP("a", 1))
-	o2, err := m.Process(ctx, &types.SimpleRow{Hash: o})
+	o2, err := m.Process(ctx, o)
 	require.NoError(t, err)
 	assert.Len(t, o2, 1)
 	expected := types.NewMapRow(types.MRP("a", 2))
-	assert2.EqualMapRows(t, expected, o2[0].GetValues())
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqConstantArray(t *testing.T) {
@@ -84,11 +80,11 @@ func TestSimpleJqConstantArray(t *testing.T) {
 
 	ctx := context.Background()
 	o := types.NewMapRow(types.MRP("a", 1))
-	o2, err := m.Process(ctx, &types.SimpleRow{Hash: o})
+	o2, err := m.Process(ctx, o)
 	require.NoError(t, err)
 	expected := types.NewMapRow(types.MRP("a", []interface{}{2}))
 	assert.Len(t, o2, 1)
-	assert2.EqualMapRows(t, expected, o2[0].GetValues())
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqExtractNestedArray(t *testing.T) {
@@ -97,11 +93,11 @@ func TestSimpleJqExtractNestedArray(t *testing.T) {
 
 	ctx := context.Background()
 	o := types.NewMapRow(types.MRP("a", []interface{}{map[string]interface{}{"b": 2}}))
-	o2, err := m.Process(ctx, &types.SimpleRow{Hash: o})
+	o2, err := m.Process(ctx, o)
 	require.NoError(t, err)
 	expected := types.NewMapRow(types.MRP("b", 2))
 	assert.Len(t, o2, 1)
-	assert2.EqualMapRows(t, expected, o2[0].GetValues())
+	assert2.EqualMapRows(t, expected, o2[0])
 }
 
 func TestSimpleJqExtract(t *testing.T) {
@@ -110,13 +106,13 @@ func TestSimpleJqExtract(t *testing.T) {
 
 	ctx := context.Background()
 	table := createJqTestTable()
-	v2 := table.Rows[0].GetValues()
-	o2, err := m.Process(ctx, &types.SimpleRow{Hash: v2})
+	v2 := table.Rows[0]
+	o2, err := m.Process(ctx, v2)
 	require.NoError(t, err)
 	assert.Len(t, o2, 3)
-	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 1}, o2[0].GetValues())
-	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 2}, o2[1].GetValues())
-	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 3}, o2[2].GetValues())
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 1}, o2[0])
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 2}, o2[1])
+	assert2.EqualMapRowMap(t, map[string]interface{}{"field": 3}, o2[2])
 }
 
 func TestSimpleJqTableConstant(t *testing.T) {
@@ -129,7 +125,7 @@ func TestSimpleJqTableConstant(t *testing.T) {
 	t2, err := m.Process(ctx, table)
 	require.NoError(t, err)
 
-	row := t2.Rows[0].GetValues()
+	row := t2.Rows[0]
 	v, ok := row.Get("a")
 	assert.True(t, ok)
 	assert.Equal(t, 2, v)
@@ -150,7 +146,7 @@ func TestSimpleJqTableTwoFields(t *testing.T) {
 	t2, err := m.Process(ctx, table)
 	require.NoError(t, err)
 
-	row := t2.Rows[0].GetValues()
+	row := t2.Rows[0]
 	assert2.EqualMapRowValue(t, 2, row, "a")
 	assert2.EqualMapRowValue(t, 2, row, "b")
 	assert2.EqualMapRowValue(t, 3, row, "c")
