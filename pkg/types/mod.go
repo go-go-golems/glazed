@@ -33,7 +33,7 @@ func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
 	return ret
 }
 
-func NewMapRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
+func NewRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
 	ret := NewRow()
 	for _, column := range columns {
 		v, ok := hash[column]
