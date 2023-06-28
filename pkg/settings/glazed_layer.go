@@ -425,7 +425,7 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
 		mw := row.NewFlattenObjectMiddleware()
-		mwProcessor.AddRowMiddleware(mw)
+		mwProcessor.AddRowMiddlewareInFront(mw)
 	}
 	fieldsFilterSettings.AddMiddlewares(mwProcessor)
 
@@ -436,7 +436,7 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 
 	var middlewares_ []middlewares.ObjectMiddleware
 	if !templateSettings.UseRowTemplates && len(templateSettings.Templates) > 0 {
-		ogtm, err := object.NewObjectGoTemplateMiddleware(templateSettings.Templates)
+		ogtm, err := object.NewTemplateMiddleware(templateSettings.Templates)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not process template argument")
 		}

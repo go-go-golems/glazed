@@ -99,7 +99,7 @@ func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.Processor) {
 		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())
 	}
 	if ffs.SortColumns {
-		p_.AddTableMiddleware(row.NewSortColumnsMiddleware())
+		p_.AddRowMiddleware(row.NewSortColumnsMiddleware())
 	}
 	if len(ffs.ReorderColumns) > 0 {
 		p_.AddRowMiddleware(row.NewReorderColumnOrderMiddleware(ffs.ReorderColumns))

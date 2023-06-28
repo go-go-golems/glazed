@@ -119,8 +119,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
 		)
-		// TODO(manuel, 2023-06-27) Wouldn't this be done up front?
-		mwProcessor.AddRowMiddleware(row.NewFlattenObjectMiddleware())
+		mwProcessor.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := csv.NewCSVOutputFormatter(
@@ -151,7 +150,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 				table_formatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
-		mwProcessor.AddRowMiddleware(row.NewFlattenObjectMiddleware())
+		mwProcessor.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
