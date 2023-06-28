@@ -9,7 +9,7 @@ import (
 )
 
 type Processor interface {
-	ProcessInputObject(ctx context.Context, obj types.Row) error
+	AddRow(ctx context.Context, obj types.Row) error
 	OutputFormatter() formatters.OutputFormatter
 	Finalize(ctx context.Context) error
 	GetTable() *types.Table
@@ -63,20 +63,6 @@ func NewGlazeProcessor(of formatters.OutputFormatter, options ...GlazeProcessorO
 	}
 
 	return ret, nil
-}
-
-// ProcessInputObject takes an input object and processes it through the object middleware
-// chain.
-func (gp *GlazeProcessor) ProcessInputObject(ctx context.Context, obj types.Row) error {
-	err := gp.AddRow(ctx, obj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (gp *GlazeProcessor) Finalize(ctx context.Context) error {
-	return gp.Processor.Finalize(ctx)
 }
 
 func NewSimpleGlazeProcessor(options ...GlazeProcessorOption) (*GlazeProcessor, error) {

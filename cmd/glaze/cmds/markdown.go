@@ -255,7 +255,7 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 	// fold the headings
 
 	for _, elt := range outputStack {
-		err = gp.ProcessInputObject(ctx, elt)
+		err = gp.AddRow(ctx, elt)
 		if err != nil {
 			return err
 		}
@@ -307,7 +307,7 @@ func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp *pr
 	}
 
 	for _, elt := range outputStack {
-		err = gp.ProcessInputObject(ctx, elt)
+		err = gp.AddRow(ctx, elt)
 		if err != nil {
 			return err
 		}
@@ -364,7 +364,7 @@ var splitByHeadingCmd = &cobra.Command{
 						types.MRP("heading", currentTitle),
 						types.MRP("content", strings.Trim(strings.Join(current, "\n"), " \n\t")),
 					)
-					err = gp.ProcessInputObject(ctx, row)
+					err = gp.AddRow(ctx, row)
 					cobra.CheckErr(err)
 
 					currentTitle = ""

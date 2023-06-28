@@ -135,7 +135,7 @@ func (c *CsvCommand) Run(
 		}
 
 		for _, row := range s {
-			err = gp.ProcessInputObject(ctx, types.NewRowFromMapWithColumns(row, header))
+			err = gp.AddRow(ctx, types.NewRowFromMapWithColumns(row, header))
 			if err != nil {
 				return errors.Wrap(err, "could not process CSV row")
 			}

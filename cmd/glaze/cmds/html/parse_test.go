@@ -49,7 +49,7 @@ func (t TestFormatter) Output(context.Context, *types.Table, io.Writer) error {
 	return nil
 }
 
-func (t *TestProcessor) ProcessInputObject(ctx context.Context, obj types.Row) error {
+func (t *TestProcessor) AddRow(ctx context.Context, obj types.Row) error {
 	t.Objects = append(t.Objects, obj)
 	return nil
 }

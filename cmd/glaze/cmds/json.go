@@ -84,7 +84,7 @@ func (j *JsonCommand) Run(
 
 			i := 1
 			for _, d := range data {
-				err = gp.ProcessInputObject(ctx, d)
+				err = gp.AddRow(ctx, d)
 				if err != nil {
 					return errors.Wrapf(err, "Error processing row %d of file %s as object", i, arg)
 				}
@@ -98,7 +98,7 @@ func (j *JsonCommand) Run(
 				return errors.Wrapf(err, "Error decoding file %s as object", arg)
 			}
 
-			err = gp.ProcessInputObject(ctx, data)
+			err = gp.AddRow(ctx, data)
 			if err != nil {
 				return errors.Wrapf(err, "Error processing file %s as object", arg)
 			}
