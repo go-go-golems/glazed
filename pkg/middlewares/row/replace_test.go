@@ -1,8 +1,8 @@
-package table
+package row
 
 import (
-	"context"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -10,10 +10,8 @@ import (
 	"testing"
 )
 
-func createReplaceTestTable() *types.Table {
-	ret := types.NewTable()
-	ret.Columns = []types.FieldName{"field1", "field2"}
-	ret.Rows = []types.Row{
+func createReplaceTestRows() []types.Row {
+	return []types.Row{
 		types.NewMapRow(
 			types.MRP("field1", "skip"),
 			types.MRP("field2", "value2"),
@@ -23,14 +21,12 @@ func createReplaceTestTable() *types.Table {
 			types.MRP("field2", "value3 blabla"),
 		),
 	}
-
-	return ret
 }
 
 func TestSingleSkip(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -41,13 +37,13 @@ func TestSingleSkip(t *testing.T) {
 		},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(replaceMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(newtable.Rows))
+	require.Equal(t, 1, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "value1", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -62,21 +58,21 @@ func TestSingleReplacement(t *testing.T) {
 				},
 			},
 		},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := replacementMiddleware.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(replacementMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(newtable.Rows))
+	require.Equal(t, 2, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
-	row = newtable.Rows[1]
+	row = newRows[1]
 	assert2.EqualMapRowValue(t, "replaced", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -84,7 +80,7 @@ func TestSingleReplacement(t *testing.T) {
 func TestTwoSkips(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -98,17 +94,17 @@ func TestTwoSkips(t *testing.T) {
 		},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(replaceMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 0, len(newtable.Rows))
+	require.Equal(t, 0, len(newRows))
 }
 
 func TestTwoColumnSkips(t *testing.T) {
 	mw := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{
 			"field1": {
@@ -124,18 +120,18 @@ func TestTwoColumnSkips(t *testing.T) {
 		},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := mw.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(mw, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 0, len(newtable.Rows))
+	require.Equal(t, 0, len(newRows))
 
 }
 
 func TestSingleRegexpSkip(t *testing.T) {
 	replaceMiddleware := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{
 			"field1": {
 				&RegexpSkip{
@@ -146,13 +142,13 @@ func TestSingleRegexpSkip(t *testing.T) {
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := replaceMiddleware.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(replaceMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(newtable.Rows))
+	require.Equal(t, 1, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "value1", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 
@@ -164,12 +160,12 @@ func TestSingleRegexpSkip(t *testing.T) {
 		},
 	}
 
-	newtable, err = replaceMiddleware.Process(context.Background(), table)
+	newRows, err = processRows(replaceMiddleware, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(newtable.Rows))
+	require.Equal(t, 1, len(newRows))
 
-	row = newtable.Rows[0]
+	row = newRows[0]
 	assert2.EqualMapRowValue(t, "value1", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -188,21 +184,21 @@ func TestTwoReplacements(t *testing.T) {
 				},
 			},
 		},
-		map[types.FieldName][]*RegexpReplacement{},
+		map[types.FieldName][]*table.RegexpReplacement{},
 		map[types.FieldName][]*RegexpSkip{},
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := rep.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(rep, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(newtable.Rows))
+	require.Equal(t, 2, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
-	row = newtable.Rows[1]
+	row = newRows[1]
 	assert2.EqualMapRowValue(t, "replaced replaced2", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -210,9 +206,9 @@ func TestTwoReplacements(t *testing.T) {
 func TestSingleRegexpReplacement(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{
+		map[types.FieldName][]*table.RegexpReplacement{
 			"field1": {
-				&RegexpReplacement{
+				&table.RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v.*1$"),
 					Replacement: "replaced",
 				},
@@ -222,17 +218,17 @@ func TestSingleRegexpReplacement(t *testing.T) {
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := rep.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(rep, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(newtable.Rows))
+	require.Equal(t, 2, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
 
-	row = newtable.Rows[1]
+	row = newRows[1]
 	assert2.EqualMapRowValue(t, "replaced", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -240,9 +236,9 @@ func TestSingleRegexpReplacement(t *testing.T) {
 func TestSingleRegexpCaptureReplacement(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{
+		map[types.FieldName][]*table.RegexpReplacement{
 			"field1": {
-				&RegexpReplacement{
+				&table.RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v(.*)1$"),
 					Replacement: "replaced$1",
 				},
@@ -252,17 +248,17 @@ func TestSingleRegexpCaptureReplacement(t *testing.T) {
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := rep.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(rep, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(newtable.Rows))
+	require.Equal(t, 2, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "skip", row, "field1")
 	assert2.EqualMapRowValue(t, "value2", row, "field2")
 
-	row = newtable.Rows[1]
+	row = newRows[1]
 	assert2.EqualMapRowValue(t, "replacedalue", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }
@@ -270,9 +266,9 @@ func TestSingleRegexpCaptureReplacement(t *testing.T) {
 func TestRegexpAndSkip(t *testing.T) {
 	rep := NewReplaceMiddleware(
 		map[types.FieldName][]*Replacement{},
-		map[types.FieldName][]*RegexpReplacement{
+		map[types.FieldName][]*table.RegexpReplacement{
 			"field1": {
-				&RegexpReplacement{
+				&table.RegexpReplacement{
 					Regexp:      regexp.MustCompile("^v.*1$"),
 					Replacement: "replaced",
 				},
@@ -288,13 +284,13 @@ func TestRegexpAndSkip(t *testing.T) {
 		map[types.FieldName][]*Skip{},
 	)
 
-	table := createReplaceTestTable()
-	newtable, err := rep.Process(context.Background(), table)
+	rows := createReplaceTestRows()
+	newRows, err := processRows(rep, rows)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(newtable.Rows))
+	require.Equal(t, 1, len(newRows))
 
-	row := newtable.Rows[0]
+	row := newRows[0]
 	assert2.EqualMapRowValue(t, "replaced", row, "field1")
 	assert2.EqualMapRowValue(t, "value3 blabla", row, "field2")
 }

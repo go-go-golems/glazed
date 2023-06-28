@@ -6,7 +6,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"os"
 )
@@ -23,12 +22,12 @@ func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.Processor) error {
 			return err
 		}
 
-		mw, err := table.NewReplaceMiddlewareFromYAML(b)
+		mw, err := row.NewReplaceMiddlewareFromYAML(b)
 		if err != nil {
 			return err
 		}
 
-		of.AddTableMiddleware(mw)
+		of.AddRowMiddleware(mw)
 	}
 
 	if len(rs.AddFields) > 0 {
