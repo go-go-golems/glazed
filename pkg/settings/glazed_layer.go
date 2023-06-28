@@ -8,7 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/simple"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -424,8 +424,8 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 	}
 
 	if (outputSettings.Output == "json" || outputSettings.Output == "yaml") && outputSettings.FlattenObjects {
-		mw := table.NewFlattenObjectMiddleware()
-		mwProcessor.AddTableMiddleware(mw)
+		mw := row.NewFlattenObjectMiddleware()
+		mwProcessor.AddRowMiddleware(mw)
 	}
 	fieldsFilterSettings.AddMiddlewares(mwProcessor)
 

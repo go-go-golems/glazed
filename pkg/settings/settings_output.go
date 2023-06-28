@@ -14,7 +14,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
 	"text/template"
 	"unicode/utf8"
@@ -120,7 +120,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 			excel.WithOutputFile(ofs.OutputFile),
 		)
 		// TODO(manuel, 2023-06-27) Wouldn't this be done up front?
-		mwProcessor.AddTableMiddleware(table.NewFlattenObjectMiddleware())
+		mwProcessor.AddRowMiddleware(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
 			csvOf := csv.NewCSVOutputFormatter(
@@ -151,7 +151,7 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter(mwProcessor *middlewar
 				table_formatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
-		mwProcessor.AddTableMiddleware(table.NewFlattenObjectMiddleware())
+		mwProcessor.AddRowMiddleware(row.NewFlattenObjectMiddleware())
 	} else if ofs.Output == "template" {
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{

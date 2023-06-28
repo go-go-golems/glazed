@@ -1,6 +1,9 @@
 package types
 
-import orderedmap "github.com/wk8/go-ordered-map/v2"
+import (
+	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"sort"
+)
 
 type TableName = string
 type FieldName = string
@@ -14,10 +17,18 @@ func NewMapRow(initialData ...MapRowPair) Row {
 	)
 }
 
-func NewMapRowFromMap(hash map[FieldName]GenericCellValue) Row {
+func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
 	ret := NewMapRow()
-	for k, v := range hash {
-		ret.Set(k, v)
+
+	// get keys of hash and sorted them
+	sortedKeys := []FieldName{}
+	for k := range hash {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, k := range sortedKeys {
+		ret.Set(k, hash[k])
 	}
 	return ret
 }

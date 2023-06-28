@@ -18,20 +18,14 @@ func NilMapRowValue(t *testing.T, obj types.Row, key string) {
 }
 
 func EqualMapRows(t *testing.T, expected types.Row, actual types.Row) {
-	// test one side
-	for pair := expected.Oldest(); pair != nil; pair = pair.Next() {
-		k, v := pair.Key, pair.Value
-		v_, ok := actual.Get(k)
-		assert.True(t, ok)
-		assert.Equal(t, v, v_)
-	}
+	assert.Equal(t, expected.Len(), actual.Len())
 
-	// test other way round
-	for pair := actual.Oldest(); pair != nil; pair = pair.Next() {
+	// test one side
+	for pair, actualPair := expected.Oldest(), actual.Oldest(); actualPair != nil && pair != nil; pair, actualPair = pair.Next(), actualPair.Next() {
 		k, v := pair.Key, pair.Value
-		v_, ok := expected.Get(k)
-		assert.True(t, ok)
-		assert.Equal(t, v, v_)
+		actualK, actualV := actualPair.Key, actualPair.Value
+		assert.Equal(t, k, actualK)
+		assert.Equal(t, v, actualV)
 	}
 }
 

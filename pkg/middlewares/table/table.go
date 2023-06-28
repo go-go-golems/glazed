@@ -3,7 +3,6 @@ package table
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -11,96 +10,6 @@ import (
 	"strings"
 	"text/template"
 )
-
-func PreserveColumnOrder(oldColumns []types.FieldName, newColumns map[types.FieldName]interface{}) []types.FieldName {
-	seenRetColumns := map[types.FieldName]interface{}{}
-	retColumns := []types.FieldName{}
-
-	// preserve previous columns order as best as possible
-	for _, column := range oldColumns {
-		if _, ok := newColumns[column]; ok {
-			retColumns = append(retColumns, column)
-			seenRetColumns[column] = nil
-		}
-	}
-	for key := range newColumns {
-		if _, ok := seenRetColumns[key]; !ok {
-			retColumns = append(retColumns, key)
-			seenRetColumns[key] = nil
-		}
-	}
-	return retColumns
-}
-
-type FlattenObjectMiddleware struct {
-}
-
-func NewFlattenObjectMiddleware() *FlattenObjectMiddleware {
-	return &FlattenObjectMiddleware{}
-}
-
-func (fom *FlattenObjectMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
-	ret := &types.Table{
-		Columns: []types.FieldName{},
-		Rows:    []types.Row{},
-	}
-
-	newColumns := map[types.FieldName]interface{}{}
-
-	for _, row := range table.Rows {
-		newValues := FlattenMapIntoColumns(row)
-		newRow := newValues
-
-		for pair := newValues.Oldest(); pair != nil; pair = pair.Next() {
-			newColumns[pair.Key] = nil
-		}
-		ret.Rows = append(ret.Rows, newRow)
-	}
-
-	ret.Columns = PreserveColumnOrder(table.Columns, newColumns)
-
-	return ret, nil
-}
-
-func FlattenMapIntoColumns(rows types.Row) types.Row {
-	ret := types.NewMapRow()
-
-	for pair := rows.Oldest(); pair != nil; pair = pair.Next() {
-		key, value := pair.Key, pair.Value
-		switch v := value.(type) {
-		case types.Row:
-			newColumns := FlattenMapIntoColumns(v)
-			for pair_ := newColumns.Oldest(); pair_ != nil; pair_ = pair_.Next() {
-				k, v := pair_.Key, pair_.Value
-				ret.Set(fmt.Sprintf("%s.%s", key, k), v)
-			}
-		default:
-			ret.Set(key, v)
-		}
-	}
-
-	return ret
-}
-
-type PreserveColumnOrderMiddleware struct {
-	columns []types.FieldName
-}
-
-func NewPreserveColumnOrderMiddleware(columns []types.FieldName) *PreserveColumnOrderMiddleware {
-	return &PreserveColumnOrderMiddleware{
-		columns: columns,
-	}
-}
-
-func (scm *PreserveColumnOrderMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
-	columnHash := map[types.FieldName]interface{}{}
-	for _, column := range scm.columns {
-		columnHash[column] = nil
-	}
-
-	table.Columns = PreserveColumnOrder(table.Columns, columnHash)
-	return table, nil
-}
 
 type ReorderColumnOrderMiddleware struct {
 	columns []types.FieldName

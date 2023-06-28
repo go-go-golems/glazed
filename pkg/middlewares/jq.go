@@ -61,7 +61,7 @@ func (jqm *JqObjectMiddleware) Process(
 					case error:
 						return nil, v_
 					case map[string]interface{}:
-						ret = append(ret, types.NewMapRowFromMap(v_))
+						ret = append(ret, types.NewRowFromMap(v_))
 					case types.Row:
 						ret = append(ret, v_)
 					default:
@@ -74,7 +74,7 @@ func (jqm *JqObjectMiddleware) Process(
 				ret = append(ret, v_)
 
 			case map[string]interface{}:
-				ret = append(ret, types.NewMapRowFromMap(v_))
+				ret = append(ret, types.NewRowFromMap(v_))
 
 			}
 		}
