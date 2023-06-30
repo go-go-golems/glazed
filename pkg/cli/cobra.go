@@ -12,7 +12,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
-	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -524,10 +525,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 // of the glazed ecosystem.
 //
 // If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
-func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (
-	*processor.GlazeProcessor,
-	error,
-) {
+func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, error) {
 	gpl, err := settings.NewGlazedParameterLayers()
 	if err != nil {
 		return nil, err
@@ -561,6 +559,11 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		gp, err := settings.SetupProcessor(ps)
 		cobra.CheckErr(err)
 
+		of, err := settings.SetupOutputFormatter(ps)
+		cobra.CheckErr(err)
+
+		gp.AddTableMiddleware(table.NewOutputMiddleware(of, os.Stdout))
+
 		err = cmd_.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return nil
@@ -569,11 +572,10 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 			cobra.CheckErr(err)
 		}
 
-		err = gp.Finalize(ctx)
+		// RunTableMiddlewares will run the TableMiddlewares
+		err = gp.RunTableMiddlewares(ctx)
 		cobra.CheckErr(err)
 
-		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
-		cobra.CheckErr(err)
 		return nil
 	})
 

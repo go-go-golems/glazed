@@ -9,7 +9,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
-	"github.com/go-go-golems/glazed/pkg/processor"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -368,15 +367,45 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcessorOption) (*processor.GlazeProcessor, error) {
+func SetupOutputFormatter(ps map[string]interface{}) (formatters.TableOutputFormatter, error) {
+	selectSettings, err := NewSelectSettingsFromParameters(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	outputSettings, err := NewOutputFormatterSettings(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	var of formatters.TableOutputFormatter
+	if selectSettings.SelectField != "" {
+		of = simple.NewSingleColumnFormatter(
+			selectSettings.SelectField,
+			simple.WithSeparator(selectSettings.SelectSeparator),
+			simple.WithOutputFile(outputSettings.OutputFile),
+			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
+			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
+		)
+	} else {
+		of, err = outputSettings.CreateOutputFormatter()
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error creating output formatter")
+		}
+	}
+	return of, nil
+
+}
+
+// SetupProcessor processes all the glazed flags out of ps and returns a TableProcessor
+// configured with all the necessary middlewares except for the output formatter.
+//
+// TODO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
+func SetupProcessor(ps map[string]interface{}, options ...middlewares.TableProcessorOption) (*middlewares.TableProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
 	templateSettings, err := NewTemplateSettings(ps)
-	if err != nil {
-		return nil, err
-	}
-	outputSettings, err := NewOutputFormatterSettings(ps)
 	if err != nil {
 		return nil, err
 	}
@@ -404,40 +433,25 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 	if err != nil {
 		return nil, err
 	}
+	outputSettings, err := NewOutputFormatterSettings(ps)
+	if err != nil {
+		return nil, err
+	}
 
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	var of formatters.TableOutputFormatter
-	if selectSettings.SelectField != "" {
-		of = simple.NewSingleColumnFormatter(
-			selectSettings.SelectField,
-			simple.WithSeparator(selectSettings.SelectSeparator),
-			simple.WithOutputFile(outputSettings.OutputFile),
-			simple.WithOutputMultipleFiles(outputSettings.OutputMultipleFiles),
-			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
-		)
-	} else {
-		of, err = outputSettings.CreateOutputFormatter()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Error creating output formatter")
-		}
-	}
-
-	gp, err := processor.NewGlazeProcessor(of)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error creating glaze processor")
-	}
+	gp := middlewares.NewProcessor(options...)
 
 	// rename middlewares run first because they are used to clean up column names
 	// for the following middlewares too.
 	// these following middlewares can create proper column names on their own
 	// when needed
-	err = renameSettings.AddMiddlewares(gp.Processor)
+	err = renameSettings.AddMiddlewares(gp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding rename middlewares")
 	}
 
-	err = templateSettings.AddMiddlewares(gp.Processor)
+	err = templateSettings.AddMiddlewares(gp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding template middlewares")
 	}
@@ -446,9 +460,9 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 		mw := row.NewFlattenObjectMiddleware()
 		gp.AddRowMiddlewareInFront(mw)
 	}
-	fieldsFilterSettings.AddMiddlewares(gp.Processor)
+	fieldsFilterSettings.AddMiddlewares(gp)
 
-	err = replaceSettings.AddMiddlewares(gp.Processor)
+	err = replaceSettings.AddMiddlewares(gp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error adding replace middlewares")
 	}
@@ -479,7 +493,7 @@ func SetupProcessor(ps map[string]interface{}, options ...processor.GlazeProcess
 	// This is not possible with cobra, which doesn't have ordering of flags, and adding that
 	// to the API that we currently use (which is a unordered hashmap, and parsed layers that lose the positioning)
 	// is not trivial.
-	sortSettings.AddMiddlewares(gp.Processor)
+	sortSettings.AddMiddlewares(gp)
 
 	gp.AddObjectMiddleware(middlewares_...)
 

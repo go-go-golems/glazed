@@ -20,7 +20,7 @@ type OutputFormatter struct {
 	AdditionalData      interface{}
 }
 
-func (t *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (t *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

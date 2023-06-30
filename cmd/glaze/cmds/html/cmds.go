@@ -39,15 +39,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				err = outputNodesDepthFirst(ctx, doc, gp)
 				cobra.CheckErr(err)
 			}
-
-			err = gp.Finalize(ctx)
-			cobra.CheckErr(err)
-
-			err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
-			cobra.CheckErr(err)
+			err = gp.RunTableMiddlewares(ctx)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
+			cobra.CheckErr(err)
 		},
 	}
 
@@ -98,14 +94,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.Finalize(ctx)
-			cobra.CheckErr(err)
-
-			err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
-			cobra.CheckErr(err)
+			err = gp.RunTableMiddlewares(ctx)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
+			cobra.CheckErr(err)
 		},
 	}
 

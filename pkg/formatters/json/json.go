@@ -19,7 +19,7 @@ type OutputFormatter struct {
 	OutputMultipleFiles  bool
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 
@@ -186,7 +186,7 @@ func NewRowOutputFormatter(options ...RowOutputFormatterOption) *RowOutputFormat
 	return ret
 }
 
-func (r *RowOutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (r *RowOutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

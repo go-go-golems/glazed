@@ -20,7 +20,7 @@ type OutputFormatter struct {
 	Separator           rune
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }

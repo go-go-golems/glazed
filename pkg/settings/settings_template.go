@@ -18,7 +18,7 @@ type TemplateSettings struct {
 //go:embed "flags/template.yaml"
 var templateFlagsYaml []byte
 
-func (tf *TemplateSettings) AddMiddlewares(p_ *middlewares.Processor) error {
+func (tf *TemplateSettings) AddMiddlewares(p_ *middlewares.TableProcessor) error {
 	if tf.UseRowTemplates && len(tf.Templates) > 0 {
 		middleware, err := row.NewTemplateMiddleware(tf.Templates, tf.RenameSeparator)
 		if err != nil {

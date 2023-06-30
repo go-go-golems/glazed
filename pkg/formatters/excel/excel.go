@@ -17,7 +17,7 @@ type OutputFormatter struct {
 	OutputFile string
 }
 
-func (E *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (E *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }

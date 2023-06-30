@@ -5,7 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"io"
 )
 
@@ -224,7 +224,7 @@ type Command interface {
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
 // - async emitting command (just strings, for example)
 // - async emitting structured log
-//   - async emitting of glaze rows (useful in general, and could be done with a special OutputFormatter, really)
+//   - async emitting of glaze rows (useful in general, and could be done with a special TableOutputFormatter, really)
 // - no output (just do it yourself)
 // - typed generic output structure (with error)
 
@@ -267,7 +267,7 @@ type GlazeCommand interface {
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
-		gp processor.TableProcessor,
+		gp middlewares.Processor,
 	) error
 }
 

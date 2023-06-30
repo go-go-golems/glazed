@@ -93,7 +93,7 @@ func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, 
 	return s, nil
 }
 
-func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.Processor) {
+func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.TableProcessor) {
 	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
 	if ffs.RemoveNulls {
 		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())

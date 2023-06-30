@@ -18,7 +18,7 @@ type SingleColumnFormatter struct {
 	Separator           string
 }
 
-func (s *SingleColumnFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (s *SingleColumnFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

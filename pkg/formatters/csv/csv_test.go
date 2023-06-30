@@ -23,7 +23,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	err := p_.AddRow(ctx, types.NewRow(types.MRP("a", 1)))
 	require.NoError(t, err)
 
-	err = p_.Finalize(ctx)
+	err = p_.RunTableMiddlewares(ctx)
 	require.NoError(t, err)
 	table_ := p_.GetTable()
 

@@ -51,7 +51,7 @@ type OutputFormatter struct {
 	PrintTableStyle     bool
 }
 
-func (tof *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (tof *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }

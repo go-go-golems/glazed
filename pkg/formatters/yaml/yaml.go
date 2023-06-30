@@ -18,7 +18,7 @@ type OutputFormatter struct {
 	OutputIndividualRows bool
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

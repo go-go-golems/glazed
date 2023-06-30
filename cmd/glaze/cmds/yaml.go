@@ -7,7 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
-	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -64,7 +64,7 @@ func (y *YamlCommand) Run(
 	ctx context.Context,
 	_ map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.TableProcessor,
+	gp middlewares.Processor,
 ) error {
 	inputIsArray, ok := ps["input-is-array"].(bool)
 	if !ok {

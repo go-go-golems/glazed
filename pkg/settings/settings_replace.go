@@ -15,7 +15,7 @@ type ReplaceSettings struct {
 	AddFields   map[string]string `glazed.parameter:"add-fields"`
 }
 
-func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.Processor) error {
+func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error {
 	if rs.ReplaceFile != "" {
 		b, err := os.ReadFile(rs.ReplaceFile)
 		if err != nil {
