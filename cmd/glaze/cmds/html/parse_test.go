@@ -16,6 +16,10 @@ type TestProcessor struct {
 	Objects []types.Row
 }
 
+func (t *TestProcessor) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewTestProcessor() *TestProcessor {
 	return &TestProcessor{}
 }

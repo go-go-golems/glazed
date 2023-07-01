@@ -586,8 +586,8 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 			cobra.CheckErr(err)
 		}
 
-		// RunTableMiddlewares will run the TableMiddlewares
-		err = gp.RunTableMiddlewares(ctx)
+		// Close will run the TableMiddlewares
+		err = gp.Close(ctx)
 		cobra.CheckErr(err)
 
 		return nil

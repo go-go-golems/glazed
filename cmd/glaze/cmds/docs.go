@@ -39,7 +39,7 @@ var DocsCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		err = gp.RunTableMiddlewares(ctx)
+		err = gp.Close(ctx)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}

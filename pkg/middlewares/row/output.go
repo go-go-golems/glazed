@@ -13,6 +13,10 @@ type OutputMiddleware struct {
 	writer    io.Writer
 }
 
+func (o OutputMiddleware) Close(ctx context.Context) error {
+	return o.formatter.Close(ctx)
+}
+
 func NewOutputMiddleware(formatter formatters.RowOutputFormatter, writer io.Writer) *OutputMiddleware {
 	return &OutputMiddleware{
 		formatter: formatter,
@@ -36,17 +40,12 @@ type OutputChannelMiddleware[T interface{ ~string }] struct {
 	c         chan<- T
 }
 
-func NewOutputChannelMiddleware[T interface{ ~string }](
-	formatter formatters.RowOutputFormatter,
-	c chan<- T,
-) *OutputChannelMiddleware[T] {
-	return &OutputChannelMiddleware[T]{
-		formatter: formatter,
-		c:         c,
-	}
+func (o *OutputChannelMiddleware[T]) Close(ctx context.Context) error {
+	close(o.c)
+	return o.formatter.Close(ctx)
 }
 
-func (o OutputChannelMiddleware[T]) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
+func (o *OutputChannelMiddleware[T]) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
 	var buf bytes.Buffer
 	err := o.formatter.OutputRow(ctx, row, &buf)
 	if err != nil {
@@ -61,21 +60,42 @@ func (o OutputChannelMiddleware[T]) Process(ctx context.Context, row types.Row) 
 	return []types.Row{row}, nil
 }
 
-// ColumnsChannelMiddleware sends the column names of each row it receives to a channel.
-// The column names are sent in a separate goroutine so as not to block the pipeline.
-type ColumnsChannelMiddleware struct {
-	c           chan<- []types.FieldName
-	seenColumns map[types.FieldName]interface{}
-}
-
-func NewColumnsChannelMiddleware(c chan<- []types.FieldName) *ColumnsChannelMiddleware {
-	return &ColumnsChannelMiddleware{
-		c:           c,
-		seenColumns: map[types.FieldName]interface{}{},
+func NewOutputChannelMiddleware[T interface{ ~string }](
+	formatter formatters.RowOutputFormatter,
+	c chan<- T,
+) *OutputChannelMiddleware[T] {
+	return &OutputChannelMiddleware[T]{
+		formatter: formatter,
+		c:         c,
 	}
 }
 
-func (c ColumnsChannelMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
+// ColumnsChannelMiddleware sends the column names of each row it receives to a channel.
+// The column names are sent in a separate goroutine so as not to block the pipeline.
+type ColumnsChannelMiddleware struct {
+	c            chan<- []types.FieldName
+	seenColumns  map[types.FieldName]interface{}
+	onlyFirstRow bool
+	seenFirstRow bool
+}
+
+func NewColumnsChannelMiddleware(c chan<- []types.FieldName, onlyFirstRow bool) *ColumnsChannelMiddleware {
+	return &ColumnsChannelMiddleware{
+		c:            c,
+		onlyFirstRow: onlyFirstRow,
+		seenColumns:  map[types.FieldName]interface{}{},
+	}
+}
+
+func (c *ColumnsChannelMiddleware) Close(ctx context.Context) error {
+	close(c.c)
+	return nil
+}
+
+func (c *ColumnsChannelMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
+	if c.onlyFirstRow && c.seenFirstRow {
+		return []types.Row{row}, nil
+	}
 	fields := types.GetFields(row)
 	newFields := []types.FieldName{}
 	for _, field := range fields {
@@ -84,6 +104,8 @@ func (c ColumnsChannelMiddleware) Process(ctx context.Context, row types.Row) ([
 			newFields = append(newFields, field)
 		}
 	}
+
+	c.seenFirstRow = true
 
 	if len(newFields) > 0 {
 		// send the columns to the channel in a goroutine so that we don't block the pipeline

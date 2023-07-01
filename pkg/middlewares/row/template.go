@@ -16,8 +16,23 @@ type TemplateMiddleware struct {
 	// in order to avoid having to use the `index` template function to access fields
 	// that contain a ".", which is frequent due to flattening.
 	RenameSeparator string
+	funcMaps        []template.FuncMap
 
 	renamedColumns map[types.FieldName]types.FieldName
+}
+
+type TemplateMiddlewareOption func(*TemplateMiddleware)
+
+func WithRenameSeparator(separator string) TemplateMiddlewareOption {
+	return func(t *TemplateMiddleware) {
+		t.RenameSeparator = separator
+	}
+}
+
+func WithFuncMaps(funcMaps ...template.FuncMap) TemplateMiddlewareOption {
+	return func(t *TemplateMiddleware) {
+		t.funcMaps = append(t.funcMaps, funcMaps...)
+	}
 }
 
 // NewTemplateMiddleware creates a new TemplateMiddleware
@@ -85,4 +100,8 @@ func (rgtm *TemplateMiddleware) Process(ctx context.Context, row types.Row) ([]t
 	}
 
 	return []types.Row{row}, nil
+}
+
+func (rgtm *TemplateMiddleware) Close(ctx context.Context) error {
+	return nil
 }

@@ -8,6 +8,10 @@ import (
 type RemoveNullsMiddleware struct {
 }
 
+func (rnm *RemoveNullsMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewRemoveNullsMiddleware() *RemoveNullsMiddleware {
 	return &RemoveNullsMiddleware{}
 }

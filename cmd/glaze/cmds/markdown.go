@@ -166,7 +166,7 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.RunTableMiddlewares(ctx)
+		err = gp.Close(ctx)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
@@ -387,7 +387,7 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.RunTableMiddlewares(ctx)
+		err = gp.Close(ctx)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}

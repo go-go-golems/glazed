@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,14 +29,14 @@ func TestTemplateRenameEndToEnd(t *testing.T) {
 	obj := types.NewRow(types.MRP("a", 1))
 	ctx := context.Background()
 
-	p_ := middlewares.NewTableProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
+	buf := &bytes.Buffer{}
+	p_ := middlewares.NewTableProcessor(
+		middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)),
+		middlewares.WithTableMiddleware(table.NewOutputMiddleware(of, buf)),
+	)
 	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
-	err = p_.RunTableMiddlewares(ctx)
-	require.NoError(t, err)
-
-	buf := &bytes.Buffer{}
-	err = of.OutputTable(ctx, p_.GetTable(), buf)
+	err = p_.Close(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, `1`, buf.String())

@@ -9,6 +9,10 @@ import (
 type SortColumnsMiddleware struct {
 }
 
+func (scm *SortColumnsMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewSortColumnsMiddleware() *SortColumnsMiddleware {
 	return &SortColumnsMiddleware{}
 }

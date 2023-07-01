@@ -39,7 +39,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				err = outputNodesDepthFirst(ctx, doc, gp)
 				cobra.CheckErr(err)
 			}
-			err = gp.RunTableMiddlewares(ctx)
+			err = gp.Close(ctx)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}
@@ -94,7 +94,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				cobra.CheckErr(err)
 			}
 
-			err = gp.RunTableMiddlewares(ctx)
+			err = gp.Close(ctx)
 			if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 				os.Exit(0)
 			}

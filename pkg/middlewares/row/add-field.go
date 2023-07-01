@@ -9,6 +9,10 @@ type AddFieldMiddleware struct {
 	Fields map[string]string
 }
 
+func (a *AddFieldMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewAddFieldMiddleware(fields map[string]string) *AddFieldMiddleware {
 	return &AddFieldMiddleware{Fields: fields}
 }

@@ -31,6 +31,10 @@ func NewJqObjectMiddleware(
 	return ret, nil
 }
 
+func (jqm *JqObjectMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func (jqm *JqObjectMiddleware) Process(
 	ctx context.Context,
 	object types.Row,

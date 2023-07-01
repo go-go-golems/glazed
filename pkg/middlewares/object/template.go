@@ -13,6 +13,10 @@ type TemplateMiddleware struct {
 	templates map[types.FieldName]*template.Template
 }
 
+func (rgtm *TemplateMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 // NewTemplateMiddleware creates a new template firmware used to process
 // individual objects.
 //

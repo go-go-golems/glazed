@@ -7,6 +7,7 @@ import (
 
 type Processor interface {
 	AddRow(ctx context.Context, obj types.Row) error
+	Close(ctx context.Context) error
 }
 
 type TableProcessor struct {
@@ -71,20 +72,35 @@ func (p *TableProcessor) GetTable() *types.Table {
 	return p.Table
 }
 
-// NOTE(manuel, 2023-06-30) should this maybe rather be called close?
-func (p *TableProcessor) RunTableMiddlewares(ctx context.Context) error {
-	// close the object and row middlewares
-
+func (p *TableProcessor) Close(ctx context.Context) error {
 	for _, tm := range p.TableMiddlewares {
 		table, err := tm.Process(ctx, p.Table)
 		if err != nil {
 			return err
 		}
 		p.Table = table
+	}
 
-		defer func(tm TableMiddleware, ctx context.Context) {
-			_ = tm.Close(ctx)
-		}(tm, ctx)
+	// close in reverse order, first tables, then rows, then objects.
+	for i := len(p.TableMiddlewares) - 1; i >= 0; i-- {
+		tm := p.TableMiddlewares[i]
+		if err := tm.Close(ctx); err != nil {
+			return err
+		}
+	}
+
+	for i := len(p.RowMiddlewares) - 1; i >= 0; i-- {
+		rm := p.RowMiddlewares[i]
+		if err := rm.Close(ctx); err != nil {
+			return err
+		}
+	}
+
+	for i := len(p.ObjectMiddlewares) - 1; i >= 0; i-- {
+		om := p.ObjectMiddlewares[i]
+		if err := om.Close(ctx); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -121,7 +137,11 @@ func (p *TableProcessor) AddRow(ctx context.Context, row types.Row) error {
 		rows = newRows
 	}
 
-	p.Table.AddRows(rows...)
+	// Only collect table rows if we have table middlewares to actually process them,
+	// otherwise discard the row so that we don't waste memory.
+	if len(p.TableMiddlewares) > 0 {
+		p.Table.AddRows(rows...)
+	}
 
 	return nil
 }
