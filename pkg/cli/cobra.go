@@ -524,7 +524,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 // abstraction to define your CLI applications, which allows you to use layers and other nice features
 // of the glazed ecosystem.
 //
-// If so, use SetupProcessor instead, and create a proper glazed.GlazeCommand for your command.
+// If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
 func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, error) {
 	gpl, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -536,7 +536,21 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, err
 	}
 
-	return settings.SetupProcessor(ps)
+	gp, err := settings.SetupTableProcessor(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	of, err := settings.SetupTableOutputFormatter(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(manuel, 2023-06-30) Properly close the output formatter here
+
+	gp.AddTableMiddleware(table.NewOutputMiddleware(of, os.Stdout))
+
+	return gp, nil
 }
 
 // AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
@@ -556,10 +570,10 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
 	) error {
-		gp, err := settings.SetupProcessor(ps)
+		gp, err := settings.SetupTableProcessor(ps)
 		cobra.CheckErr(err)
 
-		of, err := settings.SetupOutputFormatter(ps)
+		of, err := settings.SetupTableOutputFormatter(ps)
 		cobra.CheckErr(err)
 
 		gp.AddTableMiddleware(table.NewOutputMiddleware(of, os.Stdout))

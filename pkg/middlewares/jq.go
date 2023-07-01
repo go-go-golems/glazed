@@ -90,6 +90,10 @@ type JqTableMiddleware struct {
 	fieldQueries     map[types.FieldName]*gojq.Query
 }
 
+func (jqm *JqTableMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewJqTableMiddleware(
 	fieldExpressions map[types.FieldName]string,
 ) (*JqTableMiddleware, error) {

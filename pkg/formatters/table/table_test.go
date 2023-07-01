@@ -20,14 +20,14 @@ func TestTableRenameEndToEnd(t *testing.T) {
 	obj := types.NewRow(types.MRP("a", 1))
 	ctx := context.Background()
 
-	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
+	p_ := middlewares.NewTableProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
 	err := p_.AddRow(ctx, obj)
 	require.NoError(t, err)
 	err = p_.RunTableMiddlewares(ctx)
 	require.NoError(t, err)
 
 	buf := &bytes.Buffer{}
-	err = of.Output(ctx, p_.GetTable(), buf)
+	err = of.OutputTable(ctx, p_.GetTable(), buf)
 	require.NoError(t, err)
 
 	// parse s

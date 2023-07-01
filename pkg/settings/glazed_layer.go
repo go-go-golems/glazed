@@ -367,7 +367,21 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupOutputFormatter(ps map[string]interface{}) (formatters.TableOutputFormatter, error) {
+func SetupRowOutputFormatter(ps map[string]interface{}) (formatters.RowOutputFormatter, error) {
+	outputSettings, err := NewOutputFormatterSettings(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	of, err := outputSettings.CreateRowOutputFormatter()
+	if err != nil {
+		return nil, err
+	}
+
+	return of, nil
+}
+
+func SetupTableOutputFormatter(ps map[string]interface{}) (formatters.TableOutputFormatter, error) {
 	selectSettings, err := NewSelectSettingsFromParameters(ps)
 	if err != nil {
 		return nil, err
@@ -388,7 +402,7 @@ func SetupOutputFormatter(ps map[string]interface{}) (formatters.TableOutputForm
 			simple.WithOutputFileTemplate(outputSettings.OutputFileTemplate),
 		)
 	} else {
-		of, err = outputSettings.CreateOutputFormatter()
+		of, err = outputSettings.CreateTableOutputFormatter()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Error creating output formatter")
 		}
@@ -397,11 +411,11 @@ func SetupOutputFormatter(ps map[string]interface{}) (formatters.TableOutputForm
 
 }
 
-// SetupProcessor processes all the glazed flags out of ps and returns a TableProcessor
+// SetupTableProcessor processes all the glazed flags out of ps and returns a TableProcessor
 // configured with all the necessary middlewares except for the output formatter.
 //
-// TODO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
-func SetupProcessor(ps map[string]interface{}, options ...middlewares.TableProcessorOption) (*middlewares.TableProcessor, error) {
+// DO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
+func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.TableProcessorOption) (*middlewares.TableProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
@@ -440,7 +454,7 @@ func SetupProcessor(ps map[string]interface{}, options ...middlewares.TableProce
 
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
-	gp := middlewares.NewProcessor(options...)
+	gp := middlewares.NewTableProcessor(options...)
 
 	// rename middlewares run first because they are used to clean up column names
 	// for the following middlewares too.

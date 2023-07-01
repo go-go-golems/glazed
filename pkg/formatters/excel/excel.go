@@ -17,12 +17,21 @@ type OutputFormatter struct {
 	OutputFile string
 }
 
-func (E *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
+// TODO(manuel, 2023-03-06): Now that we have Close for formatters, we can turn the excel formatter
+// into a RowOutputFormatter
+//
+// See:
+
+func (E *OutputFormatter) Close(ctx context.Context) error {
+	return nil
+}
+
+func (E *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }
 
-func (E *OutputFormatter) Output(_ context.Context, table_ *types.Table, w io.Writer) error {
+func (E *OutputFormatter) OutputTable(_ context.Context, table_ *types.Table, w io.Writer) error {
 	f := excelize.NewFile()
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -97,7 +106,7 @@ func (E *OutputFormatter) Output(_ context.Context, table_ *types.Table, w io.Wr
 		return err
 	}
 
-	_, _ = fmt.Fprintf(w, "Output file created successfully at %s", E.OutputFile)
+	_, _ = fmt.Fprintf(w, "OutputTable file created successfully at %s", E.OutputFile)
 
 	return nil
 }

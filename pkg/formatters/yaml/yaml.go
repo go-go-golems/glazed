@@ -18,11 +18,15 @@ type OutputFormatter struct {
 	OutputIndividualRows bool
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
+func (f *OutputFormatter) Close(ctx context.Context) error {
 	return nil
 }
 
-func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
+func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if f.OutputMultipleFiles {
 		if f.OutputFileTemplate == "" && f.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")

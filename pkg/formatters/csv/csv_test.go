@@ -18,7 +18,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	renames := map[string]string{
 		"a": "b",
 	}
-	p_ := middlewares.NewProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
+	p_ := middlewares.NewTableProcessor(middlewares.WithRowMiddleware(row.NewFieldRenameColumnMiddleware(renames)))
 	ctx := context.Background()
 	err := p_.AddRow(ctx, types.NewRow(types.MRP("a", 1)))
 	require.NoError(t, err)
@@ -28,7 +28,7 @@ func TestCSVRenameEndToEnd(t *testing.T) {
 	table_ := p_.GetTable()
 
 	buf := &bytes.Buffer{}
-	err = of.Output(ctx, table_, buf)
+	err = of.OutputTable(ctx, table_, buf)
 	require.NoError(t, err)
 
 	_, data, err := csv.ParseCSV(strings.NewReader(buf.String()))

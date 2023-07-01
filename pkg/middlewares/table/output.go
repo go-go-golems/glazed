@@ -12,6 +12,10 @@ type OutputMiddleware struct {
 	writer    io.Writer
 }
 
+func (o *OutputMiddleware) Close(ctx context.Context) error {
+	return o.formatter.Close(ctx)
+}
+
 func NewOutputMiddleware(formatter formatters.TableOutputFormatter, writer io.Writer) *OutputMiddleware {
 	return &OutputMiddleware{
 		formatter: formatter,
@@ -20,7 +24,7 @@ func NewOutputMiddleware(formatter formatters.TableOutputFormatter, writer io.Wr
 }
 
 func (o *OutputMiddleware) Process(ctx context.Context, table *types.Table) (*types.Table, error) {
-	err := o.formatter.Output(ctx, table, o.writer)
+	err := o.formatter.OutputTable(ctx, table, o.writer)
 	if err != nil {
 		return nil, err
 	}

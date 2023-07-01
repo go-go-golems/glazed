@@ -55,7 +55,7 @@ func WithPrependRowMiddleware(rm ...RowMiddleware) TableProcessorOption {
 	}
 }
 
-func NewProcessor(options ...TableProcessorOption) *TableProcessor {
+func NewTableProcessor(options ...TableProcessorOption) *TableProcessor {
 	ret := &TableProcessor{
 		Table: types.NewTable(),
 	}
@@ -71,14 +71,22 @@ func (p *TableProcessor) GetTable() *types.Table {
 	return p.Table
 }
 
+// NOTE(manuel, 2023-06-30) should this maybe rather be called close?
 func (p *TableProcessor) RunTableMiddlewares(ctx context.Context) error {
+	// close the object and row middlewares
+
 	for _, tm := range p.TableMiddlewares {
 		table, err := tm.Process(ctx, p.Table)
 		if err != nil {
 			return err
 		}
 		p.Table = table
+
+		defer func(tm TableMiddleware, ctx context.Context) {
+			_ = tm.Close(ctx)
+		}(tm, ctx)
 	}
+
 	return nil
 }
 
@@ -152,4 +160,8 @@ func (p *TableProcessor) AddTableMiddlewareInFront(mw ...TableMiddleware) {
 
 func (p *TableProcessor) AddTableMiddlewareAtIndex(i int, mw ...TableMiddleware) {
 	p.TableMiddlewares = append(p.TableMiddlewares[:i], append(mw, p.TableMiddlewares[i:]...)...)
+}
+
+func (p *TableProcessor) ReplaceTableMiddleware(mw ...TableMiddleware) {
+	p.TableMiddlewares = mw
 }

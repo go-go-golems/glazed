@@ -18,7 +18,11 @@ type SingleColumnFormatter struct {
 	Separator           string
 }
 
-func (s *SingleColumnFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
+func (s *SingleColumnFormatter) Close(ctx context.Context) error {
+	return nil
+}
+
+func (s *SingleColumnFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 
@@ -65,7 +69,7 @@ func (s *SingleColumnFormatter) ContentType() string {
 	return "text/plain"
 }
 
-func (s *SingleColumnFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
+func (s *SingleColumnFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if s.OutputMultipleFiles {
 		if s.OutputFileTemplate == "" && s.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")

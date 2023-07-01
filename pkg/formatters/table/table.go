@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"io"
 	"os"
@@ -49,9 +50,19 @@ type OutputFormatter struct {
 	TableStyleFile      string
 	OutputFile          string
 	PrintTableStyle     bool
+	hasOutputHeaders    bool
 }
 
-func (tof *OutputFormatter) RegisterMiddlewares(mw *middlewares.TableProcessor) error {
+func (tof *OutputFormatter) Close(ctx context.Context) error {
+	return nil
+}
+
+func (tof *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
+}
+
+func (tof *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }
@@ -128,7 +139,7 @@ func (tof *OutputFormatter) ContentType() string {
 	}
 }
 
-func (tof *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
+func (tof *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if tof.OutputMultipleFiles {
 		if tof.OutputFileTemplate == "" && tof.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")
@@ -171,6 +182,53 @@ func (tof *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w i
 	}
 
 	err := tof.makeTable(table_, table_.Rows, w)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tof *OutputFormatter) OutputRow(ctx context.Context, row_ types.Row, w io.Writer) error {
+	if tof.TableFormat != "html" {
+		return errors.New("not implemented")
+	}
+
+	if !tof.hasOutputHeaders {
+		fields := types.GetFields(row_)
+
+		_, err := fmt.Fprintf(w, "<tr>")
+		if err != nil {
+			return err
+		}
+		for _, field := range fields {
+			_, err = fmt.Fprintf(w, "<th>%s</th>", field)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = fmt.Fprintf(w, "</tr>\n")
+		if err != nil {
+			return err
+		}
+
+		tof.hasOutputHeaders = true
+	}
+
+	_, err := fmt.Fprintf(w, "<tr>")
+	if err != nil {
+		return err
+	}
+
+	for pair := row_.Oldest(); pair != nil; pair = pair.Next() {
+		_, err = fmt.Fprintf(w, "<td>%s</td>", valueToString(pair.Value))
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = fmt.Fprintf(w, "</tr>\n")
 	if err != nil {
 		return err
 	}
