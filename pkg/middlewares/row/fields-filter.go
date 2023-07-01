@@ -21,6 +21,10 @@ type FieldsFilterMiddleware struct {
 	newColumns map[types.FieldName]interface{}
 }
 
+func (ffm *FieldsFilterMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterMiddleware {
 	fieldHash := map[string]interface{}{}
 	prefixFields := []string{}

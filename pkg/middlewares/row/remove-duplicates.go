@@ -10,6 +10,10 @@ type RemoveDuplicatesMiddleware struct {
 	previousRowValues types.Row
 }
 
+func (r *RemoveDuplicatesMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewRemoveDuplicatesMiddleware(columns ...string) *RemoveDuplicatesMiddleware {
 	return &RemoveDuplicatesMiddleware{
 		columns: columns,

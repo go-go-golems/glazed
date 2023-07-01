@@ -34,6 +34,10 @@ type ReplaceMiddleware struct {
 	Skips             map[types.FieldName][]*Skip
 }
 
+func (r *ReplaceMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewReplaceMiddleware(
 	replacements map[types.FieldName][]*Replacement,
 	regexReplacements map[types.FieldName][]*RegexpReplacement,

@@ -10,6 +10,10 @@ type ReorderColumnOrderMiddleware struct {
 	columns []types.FieldName
 }
 
+func (scm *ReorderColumnOrderMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewReorderColumnOrderMiddleware(columns []types.FieldName) *ReorderColumnOrderMiddleware {
 	return &ReorderColumnOrderMiddleware{
 		columns: columns,

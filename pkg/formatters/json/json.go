@@ -19,7 +19,15 @@ type OutputFormatter struct {
 	OutputMultipleFiles  bool
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (f *OutputFormatter) Close(ctx context.Context) error {
+	return nil
+}
+
+func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 
@@ -27,7 +35,7 @@ func (f *OutputFormatter) ContentType() string {
 	return "application/json"
 }
 
-func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
+func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if f.OutputMultipleFiles {
 		if f.OutputFileTemplate == "" && f.OutputFile == "" {
 			return fmt.Errorf("neither output file or output file template is set")
@@ -161,47 +169,14 @@ func NewOutputFormatter(options ...OutputFormatterOption) *OutputFormatter {
 	return ret
 }
 
-// RowOutputFormatter is a streaming formatter that can only output individual rows as dictionaries.
-type RowOutputFormatter struct {
-	indent string
-}
-
-type RowOutputFormatterOption func(*RowOutputFormatter)
-
-func WithIndent(indent string) RowOutputFormatterOption {
-	return func(formatter *RowOutputFormatter) {
-		formatter.indent = indent
-	}
-}
-
-func NewRowOutputFormatter(options ...RowOutputFormatterOption) *RowOutputFormatter {
-	ret := &RowOutputFormatter{
-		indent: "  ",
-	}
-
-	for _, option := range options {
-		option(ret)
-	}
-
-	return ret
-}
-
-func (r *RowOutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
-	return nil
-}
-
-func (r *RowOutputFormatter) Output(ctx context.Context, row types.Row, w io.Writer) error {
+func (r *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
 	m := types.RowToMap(row)
 	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", r.indent)
+	encoder.SetIndent("", "  ")
 	err := encoder.Encode(m)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (r *RowOutputFormatter) ContentType() string {
-	return "application/json"
 }

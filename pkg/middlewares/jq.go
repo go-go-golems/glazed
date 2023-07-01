@@ -31,6 +31,10 @@ func NewJqObjectMiddleware(
 	return ret, nil
 }
 
+func (jqm *JqObjectMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func (jqm *JqObjectMiddleware) Process(
 	ctx context.Context,
 	object types.Row,
@@ -88,6 +92,10 @@ func (jqm *JqObjectMiddleware) Process(
 type JqTableMiddleware struct {
 	fieldExpressions map[types.FieldName]string
 	fieldQueries     map[types.FieldName]*gojq.Query
+}
+
+func (jqm *JqTableMiddleware) Close(ctx context.Context) error {
+	return nil
 }
 
 func NewJqTableMiddleware(

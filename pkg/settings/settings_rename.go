@@ -20,7 +20,7 @@ type RenameSettings struct {
 	YamlFile      string
 }
 
-func (rs *RenameSettings) AddMiddlewares(processor *middlewares.Processor) error {
+func (rs *RenameSettings) AddMiddlewares(processor *middlewares.TableProcessor) error {
 	if len(rs.RenameFields) > 0 || len(rs.RenameRegexps) > 0 {
 		processor.AddRowMiddleware(row.NewRenameColumnMiddleware(rs.RenameFields, rs.RenameRegexps))
 	}

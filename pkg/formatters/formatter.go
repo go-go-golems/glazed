@@ -47,22 +47,24 @@ import (
 // it is the current de facto standard. RowOutputFormatter has been added later and is thus not
 // in wide spread use.
 type TableOutputFormatter interface {
-	// RegisterMiddlewares allows individual OutputFormatters to register middlewares that might be
+	// RegisterTableMiddlewares allows individual OutputFormatters to register middlewares that might be
 	// necessary for them to do the proper output. For example, table and excel output require
 	// flattening the row objects before output.
-	//
-	// TODO(manuel, 2023-06-28) We could add the indication if this output formatter can stream here
-	// Not all output formatters should have to take a full table, but could instead output a single row
-	RegisterMiddlewares(mw *middlewares.Processor) error
+	RegisterTableMiddlewares(mw *middlewares.TableProcessor) error
 
-	Output(ctx context.Context, table *types.Table, w io.Writer) error
+	OutputTable(ctx context.Context, table *types.Table, w io.Writer) error
 	ContentType() string
+
+	Close(ctx context.Context) error
 }
 
 type RowOutputFormatter interface {
-	RegisterMiddlewares(mw *middlewares.Processor) error
-	Output(ctx context.Context, row types.Row, w io.Writer) error
+	RegisterRowMiddlewares(mw *middlewares.TableProcessor) error
+
+	OutputRow(ctx context.Context, row types.Row, w io.Writer) error
 	ContentType() string
+
+	Close(ctx context.Context) error
 }
 
 func ComputeOutputFilename(
@@ -130,7 +132,7 @@ func StartFormatIntoChannel[T interface{ ~string }](
 	})
 
 	eg.Go(func() error {
-		err := formatter.Output(ctx2, table, writer)
+		err := formatter.OutputTable(ctx2, table, writer)
 		defer func(writer *io.PipeWriter) {
 			_ = writer.Close()
 		}(writer)
@@ -170,7 +172,7 @@ func StreamRows(
 			}
 
 			var buf bytes.Buffer
-			err := formatter.Output(ctx, row, &buf)
+			err := formatter.OutputRow(ctx, row, &buf)
 			if err != nil {
 				return err
 			}
@@ -207,7 +209,7 @@ func StartStreamRows[T interface{ ~string }](
 					return nil
 				}
 				var buf bytes.Buffer
-				err := formatter.Output(ctx2, row, &buf)
+				err := formatter.OutputRow(ctx2, row, &buf)
 				if err != nil {
 					return err
 				}

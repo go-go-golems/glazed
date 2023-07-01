@@ -9,6 +9,10 @@ import (
 type FlattenObjectMiddleware struct {
 }
 
+func (fom *FlattenObjectMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewFlattenObjectMiddleware() *FlattenObjectMiddleware {
 	return &FlattenObjectMiddleware{}
 }

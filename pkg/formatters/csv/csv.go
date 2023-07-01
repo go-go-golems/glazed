@@ -20,7 +20,16 @@ type OutputFormatter struct {
 	Separator           rune
 }
 
-func (f *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (f *OutputFormatter) Close(ctx context.Context) error {
+	return nil
+}
+
+func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
+}
+
+func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }
@@ -88,7 +97,7 @@ func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	return f
 }
 
-func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w_ io.Writer) error {
+func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w_ io.Writer) error {
 	if f.OutputMultipleFiles {
 		for i, row := range table_.Rows {
 			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
@@ -153,6 +162,28 @@ func (f *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w_ io
 		if err2 != nil {
 			return err2
 		}
+	}
+
+	csvWriter.Flush()
+
+	if err := csvWriter.Error(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
+	fields := types.GetFields(row)
+	f.WithHeaders = false
+	csvWriter, err := f.newCSVWriter(fields, w)
+	if err != nil {
+		return err
+	}
+
+	err = f.writeRow(fields, row, csvWriter)
+	if err != nil {
+		return err
 	}
 
 	csvWriter.Flush()

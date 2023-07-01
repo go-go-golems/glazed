@@ -18,6 +18,10 @@ type SortByMiddleware struct {
 	columns []columnOrder
 }
 
+func (s *SortByMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 // NewSortByMiddlewareFromColumns creates a new SortByMiddleware from the given columns.
 // To sort in descending order, prefix the column name with a minus sign.
 //

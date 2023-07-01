@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -38,9 +39,10 @@ var DocsCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		err = gp.Finalize(ctx)
-		cobra.CheckErr(err)
-		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
+		err = gp.Close(ctx)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			os.Exit(0)
+		}
 		cobra.CheckErr(err)
 	},
 }

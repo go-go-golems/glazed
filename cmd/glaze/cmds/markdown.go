@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
@@ -166,13 +166,11 @@ var parseCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.Finalize(ctx)
-		cobra.CheckErr(err)
-
-		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
+		err = gp.Close(ctx)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
+		cobra.CheckErr(err)
 	},
 }
 
@@ -191,7 +189,7 @@ var parseCmd = &cobra.Command{
 //		    }
 //
 // ]
-func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
+func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp middlewares.Processor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -268,7 +266,7 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp *pro
 // simpleLinearize is a simple walker that will linearize the blocks encountered,
 // and filter out the Document and Text blocks
 // to avoid duplicates, for a very simple document.
-func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp *processor.GlazeProcessor) error {
+func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp middlewares.Processor) error {
 	r := text.NewReader(s)
 
 	// parse options are:
@@ -389,14 +387,11 @@ var splitByHeadingCmd = &cobra.Command{
 
 		_ = gp
 
-		err = gp.Finalize(ctx)
-		cobra.CheckErr(err)
-
-		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), os.Stdout)
+		err = gp.Close(ctx)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
-
+		cobra.CheckErr(err)
 	},
 }
 

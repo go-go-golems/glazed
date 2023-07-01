@@ -70,7 +70,7 @@ func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSett
 	return s, nil
 }
 
-func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.TableOutputFormatter, error) {
+func (ofs *OutputFormatterSettings) computeCanonicalFormat() error {
 	if ofs.Output == "csv" {
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
@@ -87,8 +87,62 @@ func (ofs *OutputFormatterSettings) CreateOutputFormatter() (formatters.TableOut
 
 	if ofs.OutputMultipleFiles {
 		if ofs.OutputFileTemplate == "" && ofs.OutputFile == "" {
-			return nil, errors.New("output-file or output-file-template is required for output-multiple-files")
+			return errors.New("output-file or output-file-template is required for output-multiple-files")
 		}
+	}
+
+	return nil
+}
+
+func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOutputFormatter, error) {
+	err := ofs.computeCanonicalFormat()
+	if err != nil {
+		return nil, err
+	}
+
+	var of formatters.RowOutputFormatter
+	if ofs.Output == "json" {
+		of = json.NewOutputFormatter(
+			json.WithOutputIndividualRows(ofs.OutputAsObjects),
+			json.WithOutputFile(ofs.OutputFile),
+			json.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			json.WithOutputFileTemplate(ofs.OutputFileTemplate),
+		)
+	} else if ofs.Output == "table" {
+		if ofs.TableFormat == "csv" {
+			csvOf := csv.NewCSVOutputFormatter()
+			csvOf.WithHeaders = ofs.WithHeaders
+			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
+			csvOf.Separator = r
+			of = csvOf
+		} else if ofs.TableFormat == "tsv" {
+			tsvOf := csv.NewTSVOutputFormatter()
+			tsvOf.WithHeaders = ofs.WithHeaders
+			of = tsvOf
+		} else {
+			if ofs.TableFormat == "html" {
+				of = table_formatter.NewOutputFormatter("html")
+			} else {
+				return nil, errors.Errorf("row output format %s is not supported", ofs.TableFormat)
+			}
+		}
+	} else if ofs.Output == "yaml" {
+		return nil, errors.New("yaml format is not supported for row output")
+	} else if ofs.Output == "excel" {
+		return nil, errors.New("excel format is not supported for row output")
+	} else if ofs.Output == "template" {
+		return nil, errors.New("template format is not supported for row output")
+	} else {
+		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
+	}
+
+	return of, nil
+}
+
+func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.TableOutputFormatter, error) {
+	err := ofs.computeCanonicalFormat()
+	if err != nil {
+		return nil, err
 	}
 
 	var of formatters.TableOutputFormatter

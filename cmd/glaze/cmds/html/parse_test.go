@@ -2,45 +2,31 @@ package html
 
 import (
 	"context"
-	"github.com/go-go-golems/glazed/pkg/formatters"
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
-	"io"
 	"strings"
 	"testing"
 )
 
 type TestProcessor struct {
-	Objects   []types.Row
-	formatter formatters.TableOutputFormatter
-	processor *middlewares.Processor
+	Objects []types.Row
 }
 
-func (t *TestProcessor) AddRowMiddleware(mw ...middlewares.RowMiddleware) {
-}
-
-func (t *TestProcessor) Finalize(ctx context.Context) error {
-	return t.processor.Finalize(ctx)
-}
-
-func (t *TestProcessor) GetTable() *types.Table {
-	return t.processor.GetTable()
+func (t *TestProcessor) Close(ctx context.Context) error {
+	return nil
 }
 
 func NewTestProcessor() *TestProcessor {
-	return &TestProcessor{
-		formatter: &TestFormatter{},
-		processor: middlewares.NewProcessor(),
-	}
+	return &TestProcessor{}
 }
 
 type TestFormatter struct{}
 
-func (t TestFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (t TestFormatter) RegisterMiddlewares(mw middlewares.Processor) error {
 	return nil
 }
 
@@ -48,21 +34,9 @@ func (t TestFormatter) ContentType() string {
 	return "text/plain"
 }
 
-func (t TestFormatter) Output(context.Context, *types.Table, io.Writer) error {
-	return nil
-}
-
 func (t *TestProcessor) AddRow(ctx context.Context, obj types.Row) error {
 	t.Objects = append(t.Objects, obj)
 	return nil
-}
-
-func (t *TestProcessor) OutputFormatter() formatters.TableOutputFormatter {
-	return nil
-}
-
-func (t *TestProcessor) Processor() *middlewares.Processor {
-	return t.processor
 }
 
 func TestSimpleHeaderParse(t *testing.T) {

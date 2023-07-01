@@ -41,7 +41,7 @@ func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParame
 	return ret, nil
 }
 
-func (s *SortFlagsSettings) AddMiddlewares(p_ *middlewares.Processor) {
+func (s *SortFlagsSettings) AddMiddlewares(p_ *middlewares.TableProcessor) {
 	if len(s.SortBy) == 0 {
 		return
 	}

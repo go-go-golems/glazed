@@ -20,11 +20,15 @@ type OutputFormatter struct {
 	AdditionalData      interface{}
 }
 
-func (t *OutputFormatter) RegisterMiddlewares(mw *middlewares.Processor) error {
+func (t *OutputFormatter) Close(ctx context.Context) error {
 	return nil
 }
 
-func (t *OutputFormatter) Output(ctx context.Context, table_ *types.Table, w io.Writer) error {
+func (t *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (t *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	t2 := template.New("template")
 	for _, templateFuncMap := range t.TemplateFuncMaps {
 		t2 = t2.Funcs(templateFuncMap)

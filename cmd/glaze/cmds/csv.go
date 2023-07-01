@@ -6,7 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/csv"
-	"github.com/go-go-golems/glazed/pkg/processor"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -81,7 +81,7 @@ func (c *CsvCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	ps map[string]interface{},
-	gp processor.TableProcessor,
+	gp middlewares.Processor,
 ) error {
 	inputFiles, ok := ps["input-files"].([]string)
 	if !ok {
@@ -112,9 +112,6 @@ func (c *CsvCommand) Run(
 		csv.WithLazyQuotes(lazyQuotes),
 	}
 
-	finalHeaders := []string{}
-	seenHeaders := map[string]interface{}{}
-
 	for _, arg := range inputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
@@ -140,22 +137,7 @@ func (c *CsvCommand) Run(
 				return errors.Wrap(err, "could not process CSV row")
 			}
 		}
-
-		// append headers to finalHeaders, only if they don't exist yet
-		for _, h := range header {
-			if _, ok := seenHeaders[h]; !ok {
-				finalHeaders = append(finalHeaders, h)
-				seenHeaders[h] = nil
-			}
-		}
 	}
-
-	err := gp.Finalize(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not finalize table")
-	}
-	table := gp.GetTable()
-	table.Columns = finalHeaders
 
 	return nil
 }

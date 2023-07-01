@@ -19,6 +19,10 @@ type RenameColumnMiddleware struct {
 	renamedColumns map[types.FieldName]types.FieldName
 }
 
+func (r *RenameColumnMiddleware) Close(ctx context.Context) error {
+	return nil
+}
+
 func NewFieldRenameColumnMiddleware(renames map[types.FieldName]types.FieldName) *RenameColumnMiddleware {
 	return &RenameColumnMiddleware{
 		Renames:        renames,

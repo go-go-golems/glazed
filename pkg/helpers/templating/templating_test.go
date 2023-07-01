@@ -27,7 +27,7 @@ func ExampleParseFS_basicUsage() {
 
 	fmt.Println(buf.String())
 
-	// Output:
+	// OutputTable:
 	// Template content...
 }
 
@@ -48,6 +48,6 @@ func ExampleParseFS_multiplePatterns() {
 
 	fmt.Println(buf.String())
 
-	// Output:
+	// OutputTable:
 	// Loading from Partial
 }
