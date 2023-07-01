@@ -20,7 +20,7 @@ type OutputFormatter struct {
 // TODO(manuel, 2023-03-06): Now that we have Close for formatters, we can turn the excel formatter
 // into a RowOutputFormatter
 //
-// See:
+// See: https://github.com/go-go-golems/glazed/issues/313
 
 func (E *OutputFormatter) Close(ctx context.Context) error {
 	return nil
