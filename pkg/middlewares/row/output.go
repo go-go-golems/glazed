@@ -41,7 +41,6 @@ type OutputChannelMiddleware[T interface{ ~string }] struct {
 }
 
 func (o *OutputChannelMiddleware[T]) Close(ctx context.Context) error {
-	close(o.c)
 	return o.formatter.Close(ctx)
 }
 
@@ -88,7 +87,6 @@ func NewColumnsChannelMiddleware(c chan<- []types.FieldName, onlyFirstRow bool) 
 }
 
 func (c *ColumnsChannelMiddleware) Close(ctx context.Context) error {
-	close(c.c)
 	return nil
 }
 
