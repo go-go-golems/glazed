@@ -145,7 +145,7 @@ func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, 
 			_ = f_.Close()
 		}(f_)
 
-		csvWriter, err = f.newCSVWriter(table_.Columns, w_)
+		csvWriter, err = f.newCSVWriter(table_.Columns, f_)
 		if err != nil {
 			return err
 		}
