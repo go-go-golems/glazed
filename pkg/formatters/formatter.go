@@ -1,14 +1,11 @@
 package formatters
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"path/filepath"
 	"strings"
@@ -96,128 +93,4 @@ func ComputeOutputFilename(
 
 	}
 	return outputFileName, nil
-}
-
-// StartFormatIntoChannel outputs the data from an TableOutputFormatter into a channel.
-// This is useful to render a table into a stream, for example when rendering larger outputs
-// into HTML when serving.
-func StartFormatIntoChannel[T interface{ ~string }](
-	ctx context.Context,
-	table *types.Table,
-	formatter TableOutputFormatter,
-) <-chan T {
-	reader, writer := io.Pipe()
-	c := make(chan T)
-
-	eg, ctx2 := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		defer close(c)
-
-		// read 8k chunks from reader
-		buf := make([]byte, 8192)
-		for {
-			select {
-			case <-ctx2.Done():
-				return nil
-			default:
-				n, err := reader.Read(buf)
-				if err != nil {
-					return err
-				}
-
-				c <- T(buf[:n])
-			}
-		}
-	})
-
-	eg.Go(func() error {
-		err := formatter.OutputTable(ctx2, table, writer)
-		defer func(writer *io.PipeWriter) {
-			_ = writer.Close()
-		}(writer)
-		if err != nil {
-			_ = writer.CloseWithError(err)
-			return err
-		}
-		return nil
-	})
-
-	go func() {
-		err := eg.Wait()
-		if err != nil {
-			if err != io.EOF {
-				log.Error().Err(err).Msg("error in stream formatter")
-			}
-		}
-	}()
-
-	return c
-}
-
-func StreamRows(
-	ctx context.Context,
-	formatter RowOutputFormatter,
-	inputChannel <-chan types.Row,
-	outputChannel <-chan string,
-) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-
-		case row, ok := <-inputChannel:
-			if !ok {
-				return nil
-			}
-
-			var buf bytes.Buffer
-			err := formatter.OutputRow(ctx, row, &buf)
-			if err != nil {
-				return err
-			}
-		}
-	}
-}
-
-// StartStreamRows starts a background goroutine that returns two channels. The first
-// channel is used to send rows to the background goroutine, the second channel is used
-// to receive the formatted output.
-//
-// This background goroutine will close the output channel when it is done.
-func StartStreamRows[T interface{ ~string }](
-	ctx context.Context,
-	formatter RowOutputFormatter,
-) (chan<- types.Row, <-chan T) {
-	// the inputChannel is buffered, so that a slow output stream still allows
-	// the producer to move forward, to avoid having both latencies queue
-	inputChannel := make(chan types.Row, 100)
-	outputChannel := make(chan T)
-
-	eg, ctx2 := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		defer close(outputChannel)
-
-		for {
-			select {
-			case <-ctx2.Done():
-				return nil
-
-			case row, ok := <-inputChannel:
-				if !ok {
-					return nil
-				}
-				var buf bytes.Buffer
-				err := formatter.OutputRow(ctx2, row, &buf)
-				if err != nil {
-					return err
-				}
-
-				outputChannel <- T(buf.String())
-			}
-		}
-	})
-
-	return inputChannel, outputChannel
 }
