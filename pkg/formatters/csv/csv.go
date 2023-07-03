@@ -160,26 +160,21 @@ func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 
 	if f.csvWriter == nil {
 		var err error
-		var csvWriter *csv.Writer
 		if f.OutputFile != "" {
 			f.file, err = os.Create(f.OutputFile)
 			if err != nil {
 				return err
 			}
-			defer func(f_ *os.File) {
-				_ = f_.Close()
-			}(f.file)
 
-			csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, f.file)
+			f.csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, f.file)
 			if err != nil {
 				return err
 			}
 		} else {
-			csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, w)
+			f.csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, w)
 			if err != nil {
 				return err
 			}
-			f.csvWriter = csvWriter
 		}
 	}
 
