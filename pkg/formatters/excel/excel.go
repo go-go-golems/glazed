@@ -7,8 +7,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
-	"gopkg.in/errgo.v2/fmt/errors"
 	"io"
 	"strings"
 )
@@ -115,7 +115,7 @@ func (E *OutputFormatter) OutputRow(_ context.Context, row types.Row, w io.Write
 	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
 		colIndex, present := E.rowKeyToColumn[pair.Key]
 		if !present {
-			return errors.Newf("column %s not found", pair.Key)
+			return errors.Errorf("column %s not found", pair.Key)
 		}
 
 		cellIndex := colIndex + fmt.Sprint(E.rowIndex+2)
