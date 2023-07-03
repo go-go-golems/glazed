@@ -76,7 +76,6 @@ func (E *OutputFormatter) openFile() error {
 }
 
 func (E *OutputFormatter) addColumns(fields []types.FieldName) error {
-
 	for _, col := range fields {
 		if _, present := E.rowKeyToColumn[col]; present {
 			continue
