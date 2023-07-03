@@ -126,7 +126,7 @@ var parseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
@@ -321,7 +321,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		level, _ := cmd.Flags().GetInt("level")

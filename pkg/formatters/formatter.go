@@ -37,6 +37,15 @@ import (
 
 // The following is all geared towards tabulated output
 
+type OutputFormatter interface {
+	// RegisterTableMiddlewares allows individual OutputFormatters to register middlewares that might be
+	// necessary for them to do the proper output. For example, table and excel output require
+	// flattening the row objects before output.
+	RegisterTableMiddlewares(mw *middlewares.TableProcessor) error
+	ContentType() string
+	Close(ctx context.Context) error
+}
+
 // TableOutputFormatter is an output formatter that requires an entire table to be computed up
 // front before it can be output.
 //
@@ -44,24 +53,13 @@ import (
 // it is the current de facto standard. RowOutputFormatter has been added later and is thus not
 // in wide spread use.
 type TableOutputFormatter interface {
-	// RegisterTableMiddlewares allows individual OutputFormatters to register middlewares that might be
-	// necessary for them to do the proper output. For example, table and excel output require
-	// flattening the row objects before output.
-	RegisterTableMiddlewares(mw *middlewares.TableProcessor) error
-
+	OutputFormatter
 	OutputTable(ctx context.Context, table *types.Table, w io.Writer) error
-	ContentType() string
-
-	Close(ctx context.Context) error
 }
 
 type RowOutputFormatter interface {
-	RegisterRowMiddlewares(mw *middlewares.TableProcessor) error
-
+	OutputFormatter
 	OutputRow(ctx context.Context, row types.Row, w io.Writer) error
-	ContentType() string
-
-	Close(ctx context.Context) error
 }
 
 func ComputeOutputFilename(

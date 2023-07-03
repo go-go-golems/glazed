@@ -9,11 +9,11 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -525,32 +525,24 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 // of the glazed ecosystem.
 //
 // If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
-func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, error) {
+func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, formatters.OutputFormatter, error) {
 	gpl, err := settings.NewGlazedParameterLayers()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ps, err := gpl.ParseFlagsFromCobraCommand(cmd)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	gp, err := settings.SetupTableProcessor(ps)
-	if err != nil {
-		return nil, err
-	}
+	cobra.CheckErr(err)
 
-	of, err := settings.SetupTableOutputFormatter(ps)
-	if err != nil {
-		return nil, err
-	}
+	of, err := settings.SetupProcessorOutput(gp, ps, os.Stdout)
+	cobra.CheckErr(err)
 
-	// TODO(manuel, 2023-06-30) Properly close the output formatter here
-
-	gp.AddTableMiddleware(table.NewOutputMiddleware(of, os.Stdout))
-
-	return gp, nil
+	return gp, of, nil
 }
 
 // AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
@@ -573,10 +565,8 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		gp, err := settings.SetupTableProcessor(ps)
 		cobra.CheckErr(err)
 
-		of, err := settings.SetupTableOutputFormatter(ps)
+		_, err = settings.SetupProcessorOutput(gp, ps, os.Stdout)
 		cobra.CheckErr(err)
-
-		gp.AddTableMiddleware(table.NewOutputMiddleware(of, os.Stdout))
 
 		err = cmd_.Run(ctx, parsedLayers, ps, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {

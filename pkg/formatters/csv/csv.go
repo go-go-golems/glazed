@@ -18,27 +18,11 @@ type OutputFormatter struct {
 	OutputMultipleFiles bool
 	WithHeaders         bool
 	Separator           rune
-}
 
-func (f *OutputFormatter) Close(ctx context.Context) error {
-	return nil
-}
-
-func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
-	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
-	return nil
-}
-
-func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
-	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
-	return nil
-}
-
-func (f *OutputFormatter) ContentType() string {
-	if f.Separator == '\t' {
-		return "text/tab-separated-values"
-	}
-	return "text/csv"
+	// for wise output
+	rowIndex  int
+	csvWriter *csv.Writer
+	file      *os.File
 }
 
 type OutputFormatterOption func(*OutputFormatter)
@@ -97,47 +81,55 @@ func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	return f
 }
 
-func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w_ io.Writer) error {
-	if f.OutputMultipleFiles {
-		for i, row := range table_.Rows {
-			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, i)
-			if err != nil {
-				return err
-			}
+func (f *OutputFormatter) Close(ctx context.Context) error {
+	if f.csvWriter != nil {
+		f.csvWriter.Flush()
 
-			f_, err := os.Create(outputFileName)
-			if err != nil {
-				return err
-			}
-			defer func(f_ *os.File) {
-				_ = f_.Close()
-			}(f_)
-
-			csvWriter, err := f.newCSVWriter(table_.Columns, f_)
-			if err != nil {
-				return err
-			}
-
-			err = f.writeRow(table_.Columns, row, csvWriter)
-			if err != nil {
-				return err
-			}
-
-			csvWriter.Flush()
-
-			if err := csvWriter.Error(); err != nil {
-				return err
-			}
-
-			_, _ = fmt.Fprintf(w_, "Written output to %s\n", outputFileName)
+		if err := f.csvWriter.Error(); err != nil {
+			return err
 		}
-
-		return nil
 	}
 
-	var csvWriter *csv.Writer
-	if f.OutputFile != "" {
-		f_, err := os.Create(f.OutputFile)
+	if f.file != nil {
+		err := f.file.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
+}
+
+func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
+	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
+}
+
+func (f *OutputFormatter) ContentType() string {
+	if f.Separator == '\t' {
+		return "text/tab-separated-values"
+	}
+	return "text/csv"
+}
+
+func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
+	fields := types.GetFields(row)
+	defer func() {
+		f.rowIndex++
+	}()
+
+	if f.OutputMultipleFiles {
+		outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row, f.rowIndex)
+		if err != nil {
+			return err
+		}
+
+		f_, err := os.Create(outputFileName)
 		if err != nil {
 			return err
 		}
@@ -145,63 +137,75 @@ func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, 
 			_ = f_.Close()
 		}(f_)
 
-		csvWriter, err = f.newCSVWriter(table_.Columns, f_)
+		csvWriter, err := f.newCSVWriter(fields, true, f_)
 		if err != nil {
 			return err
 		}
-	} else {
+
+		err = f.writeRow(fields, row, csvWriter)
+		if err != nil {
+			return err
+		}
+
+		csvWriter.Flush()
+
+		if err := csvWriter.Error(); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(w, "Written output to %s\n", outputFileName)
+
+		return nil
+	}
+
+	if f.csvWriter == nil {
 		var err error
-		csvWriter, err = f.newCSVWriter(table_.Columns, w_)
-		if err != nil {
-			return err
+		var csvWriter *csv.Writer
+		if f.OutputFile != "" {
+			f.file, err = os.Create(f.OutputFile)
+			if err != nil {
+				return err
+			}
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f.file)
+
+			csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, f.file)
+			if err != nil {
+				return err
+			}
+		} else {
+			csvWriter, err = f.newCSVWriter(fields, f.WithHeaders, w)
+			if err != nil {
+				return err
+			}
+			f.csvWriter = csvWriter
 		}
 	}
 
-	for _, row := range table_.Rows {
-		err2 := f.writeRow(table_.Columns, row, csvWriter)
-		if err2 != nil {
-			return err2
-		}
+	err := f.writeRow(fields, row, f.csvWriter)
+	if err != nil {
+		return err
 	}
 
-	csvWriter.Flush()
-
-	if err := csvWriter.Error(); err != nil {
+	if err = f.csvWriter.Error(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
-	fields := types.GetFields(row)
-	f.WithHeaders = false
-	csvWriter, err := f.newCSVWriter(fields, w)
-	if err != nil {
-		return err
-	}
-
-	err = f.writeRow(fields, row, csvWriter)
-	if err != nil {
-		return err
-	}
-
-	csvWriter.Flush()
-
-	if err := csvWriter.Error(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (f *OutputFormatter) newCSVWriter(columns []types.FieldName, w_ io.Writer) (*csv.Writer, error) {
+func (f *OutputFormatter) newCSVWriter(
+	columns []types.FieldName,
+	withHeaders bool,
+	w_ io.Writer,
+) (*csv.Writer, error) {
 	// create a buffer writer
 	w := csv.NewWriter(w_)
 	w.Comma = f.Separator
 
 	var err error
-	if f.WithHeaders {
+	if withHeaders {
 		err = w.Write(columns)
 	}
 	return w, err

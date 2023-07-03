@@ -22,7 +22,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
-			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
@@ -31,7 +31,9 @@ func NewHTMLCommand() (*cobra.Command, error) {
 				}
 				f, err := os.Open(arg)
 				cobra.CheckErr(err)
-				defer f.Close()
+				defer func(f *os.File) {
+					_ = f.Close()
+				}(f)
 
 				doc, err := html.Parse(f)
 				cobra.CheckErr(err)
@@ -65,7 +67,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
-			gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
