@@ -9,8 +9,10 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/object"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
+	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"io"
 )
 
 // Helpers for cobra commands
@@ -512,4 +514,27 @@ func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.Table
 	gp.AddObjectMiddleware(middlewares_...)
 
 	return gp, nil
+}
+
+func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interface{}, w io.Writer) (formatters.OutputFormatter, error) {
+	// first, try to get a row updater
+	rowOf, err := SetupRowOutputFormatter(ps)
+
+	if rowOf != nil {
+		gp.AddRowMiddleware(row.NewOutputMiddleware(rowOf, w))
+		return rowOf, nil
+	} else {
+		if _, ok := err.(*ErrorRowFormatUnsupported); !ok {
+			return nil, err
+		}
+
+		of, err := SetupTableOutputFormatter(ps)
+		if err != nil {
+			return nil, err
+		}
+
+		gp.AddTableMiddleware(table.NewOutputMiddleware(of, w))
+
+		return of, nil
+	}
 }

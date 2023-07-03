@@ -2,6 +2,7 @@ package settings
 
 import (
 	_ "embed"
+	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -9,8 +10,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
-	table_formatter "github.com/go-go-golems/glazed/pkg/formatters/table"
-	template_formatter "github.com/go-go-golems/glazed/pkg/formatters/template"
+	tableformatter "github.com/go-go-golems/glazed/pkg/formatters/table"
+	templateformatter "github.com/go-go-golems/glazed/pkg/formatters/template"
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/pkg/errors"
@@ -94,6 +95,30 @@ func (ofs *OutputFormatterSettings) computeCanonicalFormat() error {
 	return nil
 }
 
+type ErrorUnknownFormat struct {
+	format string
+}
+
+type ErrorRowFormatUnsupported struct {
+	format string
+}
+
+type ErrorTableFormatUnsupported struct {
+	format string
+}
+
+func (e *ErrorUnknownFormat) Error() string {
+	return fmt.Sprintf("output format %s is not supported", e.format)
+}
+
+func (e *ErrorRowFormatUnsupported) Error() string {
+	return fmt.Sprintf("row output format %s is not supported", e.format)
+}
+
+func (e *ErrorTableFormatUnsupported) Error() string {
+	return fmt.Sprintf("table output format %s is not supported", e.format)
+}
+
 func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOutputFormatter, error) {
 	err := ofs.computeCanonicalFormat()
 	if err != nil {
@@ -110,30 +135,45 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 		)
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" {
-			csvOf := csv.NewCSVOutputFormatter()
+			csvOf := csv.NewCSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			)
 			csvOf.WithHeaders = ofs.WithHeaders
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 			csvOf.Separator = r
 			of = csvOf
 		} else if ofs.TableFormat == "tsv" {
-			tsvOf := csv.NewTSVOutputFormatter()
+			tsvOf := csv.NewTSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
+		} else if ofs.TableFormat == "html" {
+			of = tableformatter.NewOutputFormatter("html")
 		} else {
-			if ofs.TableFormat == "html" {
-				of = table_formatter.NewOutputFormatter("html")
-			} else {
-				return nil, errors.Errorf("row output format %s is not supported", ofs.TableFormat)
-			}
+			return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
 		}
 	} else if ofs.Output == "yaml" {
-		return nil, errors.New("yaml format is not supported for row output")
+		return nil, &ErrorRowFormatUnsupported{"yaml"}
 	} else if ofs.Output == "excel" {
-		return nil, errors.New("excel format is not supported for row output")
+		if ofs.OutputFile == "" {
+			return nil, errors.New("output-file is required for excel output")
+		}
+		if ofs.OutputMultipleFiles {
+			return nil, errors.New("output-multiple-files is not supported for excel output")
+		}
+		of = excel.NewOutputFormatter(
+			excel.WithSheetName(ofs.SheetName),
+			excel.WithOutputFile(ofs.OutputFile),
+		)
 	} else if ofs.Output == "template" {
-		return nil, errors.New("template format is not supported for row output")
+		return nil, &ErrorRowFormatUnsupported{"template"}
 	} else {
-		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
+		return nil, &ErrorUnknownFormat{ofs.Output}
 	}
 
 	return of, nil
@@ -161,44 +201,19 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
 		)
 	} else if ofs.Output == "excel" {
-		if ofs.OutputFile == "" {
-			return nil, errors.New("output-file is required for excel output")
-		}
-		if ofs.OutputMultipleFiles {
-			return nil, errors.New("output-multiple-files is not supported for excel output")
-		}
-		of = excel.NewOutputFormatter(
-			excel.WithSheetName(ofs.SheetName),
-			excel.WithOutputFile(ofs.OutputFile),
-		)
+		return nil, &ErrorTableFormatUnsupported{"excel"}
 	} else if ofs.Output == "table" {
-		if ofs.TableFormat == "csv" {
-			csvOf := csv.NewCSVOutputFormatter(
-				csv.WithOutputFile(ofs.OutputFile),
-				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
-			)
-			csvOf.WithHeaders = ofs.WithHeaders
-			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
-			csvOf.Separator = r
-			of = csvOf
-		} else if ofs.TableFormat == "tsv" {
-			tsvOf := csv.NewTSVOutputFormatter(
-				csv.WithOutputFile(ofs.OutputFile),
-				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
-			)
-			tsvOf.WithHeaders = ofs.WithHeaders
-			of = tsvOf
+		if ofs.TableFormat == "csv" || ofs.TableFormat == "tsv" {
+			return nil, &ErrorTableFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
 		} else {
-			of = table_formatter.NewOutputFormatter(
+			of = tableformatter.NewOutputFormatter(
 				ofs.TableFormat,
-				table_formatter.WithOutputFile(ofs.OutputFile),
-				table_formatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				table_formatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
-				table_formatter.WithTableStyle(ofs.TableStyle),
-				table_formatter.WithTableStyleFile(ofs.TableStyleFile),
-				table_formatter.WithPrintTableStyle(ofs.PrintTableStyle),
+				tableformatter.WithOutputFile(ofs.OutputFile),
+				tableformatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				tableformatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				tableformatter.WithTableStyle(ofs.TableStyle),
+				tableformatter.WithTableStyleFile(ofs.TableStyleFile),
+				tableformatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
 	} else if ofs.Output == "template" {
@@ -210,16 +225,16 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 				},
 			}
 		}
-		of = template_formatter.NewOutputFormatter(
+		of = templateformatter.NewOutputFormatter(
 			ofs.Template,
-			template_formatter.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
-			template_formatter.WithAdditionalData(ofs.TemplateData),
-			template_formatter.WithOutputFile(ofs.OutputFile),
-			template_formatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-			template_formatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			templateformatter.WithTemplateFuncMaps(ofs.TemplateFormatterSettings.TemplateFuncMaps),
+			templateformatter.WithAdditionalData(ofs.TemplateData),
+			templateformatter.WithOutputFile(ofs.OutputFile),
+			templateformatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			templateformatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else {
-		return nil, errors.Errorf("Unknown output format: " + ofs.Output)
+		return nil, &ErrorUnknownFormat{ofs.Output}
 	}
 
 	return of, nil

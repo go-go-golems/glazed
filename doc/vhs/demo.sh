@@ -40,3 +40,9 @@ glaze yaml misc/test-data/test.yaml --input-is-array \
 
 glaze yaml misc/test-data/test.yaml --input-is-array \
     --rename-yaml misc/rename.yaml
+
+ glaze json misc/test-data/[123].json --output csv \
+    --output-file /tmp/test.csv
+
+ glaze json misc/test-data/[123].json \
+    --output excel --output-file /tmp/test.xlsx
