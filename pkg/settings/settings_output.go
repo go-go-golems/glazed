@@ -160,7 +160,16 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 	} else if ofs.Output == "yaml" {
 		return nil, &ErrorRowFormatUnsupported{"yaml"}
 	} else if ofs.Output == "excel" {
-		return nil, &ErrorRowFormatUnsupported{"excel"}
+		if ofs.OutputFile == "" {
+			return nil, errors.New("output-file is required for excel output")
+		}
+		if ofs.OutputMultipleFiles {
+			return nil, errors.New("output-multiple-files is not supported for excel output")
+		}
+		of = excel.NewOutputFormatter(
+			excel.WithSheetName(ofs.SheetName),
+			excel.WithOutputFile(ofs.OutputFile),
+		)
 	} else if ofs.Output == "template" {
 		return nil, &ErrorRowFormatUnsupported{"template"}
 	} else {
@@ -192,16 +201,7 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
 		)
 	} else if ofs.Output == "excel" {
-		if ofs.OutputFile == "" {
-			return nil, errors.New("output-file is required for excel output")
-		}
-		if ofs.OutputMultipleFiles {
-			return nil, errors.New("output-multiple-files is not supported for excel output")
-		}
-		of = excel.NewOutputFormatter(
-			excel.WithSheetName(ofs.SheetName),
-			excel.WithOutputFile(ofs.OutputFile),
-		)
+		return nil, &ErrorTableFormatUnsupported{"excel"}
 	} else if ofs.Output == "table" {
 		if ofs.TableFormat == "csv" || ofs.TableFormat == "tsv" {
 			return nil, &ErrorTableFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}

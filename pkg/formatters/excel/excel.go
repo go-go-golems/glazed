@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/xuri/excelize/v2"
+	"gopkg.in/errgo.v2/fmt/errors"
 	"io"
 	"strings"
 )
@@ -15,14 +16,27 @@ import (
 type OutputFormatter struct {
 	SheetName  string
 	OutputFile string
+
+	f              *excelize.File
+	sheetIndex     int
+	headerStyle    int
+	colIndex       int
+	rowIndex       int
+	rowKeyToColumn map[string]string
 }
 
-// TODO(manuel, 2023-03-06): Now that we have Close for formatters, we can turn the excel formatter
-// into a RowOutputFormatter
-//
-// See: https://github.com/go-go-golems/glazed/issues/313
-
 func (E *OutputFormatter) Close(ctx context.Context) error {
+	if E.f != nil {
+		E.f.SetActiveSheet(E.sheetIndex)
+		if err := E.f.SaveAs(E.OutputFile); err != nil {
+			return err
+		}
+
+		err := E.f.Close()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -31,82 +45,96 @@ func (E *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcesso
 	return nil
 }
 
-func (E *OutputFormatter) OutputTable(_ context.Context, table_ *types.Table, w io.Writer) error {
-	f := excelize.NewFile()
-	defer func() {
-		if err := f.Close(); err != nil {
-			fmt.Println(err)
+func (E *OutputFormatter) openFile() error {
+	var err error
+	if E.f == nil {
+		E.f = excelize.NewFile()
+
+		E.sheetIndex, err = E.f.NewSheet(E.SheetName)
+		if err != nil {
+			return err
 		}
-	}()
 
-	sheetIndex, err := f.NewSheet(E.SheetName)
-	if err != nil {
-		return err
+		// Set the headers in bold
+		E.headerStyle, err = E.f.NewStyle(&excelize.Style{
+			Font: &excelize.Font{
+				Bold: true,
+			},
+			Fill: excelize.Fill{
+				Type:    "pattern",
+				Pattern: 1,
+				Color:   []string{"DDDDDD"},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		E.rowKeyToColumn = make(map[string]string)
 	}
+	return nil
+}
 
-	rowKeyToColumn := make(map[string]string)
+func (E *OutputFormatter) addColumns(fields []types.FieldName) error {
 
-	// Set the headers in bold
-	headerStyle, err := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{
-			Bold: true,
-		},
-		Fill: excelize.Fill{
-			Type:    "pattern",
-			Pattern: 1,
-			Color:   []string{"DDDDDD"},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	for j, col := range table_.Columns {
-		colIndex := strings2.ToAlphaString(j + 1)
+	for _, col := range fields {
+		if _, present := E.rowKeyToColumn[col]; present {
+			continue
+		}
+		colIndex := strings2.ToAlphaString(E.colIndex + 1)
+		E.colIndex++
 		cellIndex := colIndex + "1"
-		rowKeyToColumn[col] = colIndex
-		err = f.SetCellValue(E.SheetName, cellIndex, col)
+		E.rowKeyToColumn[col] = colIndex
+		err := E.f.SetCellValue(E.SheetName, cellIndex, col)
 		if err != nil {
 			return err
 		}
 
-		err = f.SetCellStyle(E.SheetName, cellIndex, cellIndex, headerStyle)
+		err = E.f.SetCellStyle(E.SheetName, cellIndex, cellIndex, E.headerStyle)
 		if err != nil {
 			return err
 		}
 	}
 
-	for i, row := range table_.Rows {
-		for _, j := range table_.Columns {
-			val, present := row.Get(j)
-			if !present {
-				continue
-			}
+	return nil
+}
 
-			colIndex := rowKeyToColumn[j]
-			cellIndex := colIndex + fmt.Sprint(i+2)
-
-			// Format val as a comma-separated list if it is a list
-			if list, ok := val.([]interface{}); ok {
-				valStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(list)), ","), "[]")
-				err = f.SetCellValue(E.SheetName, cellIndex, valStr)
-			} else {
-				err = f.SetCellValue(E.SheetName, cellIndex, val)
-			}
-
-			if err != nil {
-				return err
-			}
+func (E *OutputFormatter) OutputRow(_ context.Context, row types.Row, w io.Writer) error {
+	if E.f == nil {
+		err := E.openFile()
+		if err != nil {
+			return err
 		}
 	}
 
-	f.SetActiveSheet(sheetIndex)
-
-	if err := f.SaveAs(E.OutputFile); err != nil {
+	fields := types.GetFields(row)
+	err := E.addColumns(fields)
+	if err != nil {
 		return err
 	}
 
-	_, _ = fmt.Fprintf(w, "OutputTable file created successfully at %s", E.OutputFile)
+	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
+		colIndex, present := E.rowKeyToColumn[pair.Key]
+		if !present {
+			return errors.Newf("column %s not found", pair.Key)
+		}
+
+		cellIndex := colIndex + fmt.Sprint(E.rowIndex+2)
+
+		// Format val as a comma-separated list if it is a list
+		if list, ok := pair.Value.([]interface{}); ok {
+			valStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(list)), ","), "[]")
+			err = E.f.SetCellValue(E.SheetName, cellIndex, valStr)
+		} else {
+			err = E.f.SetCellValue(E.SheetName, cellIndex, pair.Value)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	E.rowIndex++
 
 	return nil
 }
