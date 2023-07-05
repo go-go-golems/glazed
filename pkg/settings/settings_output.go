@@ -152,8 +152,8 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 			)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
-		} else if ofs.TableFormat == "html" {
-			of = tableformatter.NewOutputFormatter("html")
+		} else if ofs.TableFormat == "html" || ofs.TableFormat == "markdown" {
+			of = tableformatter.NewOutputFormatter(ofs.TableFormat)
 		} else {
 			return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
 		}
