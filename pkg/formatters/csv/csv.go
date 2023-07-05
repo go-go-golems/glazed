@@ -190,6 +190,82 @@ func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 	return nil
 }
 
+func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w_ io.Writer) error {
+	if f.OutputMultipleFiles {
+		for i, row_ := range table_.Rows {
+			outputFileName, err := formatters.ComputeOutputFilename(f.OutputFile, f.OutputFileTemplate, row_, i)
+			if err != nil {
+				return err
+			}
+
+			f_, err := os.Create(outputFileName)
+			if err != nil {
+				return err
+			}
+			defer func(f_ *os.File) {
+				_ = f_.Close()
+			}(f_)
+
+			csvWriter, err := f.newCSVWriter(table_.Columns, f.WithHeaders, f_)
+			if err != nil {
+				return err
+			}
+
+			err = f.writeRow(table_.Columns, row_, csvWriter)
+			if err != nil {
+				return err
+			}
+
+			csvWriter.Flush()
+
+			if err := csvWriter.Error(); err != nil {
+				return err
+			}
+
+			_, _ = fmt.Fprintf(w_, "Written output to %s\n", outputFileName)
+		}
+
+		return nil
+	}
+
+	var csvWriter *csv.Writer
+	if f.OutputFile != "" {
+		f_, err := os.Create(f.OutputFile)
+		if err != nil {
+			return err
+		}
+		defer func(f_ *os.File) {
+			_ = f_.Close()
+		}(f_)
+
+		csvWriter, err = f.newCSVWriter(table_.Columns, f.WithHeaders, f_)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		csvWriter, err = f.newCSVWriter(table_.Columns, f.WithHeaders, w_)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, row_ := range table_.Rows {
+		err2 := f.writeRow(table_.Columns, row_, csvWriter)
+		if err2 != nil {
+			return err2
+		}
+	}
+
+	csvWriter.Flush()
+
+	if err := csvWriter.Error(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (f *OutputFormatter) newCSVWriter(
 	columns []types.FieldName,
 	withHeaders bool,
