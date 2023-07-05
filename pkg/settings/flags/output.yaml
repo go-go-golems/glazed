@@ -48,6 +48,11 @@ flags:
     help: Table format (ascii, markdown, html, csv, tsv)
     default: "ascii"
 
+  - name: stream
+    type: bool
+    help: Stream the output row by row (first row only used for columns)
+    default: false
+
   - name: table-style
     type: choice
     help: Pretty table style

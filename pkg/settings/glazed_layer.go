@@ -516,6 +516,12 @@ func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.Table
 	return gp, nil
 }
 
+// SetupProcessorOutput creates a new Output middleware (either row or table, depending on the format
+// and the stream flag set in ps) and adds it to the TableProcessor. Additional middlewares required by ]
+// the chosen output format might be added as well (for example, flattening rows when using table-oriented
+// output formats).
+//
+// It also returns the output formatter that was created.
 func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interface{}, w io.Writer) (formatters.OutputFormatter, error) {
 	// first, try to get a row updater
 	rowOf, err := SetupRowOutputFormatter(ps)

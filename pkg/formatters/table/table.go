@@ -190,10 +190,60 @@ func (tof *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table
 }
 
 func (tof *OutputFormatter) OutputRow(ctx context.Context, row_ types.Row, w io.Writer) error {
-	if tof.TableFormat != "html" {
-		return errors.New("not implemented")
+	switch tof.TableFormat {
+	case "html":
+		return tof.outputHTMLRow(row_, w)
+	case "markdown":
+		return tof.outputMarkdownRow(row_, w)
+	default:
+		return errors.New("unsupported table format")
+	}
+}
+
+func (tof *OutputFormatter) outputMarkdownRow(row_ types.Row, w io.Writer) error {
+	if !tof.hasOutputHeaders {
+		fields := types.GetFields(row_)
+
+		for _, field := range fields {
+			_, err := fmt.Fprintf(w, "| %s ", field)
+			if err != nil {
+				return err
+			}
+		}
+		_, err := fmt.Fprintf(w, "|\n")
+		if err != nil {
+			return err
+		}
+
+		for range fields {
+			_, err = fmt.Fprintf(w, "| --- ")
+			if err != nil {
+				return err
+			}
+		}
+		_, err = fmt.Fprintf(w, "|\n")
+		if err != nil {
+			return err
+		}
+
+		tof.hasOutputHeaders = true
 	}
 
+	for pair := row_.Oldest(); pair != nil; pair = pair.Next() {
+		_, err := fmt.Fprintf(w, "| %s ", pair.Value)
+		if err != nil {
+			return err
+		}
+	}
+	_, err := fmt.Fprintf(w, "|\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tof *OutputFormatter) outputHTMLRow(row_ types.Row, w io.Writer) error {
 	if !tof.hasOutputHeaders {
 		fields := types.GetFields(row_)
 
@@ -232,7 +282,6 @@ func (tof *OutputFormatter) OutputRow(ctx context.Context, row_ types.Row, w io.
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

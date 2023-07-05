@@ -29,6 +29,7 @@ type OutputFormatterSettings struct {
 	OutputFile                string                 `glazed.parameter:"output-file"`
 	OutputFileTemplate        string                 `glazed.parameter:"output-file-template"`
 	OutputMultipleFiles       bool                   `glazed.parameter:"output-multiple-files"`
+	Stream                    bool                   `glazed.parameter:"stream"`
 	SheetName                 string                 `glazed.parameter:"sheet-name"`
 	TableFormat               string                 `glazed.parameter:"table-format"`
 	TableStyle                string                 `glazed.parameter:"table-style"`
@@ -127,6 +128,7 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 
 	var of formatters.RowOutputFormatter
 	if ofs.Output == "json" {
+		// JSON can always be output as individual rows, since we don't need to know the column names up front
 		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),
 			json.WithOutputFile(ofs.OutputFile),
@@ -134,28 +136,34 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 			json.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
 	} else if ofs.Output == "table" {
-		if ofs.TableFormat == "csv" {
-			csvOf := csv.NewCSVOutputFormatter(
-				csv.WithOutputFile(ofs.OutputFile),
-				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
-			)
-			csvOf.WithHeaders = ofs.WithHeaders
-			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
-			csvOf.Separator = r
-			of = csvOf
-		} else if ofs.TableFormat == "tsv" {
-			tsvOf := csv.NewTSVOutputFormatter(
-				csv.WithOutputFile(ofs.OutputFile),
-				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
-				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
-			)
-			tsvOf.WithHeaders = ofs.WithHeaders
-			of = tsvOf
-		} else if ofs.TableFormat == "html" {
-			of = tableformatter.NewOutputFormatter("html")
+		if ofs.Stream {
+			if ofs.TableFormat == "csv" {
+				csvOf := csv.NewCSVOutputFormatter(
+					csv.WithOutputFile(ofs.OutputFile),
+					csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+					csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				)
+				csvOf.WithHeaders = ofs.WithHeaders
+				r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
+				csvOf.Separator = r
+				of = csvOf
+			} else if ofs.TableFormat == "tsv" {
+				tsvOf := csv.NewTSVOutputFormatter(
+					csv.WithOutputFile(ofs.OutputFile),
+					csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+					csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+				)
+				tsvOf.WithHeaders = ofs.WithHeaders
+				of = tsvOf
+			} else if ofs.TableFormat == "html" || ofs.TableFormat == "markdown" {
+				of = tableformatter.NewOutputFormatter(ofs.TableFormat)
+			} else {
+				return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
+			}
 		} else {
+			// table and csv also support table output
 			return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
+
 		}
 	} else if ofs.Output == "yaml" {
 		return nil, &ErrorRowFormatUnsupported{"yaml"}
@@ -203,8 +211,24 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 	} else if ofs.Output == "excel" {
 		return nil, &ErrorTableFormatUnsupported{"excel"}
 	} else if ofs.Output == "table" {
-		if ofs.TableFormat == "csv" || ofs.TableFormat == "tsv" {
-			return nil, &ErrorTableFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
+		if ofs.TableFormat == "csv" {
+			csvOf := csv.NewCSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			)
+			csvOf.WithHeaders = ofs.WithHeaders
+			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
+			csvOf.Separator = r
+			of = csvOf
+		} else if ofs.TableFormat == "tsv" {
+			tsvOf := csv.NewTSVOutputFormatter(
+				csv.WithOutputFile(ofs.OutputFile),
+				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+				csv.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			)
+			tsvOf.WithHeaders = ofs.WithHeaders
+			of = tsvOf
 		} else {
 			of = tableformatter.NewOutputFormatter(
 				ofs.TableFormat,
