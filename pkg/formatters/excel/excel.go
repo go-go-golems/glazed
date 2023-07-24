@@ -25,7 +25,7 @@ type OutputFormatter struct {
 	rowKeyToColumn map[string]string
 }
 
-func (E *OutputFormatter) Close(ctx context.Context) error {
+func (E *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	if E.f != nil {
 		E.f.SetActiveSheet(E.sheetIndex)
 		if err := E.f.SaveAs(E.OutputFile); err != nil {

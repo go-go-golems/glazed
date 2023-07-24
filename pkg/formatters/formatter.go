@@ -43,7 +43,7 @@ type OutputFormatter interface {
 	// flattening the row objects before output.
 	RegisterTableMiddlewares(mw *middlewares.TableProcessor) error
 	ContentType() string
-	Close(ctx context.Context) error
+	Close(ctx context.Context, w io.Writer) error
 }
 
 // TableOutputFormatter is an output formatter that requires an entire table to be computed up

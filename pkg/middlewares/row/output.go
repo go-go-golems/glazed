@@ -14,7 +14,7 @@ type OutputMiddleware struct {
 }
 
 func (o OutputMiddleware) Close(ctx context.Context) error {
-	return o.formatter.Close(ctx)
+	return o.formatter.Close(ctx, o.writer)
 }
 
 func NewOutputMiddleware(formatter formatters.RowOutputFormatter, writer io.Writer) *OutputMiddleware {
@@ -41,7 +41,7 @@ type OutputChannelMiddleware[T interface{ ~string }] struct {
 }
 
 func (o *OutputChannelMiddleware[T]) Close(ctx context.Context) error {
-	return o.formatter.Close(ctx)
+	return o.formatter.Close(ctx, nil)
 }
 
 func (o *OutputChannelMiddleware[T]) Process(ctx context.Context, row types.Row) ([]types.Row, error) {

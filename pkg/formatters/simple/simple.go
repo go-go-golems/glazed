@@ -18,7 +18,7 @@ type SingleColumnFormatter struct {
 	Separator           string
 }
 
-func (s *SingleColumnFormatter) Close(ctx context.Context) error {
+func (s *SingleColumnFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 

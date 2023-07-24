@@ -53,7 +53,7 @@ type OutputFormatter struct {
 	hasOutputHeaders    bool
 }
 
-func (tof *OutputFormatter) Close(ctx context.Context) error {
+func (tof *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 

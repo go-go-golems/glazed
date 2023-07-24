@@ -17,9 +17,20 @@ type OutputFormatter struct {
 	OutputFile           string
 	OutputFileTemplate   string
 	OutputMultipleFiles  bool
+	isFirstRow           bool
+	isStreamingRows      bool
 }
 
-func (f *OutputFormatter) Close(ctx context.Context) error {
+func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
+	if f.isStreamingRows {
+		if !f.OutputIndividualRows {
+			_, err := w.Write([]byte("]\n"))
+			if err != nil {
+				return err
+			}
+		}
+
+	}
 	return nil
 }
 
@@ -160,6 +171,7 @@ func NewOutputFormatter(options ...OutputFormatterOption) *OutputFormatter {
 	ret := &OutputFormatter{
 		OutputIndividualRows: false,
 		OutputFile:           "",
+		isFirstRow:           true,
 	}
 
 	for _, option := range options {
@@ -171,6 +183,16 @@ func NewOutputFormatter(options ...OutputFormatterOption) *OutputFormatter {
 
 func (r *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
 	m := types.RowToMap(row)
+	if r.isFirstRow {
+		if !r.OutputIndividualRows {
+			_, err := w.Write([]byte("[\n"))
+			if err != nil {
+				return err
+			}
+		}
+		r.isStreamingRows = true
+		r.isFirstRow = false
+	}
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	err := encoder.Encode(m)
