@@ -18,7 +18,7 @@ type OutputFormatter struct {
 	OutputIndividualRows bool
 }
 
-func (f *OutputFormatter) Close(ctx context.Context) error {
+func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 

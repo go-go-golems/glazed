@@ -81,7 +81,7 @@ func NewTSVOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 	return f
 }
 
-func (f *OutputFormatter) Close(ctx context.Context) error {
+func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	if f.csvWriter != nil {
 		f.csvWriter.Flush()
 

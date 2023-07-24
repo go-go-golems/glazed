@@ -20,7 +20,7 @@ type OutputFormatter struct {
 	AdditionalData      interface{}
 }
 
-func (t *OutputFormatter) Close(ctx context.Context) error {
+func (t *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
