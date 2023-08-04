@@ -38,6 +38,12 @@ func main() {
 	rootCmd.AddCommand(cmds.DocsCmd)
 	rootCmd.AddCommand(cmds.MarkdownCmd)
 
+	exampleCmd, err := cmds.NewExampleCommand()
+	cobra.CheckErr(err)
+	command, err = cli.BuildCobraCommandFromGlazeCommand(exampleCmd)
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(command)
+
 	csvCmd, err := cmds.NewCsvCommand()
 	cobra.CheckErr(err)
 	command, err = cli.BuildCobraCommandFromGlazeCommand(csvCmd)
