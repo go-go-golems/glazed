@@ -13,7 +13,6 @@ require (
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/mattn/go-isatty v0.0.17
 	github.com/nishanths/exhaustive v0.9.5
-	github.com/piprate/json-gold v0.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/spf13/cobra v1.6.1
@@ -69,7 +68,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
