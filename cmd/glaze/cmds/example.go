@@ -15,7 +15,7 @@ import (
 )
 
 type ExampleCommand struct {
-	description *cmds.CommandDescription
+	*cmds.CommandDescription
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
@@ -25,7 +25,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 	}
 
 	return &ExampleCommand{
-		description: cmds.NewCommandDescription(
+		CommandDescription: cmds.NewCommandDescription(
 			"example",
 			cmds.WithShort("Example command"),
 			cmds.WithFlags(
@@ -47,10 +47,6 @@ func NewExampleCommand() (*ExampleCommand, error) {
 			),
 		),
 	}, nil
-}
-
-func (c *ExampleCommand) Description() *cmds.CommandDescription {
-	return c.description
 }
 
 func (c *ExampleCommand) Run(

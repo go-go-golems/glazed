@@ -77,6 +77,7 @@ type ParameterLayerImpl struct {
 	Description string                            `yaml:"description"`
 	Prefix      string                            `yaml:"prefix"`
 	Flags       []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+	ChildLayers []ParameterLayer                  `yaml:"childLayers,omitempty"`
 }
 
 func (p *ParameterLayerImpl) GetName() string {

@@ -48,7 +48,7 @@ type OutputFormatterSettings struct {
 var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputParameterLayer, error) {

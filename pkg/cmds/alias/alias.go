@@ -117,6 +117,15 @@ func (a *CommandAlias) String() string {
 		a.Name, a.AliasFor, a.Parents, a.Source)
 }
 
+func (a *CommandAlias) ToYAML(w io.Writer) error {
+	enc := yaml.NewEncoder(w)
+	defer func(enc *yaml.Encoder) {
+		_ = enc.Close()
+	}(enc)
+
+	return enc.Encode(a)
+}
+
 func (a *CommandAlias) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,

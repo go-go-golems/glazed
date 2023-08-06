@@ -43,7 +43,7 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 type TemplateParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {

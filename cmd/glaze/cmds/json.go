@@ -15,7 +15,7 @@ import (
 )
 
 type JsonCommand struct {
-	description *cmds.CommandDescription
+	*cmds.CommandDescription
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
@@ -25,7 +25,7 @@ func NewJsonCommand() (*JsonCommand, error) {
 	}
 
 	return &JsonCommand{
-		description: cmds.NewCommandDescription(
+		CommandDescription: cmds.NewCommandDescription(
 			"json",
 			cmds.WithShort("Format JSON data"),
 			cmds.WithFlags(
@@ -106,8 +106,4 @@ func (j *JsonCommand) Run(
 	}
 
 	return nil
-}
-
-func (j *JsonCommand) Description() *cmds.CommandDescription {
-	return j.description
 }

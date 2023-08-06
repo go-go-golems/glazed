@@ -22,7 +22,7 @@ type FieldsFilterFlagsDefaults struct {
 }
 
 type FieldsFiltersParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 type FieldsFilterSettings struct {

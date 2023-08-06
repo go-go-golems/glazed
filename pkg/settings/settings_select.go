@@ -36,7 +36,7 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 }
 
 type SelectParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectParameterLayer, error) {
