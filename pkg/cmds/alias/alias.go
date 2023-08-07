@@ -152,6 +152,9 @@ func (a *CommandAlias) IsValid() bool {
 // This is necessary because they get mutated at runtime with various defaults,
 // depending on where they come from.
 func (a *CommandAlias) Description() *cmds.CommandDescription {
+	if a.AliasedCommand == nil {
+		return nil
+	}
 	s := a.AliasedCommand.Description()
 	layout_ := a.Layout
 	if layout_ == nil {

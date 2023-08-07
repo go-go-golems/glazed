@@ -30,7 +30,7 @@ type `*CommandDescription`.
 
 ```go
 type ExampleCommand struct {
-	description *cmds.CommandDescription
+	*cmds.CommandDescription
 }
 ```
 
@@ -41,7 +41,7 @@ arguments the command takes.
 ```go
 func NewExampleCommand() (*ExampleCommand, error) {
 	return &ExampleCommand{
-		description: cmds.NewCommandDescription(
+		CommandDescription: cmds.NewCommandDescription(
 			"example",
 			cmds.WithShort("Example command"),
 			cmds.WithFlags(
