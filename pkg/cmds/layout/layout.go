@@ -1,7 +1,7 @@
 package layout
 
 type Layout struct {
-	Sections []*Section
+	Sections []*Section `yaml:"sections"`
 }
 
 type Section struct {

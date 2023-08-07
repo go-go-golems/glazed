@@ -84,6 +84,7 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
 	cmd.Flags().String("create-cliopatra", "", "Print the CLIopatra YAML for the command")
+	cmd.Flags().Bool("print-yaml", false, "Print the command's YAML")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		parsedLayers, ps, err := cobraParser.Parse(args)
@@ -93,6 +94,15 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 			err := cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)
+		}
+
+		printYAML, err := cmd.Flags().GetBool("print-yaml")
+		cobra.CheckErr(err)
+
+		if printYAML {
+			err = s.ToYAML(os.Stdout)
+			cobra.CheckErr(err)
+			return
 		}
 
 		createCliopatra, err := cmd.Flags().GetString("create-cliopatra")

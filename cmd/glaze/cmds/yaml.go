@@ -19,7 +19,7 @@ import (
 )
 
 type YamlCommand struct {
-	description *cmds.CommandDescription
+	*cmds.CommandDescription
 }
 
 func NewYamlCommand() (*YamlCommand, error) {
@@ -29,7 +29,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 	}
 
 	return &YamlCommand{
-		description: cmds.NewCommandDescription(
+		CommandDescription: cmds.NewCommandDescription(
 			"yaml",
 			cmds.WithShort("Format YAML data"),
 			cmds.WithFlags(
@@ -146,8 +146,4 @@ func (y *YamlCommand) Run(
 	}
 
 	return nil
-}
-
-func (y *YamlCommand) Description() *cmds.CommandDescription {
-	return y.description
 }

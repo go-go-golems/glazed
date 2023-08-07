@@ -18,7 +18,7 @@ type JqSettings struct {
 var jqFlagsYaml []byte
 
 type JqParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterLayer, error) {

@@ -14,7 +14,7 @@ import (
 )
 
 type CsvCommand struct {
-	description *cmds.CommandDescription
+	*cmds.CommandDescription
 }
 
 func NewCsvCommand() (*CsvCommand, error) {
@@ -24,7 +24,7 @@ func NewCsvCommand() (*CsvCommand, error) {
 	}
 
 	return &CsvCommand{
-		description: cmds.NewCommandDescription(
+		CommandDescription: cmds.NewCommandDescription(
 			"csv",
 			cmds.WithShort("Format CSV files"),
 			cmds.WithArguments(
@@ -71,10 +71,6 @@ func NewCsvCommand() (*CsvCommand, error) {
 			),
 		),
 	}, nil
-}
-
-func (c *CsvCommand) Description() *cmds.CommandDescription {
-	return c.description
 }
 
 func (c *CsvCommand) Run(

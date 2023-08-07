@@ -53,7 +53,7 @@ type RenameFlagsDefaults struct {
 var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenameParameterLayer, error) {

@@ -27,7 +27,7 @@ func NewSortSettingsFromParameters(ps map[string]interface{}) (*SortFlagsSetting
 }
 
 type SortParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParameterLayer, error) {

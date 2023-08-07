@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"gopkg.in/yaml.v3"
 	"io"
 )
 
@@ -16,7 +17,7 @@ type CommandDescription struct {
 	Name      string                            `yaml:"name"`
 	Short     string                            `yaml:"short"`
 	Long      string                            `yaml:"long,omitempty"`
-	Layout    *layout.Layout                    `yaml:"layout,omitempty"`
+	Layout    []*layout.Section                 `yaml:"layout,omitempty"`
 	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
 	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
@@ -135,7 +136,7 @@ func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
 
 func WithLayout(l *layout.Layout) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Layout = l
+		c.Layout = l.Sections
 	}
 }
 
@@ -217,8 +218,22 @@ func WithPrependSource(s string) CommandDescriptionOption {
 	}
 }
 
+func (cd *CommandDescription) ToYAML(w io.Writer) error {
+	enc := yaml.NewEncoder(w)
+	defer func(enc *yaml.Encoder) {
+		_ = enc.Close()
+	}(enc)
+
+	return enc.Encode(cd)
+}
+
+func (cd *CommandDescription) Description() *CommandDescription {
+	return cd
+}
+
 type Command interface {
 	Description() *CommandDescription
+	ToYAML(w io.Writer) error
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need

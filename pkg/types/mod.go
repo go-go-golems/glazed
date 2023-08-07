@@ -48,13 +48,20 @@ func NewRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []Fie
 }
 
 func NewRowFromStruct(i interface{}, lowerCaseKeys bool) Row {
+	row := NewRow()
+	SetFromStruct(row, i, lowerCaseKeys)
+
+	return row
+}
+
+func SetFromStruct(row Row, i interface{}, lowerCaseKeys bool) Row {
 	val := reflect.ValueOf(i)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
 
 	t := val.Type()
-	row := NewRow()
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		name := field.Name

@@ -39,7 +39,7 @@ func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error 
 }
 
 type ReplaceParameterLayer struct {
-	*layers.ParameterLayerImpl
+	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
 //go:embed "flags/replace.yaml"

@@ -18,14 +18,33 @@ import (
 // Helpers for cobra commands
 
 type GlazedParameterLayers struct {
-	FieldsFiltersParameterLayer *FieldsFiltersParameterLayer
-	OutputParameterLayer        *OutputParameterLayer
-	RenameParameterLayer        *RenameParameterLayer
-	ReplaceParameterLayer       *ReplaceParameterLayer
-	SelectParameterLayer        *SelectParameterLayer
-	TemplateParameterLayer      *TemplateParameterLayer
-	JqParameterLayer            *JqParameterLayer
-	SortParameterLayer          *SortParameterLayer
+	FieldsFiltersParameterLayer *FieldsFiltersParameterLayer `yaml:"fieldsFiltersParameterLayer"`
+	OutputParameterLayer        *OutputParameterLayer        `yaml:"outputParameterLayer"`
+	RenameParameterLayer        *RenameParameterLayer        `yaml:"renameParameterLayer"`
+	ReplaceParameterLayer       *ReplaceParameterLayer       `yaml:"replaceParameterLayer"`
+	SelectParameterLayer        *SelectParameterLayer        `yaml:"selectParameterLayer"`
+	TemplateParameterLayer      *TemplateParameterLayer      `yaml:"templateParameterLayer"`
+	JqParameterLayer            *JqParameterLayer            `yaml:"jqParameterLayer"`
+	SortParameterLayer          *SortParameterLayer          `yaml:"sortParameterLayer"`
+}
+
+func (g *GlazedParameterLayers) MarshalYAML() (interface{}, error) {
+	return &layers.ParameterLayerImpl{
+		Name:        g.GetName(),
+		Slug:        g.GetSlug(),
+		Description: g.GetDescription(),
+		Prefix:      g.GetPrefix(),
+		ChildLayers: []layers.ParameterLayer{
+			g.FieldsFiltersParameterLayer,
+			g.OutputParameterLayer,
+			g.RenameParameterLayer,
+			g.ReplaceParameterLayer,
+			g.SelectParameterLayer,
+			g.TemplateParameterLayer,
+			g.JqParameterLayer,
+			g.SortParameterLayer,
+		},
+	}, nil
 }
 
 func (g *GlazedParameterLayers) GetName() string {

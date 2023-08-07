@@ -117,6 +117,15 @@ func (a *CommandAlias) String() string {
 		a.Name, a.AliasFor, a.Parents, a.Source)
 }
 
+func (a *CommandAlias) ToYAML(w io.Writer) error {
+	enc := yaml.NewEncoder(w)
+	defer func(enc *yaml.Encoder) {
+		_ = enc.Close()
+	}(enc)
+
+	return enc.Encode(a)
+}
+
 func (a *CommandAlias) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
@@ -143,10 +152,13 @@ func (a *CommandAlias) IsValid() bool {
 // This is necessary because they get mutated at runtime with various defaults,
 // depending on where they come from.
 func (a *CommandAlias) Description() *cmds.CommandDescription {
+	if a.AliasedCommand == nil {
+		return nil
+	}
 	s := a.AliasedCommand.Description()
 	layout_ := a.Layout
 	if layout_ == nil {
-		layout_ = s.Layout.Sections
+		layout_ = s.Layout
 	}
 	ret := &cmds.CommandDescription{
 		Name:      a.Name,
@@ -154,12 +166,10 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 		Long:      s.Long,
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
-		Layout: &layout.Layout{
-			Sections: layout_,
-		},
-		Layers:  s.Layers,
-		Parents: a.Parents,
-		Source:  a.Source,
+		Layout:    layout_,
+		Layers:    s.Layers,
+		Parents:   a.Parents,
+		Source:    a.Source,
 	}
 
 	for _, flag := range s.Flags {
