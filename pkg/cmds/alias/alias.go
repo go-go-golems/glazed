@@ -155,7 +155,7 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 	s := a.AliasedCommand.Description()
 	layout_ := a.Layout
 	if layout_ == nil {
-		layout_ = s.Layout.Sections
+		layout_ = s.Layout
 	}
 	ret := &cmds.CommandDescription{
 		Name:      a.Name,
@@ -163,12 +163,10 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 		Long:      s.Long,
 		Flags:     []*parameters.ParameterDefinition{},
 		Arguments: []*parameters.ParameterDefinition{},
-		Layout: &layout.Layout{
-			Sections: layout_,
-		},
-		Layers:  s.Layers,
-		Parents: a.Parents,
-		Source:  a.Source,
+		Layout:    layout_,
+		Layers:    s.Layers,
+		Parents:   a.Parents,
+		Source:    a.Source,
 	}
 
 	for _, flag := range s.Flags {
