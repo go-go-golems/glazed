@@ -8,7 +8,7 @@ flags:
   - name: output
     shortFlag: o
     type: choice
-    help: Output format (table, csv, tsv, json, yaml, sqlite, template, markdown)
+    help: Output format (table, csv, tsv, json, yaml, sql, template, markdown)
     default: table
     choices:
       - table
@@ -16,7 +16,7 @@ flags:
       - tsv
       - json
       - yaml
-      - sqlite
+      - sql
       - template
       - markdown
       - excel
@@ -111,3 +111,18 @@ flags:
     type: string
     help: Sheet name for Excel output
     default: "Sheet1"
+
+  - name: sql-table-name
+    type: string
+    help: Table name for SQL output
+    default: "output"
+
+  - name: with-upsert
+    type: bool
+    help: Use upsert instead of insert for SQL output
+    default: false
+
+  - name: sql-split-by-rows
+    type: int
+    help: Split SQL output by rows
+    default: 1000

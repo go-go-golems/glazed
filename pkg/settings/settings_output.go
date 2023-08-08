@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
 	"github.com/go-go-golems/glazed/pkg/formatters/json"
+	"github.com/go-go-golems/glazed/pkg/formatters/sql"
 	tableformatter "github.com/go-go-golems/glazed/pkg/formatters/table"
 	templateformatter "github.com/go-go-golems/glazed/pkg/formatters/template"
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
@@ -42,6 +43,9 @@ type OutputFormatterSettings struct {
 	Template                  string                 `glazed.parameter:"template-file"`
 	TemplateData              map[string]interface{} `glazed.parameter:"template-data"`
 	TemplateFormatterSettings *TemplateFormatterSettings
+	SqlTableName              string `glazed.parameter:"sql-table-name"`
+	WithUpsert                bool   `glazed.parameter:"with-upsert"`
+	SqlSplitByRows            int    `glazed.parameter:"sql-split-by-rows"`
 }
 
 //go:embed "flags/output.yaml"
@@ -177,6 +181,12 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 		of = excel.NewOutputFormatter(
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
+		)
+	} else if ofs.Output == "sql" {
+		of = sql.NewOutputFormatter(
+			sql.WithTableName(ofs.SqlTableName),
+			sql.WithUseUpsert(ofs.WithUpsert),
+			sql.WithSplitByRows(ofs.SqlSplitByRows),
 		)
 	} else if ofs.Output == "template" {
 		return nil, &ErrorRowFormatUnsupported{"template"}
