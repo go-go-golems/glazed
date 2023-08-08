@@ -194,11 +194,21 @@ func TestOutputFormatter_RowsWithDifferentShapes(t *testing.T) {
 		types.MRP("foo", "bar"),
 		types.MRP("quux", "corge"),
 	)
-	s, err := runFormatter(f, []types.Row{row1, row2})
+	row3 := types.NewRow(
+		types.MRP("quux", "corge"),
+	)
+	row4 := types.NewRow(
+		types.MRP("foo", "bar"),
+		types.MRP("quux", "corge"),
+		types.MRP("quux2", "corge2"),
+	)
+	s, err := runFormatter(f, []types.Row{row1, row2, row3, row4})
 	assert.NoError(t, err)
 
 	assert.Equal(t, `INSERT INTO output (foo, baz) VALUES
 ('bar', 'qux')
+, ('bar', NULL)
+, (NULL, NULL)
 , ('bar', NULL)
 ;
 `, s)
@@ -226,12 +236,14 @@ func TestOutputFormatter_SerializeRowWithDifferentDatatypes(t *testing.T) {
 	row := types.NewRow(
 		types.MRP("foo", 1),
 		types.MRP("baz", "qux"),
+		types.MRP("quux", true),
+		types.MRP("corge", 1.1),
 	)
 	s, err := runFormatter(f, []types.Row{row})
 	assert.NoError(t, err)
 
-	assert.Equal(t, `INSERT INTO output (foo, baz) VALUES
-(1, 'qux')
+	assert.Equal(t, `INSERT INTO output (foo, baz, quux, corge) VALUES
+(1, 'qux', TRUE, 1.1)
 ;
 `, s)
 }
@@ -265,6 +277,27 @@ func TestOutputFormatter_SerializeSqlEscape(t *testing.T) {
 
 	assert.Equal(t, `INSERT INTO output (foo, baz) VALUES
 ('bar''', 'qux')
+;
+`, s)
+}
+
+// Make sure that when non-primitive types are used, their string serialization is output as string.
+func TestOutputFormatter_SerializeRowWithMapAndArray(t *testing.T) {
+	f := NewOutputFormatter()
+
+	row := types.NewRow(
+		types.MRP("foo", map[string]interface{}{
+			"bar": "baz",
+		}),
+		types.MRP("qux", []interface{}{
+			"corge",
+		}),
+	)
+	s, err := runFormatter(f, []types.Row{row})
+	assert.NoError(t, err)
+
+	assert.Equal(t, `INSERT INTO output (foo, qux) VALUES
+('{"bar":"baz"}', '["corge"]')
 ;
 `, s)
 }

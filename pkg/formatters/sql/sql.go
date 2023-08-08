@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -19,7 +20,7 @@ type OutputFormatter struct {
 	printEnd    bool
 }
 
-func valToSQL(i interface{}) string {
+func valToSQL(i interface{}) (string, error) {
 	var result string
 	switch v := i.(type) {
 	case string:
@@ -27,11 +28,30 @@ func valToSQL(i interface{}) string {
 		result = fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
 	case nil:
 		result = "NULL"
-	default:
-		// For the rest, let fmt.Sprintf handle their string conversion
+	case bool:
+		if v {
+			result = "TRUE"
+		} else {
+			result = "FALSE"
+		}
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		result = fmt.Sprintf("%v", v)
+
+	default:
+		// serialize to json and output as string
+		var s strings.Builder
+		enc := json.NewEncoder(&s)
+		enc.SetEscapeHTML(false)
+		err := enc.Encode(i)
+		if err != nil {
+			return "", err
+		}
+		s_ := s.String()
+		s_ = strings.TrimSuffix(s_, "\n")
+		s_ = strings.ReplaceAll(s_, "'", "''")
+		result = fmt.Sprintf("'%s'", s_)
 	}
-	return result
+	return result, nil
 }
 
 func (f *OutputFormatter) printInsertBegin(w io.Writer) error {
@@ -177,12 +197,16 @@ func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 				v = nil
 			}
 
-			_, err := fmt.Fprintf(w, "%s", valToSQL(v))
+			v_, err := valToSQL(v)
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(w, "%s", v_)
 			if err != nil {
 				return err
 			}
 
-			if colIdx < row.Len()-1 {
+			if colIdx < len(f.columns)-1 {
 				_, err = fmt.Fprintf(w, ", ")
 			}
 			if err != nil {
