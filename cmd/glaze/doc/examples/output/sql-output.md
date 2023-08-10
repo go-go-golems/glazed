@@ -14,7 +14,7 @@ Flags:
 - with-upsert
 - sql-split-by-rows
 IsTemplate: false
-IsTopLevel: false
+IsTopLevel: true
 ShowPerDefault: false
 SectionType: Example
 ---

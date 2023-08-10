@@ -41,7 +41,19 @@ type OutputChannelMiddleware[T interface{ ~string }] struct {
 }
 
 func (o *OutputChannelMiddleware[T]) Close(ctx context.Context) error {
-	return o.formatter.Close(ctx, nil)
+	var buf bytes.Buffer
+	err := o.formatter.Close(ctx, &buf)
+	if err != nil {
+		return err
+	}
+
+	if buf.Len() == 0 {
+		return nil
+	}
+	if buf.String() != "" {
+		o.c <- T(buf.String())
+	}
+	return nil
 }
 
 func (o *OutputChannelMiddleware[T]) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
