@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"reflect"
+	"strconv"
 )
 
 func SetReflectValue(value reflect.Value, v interface{}) error {
@@ -29,6 +30,14 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 		return fmt.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if s, ok := v.(string); ok {
+			i, err := strconv.ParseUint(s, 10, 64)
+			if err != nil {
+				return err
+			}
+			value.SetUint(i)
+			return nil
+		}
 		if i, ok := v.(uint64); ok {
 			value.SetUint(i)
 			return nil
@@ -72,6 +81,14 @@ func SetReflectValue(value reflect.Value, v interface{}) error {
 		return fmt.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if s, ok := v.(string); ok {
+			i, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return err
+			}
+			value.SetInt(i)
+			return nil
+		}
 		if i, ok := v.(int64); ok {
 			value.SetInt(i)
 			return nil
