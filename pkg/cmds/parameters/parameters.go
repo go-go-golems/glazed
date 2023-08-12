@@ -507,6 +507,9 @@ func InitializeParameterDefaultsFromParameters(
 }
 
 func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) error {
+	if s == nil {
+		return errors.Errorf("Can't initialize nil struct")
+	}
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
