@@ -82,6 +82,10 @@ func TestSetReflectInt(t *testing.T) {
 
 		// try to set a string
 		err = SetReflectValue(iValue, "11")
+		require.NoError(t, err)
+		assert.Equal(t, int64(11), iValue.Int())
+
+		err = SetReflectValue(iValue, "abc")
 		require.Error(t, err)
 
 		// try to set a float
@@ -150,6 +154,10 @@ func TestSetReflectInt(t *testing.T) {
 
 		// try to set a string
 		err = SetReflectValue(iValue, "11")
+		require.NoError(t, err)
+		assert.Equal(t, uint64(11), iValue.Uint())
+
+		err = SetReflectValue(iValue, "foobar")
 		require.Error(t, err)
 
 		// try to set a float

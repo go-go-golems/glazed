@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
@@ -71,7 +70,7 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	return verbs
 }
 
-func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
+func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
 	description := s.Description()
 
 	cobraParser, err := NewCobraParserFromCommandDescription(description)
@@ -236,7 +235,7 @@ func BuildCobraCommandFromCommand(s cmds.Command, run CobraRunFunc) (*cobra.Comm
 }
 
 func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(c, func(
+	cmd, err := BuildCobraCommandFromCommandAndFunc(c, func(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
@@ -259,21 +258,18 @@ func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error
 }
 
 func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(s, func(
+	cmd, err := BuildCobraCommandFromCommandAndFunc(s, func(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
 	) error {
-		buf := &bytes.Buffer{}
-		err := s.RunIntoWriter(ctx, parsedLayers, ps, buf)
+		err := s.RunIntoWriter(ctx, parsedLayers, ps, os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return nil
 		}
 		if err != context.Canceled {
 			cobra.CheckErr(err)
 		}
-
-		fmt.Println(buf.String())
 		return nil
 	})
 
@@ -284,13 +280,8 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, e
 	return cmd, nil
 }
 
-func BuildCobraGlazeCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
-	s, ok := alias.AliasedCommand.(cmds.GlazeCommand)
-	if !ok {
-		return nil, fmt.Errorf("command %s is not a GlazeCommand", alias.AliasFor)
-	}
-
-	cmd, err := BuildCobraCommandFromGlazeCommand(s)
+func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(alias.AliasedCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +289,7 @@ func BuildCobraGlazeCommandAlias(alias *alias.CommandAlias) (*cobra.Command, err
 	origRun := cmd.Run
 
 	cmd.Use = alias.Name
-	cmd.Short = fmt.Sprintf("Alias for %s", s.Description().Name)
+	cmd.Short = fmt.Sprintf("Alias for %s", alias.AliasedCommand.Description().Name)
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		for k, v := range alias.Flags {
@@ -335,6 +326,29 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
+func BuildCobraCommandFromCommand(command cmds.Command) (*cobra.Command, error) {
+	var cobraCommand *cobra.Command
+	var err error
+	switch c := command.(type) {
+	case cmds.BareCommand:
+		cobraCommand, err = BuildCobraCommandFromBareCommand(c)
+
+	case cmds.WriterCommand:
+		cobraCommand, err = BuildCobraCommandFromWriterCommand(c)
+
+	case cmds.GlazeCommand:
+		cobraCommand, err = BuildCobraCommandFromGlazeCommand(c)
+
+	default:
+		return nil, errors.Errorf("Unknown command type %T", c)
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error building command %s", command.Description().Name)
+	}
+
+	return cobraCommand, nil
+}
+
 func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, aliases []*alias.CommandAlias) error {
 	commandsByName := map[string]cmds.Command{}
 
@@ -343,25 +357,10 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
 
-		var cobraCommand *cobra.Command
-		var err error
-		switch c := command.(type) {
-		case cmds.BareCommand:
-			cobraCommand, err = BuildCobraCommandFromBareCommand(c)
-
-		case cmds.WriterCommand:
-			cobraCommand, err = BuildCobraCommandFromWriterCommand(c)
-
-		case cmds.GlazeCommand:
-			cobraCommand, err = BuildCobraCommandFromGlazeCommand(c)
-
-		default:
-			return errors.Errorf("Unknown command type %T", c)
-		}
+		cobraCommand, err := BuildCobraCommandFromCommand(command)
 		if err != nil {
-			return errors.Wrapf(err, "Error building command %s", description.Name)
+			return nil
 		}
-
 		parentCmd.AddCommand(cobraCommand)
 		commandsByName[description.Name] = command
 
@@ -378,7 +377,7 @@ func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, a
 		alias.AliasedCommand = aliasedCommand
 
 		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
-		cobraCommand, err := BuildCobraGlazeCommandAlias(alias)
+		cobraCommand, err := BuildCobraCommandAlias(alias)
 		if err != nil {
 			return err
 		}
@@ -567,7 +566,7 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 }
 
 func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(cmd_, func(
+	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		ps map[string]interface{},
