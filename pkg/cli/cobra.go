@@ -291,6 +291,19 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 	cmd.Use = alias.Name
 	cmd.Short = fmt.Sprintf("Alias for %s", alias.AliasedCommand.Description().Name)
 
+	argumentDefinitions := alias.AliasedCommand.Description().Arguments
+	minArgs := 0
+	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true)
+
+	for _, argDef := range argumentDefinitions {
+		_, ok := provided[argDef.Name]
+		if argDef.Required && !ok {
+			minArgs++
+		}
+	}
+
+	cmd.Args = cobra.MinimumNArgs(minArgs)
+
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		for k, v := range alias.Flags {
 			if !cmd.Flags().Changed(k) {
