@@ -1,10 +1,10 @@
 package main
 
 import (
-	"embed"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
 )
@@ -14,12 +14,9 @@ var rootCmd = &cobra.Command{
 	Short: "glaze is a tool to format structured data",
 }
 
-//go:embed doc/*
-var docFS embed.FS
-
 func main() {
 	helpSystem := help.NewHelpSystem()
-	err := helpSystem.LoadSectionsFromFS(docFS, ".")
+	err := doc.AddDocToHelpSystem(helpSystem)
 	cobra.CheckErr(err)
 
 	helpSystem.SetupCobraRootCommand(rootCmd)
