@@ -1,16 +1,19 @@
 package cmds
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	json2 "github.com/go-go-golems/glazed/pkg/helpers/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
+	"io"
 	"os"
 )
 
@@ -33,6 +36,12 @@ func NewJsonCommand() (*JsonCommand, error) {
 					"input-is-array",
 					parameters.ParameterTypeBool,
 					parameters.WithHelp("Input is an array of objects (multiple files will be concatenated)"),
+					parameters.WithDefault(false),
+				),
+				parameters.NewParameterDefinition(
+					"sanitize",
+					parameters.ParameterTypeBool,
+					parameters.WithHelp("Sanitize JSON input"),
 					parameters.WithDefault(false),
 				),
 			),
@@ -66,13 +75,32 @@ func (j *JsonCommand) Run(
 		return fmt.Errorf("input-files is not a string list")
 	}
 
+	sanitizeInput, ok := ps["sanitize"].(bool)
+	if !ok {
+		return fmt.Errorf("sanitize flag is not a bool")
+	}
+
 	for _, arg := range inputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}
-		f, err := os.Open(arg)
-		if err != nil {
-			return errors.Wrapf(err, "Error opening file %s", arg)
+		var err error
+		var f io.Reader
+
+		if sanitizeInput {
+			b, err := os.ReadFile(arg)
+			if err != nil {
+				return errors.Wrapf(err, "Error reading file %s", arg)
+			}
+
+			s := json2.SanitizeJSONString(string(b))
+
+			f = bytes.NewReader([]byte(s))
+		} else {
+			f, err = os.Open(arg)
+			if err != nil {
+				return errors.Wrapf(err, "Error opening file %s", arg)
+			}
 		}
 
 		if inputIsArray {
