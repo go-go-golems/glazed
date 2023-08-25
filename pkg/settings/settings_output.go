@@ -44,7 +44,7 @@ type OutputFormatterSettings struct {
 	TemplateData              map[string]interface{} `glazed.parameter:"template-data"`
 	TemplateFormatterSettings *TemplateFormatterSettings
 	SqlTableName              string `glazed.parameter:"sql-table-name"`
-	WithUpsert                bool   `glazed.parameter:"with-upsert"`
+	WithUpsert                bool   `glazed.parameter:"sql-upsert"`
 	SqlSplitByRows            int    `glazed.parameter:"sql-split-by-rows"`
 }
 
