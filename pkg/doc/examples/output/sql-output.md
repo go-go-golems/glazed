@@ -11,7 +11,7 @@ Commands:
 - json
 Flags:
 - sql-table-name
-- with-upsert
+- sql-upsert
 - sql-split-by-rows
 IsTemplate: false
 IsTopLevel: true
@@ -24,7 +24,7 @@ The `glaze` program provides flags that allow you to control the SQL output form
 Here are the descriptions of the flags:
 
 - `sql-table-name`: Specifies the table name for SQL output. The default value is "output".
-- `with-upsert`: Uses upsert instead of insert for SQL output. The default value is false.
+- `sql-upsert`: Uses upsert instead of insert for SQL output. The default value is false.
 - `sql-split-by-rows`: Splits SQL output by the specified number of rows. The default value is 1000.
 
 Note that only the columns of the first row are used for the output statements.
@@ -61,7 +61,7 @@ In this example, the `--sql-table-name` flag is used to specify a custom table n
 ## Use upsert instead of insert for SQL output:
 
 ```
-❯ glaze json misc/test-data/[123].json --output sql --sql-table-name foobar --with-upsert
+❯ glaze json misc/test-data/[123].json --output sql --sql-table-name foobar --sql-upsert
 INSERT INTO foobar (a, b, c, d) VALUES
 (1, 2, '[3,4,5]', '{"e":6,"f":7}')
 , (10, 20, '[30,40,50]', '{"e":60,"f":70}')
@@ -73,7 +73,7 @@ c = VALUES(c),
 d = VALUES(d);
 ```
 
-By using the `--with-upsert` flag, the SQL output will use upsert statements instead of insert statements.
+By using the `--sql-upsert` flag, the SQL output will use upsert statements instead of insert statements.
 
 ## Split SQL output by a specified number of rows:
 

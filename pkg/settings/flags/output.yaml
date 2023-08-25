@@ -117,7 +117,7 @@ flags:
     help: Table name for SQL output
     default: "output"
 
-  - name: with-upsert
+  - name: sql-upsert
     type: bool
     help: Use upsert instead of insert for SQL output
     default: false
