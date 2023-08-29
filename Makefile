@@ -1,5 +1,11 @@
 .PHONY: gifs
 
+VERSION ?= $(shell git describe --tags --always --dirty)
+COMMIT ?= $(shell git rev-parse --short HEAD)
+DIRTY ?= $(shell git diff --quiet || echo "dirty")
+
+LDFLAGS=-ldflags "-X main.version=$(VERSION)-$(COMMIT)-$(DIRTY)"
+
 all: gifs
 
 TAPES=$(shell ls doc/vhs/*tape)
@@ -17,7 +23,7 @@ test:
 
 build:
 	go generate ./...
-	go build ./...
+	go build $(LDFLAGS) ./...
 
 bench:
 	go test -bench=./... -benchmem
@@ -44,5 +50,5 @@ exhaustive:
 GLAZE_BINARY=$(shell which glaze)
 
 install:
-	go build -o ./dist/glaze ./cmd/glaze && \
+	go build $(LDFLAGS) -o ./dist/glaze ./cmd/glaze && \
 		cp ./dist/glaze $(GLAZE_BINARY)
