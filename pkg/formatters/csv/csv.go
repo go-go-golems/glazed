@@ -149,6 +149,13 @@ func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 
 		csvWriter.Flush()
 
+		if f.rowIndex%1000 == 0 {
+			err := f_.Sync()
+			if err != nil {
+				return err
+			}
+		}
+
 		if err := csvWriter.Error(); err != nil {
 			return err
 		}

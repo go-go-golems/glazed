@@ -9,9 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
+
 var rootCmd = &cobra.Command{
-	Use:   "glaze",
-	Short: "glaze is a tool to format structured data",
+	Use:     "glaze",
+	Short:   "glaze is a tool to format structured data",
+	Version: version,
 }
 
 func main() {
