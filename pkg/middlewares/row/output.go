@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
+	"sync"
 )
 
 type OutputMiddleware struct {
@@ -88,6 +89,7 @@ type ColumnsChannelMiddleware struct {
 	seenColumns  map[types.FieldName]interface{}
 	onlyFirstRow bool
 	seenFirstRow bool
+	wg           sync.WaitGroup
 }
 
 func NewColumnsChannelMiddleware(c chan<- []types.FieldName, onlyFirstRow bool) *ColumnsChannelMiddleware {
@@ -99,6 +101,7 @@ func NewColumnsChannelMiddleware(c chan<- []types.FieldName, onlyFirstRow bool) 
 }
 
 func (c *ColumnsChannelMiddleware) Close(ctx context.Context) error {
+	c.wg.Wait()
 	return nil
 }
 
@@ -118,8 +121,11 @@ func (c *ColumnsChannelMiddleware) Process(ctx context.Context, row types.Row) (
 	c.seenFirstRow = true
 
 	if len(newFields) > 0 {
+		c.wg.Add(1)
+
 		// send the columns to the channel in a goroutine so that we don't block the pipeline
 		go func() {
+			defer c.wg.Done()
 			select {
 			case <-ctx.Done():
 				return
