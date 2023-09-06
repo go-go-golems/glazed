@@ -6,6 +6,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	html "html/template"
@@ -90,6 +91,8 @@ var TemplateFuncs = template.FuncMap{
 	"toYaml":      toYaml,
 	"indentBlock": indentBlock,
 
+	"toUrlParameter": toUrlParameter,
+
 	"styleBold": styleBold,
 }
 
@@ -103,6 +106,48 @@ func toDate(s interface{}) (string, error) {
 		return v.Format("2006-01-02"), nil
 	default:
 		return "", errors.Errorf("cannot convert %v to date", v)
+	}
+}
+
+// toUrlParameter encodes the value as a string that can be passed for url parameter decoding
+func toUrlParameter(s interface{}) (string, error) {
+	switch v := s.(type) {
+	case string:
+		return v, nil
+	case time.Time:
+		return v.Format("2006-01-02"), nil
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v), nil
+	case float32, float64:
+		return fmt.Sprintf("%f", v), nil
+	case []string:
+		return list.SliceToCSV(v), nil
+	case []int:
+		return list.SliceToCSV(v), nil
+	case []int8:
+		return list.SliceToCSV(v), nil
+	case []int16:
+		return list.SliceToCSV(v), nil
+	case []int32:
+		return list.SliceToCSV(v), nil
+	case []int64:
+		return list.SliceToCSV(v), nil
+	case []uint:
+		return list.SliceToCSV(v), nil
+	case []uint8:
+		return list.SliceToCSV(v), nil
+	case []uint16:
+		return list.SliceToCSV(v), nil
+	case []uint32:
+		return list.SliceToCSV(v), nil
+	case []uint64:
+		return list.SliceToCSV(v), nil
+	case []float32:
+		return list.SliceToCSV(v), nil
+	case []float64:
+		return list.SliceToCSV(v), nil
+	default:
+		return fmt.Sprintf("%v", s), nil
 	}
 }
 
