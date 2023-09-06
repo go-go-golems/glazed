@@ -362,7 +362,11 @@ func BuildCobraCommandFromCommand(command cmds.Command) (*cobra.Command, error) 
 	return cobraCommand, nil
 }
 
-func AddCommandsToRootCommand(rootCmd *cobra.Command, commands []cmds.Command, aliases []*alias.CommandAlias) error {
+func AddCommandsToRootCommand(
+	rootCmd *cobra.Command,
+	commands []cmds.Command,
+	aliases []*alias.CommandAlias,
+) error {
 	commandsByName := map[string]cmds.Command{}
 
 	for _, command := range commands {

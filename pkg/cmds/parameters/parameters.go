@@ -488,6 +488,36 @@ func InitializeParameterDefinitionsFromStruct(
 	return nil
 }
 
+func StructToMap(s interface{}) (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+
+	// check that s is indeed a pointer to a struct
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return nil, errors.Errorf("s is not a pointer")
+	}
+	// check if nil
+	if reflect.ValueOf(s).IsNil() {
+		return ret, nil
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return nil, errors.Errorf("s is not a pointer to a struct")
+	}
+	st := reflect.TypeOf(s).Elem()
+
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		parameterName, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+
+		ret[parameterName] = value
+	}
+
+	return ret, nil
+}
+
 func InitializeParameterDefaultsFromParameters(
 	parameterDefinitions map[string]*ParameterDefinition,
 	ps map[string]interface{},
