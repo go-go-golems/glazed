@@ -94,6 +94,22 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 		return choice, nil
 
+	case ParameterTypeChoiceList:
+		choices := make([]string, 0)
+		for _, arg := range v {
+			found := false
+			for _, c := range p.Choices {
+				if c == arg {
+					found = true
+				}
+			}
+			if !found {
+				return nil, errors.Errorf("Argument %s has invalid choice %s", p.Name, arg)
+			}
+			choices = append(choices, arg)
+		}
+		return choices, nil
+
 	case ParameterTypeDate:
 		parsedDate, err := ParseDate(v[0])
 		if err != nil {

@@ -57,7 +57,11 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 // GatherArguments parses the positional arguments passed as a list of strings into a map of
 // parsed values. If onlyProvided is true, then only arguments that are provided are returned
 // (i.e. the default values are not included).
-func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
+func GatherArguments(
+	args []string,
+	arguments []*ParameterDefinition,
+	onlyProvided bool,
+) (map[string]interface{}, error) {
 	_ = args
 	result := make(map[string]interface{})
 	argsIdx := 0

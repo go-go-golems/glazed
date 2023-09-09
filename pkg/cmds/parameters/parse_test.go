@@ -9,187 +9,161 @@ import (
 	"testing"
 )
 
-func TestParameterString(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeString,
-		WithDefault("default"),
-	)
+type ExpectError string
 
-	i, err := parameter.ParseParameter([]string{"test"})
-	require.NoError(t, err)
-	assert.Equal(t, "test", i)
+const ErrorExpected ExpectError = "ErrorExpected"
+const ErrorNotExpected ExpectError = "ErrorNotExpected"
 
-	_, err = parameter.ParseParameter([]string{"test", "test2"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, "default", i)
+type ParameterTestCase struct {
+	Name     string
+	Input    []string
+	Expected interface{}
+	WantErr  ExpectError
 }
 
-func TestParameterStringList(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeStringList,
-		WithDefault([]string{"default"}),
-	)
-
-	i, err := parameter.ParseParameter([]string{"test"})
-	require.NoError(t, err)
-	assert.Equal(t, []string{"test"}, i)
-
-	i, err = parameter.ParseParameter([]string{"test", "test2"})
-	require.NoError(t, err)
-	assert.Equal(t, []string{"test", "test2"}, i)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, []string{"default"}, i)
+type ParameterTest struct {
+	Name          string
+	ParameterType ParameterType
+	DefaultValue  interface{}
+	Choices       []string
+	Cases         []ParameterTestCase
 }
 
-func TestParameterInt(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeInteger,
-		WithDefault(1),
-	)
+func TestParameters(t *testing.T) {
+	tests := []ParameterTest{
+		{
+			Name:          "ParameterString",
+			ParameterType: ParameterTypeString,
+			DefaultValue:  "default",
+			Cases: []ParameterTestCase{
+				{Name: "Valid single string, no error expected", Input: []string{"test"}, Expected: "test", WantErr: ErrorNotExpected},
+				{Name: "Multiple strings for non-list, error expected", Input: []string{"test", "test2"}, WantErr: ErrorExpected},
+				{Name: "No input uses default, no error expected", Input: []string{}, Expected: "default", WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterStringList",
+			ParameterType: ParameterTypeStringList,
+			DefaultValue:  []string{"default"},
+			Cases: []ParameterTestCase{
+				{Name: "Valid single string in list, no error expected", Input: []string{"test"}, Expected: []string{"test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple strings in list, no error expected", Input: []string{"test", "test2"}, Expected: []string{"test", "test2"}, WantErr: ErrorNotExpected},
+				{Name: "No input uses default list, no error expected", Input: []string{}, Expected: []string{"default"}, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterInt",
+			ParameterType: ParameterTypeInteger,
+			DefaultValue:  1,
+			Cases: []ParameterTestCase{
+				{Name: "Valid integer string, no error expected", Input: []string{"1"}, Expected: 1, WantErr: ErrorNotExpected},
+				{Name: "Invalid non-integer string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "Multiple integers for non-list, error expected", Input: []string{"1", "2"}, WantErr: ErrorExpected},
+				{Name: "No input uses default integer, no error expected", Input: []string{}, Expected: 1, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterIntegerList",
+			ParameterType: ParameterTypeIntegerList,
+			DefaultValue:  []int{1},
+			Cases: []ParameterTestCase{
+				{Name: "Valid single integer in list, no error expected", Input: []string{"1"}, Expected: []int{1}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple integers in list, no error expected", Input: []string{"1", "2"}, Expected: []int{1, 2}, WantErr: ErrorNotExpected},
+				{Name: "Invalid non-integer string in list, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "No input uses default integer list, no error expected", Input: []string{}, Expected: []int{1}, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterBool",
+			ParameterType: ParameterTypeBool,
+			DefaultValue:  true,
+			Cases: []ParameterTestCase{
+				{Name: "Valid 'true' input, no error expected", Input: []string{"true"}, Expected: true, WantErr: ErrorNotExpected},
+				{Name: "Valid 'false' input, no error expected", Input: []string{"false"}, Expected: false, WantErr: ErrorNotExpected},
+				{Name: "Invalid non-boolean string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "Multiple boolean values, error expected", Input: []string{"true", "false"}, WantErr: ErrorExpected},
+				{Name: "No input uses default boolean, no error expected", Input: []string{}, Expected: true, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterFloat",
+			ParameterType: ParameterTypeFloat,
+			DefaultValue:  1.0,
+			Cases: []ParameterTestCase{
+				{Name: "Valid float input, no error expected", Input: []string{"1.0"}, Expected: 1.0, WantErr: ErrorNotExpected},
+				{Name: "Invalid non-float string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "Multiple floats for non-list, error expected", Input: []string{"1.0", "2.0"}, WantErr: ErrorExpected},
+				{Name: "No input uses default float, no error expected", Input: []string{}, Expected: 1.0, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterFloatList",
+			ParameterType: ParameterTypeFloatList,
+			DefaultValue:  []float64{1.0},
+			Cases: []ParameterTestCase{
+				{Name: "Valid single float in list, no error expected", Input: []string{"1.0"}, Expected: []float64{1.0}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple floats in list, no error expected", Input: []string{"1.0", "2.0"}, Expected: []float64{1.0, 2.0}, WantErr: ErrorNotExpected},
+				{Name: "Invalid non-float string in list, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "No input uses default float list, no error expected", Input: []string{}, Expected: []float64{1.0}, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterChoice",
+			ParameterType: ParameterTypeChoice,
+			DefaultValue:  "default",
+			Choices:       []string{"default", "test"},
+			Cases: []ParameterTestCase{
+				{Name: "Valid choice from list, no error expected", Input: []string{"test"}, Expected: "test", WantErr: ErrorNotExpected},
+				{Name: "Invalid choice not in list, error expected", Input: []string{"test2"}, WantErr: ErrorExpected},
+				{Name: "Multiple choices for non-list, error expected", Input: []string{"test", "test2"}, WantErr: ErrorExpected},
+				{Name: "No input uses default choice, no error expected", Input: []string{}, Expected: "default", WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterChoiceList",
+			ParameterType: ParameterTypeChoiceList,
+			DefaultValue:  []string{"default"},
+			Choices:       []string{"default", "test", "option1", "option2"},
+			Cases: []ParameterTestCase{
+				{Name: "Valid single choice in list, no error expected", Input: []string{"test"}, Expected: []string{"test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple choices in list, no error expected", Input: []string{"test", "option1"}, Expected: []string{"test", "option1"}, WantErr: ErrorNotExpected},
+				{Name: "Invalid single choice not in list, error expected", Input: []string{"test2"}, WantErr: ErrorExpected},
+				{Name: "Mixed valid and invalid choices, error expected", Input: []string{"test", "test2"}, WantErr: ErrorExpected},
+				{Name: "No input uses default choice list, no error expected", Input: []string{}, Expected: []string{"default"}, WantErr: ErrorNotExpected},
+			},
+		},
+		{
+			Name:          "ParameterTypeKeyValue",
+			ParameterType: ParameterTypeKeyValue,
+			DefaultValue:  map[string]interface{}{"default": "default"},
+			Cases: []ParameterTestCase{
+				{Name: "Valid single key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]interface{}{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple key-value pairs, no error expected", Input: []string{"test:test", "test2:test2"}, Expected: map[string]interface{}{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
+				{Name: "Invalid input without colon separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "No input uses default key-value map, no error expected", Input: []string{}, Expected: map[string]interface{}{"default": "default"}, WantErr: ErrorNotExpected},
+			},
+		},
+	}
 
-	i, err := parameter.ParseParameter([]string{"1"})
-	require.NoError(t, err)
-	assert.Equal(t, 1, i)
+	for _, tt := range tests {
+		parameter := NewParameterDefinition(
+			"test",
+			tt.ParameterType,
+			WithChoices(tt.Choices),
+			WithDefault(tt.DefaultValue))
 
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	_, err = parameter.ParseParameter([]string{"1", "2"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, 1, i)
-}
-
-func TestParameterIntegerList(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeIntegerList,
-		WithDefault([]int{1}),
-	)
-
-	i, err := parameter.ParseParameter([]string{"1"})
-	require.NoError(t, err)
-	assert.Equal(t, []int{1}, i)
-
-	i, err = parameter.ParseParameter([]string{"1", "2"})
-	require.NoError(t, err)
-	assert.Equal(t, []int{1, 2}, i)
-
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, []int{1}, i)
-}
-
-func TestParameterBool(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeBool,
-		WithDefault(true),
-	)
-
-	i, err := parameter.ParseParameter([]string{"true"})
-	require.NoError(t, err)
-	assert.Equal(t, true, i)
-
-	i, err = parameter.ParseParameter([]string{"false"})
-	require.NoError(t, err)
-	assert.Equal(t, false, i)
-
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	_, err = parameter.ParseParameter([]string{"true", "false"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, true, i)
-}
-
-func TestParameterFloat(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeFloat,
-		WithDefault(1.0),
-	)
-
-	i, err := parameter.ParseParameter([]string{"1.0"})
-	require.NoError(t, err)
-	assert.Equal(t, 1.0, i)
-
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	_, err = parameter.ParseParameter([]string{"1.0", "2.0"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, 1.0, i)
-}
-
-func TestParameterFloatList(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeFloatList,
-		WithDefault([]float64{1.0}),
-	)
-
-	i, err := parameter.ParseParameter([]string{"1.0"})
-	require.NoError(t, err)
-	assert.Equal(t, []float64{1.0}, i)
-
-	i, err = parameter.ParseParameter([]string{"1.0", "2.0"})
-	require.NoError(t, err)
-	assert.Equal(t, []float64{1.0, 2.0}, i)
-
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, []float64{1.0}, i)
-}
-
-func TestParameterChoice(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeChoice,
-		WithDefault("default"),
-		WithChoices([]string{"default", "test"}),
-	)
-
-	i, err := parameter.ParseParameter([]string{"test"})
-	require.NoError(t, err)
-	assert.Equal(t, "test", i)
-
-	_, err = parameter.ParseParameter([]string{"test2"})
-	assert.Error(t, err)
-
-	_, err = parameter.ParseParameter([]string{"test", "test2"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, "default", i)
-}
-
-func TestParameterTypeKeyValue(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeKeyValue,
-		WithDefault(map[string]interface{}{"default": "default"}),
-	)
-
-	i, err := parameter.ParseParameter([]string{"test:test"})
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, i)
-
-	i, err = parameter.ParseParameter([]string{"test:test", "test2:test2"})
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i)
-
-	_, err = parameter.ParseParameter([]string{"test"})
-	assert.Error(t, err)
-
-	i, err = parameter.ParseParameter([]string{})
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"default": "default"}, i)
+		for _, tc := range tt.Cases {
+			t.Run(fmt.Sprintf("%s: %s", tt.Name, tc.Name), func(t *testing.T) {
+				got, err := parameter.ParseParameter(tc.Input)
+				if tc.WantErr == ErrorExpected {
+					assert.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					assert.Equal(t, tc.Expected, got)
+				}
+			})
+		}
+	}
 }
 
 func TestParseStringListFromReader(t *testing.T) {

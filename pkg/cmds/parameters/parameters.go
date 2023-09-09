@@ -174,10 +174,6 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	}
 
 	if p.Default != nil {
-		err := p.CheckValueValidity(p.Default)
-		if err != nil {
-			return errors.Wrapf(err, "invalid default value for parameter %s", p.Name)
-		}
 		return p.SetValueFromInterface(value, p.Default)
 	}
 	return p.InitializeValueToEmptyValue(value)
@@ -212,7 +208,13 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 	return nil
 }
 
+// SetValueFromInterface assigns the given value to the given reflect.Value.
 func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {
+	err := p.CheckValueValidity(v)
+	if err != nil {
+		return err
+	}
+
 	switch p.Type {
 	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
 		strVal, ok := v.(string)
@@ -574,12 +576,15 @@ func IsListParameter(p ParameterType) bool {
 	}
 }
 
+// CheckParameterDefaultValueValidity checks if the ParameterDefinition's Default is valid.
+// This is used when validating loading from a YAML file or setting up cobra flag definitions.
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	// we can have no default
 	v := p.Default
 	return p.CheckValueValidity(v)
 }
 
+// CheckValueValidity checks if the given value is valid for the ParameterDefinition.
 func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	if v == nil {
 		return nil
@@ -736,6 +741,9 @@ func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
 	return nil
 }
 
+// LoadParameterDefinitionsFromYAML loads a map of ParameterDefinitions from a YAML file.
+// It checks that default values are valid.
+// It returns the ParameterDefinitions as a map indexed by name, and as a list.
 func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
 	flags := make(map[string]*ParameterDefinition)
 	flagList := make([]*ParameterDefinition, 0)
