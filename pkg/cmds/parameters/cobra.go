@@ -165,13 +165,7 @@ func AddFlagsToCobraCommand(
 		}
 
 		switch parameter.Type {
-		case ParameterTypeStringListFromFile:
-			fallthrough
-		case ParameterTypeStringFromFile:
-			fallthrough
-		case ParameterTypeObjectFromFile:
-			fallthrough
-		case ParameterTypeObjectListFromFile:
+		case ParameterTypeStringListFromFile, ParameterTypeStringFromFile, ParameterTypeObjectFromFile, ParameterTypeObjectListFromFile:
 			defaultValue := ""
 
 			if parameter.ShortFlag != "" {
@@ -180,11 +174,7 @@ func AddFlagsToCobraCommand(
 				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
-		case ParameterTypeStringListFromFiles:
-			fallthrough
-		case ParameterTypeStringFromFiles:
-			fallthrough
-		case ParameterTypeObjectListFromFiles:
+		case ParameterTypeStringListFromFiles, ParameterTypeStringFromFiles, ParameterTypeObjectListFromFiles:
 			defaultValue := []string{}
 
 			if parameter.ShortFlag != "" {
@@ -281,7 +271,7 @@ func AddFlagsToCobraCommand(
 				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
-		case ParameterTypeStringList:
+		case ParameterTypeStringList, ParameterTypeChoiceList:
 			var defaultValue []string
 
 			if parameter.Default != nil {
@@ -489,19 +479,13 @@ func GatherFlagsFromCobraCommand(
 		}
 
 		switch parameter.Type {
-		case ParameterTypeObjectFromFile:
-			fallthrough
-		case ParameterTypeObjectListFromFile:
-			fallthrough
-		case ParameterTypeStringFromFile:
-			fallthrough
-		case ParameterTypeStringListFromFile:
-			fallthrough
-		case ParameterTypeString:
-			fallthrough
-		case ParameterTypeDate:
-			fallthrough
-		case ParameterTypeChoice:
+		case ParameterTypeObjectFromFile,
+			ParameterTypeObjectListFromFile,
+			ParameterTypeStringFromFile,
+			ParameterTypeStringListFromFile,
+			ParameterTypeString,
+			ParameterTypeDate,
+			ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
 			if err != nil {
 				return nil, err
@@ -533,11 +517,9 @@ func GatherFlagsFromCobraCommand(
 			}
 			ps[parameter.Name] = v
 
-		case ParameterTypeObjectListFromFiles:
-			fallthrough
-		case ParameterTypeStringFromFiles:
-			fallthrough
-		case ParameterTypeStringListFromFiles:
+		case ParameterTypeObjectListFromFiles,
+			ParameterTypeStringFromFiles,
+			ParameterTypeStringListFromFiles:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
 				return nil, err
@@ -548,7 +530,8 @@ func GatherFlagsFromCobraCommand(
 			}
 			ps[parameter.Name] = v2
 
-		case ParameterTypeStringList:
+		case ParameterTypeStringList,
+			ParameterTypeChoiceList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
 				return nil, err

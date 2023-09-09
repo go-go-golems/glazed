@@ -43,9 +43,10 @@ func TestParseDate(t *testing.T) {
 }
 
 type DefaultTypeTestCase struct {
-	Type  ParameterType
-	Value interface{}
-	Args  []string
+	Type    ParameterType
+	Value   interface{}
+	Choices []string
+	Args    []string
 }
 
 func TestValidDefaultValue(t *testing.T) {
@@ -58,15 +59,20 @@ func TestValidDefaultValue(t *testing.T) {
 		{Type: ParameterTypeIntegerList, Value: []int{1, 2, 3}},
 		{Type: ParameterTypeStringList, Value: []string{}},
 		{Type: ParameterTypeIntegerList, Value: []int{}},
+		{Type: ParameterTypeChoice, Value: "foo", Choices: []string{"foo", "bar"}},
+		{Type: ParameterTypeChoiceList, Value: []string{"foo", "bar"}, Choices: []string{"foo", "bar"}},
 	}
 	for _, testCase := range testCases {
-		param := &ParameterDefinition{
-			Name:    "foo",
-			Default: testCase.Value,
-			Type:    testCase.Type,
-		}
-		err := param.CheckParameterDefaultValueValidity()
-		assert.Nil(t, err)
+		t.Run(string(testCase.Type), func(t *testing.T) {
+			param := &ParameterDefinition{
+				Name:    "foo",
+				Default: testCase.Value,
+				Type:    testCase.Type,
+				Choices: testCase.Choices,
+			}
+			err := param.CheckParameterDefaultValueValidity()
+			assert.Nil(t, err)
+		})
 	}
 }
 
