@@ -133,7 +133,7 @@ func CastInterfaceListToFloatList[To FloatNumber](list []interface{}) ([]To, boo
 	ret := []To{}
 
 	for _, item := range list {
-		f, ok := CastFloatInterfaceToFloat[To](item)
+		f, ok := CastNumberInterfaceToFloat[To](item)
 		if !ok {
 			return ret, false
 		}

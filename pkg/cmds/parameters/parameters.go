@@ -90,93 +90,6 @@ func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
 	return reflect.DeepEqual(p.Default, i)
 }
 
-func (p *ParameterDefinition) SetDefaultFromInterface(i interface{}) error {
-	switch p.Type {
-	case ParameterTypeString:
-		v, ok := i.(string)
-		if !ok {
-			return errors.Errorf("expected string for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeBool:
-		v, ok := i.(bool)
-		if !ok {
-			return errors.Errorf("expected bool for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeInteger:
-		v, ok := cast.CastNumberInterfaceToInt[int64](i)
-		if !ok {
-			return errors.Errorf("expected int64 for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeFloat:
-
-		v, ok := cast.CastFloatInterfaceToFloat[float64](i)
-		if !ok {
-			return errors.Errorf("expected float64 for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeStringList:
-		v, ok := cast.CastList2[string, interface{}](i)
-		if !ok {
-			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeDate:
-		p.Default = i.(time.Time).Format(time.RFC3339)
-	case ParameterTypeIntegerList:
-		v, ok := cast.CastInterfaceToIntList[int64](i)
-		if !ok {
-			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeFloatList:
-		v, ok := cast.CastInterfaceToFloatList[float64](i)
-		if !ok {
-			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeChoice:
-		p.Default = i.(string)
-	case ParameterTypeStringFromFiles:
-		fallthrough
-	case ParameterTypeStringFromFile:
-		p.Default = i.(string)
-	case ParameterTypeStringListFromFiles:
-		fallthrough
-	case ParameterTypeStringListFromFile:
-		v, ok := cast.CastList2[string, interface{}](i)
-		if !ok {
-			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeKeyValue:
-		v, ok := cast.CastInterfaceToStringMap[string, interface{}](i)
-		if !ok {
-			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeObjectFromFile:
-		v, ok := cast.CastInterfaceToStringMap[interface{}, interface{}](i)
-		if !ok {
-			return errors.Errorf("expected object for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-	case ParameterTypeObjectListFromFiles:
-		fallthrough
-	case ParameterTypeObjectListFromFile:
-		v, ok := cast.CastList2[map[string]interface{}, interface{}](i)
-		if !ok {
-			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, i)
-		}
-		p.Default = v
-
-	}
-
-	return nil
-}
-
 func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	// check if value is pointer, do nothing if nil, otherwise dereference
 	if value.Kind() == reflect.Ptr {
@@ -255,136 +168,118 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 
 // SetValueFromDefault assigns the default value of the ParameterDefinition to the given value.
 // If the Default value is nil, the value is set to the zero value of the type.
-//
-// TODO(manuel, 2023-02-12) Not sure if the setting to the zero value of the type is the best idea, really.
 func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	if !value.CanSet() {
 		return errors.Errorf("cannot set value of %s", p.Name)
 	}
 
+	if p.Default != nil {
+		err := p.CheckValueValidity(p.Default)
+		if err != nil {
+			return errors.Wrapf(err, "invalid default value for parameter %s", p.Name)
+		}
+		return p.SetValueFromInterface(value, p.Default)
+	}
+	return p.InitializeValueToEmptyValue(value)
+}
+
+// InitializeValueToEmptyValue initializes the given value to the empty value of the type of the parameter.
+func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) error {
 	switch p.Type {
-	case ParameterTypeString:
-		if p.Default == nil {
-			value.SetString("")
-		} else {
-			value.SetString(p.Default.(string))
-		}
+	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+		value.SetString("")
 	case ParameterTypeBool:
-		if p.Default == nil {
-			value.SetBool(false)
-		} else {
-			value.SetBool(p.Default.(bool))
-		}
-	case ParameterTypeInteger:
-		if p.Default == nil {
-			return reflect2.SetReflectValue(value, 0)
-		} else {
-			return reflect2.SetReflectValue(value, p.Default)
-		}
-	case ParameterTypeFloat:
-		if p.Default == nil {
-			return reflect2.SetReflectValue(value, 0.0)
-		} else {
-			return reflect2.SetReflectValue(value, p.Default)
-		}
-	case ParameterTypeStringList:
-		if p.Default == nil {
-			value.Set(reflect.ValueOf([]string{}))
-		} else {
-			v_, ok := cast.CastList2[string, interface{}](p.Default)
-			if !ok {
-				return errors.Errorf("expected string list for parameter %s, got %T", p.Name, p.Default)
-			}
-			value.Set(reflect.ValueOf(v_))
-		}
+		value.SetBool(false)
+	case ParameterTypeInteger, ParameterTypeFloat:
+		return reflect2.SetReflectValue(value, 0)
+	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+		value.Set(reflect.ValueOf([]string{}))
 	case ParameterTypeDate:
-		// TODO(manuel, 2023-02-12) Not sure exactly if this should be fully parsed at this point, or left up to the flag
-		if p.Default == nil {
-			// maybe this should be nil too (?)
-			value.Set(reflect.ValueOf(time.Time{}))
-		} else {
-			s := p.Default.(string)
-			dateTime, err := ParseDate(s)
-			if err != nil {
-				return errors.Wrapf(err, "error parsing default value for parameter %s", p.Name)
-			}
-			value.Set(reflect.ValueOf(dateTime))
-		}
+		value.Set(reflect.ValueOf(time.Time{}))
 	case ParameterTypeIntegerList:
-		if p.Default == nil {
-			return reflect2.SetReflectValue(value, []int64{})
-		} else {
-			return reflect2.SetReflectValue(value, p.Default)
-		}
+		return reflect2.SetReflectValue(value, []int64{})
 	case ParameterTypeFloatList:
-		if p.Default == nil {
-			return reflect2.SetReflectValue(value, []float64{})
-		} else {
-			return reflect2.SetReflectValue(value, p.Default)
-		}
-	case ParameterTypeChoice:
-		if p.Default == nil {
-			value.SetString("")
-		} else {
-			value.SetString(p.Default.(string))
-		}
-	case ParameterTypeStringFromFiles:
-		fallthrough
-	case ParameterTypeStringFromFile:
-		if p.Default == nil {
-			value.SetString("")
-		} else {
-			value.SetString(p.Default.(string))
-		}
-	case ParameterTypeStringListFromFiles:
-		fallthrough
-	case ParameterTypeStringListFromFile:
-		if p.Default == nil {
-			value.Set(reflect.ValueOf([]string{}))
-		} else {
-			list, b := cast.CastList2[string, interface{}](p.Default)
-			if !b {
-				return errors.Errorf("default value for parameter %s is not a list of strings", p.Name)
-			}
-			value.Set(reflect.ValueOf(list))
-		}
-	case ParameterTypeObjectListFromFiles:
-		fallthrough
-	case ParameterTypeObjectListFromFile:
-		if p.Default == nil {
-			value.Set(reflect.ValueOf([]map[string]interface{}{}))
-		} else {
-			list2, b := cast.CastList2[map[string]interface{}, interface{}](p.Default)
-			if !b {
-				return errors.Errorf("default value for parameter %s is not a list of maps", p.Name)
-			}
-			value.Set(reflect.ValueOf(list2))
-		}
+		return reflect2.SetReflectValue(value, []float64{})
+	case ParameterTypeObjectListFromFiles, ParameterTypeObjectListFromFile:
+		value.Set(reflect.ValueOf([]map[string]interface{}{}))
 	case ParameterTypeObjectFromFile:
-		if p.Default == nil {
-			value.Set(reflect.ValueOf(map[string]interface{}{}))
-		} else {
-			value.Set(reflect.ValueOf(p.Default.(map[string]interface{})))
-		}
+		value.Set(reflect.ValueOf(map[string]interface{}{}))
 	case ParameterTypeKeyValue:
-		if p.Default == nil {
-			value.Set(reflect.ValueOf(map[string]string{}))
-		} else {
-			v, ok := p.Default.(map[string]interface{})
-			if !ok {
-				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
-			}
-			v2, ok := cast.CastStringMap[string, interface{}](v)
-			if !ok {
-				return errors.Errorf("default value for parameter %s is not a map[string]interface{}", p.Name)
-			}
-			value.Set(reflect.ValueOf(v2))
+		value.Set(reflect.ValueOf(map[string]string{}))
+	default:
+		return errors.Errorf("unknown parameter type %s", p.Type)
+	}
+	return nil
+}
+
+func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {
+	switch p.Type {
+	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+		strVal, ok := v.(string)
+		if !ok {
+			return errors.Errorf("expected string value for parameter %s, got %T", p.Name, v)
 		}
+		value.SetString(strVal)
+
+	case ParameterTypeBool:
+		boolVal, ok := v.(bool)
+		if !ok {
+			return errors.Errorf("expected bool value for parameter %s, got %T", p.Name, v)
+		}
+		value.SetBool(boolVal)
+
+	case ParameterTypeInteger, ParameterTypeFloat:
+		return reflect2.SetReflectValue(value, v)
+
+	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+		list, ok := cast.CastList2[string, interface{}](v)
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, v)
+		}
+		value.Set(reflect.ValueOf(list))
+
+	case ParameterTypeDate:
+		strVal, ok := v.(string)
+		if !ok {
+			return errors.Errorf("expected string value for parameter %s, got %T", p.Name, v)
+		}
+		dateTime, err := ParseDate(strVal)
+		if err != nil {
+			return errors.Wrapf(err, "error parsing value for parameter %s", p.Name)
+		}
+		value.Set(reflect.ValueOf(dateTime))
+
+	case ParameterTypeIntegerList, ParameterTypeFloatList:
+		return reflect2.SetReflectValue(value, v)
+
+	case ParameterTypeObjectListFromFiles, ParameterTypeObjectListFromFile:
+		list, ok := cast.CastList2[map[string]interface{}, interface{}](v)
+		if !ok {
+			return errors.Errorf("expected list of maps for parameter %s, got %T", p.Name, v)
+		}
+		value.Set(reflect.ValueOf(list))
+
+	case ParameterTypeObjectFromFile:
+		mapVal, ok := v.(map[string]interface{})
+		if !ok {
+			return errors.Errorf("expected map for parameter %s, got %T", p.Name, v)
+		}
+		value.Set(reflect.ValueOf(mapVal))
+
+	case ParameterTypeKeyValue:
+		mapVal, ok := v.(map[string]interface{})
+		if !ok {
+			return errors.Errorf("expected map for parameter %s, got %T", p.Name, v)
+		}
+		mapStrVal, ok := cast.CastStringMap[string, interface{}](mapVal)
+		if !ok {
+			return errors.Errorf("expected map of strings for parameter %s, got %T", p.Name, v)
+		}
+		value.Set(reflect.ValueOf(mapStrVal))
 
 	default:
 		return errors.Errorf("unknown parameter type %s", p.Type)
 	}
-
 	return nil
 }
 

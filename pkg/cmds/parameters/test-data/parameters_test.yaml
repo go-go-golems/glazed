@@ -83,6 +83,11 @@
   type: float
   help: A float flag without a default value
 
+- name: float-flag-with-int-default
+  type: float
+  help: A float flag with an int default value
+  default: 42
+
 - name: float-flag-with-empty-default
   type: float
   help: A float flag with an empty default value
@@ -91,7 +96,7 @@
 - name: float-list-flag
   type: floatList
   help: A float list flag
-  default: [1.1, 2.2, 3.3]
+  default: [1.1, 2.2, 3.3, 4, 5]
 
 - name: float-list-flag-without-default
   type: floatList
