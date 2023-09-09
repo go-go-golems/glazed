@@ -1,3 +1,19 @@
+#  ParameterTypeString         ParameterType = "string"
+#  ParameterTypeStringFromFile ParameterType = "stringFromFile"
+#  ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
+#  ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
+#  // ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
+#  ParameterTypeKeyValue    ParameterType = "keyValue"
+#  ParameterTypeInteger     ParameterType = "int"
+#  ParameterTypeFloat       ParameterType = "float"
+#  ParameterTypeBool        ParameterType = "bool"
+#  ParameterTypeDate        ParameterType = "date"
+#  ParameterTypeStringList  ParameterType = "stringList"
+#  ParameterTypeIntegerList ParameterType = "intList"
+#  ParameterTypeFloatList   ParameterType = "floatList"
+#  ParameterTypeChoice      ParameterType = "choice"
+#  ParameterTypeChoiceList  ParameterType = "choiceList"
+
 - name: string-flag
   type: string
   help: A string flag
@@ -25,25 +41,6 @@
   type: int
   help: An int flag with an empty default value
   default: 0
-
-#  ParameterTypeString         ParameterType = "string"
-#  ParameterTypeStringFromFile ParameterType = "stringFromFile"
-#
-#  // TODO (2023-02-07) It would be great to have "list of objects from file" here
-#  // See https://github.com/go-go-golems/glazed/issues/117
-#
-#  ParameterTypeObjectListFromFile ParameterType = "objectListFromFile"
-#  ParameterTypeObjectFromFile     ParameterType = "objectFromFile"
-#  // ParameterTypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
-#  ParameterTypeKeyValue    ParameterType = "keyValue"
-#  ParameterTypeInteger     ParameterType = "int"
-#  ParameterTypeFloat       ParameterType = "float"
-#  ParameterTypeBool        ParameterType = "bool"
-#  ParameterTypeDate        ParameterType = "date"
-#  ParameterTypeStringList  ParameterType = "stringList"
-#  ParameterTypeIntegerList ParameterType = "intList"
-#  ParameterTypeFloatList   ParameterType = "floatList"
-#  ParameterTypeChoice      ParameterType = "choice"
 
 - name: string-list-flag
   type: stringList
@@ -82,6 +79,11 @@
   type: float
   help: A float flag without a default value
 
+- name: float-flag-with-int-default
+  type: float
+  help: A float flag with an int default value
+  default: 42
+
 - name: float-flag-with-empty-default
   type: float
   help: A float flag with an empty default value
@@ -90,7 +92,7 @@
 - name: float-list-flag
   type: floatList
   help: A float list flag
-  default: [1.1, 2.2, 3.3]
+  default: [1.1, 2.2, 3.3, 4, 5]
 
 - name: float-list-flag-without-default
   type: floatList
@@ -195,6 +197,17 @@
 - name: choice-flag-without-default
   type: choice
   help: A choice flag without a default value
+  choices: ["choice1", "choice2"]
+
+- name: choice-list-flag
+  type: choiceList
+  help: A choice list flag
+  default: ["default", "choice1", "choice2"]
+  choices: ["default", "choice1", "choice2"]
+
+- name: choice-list-flag-without-default
+  type: choiceList
+  help: A choice list flag without a default value
   choices: ["choice1", "choice2"]
 
 - name: key-value-flag

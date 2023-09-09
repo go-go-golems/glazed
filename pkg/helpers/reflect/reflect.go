@@ -400,7 +400,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	return fmt.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
 }
 
-func SetFloatListReflectValue[To cast.Number](value reflect.Value, v interface{}) error {
+func SetFloatListReflectValue[To cast.FloatNumber](value reflect.Value, v interface{}) error {
 	if s, ok := v.([]float64); ok {
 		s2, ok := cast.CastToNumberList[To, float64](s)
 		if !ok {
@@ -420,15 +420,12 @@ func SetFloatListReflectValue[To cast.Number](value reflect.Value, v interface{}
 	}
 
 	if s, ok := v.([]interface{}); ok {
-		v2_, ok := cast.CastList[float64, interface{}](s)
+		v2_, ok := cast.CastInterfaceListToFloatList[To](s)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
 		}
-		v3_, ok := cast.CastToNumberList[To, float64](v2_)
-		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
-		}
-		value.Set(reflect.ValueOf(v3_))
+
+		value.Set(reflect.ValueOf(v2_))
 		return nil
 	}
 

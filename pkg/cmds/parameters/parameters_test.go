@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 	"reflect"
 	"testing"
 	"time"
@@ -15,8 +16,60 @@ var testFlagsYaml []byte
 var testParameterDefinitions map[string]*ParameterDefinition
 var testParameterDefinitionsList []*ParameterDefinition
 
+type ValidityTest struct {
+	Name                string        `yaml:"name"`
+	Valid               bool          `yaml:"valid"`
+	Type                ParameterType `yaml:"type"`
+	Value               interface{}   `yaml:"value"`
+	Choices             []string      `yaml:"choices,omitempty"`
+	parameterDefinition *ParameterDefinition
+}
+
+//go:embed "test-data/parameters_validity_test.yaml"
+var validityTestYaml []byte
+
+var testParameterValidList []*ValidityTest
+
+func loadValidityTestDataFromYAML(s []byte) ([]*ValidityTest, error) {
+	var tests []*ValidityTest
+	err := yaml.Unmarshal(s, &tests)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, test := range tests {
+		test.parameterDefinition = &ParameterDefinition{
+			Name:     test.Name,
+			Type:     test.Type,
+			Default:  nil,
+			Choices:  test.Choices,
+			Required: true,
+		}
+	}
+
+	return tests, nil
+}
+
 func init() {
 	testParameterDefinitions, testParameterDefinitionsList = LoadParameterDefinitionsFromYAML(testFlagsYaml)
+	var err error
+	testParameterValidList, err = loadValidityTestDataFromYAML(validityTestYaml)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestParameterValidity(t *testing.T) {
+	for _, validityTest := range testParameterValidList {
+		t.Run(validityTest.Name, func(t *testing.T) {
+			err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
+			if validityTest.Valid {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
 }
 
 func TestSetValueFromDefaultInt(t *testing.T) {
@@ -42,7 +95,6 @@ func TestSetValueFromDefaultInt(t *testing.T) {
 	err = intFlag.SetValueFromDefault(iValue)
 	require.NoError(t, err)
 	assert.Equal(t, i, 0)
-
 }
 
 func TestSetValueFromDefaultInt32(t *testing.T) {
@@ -94,6 +146,11 @@ func TestSetValueFromDefaultFloat(t *testing.T) {
 	err = floatFlag.SetValueFromDefault(fValue)
 	require.NoError(t, err)
 	assert.Equal(t, 0.0, f)
+
+	floatFlag = testParameterDefinitions["float-flag-with-int-default"]
+	err = floatFlag.SetValueFromDefault(fValue)
+	require.NoError(t, err)
+	assert.Equal(t, 42.0, f)
 }
 
 func TestSetValueFromDefaultFloat32(t *testing.T) {
@@ -192,6 +249,60 @@ func TestSetValueFromDefaultBool(t *testing.T) {
 	assert.Equal(t, false, b)
 }
 
+func TestSetValueFromDefaultChoice(t *testing.T) {
+	choiceFlag := testParameterDefinitions["choice-flag"]
+
+	c := "foo"
+
+	// get values of testStruct.Choice
+	cValue := reflect.ValueOf(&c).Elem()
+
+	err := choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, "default", c)
+
+	choiceFlag = testParameterDefinitions["choice-flag-without-default"]
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, "", c)
+
+	choiceFlag = &ParameterDefinition{
+		Name:    "choice-flag-with-invalid-default",
+		Type:    ParameterTypeChoice,
+		Default: "invalid",
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.Error(t, err)
+}
+
+func TestSetValueFromDefaultChoiceList(t *testing.T) {
+	choiceListFlag := testParameterDefinitions["choice-list-flag"]
+
+	cl := []string{"foo", "bar"}
+
+	// get values of testStruct.ChoiceList
+	clValue := reflect.ValueOf(&cl).Elem()
+
+	err := choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"default", "choice1", "choice2"}, cl)
+
+	choiceListFlag = testParameterDefinitions["choice-list-flag-without-default"]
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []string{}, cl)
+
+	choiceListFlag = &ParameterDefinition{
+		Name:    "choice-list-flag-with-invalid-default",
+		Type:    ParameterTypeChoiceList,
+		Default: []string{"invalid"},
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.Error(t, err)
+}
+
 func TestSetValueFromDefaultIntList(t *testing.T) {
 	intListFlag := testParameterDefinitions["int-list-flag"]
 
@@ -255,7 +366,7 @@ func TestSetValueFromDefaultFloatList(t *testing.T) {
 
 	err := floatListFlag.SetValueFromDefault(flValue)
 	require.NoError(t, err)
-	assert.Equal(t, []float64{1.1, 2.2, 3.3}, fl)
+	assert.Equal(t, []float64{1.1, 2.2, 3.3, 4.0, 5.0}, fl)
 
 	floatListFlag = testParameterDefinitions["float-list-flag-without-default"]
 	err = floatListFlag.SetValueFromDefault(flValue)
@@ -281,7 +392,7 @@ func TestSetValueFromDefaultFloat32List(t *testing.T) {
 
 	err := floatListFlag.SetValueFromDefault(flValue)
 	require.NoError(t, err)
-	assert.Equal(t, []float32{1.1, 2.2, 3.3}, fl)
+	assert.Equal(t, []float32{1.1, 2.2, 3.3, 4, 5}, fl)
 
 	floatListFlag = testParameterDefinitions["float-list-flag-without-default"]
 	require.NotNil(t, floatListFlag)

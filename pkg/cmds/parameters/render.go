@@ -8,26 +8,25 @@ import (
 	"time"
 )
 
+// RenderValue renders the given value to string so that it can be parsed as a cobra command line flag.
+// TODO(manuel, 2023-09-09) Refactor rendering of values to strings that can be parsed.
+// This is only applicable to parsing using cobra, but really we now have many more ways of parsing
+// a flag out of a string, among which GET query and FORM input parameters.
 func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 	switch type_ {
-	case ParameterTypeString:
-		fallthrough
-	case ParameterTypeStringFromFile:
-		fallthrough
-	case ParameterTypeStringFromFiles:
-		fallthrough
-	case ParameterTypeChoice:
+	case ParameterTypeString,
+		ParameterTypeStringFromFile,
+		ParameterTypeStringFromFiles,
+		ParameterTypeChoice:
 		s, ok := value.(string)
 		if !ok {
 			return "", errors.Errorf("expected string, got %T", value)
 		}
 		return s, nil
 
-	case ParameterTypeObjectListFromFiles:
-		fallthrough
-	case ParameterTypeObjectListFromFile:
-		fallthrough
-	case ParameterTypeObjectFromFile:
+	case ParameterTypeObjectListFromFiles,
+		ParameterTypeObjectListFromFile,
+		ParameterTypeObjectFromFile:
 		return fmt.Sprintf("%v", value), nil
 
 	case ParameterTypeDate:
@@ -75,11 +74,10 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		}
 		return "false", nil
 
-	case ParameterTypeStringListFromFiles:
-		fallthrough
-	case ParameterTypeStringListFromFile:
-		fallthrough
-	case ParameterTypeStringList:
+	case ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile,
+		ParameterTypeStringList,
+		ParameterTypeChoiceList:
 		l, ok := cast.CastList2[string, interface{}](value)
 		if !ok {
 			return "", errors.Errorf("expected []string, got %T", value)
