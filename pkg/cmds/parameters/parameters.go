@@ -99,70 +99,16 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 		value = value.Elem()
 	}
 
-	switch p.Type {
-	case ParameterTypeString:
-		p.Default = value.String()
-	case ParameterTypeBool:
-		p.Default = value.Bool()
-	case ParameterTypeInteger:
-		p.Default = value.Int()
-	case ParameterTypeFloat:
-		p.Default = value.Float()
-
-	case ParameterTypeStringListFromFiles:
-		fallthrough
-	case ParameterTypeStringListFromFile:
-		fallthrough
-	case ParameterTypeStringList:
-		v, ok := cast.CastList2[string, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
-
-	case ParameterTypeDate:
-		p.Default = value.Interface().(time.Time).Format(time.RFC3339)
-	case ParameterTypeIntegerList:
-		v, ok := cast.CastList2[int64, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected integer list for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
-	case ParameterTypeFloatList:
-		v, ok := cast.CastList2[float64, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected float list for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
-
-	case ParameterTypeChoice:
-		p.Default = value.String()
-	case ParameterTypeStringFromFiles:
-		fallthrough
-	case ParameterTypeStringFromFile:
-		p.Default = value.String()
-	case ParameterTypeKeyValue:
-		v, ok := cast.CastInterfaceToStringMap[string, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected string map for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
-	case ParameterTypeObjectFromFile:
-		v, ok := cast.CastInterfaceToStringMap[interface{}, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected object for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
-
-	case ParameterTypeObjectListFromFiles:
-		fallthrough
-	case ParameterTypeObjectListFromFile:
-		v, ok := cast.CastList2[map[string]interface{}, interface{}](value.Interface())
-		if !ok {
-			return errors.Errorf("expected object list for parameter %s, got %T", p.Name, value.Interface())
-		}
-		p.Default = v
+	if p.CheckValueValidity(value.Interface()) != nil {
+		return errors.Errorf("invalid value for parameter %s: %v", p.Name, value.Interface())
 	}
+
+	val := reflect.ValueOf(p).Elem()
+	f := val.FieldByName("Default")
+	if f.CanSet() {
+		f.Set(reflect.ValueOf(value.Interface()))
+	}
+
 	return nil
 }
 
