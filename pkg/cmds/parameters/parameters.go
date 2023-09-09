@@ -627,6 +627,7 @@ const (
 	ParameterTypeIntegerList ParameterType = "intList"
 	ParameterTypeFloatList   ParameterType = "floatList"
 	ParameterTypeChoice      ParameterType = "choice"
+	ParameterTypeChoiceList  ParameterType = "choiceList"
 )
 
 // IsFileLoadingParameter returns true if the parameter type is one that loads a file, when provided with the given
@@ -697,7 +698,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeString:
 		_, ok := v.(string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
 	case ParameterTypeObjectListFromFile:
@@ -705,31 +706,31 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeObjectListFromFiles:
 		_, ok := v.([]interface{})
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a list of objects: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a list of objects: %v", p.Name, v)
 		}
 
 	case ParameterTypeObjectFromFile:
 		_, ok := v.(map[string]interface{})
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an object: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not an object: %v", p.Name, v)
 		}
 
 	case ParameterTypeInteger:
 		_, ok := cast.CastNumberInterfaceToInt[int64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not an integer: %v", p.Name, v)
 		}
 
 	case ParameterTypeFloat:
-		_, ok := cast.CastFloatInterfaceToFloat[float64](v)
+		_, ok := cast.CastNumberInterfaceToFloat[float64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a float: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a float: %v", p.Name, v)
 		}
 
 	case ParameterTypeBool:
 		_, ok := v.(bool)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a bool: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a bool: %v", p.Name, v)
 		}
 
 	case ParameterTypeDate:
@@ -737,12 +738,12 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		case string:
 			_, err := ParseDate(v_)
 			if err != nil {
-				return errors.Wrapf(err, "Default value for parameter %s is not a valid date: %v", p.Name, v)
+				return errors.Wrapf(err, "Value for parameter %s is not a valid date: %v", p.Name, v)
 			}
 		case time.Time:
 			return nil
 		default:
-			return errors.Errorf("Default value for parameter %s is not a valid date: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a valid date: %v", p.Name, v)
 		}
 
 	case ParameterTypeStringListFromFile:
@@ -752,15 +753,15 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeStringList:
 		_, ok := v.([]string)
 		if !ok {
-			defaultValue, ok := v.([]interface{})
+			v_, ok := v.([]interface{})
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
 
 			// convert to string list
-			fixedDefault, ok := cast.CastList[string, interface{}](defaultValue)
+			fixedDefault, ok := cast.CastList[string, interface{}](v_)
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a string list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
 			_ = fixedDefault
 		}
@@ -774,7 +775,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeFloatList:
 		_, ok := cast.CastInterfaceToFloatList[float64](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a float list: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a float list: %v", p.Name, v)
 		}
 
 	case ParameterTypeChoice:
@@ -782,36 +783,61 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		defaultValue, ok := v.(string)
+		v_, ok := v.(string)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not a string: %v", p.Name, v)
+			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
-		found := false
-		for _, choice := range p.Choices {
-			if choice == defaultValue {
-				found = true
-			}
+		err := p.checkChoiceValidity(v_)
+		if err != nil {
+			return err
 		}
-		if !found {
-			return errors.Errorf("Default value for parameter %s is not a valid choice: %v", p.Name, v)
+
+	case ParameterTypeChoiceList:
+		if len(p.Choices) == 0 {
+			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
+		}
+
+		v_, ok := cast.CastList2[string, interface{}](v)
+		if !ok {
+			return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
+		}
+
+		for _, choice := range v_ {
+			err := p.checkChoiceValidity(choice)
+			if err != nil {
+				return err
+			}
 		}
 
 	case ParameterTypeKeyValue:
 		_, ok := v.(map[string]string)
 		if !ok {
-			defaultValue, ok := v.(map[string]interface{})
+			v_, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 
-			_, ok = cast.CastStringMap[string, interface{}](defaultValue)
+			_, ok = cast.CastStringMap[string, interface{}](v_)
 			if !ok {
-				return errors.Errorf("Default value for parameter %s is not a key value list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 		}
 	}
 
+	return nil
+}
+
+func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
+	found := false
+	for _, choice2 := range p.Choices {
+		if choice == choice2 {
+			found = true
+		}
+	}
+	if !found {
+		return errors.Errorf("Value for parameter %s is not a valid choice: %v", p.Name, choice)
+	}
 	return nil
 }
 

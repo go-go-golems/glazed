@@ -44,6 +44,7 @@
 #  ParameterTypeIntegerList ParameterType = "intList"
 #  ParameterTypeFloatList   ParameterType = "floatList"
 #  ParameterTypeChoice      ParameterType = "choice"
+#  ParameterTypeChoiceList  ParameterType = "choiceList"
 
 - name: string-list-flag
   type: stringList
@@ -195,6 +196,17 @@
 - name: choice-flag-without-default
   type: choice
   help: A choice flag without a default value
+  choices: ["choice1", "choice2"]
+
+- name: choice-list-flag
+  type: choiceList
+  help: A choice list flag
+  default: ["default", "choice1", "choice2"]
+  choices: ["default", "choice1", "choice2"]
+
+- name: choice-list-flag-without-default
+  type: choiceList
+  help: A choice list flag without a default value
   choices: ["choice1", "choice2"]
 
 - name: key-value-flag
