@@ -15,7 +15,7 @@ import (
 )
 
 func TestAddZeroArguments(t *testing.T) {
-	cmd := &cobra.Command{}
+	cmd := &cobra.Command{Use: "test"}
 	desc := CommandDescription{
 		Arguments: []*parameters.ParameterDefinition{},
 	}

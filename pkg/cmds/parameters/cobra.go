@@ -76,7 +76,11 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 //   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
 //   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
 func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) string {
-	verb := strings.Fields(cmd.Use)[0]
+	fields := strings.Fields(cmd.Use)
+	if len(fields) == 0 {
+		return ""
+	}
+	verb := fields[0]
 	useStr := verb
 	var defaultValueStr string
 

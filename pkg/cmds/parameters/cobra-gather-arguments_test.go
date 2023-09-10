@@ -434,7 +434,7 @@ func TestGenerateUseString_WithMultipleValues(t *testing.T) {
 func TestGenerateUseString_RequiredWithMultipleValues(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := []*ParameterDefinition{
-		&ParameterDefinition{Name: "name", Required: true, Type: ParameterTypeStringList},
+		{Name: "name", Required: true, Type: ParameterTypeStringList},
 	}
 
 	result := GenerateUseString(cmd, arguments)
