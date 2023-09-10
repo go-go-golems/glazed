@@ -12,11 +12,19 @@ import (
 	"time"
 )
 
-// AddArgumentsToCobraCommand adds the arguments (not the flags) of a CommandDescription to a cobra command
-// as positional arguments.
-// An optional argument cannot be followed by a required argument.
-// Similarly, a list of arguments cannot be followed by any argument (since we otherwise wouldn't
-// know how many belong to the list and where to do the cut off).
+// AddArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
+// Argument ordering, optionality, and multiplicity constraints are respected:
+//   - Required arguments (argument.Required == true) should come before the optional.
+//   - Only one list argument (either ParameterTypeStringList or ParameterTypeIntegerList) is allowed and it should be the last one.
+//
+// Any violation of these conditions yields an error.
+// This function processes each argument, checks their default values for validity, which if invalid,
+// triggers an error return.
+//
+// It computes the minimum and maximum number of arguments the command can take based on the required, optional,
+// and list arguments.
+// If everything is successful, it assigns an argument validator (either MinimumNArgs or RangeArgs)
+// to the cobra command's Args attribute.
 func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
 	minArgs := 0
 	// -1 signifies unbounded
@@ -52,7 +60,43 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 		cmd.Args = cobra.RangeArgs(minArgs, maxArgs)
 	}
 
+	cmd.Use = GenerateUseString(cmd, arguments)
+
 	return nil
+}
+
+// GenerateUseString creates a string representation of the 'Use' field for a given cobra command and a list of parameter definitions. The first word of the existing 'Use' field is treated as the verb for the command.
+// The resulting string briefly describes how to use the command respecting the following conventions:
+//   - Required parameters are enclosed in '<>'.
+//   - Optional parameters are enclosed in '[]'.
+//   - Optional parameters that accept multiple input (ParameterTypeStringList or ParameterTypeIntegerList) are followed by '...'.
+//   - If a parameter has a default value, it is specified after parameter name like 'parameter (default: value)'.
+//
+// For example:
+//   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
+//   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
+func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) string {
+	verb := strings.Fields(cmd.Use)[0]
+	useStr := verb
+	var defaultValueStr string
+
+	for _, arg := range arguments {
+		defaultValueStr = ""
+		if arg.Default != nil {
+			defaultValueStr = fmt.Sprintf(" (default: %v)", arg.Default)
+		}
+		left, right := "[", "]"
+		if arg.Required {
+			left, right = "<", ">"
+		}
+		if arg.Type == ParameterTypeStringList || arg.Type == ParameterTypeIntegerList {
+			useStr += " " + left + arg.Name + "..." + defaultValueStr + right
+		} else {
+			useStr += " " + left + arg.Name + defaultValueStr + right
+		}
+	}
+
+	return useStr
 }
 
 // GatherArguments parses positional string arguments into a map of values.

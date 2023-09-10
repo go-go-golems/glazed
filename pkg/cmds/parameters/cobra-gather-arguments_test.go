@@ -1,7 +1,9 @@
 package parameters
 
 import (
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -382,4 +384,59 @@ func TestObjectListFromFilesParsing(t *testing.T) {
 			map[string]interface{}{"name": "objectList5", "type": "object"},
 			map[string]interface{}{"name": "objectList6", "type": "object"},
 		}, v1)
+}
+
+func TestGenerateUseString_NoArguments(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test", result)
+}
+
+func TestGenerateUseString_RequiredArguments(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{{Name: "name", Required: true}}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test <name>", result)
+}
+
+func TestGenerateUseString_OptionalArguments(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{{Name: "name"}}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test [name]", result)
+}
+
+func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{
+		{Name: "name", Required: true},
+		{Name: "age"},
+	}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test <name> [age]", result)
+}
+
+func TestGenerateUseString_WithDefaultValue(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{{Name: "name", Default: "John"}}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test [name (default: John)]", result)
+}
+
+func TestGenerateUseString_WithMultipleValues(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{{Name: "name", Type: ParameterTypeStringList}}
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test [name...]", result)
+}
+
+func TestGenerateUseString_RequiredWithMultipleValues(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	arguments := []*ParameterDefinition{
+		&ParameterDefinition{Name: "name", Required: true, Type: ParameterTypeStringList},
+	}
+
+	result := GenerateUseString(cmd, arguments)
+	require.Equal(t, "test <name...>", result)
 }
