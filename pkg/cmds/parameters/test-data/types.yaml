@@ -1,0 +1,82 @@
+- type: int
+  isList: false
+  isFileLoading: false
+
+- type: string
+  isList: false
+  isFileLoading: false
+
+- type: stringFromFile
+  isList: false
+  isFileLoading: true
+
+- type: stringFromFiles
+  isList: true
+  isFileLoading: true
+
+- type: objectListFromFile
+  # this is not a list because we actually parse a single file
+  isList: false
+  isFileLoading: true
+
+- type: objectListFromFiles
+  isList: true
+  isFileLoading: true
+
+- type: objectFromFile
+  isList: false
+  isFileLoading: true
+
+- type: stringListFromFile
+  isList: false
+  isFileLoading: true
+
+- type: stringListFromFiles
+  isList: true
+  isFileLoading: true
+
+- type: keyValue
+  isList: true
+  value: "foobar:foo"
+  isFileLoading: false
+
+- type: keyValue
+  isList: true
+  value: "@file.json"
+  isFileLoading: true
+
+- type: int
+  isList: false
+  isFileLoading: false
+
+- type: float
+  isList: false
+  isFileLoading: false
+
+- type: bool
+  isList: false
+  isFileLoading: false
+
+- type: date
+  isList: false
+  isFileLoading: false
+
+- type: stringList
+  isList: true
+  isFileLoading: false
+
+- type: intList
+  isList: true
+  isFileLoading: false
+
+- type: floatList
+  isList: true
+  isFileLoading: false
+
+- type: choice
+  isList: false
+  isFileLoading: false
+
+- type: choiceList
+  isList: true
+  isFileLoading: false

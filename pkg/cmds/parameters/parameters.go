@@ -479,19 +479,13 @@ const (
 func IsFileLoadingParameter(p ParameterType, v string) bool {
 	//exhaustive:ignore
 	switch p {
-	case ParameterTypeStringFromFile:
-		return true
-	case ParameterTypeObjectListFromFile:
-		return true
-	case ParameterTypeObjectFromFile:
-		return true
-	case ParameterTypeStringListFromFile:
-		return true
-	case ParameterTypeObjectListFromFiles:
-		return true
-	case ParameterTypeStringListFromFiles:
-		return true
-	case ParameterTypeStringFromFiles:
+	case ParameterTypeStringFromFile,
+		ParameterTypeObjectListFromFile,
+		ParameterTypeObjectFromFile,
+		ParameterTypeStringListFromFile,
+		ParameterTypeObjectListFromFiles,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringFromFiles:
 		return true
 	case ParameterTypeKeyValue:
 		return strings.HasPrefix(v, "@")
@@ -500,22 +494,19 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 	}
 }
 
+// IsListParameter returns if the parameter has to be parsed from a list of strings,
+// not if its value is actually a string.
 func IsListParameter(p ParameterType) bool {
 	//exhaustive:ignore
 	switch p {
-	case ParameterTypeObjectListFromFiles:
-		return true
-	case ParameterTypeStringListFromFiles:
-		return true
-	case ParameterTypeStringFromFiles:
-		return true
-	case ParameterTypeStringList:
-		return true
-	case ParameterTypeIntegerList:
-		return true
-	case ParameterTypeFloatList:
-		return true
-	case ParameterTypeKeyValue:
+	case ParameterTypeObjectListFromFiles,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringFromFiles,
+		ParameterTypeStringList,
+		ParameterTypeIntegerList,
+		ParameterTypeFloatList,
+		ParameterTypeChoiceList,
+		ParameterTypeKeyValue:
 		return true
 	default:
 		return false
