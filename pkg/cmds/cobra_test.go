@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"github.com/zenizh/go-capturer"
 	"gopkg.in/yaml.v3"
 	"testing"
@@ -42,8 +43,10 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 
 	values, err := parameters.GatherArguments([]string{"bar"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(values))
-	assert.Equal(t, "bar", values["foo"])
+	assert.Equal(t, 1, values.Len())
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "bar", v1)
 
 	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
 	assert.Error(t, err)
@@ -77,9 +80,13 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 
 	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 2, len(values))
-	assert.Equal(t, "bar", values["foo"])
-	assert.Equal(t, "foo", values["bar"])
+	assert.Equal(t, 2, values.Len())
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "bar", v1)
+	v2, ok := values.Get("bar")
+	require.True(t, ok)
+	assert.Equal(t, "foo", v2)
 
 	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
 	assert.Error(t, err)
@@ -116,15 +123,22 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 
 	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 2, len(values))
-	assert.Equal(t, "bar", values["foo"])
-	assert.Equal(t, "foo", values["bar"])
+	assert.Equal(t, 2, values.Len())
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "bar", v1)
+	v2, ok := values.Get("bar")
+	require.True(t, ok)
+	assert.Equal(t, "foo", v2)
 
 	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 2, len(values))
-	assert.Equal(t, "foo", values["foo"])
-	assert.Equal(t, "baz", values["bar"])
+	v1, ok = values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "foo", v1)
+	v2, ok = values.Get("bar")
+	require.True(t, ok)
+	assert.Equal(t, "baz", v2)
 
 	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
 	assert.Error(t, err)
@@ -152,13 +166,17 @@ func TestOneOptionalArgument(t *testing.T) {
 
 	values, err := parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(values))
-	assert.Equal(t, "foo", values["foo"])
+	assert.Equal(t, 1, values.Len())
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "foo", v1)
 
 	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(values))
-	assert.Equal(t, "123", values["foo"])
+	assert.Equal(t, 1, values.Len())
+	v1, ok = values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, "123", v1)
 }
 
 func TestDefaultIntValue(t *testing.T) {
@@ -176,13 +194,17 @@ func TestDefaultIntValue(t *testing.T) {
 	require.Nil(t, err)
 	values, err := parameters.GatherArguments([]string{}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(values))
-	assert.Equal(t, 123, values["foo"])
+	assert.Equal(t, 1, values.Len())
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, 123, v1)
 
 	values, err = parameters.GatherArguments([]string{"234"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, 1, len(values))
-	assert.Equal(t, 234, values["foo"])
+	assert.Equal(t, 1, values.Len())
+	v1, ok = values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, 234, v1)
 
 	_, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
 	assert.Error(t, err)
@@ -303,15 +325,21 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 
 	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, []string{"bar", "foo"}, values["foo"])
+	v1, ok := values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, []string{"bar", "foo"}, v1)
 
 	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, []string{"foo"}, values["foo"])
+	v1, ok = values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, []string{"foo"}, v1)
 
 	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
 	require.Nil(t, err)
-	assert.Equal(t, []string{"baz"}, values["foo"])
+	v1, ok = values.Get("foo")
+	require.True(t, ok)
+	assert.Equal(t, []string{"baz"}, v1)
 }
 
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
@@ -505,7 +533,7 @@ func testCommandParseHelper(
 	var flagsError error
 	var argsError error
 	var flagParameters map[string]interface{}
-	var argumentParameters map[string]interface{}
+	var argumentParameters *orderedmap.OrderedMap[string, interface{}]
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {

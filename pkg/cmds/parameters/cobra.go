@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"strings"
 	"time"
 )
@@ -54,24 +55,37 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 	return nil
 }
 
-// GatherArguments parses the positional arguments passed as a list of strings into a map of
-// parsed values. If onlyProvided is true, then only arguments that are provided are returned
-// (i.e. the default values are not included).
+// GatherArguments parses positional string arguments into a map of values.
+//
+// It takes the command-line arguments, the expected argument definitions,
+// and a boolean indicating whether to only include explicitly provided arguments,
+// not the default values of missing arguments.
+//
+// Only the last parameter definitions can be a list parameter type.
+//
+// Required arguments missing from the input will result in an error.
+// Arguments with default values can be included based on the onlyProvided flag.
+//
+// The result is a map with argument names as keys and parsed values.
+// Argument order is maintained.
+//
+// Any extra arguments not defined will result in an error.
+// Parsing errors for individual arguments will also return errors.
 func GatherArguments(
 	args []string,
 	arguments []*ParameterDefinition,
 	onlyProvided bool,
-) (map[string]interface{}, error) {
+) (*orderedmap.OrderedMap[string, interface{}], error) {
 	_ = args
-	result := make(map[string]interface{})
+	result := orderedmap.New[string, interface{}]()
 	argsIdx := 0
 	for _, argument := range arguments {
 		if argsIdx >= len(args) {
 			if argument.Required {
-				return nil, errors.Errorf("Argument %s not found", argument.Name)
+				return nil, fmt.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
-					result[argument.Name] = argument.Default
+					result.Set(argument.Name, argument.Default)
 				}
 				continue
 			}
@@ -90,10 +104,10 @@ func GatherArguments(
 			return nil, err
 		}
 
-		result[argument.Name] = i2
+		result.Set(argument.Name, i2)
 	}
 	if argsIdx < len(args) {
-		return nil, errors.Errorf("Too many arguments")
+		return nil, fmt.Errorf("Too many arguments")
 	}
 	return result, nil
 }
