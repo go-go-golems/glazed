@@ -50,12 +50,48 @@ func loadValidityTestDataFromYAML(s []byte) ([]*ValidityTest, error) {
 	return tests, nil
 }
 
+//go:embed "test-data/types.yaml"
+var testParametersTypesYaml []byte
+
+type ParameterTypeTest struct {
+	Type          string `yaml:"type"`
+	IsList        bool   `yaml:"isList"`
+	IsFileLoading bool   `yaml:"isFileLoading"`
+	Value         string `yaml:"value,omitempty"`
+}
+
+func loadParameterTypeTests(yamlData []byte) ([]ParameterTypeTest, error) {
+	var tests []ParameterTypeTest
+	err := yaml.Unmarshal(yamlData, &tests)
+	if err != nil {
+		return nil, err
+	}
+	return tests, nil
+}
+
+var testParameterTypeTests []ParameterTypeTest
+
 func init() {
 	testParameterDefinitions, testParameterDefinitionsList = LoadParameterDefinitionsFromYAML(testFlagsYaml)
 	var err error
 	testParameterValidList, err = loadValidityTestDataFromYAML(validityTestYaml)
 	if err != nil {
 		panic(err)
+	}
+
+	testParameterTypeTests, err = loadParameterTypeTests(testParametersTypesYaml)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestParameterTypes(t *testing.T) {
+	for _, test := range testParameterTypeTests {
+		t.Run(test.Type, func(t *testing.T) {
+			type_ := ParameterType(test.Type)
+			assert.Equal(t, test.IsList, IsListParameter(type_))
+			assert.Equal(t, test.IsFileLoading, IsFileLoadingParameter(type_, test.Value))
+		})
 	}
 }
 

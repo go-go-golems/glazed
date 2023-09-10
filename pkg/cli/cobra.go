@@ -49,7 +49,8 @@ func GatherParametersFromCobraCommand(
 
 	// merge parameters and arguments
 	// arguments take precedence over parameters
-	for k, v := range arguments {
+	for p := arguments.Oldest(); p != nil; p = p.Next() {
+		k, v := p.Key, p.Value
 		ps[k] = v
 	}
 
@@ -296,7 +297,7 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true)
 
 	for _, argDef := range argumentDefinitions {
-		_, ok := provided[argDef.Name]
+		_, ok := provided.Get(argDef.Name)
 		if argDef.Required && !ok {
 			minArgs++
 		}

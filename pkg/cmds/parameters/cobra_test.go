@@ -104,3 +104,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 		assert.Error(t, err)
 	}
 }
+
+func TestGatherArguments(t *testing.T) {
+
+}
