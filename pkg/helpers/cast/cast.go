@@ -1,5 +1,10 @@
 package cast
 
+import (
+	"github.com/pkg/errors"
+	"reflect"
+)
+
 type Number interface {
 	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr | float32 | float64
 }
@@ -57,6 +62,28 @@ func CastList2[To any, From any](list interface{}) ([]To, bool) {
 	}
 
 	return ret, true
+}
+
+// CastListToInterfaceList attempts to convert the given value to a list of interface{}.
+//
+// The function checks if the provided value is a slice or an array. If so,
+// it returns a slice of interface{}, where each item in the original slice or array
+// is converted to its interface{} representation.
+func CastListToInterfaceList(value interface{}) ([]interface{}, error) {
+	val := reflect.ValueOf(value)
+
+	// Check if the value is a slice or array
+	switch val.Kind() {
+	case reflect.Slice, reflect.Array:
+		// Create an empty slice of interface{} with the appropriate length
+		result := make([]interface{}, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			result[i] = val.Index(i).Interface()
+		}
+		return result, nil
+	default:
+		return nil, errors.New("the provided value is not a list")
+	}
 }
 
 // CastToNumberList casts a list of From objects to To.
