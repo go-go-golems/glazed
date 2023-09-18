@@ -481,7 +481,7 @@ func ParseDate(value string) (time.Time, error) {
 	return parsedDate, nil
 }
 
-func GatherParametersFromMap(m map[string]interface{}, ps map[string]*ParameterDefinition) (map[string]interface{}, error) {
+func GatherParametersFromMap(m map[string]interface{}, ps map[string]*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
 	for name, p := range ps {
@@ -489,6 +489,9 @@ func GatherParametersFromMap(m map[string]interface{}, ps map[string]*ParameterD
 		if !ok {
 			if p.ShortFlag != "" {
 				v, ok = m[p.ShortFlag]
+			}
+			if onlyProvided {
+				continue
 			}
 			if !ok {
 				ret[name] = p.Default

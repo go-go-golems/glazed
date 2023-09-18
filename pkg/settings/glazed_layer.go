@@ -199,6 +199,51 @@ func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (
 	return ps, nil
 }
 
+func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
+	ps, err := g.OutputParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	ps_, err := g.SelectParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.RenameParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.TemplateParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+
+	return ps, nil
+
+}
+
 func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interface{}) error {
 	err := g.OutputParameterLayer.InitializeParameterDefaultsFromStruct(s)
 	if err != nil {

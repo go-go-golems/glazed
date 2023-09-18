@@ -37,13 +37,14 @@ func GatherParametersFromCobraCommand(
 	cmd *cobra.Command,
 	description *cmds.CommandDescription,
 	args []string,
+	onlyProvided bool,
 ) (map[string]interface{}, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false, "")
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, onlyProvided, "")
 	if err != nil {
 		return nil, err
 	}
 
-	arguments, err := parameters.GatherArguments(args, description.Arguments, false)
+	arguments, err := parameters.GatherArguments(args, description.Arguments, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
@@ -111,36 +112,51 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 			// we now need to map the individual values in the JSON to the parsed layers as well
 			for _, layer := range description.Layers {
-				layerPs := map[string]interface{}{}
-
-				for _, parameter := range layer.GetParameterDefinitions() {
-					value, ok := result[parameter.Name]
-					if ok {
-						err := parameter.CheckValueValidity(value)
-						if err != nil {
-							err = errors.Wrapf(err, "invalid value for parameter %s: %s", parameter.Name, err)
-							cobra.CheckErr(err)
-						}
-						layerPs[parameter.Name] = value
-					} else {
-						if parameter.Default != nil {
-							layerPs[parameter.Name] = parameter.Default
-						}
-
-						if parameter.Required {
-							err := errors.Errorf("missing required parameter %s", parameter.Name)
-							cobra.CheckErr(err)
-						}
-					}
-
-					ps[parameter.Name] = layerPs[parameter.Name]
+				jsonParameterLayer, ok := layer.(layers.JSONParameterLayer)
+				if !ok {
+					err := errors.Errorf("layer %s is not a JSONParameterLayer", layer.GetName())
+					cobra.CheckErr(err)
 				}
 
-				parsedLayer := &layers.ParsedParameterLayer{
+				ps_, err := jsonParameterLayer.ParseFlagsFromJSON(result, false)
+				if err != nil {
+					cobra.CheckErr(err)
+				}
+				parsedLayers[layer.GetName()] = &layers.ParsedParameterLayer{
 					Layer:      layer,
-					Parameters: layerPs,
+					Parameters: ps_,
 				}
-				parsedLayers[layer.GetName()] = parsedLayer
+
+				for k, v := range ps_ {
+					ps[k] = v
+				}
+			}
+
+			ps_, err := parameters.GatherParametersFromMap(result, description.GetFlagMap(), false)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+			for k, v := range ps_ {
+				ps[k] = v
+			}
+
+			// this should check for required arguments and fill them, but at this points it's already too late...
+			ps_, err = parameters.GatherParametersFromMap(result, description.GetArgumentMap(), false)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+			for k, v := range ps_ {
+				ps[k] = v
+			}
+
+			// finally, load normal command line flags and arguments
+			ps_, err = GatherParametersFromCobraCommand(cmd, description, args, true)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+
+			for k, v := range ps_ {
+				ps[k] = v
 			}
 		} else {
 			parsedLayers, ps, err = cobraParser.Parse(args)
@@ -542,12 +558,12 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 		}
 
 		// parse the flags from commands
-		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
+		ps_, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		parsedLayer := &layers.ParsedParameterLayer{Parameters: ps, Layer: layer}
+		parsedLayer := &layers.ParsedParameterLayer{Parameters: ps_, Layer: layer}
 		parsedLayers[layer.GetSlug()] = parsedLayer
 
 		// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
@@ -567,7 +583,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 	//
 	// This might not even be possible in the first place, because it would mean that
 	// we used cobra to register the same flag twice.
-	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args)
+	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args, false)
 	if err != nil {
 		return nil, nil, err
 	}
