@@ -52,23 +52,6 @@ func (ppl *ParsedParameterLayer) MergeParameters(other *ParsedParameterLayer) {
 	}
 }
 
-// ParameterLayerParserFunc is a type meant to represent closures capturing some "complex" process
-// by which a ParsedParameterLayer can be produced, for example parsing a layer out of a cobra.Command
-// after flags were registered (see CobraParser).
-//
-// NOTE(manuel, 2023-03-17) This seems a bit overengineered, but the thinking behind it is
-// that depending on the frontend that a function provides (cobra, another CLI framework, REST, microservices),
-// there would be a parser function that can extract the values for a specific layer. Those could
-// potentially also be overriden by middlewares to do things like validation or masking.
-// This is not really used right now (I think), and more of an experiment that will be worth revisiting.
-type ParameterLayerParserFunc func() (*ParsedParameterLayer, error)
-
-// ParameterLayerParser is a type for anything that can parse a layer. As mentioned above, this is a bit
-// experimental and might actually not be necessary as an interface.
-type ParameterLayerParser interface {
-	RegisterParameterLayer(ParameterLayer) (ParameterLayerParserFunc, error)
-}
-
 // ParameterLayerImpl is a straight forward simple implementation of ParameterLayer
 // that can easily be reused in more complex implementations.
 type ParameterLayerImpl struct {

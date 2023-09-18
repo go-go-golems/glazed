@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -85,8 +86,28 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
 	cmd.Flags().String("create-cliopatra", "", "Print the CLIopatra YAML for the command")
 	cmd.Flags().Bool("print-yaml", false, "Print the command's YAML")
+	cmd.Flags().String("load-parameters-from-json", "", "Load the command's flags from JSON")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
+		loadParametersFromJSON, err := cmd.Flags().GetString("load-parameters-from-json")
+		if err != nil {
+			cobra.CheckErr(err)
+			os.Exit(1)
+		}
+		if loadParametersFromJSON != "" {
+			result := map[string]interface{}{}
+			bytes, err := os.ReadFile(loadParametersFromJSON)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+			err = json.Unmarshal(bytes, &result)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+
+			// we now need to map the individual values in the JSON to the parsed layers as well
+		}
+
 		parsedLayers, ps, err := cobraParser.Parse(args)
 		// show help if there is an error
 		if err != nil {
@@ -416,13 +437,6 @@ func AddCommandsToRootCommand(
 type CobraParser struct {
 	Cmd         *cobra.Command
 	description *cmds.CommandDescription
-	// parserFuncs keeps a list of closures that return a ParsedParameterLayer.
-	// NOTE(manuel, 2023-03-17) This seems a bit overengineered, but the thinking behind it is
-	// that depending on the frontend that a function provides (cobra, another CLI framework, REST, microservices),
-	// there would be a parser function that can extract the values for a specific layer. Those could
-	// potentially also be overriden by middlewares to do things like validation or masking.
-	// This is not really used right now (I think), and more of an experiment that will be worth revisiting.
-	parserFuncs []layers.ParameterLayerParserFunc
 }
 
 func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) (*CobraParser, error) {
@@ -435,7 +449,6 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	ret := &CobraParser{
 		Cmd:         cmd,
 		description: description,
-		parserFuncs: []layers.ParameterLayerParserFunc{},
 	}
 
 	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), description.Flags, "")
@@ -444,7 +457,14 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	}
 
 	for _, layer := range description.Layers {
-		err = ret.registerParameterLayer(layer)
+		// check that layer is a CobraParameterLayer
+		// if not, return an error
+		cobraLayer, ok := layer.(CobraParameterLayer)
+		if !ok {
+			return nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+		}
+
+		err := cobraLayer.AddFlagsToCobraCommand(cmd)
 		if err != nil {
 			return nil, err
 		}
@@ -475,44 +495,24 @@ type CobraParameterLayer interface {
 	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
 }
 
-func (c *CobraParser) registerParameterLayer(layer layers.ParameterLayer) error {
-	// check that layer is a CobraParameterLayer
-	// if not, return an error
-	cobraLayer, ok := layer.(CobraParameterLayer)
-	if !ok {
-		return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
-	}
-
-	err := cobraLayer.AddFlagsToCobraCommand(c.Cmd)
-	if err != nil {
-		return err
-	}
-
-	parserFunc := func() (*layers.ParsedParameterLayer, error) {
-		// parse the flags from commands
-		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
-		if err != nil {
-			return nil, err
-		}
-
-		return &layers.ParsedParameterLayer{Parameters: ps, Layer: layer}, nil
-	}
-
-	c.parserFuncs = append(c.parserFuncs, parserFunc)
-
-	return nil
-}
-
 func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLayer, map[string]interface{}, error) {
 	parsedLayers := map[string]*layers.ParsedParameterLayer{}
 	ps := map[string]interface{}{}
 
-	for _, parser := range c.parserFuncs {
-		p, err := parser()
+	for _, layer := range c.description.Layers {
+		cobraLayer, ok := layer.(CobraParameterLayer)
+		if !ok {
+			return nil, nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+		}
+
+		// parse the flags from commands
+		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
 		if err != nil {
 			return nil, nil, err
 		}
-		parsedLayers[p.Layer.GetSlug()] = p
+
+		parsedLayer := &layers.ParsedParameterLayer{Parameters: ps, Layer: layer}
+		parsedLayers[layer.GetSlug()] = parsedLayer
 
 		// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
 		//
@@ -521,7 +521,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 		// want to just pass in the parsed layers downstream
 		//
 		// See https://github.com/go-go-golems/glazed/issues/173
-		for k, v := range p.Parameters {
+		for k, v := range parsedLayer.Parameters {
 			ps[k] = v
 		}
 	}
@@ -541,7 +541,6 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 	}
 
 	return parsedLayers, ps, nil
-
 }
 
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add

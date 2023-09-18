@@ -22,6 +22,22 @@ type YAMLCommandLoader interface {
 	LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error)
 }
 
+// YAMLCommandWithFSLoader is an interface that allows an application using the glazed
+// library to loader commands from YAML files. In contrast to YAMLCommandLoader, this
+// command loader also takes a fs.FS as an argument, which can then be used to load
+// additional files from the directory the YAML file is present in.
+//
+// TODO(manuel, 2023-09-16): Implement loading additional files into a glazed command when a FS is passed.
+// This could potentially be extended to using the full prompt manager to load contexts.
+//
+// See https://github.com/go-go-golems/glazed/issues/350
+//
+// This interface is currently not implemented.
+type YAMLCommandWithFSLoader interface {
+	LoadCommandFromYAMLWithDir(s io.Reader, f fs.FS, dir string, options ...cmds.CommandDescriptionOption) ([]cmds.Command, error)
+	LoadCommandAliasFromYAMLWithDir(s io.Reader, f fs.FS, dir string, options ...alias.Option) ([]*alias.CommandAlias, error)
+}
+
 type ReaderCommandLoader interface {
 	LoadCommandsFromReader(r io.Reader, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, error)
 }
