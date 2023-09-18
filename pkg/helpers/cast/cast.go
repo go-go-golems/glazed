@@ -73,6 +73,7 @@ func CastListToInterfaceList(value interface{}) ([]interface{}, error) {
 	val := reflect.ValueOf(value)
 
 	// Check if the value is a slice or array
+	//exhaustive:ignore
 	switch val.Kind() {
 	case reflect.Slice, reflect.Array:
 		// Create an empty slice of interface{} with the appropriate length

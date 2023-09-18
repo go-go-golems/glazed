@@ -1,7 +1,5 @@
 # glazed - Output structured data in a variety of formats
 
-
-
 ![](https://img.shields.io/github/license/go-go-golems/glazed)
 ![](https://img.shields.io/github/actions/workflow/status/go-go-golems/glazed/push.yml?branch=main)
 
