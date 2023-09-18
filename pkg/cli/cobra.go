@@ -96,8 +96,8 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(1)
 		}
 
-		parsedLayers := map[string]*layers.ParsedParameterLayer{}
-		ps := map[string]interface{}{}
+		var parsedLayers map[string]*layers.ParsedParameterLayer
+		var ps map[string]interface{}
 
 		if loadParametersFromJSON != "" {
 			result := map[string]interface{}{}
@@ -110,47 +110,13 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 				cobra.CheckErr(err)
 			}
 
-			// we now need to map the individual values in the JSON to the parsed layers as well
-			for _, layer := range description.Layers {
-				jsonParameterLayer, ok := layer.(layers.JSONParameterLayer)
-				if !ok {
-					err := errors.Errorf("layer %s is not a JSONParameterLayer", layer.GetName())
-					cobra.CheckErr(err)
-				}
-
-				ps_, err := jsonParameterLayer.ParseFlagsFromJSON(result, false)
-				if err != nil {
-					cobra.CheckErr(err)
-				}
-				parsedLayers[layer.GetName()] = &layers.ParsedParameterLayer{
-					Layer:      layer,
-					Parameters: ps_,
-				}
-
-				for k, v := range ps_ {
-					ps[k] = v
-				}
-			}
-
-			ps_, err := parameters.GatherParametersFromMap(result, description.GetFlagMap(), false)
+			parsedLayers, ps, err = cmds.ParseCommandFromMap(description, result)
 			if err != nil {
 				cobra.CheckErr(err)
-			}
-			for k, v := range ps_ {
-				ps[k] = v
-			}
-
-			// this should check for required arguments and fill them, but at this points it's already too late...
-			ps_, err = parameters.GatherParametersFromMap(result, description.GetArgumentMap(), false)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-			for k, v := range ps_ {
-				ps[k] = v
 			}
 
 			// finally, load normal command line flags and arguments
-			ps_, err = GatherParametersFromCobraCommand(cmd, description, args, true)
+			ps_, err := GatherParametersFromCobraCommand(cmd, description, args, true)
 			if err != nil {
 				cobra.CheckErr(err)
 			}
@@ -486,6 +452,9 @@ func AddCommandsToRootCommand(
 //
 // This returns a CobraParser that can be used to parse the registered layers
 // from the description.
+//
+// NOTE(manuel, 2023-09-18) Now that I've removed the parserFunc, this feels a bit unnecessary too
+// Or it could be something that is actually an interface on top of Command, like a CobraCommand.
 type CobraParser struct {
 	Cmd         *cobra.Command
 	description *cmds.CommandDescription
