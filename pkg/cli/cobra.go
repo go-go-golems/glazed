@@ -37,13 +37,14 @@ func GatherParametersFromCobraCommand(
 	cmd *cobra.Command,
 	description *cmds.CommandDescription,
 	args []string,
+	onlyProvided bool,
 ) (map[string]interface{}, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, false, "")
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, onlyProvided, "")
 	if err != nil {
 		return nil, err
 	}
 
-	arguments, err := parameters.GatherArguments(args, description.Arguments, false)
+	arguments, err := parameters.GatherArguments(args, description.Arguments, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +95,10 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			cobra.CheckErr(err)
 			os.Exit(1)
 		}
+
+		var parsedLayers map[string]*layers.ParsedParameterLayer
+		var ps map[string]interface{}
+
 		if loadParametersFromJSON != "" {
 			result := map[string]interface{}{}
 			bytes, err := os.ReadFile(loadParametersFromJSON)
@@ -105,16 +110,29 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 				cobra.CheckErr(err)
 			}
 
-			// we now need to map the individual values in the JSON to the parsed layers as well
-		}
+			parsedLayers, ps, err = cmds.ParseCommandFromMap(description, result)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
 
-		parsedLayers, ps, err := cobraParser.Parse(args)
-		// show help if there is an error
-		if err != nil {
-			fmt.Println(err)
-			err := cmd.Help()
-			cobra.CheckErr(err)
-			os.Exit(1)
+			// finally, load normal command line flags and arguments
+			ps_, err := GatherParametersFromCobraCommand(cmd, description, args, true)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
+
+			for k, v := range ps_ {
+				ps[k] = v
+			}
+		} else {
+			parsedLayers, ps, err = cobraParser.Parse(args)
+			// show help if there is an error
+			if err != nil {
+				fmt.Println(err)
+				err := cmd.Help()
+				cobra.CheckErr(err)
+				os.Exit(1)
+			}
 		}
 
 		printYAML, err := cmd.Flags().GetBool("print-yaml")
@@ -434,6 +452,9 @@ func AddCommandsToRootCommand(
 //
 // This returns a CobraParser that can be used to parse the registered layers
 // from the description.
+//
+// NOTE(manuel, 2023-09-18) Now that I've removed the parserFunc, this feels a bit unnecessary too
+// Or it could be something that is actually an interface on top of Command, like a CobraCommand.
 type CobraParser struct {
 	Cmd         *cobra.Command
 	description *cmds.CommandDescription
@@ -506,12 +527,12 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 		}
 
 		// parse the flags from commands
-		ps, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
+		ps_, err := cobraLayer.ParseFlagsFromCobraCommand(c.Cmd)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		parsedLayer := &layers.ParsedParameterLayer{Parameters: ps, Layer: layer}
+		parsedLayer := &layers.ParsedParameterLayer{Parameters: ps_, Layer: layer}
 		parsedLayers[layer.GetSlug()] = parsedLayer
 
 		// TODO(manuel, 2021-02-04) This is a legacy conserving hack since all commands use a map for now
@@ -531,7 +552,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 	//
 	// This might not even be possible in the first place, because it would mean that
 	// we used cobra to register the same flag twice.
-	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args)
+	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args, false)
 	if err != nil {
 		return nil, nil, err
 	}
