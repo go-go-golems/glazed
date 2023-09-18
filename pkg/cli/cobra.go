@@ -94,6 +94,10 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			cobra.CheckErr(err)
 			os.Exit(1)
 		}
+
+		parsedLayers := map[string]*layers.ParsedParameterLayer{}
+		ps := map[string]interface{}{}
+
 		if loadParametersFromJSON != "" {
 			result := map[string]interface{}{}
 			bytes, err := os.ReadFile(loadParametersFromJSON)
@@ -106,15 +110,47 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			}
 
 			// we now need to map the individual values in the JSON to the parsed layers as well
-		}
+			for _, layer := range description.Layers {
+				layerPs := map[string]interface{}{}
 
-		parsedLayers, ps, err := cobraParser.Parse(args)
-		// show help if there is an error
-		if err != nil {
-			fmt.Println(err)
-			err := cmd.Help()
-			cobra.CheckErr(err)
-			os.Exit(1)
+				for _, parameter := range layer.GetParameterDefinitions() {
+					value, ok := result[parameter.Name]
+					if ok {
+						err := parameter.CheckValueValidity(value)
+						if err != nil {
+							err = errors.Wrapf(err, "invalid value for parameter %s: %s", parameter.Name, err)
+							cobra.CheckErr(err)
+						}
+						layerPs[parameter.Name] = value
+					} else {
+						if parameter.Default != nil {
+							layerPs[parameter.Name] = parameter.Default
+						}
+
+						if parameter.Required {
+							err := errors.Errorf("missing required parameter %s", parameter.Name)
+							cobra.CheckErr(err)
+						}
+					}
+
+					ps[parameter.Name] = layerPs[parameter.Name]
+				}
+
+				parsedLayer := &layers.ParsedParameterLayer{
+					Layer:      layer,
+					Parameters: layerPs,
+				}
+				parsedLayers[layer.GetName()] = parsedLayer
+			}
+		} else {
+			parsedLayers, ps, err = cobraParser.Parse(args)
+			// show help if there is an error
+			if err != nil {
+				fmt.Println(err)
+				err := cmd.Help()
+				cobra.CheckErr(err)
+				os.Exit(1)
+			}
 		}
 
 		printYAML, err := cmd.Flags().GetBool("print-yaml")
