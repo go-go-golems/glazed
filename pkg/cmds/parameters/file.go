@@ -33,6 +33,7 @@ type FileData struct {
 	BaseName         string
 	Extension        string
 	FileType         FileType
+	Path             string
 	RelativePath     string
 	AbsolutePath     string
 	Size             int64
@@ -135,6 +136,7 @@ func GetFileData(filename string) (*FileData, error) {
 		BaseName:         baseName,
 		Extension:        extension,
 		FileType:         fileType,
+		Path:             filename,
 		RelativePath:     relativePath,
 		AbsolutePath:     absPath,
 		Size:             info.Size(),
