@@ -29,6 +29,24 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		ParameterTypeObjectFromFile:
 		return fmt.Sprintf("%v", value), nil
 
+	case ParameterTypeFile:
+		f, ok := value.(*FileData)
+		if !ok {
+			return "", errors.Errorf("expected *FileData, got %T", value)
+		}
+		return f.AbsolutePath, nil
+
+	case ParameterTypeFileList:
+		l, ok := cast.CastList2[*FileData, interface{}](value)
+		if !ok {
+			return "", errors.Errorf("expected []*FileData, got %T", value)
+		}
+		s := []string{}
+		for _, f := range l {
+			s = append(s, f.AbsolutePath)
+		}
+		return strings.Join(s, ","), nil
+
 	case ParameterTypeDate:
 		switch v := value.(type) {
 		case string:

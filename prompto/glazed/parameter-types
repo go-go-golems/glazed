@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+cat <<EOF
+type ParameterType string
+const (
+	ParameterTypeString
+
+	ParameterTypeStringFromFile
+	ParameterTypeStringFromFiles -> string
+
+	ParameterTypeFile -> *FileData
+	ParameterTypeFileList -> []*FileData
+
+	// TODO(manuel, 2023-09-19) Add some more types and maybe revisit the entire concept of loading things from files
+	// - string (potentially from file if starting with @)
+	// - string/int/float list from file is another useful type
+
+	ParameterTypeObjectListFromFile
+	ParameterTypeObjectListFromFiles
+	ParameterTypeObjectFromFile
+	ParameterTypeStringListFromFile
+	ParameterTypeStringListFromFiles
+
+	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
+	// or when beginning with @, a file with key-value options
+	ParameterTypeKeyValue
+
+	ParameterTypeInteger
+	ParameterTypeFloat
+	ParameterTypeBool
+	ParameterTypeDate
+	ParameterTypeStringList
+	ParameterTypeIntegerList
+	ParameterTypeFloatList
+	ParameterTypeChoice
+	ParameterTypeChoiceList
+)
+EOF
+
+oak go definitions pkg/cmds/parameters/file.go --name "FileData" --definition-type struct,interface

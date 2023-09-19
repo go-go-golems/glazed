@@ -117,6 +117,24 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		}
 		return parsedDate, nil
 
+	case ParameterTypeFile:
+		v_, err := GetFileData(v[0])
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
+		}
+		return v_, nil
+
+	case ParameterTypeFileList:
+		ret := []interface{}{}
+		for _, fileName := range v {
+			v, err := GetFileData(fileName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not read file %s", fileName)
+			}
+			ret = append(ret, v)
+		}
+		return ret, nil
+
 	case ParameterTypeObjectListFromFiles:
 		fallthrough
 	case ParameterTypeObjectListFromFile:

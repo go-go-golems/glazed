@@ -562,3 +562,203 @@ func TestSetValueFromDefaultKeyValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{}, fl)
 }
+
+func TestCheckValueValidity(t *testing.T) {
+	tests := []struct {
+		name    string
+		param   ParameterDefinition
+		value   interface{}
+		wantErr bool
+	}{
+		{
+			name: "valid string value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: "default",
+			},
+			value:   "test value",
+			wantErr: false,
+		},
+		{
+			name: "invalid string value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: "default",
+			},
+			value:   123,
+			wantErr: true,
+		},
+		{
+			name: "valid integer value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeInteger,
+				Default: 1,
+			},
+			value:   2,
+			wantErr: false,
+		},
+		{
+			name: "invalid integer value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeInteger,
+				Default: 1,
+			},
+			value:   "test",
+			wantErr: true,
+		},
+		{
+			name: "valid choice value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: "choice1",
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   "choice2",
+			wantErr: false,
+		},
+		{
+			name: "invalid choice value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: "choice1",
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   "choice3",
+			wantErr: true,
+		},
+
+		{
+			name: "valid file value",
+			param: ParameterDefinition{
+				Name:    "fileTest",
+				Type:    ParameterTypeFile,
+				Default: nil,
+			},
+			value:   &FileData{}, // assuming a filled FileData instance is valid
+			wantErr: false,
+		},
+		{
+			name: "invalid file value",
+			param: ParameterDefinition{
+				Name:    "fileTest",
+				Type:    ParameterTypeFile,
+				Default: nil,
+			},
+			value:   "string instead of file data",
+			wantErr: true,
+		},
+
+		// ParameterTypeFileList
+		{
+			name: "valid file list value",
+			param: ParameterDefinition{
+				Name:    "fileListTest",
+				Type:    ParameterTypeFileList,
+				Default: nil,
+			},
+			value:   []*FileData{{}, {}}, // assuming a list of FileData instances is valid
+			wantErr: false,
+		},
+		{
+			name: "invalid file list value",
+			param: ParameterDefinition{
+				Name:    "fileListTest",
+				Type:    ParameterTypeFileList,
+				Default: nil,
+			},
+			value:   "string instead of file data list",
+			wantErr: true,
+		},
+
+		// ParameterTypeBool
+		{
+			name: "valid bool value",
+			param: ParameterDefinition{
+				Name:    "boolTest",
+				Type:    ParameterTypeBool,
+				Default: false,
+			},
+			value:   true,
+			wantErr: false,
+		},
+		{
+			name: "invalid bool value",
+			param: ParameterDefinition{
+				Name:    "boolTest",
+				Type:    ParameterTypeBool,
+				Default: false,
+			},
+			value:   "string instead of bool",
+			wantErr: true,
+		},
+
+		// ParameterTypeDate
+		{
+			name: "valid date value",
+			param: ParameterDefinition{
+				Name:    "dateTest",
+				Type:    ParameterTypeDate,
+				Default: nil,
+			},
+			value:   time.Now(), // assuming a time.Time instance is valid
+			wantErr: false,
+		},
+		{
+			name: "valid date value (as string)",
+			param: ParameterDefinition{
+				Name:    "dateTest",
+				Type:    ParameterTypeDate,
+				Default: nil,
+			},
+			value:   "today", // strings can be dates too
+			wantErr: false,
+		},
+		{
+			name: "invalid date value",
+			param: ParameterDefinition{
+				Name:    "dateTest",
+				Type:    ParameterTypeDate,
+				Default: nil,
+			},
+			value:   123,
+			wantErr: true,
+		},
+
+		// ParameterTypeStringList
+		{
+			name: "valid string list value",
+			param: ParameterDefinition{
+				Name:    "stringListTest",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   []string{"a", "b", "c"},
+			wantErr: false,
+		},
+		{
+			name: "invalid string list value",
+			param: ParameterDefinition{
+				Name:    "stringListTest",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   "string instead of string list",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.param.CheckValueValidity(tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckValueValidity() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
