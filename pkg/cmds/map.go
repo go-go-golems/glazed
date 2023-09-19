@@ -26,7 +26,7 @@ func ParseCommandFromMap(description *CommandDescription, m map[string]interface
 		if err != nil {
 			return nil, nil, err
 		}
-		parsedLayers[layer.GetName()] = &layers.ParsedParameterLayer{
+		parsedLayers[layer.GetSlug()] = &layers.ParsedParameterLayer{
 			Layer:      layer,
 			Parameters: ps_,
 		}

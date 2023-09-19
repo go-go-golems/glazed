@@ -38,13 +38,16 @@ func GatherParametersFromCobraCommand(
 	description *cmds.CommandDescription,
 	args []string,
 	onlyProvided bool,
+	// TODO(manuel, 2023-09-18) This is a bad way of doing things, this should be based on if a value was already set upstream or not...
+	// really probably what we should do is make the standard flags a layer too
+	ignoreRequired bool,
 ) (map[string]interface{}, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, onlyProvided, "")
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, description.Flags, onlyProvided, ignoreRequired, "")
 	if err != nil {
 		return nil, err
 	}
 
-	arguments, err := parameters.GatherArguments(args, description.Arguments, onlyProvided)
+	arguments, err := parameters.GatherArguments(args, description.Arguments, onlyProvided, ignoreRequired)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +118,30 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 				cobra.CheckErr(err)
 			}
 
+			// Need to update the parsedLayers from command line flags too...
+
 			// finally, load normal command line flags and arguments
-			ps_, err := GatherParametersFromCobraCommand(cmd, description, args, true)
+			ps_, err := GatherParametersFromCobraCommand(cmd, description, args, true, true)
 			if err != nil {
 				cobra.CheckErr(err)
+			}
+
+			for _, layer := range parsedLayers {
+				parameterDefinitions := layer.Layer.GetParameterDefinitions()
+				pds := []*parameters.ParameterDefinition{}
+				for _, p := range parameterDefinitions {
+					pds = append(pds, p)
+				}
+
+				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, pds, true, true, layer.Layer.GetPrefix())
+				if err != nil {
+					cobra.CheckErr(err)
+				}
+
+				for k, v := range ps_ {
+					ps[k] = v
+					layer.Parameters[k] = v
+				}
 			}
 
 			for k, v := range ps_ {
@@ -333,7 +356,7 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 
 	argumentDefinitions := alias.AliasedCommand.Description().Arguments
 	minArgs := 0
-	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true)
+	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true, false)
 
 	for _, argDef := range argumentDefinitions {
 		_, ok := provided.Get(argDef.Name)
@@ -552,7 +575,7 @@ func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLa
 	//
 	// This might not even be possible in the first place, because it would mean that
 	// we used cobra to register the same flag twice.
-	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args, false)
+	ps_, err := GatherParametersFromCobraCommand(c.Cmd, c.description, args, false, false)
 	if err != nil {
 		return nil, nil, err
 	}
