@@ -212,7 +212,7 @@ func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 // This will return a map containing the value (or default value) of each flag
 // of the layer.
 func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, p.Prefix)
+	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, false, p.Prefix)
 }
 
 func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {

@@ -41,17 +41,17 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
 
-	values, err := parameters.GatherArguments([]string{"bar"}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{"bar"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, "bar", v1)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"foo", "bla"}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{"foo", "bla"}, desc.Arguments, false, false)
 	assert.Error(t, err)
 }
 
@@ -78,7 +78,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{"bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "baz"}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
@@ -88,13 +88,13 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "foo", v2)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar"}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{"bar"}, desc.Arguments, false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false, false)
 	assert.Error(t, err)
 }
 
@@ -121,7 +121,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "baz"}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
@@ -131,7 +131,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "foo", v2)
 
-	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
+	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
@@ -140,10 +140,10 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "baz", v2)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false, false)
 	assert.Error(t, err)
 }
 
@@ -164,14 +164,14 @@ func TestOneOptionalArgument(t *testing.T) {
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{}))
 
-	values, err := parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, "foo", v1)
 
-	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
+	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
@@ -192,21 +192,21 @@ func TestDefaultIntValue(t *testing.T) {
 	}
 	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
-	values, err := parameters.GatherArguments([]string{}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, 123, v1)
 
-	values, err = parameters.GatherArguments([]string{"234"}, desc.Arguments, false)
+	values, err = parameters.GatherArguments([]string{"234"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, 234, v1)
 
-	_, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
+	_, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
 	assert.Error(t, err)
 }
 
@@ -323,19 +323,19 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, []string{"bar", "foo"}, v1)
 
-	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false)
+	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, []string{"foo"}, v1)
 
-	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false)
+	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
@@ -537,11 +537,11 @@ func testCommandParseHelper(
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.Flags, false, "")
+			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.Flags, false, false, "")
 			if flagsError != nil {
 				return
 			}
-			argumentParameters, argsError = parameters.GatherArguments(args, desc.Arguments, false)
+			argumentParameters, argsError = parameters.GatherArguments(args, desc.Arguments, false, false)
 			if argsError != nil {
 				return
 			}

@@ -119,17 +119,16 @@ func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) str
 //
 // Any extra arguments not defined will result in an error.
 // Parsing errors for individual arguments will also return errors.
-func GatherArguments(
-	args []string,
-	arguments []*ParameterDefinition,
-	onlyProvided bool,
-) (*orderedmap.OrderedMap[string, interface{}], error) {
+func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvided bool, ignoreRequired bool) (*orderedmap.OrderedMap[string, interface{}], error) {
 	_ = args
 	result := orderedmap.New[string, interface{}]()
 	argsIdx := 0
 	for _, argument := range arguments {
 		if argsIdx >= len(args) {
 			if argument.Required {
+				if ignoreRequired {
+					continue
+				}
 				return nil, fmt.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
@@ -447,7 +446,7 @@ func AddFlagsToCobraCommand(
 			}
 
 		default:
-			panic(fmt.Sprintf("Unknown parameter type %s", parameter.Type))
+			return errors.Errorf("Unknown parameter type for parameter %s: %s", parameter.Name, parameter.Type)
 		}
 	}
 
@@ -513,12 +512,7 @@ func GatherFlagsFromViper(
 // by the user are returned (i.e. not the default values).
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlagsFromCobraCommand(
-	cmd *cobra.Command,
-	params []*ParameterDefinition,
-	onlyProvided bool,
-	prefix string,
-) (map[string]interface{}, error) {
+func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool, ignoreRequired bool, prefix string) (map[string]interface{}, error) {
 	ps := map[string]interface{}{}
 
 	for _, parameter := range params {
@@ -528,6 +522,10 @@ func GatherFlagsFromCobraCommand(
 
 		if !cmd.Flags().Changed(flagName) {
 			if parameter.Required {
+				if ignoreRequired {
+					continue
+				}
+
 				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
 			}
 
