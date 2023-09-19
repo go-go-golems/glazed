@@ -148,6 +148,10 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 		value.Set(reflect.ValueOf(map[string]interface{}{}))
 	case ParameterTypeKeyValue:
 		value.Set(reflect.ValueOf(map[string]string{}))
+	case ParameterTypeFile:
+		value.Set(reflect.ValueOf(nil))
+	case ParameterTypeFileList:
+		value.Set(reflect.ValueOf([]*FileData{}))
 	default:
 		return errors.Errorf("unknown parameter type %s", p.Type)
 	}
@@ -199,6 +203,16 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 
 	case ParameterTypeIntegerList, ParameterTypeFloatList:
 		return reflect2.SetReflectValue(value, v)
+
+	case ParameterTypeFile:
+		return reflect2.SetReflectValue(value, v)
+
+	case ParameterTypeFileList:
+		list, ok := cast.CastList2[*FileData, interface{}](v)
+		if !ok {
+			return errors.Errorf("expected list of files for parameter %s, got %T", p.Name, v)
+		}
+		value.Set(reflect.ValueOf(list))
 
 	case ParameterTypeObjectListFromFiles, ParameterTypeObjectListFromFile:
 		list, ok := cast.CastList2[map[string]interface{}, interface{}](v)
@@ -446,9 +460,13 @@ const (
 	ParameterTypeStringFromFile  ParameterType = "stringFromFile"
 	ParameterTypeStringFromFiles ParameterType = "stringFromFiles"
 
-	// TODO (2023-02-07) It would be great to have "list of objects from file" here
-	// See https://github.com/go-go-golems/glazed/issues/117
-	//
+	// ParameterTypeFile and ParameterTypeFileList are a more elaborate version that loads and parses
+	// the file content and returns a list of FileData objects (or a single object in the case
+	// of ParameterTypeFile).
+	ParameterTypeFile     ParameterType = "file"
+	ParameterTypeFileList ParameterType = "fileList"
+
+	// TODO(manuel, 2023-09-19) Add some more types and maybe revisit the entire concept of loading things from files
 	// - string (potentially from file if starting with @)
 	// - string/int/float list from file is another useful type
 
@@ -485,7 +503,10 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 		ParameterTypeStringListFromFile,
 		ParameterTypeObjectListFromFiles,
 		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles:
+		ParameterTypeStringFromFiles,
+		ParameterTypeFile,
+		ParameterTypeFileList:
+
 		return true
 	case ParameterTypeKeyValue:
 		return strings.HasPrefix(v, "@")
@@ -506,7 +527,8 @@ func IsListParameter(p ParameterType) bool {
 		ParameterTypeIntegerList,
 		ParameterTypeFloatList,
 		ParameterTypeChoiceList,
-		ParameterTypeKeyValue:
+		ParameterTypeKeyValue,
+		ParameterTypeFileList:
 		return true
 	default:
 		return false
@@ -582,6 +604,20 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		default:
 			return errors.Errorf("Value for parameter %s is not a valid date: %v", p.Name, v)
 		}
+
+	case ParameterTypeFile:
+		_, ok := v.(*FileData)
+		if !ok {
+			return errors.Errorf("Value for parameter %s is not a file: %v", p.Name, v)
+		}
+		return nil
+
+	case ParameterTypeFileList:
+		_, ok := cast.CastList2[*FileData, interface{}](v)
+		if !ok {
+			return errors.Errorf("Value for parameter %s is not a file list: %v", p.Name, v)
+		}
+		return nil
 
 	case ParameterTypeStringListFromFile:
 		fallthrough

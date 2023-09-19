@@ -226,7 +226,11 @@ func AddFlagsToCobraCommand(
 		}
 
 		switch parameter.Type {
-		case ParameterTypeStringListFromFile, ParameterTypeStringFromFile, ParameterTypeObjectFromFile, ParameterTypeObjectListFromFile:
+		case ParameterTypeStringListFromFile,
+			ParameterTypeStringFromFile,
+			ParameterTypeObjectFromFile,
+			ParameterTypeObjectListFromFile,
+			ParameterTypeFile:
 			defaultValue := ""
 
 			if parameter.ShortFlag != "" {
@@ -235,7 +239,10 @@ func AddFlagsToCobraCommand(
 				flagSet.String(flagName, defaultValue, parameter.Help)
 			}
 
-		case ParameterTypeStringListFromFiles, ParameterTypeStringFromFiles, ParameterTypeObjectListFromFiles:
+		case ParameterTypeStringListFromFiles,
+			ParameterTypeStringFromFiles,
+			ParameterTypeObjectListFromFiles,
+			ParameterTypeFileList:
 			defaultValue := []string{}
 
 			if parameter.ShortFlag != "" {
@@ -498,6 +505,7 @@ func GatherFlagsFromViper(
 			ret[p.Name] = viper.GetString(flagName)
 		case ParameterTypeObjectFromFile:
 			ret[p.Name] = viper.GetStringMap(flagName)
+			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
 			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
 		}
@@ -544,6 +552,7 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 			ParameterTypeStringFromFile,
 			ParameterTypeStringListFromFile,
 			ParameterTypeString,
+			ParameterTypeFile,
 			ParameterTypeDate,
 			ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
@@ -579,7 +588,8 @@ func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefiniti
 
 		case ParameterTypeObjectListFromFiles,
 			ParameterTypeStringFromFiles,
-			ParameterTypeStringListFromFiles:
+			ParameterTypeStringListFromFiles,
+			ParameterTypeFileList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
 				return nil, err
