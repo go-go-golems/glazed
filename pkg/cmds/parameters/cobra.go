@@ -50,7 +50,7 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 			hadOptional = true
 		}
 		maxArgs++
-		if argument.Type == ParameterTypeStringList || argument.Type == ParameterTypeIntegerList {
+		if IsListParameter(argument.Type) {
 			maxArgs = -1
 		}
 	}
