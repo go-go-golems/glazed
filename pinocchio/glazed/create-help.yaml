@@ -1,0 +1,129 @@
+name: create-help
+short: Create a markdown file for a help document.
+factories:
+  openai:
+    client:
+      timeout: 120
+    completion:
+      engine: gpt-4
+      temperature: 0.2
+      max_response_tokens: 2048
+      stop: []
+      stream: true
+flags:
+  - name: title
+    type: string
+    help: Title of the document
+  - name: slug
+    type: string
+    help: Slug of the document
+  - name: short
+    type: string
+    help: Short description of the document
+  - name: topics
+    type: stringList
+    help: List of topics related to the document
+  - name: commands
+    type: stringList
+    help: List of command line verbs referred in the document
+  - name: flags
+    type: stringList
+    help: List of command line flags related to the document
+  - name: toplevel
+    type: bool
+    help: If the topic is important enough to be shown at the toplevel
+    default: false
+  - name: per_default
+    type: bool
+    help: If the topic is important enough to be shown as the default help
+    default: false
+  - name: section_type
+    type: choice
+    help: Type of the section
+    choices: [GeneralTopic, Tutorial, Example, Application]
+  - name: example
+    type: string
+    help: Example content for the document
+    default: |
+      ```markdown
+      ---
+      Title: Table Output Format
+      Slug: table-format
+      Short: |
+        Glazed supports a wide variety of table output formats. Besides HTML and Markdown, 
+        it leverages the go-pretty library to provide a rich set of styled terminal output.
+      Topics:
+      - output
+      IsTemplate: false
+      IsTopLevel: false
+      ShowPerDefault: true
+      SectionType: GeneralTopic
+      ---
+
+      Glazed supports a wide variety of table output formats.
+
+      Besides HTML and Markdown, it leverages the go-pretty library to provide a rich set of styled terminal output.
+
+      `--output table` is the default and so wouldn't need to be explicitly specified in most cases.
+
+      ## Markdown output
+
+      Use `--output table --table-format markdown` to output a table in markdown format.
+
+      ``` 
+      ❯ glaze json misc/test-data/[123].json --table-format markdown
+      | b   | c          | a   | d.e | d.f |
+      | --- | ---------- | --- | --- | --- |
+      | 2   | 3, 4, 5    | 1   | 6   | 7   |
+      | 20  | 30, 40, 50 | 10  | 60  | 70  |
+      | 200 | 300        | 100 |     |     |
+      ```
+
+      By piping it into [glow](https://github.com/charmbracelet/glow), you can get a nice looking markdown table:
+
+      ...
+      ```
+  - name: additional_system
+    type: string
+    help: Additional system prompt
+    default: ""
+  - name: additional
+    type: string
+    help: Additional prompt
+    default: ""
+  - name: context
+    type: stringFromFiles
+    help: Additional context from files
+system-prompt: |
+  You are an AI that generates markdown files for help documents. You are knowledgeable about the application and its features. You write clearly and concisely.
+  {{ .additional_system }}
+prompt: |
+  Create a markdown file representing a document in our help system.
+  
+  These documents explain and showcase one specific feature of an application,
+  often with example of how to use it on the command line.
+  
+  The document has a YAML preamble that provides the metadata required by the help system.
+  
+  ---
+  Title: {{ if .title }}{{ .title }}{{ else }}Use the content of the information passed as input to best determine the title.{{ end }}
+  Slug: {{ if .slug }}{{ .slug }}{{ else }}Use the content of the information passed as input to best determine the slug.{{ end }}
+  Short: {{ if .short }}{{ .short }}{{ else }}Use the content of the information passed as input to best determine the short description.{{ end }}
+  Topics: {{ if .topics }}{{ .topics | join ", " }}{{ else }}Use the content of the information passed as input to best determine the topics.{{ end }}
+  Commands: {{ if .commands }}{{ .commands | join ", " }}{{ else }}Use the content of the information passed as input to best determine the command line verbs.{{ end }}
+  Flags: {{ if .flags }}{{ .flags | join ", " }}{{ else }}Use the content of the information passed as input to best determine the command line flags.{{ end }}
+  IsTopLevel: {{ .toplevel }}
+  ShowPerDefault: {{ .per_default }}
+  SectionType: {{ if .section_type }}{{ .section_type }}{{ else }}Use the content of the information passed as input to best determine the type of the section.{{ end }}
+  ---
+  
+  Here is a full example of a help document:
+  {{ .example }}
+  
+  Use the provided information as information about the content of the document.
+  
+  {{ if .context -}}
+  {{ .context }}
+  {{- end }}
+  
+  {{.additional }}
