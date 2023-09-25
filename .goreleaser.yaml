@@ -38,7 +38,7 @@ brews:
 - name: glaze
   description: "Glaze is a tool for converting structured data"
   homepage: "https://github.com/go-go-golems/glazed"
-  tap:
+  repository:
     owner: go-go-golems
     name: homebrew-go-go-go
     token: "{{ .Env.TAP_GITHUB_TOKEN }}"

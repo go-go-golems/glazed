@@ -516,11 +516,24 @@ func GatherFlagsFromViper(
 
 // GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
 // to the parameter description passed in params. The result is a map of parameter
-// names to parsed values. If onlyProvided is true, only parameters that are provided
+// names to parsed values.
+//
+// If onlyProvided is true, only parameters that are provided
 // by the user are returned (i.e. not the default values).
+//
 // If a parameter cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
-func GatherFlagsFromCobraCommand(cmd *cobra.Command, params []*ParameterDefinition, onlyProvided bool, ignoreRequired bool, prefix string) (map[string]interface{}, error) {
+//
+// The required argument checks that all the required parameter definitions are present.
+// The provided argument only checks that the provided flags are passed.
+// Prefix is prepended to all flag names.
+func GatherFlagsFromCobraCommand(
+	cmd *cobra.Command,
+	params []*ParameterDefinition,
+	onlyProvided bool,
+	ignoreRequired bool,
+	prefix string,
+) (map[string]interface{}, error) {
 	ps := map[string]interface{}{}
 
 	for _, parameter := range params {
