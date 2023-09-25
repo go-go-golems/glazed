@@ -1,0 +1,101 @@
+name: create-template-command
+short: Convert input text template into YAML command representation.
+factories:
+  openai:
+    client:
+      timeout: 120
+    completion:
+      engine: gpt-4
+      temperature: 0.2
+      max_response_tokens: 2048
+      stop: []
+      stream: true
+flags:
+  - name: template_text
+    type: stringFromFile
+    help: Template text to convert into YAML
+    required: true
+  - name: additional_system
+    type: string
+    help: Additional system prompt
+    default: ""
+  - name: additional
+    type: string
+    help: Additional prompt
+    default: ""
+  - name: context
+    type: stringFromFiles
+    help: Additional context from files
+  - name: example
+    type: stringFromFile
+    help: Example YAML command
+    default: |
+      name: some-command-name
+      short: This command does something.
+      flags:
+        - name: yada
+          type: string
+          help: Some string flag
+        - name: numbers
+          type: intList
+          help: Some int list flag
+        - name: foobar
+          type: bool
+          help: A random bool flag
+          default: false
+        - name: color
+          type: choice
+          help: Some color
+          choices: [red, green, blue]
+      template: |
+        This is an example template that uses the above flags:
+        {{ .yada }}
+        {{ range .numbers }}
+        {{ . }}
+        {{ end }}
+        {{ if .foobar }}We are foobared!{{ end }}
+        
+        And our color is: {{ .color }}
+
+system-prompt: |
+  You are a YAML expert. Your task is to analyze the template text and generate a YAML representation that defines how the template operates. Remember to keep the original structure and content of the provided prompt intact.
+  {{ .additional_system }}
+prompt: |
+  Use the following template text to create a template command represented as a YAML file.
+  This YAML file will be parsed to expose flags as a command line application, and the value of these
+  flags will then be used to render the template.
+
+  Here is the template text, out of which you need to extract the necessary flags, and potentially 
+  add new template arguments if requested. This template text should be the `template:` value of the resulting
+  YAML.
+  
+  -- BEGIN INPUT TEXT
+  {{ .template_text }}
+  -- END INPUT TEXT
+
+  The types of parameters that can be used for flags are:
+  - ParameterTypeString: "string"
+  - ParameterTypeStringFromFile: "stringFromFile" -> string
+  - ParameterTypeObjectListFromFile: "objectListFromFile" -> []interface{}
+  - ParameterTypeObjectFromFile: "objectFromFile" -> interface{}
+  - ParameterTypeKeyValue: "keyValue" -> map[string]interface{}
+  - ParameterTypeInteger: "int"
+  - ParameterTypeFloat: "float"
+  - ParameterTypeBool: "bool"
+  - ParameterTypeDate: "date"
+  - ParameterTypeStringList: "stringList"
+  - ParameterTypeIntegerList: "intList"
+  - ParameterTypeFloatList: "floatList"
+  - ParameterTypeChoice: "choice" -> string
+  - ParameterTypeChoiceList: "choiceList" -> []string
+  
+  Here is an example YAML command. Don't copy the structure of this command, it is just there as an example
+  of the YAML structure.
+  ```yaml
+  {{ .example }}
+  ```
+
+  {{ .additional }}
+  {{ if .context }}
+  {{ .context }}
+  {{ end }}
