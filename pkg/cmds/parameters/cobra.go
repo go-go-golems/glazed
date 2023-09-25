@@ -119,7 +119,12 @@ func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) str
 //
 // Any extra arguments not defined will result in an error.
 // Parsing errors for individual arguments will also return errors.
-func GatherArguments(args []string, arguments []*ParameterDefinition, onlyProvided bool, ignoreRequired bool) (*orderedmap.OrderedMap[string, interface{}], error) {
+func GatherArguments(
+	args []string,
+	arguments []*ParameterDefinition,
+	onlyProvided bool,
+	ignoreRequired bool,
+) (*orderedmap.OrderedMap[string, interface{}], error) {
 	_ = args
 	result := orderedmap.New[string, interface{}]()
 	argsIdx := 0
