@@ -16,6 +16,31 @@ import (
 	"time"
 )
 
+// ParseParameter parses command line arguments according to the given ParameterDefinition.
+// It returns the parsed parameter value and a non-nil error if parsing failed.
+//
+// The function takes a list of strings that can be gathered from the command line arguments.
+// This is because cobra for example allows slice flags to be passed by reusing the same flag multiple times
+// (or by parsing comma-separated values).
+//
+// If the parameter is required and not provided, an error is returned.
+// If the parameter is optional and not provided, the default value is returned.
+//
+// The ParameterDefinition specifies the expected type and how to parse the arguments:
+//
+//   - ParameterTypeString: parsed from a single string value
+//   - ParameterTypeInteger, ParameterTypeFloat, ParameterTypeBool: parsed from a single value
+//   - ParameterTypeStringList, ParameterTypeIntegerList, ParameterTypeFloatList: parsed from multiple values
+//   - ParameterTypeFile: load file contents into a FileData struct
+//   - ParameterTypeFileList: load multiple files into []*FileData
+//   - ParameterTypeChoice, ParameterTypeChoiceList: validated against allowed choices
+//   - ParameterTypeKeyValue: parsed from colon separated strings or files
+//   - ParameterTypeObjectListFromFile, ParameterTypeObjectListFromFiles: deserialized object lists from JSON/YAML files
+//   - ParameterTypeObjectFromFile: deserialized a single object from a JSON/YAML file
+//   - ParameterTypeStringFromFile, ParameterTypeStringFromFiles: load file contents as strings
+//   - ParameterTypeStringListFromFile, ParameterTypeStringListFromFiles: load file lines as a string list
+//
+// The parsing logic depends on the Type in the ParameterDefinition.
 func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 	if len(v) == 0 {
 		if p.Required {
@@ -483,6 +508,13 @@ func parseObjectListFromReader(f io.Reader, filename string) (interface{}, error
 // refTime is used to set a reference time for natural date parsing for unit test purposes
 var refTime *time.Time
 
+// ParseDate parses a string into a time.Time based on predefined date formats.
+//
+// It first tries parsing with dateparse.ParseAny using standard formats.
+// If that fails, it tries naturaldate.Parse which handles relative natural language dates.
+//
+// If both parsing attempts fail, an error is returned.
+// The reference time passed to naturaldate.Parse defaults to time.Now().
 func ParseDate(value string) (time.Time, error) {
 	parsedDate, err := dateparse.ParseAny(value)
 	if err != nil {
@@ -499,7 +531,23 @@ func ParseDate(value string) (time.Time, error) {
 	return parsedDate, nil
 }
 
-func GatherParametersFromMap(m map[string]interface{}, ps map[string]*ParameterDefinition, onlyProvided bool) (map[string]interface{}, error) {
+// GatherParametersFromMap gathers parameter values from a map based on the provided ParameterDefinitions.
+//
+// For each ParameterDefinition, it checks if a matching value is present in the map:
+//
+// - If the parameter is missing and required, an error is returned.
+// - If the parameter is missing and optional, the default value is used.
+// - If the value is provided, it is validated against the definition.
+//
+// Values are looked up by parameter name, as well as short flag if provided.
+//
+// The returned map contains the gathered parameter values, with defaults filled in
+// for any missing optional parameters.
+func GatherParametersFromMap(
+	m map[string]interface{},
+	ps map[string]*ParameterDefinition,
+	onlyProvided bool,
+) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
 	for name, p := range ps {
