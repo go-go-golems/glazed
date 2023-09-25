@@ -8,11 +8,14 @@ import (
 // TestGatherFlagsFromStringList_ValidArgumentsAndParameters tests the function with valid arguments and parameters.
 func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    []string
-		params  []*ParameterDefinition
-		want    map[string]interface{}
-		wantErr bool
+		name           string
+		args           []string
+		params         []*ParameterDefinition
+		want           map[string]interface{}
+		wantErr        bool
+		ignoreRequired bool
+		onlyProvided   bool
+		prefix         string
 	}{
 		// "--verbose -o file.txt" (bool, string)
 		{
@@ -381,11 +384,71 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		// "--prefix-integer 1 --prefix-foobar 2" (prefix: integer, integer)
+		{
+			name: "Prefix: integer, integer",
+			args: []string{"--prefix-integer", "1", "--prefix-foobar", "2"},
+			params: []*ParameterDefinition{
+				{Name: "integer", ShortFlag: "i", Type: ParameterTypeInteger},
+				{Name: "foobar", ShortFlag: "f", Type: ParameterTypeInteger},
+			},
+			want: map[string]interface{}{
+				"integer": 1,
+				"foobar":  2,
+			},
+			wantErr: false,
+			prefix:  "prefix-",
+		},
+		// "--foobar-bla foo" (param name with _: foobar_bla)
+		{
+			name: "Param name with _: foobar_bla",
+			args: []string{"--foobar-bla", "foo"},
+			params: []*ParameterDefinition{
+				{Name: "foobar_bla", ShortFlag: "f", Type: ParameterTypeString},
+			},
+			want: map[string]interface{}{
+				"foobar_bla": "foo",
+			},
+			wantErr: false,
+		},
+		// "required argument: --required foo" (required argument)
+		{
+			name: "Required argument",
+			args: []string{"--required", "foo"},
+			params: []*ParameterDefinition{
+				{Name: "required", ShortFlag: "r", Type: ParameterTypeString, Required: true},
+			},
+			want: map[string]interface{}{
+				"required": "foo",
+			},
+			wantErr: false,
+		},
+		// error when required argument is missing
+		{
+			name: "Required argument missing",
+			args: []string{},
+			params: []*ParameterDefinition{
+				{Name: "required", ShortFlag: "r", Type: ParameterTypeString, Required: true},
+			},
+			wantErr: true,
+		},
+		// "foobar: default 2, but missing on command line" (default value)
+		{
+			name: "Default value",
+			args: []string{},
+			params: []*ParameterDefinition{
+				{Name: "foobar", ShortFlag: "f", Type: ParameterTypeInteger, Default: 2},
+			},
+			want: map[string]interface{}{
+				"foobar": 2,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GatherFlagsFromStringList(tt.args, tt.params)
+			got, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GatherFlagsFromStringList() error = %v, wantErr %v", err, tt.wantErr)
 				return

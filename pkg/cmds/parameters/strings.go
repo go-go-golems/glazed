@@ -58,12 +58,31 @@ import (
 func GatherFlagsFromStringList(
 	args []string,
 	params []*ParameterDefinition,
+	onlyProvided bool,
+	ignoreRequired bool,
+	prefix string,
 ) (map[string]interface{}, error) {
 	flagMap := make(map[string]*ParameterDefinition)
+
+	flagNames := map[string]string{}
+
 	for _, param := range params {
-		flagMap[param.Name] = param
-		if param.ShortFlag != "" {
-			flagMap[param.ShortFlag] = param
+		flagName := prefix + param.Name
+		flagName = strings.ReplaceAll(flagName, "_", "-")
+		if _, ok := flagMap[flagName]; ok {
+			return nil, fmt.Errorf("duplicate flag: --%s", flagName)
+		}
+		flagMap[flagName] = param
+		flagNames[flagName] = param.Name
+
+		if prefix == "" {
+			// we don't allow short flags when prefix is set
+			if param.ShortFlag != "" {
+				if _, ok := flagMap[param.ShortFlag]; ok {
+					return nil, fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
+				}
+				flagMap[param.ShortFlag] = param
+			}
 		}
 	}
 
@@ -90,7 +109,7 @@ func GatherFlagsFromStringList(
 		}
 
 		if param.Type == ParameterTypeBool {
-			rawValues[param.Name] = append(rawValues[param.Name], "true")
+			rawValues[flagName] = append(rawValues[flagName], "true")
 		} else {
 			if i+1 >= len(args) {
 				return nil, fmt.Errorf("missing value for flag: -%s", flagName)
@@ -100,21 +119,38 @@ func GatherFlagsFromStringList(
 			if IsListParameter(param.Type) {
 				value = strings.Trim(value, "[]")
 				values := strings.Split(value, ",")
-				rawValues[param.Name] = append(rawValues[param.Name], values...)
+				rawValues[flagName] = append(rawValues[flagName], values...)
 				continue
 			}
-			rawValues[param.Name] = append(rawValues[param.Name], value)
+			rawValues[flagName] = append(rawValues[flagName], value)
 		}
 	}
 
 	result := make(map[string]interface{})
 	for paramName, values := range rawValues {
 		param := flagMap[paramName]
+		if param == nil {
+			return nil, fmt.Errorf("unknown flag: --%s", paramName)
+		}
 		parsedValue, err := param.ParseParameter(values)
 		if err != nil {
 			return nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
 		}
 		result[param.Name] = parsedValue
 	}
+
+	for _, param := range params {
+		if param.Required && !ignoreRequired {
+			if _, ok := rawValues[param.Name]; !ok {
+				return nil, fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
+			}
+		}
+		if !onlyProvided {
+			if _, ok := rawValues[param.Name]; !ok && param.Default != nil {
+				result[param.Name] = param.Default
+			}
+		}
+	}
+
 	return result, nil
 }
