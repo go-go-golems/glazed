@@ -45,7 +45,7 @@ import (
 //	}
 //
 // args := []string{"--verbose", "-o", "file.txt"}
-// result, err := GatherFlagsFromStringList(args, params)
+// result, args, err := GatherFlagsFromStringList(args, params, false, false, "")
 //
 //	if err != nil {
 //	   log.Fatal(err)
@@ -61,25 +61,24 @@ func GatherFlagsFromStringList(
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
-) (map[string]interface{}, error) {
+) (map[string]interface{}, []string, error) {
 	flagMap := make(map[string]*ParameterDefinition)
-
 	flagNames := map[string]string{}
+	remainingArgs := []string{}
 
 	for _, param := range params {
 		flagName := prefix + param.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 		if _, ok := flagMap[flagName]; ok {
-			return nil, fmt.Errorf("duplicate flag: --%s", flagName)
+			return nil, nil, fmt.Errorf("duplicate flag: --%s", flagName)
 		}
 		flagMap[flagName] = param
 		flagNames[flagName] = param.Name
 
 		if prefix == "" {
-			// we don't allow short flags when prefix is set
 			if param.ShortFlag != "" {
 				if _, ok := flagMap[param.ShortFlag]; ok {
-					return nil, fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
+					return nil, nil, fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
 				}
 				flagMap[param.ShortFlag] = param
 			}
@@ -93,18 +92,30 @@ func GatherFlagsFromStringList(
 		var param *ParameterDefinition
 		var ok bool
 		if strings.HasPrefix(arg, "--") {
-			flagName = arg[2:]
+			splitArg := strings.SplitN(arg[2:], "=", 2)
+			flagName = splitArg[0]
 			param, ok = flagMap[flagName]
 			if !ok {
-				return nil, fmt.Errorf("unknown flag: --%s", flagName)
+				return nil, nil, fmt.Errorf("unknown flag: --%s", flagName)
+			}
+			if len(splitArg) == 2 {
+				if IsListParameter(param.Type) {
+					value := strings.Trim(splitArg[1], "[]")
+					values := strings.Split(value, ",")
+					rawValues[flagName] = append(rawValues[flagName], values...)
+				} else {
+					rawValues[flagName] = append(rawValues[flagName], splitArg[1])
+				}
+				continue
 			}
 		} else if strings.HasPrefix(arg, "-") {
 			flagName = arg[1:]
 			param, ok = flagMap[flagName]
 			if !ok {
-				return nil, fmt.Errorf("unknown flag: -%s", flagName)
+				return nil, nil, fmt.Errorf("unknown flag: -%s", flagName)
 			}
 		} else {
+			remainingArgs = append(remainingArgs, arg)
 			continue
 		}
 
@@ -112,10 +123,10 @@ func GatherFlagsFromStringList(
 			rawValues[flagName] = append(rawValues[flagName], "true")
 		} else {
 			if i+1 >= len(args) {
-				return nil, fmt.Errorf("missing value for flag: -%s", flagName)
+				return nil, nil, fmt.Errorf("missing value for flag: -%s", flagName)
 			}
 			value := args[i+1]
-			i++ // skip next arg
+			i++
 			if IsListParameter(param.Type) {
 				value = strings.Trim(value, "[]")
 				values := strings.Split(value, ",")
@@ -130,11 +141,11 @@ func GatherFlagsFromStringList(
 	for paramName, values := range rawValues {
 		param := flagMap[paramName]
 		if param == nil {
-			return nil, fmt.Errorf("unknown flag: --%s", paramName)
+			return nil, nil, fmt.Errorf("unknown flag: --%s", paramName)
 		}
 		parsedValue, err := param.ParseParameter(values)
 		if err != nil {
-			return nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
+			return nil, nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
 		}
 		result[param.Name] = parsedValue
 	}
@@ -142,7 +153,7 @@ func GatherFlagsFromStringList(
 	for _, param := range params {
 		if param.Required && !ignoreRequired {
 			if _, ok := rawValues[param.Name]; !ok {
-				return nil, fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
+				return nil, nil, fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
 			}
 		}
 		if !onlyProvided {
@@ -152,5 +163,5 @@ func GatherFlagsFromStringList(
 		}
 	}
 
-	return result, nil
+	return result, remainingArgs, nil
 }

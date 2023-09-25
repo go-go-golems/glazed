@@ -12,6 +12,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		args           []string
 		params         []*ParameterDefinition
 		want           map[string]interface{}
+		wantArgs       []string
 		wantErr        bool
 		ignoreRequired bool
 		onlyProvided   bool
@@ -58,6 +59,31 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 				"log-level": "info",
 			},
 			wantErr: false,
+		},
+		// "--output=file.txt --verbose=true" (string, bool, using =)
+		{
+			name: "string, bool using =",
+			args: []string{"--output=file.txt", "--verbose=true"},
+			params: []*ParameterDefinition{
+				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
+				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
+			},
+			want: map[string]interface{}{
+				"output":  "file.txt",
+				"verbose": true,
+			},
+			wantErr: false,
+		},
+		// "--verbose=false" (bool false)
+		{
+			name: "bool false",
+			args: []string{"--verbose=false"},
+			params: []*ParameterDefinition{
+				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
+			},
+			want: map[string]interface{}{
+				"verbose": false,
+			},
 		},
 		// "--output file.txt -v" (string, bool, different order)
 		{
@@ -150,6 +176,17 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 				"float": 3.14,
 			},
 			wantErr: false,
+		},
+		// "--int-list=1,2 --int-list 3,4 --int-list=5
+		{
+			name: "int list",
+			args: []string{"--int-list=1,2", "--int-list", "3,4", "--int-list=5"},
+			params: []*ParameterDefinition{
+				{Name: "int-list", ShortFlag: "i", Type: ParameterTypeIntegerList},
+			},
+			want: map[string]interface{}{
+				"int-list": []int{1, 2, 3, 4, 5},
+			},
 		},
 		// "--choice A" (choice)
 		{
@@ -444,17 +481,37 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// gather arguments: --verbose foobar --output file.txt another argument
+		{
+			name: "Gather arguments",
+			args: []string{"--verbose", "foobar", "--output", "file.txt", "another", "argument"},
+			params: []*ParameterDefinition{
+				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
+				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
+			},
+			want: map[string]interface{}{
+				"verbose": true,
+				"output":  "file.txt",
+			},
+			wantArgs: []string{"foobar", "another", "argument"},
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
+			got, args, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GatherFlagsFromStringList() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GatherFlagsFromStringList() = %v, want %v", got, tt.want)
+			}
+			if tt.wantArgs != nil {
+				if !reflect.DeepEqual(args, tt.wantArgs) {
+					t.Errorf("GatherFlagsFromStringList() = %v, want %v", args, tt.wantArgs)
+				}
 			}
 		})
 	}
