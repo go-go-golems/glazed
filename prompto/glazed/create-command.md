@@ -79,8 +79,6 @@ arg1 := parameters.NewParameterDefinition(
 )
 ```
 
-Certainly! Here's an enhanced description for the `Run` method, along with an explanation of the `glazedParameterLayer`:
-
 ### 2.4 Assemble the Command
 
 When assembling your command, a notable addition you can include is the `glazedParameterLayer`. This layer adds support for all the glazed structured data layer flags, enriching your command with more capabilities. Here's how you can integrate it:
@@ -118,8 +116,6 @@ return &ExampleCommand{
 }, nil
 ```
 
-
-Sure, let's proceed with restructuring the content to emphasize the importance and distinction of the `Run` methods across different command types:
 
 ---
 
