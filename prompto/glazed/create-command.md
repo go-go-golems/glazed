@@ -247,10 +247,6 @@ func (c *ExampleCommand) Run(
 }
 ```
 
-Certainly! Here's a concise description that incorporates the `NewRow*` methods for creating rows:
-
----
-
 ## 2.7 **Creating and Managing Rows in `GlazeCommand` with `types.Row`**
 
 Within the `glazed` framework, `types.Row` represents an ordered map, ensuring consistent field order in rows.

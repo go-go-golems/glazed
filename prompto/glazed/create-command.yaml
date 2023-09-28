@@ -1,0 +1,371 @@
+name: create-command
+short: This command generates a guide on how to create a new command for the `glazed` framework.
+flags:
+  - name: without_parameter_types
+    type: bool
+    help: Turn off the section about parameter types
+    default: false
+  - name: without_filedata
+    type: bool
+    help: Turn off the section about filedata
+    default: false
+  - name: command_type
+    type: choice
+    help: Set the command type to output the relevant section
+    choices: [bare, writer, glazed]
+  - name: initialization
+    type: bool
+    help: Output the initialization section
+    default: true
+  - name: run
+    type: bool
+    help: output the run section
+    default: true
+  - name: cobra
+    type: bool
+    help: Output the cobra section
+    default: false
+  - name: glazed_run
+    type: bool
+    help: Output the glazed run section
+    default: true
+
+template: |
+  # Creating a New Command for `glazed` Framework
+
+  The `glazed` framework provides a declarative way to define commands with flags, arguments, and output structured data. This README will guide you step-by-step on how to create a new command for the framework.
+
+  {{ if .initialization }}
+  {{ if not .without_parameter_types }}
+  ## 1. **Understanding the Building Blocks**
+
+  ### 1.1 Parameter Types
+
+  ParameterType establishes the data type of a parameter.
+  Commands can incorporate multiple flags and arguments, each with a designated parameter type.
+  
+  import "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+  
+  
+      ParameterTypeString -> string
+      ParameterTypeFile -> FileData
+      ParameterTypeInteger -> int
+      ParameterTypeStringFromFile -> string
+      ParameterTypeStringFromFiles -> string
+      ParameterTypeFileList -> []FileData
+      ParameterTypeObjectListFromFile -> []map[string]interface{}
+      ParameterTypeObjectListFromFiles -> []map[string]interface{}
+      ParameterTypeObjectFromFile -> map[string]interface{}
+      ParameterTypeStringListFromFile -> []string
+      ParameterTypeStringListFromFiles -> []string
+      ParameterTypeKeyValue: -> map[string]string
+      ParameterTypeFloat -> float64
+      ParameterTypeBool -> bool
+      ParameterTypeDate  -> time.Time
+      ParameterTypeStringList -> []string
+      ParameterTypeIntegerList -> []int
+      ParameterTypeFloatList -> []float64
+      ParameterTypeChoice -> string
+      ParameterTypeChoiceList -> []string
+  {{ end }}
+
+  {{ if not .without_filedata }}
+  ### 1.2 FileData
+
+  
+  `FileData` is a structure that provides detailed information about a file.
+  This is useful when your command needs to work with files.
+
+  import "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+  
+      Content: File's string content.
+      ParsedContent: Parsed version of the file's content (for json and yaml files).
+      ParseError: Any error that occurred during parsing.
+      RawContent: File content in byte format.
+      StringContent: File content as a string.
+      IsList: Indicates if the content represents a list.
+      IsObject: Signifies if the content denotes an object.
+      BaseName: File's base name.
+      Extension: File's extension.
+      FileType: File's type.
+      Path: File's path.
+      RelativePath: File's relative path.
+      AbsolutePath: File's absolute path.
+      Size: File's size in bytes.
+      LastModifiedTime: Timestamp when the file was last modified.
+      Permissions: File's permissions.
+      IsDirectory: Indicates if the file is a directory.
+  {{ end }}
+
+  ### 1.3 CommandDescription
+
+  This is a structure that contains the necessary information for registering a command. It has properties like:
+
+  - `Name`: Command name.
+  - `Short`: Short description.
+  - `Flags`: List of parameter definitions for flags.
+  - `Arguments`: List of parameter definitions for command arguments.
+
+  ### 1.4 ParameterDefinition
+
+  This structure describes a command-line parameter, whether it's a flag or an argument.
+
+  ## 2. **Steps to Create a New Command**
+
+  ### 2.1 Define the Command Structure
+
+  Create a new structure for your command that embeds `CommandDescription`. This structure will contain all the necessary configurations for your command.
+
+  Example:
+
+  ```go
+  import "github.com/go-go-golems/glazed/pkg/cmds"
+  
+  type MyNewCommand struct {
+      *cmds.CommandDescription
+  }
+  ```
+
+  ### 2.2 Initialize the Command
+
+  Create a function to initialize your new command:
+
+  ```go
+  func NewMyNewCommand() (*MyNewCommand, error) {
+      // Command initialization logic here
+  }
+  ```
+
+  ### 2.3 Define Flags and Arguments
+
+  Utilize the `ParameterDefinition` structure to define flags and arguments for your command.
+
+  Example:
+
+  ```go
+  flag1 := parameters.NewParameterDefinition(
+      "flagName",
+      parameters.ParameterTypeString,
+      parameters.WithHelp("Help description for the flag"),
+      parameters.WithDefault("default_value"),
+  )
+
+  arg1 := parameters.NewParameterDefinition(
+      "argName",
+      parameters.ParameterTypeInteger,
+      parameters.WithHelp("Help description for the argument"),
+      parameters.WithDefault(10),
+  )
+  ```
+
+  ### 2.4 Assemble the Command
+
+  When assembling your command, a notable addition you can include is the `glazedParameterLayer`. This layer adds support for all the glazed structured data layer flags, enriching your command with more capabilities. Here's how you can integrate it:
+
+  ```go
+  glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+  if err != nil {
+      return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+  }
+
+  return &ExampleCommand{
+      CommandDescription: cmds.NewCommandDescription(
+          "example",
+          cmds.WithShort("Example command"),
+          cmds.WithFlags(
+              parameters.NewParameterDefinition(
+                  "count",
+                  parameters.ParameterTypeInteger,
+                  parameters.WithHelp("Number of rows to output"),
+                  parameters.WithDefault(10),
+              ),
+          ),
+          cmds.WithArguments(
+              parameters.NewParameterDefinition(
+                  "test",
+                  parameters.ParameterTypeBool,
+                  parameters.WithHelp("Whether to add a test column"),
+                  parameters.WithDefault(false),
+              ),
+          ),
+          cmds.WithLayers(
+              glazedParameterLayer,
+          ),
+      ),
+  }, nil
+  ```
+  {{ end }}
+  
+  {{ if .run }}
+  ## Running the command
+  
+  
+  Run or RunIntoWriter is called to actually execute the command.
+  
+  parsedLayers contains the result of parsing each layer that has been
+  registered with the command description. These layers can be glazed structured data
+  flags, database connection parameters, application specification parameters.
+  
+  ps is a convenience map containing *all* parsed flags.
+   
+  {{ if or (eq .command_type "bare") (not .command_type) }}
+  ### **BareCommand**
+  The basic command type that requires a simpler `Run` method signature.
+  The focus here is on providing the parsed layers and parsed flags for your command execution.
+  Output is entirely left to the BareCommand.
+
+  ```go
+  type BareCommand interface {
+      Command
+      Run(
+          ctx context.Context,
+          parsedLayers map[string]*layers.ParsedParameterLayer,
+          ps map[string]interface{},
+      ) error
+  }
+  ```
+  {{ end }}
+
+  {{ if or (eq .command_type "writer") (not .command_type) }}
+  ### **WriterCommand**
+
+  This command type introduces the capability to write outputs to a provided writer. It's particularly useful when your
+  command needs to print or send data to an external output stream.
+
+  ```go
+  type WriterCommand interface {
+      Command
+      RunIntoWriter(
+          ctx context.Context,
+          parsedLayers map[string]*layers.ParsedParameterLayer,
+          ps map[string]interface{},
+          w io.Writer,
+      ) error
+  }
+  ```
+  {{ end }}
+
+  {{ if or (eq .command_type "glazed") (not .command_type) }}
+  ### **GlazeCommand**
+
+  The GlazeCommand is a specialized command type that deals with the `glazed` framework's structured data capabilities.
+  Its `Run` method signature not only encompasses parsed layers and parsed flags but also a `GlazeProcessor` which can be
+  utilized to emit rows of data.
+
+  ```go
+  type GlazeCommand interface {
+      Command
+      Run(
+          ctx context.Context,
+          parsedLayers map[string]*layers.ParsedParameterLayer,
+          ps map[string]interface{},
+          gp middlewares.Processor,
+      ) error
+  }
+  ```
+  {{ end }}
+  
+  It's vital to understand the specifics of each command type to ensure your `Run` method aligns with the intended command behavior.
+  
+  {{ if .glazed_run }}
+  ## 2.6 **Implementing the `Run` Method for a `GlazeCommand`**
+  
+  Given the specialized nature of a `GlazeCommand`, here's how you can effectively implement the `Run` method for this
+  command type:
+    
+    ```go
+    func (c *ExampleCommand) Run(
+      ctx context.Context,
+      parsedLayers map[string]*layers.ParsedParameterLayer,
+      ps map[string]interface{},
+      gp middlewares.Processor,
+    ) error {
+      count := ps["count"].(int)
+      test := ps["test"].(bool)
+    
+    for i := 0; i < count; i++ {
+      row := types.NewRow(
+        types.MRP("id", i),
+        types.MRP("name", "foobar-"+strconv.Itoa(i)),
+      )
+      
+      if test {
+        row.Set("test", rand.Intn(100)+1)
+      }
+      
+      if err := gp.AddRow(ctx, row); err != nil {
+        return err
+      }
+    }
+    
+    return nil
+  }
+    ```
+
+
+  ## 2.7 **Creating and Managing Rows in `GlazeCommand` with `types.Row`**
+    
+    Within the `glazed` framework, `types.Row` represents an ordered map, ensuring consistent field order in rows.
+
+  ### **Creating Rows with `types.Row` and `MRP`**
+
+  - **Direct Initialization**: Use `NewRow` with the `MRP` (MapRowPair) function to directly initialize rows while maintaining the field order:
+                                 
+                                 ```go
+                                 row := types.NewRow(
+                                 types.MRP("id", i),
+                                 types.MRP("name", "foobar-"+strconv.Itoa(i)),
+                                 )
+                                 ```
+                                 
+                                 `MRP` is a utility function to quickly create a key-value pair for a row.
+
+  ### **Other Methods for Creating Rows**
+
+  - **From Map**: Use `NewRowFromMap` to create a row from a regular map. It sorts and maintains the order of keys:
+                    
+                    ```go
+                    data := map[string]interface{}{"id": 1, "name": "Alice"}
+                    row := types.NewRowFromMap(data)
+                    ```
+
+  - **From Struct**: `NewRowFromStruct` allows you to convert a struct into a row. Optionally, you can specify whether struct field names should be converted to lowercase:
+                          
+                          ```go
+                            type Person struct {
+                            ID   int
+                            Name string
+                      }
+                            person := Person{ID: 1, Name: "Alice"}
+                            row := types.NewRowFromStruct(&person, true)  // true indicates lowercase field names.
+                            ```
+             
+  These functions offer flexibility in how you create and work with rows within the `glazed` framework.
+  {{ end }}
+    
+  {{ end }}
+
+  {{ if .cobra }}
+  ## 3. **Integrating `glazed` Commands with Cobra**
+
+  Now, the core part: adding your `glazed` command to the Cobra root command.
+  This requires converting the `glazed` command into a Cobra command using the provided utility functions.
+
+  ```go
+  func registerCommands(rootCmd *cobra.Command) {
+      // For a GlazeCommand
+      glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
+      cobra.CheckErr(err)
+
+      command, err := BuildCobraCommandFromGlazeCommand(glazeCmdInstance)
+      cobra.CheckErr(err)
+
+      rootCmd.AddCommand(command)
+  
+      // Similarly, for WriterCommand or BareCommand
+      // writerCmdInstance, err := NewMyWriterCommand()
+      // command, err = BuildCobraCommandFromWriterCommand(writerCmdInstance)
+      // rootCmd.AddCommand(command)
+  }
+  ```
+  {{ end }}
