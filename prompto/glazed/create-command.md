@@ -211,3 +211,69 @@ func (c *ExampleCommand) Run(
 }
 ```
 
+Certainly! Here's a concise description that incorporates the `NewRow*` methods for creating rows:
+
+---
+
+## 2.7 **Creating and Managing Rows in `GlazeCommand` with `types.Row`**
+
+Within the `glazed` framework, `types.Row` represents an ordered map, ensuring consistent field order in rows.
+
+### **Creating Rows with `types.Row` and `MRP`**
+
+- **Direct Initialization**: Use `NewRow` with the `MRP` (MapRowPair) function to directly initialize rows while maintaining the field order:
+
+  ```go
+  row := types.NewRow(
+      types.MRP("id", i),
+      types.MRP("name", "foobar-"+strconv.Itoa(i)),
+  )
+  ```
+
+  `MRP` is a utility function to quickly create a key-value pair for a row.
+
+### **Other Methods for Creating Rows**
+
+- **From Map**: Use `NewRowFromMap` to create a row from a regular map. It sorts and maintains the order of keys:
+
+  ```go
+  data := map[string]interface{}{"id": 1, "name": "Alice"}
+  row := types.NewRowFromMap(data)
+  ```
+
+- **From Struct**: `NewRowFromStruct` allows you to convert a struct into a row. Optionally, you can specify whether struct field names should be converted to lowercase:
+
+  ```go
+  type Person struct {
+      ID   int
+      Name string
+  }
+  person := Person{ID: 1, Name: "Alice"}
+  row := types.NewRowFromStruct(&person, true)  // true indicates lowercase field names.
+  ```
+
+These functions offer flexibility in how you create and work with rows within the `glazed` framework.
+
+## 3. **Integrating `glazed` Commands with Cobra**
+
+Now, the core part: adding your `glazed` command to the Cobra root command.
+This requires converting the `glazed` command into a Cobra command using the provided utility functions.
+
+```go
+func registerCommands(rootCmd *cobra.Command) {
+	// For a GlazeCommand
+	glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
+	cobra.CheckErr(err)
+
+	command, err := BuildCobraCommandFromGlazeCommand(glazeCmdInstance)
+	cobra.CheckErr(err)
+
+	rootCmd.AddCommand(command)
+	
+	// Similarly, for WriterCommand or BareCommand
+	// writerCmdInstance, err := NewMyWriterCommand()
+	// command, err = BuildCobraCommandFromWriterCommand(writerCmdInstance)
+	// rootCmd.AddCommand(command)
+}
+```
+
