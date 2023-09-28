@@ -76,6 +76,13 @@ func WithPrefix(prefix string) ParameterLayerOptions {
 	}
 }
 
+func WithName(name string) ParameterLayerOptions {
+	return func(p *ParameterLayerImpl) error {
+		p.Name = name
+		return nil
+	}
+}
+
 func WithDescription(description string) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
 		p.Description = description

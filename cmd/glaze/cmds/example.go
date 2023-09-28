@@ -35,6 +35,8 @@ func NewExampleCommand() (*ExampleCommand, error) {
 					parameters.WithHelp("Number of rows to output"),
 					parameters.WithDefault(10),
 				),
+			),
+			cmds.WithArguments(
 				parameters.NewParameterDefinition(
 					"test",
 					parameters.ParameterTypeBool,
@@ -49,6 +51,15 @@ func NewExampleCommand() (*ExampleCommand, error) {
 	}, nil
 }
 
+// Run is called to actually execute the command.
+//
+// parsedLayers contains the result of parsing each layer that has been
+// registered with the command description. These layers can be glazed structured data
+// flags, database connection parameters, application specification parameters.
+//
+// ps is a convenience map containing *all* parsed flags.
+//
+// gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
 func (c *ExampleCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,

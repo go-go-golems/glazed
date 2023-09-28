@@ -1,8 +1,21 @@
 package layers
 
 import (
+	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
+
+type ErrInvalidParameterLayer struct {
+	Name     string
+	Expected string
+}
+
+func (e ErrInvalidParameterLayer) Error() string {
+	if e.Expected == "" {
+		return fmt.Sprintf("invalid parameter layer: %s", e.Name)
+	}
+	return fmt.Sprintf("invalid parameter layer: %s (expected %s)", e.Name, e.Expected)
+}
 
 // ParameterLayer is a struct that is used by one specific functionality layer
 // to group and describe all the parameter definitions that it uses.
