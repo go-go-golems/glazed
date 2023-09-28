@@ -8,17 +8,53 @@ Before diving into creating a command, it's crucial to understand the components
 
 ### 1.1 Parameter Types
 
-`ParameterType` defines the data type of a parameter. A command can have multiple flags and arguments, each having a specific parameter type. Some examples are:
+1.1 Parameter Types
 
-- `ParameterTypeString`: For simple string input.
-- `ParameterTypeFile`: For fetching file data.
-- `ParameterTypeInteger`: For integer inputs.
+ParameterType establishes the data type of a parameter. Commands can incorporate multiple flags and arguments, each with a designated parameter type. Examples include:
 
-... and many more. Check the provided API documentation for a full list.
+    ParameterTypeString -> string
+    ParameterTypeFile -> FileData
+    ParameterTypeInteger -> int
+    ParameterTypeStringFromFile -> string
+    ParameterTypeStringFromFiles -> string
+    ParameterTypeFileList -> []FileData
+    ParameterTypeObjectListFromFile -> []map[string]interface{}
+    ParameterTypeObjectListFromFiles -> []map[string]interface{}
+    ParameterTypeObjectFromFile -> map[string]interface{}
+    ParameterTypeStringListFromFile -> []string
+    ParameterTypeStringListFromFiles -> []string
+    ParameterTypeKeyValue: -> map[string]string
+    ParameterTypeFloat -> float64
+    ParameterTypeBool -> bool
+    ParameterTypeDate  -> time.Time
+    ParameterTypeStringList -> []string
+    ParameterTypeIntegerList -> []int
+    ParameterTypeFloatList -> []float64
+    ParameterTypeChoice -> string
+    ParameterTypeChoiceList -> []string
 
 ### 1.2 FileData
 
-`FileData` is a structure that provides detailed information about a file. This is useful when your command needs to work with files.
+`FileData` is a structure that provides detailed information about a file.
+This is useful when your command needs to work with files.
+
+    Content: File's string content.
+    ParsedContent: Parsed version of the file's content (for json and yaml files).
+    ParseError: Any error that occurred during parsing.
+    RawContent: File content in byte format.
+    StringContent: File content as a string.
+    IsList: Indicates if the content represents a list.
+    IsObject: Signifies if the content denotes an object.
+    BaseName: File's base name.
+    Extension: File's extension.
+    FileType: File's type.
+    Path: File's path.
+    RelativePath: File's relative path.
+    AbsolutePath: File's absolute path.
+    Size: File's size in bytes.
+    LastModifiedTime: Timestamp when the file was last modified.
+    Permissions: File's permissions.
+    IsDirectory: Indicates if the file is a directory.
 
 ### 1.3 CommandDescription
 
