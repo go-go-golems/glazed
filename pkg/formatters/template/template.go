@@ -20,11 +20,17 @@ type OutputFormatter struct {
 	AdditionalData      interface{}
 }
 
+var _ formatters.TableOutputFormatter = (*OutputFormatter)(nil)
+
 func (t *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
 func (t *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (t *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

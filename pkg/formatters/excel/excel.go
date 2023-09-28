@@ -3,6 +3,7 @@ package excel
 import (
 	"context"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/formatters"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -25,6 +26,8 @@ type OutputFormatter struct {
 	rowKeyToColumn map[string]string
 }
 
+var _ formatters.RowOutputFormatter = (*OutputFormatter)(nil)
+
 func (E *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	if E.f != nil {
 		E.f.SetActiveSheet(E.sheetIndex)
@@ -42,6 +45,10 @@ func (E *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 
 func (E *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
 	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	return nil
+}
+
+func (E *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

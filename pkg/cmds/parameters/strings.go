@@ -157,7 +157,7 @@ func GatherFlagsFromStringList(
 			}
 		}
 		if !onlyProvided {
-			if _, ok := rawValues[param.Name]; !ok && param.Default != nil {
+			if _, ok := result[param.Name]; !ok && param.Default != nil {
 				result[param.Name] = param.Default
 			}
 		}

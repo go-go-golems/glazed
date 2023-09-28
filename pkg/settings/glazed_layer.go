@@ -591,6 +591,10 @@ func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interfac
 	rowOf, err := SetupRowOutputFormatter(ps)
 
 	if rowOf != nil {
+		err = rowOf.RegisterRowMiddlewares(gp)
+		if err != nil {
+			return nil, err
+		}
 		gp.AddRowMiddleware(row.NewOutputMiddleware(rowOf, w))
 		return rowOf, nil
 	} else {
@@ -599,6 +603,10 @@ func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interfac
 		}
 
 		of, err := SetupTableOutputFormatter(ps)
+		if err != nil {
+			return nil, err
+		}
+		err = of.RegisterTableMiddlewares(gp)
 		if err != nil {
 			return nil, err
 		}

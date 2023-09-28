@@ -42,6 +42,7 @@ type OutputFormatter interface {
 	// necessary for them to do the proper output. For example, table and excel output require
 	// flattening the row objects before output.
 	RegisterTableMiddlewares(mw *middlewares.TableProcessor) error
+	RegisterRowMiddlewares(mw *middlewares.TableProcessor) error
 	ContentType() string
 	Close(ctx context.Context, w io.Writer) error
 }

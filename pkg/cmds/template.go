@@ -5,6 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"io"
 	"text/template"
@@ -36,6 +37,7 @@ func (t *TemplateCommand) RunIntoWriter(
 ) error {
 	tmpl, err := template.New("template").Parse(t.Template)
 	if err != nil {
+		log.Warn().Err(err).Str("template", t.Template).Msg("failed to parse template")
 		return errors.Wrap(err, "failed to parse template")
 	}
 

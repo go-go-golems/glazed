@@ -18,11 +18,17 @@ type OutputFormatter struct {
 	OutputIndividualRows bool
 }
 
+var _ formatters.TableOutputFormatter = (*OutputFormatter)(nil)
+
 func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
 func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

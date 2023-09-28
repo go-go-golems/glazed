@@ -18,11 +18,17 @@ type SingleColumnFormatter struct {
 	Separator           string
 }
 
+var _ formatters.TableOutputFormatter = (*SingleColumnFormatter)(nil)
+
 func (s *SingleColumnFormatter) Close(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
 func (s *SingleColumnFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
+	return nil
+}
+
+func (s *SingleColumnFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
 	return nil
 }
 

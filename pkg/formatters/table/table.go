@@ -6,12 +6,12 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"io"
 	"os"
 	"strings"
@@ -58,12 +58,12 @@ func (tof *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
 }
 
 func (tof *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {
-	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	//mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }
 
 func (tof *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor) error {
-	mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
+	//mw.AddRowMiddlewareInFront(row.NewFlattenObjectMiddleware())
 	return nil
 }
 
@@ -352,19 +352,32 @@ func (tof *OutputFormatter) makeTable(table_ *types.Table, rows []types.Row, w i
 
 func valueToString(v types.GenericCellValue) string {
 	var s string
-	if v_, ok := v.([]interface{}); ok {
+	switch v_ := v.(type) {
+	case []interface{}:
 		var elms []string
 		for _, elm := range v_ {
 			elms = append(elms, fmt.Sprintf("%v", elm))
 		}
 		s = strings.Join(elms, ", ")
-	} else if v_, ok := v.(map[string]interface{}); ok {
+	case map[string]interface{}:
 		var elms []string
 		for k, v__ := range v_ {
 			elms = append(elms, fmt.Sprintf("%v:%v", k, v__))
 		}
 		s = strings.Join(elms, ",")
-	} else {
+	case types.Row:
+		var elms []string
+		for pair := v_.Oldest(); pair != nil; pair = pair.Next() {
+			elms = append(elms, fmt.Sprintf("%v:%v", pair.Key, pair.Value))
+		}
+		s = strings.Join(elms, ",")
+	case *orderedmap.OrderedMap[string, string]:
+		var elms []string
+		for pair := v_.Oldest(); pair != nil; pair = pair.Next() {
+			elms = append(elms, fmt.Sprintf("%v:%v", pair.Key, pair.Value))
+		}
+		s = strings.Join(elms, ",")
+	default:
 		s = fmt.Sprintf("%v", v)
 	}
 	return s

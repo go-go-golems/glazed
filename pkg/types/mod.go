@@ -35,6 +35,15 @@ func NewRowFromMap(hash map[FieldName]GenericCellValue) Row {
 	return ret
 }
 
+func NewRowFromRow(row Row) Row {
+	ret := NewRow()
+
+	for pair := row.Oldest(); pair != nil; pair = pair.Next() {
+		ret.Set(pair.Key, pair.Value)
+	}
+	return ret
+}
+
 func NewRowFromMapWithColumns(hash map[FieldName]GenericCellValue, columns []FieldName) Row {
 	ret := NewRow()
 	for _, column := range columns {
