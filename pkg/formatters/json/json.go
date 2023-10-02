@@ -192,6 +192,13 @@ func (r *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 		}
 		r.isStreamingRows = true
 		r.isFirstRow = false
+	} else {
+		if !r.OutputIndividualRows {
+			_, err := w.Write([]byte(", "))
+			if err != nil {
+				return err
+			}
+		}
 	}
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
