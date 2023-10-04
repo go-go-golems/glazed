@@ -80,18 +80,51 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
 	description := s.Description()
 
+	glazedCommandLayer, err := layers.NewParameterLayer(
+		"glazed-command",
+		"General purpose Command options",
+		layers.WithFlags(
+			parameters.NewParameterDefinition(
+				"create-command",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Create a new command for the query, with the defaults updated"),
+			),
+			parameters.NewParameterDefinition(
+				"create-alias",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Create a CLI alias for the query"),
+			),
+			parameters.NewParameterDefinition(
+				"create-cliopatra",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Print the CLIopatra YAML for the command"),
+			),
+			parameters.NewParameterDefinition(
+				"print-yaml",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Print the command's YAML"),
+			),
+			parameters.NewParameterDefinition(
+				"load-parameters-from-json",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Load the command's flags from JSON"),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	description.Layers = append([]layers.ParameterLayer{
+		glazedCommandLayer,
+	}, description.Layers...)
+
 	cobraParser, err := NewCobraParserFromCommandDescription(description)
 	if err != nil {
 		return nil, err
 	}
 
 	cmd := cobraParser.Cmd
-
-	cmd.Flags().String("create-command", "", "Create a new command for the query, with the defaults updated")
-	cmd.Flags().String("create-alias", "", "Create a CLI alias for the query")
-	cmd.Flags().String("create-cliopatra", "", "Print the CLIopatra YAML for the command")
-	cmd.Flags().Bool("print-yaml", false, "Print the command's YAML")
-	cmd.Flags().String("load-parameters-from-json", "", "Load the command's flags from JSON")
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		loadParametersFromJSON, err := cmd.Flags().GetString("load-parameters-from-json")
