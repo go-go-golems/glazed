@@ -378,6 +378,14 @@ func valueToString(v types.GenericCellValue) string {
 		}
 		s = strings.Join(elms, ",")
 	default:
+		l, err := cast.CastListToInterfaceList(v)
+		if err == nil {
+			var elms []string
+			for _, elm := range l {
+				elms = append(elms, fmt.Sprintf("%v", elm))
+			}
+			return strings.Join(elms, ",")
+		}
 		s = fmt.Sprintf("%v", v)
 	}
 	return s

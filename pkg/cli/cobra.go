@@ -16,6 +16,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -439,6 +440,7 @@ func AddCommandsToRootCommand(
 
 		cobraCommand, err := BuildCobraCommandFromCommand(command)
 		if err != nil {
+			log.Warn().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not build cobra command")
 			return nil
 		}
 		parentCmd.AddCommand(cobraCommand)
