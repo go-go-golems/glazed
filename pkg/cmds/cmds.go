@@ -245,6 +245,15 @@ type Command interface {
 	ToYAML(w io.Writer) error
 }
 
+type CommandWithMetadata interface {
+	Command
+	Metadata(
+		ctx context.Context,
+		parsedLayers map[string]*layers.ParsedParameterLayer,
+		ps map[string]interface{},
+	) (map[string]interface{}, error)
+}
+
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
 // - async emitting command (just strings, for example)
 // - async emitting structured log

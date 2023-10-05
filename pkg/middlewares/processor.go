@@ -18,6 +18,8 @@ type TableProcessor struct {
 	Table *types.Table
 }
 
+var _ Processor = (*TableProcessor)(nil)
+
 type TableProcessorOption func(*TableProcessor)
 
 func WithTableMiddleware(tm ...TableMiddleware) TableProcessorOption {
