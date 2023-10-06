@@ -17,7 +17,7 @@ b: 2
 c: 3
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
 
@@ -32,7 +32,7 @@ a: 1
 b: 2
 c: 3`
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 
 	inputYAML = "```\n" + `---
@@ -40,7 +40,7 @@ a: 1
 b: 2
 c: 3` + "\n```"
 
-	actualYAML = Clean(inputYAML)
+	actualYAML = Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
 
@@ -57,7 +57,7 @@ b: "foobar: blabla"
 invalidRightHandSide: "&foobar"
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
 
@@ -72,7 +72,7 @@ a: 1
 b: "foobar: blabla"
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 
 	inputYAML = `---
@@ -85,7 +85,7 @@ a: 1
 b: 'foobar: blabla'
 `
 
-	actualYAML = Clean(inputYAML)
+	actualYAML = Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 
 	inputYAML = `---
@@ -100,7 +100,7 @@ b: 'foobar: blabla'
 	foobar: blabla
 `
 
-	actualYAML = Clean(inputYAML)
+	actualYAML = Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
 
@@ -133,7 +133,7 @@ b:
   g: 2
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 
 }
@@ -156,7 +156,7 @@ c: |
 d: "&lkjsld"
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }
 
@@ -173,6 +173,6 @@ meta_title: "Buy Evergreen Trees Online - Create Year-Round Privacy and Beauty |
 meta_description: "Shop a variety of evergreen trees that stay green all year at The Tree Center. Create year-round privacy and beauty with our selection of evergreen trees. Find the perfect evergreen for your garden today!"
 `
 
-	actualYAML := Clean(inputYAML)
+	actualYAML := Clean(inputYAML, false)
 	assert.Equal(t, expectedYAML, actualYAML)
 }

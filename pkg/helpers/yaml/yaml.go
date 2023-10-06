@@ -7,7 +7,7 @@ import (
 // Clean tries to cleanup YAML that might be invalid, for example
 // if coming out of a LLM.
 // This is quite a hacky solution, and will only work for simple YAML.
-func Clean(s string) string {
+func Clean(s string, fromMarkdown bool) string {
 	// split by lines and iterate over them
 	lines := strings.Split(s, "\n")
 	ret := []string{}
@@ -21,6 +21,10 @@ func Clean(s string) string {
 		if strings.HasPrefix(line, "```") {
 			// if it is, remove it and the next line
 			isInMarkdown = !isInMarkdown
+			continue
+		}
+
+		if fromMarkdown && !isInMarkdown {
 			continue
 		}
 
