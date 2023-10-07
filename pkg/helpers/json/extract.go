@@ -1,10 +1,9 @@
 package json
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
-	"strings"
+	"github.com/go-go-golems/glazed/pkg/helpers/markdown"
 )
 
 // ExtractJSON extracts potential JSON blocks from the provided input string.
@@ -24,48 +23,12 @@ func ExtractJSON(input string) []string {
 	}
 
 	// If that fails, scan for quoted blocks
-	quotedBlocks := ExtractQuotedBlocks(input)
+	quotedBlocks := markdown.ExtractQuotedBlocks(input, false)
 	for _, block := range quotedBlocks {
 		var temp map[string]interface{}
 		block = SanitizeJSONString(block)
 		if err := json.Unmarshal([]byte(block), &temp); err == nil {
 			result = append(result, block)
-		}
-	}
-
-	return result
-}
-
-type State int
-
-const (
-	OutsideBlock State = iota
-	InsideBlock
-)
-
-// ExtractQuotedBlocks extracts blocks enclosed by ``` using a state machine.
-func ExtractQuotedBlocks(input string) []string {
-	var result []string
-	state := OutsideBlock
-	var blockLines []string
-
-	scanner := bufio.NewScanner(strings.NewReader(input))
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		switch state {
-		case OutsideBlock:
-			if strings.HasPrefix(line, "```") {
-				state = InsideBlock
-				blockLines = nil // reset blockLines
-			}
-		case InsideBlock:
-			if strings.HasPrefix(line, "```") {
-				state = OutsideBlock
-				result = append(result, strings.Join(blockLines, "\n"))
-			} else {
-				blockLines = append(blockLines, line)
-			}
 		}
 	}
 
