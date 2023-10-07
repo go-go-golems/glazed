@@ -41,20 +41,19 @@ func ExtractAllBlocks(input string) []MarkdownBlock {
 			if strings.HasPrefix(line, "```") {
 				state = InsideBlock
 				language = strings.TrimPrefix(line, "```")
+				if len(blockLines) > 0 {
+					// For normal blocks
+					result = append(result, MarkdownBlock{Type: Normal, Content: strings.Join(blockLines, "\n")})
+				}
 				blockLines = nil // reset blockLines
-			} else if len(blockLines) > 0 {
-				// For normal blocks
-				result = append(result, MarkdownBlock{Type: Normal, Content: strings.Join(blockLines, "\n")})
-				blockLines = nil // reset blockLines
+				continue
 			}
 			blockLines = append(blockLines, line)
 		case InsideBlock:
 			if strings.HasPrefix(line, "```") {
 				state = OutsideBlock
-				if len(blockLines) > 2 {
-					content := strings.Join(blockLines[1:], "\n") // excluding the language line
-					result = append(result, MarkdownBlock{Type: Code, Language: language, Content: content})
-				}
+				content := strings.Join(blockLines, "\n") // excluding the language line
+				result = append(result, MarkdownBlock{Type: Code, Language: language, Content: content})
 				blockLines = nil // reset blockLines
 				language = ""
 			} else {
