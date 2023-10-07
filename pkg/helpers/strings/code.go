@@ -198,6 +198,7 @@ var markdownToLanguageMap = map[string]Language{
 // Use this function to identify the language of a code block in markdown.
 // For example, given the string "py", the function will return the Python constant.
 func MarkdownCodeBlockToLanguage(codeBlock string) Language {
+	codeBlock = strings.ToLower(codeBlock)
 	language, exists := markdownToLanguageMap[codeBlock]
 	if !exists {
 		return None

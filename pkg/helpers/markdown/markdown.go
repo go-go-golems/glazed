@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"bufio"
+	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"strings"
 )
 
@@ -101,6 +102,69 @@ func ExtractQuotedBlocks(input string, withQuotes bool) []string {
 			result = append(result, "```"+block.Language+"\n"+block.Content+"\n```")
 		} else {
 			result = append(result, block.Content)
+		}
+	}
+
+	return result
+}
+
+// ExtractCodeBlocksWithComments processes a markdown string to return only code blocks.
+// Any non-code content preceding a code block is added as a comment within the respective code block.
+// If there are non-code contents left at the end without a following code block, they are appended
+// as comments to the last code block.
+//
+// **Usage**:
+// Call this function with a markdown string and a boolean `withQuotes`. If `withQuotes` is set to true,
+// the output will include the enclosing ``` for each code block. Otherwise, only the inner content of
+// the code block (and the preceding comments) is returned.
+func ExtractCodeBlocksWithComments(input string, withQuotes bool) []string {
+	blocks := ExtractAllBlocks(input)
+	var result []string
+	var pendingComments []string
+	lastLanguage := strings2.None
+	lastBlockLanguage := ""
+	codeContent := ""
+
+	for _, block := range blocks {
+		if block.Type == Code {
+			// If there are pending comments (non-code blocks), convert them to comments in the current language
+			codeContent = block.Content
+			language := strings2.MarkdownCodeBlockToLanguage(block.Language)
+			lastLanguage = language
+			lastBlockLanguage = block.Language
+
+			if len(pendingComments) > 0 {
+
+				// only append comments for languages we know how to generate comments for
+				if language != strings2.None {
+					commentedText := strings2.GenerateComment(strings.Join(pendingComments, "\n"), language)
+					codeContent = commentedText + "\n" + codeContent
+				}
+				pendingComments = nil
+			}
+
+			if withQuotes {
+				result = append(result, "```"+block.Language+"\n"+codeContent+"\n```")
+			} else {
+				result = append(result, codeContent)
+			}
+		} else {
+			// Accumulate non-code blocks to be commented later
+			pendingComments = append(pendingComments, block.Content)
+		}
+	}
+
+	// If there's any pending comment without a following code block, append to the previous block
+	if len(pendingComments) > 0 {
+		if lastLanguage != strings2.None && len(result) > 0 {
+			codeContent += "\n" + strings2.GenerateComment(strings.Join(pendingComments, "\n"), lastLanguage)
+			res := ""
+			if withQuotes {
+				res = "```" + lastBlockLanguage + "\n" + codeContent + "\n```"
+			} else {
+				res = codeContent
+			}
+			result[len(result)-1] = res
 		}
 	}
 
