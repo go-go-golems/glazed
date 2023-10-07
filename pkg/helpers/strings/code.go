@@ -1,6 +1,7 @@
 package strings
 
 import (
+	"github.com/muesli/reflow/wordwrap"
 	"strings"
 )
 
@@ -125,10 +126,24 @@ func GenerateComment(comment string, language Language) string {
 
 	if delimiters.Type == Line {
 		lines := strings.Split(comment, "\n")
-		for index, line := range lines {
-			lines[index] = delimiters.Inline + " " + line
+		lines_ := []string{}
+		for _, line := range lines {
+			// wordwrap the line
+			ww := wordwrap.NewWriter(100)
+			_, err := ww.Write([]byte(line))
+			// if there is an error, we just stick with line
+			if err != nil {
+				lines_ = append(lines_, delimiters.Inline+" "+line)
+				continue
+			}
+
+			_ = ww.Close()
+			line = ww.String()
+			for _, line := range strings.Split(line, "\n") {
+				lines_ = append(lines_, delimiters.Inline+" "+line)
+			}
 		}
-		return strings.Join(lines, "\n")
+		return strings.Join(lines_, "\n")
 	} else {
 		return delimiters.Start + "\n" + comment + "\n" + delimiters.End
 	}
