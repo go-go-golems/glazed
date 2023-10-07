@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -15,6 +16,8 @@ func Clean(s string, fromMarkdown bool) string {
 	isInMarkdown := false
 	isInQuotedString := false
 	quoteIndent := 0
+
+	re := regexp.MustCompile(`\s+$`)
 
 	for _, line := range lines {
 		// check if the first string is a ``` markdown marker
@@ -31,14 +34,16 @@ func Clean(s string, fromMarkdown bool) string {
 		if isInQuotedString {
 			// if quoteIndent is 0, we just started a multiline string
 			if quoteIndent == 0 {
-				quoteIndent = getIndentLevel(line)
+				quoteIndent, _ = getIndentLevel(line)
 			}
 
 			// count start indent
-			indent := getIndentLevel(line)
+			indent, isWhitespace := getIndentLevel(line)
 
 			// check if we are still in the quoted string
-			if indent >= quoteIndent {
+			if indent >= quoteIndent || isWhitespace {
+				// chop off rightmost whitespace because otherwise yaml encoder won't output it as multiline string
+				line = re.ReplaceAllString(line, "")
 				ret = append(ret, line)
 				continue
 			} else {
@@ -99,14 +104,16 @@ func Clean(s string, fromMarkdown bool) string {
 	return ret_
 }
 
-func getIndentLevel(line string) int {
+func getIndentLevel(line string) (int, bool) {
 	indent := 0
+	isWhitespace := true
 	for _, c := range line {
 		if c == ' ' {
 			indent++
 		} else {
+			isWhitespace = false
 			break
 		}
 	}
-	return indent
+	return indent, isWhitespace
 }
