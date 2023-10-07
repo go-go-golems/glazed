@@ -45,6 +45,12 @@ func NewYamlCommand() (*YamlCommand, error) {
 					parameters.WithHelp("Sanitize input (very hacky, meant for LLM cleanup)"),
 					parameters.WithDefault(false),
 				),
+				parameters.NewParameterDefinition(
+					"from-markdown",
+					parameters.ParameterTypeBool,
+					parameters.WithHelp("Input is markdown"),
+					parameters.WithDefault(false),
+				),
 			),
 			cmds.WithArguments(
 				parameters.NewParameterDefinition(
@@ -81,6 +87,11 @@ func (y *YamlCommand) Run(
 		return fmt.Errorf("input-files is not a string list")
 	}
 
+	fromMarkdown, ok := ps["from-markdown"].(bool)
+	if !ok {
+		return fmt.Errorf("from-markdown flag is not a bool")
+	}
+
 	for _, arg := range inputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
@@ -88,12 +99,12 @@ func (y *YamlCommand) Run(
 		var f io.Reader
 		var err error
 
-		if sanitize {
+		if sanitize || fromMarkdown {
 			// read in file
 			data, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			cleanData := yaml2.Clean(string(data))
+			cleanData := yaml2.Clean(string(data), fromMarkdown)
 			f = strings.NewReader(cleanData)
 		} else {
 			f, err = os.Open(arg)
