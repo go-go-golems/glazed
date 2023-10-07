@@ -25,7 +25,16 @@ type MarkdownBlock struct {
 	Content  string
 }
 
-// ExtractAllBlocks extracts blocks enclosed by ``` using a state machine.
+// ExtractAllBlocks processes a given markdown string to split it into a series of blocks.
+//
+// **Usage**:
+// Call this function with a markdown string as the argument. It will return a slice
+// of MarkdownBlock structs, each representing a block of content (either normal or code).
+//
+// **Inner Workings**:
+// The function employs a state machine approach to parse through the markdown content.
+// It recognizes and separates out code blocks (enclosed with ```) and normal text blocks.
+// For code blocks, it also identifies the optional language specifier.
 func ExtractAllBlocks(input string) []MarkdownBlock {
 	var result []MarkdownBlock
 	state := OutsideBlock
@@ -70,6 +79,17 @@ func ExtractAllBlocks(input string) []MarkdownBlock {
 	return result
 }
 
+// ExtractQuotedBlocks extracts only the code blocks from a markdown string.
+//
+// **Usage**:
+// This function takes in a markdown string and a boolean `withQuotes`. If `withQuotes`
+// is set to true, the output will include the enclosing ``` for each code block.
+// Otherwise, only the inner content of the code block is returned.
+//
+// **Inner Workings**:
+// This function leverages the `ExtractAllBlocks` function to first get all blocks
+// from the markdown content. It then filters out only the code blocks and processes
+// them based on the `withQuotes` parameter to decide on the inclusion of the enclosing ``` marks.
 func ExtractQuotedBlocks(input string, withQuotes bool) []string {
 	blocks := ExtractAllBlocks(input)
 	var result []string

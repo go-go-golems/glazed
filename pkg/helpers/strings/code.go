@@ -107,7 +107,16 @@ var CommentDict = map[Language]CommentDelimiters{
 	HCL:          {Line, "", "", "#"},
 }
 
-// GenerateComment generates the comment based on the provided language
+// GenerateComment converts a given string into a comment based on the specified programming language.
+//
+// **Usage**:
+// Call this function with a string and a language to get the string formatted
+// as a comment in that language. For example: `comment := GenerateComment("TODO: Implement this", GoLang)`.
+//
+// **Inner Workings**:
+// The function uses the CommentDict map to determine the appropriate comment delimiters
+// for the provided language. It then formats the string as a block or inline comment
+// based on the language's conventions.
 func GenerateComment(comment string, language Language) string {
 	delimiters, exists := CommentDict[language]
 	if !exists {
@@ -183,6 +192,11 @@ var markdownToLanguageMap = map[string]Language{
 	"hcl":          HCL,
 }
 
+// MarkdownCodeBlockToLanguage translates a markdown code block language specifier to its corresponding Language type.
+//
+// **Usage**:
+// Use this function to identify the language of a code block in markdown.
+// For example, given the string "py", the function will return the Python constant.
 func MarkdownCodeBlockToLanguage(codeBlock string) Language {
 	language, exists := markdownToLanguageMap[codeBlock]
 	if !exists {
