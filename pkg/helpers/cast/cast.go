@@ -361,3 +361,23 @@ func CastMapMember[To any](m map[string]interface{}, k string) (*To, bool) {
 
 	return &casted, true
 }
+
+func GetAndCast[T any](ps map[string]interface{}, name string, default_ T) (T, bool, error) {
+	if val, ok := ps[name]; ok {
+		if castedVal, ok := val.(T); ok {
+			return castedVal, true, nil
+		}
+		return default_, false, errors.Errorf("could not cast %s to %T", name, val)
+	}
+	return default_, false, nil
+}
+
+func GetAndCastPtr[T any](ps map[string]interface{}, name string, default_ *T) (*T, bool, error) {
+	if val, ok := ps[name]; ok {
+		if castedVal, ok := val.(T); ok {
+			return &castedVal, true, nil
+		}
+		return default_, true, errors.Errorf("could not cast %s to %T", name, val)
+	}
+	return default_, false, nil
+}
