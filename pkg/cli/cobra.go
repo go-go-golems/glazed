@@ -401,7 +401,10 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 
 	argumentDefinitions := alias.AliasedCommand.Description().Arguments
 	minArgs := 0
-	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true, false)
+	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true, true)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, argDef := range argumentDefinitions {
 		_, ok := provided.Get(argDef.Name)
