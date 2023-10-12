@@ -120,6 +120,8 @@ template: |
 
   ```go
   import "github.com/go-go-golems/glazed/pkg/cmds"
+  import "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+  
   
   type MyNewCommand struct {
       *cmds.CommandDescription
@@ -163,6 +165,7 @@ template: |
   When assembling your command, a notable addition you can include is the `glazedParameterLayer`. This layer adds support for all the glazed structured data layer flags, enriching your command with more capabilities. Here's how you can integrate it:
 
   ```go
+  import 	"github.com/go-go-golems/glazed/pkg/settings"
   glazedParameterLayer, err := settings.NewGlazedParameterLayers()
   if err != nil {
       return nil, errors.Wrap(err, "could not create Glazed parameter layer")
@@ -215,6 +218,8 @@ template: |
   Output is entirely left to the BareCommand.
 
   ```go
+  package "github.com/go-go-golems/glazed/pkg/cmds"
+
   type BareCommand interface {
       Command
       Run(
@@ -233,6 +238,7 @@ template: |
   command needs to print or send data to an external output stream.
 
   ```go
+  package "github.com/go-go-golems/glazed/pkg/cmds"
   type WriterCommand interface {
       Command
       RunIntoWriter(
@@ -253,6 +259,7 @@ template: |
   utilized to emit rows of data.
 
   ```go
+  package "github.com/go-go-golems/glazed/pkg/cmds"
   type GlazeCommand interface {
       Command
       Run(
@@ -274,6 +281,8 @@ template: |
   command type:
     
     ```go
+    import 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
     func (c *ExampleCommand) Run(
       ctx context.Context,
       parsedLayers map[string]*layers.ParsedParameterLayer,
@@ -311,34 +320,36 @@ template: |
 
   - **Direct Initialization**: Use `NewRow` with the `MRP` (MapRowPair) function to directly initialize rows while maintaining the field order:
                                  
-                                 ```go
-                                 row := types.NewRow(
-                                 types.MRP("id", i),
-                                 types.MRP("name", "foobar-"+strconv.Itoa(i)),
-                                 )
-                                 ```
+  ```go
+  import "github.com/go-go-golems/glazed/pkg/types"
+
+  row := types.NewRow(
+  types.MRP("id", i),
+  types.MRP("name", "foobar-"+strconv.Itoa(i)),
+  )
+  ```
                                  
-                                 `MRP` is a utility function to quickly create a key-value pair for a row.
+  `MRP` is a utility function to quickly create a key-value pair for a row.
 
   ### **Other Methods for Creating Rows**
 
   - **From Map**: Use `NewRowFromMap` to create a row from a regular map. It sorts and maintains the order of keys:
                     
-                    ```go
-                    data := map[string]interface{}{"id": 1, "name": "Alice"}
-                    row := types.NewRowFromMap(data)
-                    ```
+  ```go
+  data := map[string]interface{}{"id": 1, "name": "Alice"}
+  row := types.NewRowFromMap(data)
+  ```
 
   - **From Struct**: `NewRowFromStruct` allows you to convert a struct into a row. Optionally, you can specify whether struct field names should be converted to lowercase:
                           
-                          ```go
-                            type Person struct {
-                            ID   int
-                            Name string
-                      }
-                            person := Person{ID: 1, Name: "Alice"}
-                            row := types.NewRowFromStruct(&person, true)  // true indicates lowercase field names.
-                            ```
+  ```go
+  type Person struct {
+     ID   int
+     Name string
+  }
+  person := Person{ID: 1, Name: "Alice"}
+  row := types.NewRowFromStruct(&person, true)  // true indicates lowercase field names.
+  ```
              
   These functions offer flexibility in how you create and work with rows within the `glazed` framework.
   {{ end }}
@@ -352,20 +363,35 @@ template: |
   This requires converting the `glazed` command into a Cobra command using the provided utility functions.
 
   ```go
-  func registerCommands(rootCmd *cobra.Command) {
-      // For a GlazeCommand
-      glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
-      cobra.CheckErr(err)
-
-      command, err := BuildCobraCommandFromGlazeCommand(glazeCmdInstance)
-      cobra.CheckErr(err)
-
-      rootCmd.AddCommand(command)
+  import "github.com/go-go-golems/glazed/pkg/cli"
   
-      // Similarly, for WriterCommand or BareCommand
-      // writerCmdInstance, err := NewMyWriterCommand()
-      // command, err = BuildCobraCommandFromWriterCommand(writerCmdInstance)
-      // rootCmd.AddCommand(command)
+  func main() {
+    var rootCmd = &cobra.Command{
+      Use:   "coommandName",
+      Short: "Short Command Description",
+    }
+    
+    helpSystem := help.NewHelpSystem()
+    
+    helpSystem.SetupCobraRootCommand(rootCmd)
+  
+    // For a GlazeCommand
+    glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
+    cobra.CheckErr(err)
+
+    command, err := cli.BuildCobraCommandFromGlazeCommand(glazeCmdInstance)
+    cobra.CheckErr(err)
+
+    rootCmd.AddCommand(command)
+
+    // Similarly, for WriterCommand or BareCommand
+    // writerCmdInstance, err := NewMyWriterCommand()
+    // command, err = BuildCobraCommandFromWriterCommand(writerCmdInstance)
+    // rootCmd.AddCommand(command)
+    
+    err = rootCmd.Execute()
+    cobra.CheckErr(err)
   }
+  
   ```
   {{ end }}
