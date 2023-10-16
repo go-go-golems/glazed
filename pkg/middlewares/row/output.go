@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/go-go-golems/glazed/pkg/formatters"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"sync"
@@ -13,6 +14,8 @@ type OutputMiddleware struct {
 	formatter formatters.RowOutputFormatter
 	writer    io.Writer
 }
+
+var _ middlewares.RowMiddleware = (*OutputMiddleware)(nil)
 
 func (o OutputMiddleware) Close(ctx context.Context) error {
 	return o.formatter.Close(ctx, o.writer)
@@ -40,6 +43,8 @@ type OutputChannelMiddleware[T interface{ ~string }] struct {
 	formatter formatters.RowOutputFormatter
 	c         chan<- T
 }
+
+var _ middlewares.RowMiddleware = (*OutputChannelMiddleware[string])(nil)
 
 func (o *OutputChannelMiddleware[T]) Close(ctx context.Context) error {
 	var buf bytes.Buffer
@@ -91,6 +96,8 @@ type ColumnsChannelMiddleware struct {
 	seenFirstRow bool
 	wg           sync.WaitGroup
 }
+
+var _ middlewares.RowMiddleware = (*ColumnsChannelMiddleware)(nil)
 
 func NewColumnsChannelMiddleware(c chan<- []types.FieldName, onlyFirstRow bool) *ColumnsChannelMiddleware {
 	return &ColumnsChannelMiddleware{
