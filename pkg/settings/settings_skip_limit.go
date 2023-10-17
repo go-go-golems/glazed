@@ -11,8 +11,8 @@ import (
 var skipLimitFlagsYaml []byte
 
 type SkipLimitSettings struct {
-	Skip  int `glazed.parameter:"skip"`
-	Limit int `glazed.parameter:"limit"`
+	Skip  int `glazed.parameter:"glazed-skip"`
+	Limit int `glazed.parameter:"glazed-limit"`
 }
 
 func NewSkipLimitSettingsFromParameters(ps map[string]interface{}) (*SkipLimitSettings, error) {
