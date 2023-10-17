@@ -3,12 +3,12 @@ name: Glazed pagination flags
 description: |
   These are the flags used to paginate the structured data processed.
 flags:
-  - name: skip
+  - name: glazed-skip
     type: int
     help: Skip the first N rows
     default: 0
 
-  - name: limit
+  - name: glazed-limit
     type: int
     help: Limit the number of rows to N (0 = all rows)
     default: 0
