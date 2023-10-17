@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"strings"
 	"text/template"
@@ -20,6 +21,8 @@ type TemplateMiddleware struct {
 
 	renamedColumns map[types.FieldName]types.FieldName
 }
+
+var _ middlewares.RowMiddleware = (*TemplateMiddleware)(nil)
 
 type TemplateMiddlewareOption func(*TemplateMiddleware)
 

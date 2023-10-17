@@ -2,11 +2,14 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
 type RemoveNullsMiddleware struct {
 }
+
+var _ middlewares.RowMiddleware = (*RemoveNullsMiddleware)(nil)
 
 func (rnm *RemoveNullsMiddleware) Close(ctx context.Context) error {
 	return nil

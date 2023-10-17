@@ -2,6 +2,7 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"strings"
 )
@@ -9,6 +10,8 @@ import (
 type ReorderColumnOrderMiddleware struct {
 	columns []types.FieldName
 }
+
+var _ middlewares.RowMiddleware = (*ReorderColumnOrderMiddleware)(nil)
 
 func (scm *ReorderColumnOrderMiddleware) Close(ctx context.Context) error {
 	return nil

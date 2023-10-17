@@ -26,6 +26,7 @@ type GlazedParameterLayers struct {
 	TemplateParameterLayer      *TemplateParameterLayer      `yaml:"templateParameterLayer"`
 	JqParameterLayer            *JqParameterLayer            `yaml:"jqParameterLayer"`
 	SortParameterLayer          *SortParameterLayer          `yaml:"sortParameterLayer"`
+	SkipLimitParameterLayer     *SkipLimitParameterLayer     `yaml:"skipLimitParameterLayer"`
 }
 
 func (g *GlazedParameterLayers) MarshalYAML() (interface{}, error) {
@@ -101,6 +102,10 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 		ret[k] = v
 	}
 
+	for k, v := range g.SkipLimitParameterLayer.GetParameterDefinitions() {
+		ret[k] = v
+	}
+
 	return ret
 }
 
@@ -134,6 +139,10 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error
 		return err
 	}
 	err = g.SortParameterLayer.AddFlagsToCobraCommand(cmd)
+	if err != nil {
+		return err
+	}
+	err = g.SkipLimitParameterLayer.AddFlagsToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -195,6 +204,13 @@ func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (
 	for k, v := range ps_ {
 		ps[k] = v
 	}
+	ps_, err = g.SkipLimitParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
 
 	return ps, nil
 }
@@ -239,6 +255,27 @@ func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onl
 	for k, v := range ps_ {
 		ps[k] = v
 	}
+	ps_, err = g.JqParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.SortParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
+	ps_, err = g.SkipLimitParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps_ {
+		ps[k] = v
+	}
 
 	return ps, nil
 
@@ -275,6 +312,10 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 		return err
 	}
 	err = g.SortParameterLayer.InitializeParameterDefaultsFromStruct(s)
+	if err != nil {
+		return err
+	}
+	err = g.SkipLimitParameterLayer.InitializeParameterDefaultsFromStruct(s)
 	if err != nil {
 		return err
 	}
@@ -379,6 +420,18 @@ func WithSortParameterLayerOptions(options ...layers.ParameterLayerOptions) Glaz
 	}
 }
 
+func WithSkipLimitParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+	return func(g *GlazedParameterLayers) error {
+		for _, option := range options {
+			err := option(g.SkipLimitParameterLayer.ParameterLayerImpl)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedParameterLayers, error) {
 	fieldsFiltersParameterLayer, err := NewFieldsFiltersParameterLayer()
 	if err != nil {
@@ -412,6 +465,10 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	if err != nil {
 		return nil, err
 	}
+	skipLimitParameterLayer, err := NewSkipLimitParameterLayer()
+	if err != nil {
+		return nil, err
+	}
 	ret := &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: fieldsFiltersParameterLayer,
 		OutputParameterLayer:        outputParameterLayer,
@@ -421,6 +478,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 		TemplateParameterLayer:      templateParameterLayer,
 		JqParameterLayer:            jqParameterLayer,
 		SortParameterLayer:          sortParameterLayer,
+		SkipLimitParameterLayer:     skipLimitParameterLayer,
 	}
 
 	for _, option := range options {
@@ -517,6 +575,10 @@ func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.Table
 	if err != nil {
 		return nil, err
 	}
+	skipLimitSettings, err := NewSkipLimitSettingsFromParameters(ps)
+	if err != nil {
+		return nil, err
+	}
 
 	templateSettings.UpdateWithSelectSettings(selectSettings)
 
@@ -574,6 +636,13 @@ func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.Table
 	// to the API that we currently use (which is a unordered hashmap, and parsed layers that lose the positioning)
 	// is not trivial.
 	sortSettings.AddMiddlewares(gp)
+
+	if skipLimitSettings.Skip != 0 || skipLimitSettings.Limit != 0 {
+		gp.AddRowMiddleware(&row.SkipLimitMiddleware{
+			Skip:  skipLimitSettings.Skip,
+			Limit: skipLimitSettings.Limit,
+		})
+	}
 
 	gp.AddObjectMiddleware(middlewares_...)
 

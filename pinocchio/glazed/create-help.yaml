@@ -120,6 +120,7 @@ prompt: |
   {{ .example }}
   
   Use the provided information as information about the content of the document.
+  Replace "go run ./cmd/XXX" with "XXX".
   
   {{ if .context -}}
   {{ .context }}
