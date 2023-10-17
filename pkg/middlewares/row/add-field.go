@@ -2,12 +2,15 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
 type AddFieldMiddleware struct {
 	Fields map[string]string
 }
+
+var _ middlewares.RowMiddleware = (*AddFieldMiddleware)(nil)
 
 func (a *AddFieldMiddleware) Close(ctx context.Context) error {
 	return nil

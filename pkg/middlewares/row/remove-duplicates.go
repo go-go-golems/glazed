@@ -2,6 +2,7 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 )
 
@@ -9,6 +10,8 @@ type RemoveDuplicatesMiddleware struct {
 	columns           []string
 	previousRowValues types.Row
 }
+
+var _ middlewares.RowMiddleware = (*RemoveDuplicatesMiddleware)(nil)
 
 func (r *RemoveDuplicatesMiddleware) Close(ctx context.Context) error {
 	return nil

@@ -3,6 +3,7 @@ package row
 import (
 	"context"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"gopkg.in/yaml.v3"
 	"regexp"
@@ -18,6 +19,8 @@ type RenameColumnMiddleware struct {
 	// we cache affected columns in renamedColumns.
 	renamedColumns map[types.FieldName]types.FieldName
 }
+
+var _ middlewares.RowMiddleware = (*RenameColumnMiddleware)(nil)
 
 func (r *RenameColumnMiddleware) Close(ctx context.Context) error {
 	return nil

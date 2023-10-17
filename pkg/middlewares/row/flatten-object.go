@@ -3,12 +3,15 @@ package row
 import (
 	"context"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type FlattenObjectMiddleware struct {
 }
+
+var _ middlewares.RowMiddleware = (*FlattenObjectMiddleware)(nil)
 
 func (fom *FlattenObjectMiddleware) Close(ctx context.Context) error {
 	return nil

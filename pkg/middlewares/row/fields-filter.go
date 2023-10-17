@@ -2,6 +2,7 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"strings"
 )
@@ -20,6 +21,8 @@ type FieldsFilterMiddleware struct {
 
 	newColumns map[types.FieldName]interface{}
 }
+
+var _ middlewares.RowMiddleware = (*FieldsFilterMiddleware)(nil)
 
 func (ffm *FieldsFilterMiddleware) Close(ctx context.Context) error {
 	return nil

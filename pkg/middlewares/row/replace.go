@@ -2,6 +2,7 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -33,6 +34,8 @@ type ReplaceMiddleware struct {
 	RegexSkips        map[types.FieldName][]*RegexpSkip
 	Skips             map[types.FieldName][]*Skip
 }
+
+var _ middlewares.RowMiddleware = (*ReplaceMiddleware)(nil)
 
 func (r *ReplaceMiddleware) Close(ctx context.Context) error {
 	return nil

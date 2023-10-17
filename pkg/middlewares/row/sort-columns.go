@@ -2,12 +2,15 @@ package row
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"sort"
 )
 
 type SortColumnsMiddleware struct {
 }
+
+var _ middlewares.RowMiddleware = (*SortColumnsMiddleware)(nil)
 
 func (scm *SortColumnsMiddleware) Close(ctx context.Context) error {
 	return nil
