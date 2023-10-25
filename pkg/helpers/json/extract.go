@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/go-go-golems/glazed/pkg/helpers/markdown"
+	"strings"
 )
 
 // ExtractJSON extracts potential JSON blocks from the provided input string.
@@ -13,7 +14,7 @@ import (
 func ExtractJSON(input string) []string {
 	var result []string
 
-	input_ := SanitizeJSONString(input)
+	input_ := SanitizeJSONString(input, false)
 
 	// First, try to parse the entire string as JSON
 	var temp map[string]interface{}
@@ -26,7 +27,7 @@ func ExtractJSON(input string) []string {
 	quotedBlocks := markdown.ExtractQuotedBlocks(input, false)
 	for _, block := range quotedBlocks {
 		var temp map[string]interface{}
-		block = SanitizeJSONString(block)
+		block = SanitizeJSONString(block, false)
 		if err := json.Unmarshal([]byte(block), &temp); err == nil {
 			result = append(result, block)
 		}
@@ -35,7 +36,7 @@ func ExtractJSON(input string) []string {
 	return result
 }
 
-func SanitizeJSONString(input string) string {
+func SanitizeJSONString(input string, fromMarkdown bool) string {
 	var result bytes.Buffer
 
 	const (
@@ -44,32 +45,46 @@ func SanitizeJSONString(input string) string {
 		insideEscape
 	)
 
+	isInMarkdown := false
+
 	state := outsideQuotes
 
-	for i := 0; i < len(input); i++ {
-		ch := input[i]
+	lines := strings.Split(input, "\n")
 
-		switch state {
-		case outsideQuotes:
-			if ch == '"' {
+	for _, line := range lines {
+		if strings.HasPrefix(line, "```") {
+			isInMarkdown = !isInMarkdown
+			continue
+		}
+
+		if fromMarkdown && !isInMarkdown {
+			continue
+		}
+		for i := 0; i < len(line); i++ {
+			ch := line[i]
+
+			switch state {
+			case outsideQuotes:
+				if ch == '"' {
+					state = insideQuotes
+				}
+				result.WriteByte(ch)
+
+			case insideQuotes:
+				if ch == '\\' {
+					state = insideEscape
+				} else if ch == '"' {
+					state = outsideQuotes
+				} else if ch == '\n' {
+					result.WriteString("\\n")
+					continue
+				}
+				result.WriteByte(ch)
+
+			case insideEscape:
 				state = insideQuotes
+				result.WriteByte(ch)
 			}
-			result.WriteByte(ch)
-
-		case insideQuotes:
-			if ch == '\\' {
-				state = insideEscape
-			} else if ch == '"' {
-				state = outsideQuotes
-			} else if ch == '\n' {
-				result.WriteString("\\n")
-				continue
-			}
-			result.WriteByte(ch)
-
-		case insideEscape:
-			state = insideQuotes
-			result.WriteByte(ch)
 		}
 	}
 
