@@ -44,6 +44,12 @@ func NewJsonCommand() (*JsonCommand, error) {
 					parameters.WithHelp("Sanitize JSON input"),
 					parameters.WithDefault(false),
 				),
+				parameters.NewParameterDefinition(
+					"from-markdown",
+					parameters.ParameterTypeBool,
+					parameters.WithHelp("Input is markdown"),
+					parameters.WithDefault(false),
+				),
 			),
 			cmds.WithArguments(
 				parameters.NewParameterDefinition(
@@ -80,6 +86,11 @@ func (j *JsonCommand) Run(
 		return fmt.Errorf("sanitize flag is not a bool")
 	}
 
+	fromMarkdown, ok := ps["from-markdown"].(bool)
+	if !ok {
+		return fmt.Errorf("from-markdown flag is not a bool")
+	}
+
 	for _, arg := range inputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
@@ -87,13 +98,13 @@ func (j *JsonCommand) Run(
 		var err error
 		var f io.Reader
 
-		if sanitizeInput {
+		if sanitizeInput || fromMarkdown {
 			b, err := os.ReadFile(arg)
 			if err != nil {
 				return errors.Wrapf(err, "Error reading file %s", arg)
 			}
 
-			s := json2.SanitizeJSONString(string(b))
+			s := json2.SanitizeJSONString(string(b), fromMarkdown)
 
 			f = bytes.NewReader([]byte(s))
 		} else {
