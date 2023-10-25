@@ -7,6 +7,7 @@ import (
 	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/spf13/cobra"
+	"os"
 	"strings"
 	"text/template"
 )
@@ -115,7 +116,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 
 	data["MaxCommandNameLen"] = maxCommandNameLen
 
-	s, err := RenderToMarkdown(t, data)
+	s, err := RenderToMarkdown(t, data, os.Stderr)
 	if err != nil {
 		return err
 	}

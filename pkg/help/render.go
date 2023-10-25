@@ -13,7 +13,7 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string, error) {
+func RenderToMarkdown(t *template.Template, data interface{}, output *os.File) (string, error) {
 	sz, err := tsize.GetSize()
 	if err != nil {
 		sz.Width = 80
@@ -28,7 +28,7 @@ func RenderToMarkdown(t *template.Template, data map[string]interface{}) (string
 
 	if os.Getenv("GLAMOUR_STYLE") != "" {
 		options = append(options, glamour.WithEnvironmentConfig())
-	} else if !isatty.IsTerminal(os.Stderr.Fd()) {
+	} else if !isatty.IsTerminal(output.Fd()) {
 		options = append(options, glamour.WithStandardStyle("notty"))
 	}
 
@@ -137,7 +137,7 @@ func (hs *HelpSystem) RenderTopicHelp(
 	data["Slug"] = topicSection.Slug
 	data["HelpCommand"] = options.HelpCommand
 
-	s, err := RenderToMarkdown(t, data)
+	s, err := RenderToMarkdown(t, data, os.Stderr)
 	return s, err
 }
 
