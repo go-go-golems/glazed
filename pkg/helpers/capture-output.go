@@ -9,7 +9,6 @@ import (
 // CaptureOutput executes a provided function and captures any data
 // the function writes to standard output.
 func CaptureOutput(fn func() error) (string, error) {
-	// Create a buffer to hold the captured output
 	var buf bytes.Buffer
 
 	// Save the original stdout to restore it later
