@@ -114,8 +114,8 @@ func TestGarbageCollectTemporaryFilesWithNonExistentDirectory(t *testing.T) {
 	tempDir := "/nonexistent"
 	n := 2
 	_, err := GarbageCollectTemporaryFiles(tempDir, "file*", n)
-	if err != nil {
-		t.Fatalf("GarbageCollectTemporaryFiles failed: %v, want: %v", err, os.ErrNotExist)
+	if err == nil {
+		t.Fatalf("GarbageCollectTemporaryFiles with invalid directory should fail")
 	}
 }
 

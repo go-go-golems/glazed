@@ -17,27 +17,23 @@ func (s byModTime) Len() int           { return len(s) }
 func (s byModTime) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s byModTime) Less(i, j int) bool { return s[i].ModTime().Before(s[j].ModTime()) }
 
-// GarbageCollectTemporaryFiles deletes the oldest files based on the mask, leaving only 'n' files.
+// GarbageCollectTemporaryFiles deletes the oldest files in a directory based on a given mask,
+// leaving only 'n' newest files. It returns a slice of paths of the deleted files.
+// It requires read and write permissions on the directory. If it encounters a file that it cannot delete,
+// it will stop and return the files it has deleted so far along with the error.
 func GarbageCollectTemporaryFiles(tempDir string, mask string, n int) ([]string, error) {
 	var deletedFiles []string
 
-	// Get files that match the glob pattern in the temporary directory
 	matchingFiles, err := filepath.Glob(filepath.Join(tempDir, mask))
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if we have read access to tempDir
 	d, err := os.Stat(tempDir)
 	if err != nil {
 		return nil, err
 	}
-	if d.Mode().Perm()&0444 == 0 {
-		return nil, &os.PathError{Op: "GarbageCollectTemporaryFiles", Path: tempDir, Err: os.ErrPermission}
-	}
-
-	// Check if we have write access to tempDir
-	if d.Mode().Perm()&0222 == 0 {
+	if d.Mode().Perm()&0444 == 0 || d.Mode().Perm()&0222 == 0 {
 		return nil, &os.PathError{Op: "GarbageCollectTemporaryFiles", Path: tempDir, Err: os.ErrPermission}
 	}
 
@@ -45,20 +41,16 @@ func GarbageCollectTemporaryFiles(tempDir string, mask string, n int) ([]string,
 	for _, fileName := range matchingFiles {
 		fi, err := os.Stat(fileName)
 		if err != nil {
-			// If we can't obtain the FileInfo, skip this file
 			continue
 		}
 
-		// Check if it's a regular file (not a directory)
 		if !fi.IsDir() {
 			fileInfos = append(fileInfos, fileInfo{FileInfo: fi, path: fileName})
 		}
 	}
 
-	// Sort the files based on modification time (oldest first)
 	sort.Sort(byModTime(fileInfos))
 
-	// Delete the oldest files, stopping when only 'n' remain
 	for i, fileInfo := range fileInfos {
 		if i >= len(fileInfos)-n {
 			break
