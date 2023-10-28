@@ -69,6 +69,9 @@ func TestGarbageCollectTemporaryFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir, _, err := initTest(t, "", "temp", tt.numFiles, "file*")
+			if err != nil {
+				log.Fatalf("Failed to create temp directory: %v", err)
+			}
 
 			defer func(path string) {
 				err := os.RemoveAll(path)
@@ -138,11 +141,13 @@ func TestGarbageCollectTemporaryFilesWithInvalidMask(t *testing.T) {
 	if len(fs) != 0 {
 		t.Fatalf("GarbageCollectTemporaryFiles failed: %v, want: %v", len(fs), 0)
 	}
-
 }
 
 func TestGarbageCollectTemporaryFilesWithUnreadableDirError(t *testing.T) {
 	tempDir, _, err := initTest(t, "", "temp", 5, "file*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
 	defer func(path string) {
 		err := os.RemoveAll(path)
 		if err != nil {
