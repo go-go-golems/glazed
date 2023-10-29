@@ -87,11 +87,11 @@ flags:
     help: Additional system prompt
     default: ""
   - name: additional
-    type: string
+    type: stringList
     help: Additional prompt
-    default: ""
+    default: []
   - name: context
-    type: stringFromFiles
+    type: fileList
     help: Additional context from files
 system-prompt: |
   You are an AI that generates markdown files for help documents. You are knowledgeable about the application and its features. You write clearly and concisely.
@@ -103,6 +103,11 @@ prompt: |
   often with example of how to use it on the command line.
   
   The document has a YAML preamble that provides the metadata required by the help system.
+  
+  {{ if .additional }}
+  Additional instructions:
+  {{ .additional | join "\n- " }}
+  {{ end }}
   
   ---
   Title: {{ if .title }}{{ .title }}{{ else }}Use the content of the information passed as input to best determine the title.{{ end }}
@@ -122,8 +127,25 @@ prompt: |
   Use the provided information as information about the content of the document.
   Replace "go run ./cmd/XXX" with "XXX".
   
-  {{ if .context -}}
-  {{ .context }}
-  {{- end }}
   
-  {{.additional }}
+  {{ if .context}}Additional Context:
+  {{ range .context }}
+  Path: {{ .Path }}
+  ---
+  {{ .Content }}
+  ---
+  {{- end }}
+  {{ end }}
+  
+  {{ if .bracket -}}
+  Create a markdown file representing a document in our help system.
+  
+  These documents explain and showcase one specific feature of an application,
+  often with example of how to use it on the command line.
+  
+  The document has a YAML preamble that provides the metadata required by the help system.
+  {{ if .additional }}
+  Additional instructions:
+  {{ .additional | join "\n- " }}
+  {{ end }}
+  {{ end}}
