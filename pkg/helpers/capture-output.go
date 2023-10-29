@@ -19,6 +19,8 @@ func CaptureOutput(fn func() error) (string, error) {
 	}
 
 	os.Stdout = w
+
+	// run in a goroutine so that we don't deadlock
 	captureDone := make(chan struct{})
 	go func() {
 		_, errCopy := io.Copy(&buf, r)
