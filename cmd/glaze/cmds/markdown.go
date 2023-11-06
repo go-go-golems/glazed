@@ -282,9 +282,27 @@ func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp mid
 	outputStack := []outputElement{}
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
+			nodeKind := node.Kind().String()
+			nodeText := string(node.Text(s))
+			if nodeKind == "FencedCodeBlock" {
+				block := node.(*ast.FencedCodeBlock)
+				language := string(block.Language(s))
+				_ = language
+				info := string(block.Info.Text(s))
+				_ = info
+				lines := node.Lines()
+				_ = lines
+				l := lines.Len()
+				var s_ strings.Builder
+				for i := 0; i < l; i++ {
+					line := lines.At(i)
+					s_.Write(line.Value(s))
+				}
+				nodeText = s_.String()
+			}
 			elt := types.NewRow(
-				types.MRP("kind", node.Kind().String()),
-				types.MRP("text", string(node.Text(s))),
+				types.MRP("kind", nodeKind),
+				types.MRP("text", nodeText),
 			)
 			parseStack = append(parseStack, elt)
 		} else {
