@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"github.com/rs/zerolog/log"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,34 @@ type FileData struct {
 }
 
 func GetFileData(filename string) (*FileData, error) {
+	if filename == "-" {
+		// read from stdin
+		contentBytes, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+
+		return &FileData{
+			Content:          string(contentBytes),
+			ParsedContent:    nil,
+			ParseError:       nil,
+			RawContent:       nil,
+			StringContent:    string(contentBytes),
+			IsList:           false,
+			IsObject:         false,
+			BaseName:         "stdin",
+			Extension:        "",
+			FileType:         "",
+			Path:             "stdin",
+			RelativePath:     "stdin",
+			AbsolutePath:     "stdin",
+			Size:             int64(len(contentBytes)),
+			LastModifiedTime: time.Now(),
+			Permissions:      0,
+			IsDirectory:      false,
+		}, nil
+	}
+
 	absPath, err := filepath.Abs(filename)
 	if err != nil {
 		return nil, err
