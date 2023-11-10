@@ -587,6 +587,25 @@ type CobraParameterLayer interface {
 	ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error)
 }
 
+func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterLayerImpl) (map[string]interface{}, error) {
+	// actually hijack and load everything from viper instead of cobra...
+	ps, err := parameters.GatherFlagsFromViper(d.Flags, false, d.Prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	// now load from flag overrides
+	ps2, err := parameters.GatherFlagsFromCobraCommand(cmd, d.Flags, true, false, d.Prefix)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ps2 {
+		ps[k] = v
+	}
+
+	return ps, nil
+}
+
 func (c *CobraParser) Parse(args []string) (map[string]*layers.ParsedParameterLayer, map[string]interface{}, error) {
 	parsedLayers := map[string]*layers.ParsedParameterLayer{}
 	ps := map[string]interface{}{}
