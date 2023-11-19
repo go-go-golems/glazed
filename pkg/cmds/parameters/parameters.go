@@ -345,20 +345,29 @@ func InitializeParameterDefinitionsFromStruct(
 	return nil
 }
 
+func IsStruct(s interface{}) bool {
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return false
+	}
+	// check if nil
+	if reflect.ValueOf(s).IsNil() {
+		return false
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return false
+	}
+
+	return true
+}
+
 func StructToMap(s interface{}) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
 	// check that s is indeed a pointer to a struct
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
-		return nil, errors.Errorf("s is not a pointer")
-	}
-	// check if nil
-	if reflect.ValueOf(s).IsNil() {
-		return ret, nil
-	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+	if !IsStruct(s) {
 		return nil, errors.Errorf("s is not a pointer to a struct")
 	}
+
 	st := reflect.TypeOf(s).Elem()
 
 	for i := 0; i < st.NumField(); i++ {
