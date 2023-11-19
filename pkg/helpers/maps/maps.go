@@ -34,3 +34,18 @@ func GetValues[Key comparable, Value any](m map[Key]Value) []Value {
 	}
 	return values
 }
+
+func IsStructPointer(s interface{}) bool {
+	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+		return false
+	}
+	// check if nil
+	if reflect.ValueOf(s).IsNil() {
+		return false
+	}
+	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+		return false
+	}
+
+	return true
+}
