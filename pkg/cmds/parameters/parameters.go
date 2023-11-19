@@ -3,6 +3,7 @@ package parameters
 import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -345,26 +346,11 @@ func InitializeParameterDefinitionsFromStruct(
 	return nil
 }
 
-func IsStruct(s interface{}) bool {
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
-		return false
-	}
-	// check if nil
-	if reflect.ValueOf(s).IsNil() {
-		return false
-	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
-		return false
-	}
-
-	return true
-}
-
-func StructToMap(s interface{}) (map[string]interface{}, error) {
+func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
 	// check that s is indeed a pointer to a struct
-	if !IsStruct(s) {
+	if !maps.IsStructPointer(s) {
 		return nil, errors.Errorf("s is not a pointer to a struct")
 	}
 
