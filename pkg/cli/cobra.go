@@ -571,6 +571,7 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 }
 
 type CobraParameterLayer interface {
+	layers.ParameterLayer
 	// AddFlagsToCobraCommand adds all the flags defined in this layer to the given cobra command.
 	//
 	// NOTE(manuel, 2023-02-27) This can be moved to use that ParameterLayerParser API
