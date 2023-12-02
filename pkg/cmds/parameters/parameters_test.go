@@ -222,7 +222,8 @@ func TestSetValueFromDefaultDate(t *testing.T) {
 	// get values of testStruct.Date
 	dValue := reflect.ValueOf(&d).Elem()
 
-	parsedTime, err := time.Parse(time.RFC3339, "2021-01-01T00:00:00Z")
+	// get local
+	parsedTime, err := time.ParseInLocation("2006-01-02", "2021-01-01", time.Local)
 	require.NoError(t, err)
 
 	err = dateFlag.SetValueFromDefault(dValue)

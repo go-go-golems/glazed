@@ -1,6 +1,7 @@
 package parameters
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,15 +17,15 @@ func TestParseDate(t *testing.T) {
 		Value  string
 		Result time.Time
 	}{
-		{Value: "2018-01-01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{Value: "2018/01/01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{Value: "2018-01-01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)},
+		{Value: "2018/01/01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)},
 		//{Value: "January First 2018", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{Value: "January 1st 2018", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{Value: "January 1st 2018", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)},
 		{Value: "2018-01-01T00:00:00+00:00", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
 		{Value: "2018-01-01T00:00:00+01:00", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.FixedZone("", 3600))},
 		{Value: "2018-01-01T00:00:00-01:00", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.FixedZone("", -3600))},
-		{Value: "2018", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{Value: "2018-01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{Value: "2018", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)},
+		{Value: "2018-01", Result: time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)},
 		{Value: "last year", Result: time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
 		{Value: "last hour", Result: time.Date(2017, 12, 31, 23, 0, 0, 0, time.UTC)},
 		{Value: "last month", Result: time.Date(2017, 12, 1, 0, 0, 0, 0, time.UTC)},
@@ -34,11 +35,14 @@ func TestParseDate(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		result, err := ParseDate(testCase.Value)
-		require.Nil(t, err)
-		if !result.Equal(testCase.Result) {
-			t.Errorf("Expected %s to parse to %s, got %s", testCase.Value, testCase.Result, result)
-		}
+		t.Run(fmt.Sprintf("ParseDate - %s", testCase.Value), func(t *testing.T) {
+
+			result, err := ParseDate(testCase.Value)
+			require.Nil(t, err)
+			if !result.Equal(testCase.Result) {
+				t.Errorf("Expected %s to parse to %s, got %s", testCase.Value, testCase.Result, result)
+			}
+		})
 	}
 }
 
