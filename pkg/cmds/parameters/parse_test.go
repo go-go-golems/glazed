@@ -24,7 +24,7 @@ type ParameterTestCase struct {
 
 func TestMain(m *testing.M) {
 	// Set default time for unit tests
-	refTime_ := time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
+	refTime_ := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local)
 	refTime = &refTime_
 
 	m.Run()
@@ -86,13 +86,13 @@ func TestParameterDate(t *testing.T) {
 		{
 			Name:     "Valid full date and time input, no error expected",
 			Input:    []string{"2023-12-01 15:00"},
-			Expected: time.Date(2023, time.December, 01, 15, 00, 0, 0, time.UTC), // Adjust time zone as required
+			Expected: time.Date(2023, time.December, 01, 15, 00, 0, 0, time.Local), // Adjust time zone as required
 			WantErr:  ErrorNotExpected,
 		},
 		{
 			Name:     "Valid date only input, no error expected",
 			Input:    []string{"2023-12-01"},
-			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC), // Time defaults to 00:00
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.Local), // Time defaults to 00:00
 			WantErr:  ErrorNotExpected,
 		},
 		{
@@ -104,7 +104,7 @@ func TestParameterDate(t *testing.T) {
 		{
 			Name:     "Invalid date format, error expected",
 			Input:    []string{"2023/12/01"},
-			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC), // Time defaults to 00:00
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.Local), // Time defaults to 00:00
 		},
 		{
 			Name:    "Invalid non-date string, error expected",
@@ -120,13 +120,13 @@ func TestParameterDate(t *testing.T) {
 		{
 			Name:     "Valid date and time with seconds, no error expected",
 			Input:    []string{"2023-12-01 15:00:30"},
-			Expected: time.Date(2023, time.December, 01, 15, 00, 30, 0, time.UTC), // Adjust time zone as required
+			Expected: time.Date(2023, time.December, 01, 15, 00, 30, 0, time.Local), // Adjust time zone as required
 			WantErr:  ErrorNotExpected,
 		},
 		{
 			Name:     "Natural language date input with alternative format, no error expected",
 			Input:    []string{"December 1st, 2023"},
-			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC),
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.Local),
 			WantErr:  ErrorNotExpected,
 		},
 		{
@@ -167,13 +167,13 @@ func TestParameterDate(t *testing.T) {
 		{
 			Name:     "Valid date and time with space separator, no error expected",
 			Input:    []string{"2023-12-01 15:00:00"},
-			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.UTC),
+			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.Local),
 			WantErr:  ErrorNotExpected,
 		},
 		{
 			Name:     "Date only, no error expected",
 			Input:    []string{"2023-12-01"},
-			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC),
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.Local),
 			WantErr:  ErrorNotExpected,
 		},
 		{
@@ -184,7 +184,7 @@ func TestParameterDate(t *testing.T) {
 		{
 			Name:     "Valid 12-hour format date and time, no error expected",
 			Input:    []string{"December 1, 2023, 3:00 PM"},
-			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.UTC),
+			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.Local),
 			WantErr:  ErrorNotExpected,
 		},
 		{

@@ -516,7 +516,7 @@ var refTime *time.Time
 // If both parsing attempts fail, an error is returned.
 // The reference time passed to naturaldate.Parse defaults to time.Now().
 func ParseDate(value string) (time.Time, error) {
-	parsedDate, err := dateparse.ParseAny(value)
+	parsedDate, err := dateparse.ParseLocal(value)
 	if err != nil {
 		refTime_ := time.Now()
 		if refTime != nil {
