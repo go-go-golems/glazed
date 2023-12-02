@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
+	"time"
 )
 
 type ExpectError string
@@ -21,12 +22,202 @@ type ParameterTestCase struct {
 	WantErr  ExpectError
 }
 
+func TestMain(m *testing.M) {
+	// Set default time for unit tests
+	refTime_ := time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
+	refTime = &refTime_
+
+	m.Run()
+}
+
+func getLastYear() time.Time {
+	now := *refTime
+	lastYear := now.AddDate(-1, 0, 0) // Subtract one year from the current date
+	return lastYear
+}
+
+func getNextMondayAt3PM() time.Time {
+	now := *refTime
+	// Calculate the number of days to add to get to the next Monday
+	daysUntilNextMonday := (8 - int(now.Weekday())) % 7
+	if daysUntilNextMonday == 0 {
+		// If today is Monday and it's past 3 PM, set to next Monday
+		daysUntilNextMonday = 7
+	}
+
+	nextMonday := now.AddDate(0, 0, daysUntilNextMonday)
+	// Set the time to 15:00:00
+	return time.Date(nextMonday.Year(), nextMonday.Month(), nextMonday.Day(), 15, 0, 0, 0, nextMonday.Location())
+}
+
+func getTomorrow() time.Time {
+	now := *refTime
+	return time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+}
+
+// todayWithTime creates a new time.Time object with today's date but with the specified hour, minute, second, and nanosecond values.
+func todayWithTime(hour, minute, second, nanosecond int) time.Time {
+	now := *refTime
+	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, nanosecond, now.Location())
+}
+
 type ParameterTest struct {
 	Name          string
 	ParameterType ParameterType
 	DefaultValue  interface{}
 	Choices       []string
 	Cases         []ParameterTestCase
+}
+
+func TestParameterDate(t *testing.T) {
+	cases := []ParameterTestCase{
+		{
+			Name:     "Natural language input for past date, no error expected",
+			Input:    []string{"last year"},
+			Expected: getLastYear(),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Natural language date and time input, no error expected",
+			Input:    []string{"next Monday at 3 PM"},
+			Expected: getNextMondayAt3PM(),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid full date and time input, no error expected",
+			Input:    []string{"2023-12-01 15:00"},
+			Expected: time.Date(2023, time.December, 01, 15, 00, 0, 0, time.UTC), // Adjust time zone as required
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid date only input, no error expected",
+			Input:    []string{"2023-12-01"},
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC), // Time defaults to 00:00
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Natural language date input, no error expected",
+			Input:    []string{"tomorrow"},
+			Expected: getTomorrow(),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Invalid date format, error expected",
+			Input:    []string{"2023/12/01"},
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC), // Time defaults to 00:00
+		},
+		{
+			Name:    "Invalid non-date string, error expected",
+			Input:   []string{"oisdjfoisudof,,inot a date"},
+			WantErr: ErrorExpected,
+		},
+		{
+			Name:     "No input uses default date, no error expected",
+			Input:    []string{},
+			Expected: *refTime,
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid date and time with seconds, no error expected",
+			Input:    []string{"2023-12-01 15:00:30"},
+			Expected: time.Date(2023, time.December, 01, 15, 00, 30, 0, time.UTC), // Adjust time zone as required
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Natural language date input with alternative format, no error expected",
+			Input:    []string{"December 1st, 2023"},
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid time with hour and minute, no error expected",
+			Input:    []string{"15:30"},
+			Expected: todayWithTime(15, 30, 0, 0), // Function to set today's date with specific time
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid time with hour, minute and seconds, no error expected",
+			Input:    []string{"23:59:59"},
+			Expected: todayWithTime(23, 59, 59, 0),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid time with hour only, no error expected",
+			Input:    []string{"8 AM"},
+			Expected: todayWithTime(8, 0, 0, 0),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "12-hour format with AM/PM, no error expected",
+			Input:    []string{"3 PM"},
+			Expected: todayWithTime(15, 0, 0, 0),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:    "Invalid time format (negative minute), error expected",
+			Input:   []string{"10:-30"},
+			WantErr: ErrorExpected,
+		},
+		{
+			Name:     "Valid ISO date and time, no error expected",
+			Input:    []string{"2023-12-01T15:00:00Z"},
+			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.UTC),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Valid date and time with space separator, no error expected",
+			Input:    []string{"2023-12-01 15:00:00"},
+			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.UTC),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:     "Date only, no error expected",
+			Input:    []string{"2023-12-01"},
+			Expected: time.Date(2023, time.December, 01, 0, 0, 0, 0, time.UTC),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:    "Invalid time format in date-time combination, error expected",
+			Input:   []string{"2023-12-01 25:00:00"},
+			WantErr: ErrorExpected,
+		},
+		{
+			Name:     "Valid 12-hour format date and time, no error expected",
+			Input:    []string{"December 1, 2023, 3:00 PM"},
+			Expected: time.Date(2023, time.December, 01, 15, 00, 00, 0, time.UTC),
+			WantErr:  ErrorNotExpected,
+		},
+		{
+			Name:  "Date and time with timezone, no error expected",
+			Input: []string{"2023-12-01T15:00:00-05:00"}, // Eastern Time
+			Expected: func() time.Time {
+				t, _ := time.Parse(time.RFC3339, "2023-12-01T15:00:00-05:00")
+				return t
+			}(),
+			WantErr: ErrorNotExpected,
+		},
+	}
+
+	parameter := NewParameterDefinition(
+		"test",
+		ParameterTypeDate,
+		WithDefault(*refTime),
+	)
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("Date: %s", tc.Name), func(t *testing.T) {
+			got, err := parameter.ParseParameter(tc.Input)
+			if tc.WantErr == ErrorExpected {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				// clean out milliseconds
+				expected := tc.Expected.(time.Time).Truncate(time.Second)
+				got_ := got.(time.Time).Truncate(time.Second)
+				assert.Equal(t, expected, got_)
+			}
+		})
+	}
 }
 
 func TestParameters(t *testing.T) {
@@ -73,6 +264,7 @@ func TestParameters(t *testing.T) {
 				{Name: "No input uses default integer list, no error expected", Input: []string{}, Expected: []int{1}, WantErr: ErrorNotExpected},
 			},
 		},
+
 		{
 			Name:          "ParameterBool",
 			ParameterType: ParameterTypeBool,
