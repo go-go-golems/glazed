@@ -3,6 +3,7 @@ package parameters
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"io"
 	"os"
@@ -41,6 +42,40 @@ type FileData struct {
 	LastModifiedTime time.Time
 	Permissions      os.FileMode
 	IsDirectory      bool
+}
+
+func (fd *FileData) PrettyPrint() string {
+	return fmt.Sprintf(
+		`FileData:
+  Path: %s
+  RelativePath: %s
+  AbsolutePath: %s
+  BaseName: %s
+  Extension: %s
+  FileType: %s
+  Size: %d bytes
+  LastModifiedTime: %s
+  Permissions: %s
+  IsDirectory: %t
+  IsList: %t
+  IsObject: %t
+  Content (truncated): %.30s...
+  ParseError: %v`,
+		fd.Path,
+		fd.RelativePath,
+		fd.AbsolutePath,
+		fd.BaseName,
+		fd.Extension,
+		fd.FileType,
+		fd.Size,
+		fd.LastModifiedTime.Format(time.RFC3339),
+		fd.Permissions,
+		fd.IsDirectory,
+		fd.IsList,
+		fd.IsObject,
+		fd.Content,
+		fd.ParseError,
+	)
 }
 
 func GetFileData(filename string) (*FileData, error) {
