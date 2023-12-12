@@ -321,7 +321,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(0)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
 
 		go func() {
