@@ -24,12 +24,15 @@ import (
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
 type FSCommandLoader interface {
 	LoadCommandsFromFS(
-		f fs.FS, dir string,
+		f fs.FS, entryName string,
 		options []cmds.CommandDescriptionOption,
 		aliasOptions []alias.Option,
 	) ([]cmds.Command, error)
 }
 
+// ReaderCommandLoader loads commands (and aliases) out of a reader, meaning it can load single files.
+// We go through the reader interface because we want to be able to load commands from strings if they come
+// from different backing stores (e.g. databases, elasticsearch indices, ...)
 type ReaderCommandLoader interface {
 	LoadCommandsFromReader(
 		r io.Reader,
@@ -40,15 +43,30 @@ type ReaderCommandLoader interface {
 
 type FileCommandLoader interface {
 	ReaderCommandLoader
-	IsFileSupported(fileName string) bool
+	IsFileSupported(f fs.FS, fileName string) bool
 }
 
 type ReaderCommandOrAliasLoader struct {
-	ReaderCommandLoader
+	loader ReaderCommandLoader
 }
 
-func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
+func NewReaderCommandOrAliasLoader(
+	loader ReaderCommandLoader,
+) *ReaderCommandOrAliasLoader {
+	return &ReaderCommandOrAliasLoader{
+		loader: loader,
+	}
+}
+
+type LoadReaderCommandFunc func(
 	r io.Reader,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error)
+
+func LoadCommandOrAliasFromReader(
+	r io.Reader,
+	rawLoadCommand LoadReaderCommandFunc,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
 ) ([]cmds.Command, error) {
@@ -57,7 +75,7 @@ func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
 		return nil, err
 	}
 	br := strings.NewReader(string(bytes))
-	cmds_, err := l.LoadCommandsFromReader(br, options, aliasOptions)
+	cmds_, err := rawLoadCommand(br, options, aliasOptions)
 	if err != nil {
 		br = strings.NewReader(string(bytes))
 		aliases, err := LoadCommandAliasFromYAML(br, aliasOptions...)
@@ -72,6 +90,15 @@ func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
 	}
 
 	return cmds_, nil
+
+}
+
+func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
+	r io.Reader,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error) {
+	return LoadCommandOrAliasFromReader(r, l.loader.LoadCommandsFromReader, options, aliasOptions)
 }
 
 func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error) {
@@ -83,7 +110,7 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.Co
 	return []*alias.CommandAlias{alias_}, nil
 }
 
-// YAMLFSCommandLoader walks a FS and finds all yaml files, loading them using the passed
+// FSFileCommandLoader walks a FS and finds all yaml files, loading them using the passed
 // YAMLCommandLoader.
 //
 // It handles the following generic functionality:
@@ -146,8 +173,7 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 		// fly using some resources on the disk.
 		//
 		// See https://github.com/go-go-golems/glazed/issues/116
-		if strings.HasSuffix(entry.Name(), ".yml") ||
-			strings.HasSuffix(entry.Name(), ".yaml") {
+		if l.loader.IsFileSupported(f, fileName) {
 			commands_, err := func() ([]cmds.Command, error) {
 				file, err := f.Open(fileName)
 				if err != nil {
