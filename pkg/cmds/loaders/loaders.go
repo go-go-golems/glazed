@@ -15,8 +15,6 @@ import (
 	"strings"
 )
 
-// TODO(manuel, 2023-12-13) Unify all the loaders to only return cmds.Command, since aliases are now subsumed
-
 // FSCommandLoader is an interface that describes the most generic loader type,
 // which is then used to load commands and command aliases from embedded queries
 // and from "repository" directories used by glazed.
