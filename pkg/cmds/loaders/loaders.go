@@ -15,53 +15,70 @@ import (
 	"strings"
 )
 
-// YAMLCommandLoader is an interface that allows an application using the glazed
-// library to loader commands from YAML files.
-type YAMLCommandLoader interface {
-	LoadCommandFromYAML(s io.Reader, options ...cmds.CommandDescriptionOption) ([]cmds.Command, error)
-	LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error)
+// TODO(manuel, 2023-12-13) Unify all the loaders to only return cmds.Command, since aliases are now subsumed
+
+// FSCommandLoader is an interface that describes the most generic loader type,
+// which is then used to load commands and command aliases from embedded queries
+// and from "repository" directories used by glazed.
+//
+// Examples of this pattern are used in sqleton, escuse-me and pinocchio.
+type FSCommandLoader interface {
+	LoadCommandsFromFS(
+		f fs.FS, entryName string,
+		options []cmds.CommandDescriptionOption,
+		aliasOptions []alias.Option,
+	) ([]cmds.Command, error)
 }
 
-// YAMLCommandWithFSLoader is an interface that allows an application using the glazed
-// library to loader commands from YAML files. In contrast to YAMLCommandLoader, this
-// command loader also takes a fs.FS as an argument, which can then be used to load
-// additional files from the directory the YAML file is present in.
-//
-// TODO(manuel, 2023-09-16): Implement loading additional files into a glazed command when a FS is passed.
-// This could potentially be extended to using the full prompt manager to load contexts.
-//
-// See https://github.com/go-go-golems/glazed/issues/350
-//
-// This interface is currently not implemented.
-type YAMLCommandWithFSLoader interface {
-	LoadCommandFromYAMLWithDir(s io.Reader, f fs.FS, dir string, options ...cmds.CommandDescriptionOption) ([]cmds.Command, error)
-	LoadCommandAliasFromYAMLWithDir(s io.Reader, f fs.FS, dir string, options ...alias.Option) ([]*alias.CommandAlias, error)
-}
-
+// ReaderCommandLoader loads commands (and aliases) out of a reader, meaning it can load single files.
+// We go through the reader interface because we want to be able to load commands from strings if they come
+// from different backing stores (e.g. databases, elasticsearch indices, ...)
 type ReaderCommandLoader interface {
-	LoadCommandsFromReader(r io.Reader, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, error)
+	LoadCommandsFromReader(
+		r io.Reader,
+		options []cmds.CommandDescriptionOption,
+		aliasOptions []alias.Option,
+	) ([]cmds.Command, error)
 }
 
-type YAMLReaderCommandLoader struct {
-	YAMLCommandLoader
+type FileCommandLoader interface {
+	ReaderCommandLoader
+	IsFileSupported(f fs.FS, fileName string) bool
 }
 
-func YAMLReaderCommandLoaderFromYAMLCommandLoader(loader YAMLCommandLoader) *YAMLReaderCommandLoader {
-	return &YAMLReaderCommandLoader{
-		YAMLCommandLoader: loader,
+type ReaderCommandOrAliasLoader struct {
+	loader ReaderCommandLoader
+}
+
+func NewReaderCommandOrAliasLoader(
+	loader ReaderCommandLoader,
+) *ReaderCommandOrAliasLoader {
+	return &ReaderCommandOrAliasLoader{
+		loader: loader,
 	}
 }
 
-func (l *YAMLReaderCommandLoader) LoadCommandsFromReader(r io.Reader, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, error) {
+type LoadReaderCommandFunc func(
+	r io.Reader,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error)
+
+func LoadCommandOrAliasFromReader(
+	r io.Reader,
+	rawLoadCommand LoadReaderCommandFunc,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error) {
 	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 	br := strings.NewReader(string(bytes))
-	cmds_, err := l.LoadCommandFromYAML(br, options...)
+	cmds_, err := rawLoadCommand(br, options, aliasOptions)
 	if err != nil {
 		br = strings.NewReader(string(bytes))
-		aliases, err := l.LoadCommandAliasFromYAML(br, aliasOptions...)
+		aliases, err := LoadCommandAliasFromYAML(br, aliasOptions...)
 		if err != nil {
 			return nil, err
 		}
@@ -73,15 +90,15 @@ func (l *YAMLReaderCommandLoader) LoadCommandsFromReader(r io.Reader, options []
 	}
 
 	return cmds_, nil
+
 }
 
-// FSCommandLoader is an interface that describes the most generic loader type,
-// which is then used to load commands and command aliases from embedded queries
-// and from "repository" directories used by glazed.
-//
-// Examples of this pattern are used in sqleton, escuse-me and pinocchio.
-type FSCommandLoader interface {
-	LoadCommandsFromFS(f fs.FS, dir string, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, []*alias.CommandAlias, error)
+func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
+	r io.Reader,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error) {
+	return LoadCommandOrAliasFromReader(r, l.loader.LoadCommandsFromReader, options, aliasOptions)
 }
 
 func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error) {
@@ -93,21 +110,23 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.Co
 	return []*alias.CommandAlias{alias_}, nil
 }
 
-// YAMLFSCommandLoader walks a FS and finds all yaml files, loading them using the passed
+// FSFileCommandLoader walks a FS and finds all yaml files, loading them using the passed
 // YAMLCommandLoader.
 //
 // It handles the following generic functionality:
 // - recursive FS walking
 // - setting SourceName for each command
 // - setting Parents for each command
-type YAMLFSCommandLoader struct {
-	loader YAMLCommandLoader
+type FSFileCommandLoader struct {
+	loader FileCommandLoader
 }
 
-func NewYAMLFSCommandLoader(
-	loader YAMLCommandLoader,
-) *YAMLFSCommandLoader {
-	return &YAMLFSCommandLoader{
+var _ FSCommandLoader = (*FSFileCommandLoader)(nil)
+
+func NewFSFileCommandLoader(
+	loader FileCommandLoader,
+) *FSFileCommandLoader {
+	return &FSFileCommandLoader{
 		loader: loader,
 	}
 }
@@ -117,13 +136,16 @@ func NewYAMLFSCommandLoader(
 // TODO(manuel, 2023-03-16) Add loading of helpsystem files
 // See https://github.com/go-go-golems/glazed/issues/55
 // See https://github.com/go-go-golems/glazed/issues/218
-func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []cmds.CommandDescriptionOption, aliasOptions []alias.Option) ([]cmds.Command, []*alias.CommandAlias, error) {
+func (l *FSFileCommandLoader) LoadCommandsFromFS(
+	f fs.FS, dir string,
+	options []cmds.CommandDescriptionOption,
+	aliasOptions []alias.Option,
+) ([]cmds.Command, error) {
 	var commands []cmds.Command
-	var aliases []*alias.CommandAlias
 
 	entries, err := fs.ReadDir(f, dir)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	for _, entry := range entries {
 		// skip hidden files
@@ -132,12 +154,11 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 		}
 		fileName := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			subCommands, subAliases, err := l.LoadCommandsFromFS(f, fileName, options, aliasOptions)
+			subCommands, err := l.LoadCommandsFromFS(f, fileName, options, aliasOptions)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			commands = append(commands, subCommands...)
-			aliases = append(aliases, subAliases...)
 			continue
 		}
 		// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
@@ -152,8 +173,8 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 		// fly using some resources on the disk.
 		//
 		// See https://github.com/go-go-golems/glazed/issues/116
-		if strings.HasSuffix(entry.Name(), ".yml") ||
-			strings.HasSuffix(entry.Name(), ".yaml") {
+		if l.loader.IsFileSupported(f, fileName) {
+			fromDir := GetParentsFromDir(dir)
 			commands_, err := func() ([]cmds.Command, error) {
 				file, err := f.Open(fileName)
 				if err != nil {
@@ -166,9 +187,12 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 				log.Debug().Str("file", fileName).Msg("Loading command from file")
 				options_ := append([]cmds.CommandDescriptionOption{
 					cmds.WithSource(fileName),
-					cmds.WithParents(GetParentsFromDir(dir)...),
+					cmds.WithParents(fromDir...),
 				}, options...)
-				commands_, err := l.loader.LoadCommandFromYAML(file, options_...)
+				aliasOptions_ := append([]alias.Option{
+					alias.WithParents(fromDir...),
+				}, aliasOptions...)
+				commands_, err := l.loader.LoadCommandsFromReader(file, options_, aliasOptions_)
 				if err != nil {
 					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err
@@ -197,13 +221,13 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 						options_ := append(
 							[]alias.Option{
 								alias.WithSource(fileName),
-								alias.WithParents(GetParentsFromDir(dir)...),
-								alias.WithParents(GetParentsFromDir(dir)...),
+								alias.WithParents(fromDir...),
+								alias.WithParents(fromDir...),
 							},
 							aliasOptions...,
 						)
 						log.Debug().Str("file", fileName).Msg("Loading alias from file")
-						aliases_, err := l.loader.LoadCommandAliasFromYAML(file, options_...)
+						aliases_, err := LoadCommandAliasFromYAML(file, options_...)
 						if err != nil {
 							log.Debug().Err(err).Str("file", fileName).Msg("Could not load alias from file")
 							return nil, err
@@ -218,7 +242,11 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 						_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
 						continue
 					} else {
-						aliases = append(aliases, aliases_...)
+						commands_, b := cast.CastList[cmds.Command, *alias.CommandAlias](aliases_)
+						if !b {
+							return nil, errors.New("could not cast aliases to commands")
+						}
+						commands = append(commands, commands_...)
 					}
 				}
 				continue
@@ -228,7 +256,7 @@ func (l *YAMLFSCommandLoader) LoadCommandsFromFS(f fs.FS, dir string, options []
 		}
 	}
 
-	return commands, aliases, nil
+	return commands, nil
 }
 
 // GetParentsFromDir is a helper function to simply return a list of parent verbs

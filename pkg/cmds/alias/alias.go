@@ -30,6 +30,8 @@ type CommandAlias struct {
 	Source         string       `yaml:",omitempty"`
 }
 
+var _ cmds.Command = (*CommandAlias)(nil)
+
 func WithName(name string) Option {
 	return func(a *CommandAlias) {
 		a.Name = name

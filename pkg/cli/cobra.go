@@ -10,7 +10,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
-	"github.com/go-go-golems/glazed/pkg/helpers"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -21,6 +20,7 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	"os"
+	"os/signal"
 	"strings"
 )
 
@@ -323,13 +323,8 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
-
-		go func() {
-			err := helpers.CancelOnSignal(ctx, os.Interrupt, cancel)
-			if err != nil && err != context.Canceled {
-				fmt.Println(err)
-			}
-		}()
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		defer stop()
 
 		err = run(ctx, parsedLayers, ps)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
