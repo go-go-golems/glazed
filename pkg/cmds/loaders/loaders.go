@@ -174,6 +174,7 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 		//
 		// See https://github.com/go-go-golems/glazed/issues/116
 		if l.loader.IsFileSupported(f, fileName) {
+			fromDir := GetParentsFromDir(dir)
 			commands_, err := func() ([]cmds.Command, error) {
 				file, err := f.Open(fileName)
 				if err != nil {
@@ -186,9 +187,12 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 				log.Debug().Str("file", fileName).Msg("Loading command from file")
 				options_ := append([]cmds.CommandDescriptionOption{
 					cmds.WithSource(fileName),
-					cmds.WithParents(GetParentsFromDir(dir)...),
+					cmds.WithParents(fromDir...),
 				}, options...)
-				commands_, err := l.loader.LoadCommandsFromReader(file, options_, aliasOptions)
+				aliasOptions_ := append([]alias.Option{
+					alias.WithParents(fromDir...),
+				}, aliasOptions...)
+				commands_, err := l.loader.LoadCommandsFromReader(file, options_, aliasOptions_)
 				if err != nil {
 					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err
@@ -217,8 +221,8 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 						options_ := append(
 							[]alias.Option{
 								alias.WithSource(fileName),
-								alias.WithParents(GetParentsFromDir(dir)...),
-								alias.WithParents(GetParentsFromDir(dir)...),
+								alias.WithParents(fromDir...),
+								alias.WithParents(fromDir...),
 							},
 							aliasOptions...,
 						)
