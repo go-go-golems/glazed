@@ -22,7 +22,9 @@ type Input struct {
 	Name string `yaml:"name"`
 
 	// These can be specified to override the values read from the flag / layer parameter definition
-	Label        string      `yaml:"label,omitempty"`
+	Label string `yaml:"label,omitempty"`
+
+	// when a select type
 	Options      []Option    `yaml:"options,omitempty"`
 	DefaultValue interface{} `yaml:"default,omitempty"`
 	Help         string      `yaml:"help,omitempty"`

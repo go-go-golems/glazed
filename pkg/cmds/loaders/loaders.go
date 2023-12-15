@@ -1,13 +1,11 @@
 package loaders
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 	"io"
 	"io/fs"
 	"os"
@@ -15,45 +13,18 @@ import (
 	"strings"
 )
 
-// FSCommandLoader is an interface that describes the most generic loader type,
+// CommandLoader is an interface that describes the most generic loader type,
 // which is then used to load commands and command aliases from embedded queries
 // and from "repository" directories used by glazed.
 //
 // Examples of this pattern are used in sqleton, escuse-me and pinocchio.
-type FSCommandLoader interface {
-	LoadCommandsFromFS(
+type CommandLoader interface {
+	LoadCommands(
 		f fs.FS, entryName string,
 		options []cmds.CommandDescriptionOption,
 		aliasOptions []alias.Option,
 	) ([]cmds.Command, error)
-}
-
-// ReaderCommandLoader loads commands (and aliases) out of a reader, meaning it can load single files.
-// We go through the reader interface because we want to be able to load commands from strings if they come
-// from different backing stores (e.g. databases, elasticsearch indices, ...)
-type ReaderCommandLoader interface {
-	LoadCommandsFromReader(
-		r io.Reader,
-		options []cmds.CommandDescriptionOption,
-		aliasOptions []alias.Option,
-	) ([]cmds.Command, error)
-}
-
-type FileCommandLoader interface {
-	ReaderCommandLoader
 	IsFileSupported(f fs.FS, fileName string) bool
-}
-
-type ReaderCommandOrAliasLoader struct {
-	loader ReaderCommandLoader
-}
-
-func NewReaderCommandOrAliasLoader(
-	loader ReaderCommandLoader,
-) *ReaderCommandOrAliasLoader {
-	return &ReaderCommandOrAliasLoader{
-		loader: loader,
-	}
 }
 
 type LoadReaderCommandFunc func(
@@ -91,14 +62,6 @@ func LoadCommandOrAliasFromReader(
 
 }
 
-func (l *ReaderCommandOrAliasLoader) LoadCommandsFromReader(
-	r io.Reader,
-	options []cmds.CommandDescriptionOption,
-	aliasOptions []alias.Option,
-) ([]cmds.Command, error) {
-	return LoadCommandOrAliasFromReader(r, l.loader.LoadCommandsFromReader, options, aliasOptions)
-}
-
 func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error) {
 	alias_, err := alias.NewCommandAliasFromYAML(s, options...)
 	if err != nil {
@@ -108,34 +71,14 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.Co
 	return []*alias.CommandAlias{alias_}, nil
 }
 
-// FSFileCommandLoader walks a FS and finds all yaml files, loading them using the passed
-// YAMLCommandLoader.
-//
-// It handles the following generic functionality:
-// - recursive FS walking
-// - setting SourceName for each command
-// - setting Parents for each command
-type FSFileCommandLoader struct {
-	loader FileCommandLoader
-}
-
-var _ FSCommandLoader = (*FSFileCommandLoader)(nil)
-
-func NewFSFileCommandLoader(
-	loader FileCommandLoader,
-) *FSFileCommandLoader {
-	return &FSFileCommandLoader{
-		loader: loader,
-	}
-}
-
 // LoadCommandsFromFS walks the FS and loads all commands and command aliases found.
 //
 // TODO(manuel, 2023-03-16) Add loading of helpsystem files
 // See https://github.com/go-go-golems/glazed/issues/55
 // See https://github.com/go-go-golems/glazed/issues/218
-func (l *FSFileCommandLoader) LoadCommandsFromFS(
+func LoadCommandsFromFS(
 	f fs.FS, dir string,
+	loader CommandLoader,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
 ) ([]cmds.Command, error) {
@@ -151,37 +94,22 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 			continue
 		}
 		fileName := filepath.Join(dir, entry.Name())
-		if entry.IsDir() {
-			subCommands, err := l.LoadCommandsFromFS(f, fileName, options, aliasOptions)
-			if err != nil {
-				return nil, err
-			}
-			commands = append(commands, subCommands...)
-			continue
-		}
+
 		// NOTE(2023-02-07, manuel) This might benefit from being made more generic than just loading from YAML
 		//
 		// One problem with the "commands from YAML" pattern being defined in glazed
 		// is that is actually not great for a more complex application like pinocchio which
 		// would benefit from loading applications from entire directories.
 		//
-		// This can of course be solved by providing a FSCommandLoader for directories.
+		// This can of course be solved by providing a CommandLoader for directories.
 		//
 		// Similarly, we might want to store applications in a database, or generate them on the
 		// fly using some resources on the disk.
 		//
 		// See https://github.com/go-go-golems/glazed/issues/116
-		if l.loader.IsFileSupported(f, fileName) {
+		if loader.IsFileSupported(f, fileName) {
 			fromDir := GetParentsFromDir(dir)
 			commands_, err := func() ([]cmds.Command, error) {
-				file, err := f.Open(fileName)
-				if err != nil {
-					return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-				}
-				defer func() {
-					_ = file.Close()
-				}()
-
 				log.Debug().Str("file", fileName).Msg("Loading command from file")
 				options_ := append([]cmds.CommandDescriptionOption{
 					cmds.WithSource(fileName),
@@ -190,7 +118,7 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 				aliasOptions_ := append([]alias.Option{
 					alias.WithParents(fromDir...),
 				}, aliasOptions...)
-				commands_, err := l.loader.LoadCommandsFromReader(file, options_, aliasOptions_)
+				commands_, err := loader.LoadCommands(f, fileName, options_, aliasOptions_)
 				if err != nil {
 					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err
@@ -201,56 +129,22 @@ func (l *FSFileCommandLoader) LoadCommandsFromFS(
 
 				return commands_, err
 			}()
-
 			if err != nil {
-				// If the error was a yaml parsing error, then we try to load the YAML file
-				// again, but as an alias this time around. YAML / JSON parsing in golang
-				// definitely is a bit of an adventure.
-				if _, ok := err.(*yaml.TypeError); ok {
-					aliases_, err := func() ([]*alias.CommandAlias, error) {
-						file, err := f.Open(fileName)
-						if err != nil {
-							return nil, errors.Wrapf(err, "Could not open file %s", fileName)
-						}
-						defer func() {
-							_ = file.Close()
-						}()
-
-						options_ := append(
-							[]alias.Option{
-								alias.WithSource(fileName),
-								alias.WithParents(fromDir...),
-								alias.WithParents(fromDir...),
-							},
-							aliasOptions...,
-						)
-						log.Debug().Str("file", fileName).Msg("Loading alias from file")
-						aliases_, err := LoadCommandAliasFromYAML(file, options_...)
-						if err != nil {
-							log.Debug().Err(err).Str("file", fileName).Msg("Could not load alias from file")
-							return nil, err
-						}
-						if len(aliases_) != 1 {
-							return nil, errors.New("Expected exactly one alias")
-						}
-
-						return aliases_, err
-					}()
-					if err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "Could not load command or alias from file %s: %s\n", fileName, err)
-						continue
-					} else {
-						commands_, b := cast.CastList[cmds.Command, *alias.CommandAlias](aliases_)
-						if !b {
-							return nil, errors.New("could not cast aliases to commands")
-						}
-						commands = append(commands, commands_...)
-					}
-				}
+				log.Warn().Err(err).Str("file", fileName).Msg("Could not load command from file")
 				continue
 			}
 
 			commands = append(commands, commands_...)
+			continue
+		}
+
+		if entry.IsDir() {
+			subCommands, err := LoadCommandsFromFS(f, fileName, loader, options, aliasOptions)
+			if err != nil {
+				return nil, err
+			}
+			commands = append(commands, subCommands...)
+			continue
 		}
 	}
 
@@ -271,4 +165,44 @@ func GetParentsFromDir(dir string) []string {
 		parents = parents[:len(parents)-1]
 	}
 	return parents
+}
+
+func FileNameToFsFilePath(fileName string) (fs.FS, string, error) {
+	// get absolute path from config_.File
+	fs_ := os.DirFS("/")
+
+	cleanedPath := filepath.Clean(fileName)
+
+	var filePath string
+	switch {
+	case strings.HasPrefix(fileName, "/"):
+		filePath = fileName[1:]
+	case strings.HasPrefix(fileName, "./"):
+		fs_ = os.DirFS(".")
+		filePath = fileName[2:]
+	case strings.HasPrefix(fileName, "../"):
+		var upCount int
+		relPath := cleanedPath
+		for strings.HasPrefix(relPath, "../") {
+			upCount++
+			relPath = strings.TrimPrefix(relPath, "../")
+		}
+
+		// Walk up the directory tree as needed
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return nil, "", err
+		}
+
+		for i := 0; i < upCount; i++ {
+			currentDir = filepath.Dir(currentDir)
+		}
+
+		fileSystem := os.DirFS(currentDir)
+		return fileSystem, relPath, nil
+	default:
+		fs_ = os.DirFS(".")
+		filePath = fileName
+	}
+	return fs_, filePath, nil
 }
