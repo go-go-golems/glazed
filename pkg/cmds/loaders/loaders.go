@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -164,4 +165,44 @@ func GetParentsFromDir(dir string) []string {
 		parents = parents[:len(parents)-1]
 	}
 	return parents
+}
+
+func FileNameToFsFilePath(fileName string) (fs.FS, string, error) {
+	// get absolute path from config_.File
+	fs_ := os.DirFS("/")
+
+	cleanedPath := filepath.Clean(fileName)
+
+	var filePath string
+	switch {
+	case strings.HasPrefix(fileName, "/"):
+		filePath = fileName[1:]
+	case strings.HasPrefix(fileName, "./"):
+		fs_ = os.DirFS(".")
+		filePath = fileName[2:]
+	case strings.HasPrefix(fileName, "../"):
+		var upCount int
+		relPath := cleanedPath
+		for strings.HasPrefix(relPath, "../") {
+			upCount++
+			relPath = strings.TrimPrefix(relPath, "../")
+		}
+
+		// Walk up the directory tree as needed
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return nil, "", err
+		}
+
+		for i := 0; i < upCount; i++ {
+			currentDir = filepath.Dir(currentDir)
+		}
+
+		fileSystem := os.DirFS(currentDir)
+		return fileSystem, relPath, nil
+	default:
+		fs_ = os.DirFS(".")
+		filePath = fileName
+	}
+	return fs_, filePath, nil
 }
