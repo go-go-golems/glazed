@@ -319,7 +319,6 @@ func (p *Program) AddRawFlag(raw ...string) {
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
 	w io.Writer) error {
 	var err error
 	path := p.Path
@@ -329,6 +328,8 @@ func (p *Program) RunIntoWriter(
 			return errors.Wrapf(err, "could not find executable %s", p.Name)
 		}
 	}
+
+	ps := layers.GetAllParsedParameters(parsedLayers)
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {

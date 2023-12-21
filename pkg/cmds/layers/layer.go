@@ -70,4 +70,13 @@ func (ppl *ParsedParameterLayer) MergeParameters(other *ParsedParameterLayer) {
 	}
 }
 
-// TODO(manuel, 2023-02-27) Might be worth making a struct defaults middleware
+func GetAllParsedParameters(layers map[string]*ParsedParameterLayer) map[string]interface{} {
+	ret := make(map[string]interface{})
+	for _, l := range layers {
+		for k, v := range l.Parameters {
+			ret[k] = v
+		}
+	}
+
+	return ret
+}

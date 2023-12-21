@@ -29,10 +29,11 @@ type TemplateCommandDescription struct {
 	Template  string                            `yaml:"template"`
 }
 
+var _ WriterCommand = (*TemplateCommand)(nil)
+
 func (t *TemplateCommand) RunIntoWriter(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
 	w io.Writer,
 ) error {
 	tmpl, err := template.New("template").Parse(t.Template)
@@ -41,7 +42,7 @@ func (t *TemplateCommand) RunIntoWriter(
 		return errors.Wrap(err, "failed to parse template")
 	}
 
-	err = tmpl.Execute(w, ps)
+	err = tmpl.Execute(w, layers.GetAllParsedParameters(parsedLayers))
 	if err != nil {
 		return errors.Wrap(err, "failed to execute template")
 	}
