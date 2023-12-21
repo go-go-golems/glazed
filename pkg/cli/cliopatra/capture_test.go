@@ -9,16 +9,31 @@ import (
 	"testing"
 )
 
-func TestSingleFlag(t *testing.T) {
-	p := NewProgramFromCapture(
-		cmds.NewCommandDescription("test",
-			cmds.WithFlags(
-				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-			),
-		),
-		map[string]interface{}{
-			"test": "foobar",
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps map[string]interface{}) map[string]*layers.ParsedParameterLayer {
+	defaultLayer, ok := desc.GetLayer("default")
+	if !ok {
+		return nil
+	}
+
+	return map[string]*layers.ParsedParameterLayer{
+		"default": &layers.ParsedParameterLayer{
+			Layer:      defaultLayer,
+			Parameters: ps,
 		},
+	}
+}
+
+func TestSingleFlag(t *testing.T) {
+	desc := cmds.NewCommandDescription("test",
+		cmds.WithFlags(
+			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+		),
+	)
+	p := NewProgramFromCapture(
+		desc,
+		makeParsedDefaultLayer(desc, map[string]interface{}{
+			"test": "foobar",
+		}),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -40,15 +55,17 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 			),
 		),
 	)
-	p := NewProgramFromCapture(d, map[string]interface{}{})
+	p := NewProgramFromCapture(d, makeParsedDefaultLayer(d, map[string]interface{}{
+		"test": "foobar",
+	}))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
 	assert.Len(t, p.Flags, 0)
 
-	p = NewProgramFromCapture(d, map[string]interface{}{
+	p = NewProgramFromCapture(d, makeParsedDefaultLayer(d, map[string]interface{}{
 		"test": "foobar2",
-	})
+	}))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -60,17 +77,19 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 }
 
 func TestTwoFlags(t *testing.T) {
-	p := NewProgramFromCapture(
-		cmds.NewCommandDescription("test",
-			cmds.WithFlags(
-				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-				parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
-			),
+	d := cmds.NewCommandDescription("test",
+		cmds.WithFlags(
+			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+			parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
 		),
-		map[string]interface{}{
+	)
+
+	p := NewProgramFromCapture(
+		d,
+		makeParsedDefaultLayer(d, map[string]interface{}{
 			"test":  "foobar",
 			"test2": "foobar2",
-		},
+		}),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -87,15 +106,16 @@ func TestTwoFlags(t *testing.T) {
 }
 
 func TestSingleArg(t *testing.T) {
-	p := NewProgramFromCapture(
-		cmds.NewCommandDescription("test",
-			cmds.WithArguments(
-				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-			),
+	d := cmds.NewCommandDescription("test",
+		cmds.WithArguments(
+			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
 		),
-		map[string]interface{}{
+	)
+	p := NewProgramFromCapture(
+		d,
+		makeParsedDefaultLayer(d, map[string]interface{}{
 			"test": "foobar",
-		},
+		}),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -108,23 +128,24 @@ func TestSingleArg(t *testing.T) {
 }
 
 func TestTwoArgsTwoFlags(t *testing.T) {
-	p := NewProgramFromCapture(
-		cmds.NewCommandDescription("test",
-			cmds.WithArguments(
-				parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-				parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
-			),
-			cmds.WithFlags(
-				parameters.NewParameterDefinition("test3", parameters.ParameterTypeString),
-				parameters.NewParameterDefinition("test4", parameters.ParameterTypeString),
-			),
+	d := cmds.NewCommandDescription("test",
+		cmds.WithArguments(
+			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+			parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
 		),
-		map[string]interface{}{
+		cmds.WithFlags(
+			parameters.NewParameterDefinition("test3", parameters.ParameterTypeString),
+			parameters.NewParameterDefinition("test4", parameters.ParameterTypeString),
+		),
+	)
+	p := NewProgramFromCapture(
+		d,
+		makeParsedDefaultLayer(d, map[string]interface{}{
 			"test":  "foobar",
 			"test2": "foobar2",
 			"test3": "foobar3",
 			"test4": "foobar4",
-		},
+		}),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -157,16 +178,17 @@ func TestSingleLayer(t *testing.T) {
 	)
 	require.NoError(t, err2)
 
-	p := NewProgramFromCapture(
-		cmds.NewCommandDescription("test",
-			cmds.WithLayers(
-				layer,
-			),
+	d := cmds.NewCommandDescription("test",
+		cmds.WithLayers(
+			layer,
 		),
-		map[string]interface{}{
+	)
+	p := NewProgramFromCapture(
+		d,
+		makeParsedDefaultLayer(d, map[string]interface{}{
 			"test":  "foobar",
 			"test2": "foobar2",
-		},
+		}),
 	)
 
 	assert.Equal(t, "test", p.Name)

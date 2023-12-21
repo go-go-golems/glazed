@@ -22,13 +22,14 @@ import (
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
 type Parameter struct {
-	Name    string                   `yaml:"name"`
-	Flag    string                   `yaml:"flag,omitempty"`
-	Short   string                   `yaml:"short"`
-	Type    parameters.ParameterType `yaml:"type"`
-	Value   interface{}              `yaml:"value"`
-	Raw     string                   `yaml:"raw,omitempty"`
-	NoValue bool                     `yaml:"noValue,omitempty"`
+	Name       string                   `yaml:"name"`
+	Flag       string                   `yaml:"flag,omitempty"`
+	Short      string                   `yaml:"short"`
+	Type       parameters.ParameterType `yaml:"type"`
+	Value      interface{}              `yaml:"value"`
+	Raw        string                   `yaml:"raw,omitempty"`
+	NoValue    bool                     `yaml:"noValue,omitempty"`
+	IsArgument bool                     `yaml:"isArgument,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files

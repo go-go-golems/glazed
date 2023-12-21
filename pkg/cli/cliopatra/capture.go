@@ -7,7 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 )
 
-func getCliopatraFlag(
+func getCliopatraParameters(
 	definitions []*parameters.ParameterDefinition,
 	ps map[string]interface{},
 	prefix string,
@@ -42,6 +42,8 @@ func getCliopatraFlag(
 		if flag != name {
 			param.Flag = flag
 		}
+
+		param.IsArgument = p.IsArgument
 
 		// TODO(manuel, 2023-03-21) This would be easier if we knew why and from where something is set
 		//
@@ -86,12 +88,22 @@ func NewProgramFromCapture(
 		}
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
-		ret.Flags = append(
-			ret.Flags,
-			getCliopatraFlag(
-				maps.GetValues(layer.GetParameterDefinitions()),
-				parsedLayer.Parameters,
-				layer.GetPrefix())...)
+		parameters := getCliopatraParameters(
+			maps.GetValues(layer.GetParameterDefinitions()),
+			parsedLayer.Parameters,
+			layer.GetPrefix())
+		flags := []*Parameter{}
+		arguments := []*Parameter{}
+
+		for _, p := range parameters {
+			if p.IsArgument {
+				arguments = append(arguments, p)
+			} else {
+				flags = append(flags, p)
+			}
+		}
+		ret.Flags = append(ret.Flags, flags...)
+		ret.Args = append(ret.Args, arguments...)
 	}
 
 	for _, opt := range opts {
