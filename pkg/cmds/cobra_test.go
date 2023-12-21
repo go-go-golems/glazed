@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -16,69 +17,75 @@ import (
 
 func TestAddZeroArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.AddParametersToCobraCommand(cmd, []*parameters.ParameterDefinition{}, "")
 	// assert that err is nil
 	require.Nil(t, err)
 }
 
 func TestAddSingleRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 				Type:     parameters.ParameterTypeString,
 			},
-		},
+		))
+	require.Nil(t, err)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
+
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
 
-	values, err := parameters.GatherArguments([]string{"bar"}, desc.Arguments, false, false)
+	values, err := parameters.GatherArguments([]string{"bar"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, "bar", v1)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"foo", "bla"}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{"foo", "bla"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 }
 
 func TestAddTwoRequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 				Type:     parameters.ParameterTypeString,
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:     "bar",
 				Required: true,
 				Type:     parameters.ParameterTypeString,
 			},
-		},
+		),
+	)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "baz"}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
@@ -88,40 +95,44 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "foo", v2)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar"}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{"bar"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 }
 
 func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 				Type:     parameters.ParameterTypeString,
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeString,
 				Default: "baz",
 			},
-		},
+		),
+	)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "baz"}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
@@ -131,7 +142,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "foo", v2)
 
-	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
+	values, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
@@ -140,38 +151,42 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "baz", v2)
 
-	_, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 
-	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{"bar", "foo", "baz"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 }
 
 func TestOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Default: "123",
 				Type:    parameters.ParameterTypeString,
 			},
-		},
+		),
+	)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{}))
 
-	values, err := parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
+	values, err := parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, "foo", v1)
 
-	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+	values, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
@@ -181,32 +196,36 @@ func TestOneOptionalArgument(t *testing.T) {
 
 func TestDefaultIntValue(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Default: 123,
 				Type:    parameters.ParameterTypeInteger,
 			},
-		},
+		),
+	)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
-	values, err := parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+
+	values, err := parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, 123, v1)
 
-	values, err = parameters.GatherArguments([]string{"234"}, desc.Arguments, false, false)
+	values, err = parameters.GatherArguments([]string{"234"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, 234, v1)
 
-	_, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
+	_, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
 }
 
@@ -233,16 +252,16 @@ func TestInvalidDefaultValue(t *testing.T) {
 		{Type: parameters.ParameterTypeIntegerList, Value: []string{}},
 	}
 	for _, failingType := range failingTypes {
-		desc := CommandDescription{
-			Arguments: []*parameters.ParameterDefinition{
-				{
+		defaultLayer, err := layers.NewParameterLayer("default", "Default",
+			layers.WithArguments(
+				&parameters.ParameterDefinition{
 					Name:    "foo",
 					Default: failingType.Value,
 					Type:    failingType.Type,
 				},
-			},
-		}
-		err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+			),
+		)
+		err = defaultLayer.AddLayerToCobraCommand(cmd)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
 		}
@@ -252,18 +271,19 @@ func TestInvalidDefaultValue(t *testing.T) {
 
 func TestTwoOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name: "foo",
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name: "bar",
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "blop"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -272,34 +292,35 @@ func TestTwoOptionalArguments(t *testing.T) {
 
 func TestFailAddingRequiredAfterOptional(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name: "foo",
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:     "bar",
 				Required: true,
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
 func TestAddStringListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 				Type:     parameters.ParameterTypeStringList,
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
@@ -308,34 +329,38 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeStringList,
 				Default: []string{"baz"},
 			},
-		},
+		),
+	)
+	desc := CommandDescription{
+		Layers: []layers.ParameterLayer{defaultLayer},
 	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{}))
 
-	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.Arguments, false, false)
+	values, err := parameters.GatherArguments([]string{"bar", "foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, []string{"bar", "foo"}, v1)
 
-	values, err = parameters.GatherArguments([]string{"foo"}, desc.Arguments, false, false)
+	values, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
 	assert.Equal(t, []string{"foo"}, v1)
 
-	values, err = parameters.GatherArguments([]string{}, desc.Arguments, false, false)
+	values, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
@@ -344,34 +369,35 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name: "foo",
 				Type: parameters.ParameterTypeStringList,
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name: "bar",
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
 func TestAddIntegerListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 				Type:     parameters.ParameterTypeIntegerList,
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"1", "2"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Nil(t, cmd.Args(cmd, []string{"1"}))
@@ -380,21 +406,22 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:     "bar",
 				Type:     parameters.ParameterTypeStringList,
 				Required: true,
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
 	assert.Error(t, cmd.Args(cmd, []string{"1"}))
@@ -403,20 +430,20 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:     "foo",
 				Required: true,
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
 				Default: []string{"blop"},
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -426,22 +453,23 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeString,
 				Default: "blop",
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
 				Default: []string{"bloppp"},
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
+
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -450,19 +478,19 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	desc := CommandDescription{
-		Arguments: []*parameters.ParameterDefinition{
-			{
+	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		layers.WithArguments(
+			&parameters.ParameterDefinition{
 				Name: "foo",
 			},
-			{
+			&parameters.ParameterDefinition{
 				Name:     "bar",
 				Type:     parameters.ParameterTypeStringList,
 				Required: true,
 			},
-		},
-	}
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+		),
+	)
+	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
@@ -480,8 +508,14 @@ type expectedCommandResults struct {
 	Args                       []string               `yaml:"args"`
 }
 
+type commandDescription struct {
+	CommandDescription
+	Flags     []*parameters.ParameterDefinition `yaml:"flags"`
+	Arguments []*parameters.ParameterDefinition `yaml:"arguments"`
+}
+
 type commandTest struct {
-	Description *CommandDescription       `yaml:"description"`
+	Description *commandDescription       `yaml:"description"`
 	Tests       []*expectedCommandResults `yaml:"tests"`
 }
 
@@ -502,6 +536,13 @@ func TestCommandArgumentsParsing(t *testing.T) {
 		err = yaml.Unmarshal(fileData, testSuite)
 		require.NoError(t, err)
 
+		layer, err := layers.NewParameterLayer("default", "Default",
+			layers.WithArguments(testSuite.Description.Arguments...),
+			layers.WithParameters(testSuite.Description.Flags...),
+		)
+		require.NoError(t, err)
+		testSuite.Description.Layers = []layers.ParameterLayer{layer}
+
 		if testSuite.Description.Name != "string-from-file" {
 			// XXX hack to debug
 			continue
@@ -519,7 +560,7 @@ func TestCommandArgumentsParsing(t *testing.T) {
 			t.Run(
 				fmt.Sprintf("%s/%s", testSuite.Description.Name, test2.Name),
 				func(t *testing.T) {
-					testCommandParseHelper(t, testSuite.Description, test2)
+					testCommandParseHelper(t, &testSuite.Description.CommandDescription, test2)
 				})
 		}
 	}
@@ -537,21 +578,25 @@ func testCommandParseHelper(
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.Flags, false, false, "")
+			flagParameters, flagsError = parameters.GatherFlagsFromCobraCommand(cmd, desc.GetDefaultFlags(), false, false, "")
 			if flagsError != nil {
 				return
 			}
-			argumentParameters, argsError = parameters.GatherArguments(args, desc.Arguments, false, false)
+			argumentParameters, argsError = parameters.GatherArguments(args, desc.GetDefaultArguments(), false, false)
 			if argsError != nil {
 				return
 			}
 		},
 	}
 
-	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
+	defaultLayer, ok := desc.GetDefaultLayer()
+	require.True(t, ok)
+	defaultLayer_, ok := defaultLayer.(layers.CobraParameterLayer)
+	require.True(t, ok)
+
+	err := defaultLayer_.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
-	err = parameters.AddParametersToCobraCommand(cmd.Flags(), desc.Flags, "")
-	require.Nil(t, err)
+
 	cmd.SetArgs(expected.Args)
 
 	_ = capturer.CaptureStderr(func() {

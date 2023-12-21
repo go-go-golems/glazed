@@ -191,8 +191,8 @@ func WithDefaultLayer(
 		layer, err := layers.NewParameterLayer(
 			"default",
 			"Default",
-			layers.WithFlags(flags...),
-			layers.WithFlags(arguments...),
+			layers.WithParameters(flags...),
+			layers.WithParameters(arguments...),
 		)
 		if err != nil {
 			panic(err)

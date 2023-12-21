@@ -151,7 +151,7 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 
 func TestSingleLayer(t *testing.T) {
 	layer, err2 := layers.NewParameterLayer("test-layer", "test-layer",
-		layers.WithFlags(
+		layers.WithParameters(
 			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
 		),
 	)

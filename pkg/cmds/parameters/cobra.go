@@ -562,6 +562,10 @@ func GatherFlagsFromCobraCommand(
 	ps := map[string]interface{}{}
 
 	for _, parameter := range params {
+		if parameter.IsArgument {
+			continue
+		}
+
 		// check if the flag is set
 		flagName := prefix + parameter.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
