@@ -25,6 +25,12 @@ type FieldsFiltersParameterLayer struct {
 	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
+func (f *FieldsFiltersParameterLayer) Clone() layers.ParameterLayer {
+	return &FieldsFiltersParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
 type FieldsFilterSettings struct {
 	Filters          []string `glazed.parameter:"filter"`
 	Fields           []string `glazed.parameter:"fields"`
@@ -45,7 +51,7 @@ func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*F
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command) error {
+func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	defaults := &FieldsFilterFlagsDefaults{}
 	err := f.ParameterLayerImpl.InitializeStructFromParameterDefaults(defaults)
 	if err != nil {
@@ -62,26 +68,26 @@ func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command)
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.ParameterLayerImpl.AddFlagsToCobraCommand(cmd)
+	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := f.ParameterLayerImpl.ParseFlagsFromCobraCommand(cmd)
+func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedParameterLayer, error) {
+	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
 	// if fields were manually specified, clear whatever default filters we might have set
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		ps["filter"] = []string{}
+		l.Parameters["filter"] = []string{}
 	}
 
-	return ps, nil
+	return l, nil
 }
 
-func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(glazedLayer *layers.ParsedParameterLayer) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {
 		return nil, err
 	}

@@ -66,7 +66,8 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 	return ret, nil
 }
 
-func NewRenameSettingsFromParameters(ps map[string]interface{}) (*RenameSettings, error) {
+func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*RenameSettings, error) {
+	ps := glazedLayer.Parameters
 	if ps["rename"] == nil {
 		return &RenameSettings{
 			RenameFields:  map[types.FieldName]string{},

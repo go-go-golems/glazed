@@ -22,6 +22,8 @@ type YamlCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*YamlCommand)(nil)
+
 func NewYamlCommand() (*YamlCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -68,26 +70,29 @@ func NewYamlCommand() (*YamlCommand, error) {
 
 func (y *YamlCommand) Run(
 	ctx context.Context,
-	_ map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
+	layers map[string]*layers.ParsedParameterLayer,
 	gp middlewares.Processor,
 ) error {
-	inputIsArray, ok := ps["input-is-array"].(bool)
+	d, ok := layers["default"]
+	if !ok {
+		return errors.New("no default layer")
+	}
+	inputIsArray, ok := d.Parameters["input-is-array"].(bool)
 	if !ok {
 		return fmt.Errorf("input-is-array flag is not a bool")
 	}
 
-	sanitize, ok := ps["sanitize"].(bool)
+	sanitize, ok := d.Parameters["sanitize"].(bool)
 	if !ok {
 		return fmt.Errorf("sanitize flag is not a bool")
 	}
 
-	inputFiles, ok := ps["input-files"].([]string)
+	inputFiles, ok := d.Parameters["input-files"].([]string)
 	if !ok {
 		return fmt.Errorf("input-files is not a string list")
 	}
 
-	fromMarkdown, ok := ps["from-markdown"].(bool)
+	fromMarkdown, ok := d.Parameters["from-markdown"].(bool)
 	if !ok {
 		return fmt.Errorf("from-markdown flag is not a bool")
 	}

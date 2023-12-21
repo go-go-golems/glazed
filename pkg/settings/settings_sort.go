@@ -16,9 +16,9 @@ type SortFlagsSettings struct {
 	SortBy []string `glazed.parameter:"sort-by"`
 }
 
-func NewSortSettingsFromParameters(ps map[string]interface{}) (*SortFlagsSettings, error) {
+func NewSortSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize sort settings from parameters")
 	}

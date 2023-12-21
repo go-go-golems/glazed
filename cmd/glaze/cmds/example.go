@@ -18,6 +18,8 @@ type ExampleCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*ExampleCommand)(nil)
+
 func NewExampleCommand() (*ExampleCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -63,11 +65,14 @@ func NewExampleCommand() (*ExampleCommand, error) {
 func (c *ExampleCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
 	gp middlewares.Processor,
 ) error {
-	count := ps["count"].(int)
-	test := ps["test"].(bool)
+	d, ok := parsedLayers["default"]
+	if !ok {
+		return errors.New("no default layer")
+	}
+	count := d.Parameters["count"].(int)
+	test := d.Parameters["test"].(bool)
 
 	for i := 0; i < count; i++ {
 		row := types.NewRow(

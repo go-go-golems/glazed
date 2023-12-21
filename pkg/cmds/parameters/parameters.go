@@ -17,20 +17,21 @@ import (
 // Along with metadata (Name, Help) that is useful for help,
 // it also specifies a Type, a Default value and if it is Required.
 type ParameterDefinition struct {
-	Name      string        `yaml:"name"`
-	ShortFlag string        `yaml:"shortFlag,omitempty"`
-	Type      ParameterType `yaml:"type"`
-	Help      string        `yaml:"help,omitempty"`
-	Default   interface{}   `yaml:"default,omitempty"`
-	Choices   []string      `yaml:"choices,omitempty"`
-	Required  bool          `yaml:"required,omitempty"`
+	Name       string        `yaml:"name"`
+	ShortFlag  string        `yaml:"shortFlag,omitempty"`
+	Type       ParameterType `yaml:"type"`
+	Help       string        `yaml:"help,omitempty"`
+	Default    interface{}   `yaml:"default,omitempty"`
+	Choices    []string      `yaml:"choices,omitempty"`
+	Required   bool          `yaml:"required,omitempty"`
+	IsArgument bool          `yaml:"-"`
 }
 
 func (p *ParameterDefinition) String() string {
 	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
 }
 
-func (p *ParameterDefinition) Copy() *ParameterDefinition {
+func (p *ParameterDefinition) Clone() *ParameterDefinition {
 	return &ParameterDefinition{
 		Name:      p.Name,
 		ShortFlag: p.ShortFlag,
@@ -84,6 +85,12 @@ func WithChoices(choices []string) ParameterDefinitionOption {
 func WithRequired(required bool) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
 		p.Required = required
+	}
+}
+
+func WithIsArgument(isArgument bool) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.IsArgument = isArgument
 	}
 }
 

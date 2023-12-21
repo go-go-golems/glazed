@@ -76,7 +76,7 @@ func init() {
 		panic(err)
 	}
 
-	err = gpl.AddFlagsToCobraCommand(DocsCmd)
+	err = gpl.AddLayerToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

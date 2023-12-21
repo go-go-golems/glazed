@@ -26,7 +26,7 @@ func TestAddFlagsToCobraCommandSimple(t *testing.T) {
 		Use: "test",
 	}
 
-	err := layer.AddFlagsToCobraCommand(cmd)
+	err := layer.AddLayerToCobraCommand(cmd)
 	require.NoError(t, err)
 
 	flagGroupUsage := ComputeCommandFlagGroupUsage(cmd)
@@ -51,7 +51,7 @@ func TestAddFlagsToCobraCommandPrefix(t *testing.T) {
 		Use: "test",
 	}
 
-	err := layer.AddFlagsToCobraCommand(cmd)
+	err := layer.AddLayerToCobraCommand(cmd)
 	require.NoError(t, err)
 
 	flagGroupUsage := ComputeCommandFlagGroupUsage(cmd)

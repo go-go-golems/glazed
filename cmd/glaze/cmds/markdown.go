@@ -419,7 +419,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddFlagsToCobraCommand(parseCmd)
+	err = g.AddLayerToCobraCommand(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -429,7 +429,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = g.AddFlagsToCobraCommand(splitByHeadingCmd)
+	err = g.AddLayerToCobraCommand(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}

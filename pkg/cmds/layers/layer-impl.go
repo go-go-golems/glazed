@@ -18,6 +18,9 @@ type ParameterLayerImpl struct {
 	ChildLayers []ParameterLayer                  `yaml:"childLayers,omitempty"`
 }
 
+var _ ParameterLayer = &ParameterLayerImpl{}
+var _ CobraParameterLayer = &ParameterLayerImpl{}
+
 func (p *ParameterLayerImpl) GetName() string {
 	return p.Name
 }
@@ -142,8 +145,8 @@ func NewParameterLayerFromYAML(s []byte, options ...ParameterLayerOptions) (*Par
 	return ret, nil
 }
 
-func (p *ParameterLayerImpl) AddFlag(flag *parameters.ParameterDefinition) {
-	p.Flags = append(p.Flags, flag)
+func (p *ParameterLayerImpl) AddFlags(flag ...*parameters.ParameterDefinition) {
+	p.Flags = append(p.Flags, flag...)
 }
 
 // GetParameterDefinitions returns a map that maps all parameters (flags and arguments) to their name.
@@ -197,12 +200,12 @@ func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{},
 	return parameters.GatherParametersFromMap(m, ps, onlyProvided)
 }
 
-// AddFlagsToCobraCommand adds all flags of the layer to the given Cobra command.
+// AddLayerToCobraCommand adds all flags of the layer to the given Cobra command.
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.
-func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
+func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err := parameters.AddFlagsToCobraCommand(cmd.Flags(), p.Flags, p.Prefix)
+	err := parameters.AddParametersToCobraCommand(cmd, p.Flags, p.Prefix)
 	if err != nil {
 		return err
 	}
@@ -212,16 +215,45 @@ func (p *ParameterLayerImpl) AddFlagsToCobraCommand(cmd *cobra.Command) error {
 	return nil
 }
 
-// ParseFlagsFromCobraCommand parses the flags of the layer from the given Cobra command.
+// ParseLayerFromCobraCommand parses the flags of the layer from the given Cobra command.
 // If the layer has a prefix, the flags are parsed with that prefix (meaning, the prefix
 // is stripped from the flag names before they are added to the returned map).
 //
 // This will return a map containing the value (or default value) of each flag
 // of the layer.
-func (p *ParameterLayerImpl) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	return parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, false, p.Prefix)
+func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(cmd *cobra.Command) (*ParsedParameterLayer, error) {
+	var flags = []*parameters.ParameterDefinition{}
+	for _, pd := range p.Flags {
+		if !pd.IsArgument {
+			flags = append(flags, pd)
+		}
+	}
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, flags, false, false, p.Prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ParsedParameterLayer{
+		Layer:      p,
+		Parameters: ps,
+	}, nil
 }
 
 func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
 	return parameters.GatherParametersFromMap(m, p.GetParameterDefinitions(), onlyProvided)
+}
+
+func (p *ParameterLayerImpl) Clone() ParameterLayer {
+	ret := &ParameterLayerImpl{
+		Name:        p.Name,
+		Slug:        p.Slug,
+		Description: p.Description,
+		Prefix:      p.Prefix,
+		Flags:       []*parameters.ParameterDefinition{},
+	}
+	for _, f := range p.Flags {
+		ret.Flags = append(ret.Flags, f.Clone())
+	}
+	return ret
+
 }

@@ -2,6 +2,7 @@ package cliopatra
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 )
@@ -56,9 +57,9 @@ func getCliopatraFlag(
 }
 
 // NewProgramFromCapture is a helper function to help capture a cliopatra Program from
-// the description and the parameters map of a glazed command.
+// the description and the parsed layers a glazed command.
 //
-// It will go over all the ParameterDefinition (from the layers, flags and arguments)
+// It will go over all the ParameterDefinition (from the layers, which now also include the default layers).
 // and will try to create the best cliopatra map it can. It tries to resolve the prefixes
 // of layered parameters.
 //
@@ -67,7 +68,7 @@ func getCliopatraFlag(
 // option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
-	ps map[string]interface{},
+	parsedLayers map[string]*layers.ParsedParameterLayer,
 	opts ...ProgramOption,
 ) *Program {
 	ret := &Program{
@@ -79,11 +80,19 @@ func NewProgramFromCapture(
 	//
 	// See https://github.com/go-go-golems/cliopatra/issues/6
 	for _, layer := range description.Layers {
-		ret.Flags = append(ret.Flags, getCliopatraFlag(maps.GetValues(layer.GetParameterDefinitions()), ps, layer.GetPrefix())...)
-	}
+		parsedLayer, ok := parsedLayers[layer.GetSlug()]
+		if !ok {
+			continue
+		}
 
-	ret.Flags = append(ret.Flags, getCliopatraFlag(description.Flags, ps, "")...)
-	ret.Args = getCliopatraFlag(description.Arguments, ps, "")
+		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
+		ret.Flags = append(
+			ret.Flags,
+			getCliopatraFlag(
+				maps.GetValues(layer.GetParameterDefinitions()),
+				parsedLayer.Parameters,
+				layer.GetPrefix())...)
+	}
 
 	for _, opt := range opts {
 		opt(ret)

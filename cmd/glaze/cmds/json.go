@@ -21,6 +21,8 @@ type JsonCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*JsonCommand)(nil)
+
 func NewJsonCommand() (*JsonCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -68,25 +70,29 @@ func NewJsonCommand() (*JsonCommand, error) {
 func (j *JsonCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
 	gp middlewares.Processor,
 ) error {
-	inputIsArray, ok := ps["input-is-array"].(bool)
+	d, ok := parsedLayers["default"]
+	if !ok {
+		return errors.New("no default layer")
+	}
+
+	inputIsArray, ok := d.Parameters["input-is-array"].(bool)
 	if !ok {
 		return fmt.Errorf("input-is-array flag is not a bool")
 	}
 
-	inputFiles, ok := ps["input-files"].([]string)
+	inputFiles, ok := d.Parameters["input-files"].([]string)
 	if !ok {
 		return fmt.Errorf("input-files is not a string list")
 	}
 
-	sanitizeInput, ok := ps["sanitize"].(bool)
+	sanitizeInput, ok := d.Parameters["sanitize"].(bool)
 	if !ok {
 		return fmt.Errorf("sanitize flag is not a bool")
 	}
 
-	fromMarkdown, ok := ps["from-markdown"].(bool)
+	fromMarkdown, ok := d.Parameters["from-markdown"].(bool)
 	if !ok {
 		return fmt.Errorf("from-markdown flag is not a bool")
 	}

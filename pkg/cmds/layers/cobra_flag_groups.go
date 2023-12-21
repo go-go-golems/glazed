@@ -65,7 +65,7 @@ func (f *FlagGroupUsage) AddFlagUsage(flag *FlagUsage) {
 
 // CommandFlagGroupUsage is used to render the flags for an entire command.
 // This gets parsed at rendering time, and passed along the command to the usage or help
-// template. Flags that are not assigned to any group are passed as the "" group, with the
+// template. Parameters that are not assigned to any group are passed as the "" group, with the
 // name "Other flags".
 type CommandFlagGroupUsage struct {
 	LocalGroupUsages     []*FlagGroupUsage

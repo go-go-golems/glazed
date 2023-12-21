@@ -56,9 +56,9 @@ func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*Replace
 	return ret, nil
 }
 
-func NewReplaceSettingsFromParameters(ps map[string]interface{}) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
 	}

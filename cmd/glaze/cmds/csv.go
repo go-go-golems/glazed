@@ -17,6 +17,8 @@ type CsvCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*CsvCommand)(nil)
+
 func NewCsvCommand() (*CsvCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -27,14 +29,14 @@ func NewCsvCommand() (*CsvCommand, error) {
 		CommandDescription: cmds.NewCommandDescription(
 			"csv",
 			cmds.WithShort("Format CSV files"),
-			cmds.WithArguments(
+			cmds.WithFlags(
 				parameters.NewParameterDefinition(
 					"input-files",
 					parameters.ParameterTypeStringList,
 					parameters.WithRequired(true),
 				),
 			),
-			cmds.WithFlags(
+			cmds.WithArguments(
 				parameters.NewParameterDefinition(
 					"delimiter",
 					parameters.ParameterTypeString,
@@ -76,29 +78,32 @@ func NewCsvCommand() (*CsvCommand, error) {
 func (c *CsvCommand) Run(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
 	gp middlewares.Processor,
 ) error {
-	inputFiles, ok := ps["input-files"].([]string)
+	d, ok := parsedLayers["default"]
+	if !ok {
+		return errors.New("no default layer")
+	}
+	inputFiles, ok := d.Parameters["input-files"].([]string)
 	if !ok {
 		return errors.New("input-files argument is not a string list")
 	}
 
-	comma, _ := ps["delimiter"].(string)
+	comma, _ := d.Parameters["delimiter"].(string)
 	if len(comma) != 1 {
 		return errors.New("delimiter must be a single character")
 	}
 	commaRune := rune(comma[0])
 
-	comment, _ := ps["comment"].(string)
+	comment, _ := d.Parameters["comment"].(string)
 	if len(comment) != 1 {
 		return errors.New("comment must be a single character")
 	}
 	commentRune := rune(comment[0])
 
-	fieldsPerRecord, _ := ps["fields-per-record"].(int)
-	trimLeadingSpace, _ := ps["trim-leading-space"].(bool)
-	lazyQuotes, _ := ps["lazy-quotes"].(bool)
+	fieldsPerRecord, _ := d.Parameters["fields-per-record"].(int)
+	trimLeadingSpace, _ := d.Parameters["trim-leading-space"].(bool)
+	lazyQuotes, _ := d.Parameters["lazy-quotes"].(bool)
 
 	options := []csv.ParseCSVOption{
 		csv.WithComma(commaRune),

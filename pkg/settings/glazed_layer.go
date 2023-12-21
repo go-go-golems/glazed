@@ -29,6 +29,22 @@ type GlazedParameterLayers struct {
 	SkipLimitParameterLayer     *SkipLimitParameterLayer     `yaml:"skipLimitParameterLayer"`
 }
 
+func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
+	return &GlazedParameterLayers{
+		FieldsFiltersParameterLayer: g.FieldsFiltersParameterLayer.Clone().(*FieldsFiltersParameterLayer),
+		OutputParameterLayer:        g.OutputParameterLayer.Clone().(*OutputParameterLayer),
+		RenameParameterLayer:        g.RenameParameterLayer.Clone().(*RenameParameterLayer),
+		ReplaceParameterLayer:       g.ReplaceParameterLayer.Clone().(*ReplaceParameterLayer),
+		SelectParameterLayer:        g.SelectParameterLayer.Clone().(*SelectParameterLayer),
+		TemplateParameterLayer:      g.TemplateParameterLayer.Clone().(*TemplateParameterLayer),
+		JqParameterLayer:            g.JqParameterLayer.Clone().(*JqParameterLayer),
+		SortParameterLayer:          g.SortParameterLayer.Clone().(*SortParameterLayer),
+	}
+}
+
+var _ layers.ParameterLayer = (*GlazedParameterLayers)(nil)
+var _ layers.CobraParameterLayer = (*GlazedParameterLayers)(nil)
+
 func (g *GlazedParameterLayers) MarshalYAML() (interface{}, error) {
 	return &layers.ParameterLayerImpl{
 		Name:        g.GetName(),
@@ -64,7 +80,7 @@ func (g *GlazedParameterLayers) GetPrefix() string {
 	return g.FieldsFiltersParameterLayer.GetPrefix()
 }
 
-func (g *GlazedParameterLayers) AddFlag(*parameters.ParameterDefinition) {
+func (g *GlazedParameterLayers) AddFlags(...*parameters.ParameterDefinition) {
 	panic("not supported me")
 }
 
@@ -109,40 +125,40 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters
 	return ret
 }
 
-func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error {
-	err := g.OutputParameterLayer.AddFlagsToCobraCommand(cmd)
+func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error {
+	err := g.OutputParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.FieldsFiltersParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.FieldsFiltersParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.SelectParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.SelectParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.TemplateParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.TemplateParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.RenameParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.RenameParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.ReplaceParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.ReplaceParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.JqParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.JqParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.SortParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.SortParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
-	err = g.SkipLimitParameterLayer.AddFlagsToCobraCommand(cmd)
+	err = g.SkipLimitParameterLayer.AddLayerToCobraCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -150,69 +166,78 @@ func (g *GlazedParameterLayers) AddFlagsToCobraCommand(cmd *cobra.Command) error
 	return nil
 }
 
-func (g *GlazedParameterLayers) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := g.OutputParameterLayer.ParseFlagsFromCobraCommand(cmd)
+func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedParameterLayer, error) {
+	res := &layers.ParsedParameterLayer{
+		Layer: g,
+	}
+	ps := make(map[string]interface{})
+	l, err := g.OutputParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	ps_, err := g.SelectParameterLayer.ParseFlagsFromCobraCommand(cmd)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.RenameParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.SelectParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.TemplateParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.RenameParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.TemplateParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.FieldsFiltersParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.JqParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.ReplaceParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.SortParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.JqParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
-	ps_, err = g.SkipLimitParameterLayer.ParseFlagsFromCobraCommand(cmd)
+	l, err = g.SortParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
+	for k, v := range l.Parameters {
+		ps[k] = v
+	}
+	l, err = g.SkipLimitParameterLayer.ParseLayerFromCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range l.Parameters {
 		ps[k] = v
 	}
 
-	return ps, nil
+	res.Parameters = ps
+
+	return res, nil
 }
 
 func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
@@ -491,8 +516,8 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupRowOutputFormatter(ps map[string]interface{}) (formatters.RowOutputFormatter, error) {
-	outputSettings, err := NewOutputFormatterSettings(ps)
+func SetupRowOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (formatters.RowOutputFormatter, error) {
+	outputSettings, err := NewOutputFormatterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -505,13 +530,13 @@ func SetupRowOutputFormatter(ps map[string]interface{}) (formatters.RowOutputFor
 	return of, nil
 }
 
-func SetupTableOutputFormatter(ps map[string]interface{}) (formatters.TableOutputFormatter, error) {
-	selectSettings, err := NewSelectSettingsFromParameters(ps)
+func SetupTableOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (formatters.TableOutputFormatter, error) {
+	selectSettings, err := NewSelectSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
 
-	outputSettings, err := NewOutputFormatterSettings(ps)
+	outputSettings, err := NewOutputFormatterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -539,43 +564,46 @@ func SetupTableOutputFormatter(ps map[string]interface{}) (formatters.TableOutpu
 // configured with all the necessary middlewares except for the output formatter.
 //
 // DO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
-func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.TableProcessorOption) (*middlewares.TableProcessor, error) {
+func SetupTableProcessor(
+	glazedLayer *layers.ParsedParameterLayer,
+	options ...middlewares.TableProcessorOption,
+) (*middlewares.TableProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
 	//
 	// See: https://github.com/go-go-golems/glazed/issues/199
-	templateSettings, err := NewTemplateSettings(ps)
+	templateSettings, err := NewTemplateSettings(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	selectSettings, err := NewSelectSettingsFromParameters(ps)
+	selectSettings, err := NewSelectSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	renameSettings, err := NewRenameSettingsFromParameters(ps)
+	renameSettings, err := NewRenameSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	fieldsFilterSettings, err := NewFieldsFilterSettings(ps)
+	fieldsFilterSettings, err := NewFieldsFilterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	replaceSettings, err := NewReplaceSettingsFromParameters(ps)
+	replaceSettings, err := NewReplaceSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	jqSettings, err := NewJqSettingsFromParameters(ps)
+	jqSettings, err := NewJqSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	sortSettings, err := NewSortSettingsFromParameters(ps)
+	sortSettings, err := NewSortSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	outputSettings, err := NewOutputFormatterSettings(ps)
+	outputSettings, err := NewOutputFormatterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
-	skipLimitSettings, err := NewSkipLimitSettingsFromParameters(ps)
+	skipLimitSettings, err := NewSkipLimitSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
 	}
@@ -655,9 +683,9 @@ func SetupTableProcessor(ps map[string]interface{}, options ...middlewares.Table
 // output formats).
 //
 // It also returns the output formatter that was created.
-func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interface{}, w io.Writer) (formatters.OutputFormatter, error) {
+func SetupProcessorOutput(gp *middlewares.TableProcessor, glazedLayer *layers.ParsedParameterLayer, w io.Writer) (formatters.OutputFormatter, error) {
 	// first, try to get a row updater
-	rowOf, err := SetupRowOutputFormatter(ps)
+	rowOf, err := SetupRowOutputFormatter(glazedLayer)
 
 	if rowOf != nil {
 		err = rowOf.RegisterRowMiddlewares(gp)
@@ -671,7 +699,7 @@ func SetupProcessorOutput(gp *middlewares.TableProcessor, ps map[string]interfac
 			return nil, err
 		}
 
-		of, err := SetupTableOutputFormatter(ps)
+		of, err := SetupTableOutputFormatter(glazedLayer)
 		if err != nil {
 			return nil, err
 		}

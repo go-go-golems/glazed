@@ -66,9 +66,9 @@ func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputPa
 	return ret, nil
 }
 
-func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(glazedLayer *layers.ParsedParameterLayer) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}

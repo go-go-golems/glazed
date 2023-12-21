@@ -5,14 +5,13 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"strings"
 	"time"
 )
 
-// AddArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
+// addArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
 // Argument ordering, optionality, and multiplicity constraints are respected:
 //   - Required arguments (argument.Required == true) should come before the optional.
 //   - Only one list argument (either ParameterTypeStringList or ParameterTypeIntegerList) is allowed and it should be the last one.
@@ -25,11 +24,15 @@ import (
 // and list arguments.
 // If everything is successful, it assigns an argument validator (either MinimumNArgs or RangeArgs)
 // to the cobra command's Args attribute.
-func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
+func addArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
 	hadOptional := false
+
+	if len(arguments) == 0 {
+		return nil
+	}
 
 	for _, argument := range arguments {
 		if maxArgs == -1 {
@@ -164,8 +167,8 @@ func GatherArguments(
 	return result, nil
 }
 
-// AddFlagsToCobraCommand takes the parameters from a CommandDescription and converts them
-// to cobra flags, before adding them to the Flags() of a the passed cobra command.
+// AddParametersToCobraCommand takes the parameters from a CommandDescription and converts them
+// to cobra flags, before adding them to the Parameters() of a the passed cobra command.
 //
 // # TODO(manuel, 2023-02-12) We need to handle arbitrary defaults here
 //
@@ -203,13 +206,30 @@ func GatherArguments(
 // concept of what it means for a library user to overload the defaults handling
 // mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
 // an empty list or a list containing "all" should be treated the same.
-func AddFlagsToCobraCommand(
-	flagSet *pflag.FlagSet,
+func AddParametersToCobraCommand(
+	cmd *cobra.Command,
 	flags []*ParameterDefinition,
 	prefix string,
-
 ) error {
-	for _, parameter := range flags {
+	actualFlags := []*ParameterDefinition{}
+	arguments := []*ParameterDefinition{}
+
+	for _, flag := range flags {
+		if flag.IsArgument {
+			arguments = append(arguments, flag)
+		} else {
+			actualFlags = append(actualFlags, flag)
+		}
+	}
+
+	flagSet := cmd.Flags()
+
+	err := addArgumentsToCobraCommand(cmd, arguments)
+	if err != nil {
+		return err
+	}
+
+	for _, parameter := range actualFlags {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)

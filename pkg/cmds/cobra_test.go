@@ -19,7 +19,7 @@ func TestAddZeroArguments(t *testing.T) {
 	desc := CommandDescription{
 		Arguments: []*parameters.ParameterDefinition{},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	// assert that err is nil
 	require.Nil(t, err)
 }
@@ -35,7 +35,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -71,7 +71,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -114,7 +114,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -158,7 +158,7 @@ func TestOneOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -190,7 +190,7 @@ func TestDefaultIntValue(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	values, err := parameters.GatherArguments([]string{}, desc.Arguments, false, false)
 	require.Nil(t, err)
@@ -242,7 +242,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 				},
 			},
 		}
-		err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+		err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
 		}
@@ -262,7 +262,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "blop"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -283,7 +283,7 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
@@ -298,7 +298,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -317,7 +317,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo"}))
@@ -355,7 +355,7 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
@@ -370,7 +370,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"1", "2"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -393,7 +393,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))
@@ -416,7 +416,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -440,7 +440,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -462,7 +462,7 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 			},
 		},
 	}
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	assert.Error(t, err)
 }
 
@@ -548,9 +548,9 @@ func testCommandParseHelper(
 		},
 	}
 
-	err := parameters.AddArgumentsToCobraCommand(cmd, desc.Arguments)
+	err := parameters.addArgumentsToCobraCommand(cmd, desc.Arguments)
 	require.Nil(t, err)
-	err = parameters.AddFlagsToCobraCommand(cmd.Flags(), desc.Flags, "")
+	err = parameters.AddParametersToCobraCommand(cmd.Flags(), desc.Flags, "")
 	require.Nil(t, err)
 	cmd.SetArgs(expected.Args)
 

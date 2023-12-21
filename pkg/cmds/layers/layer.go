@@ -21,8 +21,10 @@ func (e ErrInvalidParameterLayer) Error() string {
 // to group and describe all the parameter definitions that it uses.
 // It also provides a location for a name, slug and description to be used in help
 // pages.
+//
+// TODO(manuel, 2023-12-20) This is a pretty messy interface, I think it used to be a struct?
 type ParameterLayer interface {
-	AddFlag(flag *parameters.ParameterDefinition)
+	AddFlags(flag ...*parameters.ParameterDefinition)
 	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
 
 	InitializeParameterDefaultsFromStruct(s interface{}) error
@@ -31,6 +33,8 @@ type ParameterLayer interface {
 	GetSlug() string
 	GetDescription() string
 	GetPrefix() string
+
+	Clone() ParameterLayer
 }
 
 // ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer
