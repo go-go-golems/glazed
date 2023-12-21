@@ -16,7 +16,7 @@ func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps map[string]interfa
 	}
 
 	return map[string]*layers.ParsedParameterLayer{
-		"default": &layers.ParsedParameterLayer{
+		"default": {
 			Layer:      defaultLayer,
 			Parameters: ps,
 		},
@@ -185,11 +185,15 @@ func TestSingleLayer(t *testing.T) {
 	)
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, map[string]interface{}{
-			"test":  "foobar",
-			"test2": "foobar2",
-		}),
-	)
+		map[string]*layers.ParsedParameterLayer{
+			"test-layer": {
+				Layer: layer,
+				Parameters: map[string]interface{}{
+					"test":  "foobar",
+					"test2": "foobar2",
+				},
+			},
+		})
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)

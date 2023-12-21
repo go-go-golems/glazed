@@ -88,14 +88,14 @@ func NewProgramFromCapture(
 		}
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
-		parameters := getCliopatraParameters(
+		parameters_ := getCliopatraParameters(
 			maps.GetValues(layer.GetParameterDefinitions()),
 			parsedLayer.Parameters,
 			layer.GetPrefix())
 		flags := []*Parameter{}
 		arguments := []*Parameter{}
 
-		for _, p := range parameters {
+		for _, p := range parameters_ {
 			if p.IsArgument {
 				arguments = append(arguments, p)
 			} else {
