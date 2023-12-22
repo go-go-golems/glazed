@@ -8,7 +8,7 @@ import (
 
 func getCliopatraParameters(
 	definitions parameters.ParameterDefinitions,
-	ps map[string]interface{},
+	ps *parameters.ParsedParameters,
 	prefix string,
 ) []*Parameter {
 	ret := []*Parameter{}
@@ -18,10 +18,10 @@ func getCliopatraParameters(
 		shortFlag := p.ShortFlag
 		flag := name
 
-		v, ok := ps[name]
+		v, ok := ps.Get(name)
 		if !ok {
 			flag = shortFlag
-			v, ok = ps[shortFlag]
+			v, ok = ps.Get(shortFlag)
 			if !ok {
 				return
 			}
@@ -32,7 +32,7 @@ func getCliopatraParameters(
 			Name:  name,
 			Short: p.Help,
 			Type:  p.Type,
-			Value: v,
+			Value: v.Value,
 		}
 		if p.Type == parameters.ParameterTypeBool {
 			param.NoValue = true
@@ -49,7 +49,7 @@ func getCliopatraParameters(
 		// Right now we can only kind of guess, by doing some comparison.
 		//
 		// See https://github.com/go-go-golems/glazed/issues/239
-		if !p.IsEqualToDefault(v) {
+		if !p.IsEqualToDefault(v.Value) {
 			ret = append(ret, param)
 		}
 	})

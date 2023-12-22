@@ -211,7 +211,7 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
-func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
+func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error) {
 	ps := p.GetParameterDefinitions()
 	return parameters.GatherParametersFromMap(m, ps, onlyProvided)
 }
@@ -249,7 +249,8 @@ func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(cmd *cobra.Command) (*Pa
 	}, nil
 }
 
-func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
+func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error) {
+	// TODO(manuel, 2023-12-22) I think we should pass in the name of the step here for the log metadata
 	return parameters.GatherParametersFromMap(m, p.GetParameterDefinitions(), onlyProvided)
 }
 

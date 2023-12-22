@@ -61,7 +61,7 @@ func GatherFlagsFromStringList(
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
-) (map[string]interface{}, []string, error) {
+) (*ParsedParameters, []string, error) {
 	flagMap := make(map[string]*ParameterDefinition)
 	flagNames := map[string]string{}
 	remainingArgs := []string{}
@@ -137,7 +137,7 @@ func GatherFlagsFromStringList(
 		}
 	}
 
-	result := make(map[string]interface{})
+	result := NewParsedParameters()
 	for paramName, values := range rawValues {
 		param := flagMap[paramName]
 		if param == nil {
@@ -147,7 +147,7 @@ func GatherFlagsFromStringList(
 		if err != nil {
 			return nil, nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
 		}
-		result[param.Name] = parsedValue
+		result.Set(param.Name, parsedValue)
 	}
 
 	for _, param := range params {
@@ -157,8 +157,12 @@ func GatherFlagsFromStringList(
 			}
 		}
 		if !onlyProvided {
-			if _, ok := result[param.Name]; !ok && param.Default != nil {
-				result[param.Name] = param.Default
+			if _, ok := result.Get(param.Name); !ok && param.Default != nil {
+				p := &ParsedParameter{
+					ParameterDefinition: param,
+				}
+				p.Set("default", param.Default)
+				result.Set(param.Name, p)
 			}
 		}
 	}

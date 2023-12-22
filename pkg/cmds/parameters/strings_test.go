@@ -500,11 +500,18 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, args, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
+			got_, args, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GatherFlagsFromStringList() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if err != nil {
+				return
+			}
+			got := map[string]interface{}{}
+			got_.ForEach(func(key string, p *ParsedParameter) {
+				got[key] = p.Value
+			})
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GatherFlagsFromStringList() = %v, want %v", got, tt.want)
 			}

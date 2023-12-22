@@ -68,16 +68,17 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 
 func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*RenameSettings, error) {
 	ps := glazedLayer.Parameters
-	if ps["rename"] == nil {
+	rename := ps.GetValue("rename")
+	if rename == nil {
 		return &RenameSettings{
 			RenameFields:  map[types.FieldName]string{},
 			RenameRegexps: row.RegexpReplacements{},
 		}, nil
 	}
 
-	renameFields, ok := cast.CastList2[string, interface{}](ps["rename"])
+	renameFields, ok := cast.CastList2[string, interface{}](rename)
 	if !ok {
-		return nil, errors.Errorf("Invalid rename fields %s", ps["rename"])
+		return nil, errors.Errorf("Invalid rename fields %s", rename)
 	}
 	renamesFieldsMap := map[types.FieldName]types.FieldName{}
 	for _, renameField := range renameFields {
@@ -89,7 +90,7 @@ func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (
 	}
 
 	regexpReplacements := row.RegexpReplacements{}
-	renameRegexpFields, ok := ps["rename-regexp"].(map[string]interface{})
+	renameRegexpFields, ok := ps.GetValue("rename-regexp").(map[string]interface{})
 	if !ok {
 		return nil, errors.Errorf("Invalid rename regexp fields")
 	}
@@ -106,7 +107,7 @@ func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (
 			&row.RegexpReplacement{Regexp: re, Replacement: replacement_})
 	}
 
-	renameYaml, ok := ps["rename-yaml"].(string)
+	renameYaml, ok := ps.GetValue("rename-yaml").(string)
 	if !ok {
 		return nil, errors.Errorf("Invalid rename yaml")
 	}

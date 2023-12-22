@@ -39,7 +39,7 @@ func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
 	assert.True(t, present)
-	assert.Equal(t, v, "value")
+	assert.Equal(t, "value", v.Value)
 }
 
 // Test parsing of list-type parameter with multiple arguments
@@ -54,7 +54,7 @@ func TestGatherArguments_ListParameterParsing(t *testing.T) {
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
 	assert.True(t, present)
-	assert.Equal(t, v, []string{"value1", "value2"})
+	assert.Equal(t, []string{"value1", "value2"}, v.Value)
 }
 
 // Test handling of default values when onlyProvided is set to false
@@ -70,7 +70,7 @@ func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
 	assert.True(t, present)
-	assert.Equal(t, v, "default")
+	assert.Equal(t, "default", v.Value)
 }
 
 // Test handling of default values when onlyProvided is set to true
@@ -118,10 +118,10 @@ func TestGatherArguments_CorrectSequence(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := res.Get("Test1")
 	assert.True(t, present)
-	assert.Equal(t, v1, "value1")
+	assert.Equal(t, "value1", v1.Value)
 	v2, present := res.Get("Test2")
 	assert.True(t, present)
-	assert.Equal(t, v2, "value2")
+	assert.Equal(t, "value2", v2.Value)
 }
 
 // Test various combinations of list and non-list arguments
@@ -140,10 +140,10 @@ func TestGatherArguments_CombinationsListNonList(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := res.Get("Test1")
 	assert.True(t, present)
-	assert.Equal(t, v1, "value1")
+	assert.Equal(t, "value1", v1.Value)
 	v2, present := res.Get("Test2")
 	assert.True(t, present)
-	assert.Equal(t, v2, []string{"value2", "value3"})
+	assert.Equal(t, []string{"value2", "value3"}, v2.Value)
 }
 
 func TestListParsingWithDefaults(t *testing.T) {
@@ -159,7 +159,7 @@ func TestListParsingWithDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []string{"data1", "data2"}, v1)
+	assert.Equal(t, []string{"data1", "data2"}, v1.Value)
 }
 
 func TestListDefault(t *testing.T) {
@@ -175,7 +175,7 @@ func TestListDefault(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []string{"default1", "default2"}, v1)
+	assert.Equal(t, []string{"default1", "default2"}, v1.Value)
 }
 
 func TestIntegerListParsing(t *testing.T) {
@@ -190,7 +190,7 @@ func TestIntegerListParsing(t *testing.T) {
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []int{1, 2, 3}, v2)
+	assert.Equal(t, []int{1, 2, 3}, v2.Value)
 }
 
 func TestFloatListParsing(t *testing.T) {
@@ -205,7 +205,7 @@ func TestFloatListParsing(t *testing.T) {
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []float64{1.1, 2.2, 3.3}, v2)
+	assert.Equal(t, []float64{1.1, 2.2, 3.3}, v2.Value)
 }
 
 func TestChoiceListParsing(t *testing.T) {
@@ -225,7 +225,7 @@ func TestChoiceListParsing(t *testing.T) {
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []string{"choice1", "choice2", "choice3"}, v2)
+	assert.Equal(t, []string{"choice1", "choice2", "choice3"}, v2.Value)
 }
 
 func TestParsingErrorInvalidInt(t *testing.T) {
@@ -257,10 +257,10 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, 1, v1)
+	assert.Equal(t, 1, v1.Value)
 	v2, present := result.Get("arg2")
 	assert.True(t, present)
-	assert.Equal(t, []int{2, 3}, v2)
+	assert.Equal(t, []int{2, 3}, v2.Value)
 }
 
 func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
@@ -288,16 +288,16 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, 1, v1)
+	assert.Equal(t, 1, v1.Value)
 	v2, present := result.Get("arg2")
 	assert.True(t, present)
-	assert.Equal(t, 2, v2)
+	assert.Equal(t, 2, v2.Value)
 	v3, present := result.Get("arg3")
 	assert.True(t, present)
-	assert.Equal(t, 3, v3)
+	assert.Equal(t, 3, v3.Value)
 	v4, present := result.Get("arg4")
 	assert.True(t, present)
-	assert.Equal(t, []int{4}, v4)
+	assert.Equal(t, []int{4}, v4.Value)
 }
 
 func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) {
@@ -325,16 +325,16 @@ func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) 
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, 1, v1)
+	assert.Equal(t, 1, v1.Value)
 	v2, present := result.Get("arg2")
 	assert.True(t, present)
-	assert.Equal(t, 2, v2)
+	assert.Equal(t, 2, v2.Value)
 	v3, present := result.Get("arg3")
 	assert.True(t, present)
-	assert.Equal(t, 3, v3)
+	assert.Equal(t, 3, v3.Value)
 	v4, present := result.Get("arg4")
 	assert.True(t, present)
-	assert.Equal(t, []int{5, 6, 7}, v4)
+	assert.Equal(t, []int{5, 6, 7}, v4.Value)
 }
 
 // Test that an argument of type objectListFromFile from test-data/objectList.json correctly parses the argument
@@ -359,7 +359,7 @@ func TestObjectListFromFileParsing(t *testing.T) {
 			"name": "objectList2",
 			"type": "object",
 		},
-	}, v1)
+	}, v1.Value)
 }
 
 // Test that loading from multiple files with an argument of type objectListFromFiles correctly parses
@@ -383,59 +383,62 @@ func TestObjectListFromFilesParsing(t *testing.T) {
 			map[string]interface{}{"name": "objectList4", "type": "object"},
 			map[string]interface{}{"name": "objectList5", "type": "object"},
 			map[string]interface{}{"name": "objectList6", "type": "object"},
-		}, v1)
+		}, v1.Value)
 }
 
 func TestGenerateUseString_NoArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{}
+	arguments := NewParameterDefinitions()
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test", result)
 }
 
 func TestGenerateUseString_RequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{{Name: "name", Required: true}}
+	arguments := NewParameterDefinitions(WithParameterDefinitionList(
+		[]*ParameterDefinition{{Name: "name", Required: true}}))
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test <name>", result)
 }
 
 func TestGenerateUseString_OptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{{Name: "name"}}
+	arguments := NewParameterDefinitions(WithParameterDefinitionList(
+		[]*ParameterDefinition{{Name: "name"}}))
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test [name]", result)
 }
 
 func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{Name: "name", Required: true},
 		{Name: "age"},
-	}
+	}))
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test <name> [age]", result)
 }
 
 func TestGenerateUseString_WithDefaultValue(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{{Name: "name", Default: "John"}}
+	arguments := NewParameterDefinitions(WithParameterDefinitionList(
+		[]*ParameterDefinition{{Name: "name", Default: "John"}}))
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test [name (default: John)]", result)
 }
 
 func TestGenerateUseString_WithMultipleValues(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{{Name: "name", Type: ParameterTypeStringList}}
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{{Name: "name", Type: ParameterTypeStringList}}))
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test [name...]", result)
 }
 
 func TestGenerateUseString_RequiredWithMultipleValues(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{Name: "name", Required: true, Type: ParameterTypeStringList},
-	}
+	}))
 
 	result := GenerateUseString(cmd, arguments)
 	require.Equal(t, "test <name...>", result)

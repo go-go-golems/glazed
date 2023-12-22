@@ -396,7 +396,7 @@ func InitializeParameterDefaultsFromParameters(
 	return nil
 }
 
-func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) error {
+func InitializeStructFromParameters(s interface{}, ps *ParsedParameters) error {
 	if s == nil {
 		return errors.Errorf("Can't initialize nil struct")
 	}
@@ -415,7 +415,7 @@ func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) er
 		if !ok {
 			continue
 		}
-		v_, ok := ps[v]
+		v_, ok := ps.Get(v)
 		if !ok {
 			continue
 		}
@@ -434,14 +434,14 @@ func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) er
 					return errors.Wrapf(err, "failed to initialize struct for %s", v)
 				}
 			default:
-				err := reflect2.SetReflectValue(value.Elem(), v_)
+				err := reflect2.SetReflectValue(value.Elem(), v_.Value)
 				if err != nil {
 					return errors.Wrapf(err, "failed to set value for %s", v)
 				}
 			}
 
 		} else {
-			err := reflect2.SetReflectValue(value, v_)
+			err := reflect2.SetReflectValue(value, v_.Value)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set value for %s", v)
 			}

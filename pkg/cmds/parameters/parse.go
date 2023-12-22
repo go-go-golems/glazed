@@ -8,6 +8,7 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/pkg/errors"
 	"github.com/tj/go-naturaldate"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -15,6 +16,115 @@ import (
 	"strings"
 	"time"
 )
+
+type ParseStep struct {
+	Source   string
+	Value    interface{}
+	Metadata map[string]interface{}
+}
+
+type ParsedParameter struct {
+	Value               interface{}
+	ParameterDefinition *ParameterDefinition
+	// Log contains a history of the parsing steps that were taken to arrive at the value.
+	// Last step is the final value.
+	Log []ParseStep
+}
+
+func (p *ParsedParameter) Set(source string, value interface{}) {
+	p.Value = value
+	p.Log = append(p.Log, ParseStep{
+		Source: source,
+		Value:  value,
+	})
+}
+
+func (p *ParsedParameter) SetWithMetadata(source string, value interface{}, metadata map[string]interface{}) {
+	p.Value = value
+	p.Log = append(p.Log, ParseStep{
+		Source:   source,
+		Value:    value,
+		Metadata: metadata,
+	})
+}
+
+func (p *ParsedParameter) Merge(v *ParsedParameter) {
+	p.Log = append(p.Log, v.Log...)
+	p.Value = v.Value
+}
+
+type ParsedParameters struct {
+	*orderedmap.OrderedMap[string, *ParsedParameter]
+}
+
+type ParsedParametersOption func(*ParsedParameters)
+
+func WithParsedParameter(pd *ParameterDefinition, key string, value interface{}) ParsedParametersOption {
+	return func(p *ParsedParameters) {
+		p.Set(key, &ParsedParameter{
+			ParameterDefinition: pd,
+			Value:               value,
+		})
+	}
+}
+
+func NewParsedParameters(options ...ParsedParametersOption) *ParsedParameters {
+	ret := &ParsedParameters{
+		OrderedMap: orderedmap.New[string, *ParsedParameter](),
+	}
+	for _, o := range options {
+		o(ret)
+	}
+	return ret
+}
+
+func (p *ParsedParameters) GetCheckedValue(key string) (interface{}, bool) {
+	v, ok := p.Get(key)
+	if !ok {
+		return nil, false
+	}
+	return v.Value, true
+}
+
+func (p *ParsedParameters) GetValue(key string) interface{} {
+	v, ok := p.Get(key)
+	if !ok {
+		return nil
+	}
+	return v.Value
+}
+
+func (p *ParsedParameters) ForEach(f func(key string, value *ParsedParameter)) {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		f(v.Key, v.Value)
+	}
+}
+
+func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) error) error {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		err := f(v.Key, v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Merge is actually more complex than it seems, other takes precedence. If the key already exists in the map,
+// we actually merge the ParsedParameter themselves, by appending the entire history of the other parameter to the
+// current one.
+func (p *ParsedParameters) Merge(other *ParsedParameters) *ParsedParameters {
+	other.ForEach(func(k string, v *ParsedParameter) {
+		v_, ok := p.Get(k)
+		if ok {
+			v_.Merge(v)
+		} else {
+			p.Set(k, v)
+		}
+	})
+	return p
+}
 
 // ParseParameter parses command line arguments according to the given ParameterDefinition.
 // It returns the parsed parameter value and a non-nil error if parsing failed.
@@ -41,21 +151,30 @@ import (
 //   - ParameterTypeStringListFromFile, ParameterTypeStringListFromFiles: load file lines as a string list
 //
 // The parsing logic depends on the Type in the ParameterDefinition.
-func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
+//
+// TODO(manuel, 2023-12-22) We should provide the parsing context from higher up here, instead of just calling it strings
+func (p *ParameterDefinition) ParseParameter(v []string) (*ParsedParameter, error) {
+	ret := &ParsedParameter{
+		ParameterDefinition: p,
+	}
+
 	if len(v) == 0 {
 		if p.Required {
 			return nil, errors.Errorf("Argument %s not found", p.Name)
 		} else {
-			return p.Default, nil
+			ret.Set("default", p.Default)
+			return ret, nil
 		}
 	}
+
+	var v_ interface{}
 
 	switch p.Type {
 	case ParameterTypeString:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single string", p.Name)
 		}
-		return v[0], nil
+		v_ = v[0]
 	case ParameterTypeInteger:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single integer", p.Name)
@@ -64,7 +183,7 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as integer", p.Name)
 		}
-		return i, nil
+		v_ = i
 	case ParameterTypeFloat:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single float", p.Name)
@@ -73,9 +192,9 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as float", p.Name)
 		}
-		return f, nil
+		v_ = f
 	case ParameterTypeStringList:
-		return v, nil
+		v_ = v
 	case ParameterTypeIntegerList:
 		ints := make([]int, 0)
 		for _, arg := range v {
@@ -85,23 +204,24 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			}
 			ints = append(ints, i)
 		}
-		return ints, nil
+		v_ = ints
 
 	case ParameterTypeBool:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single boolean", p.Name)
 		}
-		if v[0] == "on" {
-			return true, nil
+		switch {
+		case v[0] == "on":
+			v_ = true
+		case v[0] == "off":
+			v_ = false
+		default:
+			b, err := strconv.ParseBool(v[0])
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not parse argument %s as bool", p.Name)
+			}
+			v_ = b
 		}
-		if v[0] == "off" {
-			return false, nil
-		}
-		b, err := strconv.ParseBool(v[0])
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse argument %s as bool", p.Name)
-		}
-		return b, nil
 
 	case ParameterTypeChoice:
 		if len(v) > 1 {
@@ -117,7 +237,7 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 		if !found {
 			return nil, errors.Errorf("Argument %s has invalid choice %s", p.Name, choice)
 		}
-		return choice, nil
+		v_ = choice
 
 	case ParameterTypeChoiceList:
 		choices := make([]string, 0)
@@ -133,21 +253,21 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			}
 			choices = append(choices, arg)
 		}
-		return choices, nil
+		v_ = choices
 
 	case ParameterTypeDate:
 		parsedDate, err := ParseDate(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not parse argument %s as date", p.Name)
 		}
-		return parsedDate, nil
+		v_ = parsedDate
 
 	case ParameterTypeFile:
-		v_, err := GetFileData(v[0])
+		v__, err := GetFileData(v[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read file %s", v[0])
 		}
-		return v_, nil
+		v_ = v__
 
 	case ParameterTypeFileList:
 		ret := []interface{}{}
@@ -158,31 +278,35 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			}
 			ret = append(ret, v)
 		}
-		return ret, nil
+		v_ = ret
 
 	case ParameterTypeObjectListFromFiles:
 		fallthrough
 	case ParameterTypeObjectListFromFile:
-		ret := []interface{}{}
+		ret_ := []interface{}{}
 		for _, fileName := range v {
 			l, err := parseFromFileName(fileName, p)
 			if err != nil {
 				return nil, err
 			}
-			lObj, ok := l.([]interface{})
+			lObj, ok := l.Value.([]interface{})
 			if !ok {
 				return nil, errors.Errorf("Could not parse file %s as list of objects", fileName)
 			}
 
-			ret = append(ret, lObj...)
+			ret_ = append(ret_, lObj...)
 		}
-		return ret, nil
+		v_ = ret_
 
 	case ParameterTypeObjectFromFile:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single file name", p.Name)
 		}
-		return parseFromFileName(v[0], p)
+		v__, err := parseFromFileName(v[0], p)
+		if err != nil {
+			return nil, err
+		}
+		v_ = v__
 
 	case ParameterTypeStringFromFile:
 		fallthrough
@@ -193,13 +317,13 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			sObj, ok := s.(string)
+			sObj, ok := s.Value.(string)
 			if !ok {
 				return nil, errors.Errorf("Could not parse file %s as string", fileName)
 			}
 			res.WriteString(sObj)
 		}
-		return res.String(), nil
+		v_ = res.String()
 
 	case ParameterTypeStringListFromFiles:
 		fallthrough
@@ -210,20 +334,20 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			sObj, ok := s.([]string)
+			sObj, ok := s.Value.([]string)
 			if !ok {
 				return nil, errors.Errorf("Could not parse file %s as string list", fileName)
 			}
 			res = append(res, sObj...)
 		}
-		return res, nil
+		v_ = res
 
 	case ParameterTypeKeyValue:
-		if len(v) == 0 {
-			return p.Default, nil
-		}
-		ret := map[string]interface{}{}
-		if len(v) == 1 && strings.HasPrefix(v[0], "@") {
+		switch {
+		case len(v) == 0:
+			v_ = p.Default
+
+		case len(v) == 1 && strings.HasPrefix(v[0], "@"):
 			// load from file
 			templateDataFile := v[0][1:]
 
@@ -241,8 +365,14 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 				f = f2
 			}
 
-			return p.ParseFromReader(f, templateDataFile)
-		} else {
+			v__, err := p.ParseFromReader(f, templateDataFile)
+			if err != nil {
+				return nil, err
+			}
+			v_ = v__
+
+		default:
+			ret_ := map[string]interface{}{}
 			for _, arg := range v {
 				// TODO(2023-02-11): The separator could be stored in the parameter itself?
 				// It was configurable before.
@@ -252,10 +382,10 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 				if len(parts) != 2 {
 					return nil, errors.Errorf("Could not parse argument %s as key=value pair", arg)
 				}
-				ret[parts[0]] = parts[1]
+				ret_[parts[0]] = parts[1]
 			}
+			v_ = ret_
 		}
-		return ret, nil
 
 	case ParameterTypeFloatList:
 		floats := make([]float64, 0)
@@ -267,15 +397,25 @@ func (p *ParameterDefinition) ParseParameter(v []string) (interface{}, error) {
 			}
 			floats = append(floats, f)
 		}
-		return floats, nil
+		v_ = floats
+
+	default:
+		return nil, errors.Errorf("Unknown parameter type %s", p.Type)
 	}
 
-	return nil, errors.Errorf("Unknown parameter type %s", p.Type)
+	ret.SetWithMetadata("strings", v_, map[string]interface{}{
+		"value": v,
+	})
+	return ret, nil
 }
 
-func parseFromFileName(fileName string, p *ParameterDefinition) (interface{}, error) {
+func parseFromFileName(fileName string, p *ParameterDefinition) (*ParsedParameter, error) {
+	ret := &ParsedParameter{
+		ParameterDefinition: p,
+	}
 	if fileName == "" {
-		return p.Default, nil
+		ret.Set("default", p.Default)
+		return ret, nil
 	}
 	var f io.Reader
 	if fileName == "-" {
@@ -351,42 +491,59 @@ func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error)
 // ParseFromReader parses a single element for the type from the reader.
 // In the case of parameters taking multiple files, this needs to be called for each file
 // and merged at the caller level.
-func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (interface{}, error) {
+func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (*ParsedParameter, error) {
+	ret := &ParsedParameter{
+		ParameterDefinition: p,
+	}
+
 	var err error
 	//exhaustive:ignore
 	switch p.Type {
 	case ParameterTypeStringListFromFiles:
 		fallthrough
 	case ParameterTypeStringListFromFile:
-		ret := make([]string, 0)
+		ret_ := make([]string, 0)
 
 		// check for json
 		if strings.HasSuffix(filename, ".json") {
-			err = json.NewDecoder(f).Decode(&ret)
+			err = json.NewDecoder(f).Decode(&ret_)
 			if err != nil {
 				return nil, err
 			}
+			ret.SetWithMetadata("json", ret_, map[string]interface{}{
+				"filename": filename,
+			})
 			return ret, nil
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
-			err = yaml.NewDecoder(f).Decode(&ret)
+			err = yaml.NewDecoder(f).Decode(&ret_)
 			if err != nil {
 				return nil, err
 			}
+			ret.SetWithMetadata("yaml", ret_, map[string]interface{}{
+				"filename": filename,
+			})
 			return ret, nil
 		} else {
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
-				ret = append(ret, scanner.Text())
+				ret_ = append(ret_, scanner.Text())
 			}
 			if err = scanner.Err(); err != nil {
 				return nil, err
 			}
 			if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
-				if len(ret) == 0 {
+				if len(ret_) == 0 {
 					return nil, errors.Errorf("File %s does not contain any lines", filename)
 				}
 				// remove headers
-				ret = ret[1:]
+				ret_ = ret_[1:]
+				ret.SetWithMetadata("csv", ret_, map[string]interface{}{
+					"filename": filename,
+				})
+			} else {
+				ret.SetWithMetadata("text", ret_, map[string]interface{}{
+					"filename": filename,
+				})
 			}
 		}
 
@@ -396,8 +553,14 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 		object := interface{}(nil)
 		if filename == "-" || strings.HasSuffix(filename, ".json") {
 			err = json.NewDecoder(f).Decode(&object)
+			ret.SetWithMetadata("json", object, map[string]interface{}{
+				"filename": filename,
+			})
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&object)
+			ret.SetWithMetadata("yaml", object, map[string]interface{}{
+				"filename": filename,
+			})
 		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 			objects, err := parseObjectListFromCSV(f, filename)
 			if err != nil {
@@ -407,6 +570,9 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
 			}
 			object = objects[0]
+			ret.SetWithMetadata("csv", object, map[string]interface{}{
+				"filename": filename,
+			})
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
@@ -415,19 +581,31 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
 		}
 
-		return object, nil
+		return ret, nil
 
 	case ParameterTypeObjectListFromFiles:
 		fallthrough
 	case ParameterTypeObjectListFromFile:
-		return parseObjectListFromReader(f, filename)
+		return p.parseObjectListFromReader(f, filename)
 
 	case ParameterTypeKeyValue:
-		ret := interface{}(nil)
+		ret_ := interface{}(nil)
 		if filename == "-" || strings.HasSuffix(filename, ".json") {
-			err = json.NewDecoder(f).Decode(&ret)
+			err = json.NewDecoder(f).Decode(&ret_)
+			if err != nil {
+				return nil, err
+			}
+			ret.SetWithMetadata("json", ret_, map[string]interface{}{
+				"filename": filename,
+			})
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
-			err = yaml.NewDecoder(f).Decode(&ret)
+			err = yaml.NewDecoder(f).Decode(&ret_)
+			if err != nil {
+				return nil, err
+			}
+			ret.SetWithMetadata("yaml", ret_, map[string]interface{}{
+				"filename": filename,
+			})
 		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 			objects, err := parseObjectListFromCSV(f, filename)
 			if err != nil {
@@ -436,14 +614,13 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 			if len(objects) != 1 {
 				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
 			}
-			ret = objects[0]
+			ret.SetWithMetadata("csv", objects[0], map[string]interface{}{
+				"filename": filename,
+			})
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
 
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not parse file %s", filename)
-		}
 		return ret, nil
 
 	case ParameterTypeStringFromFiles:
@@ -454,14 +631,21 @@ func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string) (int
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read from stdin")
 		}
-		return b.String(), nil
+		ret.SetWithMetadata("text", b.String(), map[string]interface{}{
+			"filename": filename,
+		})
+		return ret, nil
 
 	default:
 		return nil, errors.New("Cannot parse from file for this parameter type")
 	}
 }
 
-func parseObjectListFromReader(f io.Reader, filename string) (interface{}, error) {
+func (p *ParameterDefinition) parseObjectListFromReader(f io.Reader, filename string) (*ParsedParameter, error) {
+	ret := &ParsedParameter{
+		ParameterDefinition: p,
+	}
+
 	objectList := []interface{}{}
 	var object interface{}
 	if filename == "-" || strings.HasSuffix(filename, ".json") {
@@ -478,6 +662,9 @@ func parseObjectListFromReader(f io.Reader, filename string) (interface{}, error
 			}
 			objectList = []interface{}{object}
 		}
+		ret.SetWithMetadata("json", objectList, map[string]interface{}{
+			"filename": filename,
+		})
 	} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 		b, err := io.ReadAll(f)
 		if err != nil {
@@ -492,17 +679,25 @@ func parseObjectListFromReader(f io.Reader, filename string) (interface{}, error
 			}
 			objectList = []interface{}{object}
 		}
+
+		ret.SetWithMetadata("yaml", objectList, map[string]interface{}{
+			"filename": filename,
+		})
 	} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 		var err error
 		objectList, err = parseObjectListFromCSV(f, filename)
 		if err != nil {
 			return nil, err
 		}
+
+		ret.SetWithMetadata("csv", objectList, map[string]interface{}{
+			"filename": filename,
+		})
 	} else {
 		return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 	}
 
-	return objectList, nil
+	return ret, nil
 }
 
 // refTime is used to set a reference time for natural date parsing for unit test purposes
@@ -547,29 +742,39 @@ func GatherParametersFromMap(
 	m map[string]interface{},
 	ps ParameterDefinitions,
 	onlyProvided bool,
-) (map[string]interface{}, error) {
-	ret := map[string]interface{}{}
+) (*ParsedParameters, error) {
+	ret := NewParsedParameters()
 
 	for v := ps.Oldest(); v != nil; v = v.Next() {
 		name, p := v.Key, v.Value
-		v, ok := m[name]
+
+		parsed := &ParsedParameter{
+			ParameterDefinition: p,
+		}
+
+		v_, ok := m[name]
 		if !ok {
 			if p.ShortFlag != "" {
-				v, ok = m[p.ShortFlag]
+				v_, ok = m[p.ShortFlag]
 			}
 			if onlyProvided {
 				continue
 			}
 			if !ok {
-				ret[name] = p.Default
+				parsed.Set("default", p.Default)
+				ret.Set(name, parsed)
 				continue
 			}
 		}
-		err := p.CheckValueValidity(v)
+		err := p.CheckValueValidity(v_)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Invalid value for parameter %s", name)
 		}
-		ret[name] = v
+		// NOTE(manuel, 2023-12-22) We might want to pass in that name instead of just saying from-map
+		parsed.SetWithMetadata("from-map", v_, map[string]interface{}{
+			"value": v_,
+		})
+		ret.Set(name, parsed)
 	}
 
 	return ret, nil

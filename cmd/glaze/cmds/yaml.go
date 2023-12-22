@@ -77,22 +77,22 @@ func (y *YamlCommand) RunIntoGlazeProcessor(
 	if !ok {
 		return errors.New("no default layer")
 	}
-	inputIsArray, ok := d.Parameters["input-is-array"].(bool)
+	inputIsArray, ok := d.Parameters.GetValue("input-is-array").(bool)
 	if !ok {
 		return fmt.Errorf("input-is-array flag is not a bool")
 	}
 
-	sanitize, ok := d.Parameters["sanitize"].(bool)
+	sanitize, ok := d.Parameters.GetValue("sanitize").(bool)
 	if !ok {
 		return fmt.Errorf("sanitize flag is not a bool")
 	}
 
-	inputFiles, ok := d.Parameters["input-files"].([]string)
+	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
 	if !ok {
 		return fmt.Errorf("input-files is not a string list")
 	}
 
-	fromMarkdown, ok := d.Parameters["from-markdown"].(bool)
+	fromMarkdown, ok := d.Parameters.GetValue("from-markdown").(bool)
 	if !ok {
 		return fmt.Errorf("from-markdown flag is not a bool")
 	}

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps map[string]interface{}) map[string]*layers.ParsedParameterLayer {
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) map[string]*layers.ParsedParameterLayer {
 	defaultLayer, ok := desc.GetLayer("default")
 	if !ok {
 		return nil
@@ -24,16 +24,15 @@ func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps map[string]interfa
 }
 
 func TestSingleFlag(t *testing.T) {
+	testPd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
 	desc := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
-			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+			testPd,
 		),
 	)
 	p := NewProgramFromCapture(
 		desc,
-		makeParsedDefaultLayer(desc, map[string]interface{}{
-			"test": "foobar",
-		}),
+		makeParsedDefaultLayer(desc, parameters.NewParsedParameters(parameters.WithParsedParameter(testPd, "test", "foobar"))),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -46,26 +45,23 @@ func TestSingleFlag(t *testing.T) {
 }
 
 func TestSingleFlagDefaultValue(t *testing.T) {
+	pdTest := parameters.NewParameterDefinition("test",
+		parameters.ParameterTypeString,
+		parameters.WithDefault("foobar"),
+		parameters.WithHelp("testing help"),
+	)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
-			parameters.NewParameterDefinition("test",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("foobar"),
-				parameters.WithHelp("testing help"),
-			),
+			pdTest,
 		),
 	)
-	p := NewProgramFromCapture(d, makeParsedDefaultLayer(d, map[string]interface{}{
-		"test": "foobar",
-	}))
+	p := NewProgramFromCapture(d, makeParsedDefaultLayer(d, parameters.NewParsedParameters(parameters.WithParsedParameter(pdTest, "test", "foobar"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
 	assert.Len(t, p.Flags, 0)
 
-	p = NewProgramFromCapture(d, makeParsedDefaultLayer(d, map[string]interface{}{
-		"test": "foobar2",
-	}))
+	p = NewProgramFromCapture(d, makeParsedDefaultLayer(d, parameters.NewParsedParameters(parameters.WithParsedParameter(pdTest, "test", "foobar2"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -77,20 +73,21 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 }
 
 func TestTwoFlags(t *testing.T) {
+	pd1 := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
+	pd2 := parameters.NewParameterDefinition("test2", parameters.ParameterTypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
-			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
+			pd1,
+			pd2,
 		),
 	)
 
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, map[string]interface{}{
-			"test":  "foobar",
-			"test2": "foobar2",
-		}),
-	)
+		makeParsedDefaultLayer(d, parameters.NewParsedParameters(
+			parameters.WithParsedParameter(pd1, "test", "foobar"),
+			parameters.WithParsedParameter(pd2, "test2", "foobar2"),
+		)))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -106,17 +103,17 @@ func TestTwoFlags(t *testing.T) {
 }
 
 func TestSingleArg(t *testing.T) {
+	pd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithArguments(
-			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+			pd,
 		),
 	)
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, map[string]interface{}{
-			"test": "foobar",
-		}),
-	)
+		makeParsedDefaultLayer(d,
+			parameters.NewParsedParameters(
+				parameters.WithParsedParameter(pd, "test", "foobar"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -128,24 +125,28 @@ func TestSingleArg(t *testing.T) {
 }
 
 func TestTwoArgsTwoFlags(t *testing.T) {
+	pd1 := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
+	pd2 := parameters.NewParameterDefinition("test2", parameters.ParameterTypeString)
+	pd3 := parameters.NewParameterDefinition("test3", parameters.ParameterTypeString)
+	pd4 := parameters.NewParameterDefinition("test4", parameters.ParameterTypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithArguments(
-			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("test2", parameters.ParameterTypeString),
+			pd1,
+			pd2,
 		),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition("test3", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("test4", parameters.ParameterTypeString),
+			pd3,
+			pd4,
 		),
 	)
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, map[string]interface{}{
-			"test":  "foobar",
-			"test2": "foobar2",
-			"test3": "foobar3",
-			"test4": "foobar4",
-		}),
+		makeParsedDefaultLayer(d, parameters.NewParsedParameters(
+			parameters.WithParsedParameter(pd1, "test", "foobar"),
+			parameters.WithParsedParameter(pd2, "test2", "foobar2"),
+			parameters.WithParsedParameter(pd3, "test3", "foobar3"),
+			parameters.WithParsedParameter(pd4, "test4", "foobar4"),
+		)),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -171,9 +172,10 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 }
 
 func TestSingleLayer(t *testing.T) {
+	pd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
 	layer, err2 := layers.NewParameterLayer("test-layer", "test-layer",
 		layers.WithParameters(
-			parameters.NewParameterDefinition("test", parameters.ParameterTypeString),
+			pd,
 		),
 	)
 	require.NoError(t, err2)
@@ -188,12 +190,8 @@ func TestSingleLayer(t *testing.T) {
 		map[string]*layers.ParsedParameterLayer{
 			"test-layer": {
 				Layer: layer,
-				Parameters: map[string]interface{}{
-					"test":  "foobar",
-					"test2": "foobar2",
-				},
-			},
-		})
+				Parameters: parameters.NewParsedParameters(
+					parameters.WithParsedParameter(pd, "test", "foobar"))}})
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)

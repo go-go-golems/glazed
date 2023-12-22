@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"strings"
 	"time"
 )
@@ -24,17 +23,17 @@ import (
 // and list arguments.
 // If everything is successful, it assigns an argument validator (either MinimumNArgs or RangeArgs)
 // to the cobra command's Args attribute.
-func addArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
+func addArgumentsToCobraCommand(cmd *cobra.Command, arguments ParameterDefinitions) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
 	hadOptional := false
 
-	if len(arguments) == 0 {
+	if arguments.Len() == 0 {
 		return nil
 	}
 
-	for _, argument := range arguments {
+	err := arguments.ForEachE(func(argument *ParameterDefinition) error {
 		if maxArgs == -1 {
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
@@ -56,6 +55,12 @@ func addArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 		if IsListParameter(argument.Type) {
 			maxArgs = -1
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	cmd.Args = cobra.MinimumNArgs(minArgs)
@@ -78,7 +83,7 @@ func addArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 // For example:
 //   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
 //   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
-func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) string {
+func GenerateUseString(cmd *cobra.Command, arguments ParameterDefinitions) string {
 	fields := strings.Fields(cmd.Use)
 	if len(fields) == 0 {
 		return ""
@@ -87,7 +92,7 @@ func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) str
 	useStr := verb
 	var defaultValueStr string
 
-	for _, arg := range arguments {
+	arguments.ForEach(func(arg *ParameterDefinition) {
 		defaultValueStr = ""
 		if arg.Default != nil {
 			defaultValueStr = fmt.Sprintf(" (default: %v)", arg.Default)
@@ -101,7 +106,7 @@ func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) str
 		} else {
 			useStr += " " + left + arg.Name + defaultValueStr + right
 		}
-	}
+	})
 
 	return useStr
 }
@@ -127,12 +132,15 @@ func GatherArguments(
 	arguments ParameterDefinitions,
 	onlyProvided bool,
 	ignoreRequired bool,
-) (*orderedmap.OrderedMap[string, interface{}], error) {
+) (*ParsedParameters, error) {
 	_ = args
-	result := orderedmap.New[string, interface{}]()
+	result := NewParsedParameters()
 	argsIdx := 0
 	for v := arguments.Oldest(); v != nil; v = v.Next() {
 		argument := v.Value
+		p := &ParsedParameter{
+			ParameterDefinition: argument,
+		}
 
 		if argsIdx >= len(args) {
 			if argument.Required {
@@ -142,7 +150,8 @@ func GatherArguments(
 				return nil, fmt.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
-					result.Set(argument.Name, argument.Default)
+					p.Set("default", argument.Default)
+					result.Set(argument.Name, p)
 				}
 				continue
 			}
@@ -213,26 +222,14 @@ func AddParametersToCobraCommand(
 	flags ParameterDefinitions,
 	prefix string,
 ) error {
-	actualFlags := []*ParameterDefinition{}
-	arguments := []*ParameterDefinition{}
-
-	for v := flags.Oldest(); v != nil; v = v.Next() {
-		flag := v.Value
-		if flag.IsArgument {
-			arguments = append(arguments, flag)
-		} else {
-			actualFlags = append(actualFlags, flag)
-		}
-	}
-
 	flagSet := cmd.Flags()
 
-	err := addArgumentsToCobraCommand(cmd, arguments)
+	err := addArgumentsToCobraCommand(cmd, flags.GetArguments())
 	if err != nil {
 		return err
 	}
 
-	for _, parameter := range actualFlags {
+	err = flags.GetFlags().ForEachE(func(parameter *ParameterDefinition) error {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
@@ -483,6 +480,11 @@ func AddParametersToCobraCommand(
 		default:
 			return errors.Errorf("Unknown parameter type for parameter %s: %s", parameter.Name, parameter.Type)
 		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -492,11 +494,15 @@ func GatherFlagsFromViper(
 	params ParameterDefinitions,
 	onlyProvided bool,
 	prefix string,
-) (map[string]interface{}, error) {
-	ret := map[string]interface{}{}
+) (*ParsedParameters, error) {
+	ret := NewParsedParameters()
 
 	for v := params.Oldest(); v != nil; v = v.Next() {
 		p := v.Value
+
+		parsed := &ParsedParameter{
+			ParameterDefinition: p,
+		}
 
 		flagName := prefix + p.Name
 		if onlyProvided && !viper.IsSet(flagName) {
@@ -504,7 +510,8 @@ func GatherFlagsFromViper(
 		}
 		if !onlyProvided && !viper.IsSet(flagName) {
 			if p.Default != nil {
-				ret[p.Name] = p.Default
+				parsed.Set("default", p.Default)
+				ret.Set(p.Name, parsed)
 			}
 			continue
 		}
@@ -512,33 +519,58 @@ func GatherFlagsFromViper(
 		//exhaustive:ignore
 		switch p.Type {
 		case ParameterTypeString:
-			ret[p.Name] = viper.GetString(flagName)
+			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
+				"flag": flagName,
+				// TODO(manuel, 2023-12-22) Would be cool if viper were to tell us where the flag came from...
+			})
 		case ParameterTypeInteger:
-			ret[p.Name] = viper.GetInt(flagName)
+			parsed.SetWithMetadata("viper", viper.GetInt(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeFloat:
-			ret[p.Name] = viper.GetFloat64(flagName)
+			parsed.SetWithMetadata("viper", viper.GetFloat64(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeBool:
-			ret[p.Name] = viper.GetBool(flagName)
+			parsed.SetWithMetadata("viper", viper.GetBool(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeStringList:
-			ret[p.Name] = viper.GetStringSlice(flagName)
+			parsed.SetWithMetadata("viper", viper.GetStringSlice(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeIntegerList:
-			ret[p.Name] = viper.GetIntSlice(flagName)
+			parsed.SetWithMetadata("viper", viper.GetIntSlice(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeKeyValue:
-			ret[p.Name] = viper.GetStringMapString(flagName)
+			parsed.SetWithMetadata("viper", viper.GetStringMapString(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeStringListFromFile:
-			ret[p.Name] = viper.GetStringSlice(flagName)
+			parsed.SetWithMetadata("viper", viper.GetStringSlice(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeStringFromFile:
 			// not sure if this is the best here, maybe it should be the filename?
-			ret[p.Name] = viper.GetString(flagName)
+			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeChoice:
 			// probably should do some checking here
-			ret[p.Name] = viper.GetString(flagName)
+			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 		case ParameterTypeObjectFromFile:
-			ret[p.Name] = viper.GetStringMap(flagName)
+			parsed.SetWithMetadata("viper", viper.GetStringMap(flagName), map[string]interface{}{
+				"flag": flagName,
+			})
 			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
 			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
 		}
+
+		ret.Set(p.Name, parsed)
 	}
 
 	return ret, nil
@@ -563,30 +595,33 @@ func GatherFlagsFromCobraCommand(
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
-) (map[string]interface{}, error) {
-	ps := map[string]interface{}{}
+) (*ParsedParameters, error) {
+	ps := NewParsedParameters()
 
 	for v := params.Oldest(); v != nil; v = v.Next() {
-		parameter := v.Value
+		pd := v.Value
+		p := &ParsedParameter{
+			ParameterDefinition: pd,
+		}
 
-		if parameter.IsArgument {
+		if pd.IsArgument {
 			continue
 		}
 
 		// check if the flag is set
-		flagName := prefix + parameter.Name
+		flagName := prefix + pd.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 
 		if !cmd.Flags().Changed(flagName) {
-			if parameter.Required {
+			if pd.Required {
 				if ignoreRequired {
 					continue
 				}
 
-				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
+				return nil, errors.Errorf("Parameter %s is required", pd.Name)
 			}
 
-			if parameter.Default == nil {
+			if pd.Default == nil {
 				continue
 			}
 
@@ -595,7 +630,7 @@ func GatherFlagsFromCobraCommand(
 			}
 		}
 
-		switch parameter.Type {
+		switch pd.Type {
 		case ParameterTypeObjectFromFile,
 			ParameterTypeObjectListFromFile,
 			ParameterTypeStringFromFile,
@@ -608,32 +643,41 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			v2, err := parameter.ParseParameter([]string{v})
+			v2, err := pd.ParseParameter([]string{v})
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v2
+			ps.Set(pd.Name, v2)
 
 		case ParameterTypeFloat:
 			v, err := cmd.Flags().GetFloat64(flagName)
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeInteger:
 			v, err := cmd.Flags().GetInt(flagName)
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeBool:
 			v, err := cmd.Flags().GetBool(flagName)
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeObjectListFromFiles,
 			ParameterTypeStringFromFiles,
@@ -643,11 +687,11 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			v2, err := parameter.ParseParameter(v)
+			v2, err := pd.ParseParameter(v)
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v2
+			ps.Set(pd.Name, v2)
 
 		case ParameterTypeStringList,
 			ParameterTypeChoiceList:
@@ -655,7 +699,10 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeKeyValue:
 			v, err := cmd.Flags().GetStringSlice(flagName)
@@ -665,13 +712,19 @@ func GatherFlagsFromCobraCommand(
 
 			// if it was changed and is empty, then skip setting from default
 			if cmd.Flags().Changed(flagName) && len(v) == 0 {
-				ps[parameter.Name] = map[string]string{}
+				p.SetWithMetadata("cobra",
+					map[string]string{},
+					map[string]interface{}{
+						"flag":      flagName,
+						"emptyFlag": true,
+					})
+				ps.Set(pd.Name, p)
 			} else {
-				v2, err := parameter.ParseParameter(v)
+				v2, err := pd.ParseParameter(v)
 				if err != nil {
 					return nil, err
 				}
-				ps[parameter.Name] = v2
+				ps.Set(pd.Name, v2)
 			}
 
 		case ParameterTypeIntegerList:
@@ -680,7 +733,10 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeFloatList:
 			// NOTE(manuel, 2023-04-01) Do we not check for default here?
@@ -688,7 +744,10 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			ps[parameter.Name] = v
+			p.SetWithMetadata("cobra", v, map[string]interface{}{
+				"flag": flagName,
+			})
+			ps.Set(pd.Name, p)
 		}
 	}
 	return ps, nil

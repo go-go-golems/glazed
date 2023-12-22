@@ -79,7 +79,20 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 
 	// if fields were manually specified, clear whatever default filters we might have set
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		l.Parameters["filter"] = []string{}
+		parsedFilter, ok := l.Parameters.Get("filter")
+		if !ok {
+			pd, ok := f.Flags.Get("filter")
+			if !ok {
+				return nil, errors.New("Failed to find default filter parameter definition")
+			}
+			p := &parameters.ParsedParameter{
+				ParameterDefinition: pd,
+			}
+			p.Set("override-fields-filter", []string{})
+			l.Parameters.Set("filter", p)
+		} else {
+			parsedFilter.Set("override-fields-filter", []string{})
+		}
 	}
 
 	return l, nil

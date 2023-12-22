@@ -135,9 +135,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 					cobra.CheckErr(err)
 				}
 
-				for k, v := range ps_ {
-					layer.Parameters[k] = v
-				}
+				layer.Parameters.Merge(ps_)
 			}
 		} else {
 			parsedLayers, err = cobraParser.Parse(args)
@@ -155,7 +153,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			if layer == nil {
 				layer = &layers.ParsedParameterLayer{
 					Layer:      defaultLayer,
-					Parameters: map[string]interface{}{},
+					Parameters: parameters.NewParsedParameters(),
 				}
 				parsedLayers[defaultLayer.GetSlug()] = layer
 			}
@@ -164,10 +162,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			if err != nil {
 				cobra.CheckErr(err)
 			}
-			for p := arguments.Oldest(); p != nil; p = p.Next() {
-				k, v := p.Key, p.Value
-				layer.Parameters[k] = v
-			}
+			layer.Parameters.Merge(arguments)
 		}
 
 		printYAML, err := cmd.Flags().GetBool("print-yaml")
@@ -526,7 +521,7 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	return ret, nil
 }
 
-func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterLayerImpl) (map[string]interface{}, error) {
+func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterLayerImpl) (*parameters.ParsedParameters, error) {
 	// actually hijack and load everything from viper instead of cobra...
 	ps, err := parameters.GatherFlagsFromViper(d.Flags, false, d.Prefix)
 	if err != nil {
@@ -538,9 +533,7 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterL
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps2 {
-		ps[k] = v
-	}
+	ps.Merge(ps2)
 
 	return ps, nil
 }

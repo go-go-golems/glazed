@@ -144,77 +144,59 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(cmd *cobra.Command) (
 	res := &layers.ParsedParameterLayer{
 		Layer: g,
 	}
-	ps := make(map[string]interface{})
+	ps := parameters.NewParsedParameters()
 	l, err := g.OutputParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.SelectParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.RenameParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.TemplateParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.FieldsFiltersParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.ReplaceParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.JqParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.SortParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 	l, err = g.SkipLimitParameterLayer.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range l.Parameters {
-		ps[k] = v
-	}
+	ps.Merge(l.Parameters)
 
 	res.Parameters = ps
 
 	return res, nil
 }
 
-func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error) {
+func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error) {
 	ps, err := g.OutputParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
@@ -223,58 +205,42 @@ func (g *GlazedParameterLayers) ParseFlagsFromJSON(m map[string]interface{}, onl
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.RenameParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.TemplateParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.JqParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.SortParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 	ps_, err = g.SkipLimitParameterLayer.ParseFlagsFromJSON(m, onlyProvided)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ps_ {
-		ps[k] = v
-	}
+	ps.Merge(ps_)
 
 	return ps, nil
 

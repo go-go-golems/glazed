@@ -37,22 +37,16 @@ type ParameterLayer interface {
 	Clone() ParameterLayer
 }
 
-type ParsedParameter struct {
-	Name   string
-	Value  interface{}
-	Source string
-}
-
 // ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer
 // specification. For example, it could be the result of parsing cobra command flags,
 // or a JSON body, or HTTP query parameters.
 type ParsedParameterLayer struct {
 	Layer      ParameterLayer
-	Parameters map[string]interface{}
+	Parameters *parameters.ParsedParameters
 }
 
 type JSONParameterLayer interface {
-	ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (map[string]interface{}, error)
+	ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error)
 }
 
 // Clone returns a copy of the parsedParameterLayer with a fresh Parameters map.
@@ -60,28 +54,26 @@ type JSONParameterLayer interface {
 func (ppl *ParsedParameterLayer) Clone() *ParsedParameterLayer {
 	ret := &ParsedParameterLayer{
 		Layer:      ppl.Layer,
-		Parameters: make(map[string]interface{}),
+		Parameters: parameters.NewParsedParameters().Merge(ppl.Parameters),
 	}
-	for k, v := range ppl.Parameters {
-		ret.Parameters[k] = v
-	}
+	ppl.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
+		ret.Parameters.Set(k, v)
+	})
 	return ret
 }
 
 // MergeParameters merges the other ParsedParameterLayer into this one, overwriting any
 // existing values. This doesn't replace the actual Layer pointer.
 func (ppl *ParsedParameterLayer) MergeParameters(other *ParsedParameterLayer) {
-	for k, v := range other.Parameters {
-		ppl.Parameters[k] = v
-	}
+	ppl.Parameters.Merge(other.Parameters)
 }
 
 func GetAllParsedParameters(layers map[string]*ParsedParameterLayer) map[string]interface{} {
 	ret := make(map[string]interface{})
 	for _, l := range layers {
-		for k, v := range l.Parameters {
+		l.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
 			ret[k] = v
-		}
+		})
 	}
 
 	return ret

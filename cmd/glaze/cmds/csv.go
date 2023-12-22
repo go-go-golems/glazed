@@ -84,26 +84,26 @@ func (c *CsvCommand) RunIntoGlazeProcessor(
 	if !ok {
 		return errors.New("no default layer")
 	}
-	inputFiles, ok := d.Parameters["input-files"].([]string)
+	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
 	if !ok {
 		return errors.New("input-files argument is not a string list")
 	}
 
-	comma, _ := d.Parameters["delimiter"].(string)
+	comma, _ := d.Parameters.GetValue("delimiter").(string)
 	if len(comma) != 1 {
 		return errors.New("delimiter must be a single character")
 	}
 	commaRune := rune(comma[0])
 
-	comment, _ := d.Parameters["comment"].(string)
+	comment, _ := d.Parameters.GetValue("comment").(string)
 	if len(comment) != 1 {
 		return errors.New("comment must be a single character")
 	}
 	commentRune := rune(comment[0])
 
-	fieldsPerRecord, _ := d.Parameters["fields-per-record"].(int)
-	trimLeadingSpace, _ := d.Parameters["trim-leading-space"].(bool)
-	lazyQuotes, _ := d.Parameters["lazy-quotes"].(bool)
+	fieldsPerRecord, _ := d.Parameters.GetValue("fields-per-record").(int)
+	trimLeadingSpace, _ := d.Parameters.GetValue("trim-leading-space").(bool)
+	lazyQuotes, _ := d.Parameters.GetValue("lazy-quotes").(bool)
 
 	options := []csv.ParseCSVOption{
 		csv.WithComma(commaRune),

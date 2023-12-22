@@ -213,7 +213,7 @@ func TestParameterDate(t *testing.T) {
 				require.NoError(t, err)
 				// clean out milliseconds
 				expected := tc.Expected.(time.Time).Truncate(time.Second)
-				got_ := got.(time.Time).Truncate(time.Second)
+				got_ := got.Value.(time.Time).Truncate(time.Second)
 				assert.Equal(t, expected, got_)
 			}
 		})
@@ -351,7 +351,7 @@ func TestParameters(t *testing.T) {
 					assert.Error(t, err)
 				} else {
 					require.NoError(t, err)
-					assert.Equal(t, tc.Expected, got)
+					assert.Equal(t, tc.Expected, got.Value)
 				}
 			})
 		}
@@ -366,29 +366,29 @@ func TestParseStringListFromReader(t *testing.T) {
 	reader := strings.NewReader("test\ntest2")
 	i, err := parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"test", "test2"}, i)
+	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	reader = strings.NewReader("test")
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"test"}, i)
+	assert.Equal(t, []string{"test"}, i.Value)
 
 	reader = strings.NewReader("")
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, []string{}, i)
+	assert.Equal(t, []string{}, i.Value)
 
 	// try single column CSV with header
 	reader = strings.NewReader("test\ntest2\ntest3\ntest4")
 	i, err = parameter.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"test2", "test3", "test4"}, i)
+	assert.Equal(t, []string{"test2", "test3", "test4"}, i.Value)
 
 	// test single string list json
 	reader = strings.NewReader(`["test","test2"]`)
 	i, err = parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"test", "test2"}, i)
+	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	// fail single string
 	reader = strings.NewReader(`"test"`)
@@ -419,20 +419,20 @@ func TestParseStringListFromReader(t *testing.T) {
 	reader = strings.NewReader(`[]`)
 	i, err = parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, []string{}, i)
+	assert.Equal(t, []string{}, i.Value)
 
 	// test yaml
 	reader = strings.NewReader(`- test
 - test2`)
 	i, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"test", "test2"}, i)
+	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	// test empty csv (just headers)
 	reader = strings.NewReader(`test`)
 	i, err = parameter.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
-	assert.Equal(t, []string{}, i)
+	assert.Equal(t, []string{}, i.Value)
 
 }
 
@@ -444,7 +444,7 @@ func TestParseObjectFromFile(t *testing.T) {
 	reader := strings.NewReader(`{"test":"test"}`)
 	i, err := parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	reader = strings.NewReader(`{"test":"test"`)
 	_, err = parameter.ParseFromReader(reader, "test.json")
@@ -453,7 +453,7 @@ func TestParseObjectFromFile(t *testing.T) {
 	reader = strings.NewReader(`{"test":{"test":"test"}}`)
 	i, err = parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i)
+	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i.Value)
 
 	reader = strings.NewReader(``)
 	_, err = parameter.ParseFromReader(reader, "test.json")
@@ -463,55 +463,55 @@ func TestParseObjectFromFile(t *testing.T) {
 	reader = strings.NewReader(`["test"]`)
 	v, err := parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"test"}, v)
+	assert.Equal(t, []interface{}{"test"}, v.Value)
 
 	// toplevel string
 	reader = strings.NewReader(`"test"`)
 	v, err = parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, "test", v)
+	assert.Equal(t, "test", v.Value)
 
 	// toplevel int
 	reader = strings.NewReader(`1`)
 	v, err = parameter.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
-	assert.Equal(t, 1.0, v)
+	assert.Equal(t, 1.0, v.Value)
 
 	// now yaml
 	reader = strings.NewReader(`test: test`)
 	i, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	reader = strings.NewReader(`test: test`)
 	i, err = parameter.ParseFromReader(reader, "test.yml")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	// nested object
 	reader = strings.NewReader(`test: {test: test}`)
 	i, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i)
+	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i.Value)
 
 	// toplevel list
 	reader = strings.NewReader("- test\n- test2")
 	v, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"test", "test2"}, v)
+	assert.Equal(t, []interface{}{"test", "test2"}, v.Value)
 
 	// toplevel string
 	reader = strings.NewReader(`test`)
 	v, err = parameter.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, "test", v)
+	assert.Equal(t, "test", v.Value)
 
 	// now, one-line CSV with headers
 	reader = strings.NewReader(`test,test2
 test,test2`)
 	i, err = parameter.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i.Value)
 
 	// fail on 2 line CSV
 	reader = strings.NewReader(`test,test2
@@ -535,21 +535,21 @@ test,test2`)
 test	test2`)
 	i, err = parameter.ParseFromReader(reader, "test.tsv")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i.Value)
 
 	// try numbers
 	reader = strings.NewReader(`test,test2
 1,2`)
 	i, err = parameter.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i.Value)
 
 	// try quoted numbers as strings
 	reader = strings.NewReader(`test,test2
 "1","2"`)
 	i, err = parameter.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i)
+	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i.Value)
 }
 
 func TestParseObjectListFromFile(t *testing.T) {
@@ -661,7 +661,7 @@ func parseObjectListFromString(parameter *ParameterDefinition, input string, fil
 	if err != nil {
 		return nil, err
 	}
-	v, ok := cast.CastList[map[string]interface{}, interface{}](i.([]interface{}))
+	v, ok := cast.CastList[map[string]interface{}, interface{}](i.Value.([]interface{}))
 	if !ok {
 		return nil, fmt.Errorf("failed to cast")
 	}
@@ -674,7 +674,7 @@ func parseObjectFromString(parameter *ParameterDefinition, input string, fileNam
 	if err != nil {
 		return nil, err
 	}
-	v, ok := i.(map[string]interface{})
+	v, ok := i.Value.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("failed to cast")
 	}
@@ -689,18 +689,18 @@ func TestParseStringFromFile(t *testing.T) {
 	reader := strings.NewReader("test")
 	i, err := parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "test", i)
+	assert.Equal(t, "test", i.Value)
 
 	// multiline
 	reader = strings.NewReader("test\ntest2")
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "test\ntest2", i)
+	assert.Equal(t, "test\ntest2", i.Value)
 
 	reader = strings.NewReader("")
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "", i)
+	assert.Equal(t, "", i.Value)
 }
 
 func TestParseKeyFromFile(t *testing.T) {
@@ -766,18 +766,18 @@ func TestParseStringFromFileRealFile(t *testing.T) {
 
 	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, "string1\n", v)
+	assert.Equal(t, "string1\n", v.Value)
 
 	parameter = NewParameterDefinition("test", ParameterTypeStringFromFiles,
 		WithDefault("default"),
 	)
 	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, "string1\n", v)
+	assert.Equal(t, "string1\n", v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, "string1\nstring2\n", v)
+	assert.Equal(t, "string1\nstring2\n", v.Value)
 }
 
 func TestParseStringListFromFileRealFile(t *testing.T) {
@@ -787,26 +787,26 @@ func TestParseStringListFromFileRealFile(t *testing.T) {
 
 	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"string1"}, v)
+	assert.Equal(t, []string{"string1"}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"stringList1", "stringList2"}, v)
+	assert.Equal(t, []string{"stringList1", "stringList2"}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"stringList1", "stringList2", "stringList3", "stringList4"}, v)
+	assert.Equal(t, []string{"stringList1", "stringList2", "stringList3", "stringList4"}, v.Value)
 
 	parameter = NewParameterDefinition("test", ParameterTypeStringListFromFiles,
 		WithDefault("default"),
 	)
 	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"string1"}, v)
+	assert.Equal(t, []string{"string1"}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"string1", "string2"}, v)
+	assert.Equal(t, []string{"string1", "string2"}, v.Value)
 }
 
 func TestParseObjectListFromFileRealFile(t *testing.T) {
@@ -816,7 +816,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 
 	v, err := parameter.ParseParameter([]string{"test-data/object.json"})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v)
+	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/objectList.json"})
 	require.NoError(t, err)
@@ -824,7 +824,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		[]interface{}{
 			map[string]interface{}{"name": "objectList1", "type": "object"},
 			map[string]interface{}{"name": "objectList2", "type": "object"},
-		}, v)
+		}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/objectList3.csv"})
 	require.NoError(t, err)
@@ -832,7 +832,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		[]interface{}{
 			map[string]interface{}{"name": "objectList5", "type": "object"},
 			map[string]interface{}{"name": "objectList6", "type": "object"},
-		}, v)
+		}, v.Value)
 
 	parameter = NewParameterDefinition("test", ParameterTypeObjectListFromFiles,
 		WithDefault([]interface{}{}),
@@ -840,7 +840,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 
 	v, err = parameter.ParseParameter([]string{"test-data/object.json"})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v)
+	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/object.json", "test-data/object2.json"})
 	require.NoError(t, err)
@@ -849,7 +849,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 			map[string]interface{}{"name": "object1", "type": "object"},
 			map[string]interface{}{"name": "object2", "type": "object"},
 		},
-		v)
+		v.Value)
 
 	v, err = parameter.ParseParameter([]string{
 		"test-data/objectList.json",
@@ -869,5 +869,5 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 			map[string]interface{}{"name": "objectList5", "type": "object"},
 			map[string]interface{}{"name": "objectList6", "type": "object"},
 		},
-		v)
+		v.Value)
 }

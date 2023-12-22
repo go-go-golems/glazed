@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"github.com/zenizh/go-capturer"
 	"gopkg.in/yaml.v3"
 	"testing"
@@ -49,7 +48,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "bar", v1)
+	assert.Equal(t, "bar", v1.Value)
 
 	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
@@ -91,10 +90,10 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "bar", v1)
+	assert.Equal(t, "bar", v1.Value)
 	v2, ok := values.Get("bar")
 	require.True(t, ok)
-	assert.Equal(t, "foo", v2)
+	assert.Equal(t, "foo", v2.Value)
 
 	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
@@ -139,19 +138,19 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	assert.Equal(t, 2, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "bar", v1)
+	assert.Equal(t, "bar", v1.Value)
 	v2, ok := values.Get("bar")
 	require.True(t, ok)
-	assert.Equal(t, "foo", v2)
+	assert.Equal(t, "foo", v2.Value)
 
 	values, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "foo", v1)
+	assert.Equal(t, "foo", v1.Value)
 	v2, ok = values.Get("bar")
 	require.True(t, ok)
-	assert.Equal(t, "baz", v2)
+	assert.Equal(t, "baz", v2.Value)
 
 	_, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
@@ -187,14 +186,14 @@ func TestOneOptionalArgument(t *testing.T) {
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "foo", v1)
+	assert.Equal(t, "foo", v1.Value)
 
 	values, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, "123", v1)
+	assert.Equal(t, "123", v1.Value)
 }
 
 func TestDefaultIntValue(t *testing.T) {
@@ -220,14 +219,14 @@ func TestDefaultIntValue(t *testing.T) {
 	assert.Equal(t, 1, values.Len())
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, 123, v1)
+	assert.Equal(t, 123, v1.Value)
 
 	values, err = parameters.GatherArguments([]string{"234"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	assert.Equal(t, 1, values.Len())
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, 234, v1)
+	assert.Equal(t, 234, v1.Value)
 
 	_, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	assert.Error(t, err)
@@ -361,19 +360,19 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 	require.Nil(t, err)
 	v1, ok := values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, []string{"bar", "foo"}, v1)
+	assert.Equal(t, []string{"bar", "foo"}, v1.Value)
 
 	values, err = parameters.GatherArguments([]string{"foo"}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, []string{"foo"}, v1)
+	assert.Equal(t, []string{"foo"}, v1.Value)
 
 	values, err = parameters.GatherArguments([]string{}, desc.GetDefaultArguments(), false, false)
 	require.Nil(t, err)
 	v1, ok = values.Get("foo")
 	require.True(t, ok)
-	assert.Equal(t, []string{"baz"}, v1)
+	assert.Equal(t, []string{"baz"}, v1.Value)
 }
 
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
@@ -588,8 +587,8 @@ func testCommandParseHelper(
 ) {
 	var flagsError error
 	var argsError error
-	var flagParameters map[string]interface{}
-	var argumentParameters *orderedmap.OrderedMap[string, interface{}]
+	var flagParameters *parameters.ParsedParameters
+	var argumentParameters *parameters.ParsedParameters
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {

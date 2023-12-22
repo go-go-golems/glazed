@@ -298,7 +298,7 @@ type WriterCommand interface {
 
 type GlazeCommand interface {
 	Command
-	// Run is called to actually execute the command.
+	// RunIntoGlazeProcessor is called to actually execute the command.
 	//
 	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
 	//

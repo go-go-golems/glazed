@@ -71,8 +71,8 @@ func (c *ExampleCommand) RunIntoGlazeProcessor(
 	if !ok {
 		return errors.New("no default layer")
 	}
-	count := d.Parameters["count"].(int)
-	test := d.Parameters["test"].(bool)
+	count := d.Parameters.GetValue("count").(int)
+	test := d.Parameters.GetValue("test").(bool)
 
 	for i := 0; i < count; i++ {
 		row := types.NewRow(
