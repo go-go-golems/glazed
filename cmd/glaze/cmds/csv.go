@@ -75,15 +75,8 @@ func NewCsvCommand() (*CsvCommand, error) {
 	}, nil
 }
 
-func (c *CsvCommand) RunIntoGlazeProcessor(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	gp middlewares.Processor,
-) error {
-	d, ok := parsedLayers["default"]
-	if !ok {
-		return errors.New("no default layer")
-	}
+func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+	d := parsedLayers.GetDefaultParameterLayer()
 	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
 	if !ok {
 		return errors.New("input-files argument is not a string list")

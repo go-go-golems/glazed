@@ -318,7 +318,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
+	parsedLayers *layers.ParsedParameterLayers,
 	w io.Writer) error {
 	var err error
 	path := p.Path
@@ -359,7 +359,7 @@ func (p *Program) RunIntoWriter(
 	return nil
 }
 
-func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
+func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error) {
 	var err error
 
 	args := []string{}
@@ -386,12 +386,12 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 			continue
 		}
 
-		value, ok := ps[flag.Name]
+		value, ok := ps.Get(flag.Name)
 		value_ := ""
 		if !ok {
 			value_ = flag.Raw
 		} else {
-			value_, err = parameters.RenderValue(flag.Type, value)
+			value_, err = parameters.RenderValue(flag.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}
@@ -408,12 +408,12 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 	}
 
 	for _, arg := range p.Args {
-		value, ok := ps[arg.Name]
+		value, ok := ps.Get(arg.Name)
 		value_ := ""
 		if !ok {
 			value_ = arg.Raw
 		} else {
-			value_, err = parameters.RenderValue(arg.Type, value)
+			value_, err = parameters.RenderValue(arg.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}

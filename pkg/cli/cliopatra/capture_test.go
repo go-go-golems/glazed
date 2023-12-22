@@ -9,18 +9,19 @@ import (
 	"testing"
 )
 
-func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) map[string]*layers.ParsedParameterLayer {
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *layers.ParsedParameterLayers {
 	defaultLayer, ok := desc.GetLayer("default")
 	if !ok {
 		return nil
 	}
 
-	return map[string]*layers.ParsedParameterLayer{
-		"default": {
-			Layer:      defaultLayer,
-			Parameters: ps,
-		},
-	}
+	ret := layers.NewParsedParameterLayers()
+	ret.Set("default", &layers.ParsedParameterLayer{
+		Layer:      defaultLayer,
+		Parameters: ps,
+	})
+
+	return ret
 }
 
 func TestSingleFlag(t *testing.T) {
@@ -185,13 +186,14 @@ func TestSingleLayer(t *testing.T) {
 			layer,
 		),
 	)
-	p := NewProgramFromCapture(
-		d,
-		map[string]*layers.ParsedParameterLayer{
-			"test-layer": {
-				Layer: layer,
-				Parameters: parameters.NewParsedParameters(
-					parameters.WithParsedParameter(pd, "test", "foobar"))}})
+
+	ret := layers.NewParsedParameterLayers()
+	ret.Set("test-layer", &layers.ParsedParameterLayer{
+		Layer: layer,
+		Parameters: parameters.NewParsedParameters(
+			parameters.WithParsedParameter(pd, "test", "foobar"))})
+
+	p := NewProgramFromCapture(d, ret)
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)

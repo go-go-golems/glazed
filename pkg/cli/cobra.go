@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-type CobraRunFunc func(ctx context.Context, parsedLayers map[string]*layers.ParsedParameterLayer) error
+type CobraRunFunc func(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) error
 
 func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	var verbs []string
@@ -109,7 +109,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(1)
 		}
 
-		var parsedLayers map[string]*layers.ParsedParameterLayer
+		var parsedLayers *layers.ParsedParameterLayers
 
 		if loadParametersFromJSON != "" {
 			result := map[string]interface{}{}
@@ -129,14 +129,16 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 			// Need to update the parsedLayers from command line flags too...
 
-			for _, layer := range parsedLayers {
+			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedParameterLayer) error {
 				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, layer.Layer.GetParameterDefinitions(), true, true, layer.Layer.GetPrefix())
 				if err != nil {
-					cobra.CheckErr(err)
+					return err
 				}
 
 				layer.Parameters.Merge(ps_)
-			}
+				return nil
+			})
+			cobra.CheckErr(err)
 		} else {
 			parsedLayers, err = cobraParser.Parse(args)
 			// show help if there is an error
@@ -148,22 +150,13 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			}
 		}
 
-		if defaultLayer, ok := description.GetDefaultLayer(); ok {
-			layer := parsedLayers[defaultLayer.GetSlug()]
-			if layer == nil {
-				layer = &layers.ParsedParameterLayer{
-					Layer:      defaultLayer,
-					Parameters: parameters.NewParsedParameters(),
-				}
-				parsedLayers[defaultLayer.GetSlug()] = layer
-			}
+		layer := parsedLayers.GetDefaultParameterLayer()
 
-			arguments, err := parameters.GatherArguments(args, description.GetDefaultArguments(), true, true)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-			layer.Parameters.Merge(arguments)
+		arguments, err := parameters.GatherArguments(args, description.GetDefaultArguments(), true, true)
+		if err != nil {
+			cobra.CheckErr(err)
 		}
+		layer.Parameters.Merge(arguments)
 
 		printYAML, err := cmd.Flags().GetBool("print-yaml")
 		cobra.CheckErr(err)
@@ -306,7 +299,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(c, func(
 		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
+		parsedLayers *layers.ParsedParameterLayers,
 	) error {
 		err := c.Run(ctx, parsedLayers)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
@@ -328,7 +321,7 @@ func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error
 func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(s, func(
 		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
+		parsedLayers *layers.ParsedParameterLayers,
 	) error {
 		err := s.RunIntoWriter(ctx, parsedLayers, os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
@@ -539,9 +532,9 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterL
 }
 
 func (c *CobraParser) Parse(args []string) (
-	map[string]*layers.ParsedParameterLayer,
+	*layers.ParsedParameterLayers,
 	error) {
-	parsedLayers := map[string]*layers.ParsedParameterLayer{}
+	parsedLayers := layers.NewParsedParameterLayers()
 
 	for _, layer := range c.description.Layers {
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
@@ -555,7 +548,7 @@ func (c *CobraParser) Parse(args []string) (
 			return nil, err
 		}
 
-		parsedLayers[layer.GetSlug()] = parsedLayer
+		parsedLayers.Set(layer.GetSlug(), parsedLayer)
 	}
 
 	return parsedLayers, nil
@@ -610,9 +603,9 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
 		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
+		parsedLayers *layers.ParsedParameterLayers,
 	) error {
-		glazedLayer, ok := parsedLayers["glazed"]
+		glazedLayer, ok := parsedLayers.Get("glazed")
 		if !ok {
 			return errors.New("glazed layer not found")
 		}

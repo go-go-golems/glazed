@@ -67,15 +67,8 @@ func NewJsonCommand() (*JsonCommand, error) {
 	}, nil
 }
 
-func (j *JsonCommand) RunIntoGlazeProcessor(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	gp middlewares.Processor,
-) error {
-	d, ok := parsedLayers["default"]
-	if !ok {
-		return errors.New("no default layer")
-	}
+func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+	d := parsedLayers.GetDefaultParameterLayer()
 
 	inputIsArray, ok := d.Parameters.GetValue("input-is-array").(bool)
 	if !ok {

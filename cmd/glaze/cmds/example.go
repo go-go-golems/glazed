@@ -53,7 +53,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 	}, nil
 }
 
-// Run is called to actually execute the command.
+// RunIntoGlazeProcessor is called to actually execute the command.
 //
 // parsedLayers contains the result of parsing each layer that has been
 // registered with the command description. These layers can be glazed structured data
@@ -62,15 +62,8 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
-func (c *ExampleCommand) RunIntoGlazeProcessor(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	gp middlewares.Processor,
-) error {
-	d, ok := parsedLayers["default"]
-	if !ok {
-		return errors.New("no default layer")
-	}
+func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+	d := parsedLayers.GetDefaultParameterLayer()
 	count := d.Parameters.GetValue("count").(int)
 	test := d.Parameters.GetValue("test").(bool)
 

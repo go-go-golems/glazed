@@ -69,7 +69,7 @@ func getCliopatraParameters(
 // option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
+	parsedLayers *layers.ParsedParameterLayers,
 	opts ...ProgramOption,
 ) *Program {
 	ret := &Program{
@@ -81,7 +81,7 @@ func NewProgramFromCapture(
 	//
 	// See https://github.com/go-go-golems/cliopatra/issues/6
 	for _, layer := range description.Layers {
-		parsedLayer, ok := parsedLayers[layer.GetSlug()]
+		parsedLayer, ok := parsedLayers.Get(layer.GetSlug())
 		if !ok {
 			continue
 		}

@@ -3,6 +3,7 @@ package layers
 import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type ErrInvalidParameterLayer struct {
@@ -45,6 +46,13 @@ type ParsedParameterLayer struct {
 	Parameters *parameters.ParsedParameters
 }
 
+func NewParsedParameterLayer(layer ParameterLayer) *ParsedParameterLayer {
+	return &ParsedParameterLayer{
+		Layer:      layer,
+		Parameters: parameters.NewParsedParameters(),
+	}
+}
+
 type JSONParameterLayer interface {
 	ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error)
 }
@@ -68,13 +76,72 @@ func (ppl *ParsedParameterLayer) MergeParameters(other *ParsedParameterLayer) {
 	ppl.Parameters.Merge(other.Parameters)
 }
 
-func GetAllParsedParameters(layers map[string]*ParsedParameterLayer) map[string]interface{} {
-	ret := make(map[string]interface{})
-	for _, l := range layers {
-		l.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
-			ret[k] = v
+func GetAllParsedParameters(layers *ParsedParameterLayers) *parameters.ParsedParameters {
+	ret := parameters.NewParsedParameters()
+	layers.ForEach(
+		func(_ string, v *ParsedParameterLayer) {
+			ret.Merge(v.Parameters)
 		})
-	}
 
 	return ret
+}
+
+type ParsedParameterLayers struct {
+	*orderedmap.OrderedMap[string, *ParsedParameterLayer]
+}
+
+func NewParsedParameterLayers() *ParsedParameterLayers {
+	return &ParsedParameterLayers{
+		OrderedMap: orderedmap.New[string, *ParsedParameterLayer](),
+	}
+}
+
+func (p *ParsedParameterLayers) GetParameter(slug string, key string) (*parameters.ParsedParameter, bool) {
+	layer, ok := p.Get(slug)
+	if !ok {
+		return nil, false
+	}
+	return layer.Parameters.Get(key)
+}
+
+func (p *ParsedParameterLayers) GetParameterValue(slug string, key string) interface{} {
+	layer, ok := p.OrderedMap.Get(slug)
+	if !ok {
+		return nil
+	}
+	return layer.Parameters.GetValue(key)
+}
+
+func (p *ParsedParameterLayers) GetDefaultParameterLayer() *ParsedParameterLayer {
+	v, ok := p.Get("default")
+	if ok {
+		return v
+	}
+	defaultParameterLayer, err := NewParameterLayer("default", "Default")
+	if err != nil {
+		panic(err)
+	}
+	defaultLayer := &ParsedParameterLayer{
+		Layer:      defaultParameterLayer,
+		Parameters: parameters.NewParsedParameters(),
+	}
+	p.Set("default", defaultLayer)
+
+	return defaultLayer
+}
+
+func (p *ParsedParameterLayers) ForEach(fn func(k string, v *ParsedParameterLayer)) {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		fn(v.Key, v.Value)
+	}
+}
+
+func (p *ParsedParameterLayers) ForEachE(fn func(k string, v *ParsedParameterLayer) error) error {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		err := fn(v.Key, v.Value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -281,19 +281,12 @@ type CommandWithMetadata interface {
 
 type BareCommand interface {
 	Command
-	Run(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-	) error
+	Run(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) error
 }
 
 type WriterCommand interface {
 	Command
-	RunIntoWriter(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		w io.Writer,
-	) error
+	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, w io.Writer) error
 }
 
 type GlazeCommand interface {
@@ -312,11 +305,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	RunIntoGlazeProcessor(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		gp middlewares.Processor,
-	) error
+	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error
 }
 
 type ExitWithoutGlazeError struct{}
