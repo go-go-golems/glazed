@@ -75,7 +75,7 @@ func NewCsvCommand() (*CsvCommand, error) {
 	}, nil
 }
 
-func (c *CsvCommand) Run(
+func (c *CsvCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	gp middlewares.Processor,

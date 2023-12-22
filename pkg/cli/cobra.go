@@ -485,7 +485,7 @@ func AddCommandsToRootCommand(
 // It can then be used to parse the cobra flags and arguments back into a
 // set of ParsedParameterLayer and a map[string]interface{} for the lose stuff.
 //
-// That command however doesn't have a Run method, which is left to the caller to implement.
+// That command however doesn't have a Run* method, which is left to the caller to implement.
 //
 // This returns a CobraParser that can be used to parse the registered layers
 // from the description.
@@ -629,7 +629,7 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
 		cobra.CheckErr(err)
 
-		err = cmd_.Run(ctx, parsedLayers, gp)
+		err = cmd_.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			return nil
 		}

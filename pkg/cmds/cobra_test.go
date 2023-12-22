@@ -74,6 +74,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	desc := CommandDescription{
 		Layers: []layers.ParameterLayer{defaultLayer},
 	}
@@ -121,6 +122,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	desc := CommandDescription{
 		Layers: []layers.ParameterLayer{defaultLayer},
 	}
@@ -169,6 +171,7 @@ func TestOneOptionalArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	desc := CommandDescription{
 		Layers: []layers.ParameterLayer{defaultLayer},
 	}
@@ -205,6 +208,7 @@ func TestDefaultIntValue(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	desc := CommandDescription{
 		Layers: []layers.ParameterLayer{defaultLayer},
 	}
@@ -261,6 +265,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 				},
 			),
 		)
+		require.Nil(t, err)
 		err = defaultLayer.AddLayerToCobraCommand(cmd)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
@@ -281,6 +286,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -303,6 +309,7 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }
@@ -318,6 +325,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -338,6 +346,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	desc := CommandDescription{
 		Layers: []layers.ParameterLayer{defaultLayer},
 	}
@@ -380,6 +389,7 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }
@@ -395,6 +405,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -419,6 +430,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -443,6 +455,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
@@ -467,6 +480,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -490,6 +504,7 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 			},
 		),
 	)
+	require.Nil(t, err)
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	assert.Error(t, err)
 }

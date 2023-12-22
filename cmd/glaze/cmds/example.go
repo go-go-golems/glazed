@@ -62,7 +62,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
-func (c *ExampleCommand) Run(
+func (c *ExampleCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	gp middlewares.Processor,

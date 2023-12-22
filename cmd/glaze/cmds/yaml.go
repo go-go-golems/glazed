@@ -68,7 +68,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 	}, nil
 }
 
-func (y *YamlCommand) Run(
+func (y *YamlCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
 	layers map[string]*layers.ParsedParameterLayer,
 	gp middlewares.Processor,

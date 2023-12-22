@@ -130,7 +130,7 @@ func (a *CommandAlias) ToYAML(w io.Writer) error {
 	return enc.Encode(a)
 }
 
-func (a *CommandAlias) Run(
+func (a *CommandAlias) RunIntoGlazeProcessor(
 	ctx context.Context,
 	parsedLayers map[string]*layers.ParsedParameterLayer,
 	gp middlewares.Processor,
@@ -142,7 +142,7 @@ func (a *CommandAlias) Run(
 	if !ok {
 		return errors.New("aliased command is not a GlazeCommand")
 	}
-	return glazeCommand.Run(ctx, parsedLayers, gp)
+	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
 }
 
 func (a *CommandAlias) RunIntoWriter(

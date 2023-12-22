@@ -312,7 +312,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	Run(
+	RunIntoGlazeProcessor(
 		ctx context.Context,
 		parsedLayers map[string]*layers.ParsedParameterLayer,
 		gp middlewares.Processor,

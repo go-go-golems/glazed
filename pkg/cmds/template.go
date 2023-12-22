@@ -84,6 +84,9 @@ func (tcl *TemplateCommandLoader) LoadCommandFromYAML(
 
 	defaultLayer, err := layers.NewParameterLayer("default", "Default",
 		layers.WithParameters(append(tcd.Flags, tcd.Arguments...)...))
+	if err != nil {
+		return nil, err
+	}
 
 	options_ := []CommandDescriptionOption{
 		WithShort(tcd.Short),
