@@ -280,11 +280,12 @@ func AddFlagGroupToCobraCommand(
 	cmd *cobra.Command,
 	id string,
 	name string,
-	flags []*parameters.ParameterDefinition,
+	flags parameters.ParameterDefinitions,
 	prefix string,
 ) {
 	flagNames := []string{}
-	for _, f := range flags {
+	for v := flags.Oldest(); v != nil; v = v.Next() {
+		f := v.Value
 		flagNames = append(flagNames, f.Name)
 	}
 

@@ -25,7 +25,7 @@ func (e ErrInvalidParameterLayer) Error() string {
 // TODO(manuel, 2023-12-20) This is a pretty messy interface, I think it used to be a struct?
 type ParameterLayer interface {
 	AddFlags(flag ...*parameters.ParameterDefinition)
-	GetParameterDefinitions() map[string]*parameters.ParameterDefinition
+	GetParameterDefinitions() parameters.ParameterDefinitions
 
 	InitializeParameterDefaultsFromStruct(s interface{}) error
 
@@ -35,6 +35,12 @@ type ParameterLayer interface {
 	GetPrefix() string
 
 	Clone() ParameterLayer
+}
+
+type ParsedParameter struct {
+	Name   string
+	Value  interface{}
+	Source string
 }
 
 // ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer

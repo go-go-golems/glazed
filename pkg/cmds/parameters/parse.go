@@ -545,12 +545,13 @@ func ParseDate(value string) (time.Time, error) {
 // for any missing optional parameters.
 func GatherParametersFromMap(
 	m map[string]interface{},
-	ps map[string]*ParameterDefinition,
+	ps ParameterDefinitions,
 	onlyProvided bool,
 ) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
-	for name, p := range ps {
+	for v := ps.Oldest(); v != nil; v = v.Next() {
+		name, p := v.Key, v.Value
 		v, ok := m[name]
 		if !ok {
 			if p.ShortFlag != "" {

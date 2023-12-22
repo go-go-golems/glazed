@@ -47,32 +47,21 @@ func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
 	return c.GetLayer("default")
 }
 
-func (c *CommandDescription) GetDefaultFlags() []*parameters.ParameterDefinition {
+func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
 	l, ok := c.GetDefaultLayer()
 	if !ok {
-		return nil
+		return parameters.NewParameterDefinitions()
 	}
-	var flags []*parameters.ParameterDefinition
-	for _, f := range l.GetParameterDefinitions() {
-		if !f.IsArgument {
-			flags = append(flags, f)
-		}
-	}
-	return flags
+	return l.GetParameterDefinitions().GetFlags()
 }
 
-func (c *CommandDescription) GetDefaultArguments() []*parameters.ParameterDefinition {
+func (c *CommandDescription) GetDefaultArguments() parameters.ParameterDefinitions {
 	l, ok := c.GetDefaultLayer()
 	if !ok {
-		return nil
+		return parameters.NewParameterDefinitions()
 	}
-	var arguments []*parameters.ParameterDefinition
-	for _, f := range l.GetParameterDefinitions() {
-		if f.IsArgument {
-			arguments = append(arguments, f)
-		}
-	}
-	return arguments
+
+	return l.GetParameterDefinitions().GetArguments()
 }
 
 func (c *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {

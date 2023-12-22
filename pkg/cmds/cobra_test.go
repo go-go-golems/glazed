@@ -17,7 +17,7 @@ import (
 
 func TestAddZeroArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	err := parameters.AddParametersToCobraCommand(cmd, []*parameters.ParameterDefinition{}, "")
+	err := parameters.AddParametersToCobraCommand(cmd, parameters.NewParameterDefinitions(), "")
 	// assert that err is nil
 	require.Nil(t, err)
 }

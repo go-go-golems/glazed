@@ -4,17 +4,16 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 )
 
 func getCliopatraParameters(
-	definitions []*parameters.ParameterDefinition,
+	definitions parameters.ParameterDefinitions,
 	ps map[string]interface{},
 	prefix string,
 ) []*Parameter {
 	ret := []*Parameter{}
 
-	for _, p := range definitions {
+	definitions.ForEach(func(p *parameters.ParameterDefinition) {
 		name := prefix + p.Name
 		shortFlag := p.ShortFlag
 		flag := name
@@ -24,7 +23,7 @@ func getCliopatraParameters(
 			flag = shortFlag
 			v, ok = ps[shortFlag]
 			if !ok {
-				continue
+				return
 			}
 		}
 
@@ -53,7 +52,7 @@ func getCliopatraParameters(
 		if !p.IsEqualToDefault(v) {
 			ret = append(ret, param)
 		}
-	}
+	})
 
 	return ret
 }
@@ -89,7 +88,7 @@ func NewProgramFromCapture(
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
 		parameters_ := getCliopatraParameters(
-			maps.GetValues(layer.GetParameterDefinitions()),
+			layer.GetParameterDefinitions(),
 			parsedLayer.Parameters,
 			layer.GetPrefix())
 		flags := []*Parameter{}

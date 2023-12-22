@@ -9,18 +9,18 @@ import (
 
 // Test no arguments are passed to the function
 func TestGatherArguments_NoArguments(t *testing.T) {
-	_, err := GatherArguments([]string{}, []*ParameterDefinition{}, true, false)
+	_, err := GatherArguments([]string{}, NewParameterDefinitions(), true, false)
 	assert.NoError(t, err)
 }
 
 // Test missing required argument
 func TestGatherArguments_RequiredMissing(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:     "Test",
 			Required: true,
 		},
-	}
+	}))
 	_, err := GatherArguments([]string{}, arg, true, false)
 	assert.EqualError(t, err, "Argument Test not found")
 }
@@ -29,12 +29,12 @@ func TestGatherArguments_RequiredMissing(t *testing.T) {
 // This should be broken down into individual tests for each parameter types.
 // However a generic example of such test might look like:
 func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "Test",
 			Type: ParameterTypeString,
 		},
-	}
+	}))
 	res, err := GatherArguments([]string{"value"}, arg, true, false)
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
@@ -44,12 +44,12 @@ func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 
 // Test parsing of list-type parameter with multiple arguments
 func TestGatherArguments_ListParameterParsing(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "Test",
 			Type: ParameterTypeStringList,
 		},
-	}
+	}))
 	res, err := GatherArguments([]string{"value1", "value2"}, arg, true, false)
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
@@ -59,13 +59,13 @@ func TestGatherArguments_ListParameterParsing(t *testing.T) {
 
 // Test handling of default values when onlyProvided is set to false
 func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:    "Test",
 			Type:    ParameterTypeString,
 			Default: "default",
 		},
-	}
+	}))
 	res, err := GatherArguments([]string{}, arg, false, false)
 	assert.NoError(t, err)
 	v, present := res.Get("Test")
@@ -75,13 +75,13 @@ func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
 
 // Test handling of default values when onlyProvided is set to true
 func TestGatherArguments_NoDefaultsWhenProvidedTrue(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:    "Test",
 			Type:    ParameterTypeString,
 			Default: "default",
 		},
-	}
+	}))
 	v, err := GatherArguments([]string{}, arg, true, false)
 	assert.NoError(t, err)
 	// check that Test is not in v
@@ -91,12 +91,12 @@ func TestGatherArguments_NoDefaultsWhenProvidedTrue(t *testing.T) {
 
 // Test the error condition of providing too many arguments
 func TestGatherArguments_TooManyArguments(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "Test",
 			Type: ParameterTypeString,
 		},
-	}
+	}))
 	v, err := GatherArguments([]string{"value1", "value2"}, arg, true, false)
 	_ = v
 	assert.EqualError(t, err, "Too many arguments")
@@ -104,7 +104,7 @@ func TestGatherArguments_TooManyArguments(t *testing.T) {
 
 // Test the correct sequencing of arguments
 func TestGatherArguments_CorrectSequence(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "Test1",
 			Type: ParameterTypeString,
@@ -113,7 +113,7 @@ func TestGatherArguments_CorrectSequence(t *testing.T) {
 			Name: "Test2",
 			Type: ParameterTypeString,
 		},
-	}
+	}))
 	res, err := GatherArguments([]string{"value1", "value2"}, arg, true, false)
 	assert.NoError(t, err)
 	v1, present := res.Get("Test1")
@@ -126,7 +126,7 @@ func TestGatherArguments_CorrectSequence(t *testing.T) {
 
 // Test various combinations of list and non-list arguments
 func TestGatherArguments_CombinationsListNonList(t *testing.T) {
-	arg := []*ParameterDefinition{
+	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "Test1",
 			Type: ParameterTypeString,
@@ -135,7 +135,7 @@ func TestGatherArguments_CombinationsListNonList(t *testing.T) {
 			Name: "Test2",
 			Type: ParameterTypeStringList,
 		},
-	}
+	}))
 	res, err := GatherArguments([]string{"value1", "value2", "value3"}, arg, true, false)
 	assert.NoError(t, err)
 	v1, present := res.Get("Test1")
@@ -148,13 +148,13 @@ func TestGatherArguments_CombinationsListNonList(t *testing.T) {
 
 func TestListParsingWithDefaults(t *testing.T) {
 	args := []string{"data1", "data2"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:    "arg1",
 			Type:    ParameterTypeStringList,
 			Default: []string{"default1", "default2"},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -164,13 +164,13 @@ func TestListParsingWithDefaults(t *testing.T) {
 
 func TestListDefault(t *testing.T) {
 	args := []string{}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:    "arg1",
 			Type:    ParameterTypeStringList,
 			Default: []string{"default1", "default2"},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -180,12 +180,12 @@ func TestListDefault(t *testing.T) {
 
 func TestIntegerListParsing(t *testing.T) {
 	args := []string{"1", "2", "3"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeIntegerList,
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
@@ -195,12 +195,12 @@ func TestIntegerListParsing(t *testing.T) {
 
 func TestFloatListParsing(t *testing.T) {
 	args := []string{"1.1", "2.2", "3.3"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeFloatList,
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
@@ -210,7 +210,7 @@ func TestFloatListParsing(t *testing.T) {
 
 func TestChoiceListParsing(t *testing.T) {
 	args := []string{"choice1", "choice2", "choice3"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeChoiceList,
@@ -220,7 +220,7 @@ func TestChoiceListParsing(t *testing.T) {
 				"choice3",
 			},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v2, present := result.Get("arg1")
@@ -230,19 +230,19 @@ func TestChoiceListParsing(t *testing.T) {
 
 func TestParsingErrorInvalidInt(t *testing.T) {
 	args := []string{"1", "2", "3", "notanint"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeIntegerList,
 		},
-	}
+	}))
 	_, err := GatherArguments(args, arguments, false, false)
 	assert.Error(t, err)
 }
 
 func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeInteger,
@@ -252,7 +252,7 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 			Type:    ParameterTypeIntegerList,
 			Default: []int{4, 5, 6},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -265,7 +265,7 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 
 func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3", "4"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeInteger,
@@ -283,7 +283,7 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 			Type:    ParameterTypeIntegerList,
 			Default: []int{5, 6, 7},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -302,7 +302,7 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 
 func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) {
 	args := []string{"1", "2", "3"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeInteger,
@@ -320,7 +320,7 @@ func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) 
 			Type:    ParameterTypeIntegerList,
 			Default: []int{5, 6, 7},
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -340,12 +340,12 @@ func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) 
 // Test that an argument of type objectListFromFile from test-data/objectList.json correctly parses the argument
 func TestObjectListFromFileParsing(t *testing.T) {
 	args := []string{"test-data/objectList.json"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeObjectListFromFile,
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
@@ -366,12 +366,12 @@ func TestObjectListFromFileParsing(t *testing.T) {
 // objectList.json objectList2.yaml and objectList3.csv
 func TestObjectListFromFilesParsing(t *testing.T) {
 	args := []string{"test-data/objectList.json", "test-data/objectList2.yaml", "test-data/objectList3.csv"}
-	arguments := []*ParameterDefinition{
+	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name: "arg1",
 			Type: ParameterTypeObjectListFromFiles,
 		},
-	}
+	}))
 	result, err := GatherArguments(args, arguments, false, false)
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")

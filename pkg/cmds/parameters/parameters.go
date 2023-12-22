@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
+	"github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
 	"reflect"
 	"strings"
@@ -260,7 +261,7 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 // is returned.
 func InitializeStructFromParameterDefinitions(
 	s interface{},
-	parameterDefinitions map[string]*ParameterDefinition,
+	parameterDefinitions ParameterDefinitions,
 ) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
@@ -277,7 +278,7 @@ func InitializeStructFromParameterDefinitions(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions[v]
+		parameter, ok := parameterDefinitions.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -316,7 +317,7 @@ func InitializeStructFromParameterDefinitions(
 // If no `ParameterDefinition` is found for a field, an error is returned.
 // This is the inverse of InitializeStructFromParameterDefinitions.
 func InitializeParameterDefinitionsFromStruct(
-	parameterDefinitions map[string]*ParameterDefinition,
+	parameterDefinitions ParameterDefinitions,
 	s interface{},
 ) error {
 	// check that s is indeed a pointer to a struct
@@ -338,7 +339,7 @@ func InitializeParameterDefinitionsFromStruct(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions[v]
+		parameter, ok := parameterDefinitions.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -378,11 +379,11 @@ func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 }
 
 func InitializeParameterDefaultsFromParameters(
-	parameterDefinitions map[string]*ParameterDefinition,
+	parameterDefinitions ParameterDefinitions,
 	ps map[string]interface{},
 ) error {
 	for k, v := range ps {
-		parameter, ok := parameterDefinitions[k]
+		parameter, ok := parameterDefinitions.Get(k)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", k)
 		}
@@ -741,4 +742,106 @@ func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*Parameter
 	}
 
 	return flags, flagList
+}
+
+type ParameterDefinitions struct {
+	*orderedmap.OrderedMap[string, *ParameterDefinition]
+}
+
+func (p ParameterDefinitions) Merge(m ParameterDefinitions) ParameterDefinitions {
+	for v := m.Oldest(); v != nil; v = v.Next() {
+		p.Set(v.Key, v.Value)
+	}
+	return p
+}
+
+func (p ParameterDefinitions) GetFlags() ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		if !v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+func (p ParameterDefinitions) GetArguments() ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		if v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+func (p ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		err := f(v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		f(v.Value)
+	}
+}
+
+type ParameterDefinitionsOption func(*ParameterDefinitions)
+
+func WithParameterDefinitions(parameterDefinitions ParameterDefinitions) ParameterDefinitionsOption {
+	return func(p *ParameterDefinitions) {
+		p.Merge(parameterDefinitions)
+	}
+}
+
+func WithParameterDefinitionList(parameterDefinitions []*ParameterDefinition) ParameterDefinitionsOption {
+	return func(p *ParameterDefinitions) {
+		for _, pd := range parameterDefinitions {
+			p.Set(pd.Name, pd)
+		}
+	}
+}
+
+func NewParameterDefinitions(options ...ParameterDefinitionsOption) ParameterDefinitions {
+	ret := ParameterDefinitions{
+		orderedmap.New[string, *ParameterDefinition](),
+	}
+
+	for _, o := range options {
+		o(&ret)
+	}
+
+	return ret
+}
+
+func (p ParameterDefinitions) MarshalYAML() (interface{}, error) {
+	ret := []*ParameterDefinition{}
+	p.ForEach(func(definition *ParameterDefinition) {
+		ret = append(ret, definition)
+	})
+	return ret, nil
+}
+
+func (p ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
+	var parameterDefinitions []*ParameterDefinition
+	err := value.Decode(&parameterDefinitions)
+	if err != nil {
+		return err
+	}
+
+	for _, pd := range parameterDefinitions {
+		p.Set(pd.Name, pd)
+	}
+
+	return nil
 }

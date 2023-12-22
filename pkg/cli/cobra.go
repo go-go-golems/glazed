@@ -130,13 +130,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			// Need to update the parsedLayers from command line flags too...
 
 			for _, layer := range parsedLayers {
-				parameterDefinitions := layer.Layer.GetParameterDefinitions()
-				pds := []*parameters.ParameterDefinition{}
-				for _, p := range parameterDefinitions {
-					pds = append(pds, p)
-				}
-
-				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, pds, true, true, layer.Layer.GetPrefix())
+				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, layer.Layer.GetParameterDefinitions(), true, true, layer.Layer.GetPrefix())
 				if err != nil {
 					cobra.CheckErr(err)
 				}
@@ -377,12 +371,12 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 		return nil, err
 	}
 
-	for _, argDef := range argumentDefinitions {
+	argumentDefinitions.ForEach(func(argDef *parameters.ParameterDefinition) {
 		_, ok := provided.Get(argDef.Name)
 		if argDef.Required && !ok {
 			minArgs++
 		}
-	}
+	})
 
 	cmd.Args = cobra.MinimumNArgs(minArgs)
 

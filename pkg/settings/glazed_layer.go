@@ -84,43 +84,17 @@ func (g *GlazedParameterLayers) AddFlags(...*parameters.ParameterDefinition) {
 	panic("not supported me")
 }
 
-func (g *GlazedParameterLayers) GetParameterDefinitions() map[string]*parameters.ParameterDefinition {
-	ret := make(map[string]*parameters.ParameterDefinition)
-	for k, v := range g.RenameParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.OutputParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.SelectParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.TemplateParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.FieldsFiltersParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.ReplaceParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.JqParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.SortParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
-
-	for k, v := range g.SkipLimitParameterLayer.GetParameterDefinitions() {
-		ret[k] = v
-	}
+func (g *GlazedParameterLayers) GetParameterDefinitions() parameters.ParameterDefinitions {
+	ret := parameters.NewParameterDefinitions()
+	ret.Merge(g.OutputParameterLayer.GetParameterDefinitions()).
+		Merge(g.FieldsFiltersParameterLayer.GetParameterDefinitions()).
+		Merge(g.SelectParameterLayer.GetParameterDefinitions()).
+		Merge(g.TemplateParameterLayer.GetParameterDefinitions()).
+		Merge(g.RenameParameterLayer.GetParameterDefinitions()).
+		Merge(g.ReplaceParameterLayer.GetParameterDefinitions()).
+		Merge(g.JqParameterLayer.GetParameterDefinitions()).
+		Merge(g.SortParameterLayer.GetParameterDefinitions()).
+		Merge(g.SkipLimitParameterLayer.GetParameterDefinitions())
 
 	return ret
 }

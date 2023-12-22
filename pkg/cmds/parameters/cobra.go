@@ -124,14 +124,16 @@ func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) str
 // Parsing errors for individual arguments will also return errors.
 func GatherArguments(
 	args []string,
-	arguments []*ParameterDefinition,
+	arguments ParameterDefinitions,
 	onlyProvided bool,
 	ignoreRequired bool,
 ) (*orderedmap.OrderedMap[string, interface{}], error) {
 	_ = args
 	result := orderedmap.New[string, interface{}]()
 	argsIdx := 0
-	for _, argument := range arguments {
+	for v := arguments.Oldest(); v != nil; v = v.Next() {
+		argument := v.Value
+
 		if argsIdx >= len(args) {
 			if argument.Required {
 				if ignoreRequired {
@@ -208,13 +210,14 @@ func GatherArguments(
 // an empty list or a list containing "all" should be treated the same.
 func AddParametersToCobraCommand(
 	cmd *cobra.Command,
-	flags []*ParameterDefinition,
+	flags ParameterDefinitions,
 	prefix string,
 ) error {
 	actualFlags := []*ParameterDefinition{}
 	arguments := []*ParameterDefinition{}
 
-	for _, flag := range flags {
+	for v := flags.Oldest(); v != nil; v = v.Next() {
+		flag := v.Value
 		if flag.IsArgument {
 			arguments = append(arguments, flag)
 		} else {
@@ -486,13 +489,15 @@ func AddParametersToCobraCommand(
 }
 
 func GatherFlagsFromViper(
-	params []*ParameterDefinition,
+	params ParameterDefinitions,
 	onlyProvided bool,
 	prefix string,
 ) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
-	for _, p := range params {
+	for v := params.Oldest(); v != nil; v = v.Next() {
+		p := v.Value
+
 		flagName := prefix + p.Name
 		if onlyProvided && !viper.IsSet(flagName) {
 			continue
@@ -554,14 +559,16 @@ func GatherFlagsFromViper(
 // Prefix is prepended to all flag names.
 func GatherFlagsFromCobraCommand(
 	cmd *cobra.Command,
-	params []*ParameterDefinition,
+	params ParameterDefinitions,
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
 ) (map[string]interface{}, error) {
 	ps := map[string]interface{}{}
 
-	for _, parameter := range params {
+	for v := params.Oldest(); v != nil; v = v.Next() {
+		parameter := v.Value
+
 		if parameter.IsArgument {
 			continue
 		}
