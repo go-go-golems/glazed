@@ -145,9 +145,8 @@ func (p *ParsedParameters) UpdateValueWithMetadata(
 
 // SetAsDefault sets the current value of the parameter if no value has yet been set.
 func (p *ParsedParameters) SetAsDefault(key string, pd *ParameterDefinition, source string, v interface{}) {
-	v_, ok := p.Get(key)
-	if !ok {
-		v_ = &ParsedParameter{
+	if _, ok := p.Get(key); !ok {
+		v_ := &ParsedParameter{
 			ParameterDefinition: pd,
 		}
 		p.Set(key, v_)
@@ -162,9 +161,8 @@ func (p *ParsedParameters) SetAsDefaultWithMetadata(
 	v interface{},
 	metadata map[string]interface{},
 ) {
-	v_, ok := p.Get(key)
-	if !ok {
-		v_ = &ParsedParameter{
+	if _, ok := p.Get(key); !ok {
+		v_ := &ParsedParameter{
 			ParameterDefinition: pd,
 		}
 		p.Set(key, v_)
