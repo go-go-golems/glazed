@@ -31,77 +31,6 @@ type CommandDescription struct {
 
 type CommandDescriptionOption func(*CommandDescription)
 
-func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
-	ret := &CommandDescription{
-		Name: name,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
-
-func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
-	return c.GetLayer(layers.DefaultSlug)
-}
-
-func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
-	l, ok := c.GetDefaultLayer()
-	if !ok {
-		return parameters.NewParameterDefinitions()
-	}
-	return l.GetParameterDefinitions().GetFlags()
-}
-
-func (c *CommandDescription) GetDefaultArguments() parameters.ParameterDefinitions {
-	l, ok := c.GetDefaultLayer()
-	if !ok {
-		return parameters.NewParameterDefinitions()
-	}
-
-	return l.GetParameterDefinitions().GetArguments()
-}
-
-func (c *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
-	for _, l := range c.Layers {
-		if l.GetSlug() == name {
-			return l, true
-		}
-	}
-	return nil, false
-}
-
-func (c *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
-	// clone flags
-	var layers_ []layers.ParameterLayer
-	if cloneLayers {
-		for _, l := range c.Layers {
-			layers_ = append(layers_, l.Clone())
-		}
-	}
-
-	// copy parents
-	parents := make([]string, len(c.Parents))
-	copy(parents, c.Parents)
-
-	ret := &CommandDescription{
-		Name:    c.Name,
-		Short:   c.Short,
-		Long:    c.Long,
-		Layers:  layers_,
-		Parents: parents,
-		Source:  c.Source,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
-
 func WithName(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Name = s
@@ -244,6 +173,77 @@ func WithPrependSource(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Source = s + c.Source
 	}
+}
+
+func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
+	ret := &CommandDescription{
+		Name: name,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
+	return c.GetLayer(layers.DefaultSlug)
+}
+
+func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
+	l, ok := c.GetDefaultLayer()
+	if !ok {
+		return parameters.NewParameterDefinitions()
+	}
+	return l.GetParameterDefinitions().GetFlags()
+}
+
+func (c *CommandDescription) GetDefaultArguments() parameters.ParameterDefinitions {
+	l, ok := c.GetDefaultLayer()
+	if !ok {
+		return parameters.NewParameterDefinitions()
+	}
+
+	return l.GetParameterDefinitions().GetArguments()
+}
+
+func (c *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
+	for _, l := range c.Layers {
+		if l.GetSlug() == name {
+			return l, true
+		}
+	}
+	return nil, false
+}
+
+func (c *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
+	// clone flags
+	var layers_ []layers.ParameterLayer
+	if cloneLayers {
+		for _, l := range c.Layers {
+			layers_ = append(layers_, l.Clone())
+		}
+	}
+
+	// copy parents
+	parents := make([]string, len(c.Parents))
+	copy(parents, c.Parents)
+
+	ret := &CommandDescription{
+		Name:    c.Name,
+		Short:   c.Short,
+		Long:    c.Long,
+		Layers:  layers_,
+		Parents: parents,
+		Source:  c.Source,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
 }
 
 func (cd *CommandDescription) ToYAML(w io.Writer) error {
