@@ -44,7 +44,7 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 }
 
 func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
-	return c.GetLayer("default")
+	return c.GetLayer(layers.DefaultSlug)
 }
 
 func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
@@ -135,7 +135,7 @@ func WithFlags(
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer("default", "Default")
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
 			if err != nil {
 				panic(err)
 			}
@@ -154,7 +154,7 @@ func WithArguments(
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer("default", "Default")
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
 			if err != nil {
 				panic(err)
 			}
@@ -178,10 +178,10 @@ func WithDefaultLayer(
 	}
 	return func(c *CommandDescription) {
 		layer, err := layers.NewParameterLayer(
-			"default",
+			layers.DefaultSlug,
 			"Default",
-			layers.WithParameters(flags...),
-			layers.WithParameters(arguments...),
+			layers.WithParameterDefinitions(flags...),
+			layers.WithParameterDefinitions(arguments...),
 		)
 		if err != nil {
 			panic(err)
@@ -266,10 +266,7 @@ type Command interface {
 
 type CommandWithMetadata interface {
 	Command
-	Metadata(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-	) (map[string]interface{}, error)
+	Metadata(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) (map[string]interface{}, error)
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need

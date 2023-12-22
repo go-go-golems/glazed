@@ -9,7 +9,7 @@ import (
 
 func createSimpleParameterLayer(t *testing.T, options ...ParameterLayerOptions) *ParameterLayerImpl {
 	options_ := append([]ParameterLayerOptions{
-		WithParameters(
+		WithParameterDefinitions(
 			parameters.NewParameterDefinition("flag1", parameters.ParameterTypeString),
 		),
 	}, options...)

@@ -78,8 +78,8 @@ func (tcl *TemplateCommandLoader) LoadCommandFromYAML(
 		argument.IsArgument = true
 	}
 
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
-		layers.WithParameters(append(tcd.Flags, tcd.Arguments...)...))
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
+		layers.WithParameterDefinitions(append(tcd.Flags, tcd.Arguments...)...))
 	if err != nil {
 		return nil, err
 	}

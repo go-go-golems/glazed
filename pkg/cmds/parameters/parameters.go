@@ -720,9 +720,8 @@ func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
 // LoadParameterDefinitionsFromYAML loads a map of ParameterDefinitions from a YAML file.
 // It checks that default values are valid.
 // It returns the ParameterDefinitions as a map indexed by name, and as a list.
-func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
-	flags := make(map[string]*ParameterDefinition)
-	flagList := make([]*ParameterDefinition, 0)
+func LoadParameterDefinitionsFromYAML(yamlContent []byte) ParameterDefinitions {
+	parameters_ := NewParameterDefinitions()
 
 	var err error
 	var parameters []*ParameterDefinition
@@ -737,11 +736,10 @@ func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*Parameter
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
 		}
-		flags[p.Name] = p
-		flagList = append(flagList, p)
+		parameters_.Set(p.Name, p)
 	}
 
-	return flags, flagList
+	return parameters_
 }
 
 type ParameterDefinitions struct {
@@ -844,4 +842,9 @@ func (p ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	return nil
+}
+
+func (p ParameterDefinitions) Clone() ParameterDefinitions {
+	return NewParameterDefinitions().Merge(p)
+
 }

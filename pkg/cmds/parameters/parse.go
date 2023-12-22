@@ -53,6 +53,16 @@ func (p *ParsedParameter) Merge(v *ParsedParameter) {
 	p.Value = v.Value
 }
 
+func (p *ParsedParameter) Clone() *ParsedParameter {
+	ret := &ParsedParameter{
+		Value:               p.Value,
+		ParameterDefinition: p.ParameterDefinition,
+		Log:                 make([]ParseStep, len(p.Log)),
+	}
+	copy(ret.Log, p.Log)
+	return ret
+}
+
 type ParsedParameters struct {
 	*orderedmap.OrderedMap[string, *ParsedParameter]
 }
@@ -94,6 +104,74 @@ func (p *ParsedParameters) GetValue(key string) interface{} {
 	return v.Value
 }
 
+// UpdateExistingValue updates the value of an existing parameter, and returns true if the parameter existed.
+// If the parameter did not exist, it returns false.
+func (p *ParsedParameters) UpdateExistingValue(key string, source string, v interface{}) bool {
+	v_, ok := p.Get(key)
+	if !ok {
+		return false
+	}
+	v_.Set(source, v)
+	return true
+}
+
+func (p *ParsedParameters) UpdateValue(key string, pd *ParameterDefinition, source string, v interface{}) {
+	v_, ok := p.Get(key)
+	if !ok {
+		v_ = &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+		p.Set(key, v_)
+	}
+	v_.Set(source, v)
+}
+
+func (p *ParsedParameters) UpdateValueWithMetadata(
+	key string,
+	pd *ParameterDefinition,
+	source string,
+	v interface{},
+	metadata map[string]interface{},
+) {
+	v_, ok := p.Get(key)
+	if !ok {
+		v_ = &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+		p.Set(key, v_)
+	}
+	v_.SetWithMetadata(source, v, metadata)
+}
+
+// SetAsDefault sets the current value of the parameter if no value has yet been set.
+func (p *ParsedParameters) SetAsDefault(key string, pd *ParameterDefinition, source string, v interface{}) {
+	v_, ok := p.Get(key)
+	if !ok {
+		v_ = &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+		p.Set(key, v_)
+		v_.Set(source, v)
+	}
+}
+
+func (p *ParsedParameters) SetAsDefaultWithMetadata(
+	key string,
+	pd *ParameterDefinition,
+	source string,
+	v interface{},
+	metadata map[string]interface{},
+) {
+	v_, ok := p.Get(key)
+	if !ok {
+		v_ = &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+		p.Set(key, v_)
+		v_.SetWithMetadata(source, v, metadata)
+	}
+}
+
 func (p *ParsedParameters) ForEach(f func(key string, value *ParsedParameter)) {
 	for v := p.Oldest(); v != nil; v = v.Next() {
 		f(v.Key, v.Value)
@@ -124,6 +202,14 @@ func (p *ParsedParameters) Merge(other *ParsedParameters) *ParsedParameters {
 		}
 	})
 	return p
+}
+
+func (p *ParsedParameters) ToMap() map[string]interface{} {
+	ret := map[string]interface{}{}
+	p.ForEach(func(k string, v *ParsedParameter) {
+		ret[k] = v.Value
+	})
+	return ret
 }
 
 // ParseParameter parses command line arguments according to the given ParameterDefinition.

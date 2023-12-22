@@ -38,6 +38,8 @@ type ParameterLayer interface {
 	Clone() ParameterLayer
 }
 
+const DefaultSlug = "default"
+
 // ParsedParameterLayer is the result of "parsing" input data using a ParameterLayer
 // specification. For example, it could be the result of parsing cobra command flags,
 // or a JSON body, or HTTP query parameters.
@@ -96,6 +98,18 @@ func NewParsedParameterLayers() *ParsedParameterLayers {
 	}
 }
 
+// GetDataMap is useful when rendering out templates using all passed in layers.
+// TODO(manuel, 2023-12-22) Allow passing middlewares so that we can blacklist layers
+func (p *ParsedParameterLayers) GetDataMap() map[string]interface{} {
+	ps := map[string]interface{}{}
+	p.ForEach(func(k string, v *ParsedParameterLayer) {
+		v.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
+			ps[v.ParameterDefinition.Name] = v.Value
+		})
+	})
+	return ps
+}
+
 func (p *ParsedParameterLayers) GetParameter(slug string, key string) (*parameters.ParsedParameter, bool) {
 	layer, ok := p.Get(slug)
 	if !ok {
@@ -113,11 +127,11 @@ func (p *ParsedParameterLayers) GetParameterValue(slug string, key string) inter
 }
 
 func (p *ParsedParameterLayers) GetDefaultParameterLayer() *ParsedParameterLayer {
-	v, ok := p.Get("default")
+	v, ok := p.Get(DefaultSlug)
 	if ok {
 		return v
 	}
-	defaultParameterLayer, err := NewParameterLayer("default", "Default")
+	defaultParameterLayer, err := NewParameterLayer(DefaultSlug, "Default")
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +139,7 @@ func (p *ParsedParameterLayers) GetDefaultParameterLayer() *ParsedParameterLayer
 		Layer:      defaultParameterLayer,
 		Parameters: parameters.NewParsedParameters(),
 	}
-	p.Set("default", defaultLayer)
+	p.Set(DefaultSlug, defaultLayer)
 
 	return defaultLayer
 }

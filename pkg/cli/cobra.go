@@ -57,7 +57,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		glazedCommandLayer, err := layers.NewParameterLayer(
 			"glazed-command",
 			"General purpose Command options",
-			layers.WithParameters(
+			layers.WithParameterDefinitions(
 				parameters.NewParameterDefinition(
 					"create-command",
 					parameters.ParameterTypeString,

@@ -500,6 +500,16 @@ func SetupTableOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (format
 
 }
 
+func SetupSimpleTableProcessor(
+	output string,
+	tableFormat string,
+	options ...middlewares.TableProcessorOption,
+) (*middlewares.TableProcessor, error) {
+	gp := middlewares.NewTableProcessor(options...)
+
+	return gp, nil
+}
+
 // SetupTableProcessor processes all the glazed flags out of ps and returns a TableProcessor
 // configured with all the necessary middlewares except for the output formatter.
 //
@@ -623,7 +633,11 @@ func SetupTableProcessor(
 // output formats).
 //
 // It also returns the output formatter that was created.
-func SetupProcessorOutput(gp *middlewares.TableProcessor, glazedLayer *layers.ParsedParameterLayer, w io.Writer) (formatters.OutputFormatter, error) {
+func SetupProcessorOutput(
+	gp *middlewares.TableProcessor,
+	glazedLayer *layers.ParsedParameterLayer,
+	w io.Writer,
+) (formatters.OutputFormatter, error) {
 	// first, try to get a row updater
 	rowOf, err := SetupRowOutputFormatter(glazedLayer)
 

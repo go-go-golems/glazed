@@ -107,9 +107,9 @@ func WithDefaults(s interface{}) ParameterLayerOptions {
 	}
 }
 
-func WithParameters(flags ...*parameters.ParameterDefinition) ParameterLayerOptions {
+func WithParameterDefinitions(parameterDefinitions ...*parameters.ParameterDefinition) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
-		for _, f := range flags {
+		for _, f := range parameterDefinitions {
 			p.Flags.Set(f.Name, f)
 		}
 		return nil

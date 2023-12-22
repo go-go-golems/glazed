@@ -10,13 +10,13 @@ import (
 )
 
 func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *layers.ParsedParameterLayers {
-	defaultLayer, ok := desc.GetLayer("default")
+	defaultLayer, ok := desc.GetLayer(layers.DefaultSlug)
 	if !ok {
 		return nil
 	}
 
 	ret := layers.NewParsedParameterLayers()
-	ret.Set("default", &layers.ParsedParameterLayer{
+	ret.Set(layers.DefaultSlug, &layers.ParsedParameterLayer{
 		Layer:      defaultLayer,
 		Parameters: ps,
 	})
@@ -175,7 +175,7 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 func TestSingleLayer(t *testing.T) {
 	pd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
 	layer, err2 := layers.NewParameterLayer("test-layer", "test-layer",
-		layers.WithParameters(
+		layers.WithParameterDefinitions(
 			pd,
 		),
 	)

@@ -24,7 +24,7 @@ func TestAddZeroArguments(t *testing.T) {
 func TestAddSingleRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -59,7 +59,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 
 func TestAddTwoRequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -107,7 +107,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 
 func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -161,7 +161,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 
 func TestOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
@@ -198,7 +198,7 @@ func TestOneOptionalArgument(t *testing.T) {
 
 func TestDefaultIntValue(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
@@ -255,7 +255,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 		{Type: parameters.ParameterTypeIntegerList, Value: []string{}},
 	}
 	for _, failingType := range failingTypes {
-		defaultLayer, err := layers.NewParameterLayer("default", "Default",
+		defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 			layers.WithArguments(
 				&parameters.ParameterDefinition{
 					Name:    "foo",
@@ -275,7 +275,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 
 func TestTwoOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name: "foo",
@@ -297,7 +297,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 
 func TestFailAddingRequiredAfterOptional(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name: "foo",
@@ -315,7 +315,7 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 
 func TestAddStringListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -336,7 +336,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
@@ -377,7 +377,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name: "foo",
@@ -395,7 +395,7 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 
 func TestAddIntegerListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -416,7 +416,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -441,7 +441,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:     "foo",
@@ -465,7 +465,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
@@ -491,7 +491,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := layers.NewParameterLayer("default", "Default",
+	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name: "foo",
@@ -550,9 +550,9 @@ func TestCommandArgumentsParsing(t *testing.T) {
 		err = yaml.Unmarshal(fileData, testSuite)
 		require.NoError(t, err)
 
-		layer, err := layers.NewParameterLayer("default", "Default",
+		layer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
 			layers.WithArguments(testSuite.Description.Arguments...),
-			layers.WithParameters(testSuite.Description.Flags...),
+			layers.WithParameterDefinitions(testSuite.Description.Flags...),
 		)
 		require.NoError(t, err)
 		testSuite.Description.Layers = []layers.ParameterLayer{layer}
