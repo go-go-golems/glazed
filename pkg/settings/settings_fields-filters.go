@@ -81,7 +81,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Parameters.Get("filter")
 		if !ok {
-			pd, ok := f.Flags.Get("filter")
+			pd, ok := f.ParameterDefinitions.Get("filter")
 			if !ok {
 				return nil, errors.New("Failed to find default filter parameter definition")
 			}

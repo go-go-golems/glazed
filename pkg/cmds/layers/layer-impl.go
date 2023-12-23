@@ -10,12 +10,12 @@ import (
 // ParameterLayerImpl is a straight forward simple implementation of ParameterLayer
 // that can easily be reused in more complex implementations.
 type ParameterLayerImpl struct {
-	Name        string                           `yaml:"name"`
-	Slug        string                           `yaml:"slug"`
-	Description string                           `yaml:"description"`
-	Prefix      string                           `yaml:"prefix"`
-	Flags       *parameters.ParameterDefinitions `yaml:"flags,omitempty"`
-	ChildLayers []ParameterLayer                 `yaml:"childLayers,omitempty"`
+	Name                 string                           `yaml:"name"`
+	Slug                 string                           `yaml:"slug"`
+	Description          string                           `yaml:"description"`
+	Prefix               string                           `yaml:"prefix"`
+	ParameterDefinitions *parameters.ParameterDefinitions `yaml:"flags,omitempty"`
+	ChildLayers          []ParameterLayer                 `yaml:"childLayers,omitempty"`
 }
 
 var _ ParameterLayer = &ParameterLayerImpl{}
@@ -51,7 +51,7 @@ func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) er
 	p.Name = raw.Name
 	p.Slug = raw.Slug
 	p.Description = raw.Description
-	p.Flags = raw.Flags
+	p.ParameterDefinitions = raw.Flags
 	return nil
 }
 
@@ -59,9 +59,9 @@ type ParameterLayerOptions func(*ParameterLayerImpl) error
 
 func NewParameterLayer(slug string, name string, options ...ParameterLayerOptions) (*ParameterLayerImpl, error) {
 	ret := &ParameterLayerImpl{
-		Slug:  slug,
-		Name:  name,
-		Flags: parameters.NewParameterDefinitions(),
+		Slug:                 slug,
+		Name:                 name,
+		ParameterDefinitions: parameters.NewParameterDefinitions(),
 	}
 
 	for _, o := range options {
@@ -110,7 +110,7 @@ func WithDefaults(s interface{}) ParameterLayerOptions {
 func WithParameterDefinitions(parameterDefinitions ...*parameters.ParameterDefinition) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
 		for _, f := range parameterDefinitions {
-			p.Flags.Set(f.Name, f)
+			p.ParameterDefinitions.Set(f.Name, f)
 		}
 		return nil
 	}
@@ -120,7 +120,7 @@ func WithArguments(arguments ...*parameters.ParameterDefinition) ParameterLayerO
 	return func(p *ParameterLayerImpl) error {
 		for _, a := range arguments {
 			a.IsArgument = true
-			p.Flags.Set(a.Name, a)
+			p.ParameterDefinitions.Set(a.Name, a)
 		}
 		return nil
 	}
@@ -132,7 +132,7 @@ func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 		return err
 	}
 
-	for f_ := p.Flags.Oldest(); f_ != nil; f_ = f_.Next() {
+	for f_ := p.ParameterDefinitions.Oldest(); f_ != nil; f_ = f_.Next() {
 		err := f_.Value.CheckParameterDefaultValueValidity()
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
@@ -161,7 +161,7 @@ func NewParameterLayerFromYAML(s []byte, options ...ParameterLayerOptions) (*Par
 
 func (p *ParameterLayerImpl) AddFlags(flag ...*parameters.ParameterDefinition) {
 	for _, f := range flag {
-		p.Flags.Set(f.Name, f)
+		p.ParameterDefinitions.Set(f.Name, f)
 	}
 }
 
@@ -170,7 +170,7 @@ func (p *ParameterLayerImpl) AddFlags(flag ...*parameters.ParameterDefinition) {
 // a lambda that might become more relevant.
 func (p *ParameterLayerImpl) GetParameterDefinitions() *parameters.ParameterDefinitions {
 	ret := parameters.NewParameterDefinitions()
-	for f := p.Flags.Oldest(); f != nil; f = f.Next() {
+	for f := p.ParameterDefinitions.Oldest(); f != nil; f = f.Next() {
 		ret.Set(f.Key, f.Value)
 	}
 	return ret
@@ -223,12 +223,12 @@ func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{},
 // If the layer has a prefix, the flags are added with that prefix.
 func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err := parameters.AddParametersToCobraCommand(cmd, p.Flags, p.Prefix)
+	err := parameters.AddParametersToCobraCommand(cmd, p.ParameterDefinitions, p.Prefix)
 	if err != nil {
 		return err
 	}
 
-	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Flags, p.Prefix)
+	AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.ParameterDefinitions, p.Prefix)
 
 	return nil
 }
@@ -240,7 +240,7 @@ func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
 // This will return a map containing the value (or default value) of each flag
 // of the layer.
 func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(cmd *cobra.Command) (*ParsedLayer, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, p.Flags, false, false, p.Prefix)
+	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, p.ParameterDefinitions, false, false, p.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -258,14 +258,14 @@ func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyPr
 
 func (p *ParameterLayerImpl) Clone() ParameterLayer {
 	ret := &ParameterLayerImpl{
-		Name:        p.Name,
-		Slug:        p.Slug,
-		Description: p.Description,
-		Prefix:      p.Prefix,
-		Flags:       parameters.NewParameterDefinitions(),
+		Name:                 p.Name,
+		Slug:                 p.Slug,
+		Description:          p.Description,
+		Prefix:               p.Prefix,
+		ParameterDefinitions: parameters.NewParameterDefinitions(),
 	}
-	for v := p.Flags.Oldest(); v != nil; v = v.Next() {
-		ret.Flags.Set(v.Key, v.Value.Clone())
+	for v := p.ParameterDefinitions.Oldest(); v != nil; v = v.Next() {
+		ret.ParameterDefinitions.Set(v.Key, v.Value.Clone())
 	}
 	return ret
 

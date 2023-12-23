@@ -678,6 +678,14 @@ func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 	return ret
 }
 
+func (pds *ParameterDefinitions) GetDefaultValue(key string, defaultValue interface{}) interface{} {
+	v, ok := pds.Get(key)
+	if !ok {
+		return defaultValue
+	}
+	return v.Default
+}
+
 // GetArguments returns a new ParameterDefinitions containing only the argument
 // parameters. The parameter definitions are not cloned.
 func (pds *ParameterDefinitions) GetArguments() *ParameterDefinitions {

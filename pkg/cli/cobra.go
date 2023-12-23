@@ -130,7 +130,11 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			// Need to update the parsedLayers from command line flags too...
 
 			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedLayer) error {
-				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, layer.Layer.GetParameterDefinitions(), true, true, layer.Layer.GetPrefix())
+				ps_, err := parameters.GatherFlagsFromCobraCommand(
+					cmd,
+					layer.Layer.GetParameterDefinitions(),
+					true, true,
+					layer.Layer.GetPrefix())
 				if err != nil {
 					return err
 				}
@@ -140,7 +144,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			})
 			cobra.CheckErr(err)
 		} else {
-			parsedLayers, err = cobraParser.Parse(args)
+			parsedLayers, err = cobraParser.Parse()
 			// show help if there is an error
 			if err != nil {
 				fmt.Println(err)
@@ -514,15 +518,18 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	return ret, nil
 }
 
-func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterLayerImpl) (*parameters.ParsedParameters, error) {
+func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d layers.ParameterLayer) (*parameters.ParsedParameters, error) {
 	// actually hijack and load everything from viper instead of cobra...
-	ps, err := parameters.GatherFlagsFromViper(d.Flags, false, d.Prefix)
+	parameterDefinitions := d.GetParameterDefinitions()
+	prefix := d.GetPrefix()
+
+	ps, err := parameters.GatherFlagsFromViper(parameterDefinitions, false, prefix)
 	if err != nil {
 		return nil, err
 	}
 
 	// now load from flag overrides
-	ps2, err := parameters.GatherFlagsFromCobraCommand(cmd, d.Flags, true, false, d.Prefix)
+	ps2, err := parameters.GatherFlagsFromCobraCommand(cmd, parameterDefinitions, true, false, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -531,9 +538,7 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterL
 	return ps, nil
 }
 
-func (c *CobraParser) Parse(args []string) (
-	*layers.ParsedLayers,
-	error) {
+func (c *CobraParser) Parse() (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 
 	for _, layer := range c.description.Layers {
@@ -635,4 +640,22 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 	}
 
 	return cmd, nil
+}
+
+func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParameterLayer) (
+	*layers.ParsedLayers,
+	error,
+) {
+	options := []layers.ParsedLayersOption{}
+
+	for _, layer := range layers_ {
+		ps, err := layer.ParseLayerFromCobraCommand(cmd)
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, layers.WithParsedLayer(layer.GetSlug(), ps))
+	}
+	ret := layers.NewParsedLayers(options...)
+
+	return ret, nil
 }
