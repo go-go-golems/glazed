@@ -16,7 +16,11 @@ type ParsedLayer struct {
 
 type ParsedLayerOption func(*ParsedLayer) error
 
-func WithParsedParameterValue(source string, key string, value interface{}) ParsedLayerOption {
+func WithParsedParameterValue(
+	source string,
+	key string, value interface{},
+	options ...parameters.ParseStepOption,
+) ParsedLayerOption {
 	return func(pl *ParsedLayer) error {
 		pd, ok := pl.Layer.GetParameterDefinitions().Get(key)
 		if !ok {
@@ -25,23 +29,7 @@ func WithParsedParameterValue(source string, key string, value interface{}) Pars
 		p := &parameters.ParsedParameter{
 			ParameterDefinition: pd,
 		}
-		p.Set(source, value)
-		pl.Parameters.Set(key, p)
-
-		return nil
-	}
-}
-
-func WithParsedParameterValueWithMetadata(source string, key string, value interface{}, metadata map[string]interface{}) ParsedLayerOption {
-	return func(pl *ParsedLayer) error {
-		pd, ok := pl.Layer.GetParameterDefinitions().Get(key)
-		if !ok {
-			return errors.Errorf("parameter definition %s not found in layer %s", key, pl.Layer.GetName())
-		}
-		p := &parameters.ParsedParameter{
-			ParameterDefinition: pd,
-		}
-		p.SetWithMetadata(source, value, metadata)
+		p.SetWithSource(source, value, options...)
 		pl.Parameters.Set(key, p)
 
 		return nil
@@ -63,7 +51,7 @@ func WithParsedParameterValues(source string, values map[string]interface{}) Par
 func WithParsedParameterValuesWithMetadata(source string, values map[string]interface{}, metadata map[string]interface{}) ParsedLayerOption {
 	return func(p *ParsedLayer) error {
 		for k, v := range values {
-			err := WithParsedParameterValueWithMetadata(source, k, v, metadata)(p)
+			err := WithParsedParameterValue(source, k, v, parameters.WithParseStepMetadata(metadata))(p)
 			if err != nil {
 				return err
 			}

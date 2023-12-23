@@ -3,7 +3,6 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 )
@@ -34,7 +33,7 @@ func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterL
 
 func NewJqSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*JqSettings, error) {
 	s := &JqSettings{}
-	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize jq settings from parameters")
 	}

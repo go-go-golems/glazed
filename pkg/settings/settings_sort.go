@@ -3,7 +3,6 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ type SortFlagsSettings struct {
 
 func NewSortSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
-	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize sort settings from parameters")
 	}

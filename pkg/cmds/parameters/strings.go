@@ -161,7 +161,7 @@ func GatherFlagsFromStringList(
 				p := &ParsedParameter{
 					ParameterDefinition: param,
 				}
-				p.Set("default", param.Default)
+				p.SetWithSource("default", param.Default)
 				result.Set(param.Name, p)
 			}
 		}

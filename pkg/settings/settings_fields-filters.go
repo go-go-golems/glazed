@@ -88,10 +88,10 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 			p := &parameters.ParsedParameter{
 				ParameterDefinition: pd,
 			}
-			p.Set("override-fields-filter", []string{})
+			p.SetWithSource("override-fields-filter", []string{})
 			l.Parameters.Set("filter", p)
 		} else {
-			parsedFilter.Set("override-fields-filter", []string{})
+			parsedFilter.SetWithSource("override-fields-filter", []string{})
 		}
 	}
 
@@ -100,7 +100,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 
 func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, err
 	}

@@ -151,7 +151,7 @@ func GatherArguments(
 				return nil, fmt.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
-					p.Set("default", argument.Default)
+					p.SetWithSource("default", argument.Default)
 					result.Set(argument.Name, p)
 				}
 				continue
@@ -511,61 +511,45 @@ func GatherFlagsFromViper(
 		}
 		if !onlyProvided && !viper.IsSet(flagName) {
 			if p.Default != nil {
-				parsed.Set("default", p.Default)
+				parsed.SetWithSource("default", p.Default)
 				ret.Set(p.Name, parsed)
 			}
 			continue
 		}
 
+		// TODO(manuel, 2023-12-22) Would be cool if viper were to tell us where the flag came from...
+		options := []ParseStepOption{
+			WithParseStepMetadata(map[string]interface{}{
+				"flag": flagName,
+			}),
+			WithParseStepSource("viper"),
+		}
 		//exhaustive:ignore
 		switch p.Type {
 		case ParameterTypeString:
-			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
-				"flag": flagName,
-				// TODO(manuel, 2023-12-22) Would be cool if viper were to tell us where the flag came from...
-			})
+			parsed.Set(viper.GetString(flagName), options...)
 		case ParameterTypeInteger:
-			parsed.SetWithMetadata("viper", viper.GetInt(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetInt(flagName), options...)
 		case ParameterTypeFloat:
-			parsed.SetWithMetadata("viper", viper.GetFloat64(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetFloat64(flagName), options...)
 		case ParameterTypeBool:
-			parsed.SetWithMetadata("viper", viper.GetBool(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetBool(flagName), options...)
 		case ParameterTypeStringList:
-			parsed.SetWithMetadata("viper", viper.GetStringSlice(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetStringSlice(flagName), options...)
 		case ParameterTypeIntegerList:
-			parsed.SetWithMetadata("viper", viper.GetIntSlice(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetIntSlice(flagName), options...)
 		case ParameterTypeKeyValue:
-			parsed.SetWithMetadata("viper", viper.GetStringMapString(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetStringMapString(flagName), options...)
 		case ParameterTypeStringListFromFile:
-			parsed.SetWithMetadata("viper", viper.GetStringSlice(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetStringSlice(flagName), options...)
 		case ParameterTypeStringFromFile:
 			// not sure if this is the best here, maybe it should be the filename?
-			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetString(flagName), options...)
 		case ParameterTypeChoice:
 			// probably should do some checking here
-			parsed.SetWithMetadata("viper", viper.GetString(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetString(flagName), options...)
 		case ParameterTypeObjectFromFile:
-			parsed.SetWithMetadata("viper", viper.GetStringMap(flagName), map[string]interface{}{
-				"flag": flagName,
-			})
+			parsed.Set(viper.GetStringMap(flagName), options...)
 			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
 			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
@@ -631,6 +615,13 @@ func GatherFlagsFromCobraCommand(
 			}
 		}
 
+		options := []ParseStepOption{
+			WithParseStepMetadata(map[string]interface{}{
+				"flag": flagName,
+			}),
+			WithParseStepSource("cobra"),
+		}
+
 		switch pd.Type {
 		case ParameterTypeObjectFromFile,
 			ParameterTypeObjectListFromFile,
@@ -655,9 +646,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeInteger:
@@ -665,9 +654,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeBool:
@@ -675,9 +662,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeObjectListFromFiles,
@@ -700,9 +685,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeKeyValue:
@@ -713,12 +696,12 @@ func GatherFlagsFromCobraCommand(
 
 			// if it was changed and is empty, then skip setting from default
 			if cmd.Flags().Changed(flagName) && len(v) == 0 {
-				p.SetWithMetadata("cobra",
-					map[string]string{},
-					map[string]interface{}{
+				options := append(options,
+					WithParseStepMetadata(map[string]interface{}{
 						"flag":      flagName,
 						"emptyFlag": true,
-					})
+					}))
+				p.Set(map[string]string{}, options...)
 				ps.Set(pd.Name, p)
 			} else {
 				v2, err := pd.ParseParameter(v)
@@ -734,9 +717,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeFloatList:
@@ -745,9 +726,7 @@ func GatherFlagsFromCobraCommand(
 			if err != nil {
 				return nil, err
 			}
-			p.SetWithMetadata("cobra", v, map[string]interface{}{
-				"flag": flagName,
-			})
+			p.Set(v, options...)
 			ps.Set(pd.Name, p)
 		}
 	}
