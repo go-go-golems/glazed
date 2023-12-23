@@ -76,10 +76,8 @@ type YamlSettings struct {
 }
 
 func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
-	d := parsedLayers.GetDefaultParameterLayer()
-
 	s := &YamlSettings{}
-	err := d.Parameters.InitializeStruct(s)
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
 	}

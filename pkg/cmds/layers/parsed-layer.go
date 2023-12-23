@@ -119,6 +119,19 @@ func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 	return ps
 }
 
+func (p *ParsedLayers) InitializeStruct(key string, s interface{}) error {
+	// We special case Default because we will create a fresh empty default layer for defaults.
+	// Not sure how necessary that is, honestly
+	if key == DefaultSlug {
+		return p.GetDefaultParameterLayer().InitializeStruct(s)
+	}
+	v, ok := p.Get(key)
+	if !ok {
+		return errors.Errorf("layer %s not found", key)
+	}
+	return v.InitializeStruct(s)
+}
+
 func GetAllParsedParameters(layers *ParsedLayers) *parameters.ParsedParameters {
 	ret := parameters.NewParsedParameters()
 	layers.ForEach(

@@ -85,9 +85,8 @@ type CsvSettings struct {
 }
 
 func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
-	d := parsedLayers.GetDefaultParameterLayer()
 	s := &CsvSettings{}
-	err := d.InitializeStruct(s)
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize csv settings from parameters")
 	}

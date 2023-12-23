@@ -74,10 +74,8 @@ func NewJsonCommand() (*JsonCommand, error) {
 }
 
 func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
-	d := parsedLayers.GetDefaultParameterLayer()
-
 	s := &JsonSettings{}
-	err := d.Parameters.InitializeStruct(s)
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize json settings from parameters")
 	}
