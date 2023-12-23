@@ -20,6 +20,11 @@ type ExampleCommand struct {
 
 var _ cmds.GlazeCommand = (*ExampleCommand)(nil)
 
+type ExampleSettings struct {
+	Count int  `glazed.parameter:"count"`
+	Test  bool `glazed.parameter:"test"`
+}
+
 func NewExampleCommand() (*ExampleCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -64,16 +69,19 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
 func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	d := parsedLayers.GetDefaultParameterLayer()
-	count := d.Parameters.GetValue("count").(int)
-	test := d.Parameters.GetValue("test").(bool)
+	s := &ExampleSettings{}
+	err := d.Parameters.InitializeStruct(s)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize example settings from parameters")
+	}
 
-	for i := 0; i < count; i++ {
+	for i := 0; i < s.Count; i++ {
 		row := types.NewRow(
 			types.MRP("id", i),
 			types.MRP("name", "foobar-"+strconv.Itoa(i)),
 		)
 
-		if test {
+		if s.Test {
 			row.Set("test", rand.Intn(100)+1)
 		}
 

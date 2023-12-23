@@ -68,41 +68,35 @@ func NewYamlCommand() (*YamlCommand, error) {
 	}, nil
 }
 
+type YamlSettings struct {
+	InputIsArray bool     `glazed.parameter:"input-is-array"`
+	Sanitize     bool     `glazed.parameter:"sanitize"`
+	FromMarkdown bool     `glazed.parameter:"from-markdown"`
+	InputFiles   []string `glazed.parameter:"input-files"`
+}
+
 func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	d := parsedLayers.GetDefaultParameterLayer()
-	inputIsArray, ok := d.Parameters.GetValue("input-is-array").(bool)
-	if !ok {
-		return fmt.Errorf("input-is-array flag is not a bool")
+
+	s := &YamlSettings{}
+	err := d.Parameters.InitializeStruct(s)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
 	}
 
-	sanitize, ok := d.Parameters.GetValue("sanitize").(bool)
-	if !ok {
-		return fmt.Errorf("sanitize flag is not a bool")
-	}
-
-	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
-	if !ok {
-		return fmt.Errorf("input-files is not a string list")
-	}
-
-	fromMarkdown, ok := d.Parameters.GetValue("from-markdown").(bool)
-	if !ok {
-		return fmt.Errorf("from-markdown flag is not a bool")
-	}
-
-	for _, arg := range inputFiles {
+	for _, arg := range s.InputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}
 		var f io.Reader
 		var err error
 
-		if sanitize || fromMarkdown {
+		if s.Sanitize || s.FromMarkdown {
 			// read in file
 			data, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			cleanData := yaml2.Clean(string(data), fromMarkdown)
+			cleanData := yaml2.Clean(string(data), s.FromMarkdown)
 			f = strings.NewReader(cleanData)
 		} else {
 			f, err = os.Open(arg)
@@ -115,7 +109,7 @@ func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *l
 			}(f.(*os.File))
 		}
 
-		if inputIsArray {
+		if s.InputIsArray {
 			// TODO(manuel, 2023-06-25) We should implement an unmarshaller for maprow from yaml
 			// See https://github.com/go-go-golems/glazed/issues/305
 			data := make([]types.Row, 0)

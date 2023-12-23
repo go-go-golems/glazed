@@ -36,30 +36,6 @@ func WithParsedParameterValue(
 	}
 }
 
-func WithParsedParameterValues(source string, values map[string]interface{}) ParsedLayerOption {
-	return func(p *ParsedLayer) error {
-		for k, v := range values {
-			err := WithParsedParameterValue(source, k, v)(p)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func WithParsedParameterValuesWithMetadata(source string, values map[string]interface{}, metadata map[string]interface{}) ParsedLayerOption {
-	return func(p *ParsedLayer) error {
-		for k, v := range values {
-			err := WithParsedParameterValue(source, k, v, parameters.WithParseStepMetadata(metadata))(p)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
 func NewParsedLayer(layer ParameterLayer, options ...ParsedLayerOption) (*ParsedLayer, error) {
 	ret := &ParsedLayer{
 		Layer:      layer,
@@ -118,6 +94,10 @@ func (ppl *ParsedLayer) GetDataMap() map[string]interface{} {
 	})
 
 	return ret
+}
+
+func (ppl *ParsedLayer) InitializeStruct(s interface{}) error {
+	return ppl.Parameters.InitializeStruct(s)
 }
 
 type ParsedLayers struct {

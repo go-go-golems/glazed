@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -22,6 +21,13 @@ type JsonCommand struct {
 }
 
 var _ cmds.GlazeCommand = (*JsonCommand)(nil)
+
+type JsonSettings struct {
+	InputIsArray bool     `glazed.parameter:"input-is-array"`
+	Sanitize     bool     `glazed.parameter:"sanitize"`
+	FromMarkdown bool     `glazed.parameter:"from-markdown"`
+	InputFiles   []string `glazed.parameter:"input-files"`
+}
 
 func NewJsonCommand() (*JsonCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
@@ -70,40 +76,26 @@ func NewJsonCommand() (*JsonCommand, error) {
 func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	d := parsedLayers.GetDefaultParameterLayer()
 
-	inputIsArray, ok := d.Parameters.GetValue("input-is-array").(bool)
-	if !ok {
-		return fmt.Errorf("input-is-array flag is not a bool")
+	s := &JsonSettings{}
+	err := d.Parameters.InitializeStruct(s)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize json settings from parameters")
 	}
 
-	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
-	if !ok {
-		return fmt.Errorf("input-files is not a string list")
-	}
-
-	sanitizeInput, ok := d.Parameters.GetValue("sanitize").(bool)
-	if !ok {
-		return fmt.Errorf("sanitize flag is not a bool")
-	}
-
-	fromMarkdown, ok := d.Parameters.GetValue("from-markdown").(bool)
-	if !ok {
-		return fmt.Errorf("from-markdown flag is not a bool")
-	}
-
-	for _, arg := range inputFiles {
+	for _, arg := range s.InputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}
 		var err error
 		var f io.Reader
 
-		if sanitizeInput || fromMarkdown {
+		if s.Sanitize || s.FromMarkdown {
 			b, err := os.ReadFile(arg)
 			if err != nil {
 				return errors.Wrapf(err, "Error reading file %s", arg)
 			}
 
-			s := json2.SanitizeJSONString(string(b), fromMarkdown)
+			s := json2.SanitizeJSONString(string(b), s.FromMarkdown)
 
 			f = bytes.NewReader([]byte(s))
 		} else {
@@ -113,11 +105,11 @@ func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *l
 			}
 		}
 
-		if inputIsArray {
+		if s.InputIsArray {
 			data := make([]types.Row, 0)
 			err = json.NewDecoder(f).Decode(&data)
 			if err != nil {
-				return errors.Wrapf(err, "Error decoding file %s as array", arg)
+				return errors.Errorf("Error decoding file %s as array", arg)
 			}
 
 			i := 1

@@ -17,12 +17,6 @@ type ParsedParameter struct {
 
 type ParseStepOption func(*ParseStep)
 
-func WithParseStepReplaceMetadata(metadata map[string]interface{}) ParseStepOption {
-	return func(p *ParseStep) {
-		p.Metadata = metadata
-	}
-}
-
 func WithParseStepMetadata(metadata map[string]interface{}) ParseStepOption {
 	return func(p *ParseStep) {
 		if p.Metadata == nil {
