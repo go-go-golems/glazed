@@ -28,36 +28,7 @@ type ParameterDefinition struct {
 	IsArgument bool          `yaml:"-"`
 }
 
-func (p *ParameterDefinition) String() string {
-	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
-}
-
-func (p *ParameterDefinition) Clone() *ParameterDefinition {
-	return &ParameterDefinition{
-		Name:      p.Name,
-		ShortFlag: p.ShortFlag,
-		Type:      p.Type,
-		Help:      p.Help,
-		Default:   p.Default,
-		Choices:   p.Choices,
-		Required:  p.Required,
-	}
-}
-
 type ParameterDefinitionOption func(*ParameterDefinition)
-
-func NewParameterDefinition(name string, parameterType ParameterType, options ...ParameterDefinitionOption) *ParameterDefinition {
-	ret := &ParameterDefinition{
-		Name: name,
-		Type: parameterType,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
 
 func WithHelp(help string) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
@@ -92,6 +63,39 @@ func WithRequired(required bool) ParameterDefinitionOption {
 func WithIsArgument(isArgument bool) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
 		p.IsArgument = isArgument
+	}
+}
+
+func NewParameterDefinition(
+	name string,
+	parameterType ParameterType,
+	options ...ParameterDefinitionOption,
+) *ParameterDefinition {
+	ret := &ParameterDefinition{
+		Name: name,
+		Type: parameterType,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func (p *ParameterDefinition) String() string {
+	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
+}
+
+func (p *ParameterDefinition) Clone() *ParameterDefinition {
+	return &ParameterDefinition{
+		Name:      p.Name,
+		ShortFlag: p.ShortFlag,
+		Type:      p.Type,
+		Help:      p.Help,
+		Default:   p.Default,
+		Choices:   p.Choices,
+		Required:  p.Required,
 	}
 }
 
@@ -146,7 +150,10 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 		value.SetBool(false)
 	case ParameterTypeInteger, ParameterTypeFloat:
 		return reflect2.SetReflectValue(value, 0)
-	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+	case ParameterTypeStringList,
+		ParameterTypeChoiceList,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile:
 		value.Set(reflect.ValueOf([]string{}))
 	case ParameterTypeDate:
 		value.Set(reflect.ValueOf(time.Time{}))
@@ -197,7 +204,10 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	case ParameterTypeInteger, ParameterTypeFloat:
 		return reflect2.SetReflectValue(value, v)
 
-	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+	case ParameterTypeStringList,
+		ParameterTypeChoiceList,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile:
 		list, ok := cast.CastList2[string, interface{}](v)
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, v)
@@ -259,15 +269,12 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	return nil
 }
 
-// InitializeStructFromParameterDefinitions initializes a struct from a map of parameter definitions.
+// InitializeStructFromDefaults initializes a struct from a map of parameter definitions.
 //
 // Each field in the struct annotated with tag `glazed.parameter` will be set to the default value of
 // the corresponding `ParameterDefinition`. If no `ParameterDefinition` is found for a field, an error
 // is returned.
-func InitializeStructFromParameterDefinitions(
-	s interface{},
-	parameterDefinitions *ParameterDefinitions,
-) error {
+func (pds *ParameterDefinitions) InitializeStructFromDefaults(s interface{}) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
@@ -283,7 +290,7 @@ func InitializeStructFromParameterDefinitions(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions.Get(v)
+		parameter, ok := pds.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -294,7 +301,7 @@ func InitializeStructFromParameterDefinitions(
 				value.Set(reflect.New(field.Type.Elem()))
 			}
 			if field.Type.Elem().Kind() == reflect.Struct {
-				err := InitializeStructFromParameterDefinitions(value.Interface(), parameterDefinitions)
+				err := pds.InitializeStructFromDefaults(value.Interface())
 				if err != nil {
 					return errors.Wrapf(err, "failed to initialize struct for %s", v)
 				}
@@ -316,13 +323,12 @@ func InitializeStructFromParameterDefinitions(
 	return nil
 }
 
-// InitializeParameterDefinitionsFromStruct initializes a map of parameter definitions from a struct.
+// InitializeDefaultsFromStruct initializes the parameters definitions from a struct.
 // Each field in the struct annotated with tag `glazed.parameter` will be used to set
 // the default value of the corresponding definition in `parameterDefinitions`.
 // If no `ParameterDefinition` is found for a field, an error is returned.
-// This is the inverse of InitializeStructFromParameterDefinitions.
-func InitializeParameterDefinitionsFromStruct(
-	parameterDefinitions *ParameterDefinitions,
+// This is the inverse of InitializeStructFromDefaults.
+func (pds *ParameterDefinitions) InitializeDefaultsFromStruct(
 	s interface{},
 ) error {
 	// check that s is indeed a pointer to a struct
@@ -344,7 +350,7 @@ func InitializeParameterDefinitionsFromStruct(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions.Get(v)
+		parameter, ok := pds.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -388,12 +394,11 @@ func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 	return ret, nil
 }
 
-func InitializeParameterDefaultsFromMap(
-	parameterDefinitions *ParameterDefinitions,
+func (pds *ParameterDefinitions) InitializeDefaultsFromMap(
 	ps map[string]interface{},
 ) error {
 	for k, v := range ps {
-		parameter, ok := parameterDefinitions.Get(k)
+		parameter, ok := pds.Get(k)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", k)
 		}
@@ -716,26 +721,26 @@ func NewParameterDefinitions(options ...ParameterDefinitionsOption) *ParameterDe
 
 // Clone returns a cloned copy of the ParameterDefinitions.
 // The parameter definitions are cloned as well.
-func (p *ParameterDefinitions) Clone() *ParameterDefinitions {
-	return NewParameterDefinitions().Merge(p)
+func (pds *ParameterDefinitions) Clone() *ParameterDefinitions {
+	return NewParameterDefinitions().Merge(pds)
 }
 
 // Merge merges the parameter definitions from m into p.
 // It clones each parameter definition before adding it to p
 // so that updates to p do not affect m.
-func (p *ParameterDefinitions) Merge(m *ParameterDefinitions) *ParameterDefinitions {
+func (pds *ParameterDefinitions) Merge(m *ParameterDefinitions) *ParameterDefinitions {
 	for v := m.Oldest(); v != nil; v = v.Next() {
-		p.Set(v.Key, v.Value.Clone())
+		pds.Set(v.Key, v.Value.Clone())
 	}
-	return p
+	return pds
 }
 
 // GetFlags returns a new ParameterDefinitions containing only the flag
 // parameters. The parameter definitions are not cloned.
-func (p *ParameterDefinitions) GetFlags() *ParameterDefinitions {
+func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 	ret := NewParameterDefinitions()
 
-	for v := p.Oldest(); v != nil; v = v.Next() {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
 		if !v.Value.IsArgument {
 			ret.Set(v.Key, v.Value)
 		}
@@ -746,10 +751,10 @@ func (p *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 
 // GetArguments returns a new ParameterDefinitions containing only the argument
 // parameters. The parameter definitions are not cloned.
-func (p *ParameterDefinitions) GetArguments() *ParameterDefinitions {
+func (pds *ParameterDefinitions) GetArguments() *ParameterDefinitions {
 	ret := NewParameterDefinitions()
 
-	for v := p.Oldest(); v != nil; v = v.Next() {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
 		if v.Value.IsArgument {
 			ret.Set(v.Key, v.Value)
 		}
@@ -760,8 +765,8 @@ func (p *ParameterDefinitions) GetArguments() *ParameterDefinitions {
 
 // ForEachE calls the given function f on each parameter definition in p.
 // If f returns an error, ForEachE stops iterating and returns the error immediately.
-func (p *ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
-	for v := p.Oldest(); v != nil; v = v.Next() {
+func (pds *ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
 		err := f(v.Value)
 		if err != nil {
 			return err
@@ -772,29 +777,29 @@ func (p *ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) 
 }
 
 // ForEach calls the given function f on each parameter definition in p.
-func (p *ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
-	for v := p.Oldest(); v != nil; v = v.Next() {
+func (pds *ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
 		f(v.Value)
 	}
 }
 
-func (p *ParameterDefinitions) MarshalYAML() (interface{}, error) {
+func (pds *ParameterDefinitions) MarshalYAML() (interface{}, error) {
 	ret := []*ParameterDefinition{}
-	p.ForEach(func(definition *ParameterDefinition) {
+	pds.ForEach(func(definition *ParameterDefinition) {
 		ret = append(ret, definition)
 	})
 	return ret, nil
 }
 
-func (p *ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
+func (pds *ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
 	var parameterDefinitions []*ParameterDefinition
 	err := value.Decode(&parameterDefinitions)
 	if err != nil {
 		return err
 	}
 
-	for _, pd := range parameterDefinitions {
-		p.Set(pd.Name, pd)
+	for _, pd_ := range parameterDefinitions {
+		pds.Set(pd_.Name, pd_)
 	}
 
 	return nil

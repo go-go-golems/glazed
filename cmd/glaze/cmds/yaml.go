@@ -68,7 +68,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 	}, nil
 }
 
-func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	d := parsedLayers.GetDefaultParameterLayer()
 	inputIsArray, ok := d.Parameters.GetValue("input-is-array").(bool)
 	if !ok {

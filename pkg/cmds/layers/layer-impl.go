@@ -189,7 +189,7 @@ func (p *ParameterLayerImpl) InitializeParameterDefaultsFromStruct(defaults inte
 		return nil
 	}
 	ps := p.GetParameterDefinitions()
-	err := parameters.InitializeParameterDefinitionsFromStruct(ps, defaults)
+	err := ps.InitializeDefaultsFromStruct(defaults)
 	return err
 }
 
@@ -200,7 +200,7 @@ func (p *ParameterLayerImpl) InitializeParameterDefaultsFromParameters(
 	ps map[string]interface{},
 ) error {
 	pds := p.GetParameterDefinitions()
-	err := parameters.InitializeParameterDefaultsFromMap(pds, ps)
+	err := pds.InitializeDefaultsFromMap(ps)
 	return err
 }
 
@@ -208,8 +208,8 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	if s == nil {
 		return nil
 	}
-	ps := p.GetParameterDefinitions()
-	err := parameters.InitializeStructFromParameterDefinitions(s, ps)
+	pds := p.GetParameterDefinitions()
+	err := pds.InitializeStructFromDefaults(s)
 	return err
 }
 

@@ -75,7 +75,7 @@ func NewCsvCommand() (*CsvCommand, error) {
 	}, nil
 }
 
-func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	d := parsedLayers.GetDefaultParameterLayer()
 	inputFiles, ok := d.Parameters.GetValue("input-files").([]string)
 	if !ok {
