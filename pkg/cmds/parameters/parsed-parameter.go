@@ -118,14 +118,6 @@ func NewParsedParameters(options ...ParsedParametersOption) *ParsedParameters {
 	return ret
 }
 
-func (p *ParsedParameters) GetCheckedValue(key string) (interface{}, bool) {
-	v, ok := p.Get(key)
-	if !ok {
-		return nil, false
-	}
-	return v.Value, true
-}
-
 func (p *ParsedParameters) GetValue(key string) interface{} {
 	v, ok := p.Get(key)
 	if !ok {

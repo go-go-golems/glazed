@@ -79,23 +79,6 @@ func (ppl *ParsedLayer) GetParameter(k string) (interface{}, bool) {
 	return v.Value, true
 }
 
-func (ppl *ParsedLayer) GetParameterValue(k string) interface{} {
-	if v, ok := ppl.Parameters.Get(k); ok {
-		return v.Value
-	}
-
-	return nil
-}
-
-func (ppl *ParsedLayer) GetDataMap() map[string]interface{} {
-	ret := map[string]interface{}{}
-	ppl.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
-		ret[v.ParameterDefinition.Name] = v.Value
-	})
-
-	return ret
-}
-
 func (ppl *ParsedLayer) InitializeStruct(s interface{}) error {
 	return ppl.Parameters.InitializeStruct(s)
 }
@@ -152,14 +135,6 @@ func (p *ParsedLayers) GetParameter(slug string, key string) (*parameters.Parsed
 		return nil, false
 	}
 	return layer.Parameters.Get(key)
-}
-
-func (p *ParsedLayers) GetParameterValue(slug string, key string) interface{} {
-	layer, ok := p.OrderedMap.Get(slug)
-	if !ok {
-		return nil
-	}
-	return layer.Parameters.GetValue(key)
 }
 
 func (p *ParsedLayers) GetDefaultParameterLayer() *ParsedLayer {
