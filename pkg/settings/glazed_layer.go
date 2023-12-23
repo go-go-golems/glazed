@@ -29,6 +29,11 @@ type GlazedParameterLayers struct {
 	SkipLimitParameterLayer     *SkipLimitParameterLayer     `yaml:"skipLimitParameterLayer"`
 }
 
+const GlazedSlug = "glazed"
+
+var _ layers.ParameterLayer = (*GlazedParameterLayers)(nil)
+var _ layers.CobraParameterLayer = (*GlazedParameterLayers)(nil)
+
 func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
 	return &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: g.FieldsFiltersParameterLayer.Clone().(*FieldsFiltersParameterLayer),
@@ -41,9 +46,6 @@ func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
 		SortParameterLayer:          g.SortParameterLayer.Clone().(*SortParameterLayer),
 	}
 }
-
-var _ layers.ParameterLayer = (*GlazedParameterLayers)(nil)
-var _ layers.CobraParameterLayer = (*GlazedParameterLayers)(nil)
 
 func (g *GlazedParameterLayers) MarshalYAML() (interface{}, error) {
 	return &layers.ParameterLayerImpl{
@@ -69,7 +71,7 @@ func (g *GlazedParameterLayers) GetName() string {
 }
 
 func (g *GlazedParameterLayers) GetSlug() string {
-	return "glazed"
+	return GlazedSlug
 }
 
 func (g *GlazedParameterLayers) GetDescription() string {

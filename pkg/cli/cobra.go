@@ -610,7 +610,7 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		ctx context.Context,
 		parsedLayers *layers.ParsedLayers,
 	) error {
-		glazedLayer, ok := parsedLayers.Get("glazed")
+		glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
 		if !ok {
 			return errors.New("glazed layer not found")
 		}
