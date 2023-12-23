@@ -130,7 +130,7 @@ func (a *CommandAlias) ToYAML(w io.Writer) error {
 	return enc.Encode(a)
 }
 
-func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error {
+func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
@@ -141,7 +141,7 @@ func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *
 	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
 }
 
-func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, w io.Writer) error {
+func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}

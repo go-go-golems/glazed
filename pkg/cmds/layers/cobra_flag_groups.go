@@ -2,12 +2,13 @@ package layers
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
 )
 
 // FlagGroup is a group of flags that can be added to a cobra command.
@@ -280,7 +281,7 @@ func AddFlagGroupToCobraCommand(
 	cmd *cobra.Command,
 	id string,
 	name string,
-	flags parameters.ParameterDefinitions,
+	flags *parameters.ParameterDefinitions,
 	prefix string,
 ) {
 	flagNames := []string{}

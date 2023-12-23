@@ -191,7 +191,7 @@ func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
 	return c.GetLayer(layers.DefaultSlug)
 }
 
-func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
+func (c *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
 	l, ok := c.GetDefaultLayer()
 	if !ok {
 		return parameters.NewParameterDefinitions()
@@ -199,7 +199,7 @@ func (c *CommandDescription) GetDefaultFlags() parameters.ParameterDefinitions {
 	return l.GetParameterDefinitions().GetFlags()
 }
 
-func (c *CommandDescription) GetDefaultArguments() parameters.ParameterDefinitions {
+func (c *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
 	l, ok := c.GetDefaultLayer()
 	if !ok {
 		return parameters.NewParameterDefinitions()
@@ -266,7 +266,7 @@ type Command interface {
 
 type CommandWithMetadata interface {
 	Command
-	Metadata(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) (map[string]interface{}, error)
+	Metadata(ctx context.Context, parsedLayers *layers.ParsedLayers) (map[string]interface{}, error)
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
@@ -278,12 +278,12 @@ type CommandWithMetadata interface {
 
 type BareCommand interface {
 	Command
-	Run(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) error
+	Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
 }
 
 type WriterCommand interface {
 	Command
-	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, w io.Writer) error
+	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
 }
 
 type GlazeCommand interface {
@@ -302,7 +302,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, gp middlewares.Processor) error
+	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
 }
 
 type ExitWithoutGlazeError struct{}

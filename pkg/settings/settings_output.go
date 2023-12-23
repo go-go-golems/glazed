@@ -66,7 +66,7 @@ func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputPa
 	return ret, nil
 }
 
-func NewOutputFormatterSettings(glazedLayer *layers.ParsedParameterLayer) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
 	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {

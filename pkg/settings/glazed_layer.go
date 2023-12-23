@@ -84,7 +84,7 @@ func (g *GlazedParameterLayers) AddFlags(...*parameters.ParameterDefinition) {
 	panic("not supported me")
 }
 
-func (g *GlazedParameterLayers) GetParameterDefinitions() parameters.ParameterDefinitions {
+func (g *GlazedParameterLayers) GetParameterDefinitions() *parameters.ParameterDefinitions {
 	ret := parameters.NewParameterDefinitions()
 	ret.Merge(g.OutputParameterLayer.GetParameterDefinitions()).
 		Merge(g.FieldsFiltersParameterLayer.GetParameterDefinitions()).
@@ -140,8 +140,8 @@ func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error
 	return nil
 }
 
-func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedParameterLayer, error) {
-	res := &layers.ParsedParameterLayer{
+func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedLayer, error) {
+	res := &layers.ParsedLayer{
 		Layer: g,
 	}
 	ps := parameters.NewParsedParameters()
@@ -456,7 +456,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupRowOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (formatters.RowOutputFormatter, error) {
+func SetupRowOutputFormatter(glazedLayer *layers.ParsedLayer) (formatters.RowOutputFormatter, error) {
 	outputSettings, err := NewOutputFormatterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
@@ -470,7 +470,7 @@ func SetupRowOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (formatte
 	return of, nil
 }
 
-func SetupTableOutputFormatter(glazedLayer *layers.ParsedParameterLayer) (formatters.TableOutputFormatter, error) {
+func SetupTableOutputFormatter(glazedLayer *layers.ParsedLayer) (formatters.TableOutputFormatter, error) {
 	selectSettings, err := NewSelectSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
@@ -515,7 +515,7 @@ func SetupSimpleTableProcessor(
 //
 // DO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
 func SetupTableProcessor(
-	glazedLayer *layers.ParsedParameterLayer,
+	glazedLayer *layers.ParsedLayer,
 	options ...middlewares.TableProcessorOption,
 ) (*middlewares.TableProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
@@ -635,7 +635,7 @@ func SetupTableProcessor(
 // It also returns the output formatter that was created.
 func SetupProcessorOutput(
 	gp *middlewares.TableProcessor,
-	glazedLayer *layers.ParsedParameterLayer,
+	glazedLayer *layers.ParsedLayer,
 	w io.Writer,
 ) (formatters.OutputFormatter, error) {
 	// first, try to get a row updater

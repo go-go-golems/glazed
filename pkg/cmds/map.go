@@ -6,10 +6,10 @@ import (
 )
 
 func ParseCommandFromMap(description *CommandDescription, m map[string]interface{}) (
-	*layers.ParsedParameterLayers,
+	*layers.ParsedLayers,
 	error,
 ) {
-	parsedLayers := layers.NewParsedParameterLayers()
+	parsedLayers := layers.NewParsedLayers()
 
 	// we now need to map the individual values in the JSON to the parsed layers as well
 	for _, layer := range description.Layers {
@@ -23,7 +23,7 @@ func ParseCommandFromMap(description *CommandDescription, m map[string]interface
 		if err != nil {
 			return nil, err
 		}
-		parsedLayers.Set(layer.GetSlug(), &layers.ParsedParameterLayer{
+		parsedLayers.Set(layer.GetSlug(), &layers.ParsedLayer{
 			Layer:      layer,
 			Parameters: ps_,
 		})

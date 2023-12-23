@@ -6,5 +6,5 @@ type CobraParameterLayer interface {
 	ParameterLayer
 	// AddLayerToCobraCommand adds all the flags and arguments defined in this layer to the given cobra command.
 	AddLayerToCobraCommand(cmd *cobra.Command) error
-	ParseLayerFromCobraCommand(cmd *cobra.Command) (*ParsedParameterLayer, error)
+	ParseLayerFromCobraCommand(cmd *cobra.Command) (*ParsedLayer, error)
 }

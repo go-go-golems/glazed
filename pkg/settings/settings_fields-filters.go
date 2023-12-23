@@ -71,7 +71,7 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedParameterLayer, error) {
+func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedLayer, error) {
 	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
@@ -98,7 +98,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 	return l, nil
 }
 
-func NewFieldsFilterSettings(glazedLayer *layers.ParsedParameterLayer) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
 	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {

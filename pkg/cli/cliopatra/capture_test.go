@@ -9,14 +9,14 @@ import (
 	"testing"
 )
 
-func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *layers.ParsedParameterLayers {
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *layers.ParsedLayers {
 	defaultLayer, ok := desc.GetLayer(layers.DefaultSlug)
 	if !ok {
 		return nil
 	}
 
-	ret := layers.NewParsedParameterLayers()
-	ret.Set(layers.DefaultSlug, &layers.ParsedParameterLayer{
+	ret := layers.NewParsedLayers()
+	ret.Set(layers.DefaultSlug, &layers.ParsedLayer{
 		Layer:      defaultLayer,
 		Parameters: ps,
 	})
@@ -187,8 +187,8 @@ func TestSingleLayer(t *testing.T) {
 		),
 	)
 
-	ret := layers.NewParsedParameterLayers()
-	ret.Set("test-layer", &layers.ParsedParameterLayer{
+	ret := layers.NewParsedLayers()
+	ret.Set("test-layer", &layers.ParsedLayer{
 		Layer: layer,
 		Parameters: parameters.NewParsedParameters(
 			parameters.WithParsedParameter(pd, "test", "foobar"))})

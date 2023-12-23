@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-type CobraRunFunc func(ctx context.Context, parsedLayers *layers.ParsedParameterLayers) error
+type CobraRunFunc func(ctx context.Context, parsedLayers *layers.ParsedLayers) error
 
 func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	var verbs []string
@@ -109,7 +109,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(1)
 		}
 
-		var parsedLayers *layers.ParsedParameterLayers
+		var parsedLayers *layers.ParsedLayers
 
 		if loadParametersFromJSON != "" {
 			result := map[string]interface{}{}
@@ -129,7 +129,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 			// Need to update the parsedLayers from command line flags too...
 
-			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedParameterLayer) error {
+			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedLayer) error {
 				ps_, err := parameters.GatherFlagsFromCobraCommand(cmd, layer.Layer.GetParameterDefinitions(), true, true, layer.Layer.GetPrefix())
 				if err != nil {
 					return err
@@ -299,7 +299,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(c, func(
 		ctx context.Context,
-		parsedLayers *layers.ParsedParameterLayers,
+		parsedLayers *layers.ParsedLayers,
 	) error {
 		err := c.Run(ctx, parsedLayers)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
@@ -321,7 +321,7 @@ func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error
 func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(s, func(
 		ctx context.Context,
-		parsedLayers *layers.ParsedParameterLayers,
+		parsedLayers *layers.ParsedLayers,
 	) error {
 		err := s.RunIntoWriter(ctx, parsedLayers, os.Stdout)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
@@ -471,7 +471,7 @@ func AddCommandsToRootCommand(
 
 // CobraParser takes a CommandDescription, and hooks it up to a cobra command.
 // It can then be used to parse the cobra flags and arguments back into a
-// set of ParsedParameterLayer and a map[string]interface{} for the lose stuff.
+// set of ParsedLayer and a map[string]interface{} for the lose stuff.
 //
 // That command however doesn't have a Run* method, which is left to the caller to implement.
 //
@@ -532,9 +532,9 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d *layers.ParameterL
 }
 
 func (c *CobraParser) Parse(args []string) (
-	*layers.ParsedParameterLayers,
+	*layers.ParsedLayers,
 	error) {
-	parsedLayers := layers.NewParsedParameterLayers()
+	parsedLayers := layers.NewParsedLayers()
 
 	for _, layer := range c.description.Layers {
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
@@ -573,7 +573,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, nil, err
 	}
 
-	var glazedLayer *layers.ParsedParameterLayer
+	var glazedLayer *layers.ParsedLayer
 
 	//glazedLayer, ok := parsedLayers["glazed"]
 	//if !ok {
@@ -603,7 +603,7 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
 		ctx context.Context,
-		parsedLayers *layers.ParsedParameterLayers,
+		parsedLayers *layers.ParsedLayers,
 	) error {
 		glazedLayer, ok := parsedLayers.Get("glazed")
 		if !ok {

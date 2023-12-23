@@ -13,7 +13,7 @@ import (
 //go:embed "test-data/parameters_test.yaml"
 var testFlagsYaml []byte
 
-var testParameterDefinitions ParameterDefinitions
+var testParameterDefinitions *ParameterDefinitions
 
 type ValidityTest struct {
 	Name                string        `yaml:"name"`

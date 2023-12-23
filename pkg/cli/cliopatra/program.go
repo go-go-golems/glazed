@@ -318,7 +318,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers *layers.ParsedParameterLayers,
+	parsedLayers *layers.ParsedLayers,
 	w io.Writer) error {
 	var err error
 	path := p.Path

@@ -32,7 +32,7 @@ func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterL
 	return ret, nil
 }
 
-func NewJqSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*JqSettings, error) {
+func NewJqSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*JqSettings, error) {
 	s := &JqSettings{}
 	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {

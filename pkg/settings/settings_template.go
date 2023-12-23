@@ -57,7 +57,7 @@ func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*Templa
 	return ret, nil
 }
 
-func NewTemplateSettings(layer *layers.ParsedParameterLayer) (*TemplateSettings, error) {
+func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 

@@ -31,7 +31,7 @@ type TemplateCommandDescription struct {
 
 var _ WriterCommand = (*TemplateCommand)(nil)
 
-func (t *TemplateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedParameterLayers, w io.Writer) error {
+func (t *TemplateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
 	tmpl, err := template.New("template").Parse(t.Template)
 	if err != nil {
 		log.Warn().Err(err).Str("template", t.Template).Msg("failed to parse template")

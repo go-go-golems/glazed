@@ -15,7 +15,7 @@ type SkipLimitSettings struct {
 	Limit int `glazed.parameter:"glazed-limit"`
 }
 
-func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*SkipLimitSettings, error) {
+func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
 	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {

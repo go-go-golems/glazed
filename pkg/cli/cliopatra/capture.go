@@ -7,7 +7,7 @@ import (
 )
 
 func getCliopatraParameters(
-	definitions parameters.ParameterDefinitions,
+	definitions *parameters.ParameterDefinitions,
 	ps *parameters.ParsedParameters,
 	prefix string,
 ) []*Parameter {
@@ -69,7 +69,7 @@ func getCliopatraParameters(
 // option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
-	parsedLayers *layers.ParsedParameterLayers,
+	parsedLayers *layers.ParsedLayers,
 	opts ...ProgramOption,
 ) *Program {
 	ret := &Program{

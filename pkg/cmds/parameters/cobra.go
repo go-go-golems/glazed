@@ -2,12 +2,13 @@ package parameters
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"strings"
-	"time"
 )
 
 // addArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
@@ -23,7 +24,7 @@ import (
 // and list arguments.
 // If everything is successful, it assigns an argument validator (either MinimumNArgs or RangeArgs)
 // to the cobra command's Args attribute.
-func addArgumentsToCobraCommand(cmd *cobra.Command, arguments ParameterDefinitions) error {
+func addArgumentsToCobraCommand(cmd *cobra.Command, arguments *ParameterDefinitions) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
@@ -83,7 +84,7 @@ func addArgumentsToCobraCommand(cmd *cobra.Command, arguments ParameterDefinitio
 // For example:
 //   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
 //   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
-func GenerateUseString(cmd *cobra.Command, arguments ParameterDefinitions) string {
+func GenerateUseString(cmd *cobra.Command, arguments *ParameterDefinitions) string {
 	fields := strings.Fields(cmd.Use)
 	if len(fields) == 0 {
 		return ""
@@ -129,7 +130,7 @@ func GenerateUseString(cmd *cobra.Command, arguments ParameterDefinitions) strin
 // Parsing errors for individual arguments will also return errors.
 func GatherArguments(
 	args []string,
-	arguments ParameterDefinitions,
+	arguments *ParameterDefinitions,
 	onlyProvided bool,
 	ignoreRequired bool,
 ) (*ParsedParameters, error) {
@@ -219,17 +220,17 @@ func GatherArguments(
 // an empty list or a list containing "all" should be treated the same.
 func AddParametersToCobraCommand(
 	cmd *cobra.Command,
-	flags ParameterDefinitions,
+	pds *ParameterDefinitions,
 	prefix string,
 ) error {
 	flagSet := cmd.Flags()
 
-	err := addArgumentsToCobraCommand(cmd, flags.GetArguments())
+	err := addArgumentsToCobraCommand(cmd, pds.GetArguments())
 	if err != nil {
 		return err
 	}
 
-	err = flags.GetFlags().ForEachE(func(parameter *ParameterDefinition) error {
+	err = pds.GetFlags().ForEachE(func(parameter *ParameterDefinition) error {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
@@ -491,7 +492,7 @@ func AddParametersToCobraCommand(
 }
 
 func GatherFlagsFromViper(
-	params ParameterDefinitions,
+	params *ParameterDefinitions,
 	onlyProvided bool,
 	prefix string,
 ) (*ParsedParameters, error) {
@@ -591,7 +592,7 @@ func GatherFlagsFromViper(
 // Prefix is prepended to all flag names.
 func GatherFlagsFromCobraCommand(
 	cmd *cobra.Command,
-	params ParameterDefinitions,
+	params *ParameterDefinitions,
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,

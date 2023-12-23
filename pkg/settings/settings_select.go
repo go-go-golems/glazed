@@ -17,7 +17,7 @@ type SelectSettings struct {
 	SelectTemplate  string `glazed.parameter:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(glazedLayer *layers.ParsedParameterLayer) (*SelectSettings, error) {
+func NewSelectSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SelectSettings, error) {
 	s := &SelectSettings{}
 	err := parameters.InitializeStructFromParameters(s, glazedLayer.Parameters)
 	if err != nil {

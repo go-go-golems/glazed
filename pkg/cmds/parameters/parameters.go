@@ -2,15 +2,15 @@ package parameters
 
 import (
 	"fmt"
+	"reflect"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
-	"github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
-	"reflect"
-	"strings"
-	"time"
 )
 
 // ParameterDefinition is a declarative way of describing a command line parameter.
@@ -99,6 +99,9 @@ func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
 	return reflect.DeepEqual(p.Default, i)
 }
 
+// SetDefaultFromValue sets the Default field of the ParameterDefinition
+// to the provided value. It handles nil values and dereferencing pointers.
+// The value is type checked before being set.
 func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	// check if value is pointer, do nothing if nil, otherwise dereference
 	if value.Kind() == reflect.Ptr {
@@ -167,7 +170,9 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 	return nil
 }
 
-// SetValueFromInterface assigns the given value to the given reflect.Value.
+// SetValueFromInterface assigns the value v to the given reflect.Value based on the
+// ParameterDefinition's type. It handles type checking and conversion for the
+// various supported parameter types.
 func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {
 	err := p.CheckValueValidity(v)
 	if err != nil {
@@ -261,7 +266,7 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 // is returned.
 func InitializeStructFromParameterDefinitions(
 	s interface{},
-	parameterDefinitions ParameterDefinitions,
+	parameterDefinitions *ParameterDefinitions,
 ) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
@@ -317,7 +322,7 @@ func InitializeStructFromParameterDefinitions(
 // If no `ParameterDefinition` is found for a field, an error is returned.
 // This is the inverse of InitializeStructFromParameterDefinitions.
 func InitializeParameterDefinitionsFromStruct(
-	parameterDefinitions ParameterDefinitions,
+	parameterDefinitions *ParameterDefinitions,
 	s interface{},
 ) error {
 	// check that s is indeed a pointer to a struct
@@ -354,6 +359,11 @@ func InitializeParameterDefinitionsFromStruct(
 	return nil
 }
 
+// GlazedStructToMap converts a struct pointer to a map of parameter names to values.
+// It iterates through the struct fields looking for the "glazed.parameter" tag.
+// For each field with the tag, it will add an entry to the returned map with the
+// tag value as the key and the field's value as the map value.
+// Returns an error if s is not a pointer to a struct.
 func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 
@@ -378,8 +388,8 @@ func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 	return ret, nil
 }
 
-func InitializeParameterDefaultsFromParameters(
-	parameterDefinitions ParameterDefinitions,
+func InitializeParameterDefaultsFromMap(
+	parameterDefinitions *ParameterDefinitions,
 	ps map[string]interface{},
 ) error {
 	for k, v := range ps {
@@ -396,6 +406,22 @@ func InitializeParameterDefaultsFromParameters(
 	return nil
 }
 
+// InitializeStructFromParameters initializes a struct from a ParsedParameters map.
+//
+// It iterates through the struct fields looking for those tagged with
+// "glazed.parameter". For each tagged field, it will lookup the corresponding
+// parameter value in the ParsedParameters map and set the field's value.
+//
+// Struct fields that are pointers to other structs are handled recursively.
+//
+// s should be a pointer to the struct to initialize.
+//
+// ps is the ParsedParameters map to lookup parameter values from.
+//
+// Returns an error if:
+// - s is not a pointer to a struct
+// - A tagged field does not have a matching parameter value in ps
+// - Failed to set the value of a field
 func InitializeStructFromParameters(s interface{}, ps *ParsedParameters) error {
 	if s == nil {
 		return errors.Errorf("Can't initialize nil struct")
@@ -449,93 +475,6 @@ func InitializeStructFromParameters(s interface{}, ps *ParsedParameters) error {
 	}
 
 	return nil
-}
-
-type ParameterType string
-
-const (
-	ParameterTypeString ParameterType = "string"
-
-	// TODO(2023-02-13, manuel) Should the "default" of a stringFromFile be the filename, or the string?
-	//
-	// See https://github.com/go-go-golems/glazed/issues/137
-
-	ParameterTypeStringFromFile  ParameterType = "stringFromFile"
-	ParameterTypeStringFromFiles ParameterType = "stringFromFiles"
-
-	// ParameterTypeFile and ParameterTypeFileList are a more elaborate version that loads and parses
-	// the file content and returns a list of FileData objects (or a single object in the case
-	// of ParameterTypeFile).
-	ParameterTypeFile     ParameterType = "file"
-	ParameterTypeFileList ParameterType = "fileList"
-
-	// TODO(manuel, 2023-09-19) Add some more types and maybe revisit the entire concept of loading things from files
-	// - string (potentially from file if starting with @)
-	// - string/int/float list from file is another useful type
-
-	ParameterTypeObjectListFromFile  ParameterType = "objectListFromFile"
-	ParameterTypeObjectListFromFiles ParameterType = "objectListFromFiles"
-	ParameterTypeObjectFromFile      ParameterType = "objectFromFile"
-	ParameterTypeStringListFromFile  ParameterType = "stringListFromFile"
-	ParameterTypeStringListFromFiles ParameterType = "stringListFromFiles"
-
-	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
-	// or when beginning with @, a file with key-value options
-	ParameterTypeKeyValue ParameterType = "keyValue"
-
-	ParameterTypeInteger     ParameterType = "int"
-	ParameterTypeFloat       ParameterType = "float"
-	ParameterTypeBool        ParameterType = "bool"
-	ParameterTypeDate        ParameterType = "date"
-	ParameterTypeStringList  ParameterType = "stringList"
-	ParameterTypeIntegerList ParameterType = "intList"
-	ParameterTypeFloatList   ParameterType = "floatList"
-	ParameterTypeChoice      ParameterType = "choice"
-	ParameterTypeChoiceList  ParameterType = "choiceList"
-)
-
-// IsFileLoadingParameter returns true if the parameter type is one that loads a file, when provided with the given
-// value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
-// beginning character of @ indicates a file.
-func IsFileLoadingParameter(p ParameterType, v string) bool {
-	//exhaustive:ignore
-	switch p {
-	case ParameterTypeStringFromFile,
-		ParameterTypeObjectListFromFile,
-		ParameterTypeObjectFromFile,
-		ParameterTypeStringListFromFile,
-		ParameterTypeObjectListFromFiles,
-		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
-		ParameterTypeFile,
-		ParameterTypeFileList:
-
-		return true
-	case ParameterTypeKeyValue:
-		return strings.HasPrefix(v, "@")
-	default:
-		return false
-	}
-}
-
-// IsListParameter returns if the parameter has to be parsed from a list of strings,
-// not if its value is actually a string.
-func IsListParameter(p ParameterType) bool {
-	//exhaustive:ignore
-	switch p {
-	case ParameterTypeObjectListFromFiles,
-		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
-		ParameterTypeStringList,
-		ParameterTypeIntegerList,
-		ParameterTypeFloatList,
-		ParameterTypeChoiceList,
-		ParameterTypeKeyValue,
-		ParameterTypeFileList:
-		return true
-	default:
-		return false
-	}
 }
 
 // CheckParameterDefaultValueValidity checks if the ParameterDefinition's Default is valid.
@@ -720,7 +659,7 @@ func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
 // LoadParameterDefinitionsFromYAML loads a map of ParameterDefinitions from a YAML file.
 // It checks that default values are valid.
 // It returns the ParameterDefinitions as a map indexed by name, and as a list.
-func LoadParameterDefinitionsFromYAML(yamlContent []byte) ParameterDefinitions {
+func LoadParameterDefinitionsFromYAML(yamlContent []byte) *ParameterDefinitions {
 	parameters_ := NewParameterDefinitions()
 
 	var err error
@@ -742,61 +681,14 @@ func LoadParameterDefinitionsFromYAML(yamlContent []byte) ParameterDefinitions {
 	return parameters_
 }
 
+// ParameterDefinitions is an ordered map of ParameterDefinition.
 type ParameterDefinitions struct {
 	*orderedmap.OrderedMap[string, *ParameterDefinition]
 }
 
-func (p ParameterDefinitions) Merge(m ParameterDefinitions) ParameterDefinitions {
-	for v := m.Oldest(); v != nil; v = v.Next() {
-		p.Set(v.Key, v.Value)
-	}
-	return p
-}
-
-func (p ParameterDefinitions) GetFlags() ParameterDefinitions {
-	ret := NewParameterDefinitions()
-
-	for v := p.Oldest(); v != nil; v = v.Next() {
-		if !v.Value.IsArgument {
-			ret.Set(v.Key, v.Value)
-		}
-	}
-
-	return ret
-}
-
-func (p ParameterDefinitions) GetArguments() ParameterDefinitions {
-	ret := NewParameterDefinitions()
-
-	for v := p.Oldest(); v != nil; v = v.Next() {
-		if v.Value.IsArgument {
-			ret.Set(v.Key, v.Value)
-		}
-	}
-
-	return ret
-}
-
-func (p ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
-	for v := p.Oldest(); v != nil; v = v.Next() {
-		err := f(v.Value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (p ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
-	for v := p.Oldest(); v != nil; v = v.Next() {
-		f(v.Value)
-	}
-}
-
 type ParameterDefinitionsOption func(*ParameterDefinitions)
 
-func WithParameterDefinitions(parameterDefinitions ParameterDefinitions) ParameterDefinitionsOption {
+func WithParameterDefinitions(parameterDefinitions *ParameterDefinitions) ParameterDefinitionsOption {
 	return func(p *ParameterDefinitions) {
 		p.Merge(parameterDefinitions)
 	}
@@ -810,19 +702,83 @@ func WithParameterDefinitionList(parameterDefinitions []*ParameterDefinition) Pa
 	}
 }
 
-func NewParameterDefinitions(options ...ParameterDefinitionsOption) ParameterDefinitions {
-	ret := ParameterDefinitions{
+func NewParameterDefinitions(options ...ParameterDefinitionsOption) *ParameterDefinitions {
+	ret := &ParameterDefinitions{
 		orderedmap.New[string, *ParameterDefinition](),
 	}
 
 	for _, o := range options {
-		o(&ret)
+		o(ret)
 	}
 
 	return ret
 }
 
-func (p ParameterDefinitions) MarshalYAML() (interface{}, error) {
+// Clone returns a cloned copy of the ParameterDefinitions.
+// The parameter definitions are cloned as well.
+func (p *ParameterDefinitions) Clone() *ParameterDefinitions {
+	return NewParameterDefinitions().Merge(p)
+}
+
+// Merge merges the parameter definitions from m into p.
+// It clones each parameter definition before adding it to p
+// so that updates to p do not affect m.
+func (p *ParameterDefinitions) Merge(m *ParameterDefinitions) *ParameterDefinitions {
+	for v := m.Oldest(); v != nil; v = v.Next() {
+		p.Set(v.Key, v.Value.Clone())
+	}
+	return p
+}
+
+// GetFlags returns a new ParameterDefinitions containing only the flag
+// parameters. The parameter definitions are not cloned.
+func (p *ParameterDefinitions) GetFlags() *ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		if !v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+// GetArguments returns a new ParameterDefinitions containing only the argument
+// parameters. The parameter definitions are not cloned.
+func (p *ParameterDefinitions) GetArguments() *ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		if v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+// ForEachE calls the given function f on each parameter definition in p.
+// If f returns an error, ForEachE stops iterating and returns the error immediately.
+func (p *ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		err := f(v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ForEach calls the given function f on each parameter definition in p.
+func (p *ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
+	for v := p.Oldest(); v != nil; v = v.Next() {
+		f(v.Value)
+	}
+}
+
+func (p *ParameterDefinitions) MarshalYAML() (interface{}, error) {
 	ret := []*ParameterDefinition{}
 	p.ForEach(func(definition *ParameterDefinition) {
 		ret = append(ret, definition)
@@ -830,7 +786,7 @@ func (p ParameterDefinitions) MarshalYAML() (interface{}, error) {
 	return ret, nil
 }
 
-func (p ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
+func (p *ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
 	var parameterDefinitions []*ParameterDefinition
 	err := value.Decode(&parameterDefinitions)
 	if err != nil {
@@ -842,9 +798,4 @@ func (p ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	return nil
-}
-
-func (p ParameterDefinitions) Clone() ParameterDefinitions {
-	return NewParameterDefinitions().Merge(p)
-
 }
