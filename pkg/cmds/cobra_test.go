@@ -34,7 +34,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 		))
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
+		Layers: layers.NewParameterLayers(layers.WithLayers(defaultLayer)),
 	}
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 
@@ -74,9 +74,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
-	}
+	desc := NewCommandDescription("test", WithLayers(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -123,7 +121,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
+		Layers: layers.NewParameterLayers(layers.WithLayers(defaultLayer)),
 	}
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
@@ -171,9 +169,7 @@ func TestOneOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
-	}
+	desc := NewCommandDescription("test", WithLayers(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -209,7 +205,7 @@ func TestDefaultIntValue(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
+		Layers: layers.NewParameterLayers(layers.WithLayers(defaultLayer)),
 	}
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
@@ -346,9 +342,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := CommandDescription{
-		Layers: []layers.ParameterLayer{defaultLayer},
-	}
+	desc := NewCommandDescription("test", WithLayers(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -555,7 +549,7 @@ func TestCommandArgumentsParsing(t *testing.T) {
 			layers.WithParameterDefinitions(testSuite.Description.Flags...),
 		)
 		require.NoError(t, err)
-		testSuite.Description.Layers = []layers.ParameterLayer{layer}
+		testSuite.Description.Layers = layers.NewParameterLayers(layers.WithLayers(layer))
 
 		if testSuite.Description.Name != "string-from-file" {
 			// XXX hack to debug

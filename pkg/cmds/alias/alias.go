@@ -171,10 +171,7 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 		layout_ = s.Layout
 	}
 
-	var newLayers []layers.ParameterLayer
-	for _, layer := range s.Layers {
-		newLayers = append(newLayers, layer.Clone())
-	}
+	newLayers := s.Layers.Clone()
 
 	ret := &cmds.CommandDescription{
 		Name:    a.Name,

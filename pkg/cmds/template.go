@@ -25,7 +25,7 @@ type TemplateCommandDescription struct {
 	Layout    []*layout.Section                 `yaml:"layout,omitempty"`
 	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
 	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
-	Layers    []layers.ParameterLayer           `yaml:"layers,omitempty"`
+	Layers    layers.ParameterLayers            `yaml:"layers,omitempty"`
 	Template  string                            `yaml:"template"`
 }
 
@@ -38,7 +38,7 @@ func (t *TemplateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layer
 		return errors.Wrap(err, "failed to parse template")
 	}
 
-	err = tmpl.Execute(w, layers.GetAllParsedParameters(parsedLayers))
+	err = tmpl.Execute(w, parsedLayers.GetAllParsedParameters())
 	if err != nil {
 		return errors.Wrap(err, "failed to execute template")
 	}
@@ -87,7 +87,8 @@ func (tcl *TemplateCommandLoader) LoadCommandFromYAML(
 	options_ := []CommandDescriptionOption{
 		WithShort(tcd.Short),
 		WithLong(tcd.Long),
-		WithLayers(append(tcd.Layers, defaultLayer)...),
+		WithLayers(tcd.Layers.AsList()...),
+		WithLayers(defaultLayer),
 		WithLayout(&layout.Layout{
 			Sections: tcd.Layout,
 		}),

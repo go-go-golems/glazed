@@ -43,14 +43,13 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 	// check if we need to add the glazedCommandLayer
 	addGlazedCommandLayer := true
-	for _, layer := range description.Layers {
+	description.Layers.ForEach(func(_ string, layer layers.ParameterLayer) {
 		if layer.GetSlug() == "glazed-command" {
 			addGlazedCommandLayer = false
 		}
-	}
+	})
 
-	layers_ := []layers.ParameterLayer{}
-	layers_ = append(layers_, description.Layers...)
+	layers_ := description.Layers.Clone()
 
 	// TODO(manuel, 2023-12-21) Not sure if this cobra specific location is the best place to add the glazed-command layer
 	if addGlazedCommandLayer {
@@ -90,7 +89,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		}
 
 		// NOTE(manuel, 2023-12-20) Should we clone the layer list here?
-		layers_ = append(layers_, glazedCommandLayer)
+		layers_.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 	}
 
 	description.Layers = layers_
@@ -501,18 +500,23 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 		description: description,
 	}
 
-	for _, layer := range description.Layers {
+	err := description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
 		// check that layer is a CobraParameterLayer
 		// if not, return an error
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
 		if !ok {
-			return nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+			return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
 		}
 
 		err := cobraLayer.AddLayerToCobraCommand(cmd)
 		if err != nil {
-			return nil, err
+			return err
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return ret, nil
@@ -541,19 +545,23 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d layers.ParameterLa
 func (c *CobraParser) Parse() (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 
-	for _, layer := range c.description.Layers {
+	err := c.description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
 		if !ok {
-			return nil, fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+			return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
 		}
 
 		// parse the flags from commands
 		parsedLayer, err := cobraLayer.ParseLayerFromCobraCommand(c.Cmd)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		parsedLayers.Set(layer.GetSlug(), parsedLayer)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return parsedLayers, nil

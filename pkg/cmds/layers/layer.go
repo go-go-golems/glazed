@@ -2,6 +2,7 @@ package layers
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 // ParameterLayer is a struct that is used by one specific functionality layer
@@ -28,4 +29,70 @@ const DefaultSlug = "default"
 
 type JSONParameterLayer interface {
 	ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error)
+}
+
+type ParameterLayers struct {
+	*orderedmap.OrderedMap[string, ParameterLayer]
+}
+
+type ParameterLayersOption func(*ParameterLayers)
+
+func WithLayers(layers ...ParameterLayer) ParameterLayersOption {
+	return func(pl *ParameterLayers) {
+		for _, l := range layers {
+			pl.Set(l.GetSlug(), l)
+
+		}
+	}
+}
+
+func NewParameterLayers(options ...ParameterLayersOption) *ParameterLayers {
+	ret := &ParameterLayers{
+		OrderedMap: orderedmap.New[string, ParameterLayer](),
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+// ForEach iterates over each element in the ParameterLayers map and applies the given function to each key-value pair.
+func (pl *ParameterLayers) ForEach(f func(key string, p ParameterLayer)) {
+	for v := pl.Oldest(); v != nil; v = v.Next() {
+		f(v.Key, v.Value)
+	}
+}
+
+// ForEachE applies a function to each key-value pair in the ParameterLayers, in oldest-to-newest order.
+// It stops iteration and returns the first error encountered, if any.
+func (pl *ParameterLayers) ForEachE(f func(key string, p ParameterLayer) error) error {
+	for v := pl.Oldest(); v != nil; v = v.Next() {
+		if err := f(v.Key, v.Value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (pl *ParameterLayers) Merge(p *ParameterLayers) *ParameterLayers {
+	pl.ForEach(func(k string, v ParameterLayer) {
+		p.Set(k, v.Clone())
+	})
+
+	return pl
+}
+
+func (pl *ParameterLayers) AsList() []ParameterLayer {
+	ret := make([]ParameterLayer, 0, pl.Len())
+	pl.ForEach(func(_ string, v ParameterLayer) {
+		ret = append(ret, v)
+	})
+	return ret
+}
+
+func (pl *ParameterLayers) Clone() *ParameterLayers {
+	ret := NewParameterLayers()
+	return ret.Merge(pl)
 }

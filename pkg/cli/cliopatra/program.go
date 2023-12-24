@@ -329,7 +329,7 @@ func (p *Program) RunIntoWriter(
 		}
 	}
 
-	ps := layers.GetAllParsedParameters(parsedLayers)
+	ps := parsedLayers.GetAllParsedParameters()
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {

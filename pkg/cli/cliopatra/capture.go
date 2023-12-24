@@ -80,10 +80,10 @@ func NewProgramFromCapture(
 	// NOTE(manuel, 2023-03-21) Maybe we should add layers to the program capture too, to expose all the parameters
 	//
 	// See https://github.com/go-go-golems/cliopatra/issues/6
-	for _, layer := range description.Layers {
+	description.Layers.ForEach(func(_ string, layer layers.ParameterLayer) {
 		parsedLayer, ok := parsedLayers.Get(layer.GetSlug())
 		if !ok {
-			continue
+			return
 		}
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
@@ -103,7 +103,7 @@ func NewProgramFromCapture(
 		}
 		ret.Flags = append(ret.Flags, flags...)
 		ret.Args = append(ret.Args, arguments...)
-	}
+	})
 
 	for _, opt := range opts {
 		opt(ret)

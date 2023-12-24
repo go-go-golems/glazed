@@ -108,7 +108,6 @@ func NewParsedLayers(options ...ParsedLayersOption) *ParsedLayers {
 }
 
 // GetDataMap is useful when rendering out templates using all passed in layers.
-// TODO(manuel, 2023-12-22) Allow passing middlewares so that we can blacklist layers
 func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 	ps := map[string]interface{}{}
 	p.ForEach(func(k string, v *ParsedLayer) {
@@ -119,6 +118,10 @@ func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 	return ps
 }
 
+// InitializeStruct initializes a struct with values from a ParsedLayer specified by the key.
+// If the key is "default", it creates a fresh empty default layer for defaults and initializes the struct with it.
+// If the layer specified by the key is not found, it returns an error.
+// The struct must be passed by reference as the s parameter.
 func (p *ParsedLayers) InitializeStruct(key string, s interface{}) error {
 	// We special case Default because we will create a fresh empty default layer for defaults.
 	// Not sure how necessary that is, honestly
@@ -132,11 +135,14 @@ func (p *ParsedLayers) InitializeStruct(key string, s interface{}) error {
 	return v.InitializeStruct(s)
 }
 
-func GetAllParsedParameters(layers *ParsedLayers) *parameters.ParsedParameters {
+// GetAllParsedParameters returns a new instance of parameters.ParsedParameters
+// that merges the parameters from all ParsedLayers.
+// The returned parameters are a deep clone of the parameters.
+func (p *ParsedLayers) GetAllParsedParameters() *parameters.ParsedParameters {
 	ret := parameters.NewParsedParameters()
-	layers.ForEach(
+	p.ForEach(
 		func(_ string, v *ParsedLayer) {
-			ret.Merge(v.Parameters)
+			ret.Merge(v.Parameters.Clone())
 		})
 
 	return ret

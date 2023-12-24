@@ -19,7 +19,7 @@ type CommandDescription struct {
 	Long  string `yaml:"long,omitempty"`
 	// TODO(manuel, 2023-12-21) Does this need to be a list of pointers? Could it just be a list of struct?
 	Layout         []*layout.Section       `yaml:"layout,omitempty"`
-	Layers         []layers.ParameterLayer `yaml:"layers,omitempty"`
+	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
 	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
@@ -49,9 +49,11 @@ func WithLong(s string) CommandDescriptionOption {
 	}
 }
 
-func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
+func WithLayers(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Layers = append(c.Layers, l...)
+		for _, l := range ls {
+			c.Layers.Set(l.GetSlug(), l)
+		}
 	}
 }
 
@@ -68,7 +70,7 @@ func WithFlags(
 			if err != nil {
 				panic(err)
 			}
-			c.Layers = append(c.Layers, layer)
+			c.Layers.Set(layer.GetSlug(), layer)
 		}
 		layer.AddFlags(flags...)
 	}
@@ -87,7 +89,7 @@ func WithArguments(
 			if err != nil {
 				panic(err)
 			}
-			c.Layers = append(c.Layers, layer)
+			c.Layers.Set(layer.GetSlug(), layer)
 		}
 
 		for _, arg := range arguments {
@@ -115,7 +117,7 @@ func WithDefaultLayer(
 		if err != nil {
 			panic(err)
 		}
-		c.Layers = append(c.Layers, layer)
+		c.Layers.Set(layer.GetSlug(), layer)
 	}
 }
 
@@ -127,14 +129,8 @@ func WithLayout(l *layout.Layout) CommandDescriptionOption {
 
 func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-	outerLoop:
 		for _, l := range layers_ {
-			for i, ll := range c.Layers {
-				if ll.GetSlug() == l.GetSlug() {
-					c.Layers[i] = l
-					continue outerLoop
-				}
-			}
+			c.Layers.Set(l.GetSlug(), l)
 		}
 	}
 }
@@ -177,7 +173,8 @@ func WithPrependSource(s string) CommandDescriptionOption {
 
 func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
 	ret := &CommandDescription{
-		Name: name,
+		Name:   name,
+		Layers: layers.NewParameterLayers(),
 	}
 
 	for _, o := range options {
@@ -187,20 +184,20 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	return ret
 }
 
-func (c *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
-	return c.GetLayer(layers.DefaultSlug)
+func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
+	return cd.GetLayer(layers.DefaultSlug)
 }
 
-func (c *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
-	l, ok := c.GetDefaultLayer()
+func (cd *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
+	l, ok := cd.GetDefaultLayer()
 	if !ok {
 		return parameters.NewParameterDefinitions()
 	}
 	return l.GetParameterDefinitions().GetFlags()
 }
 
-func (c *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
-	l, ok := c.GetDefaultLayer()
+func (cd *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
+	l, ok := cd.GetDefaultLayer()
 	if !ok {
 		return parameters.NewParameterDefinitions()
 	}
@@ -208,35 +205,28 @@ func (c *CommandDescription) GetDefaultArguments() *parameters.ParameterDefiniti
 	return l.GetParameterDefinitions().GetArguments()
 }
 
-func (c *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
-	for _, l := range c.Layers {
-		if l.GetSlug() == name {
-			return l, true
-		}
-	}
-	return nil, false
+func (cd *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
+	return cd.Layers.Get(name)
 }
 
-func (c *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
+func (cd *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
 	// clone flags
-	var layers_ []layers.ParameterLayer
+	layers_ := layers.NewParameterLayers()
 	if cloneLayers {
-		for _, l := range c.Layers {
-			layers_ = append(layers_, l.Clone())
-		}
+		layers_ = cd.Layers.Clone()
 	}
 
 	// copy parents
-	parents := make([]string, len(c.Parents))
-	copy(parents, c.Parents)
+	parents := make([]string, len(cd.Parents))
+	copy(parents, cd.Parents)
 
 	ret := &CommandDescription{
-		Name:    c.Name,
-		Short:   c.Short,
-		Long:    c.Long,
+		Name:    cd.Name,
+		Short:   cd.Short,
+		Long:    cd.Long,
 		Layers:  layers_,
 		Parents: parents,
-		Source:  c.Source,
+		Source:  cd.Source,
 	}
 
 	for _, o := range options {

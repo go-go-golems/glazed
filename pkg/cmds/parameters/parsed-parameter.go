@@ -126,6 +126,14 @@ func (p *ParsedParameters) GetValue(key string) interface{} {
 	return v.Value
 }
 
+func (p *ParsedParameters) Clone() *ParsedParameters {
+	ret := NewParsedParameters()
+	p.ForEach(func(k string, v *ParsedParameter) {
+		ret.Set(k, v.Clone())
+	})
+	return ret
+}
+
 // UpdateExistingValue updates the value of an existing parameter, and returns true if the parameter existed.
 // If the parameter did not exist, it returns false.
 func (p *ParsedParameters) UpdateExistingValue(
