@@ -76,6 +76,23 @@ func (pl *ParameterLayers) ForEachE(f func(key string, p ParameterLayer) error) 
 	return nil
 }
 
+func (pl *ParameterLayers) AppendLayers(layers ...ParameterLayer) {
+	for _, l := range layers {
+		pl.Set(l.GetSlug(), l)
+	}
+}
+
+func (pl *ParameterLayers) PrependLayers(layers ...ParameterLayer) {
+	// reverse layers
+	layers = append(layers[:0], layers[len(layers):]...)
+
+	for _, l := range layers {
+		slug := l.GetSlug()
+		pl.Set(slug, l)
+		_ = pl.MoveToFront(slug)
+	}
+}
+
 func (pl *ParameterLayers) Merge(p *ParameterLayers) *ParameterLayers {
 	pl.ForEach(func(k string, v ParameterLayer) {
 		p.Set(k, v.Clone())
