@@ -17,7 +17,6 @@ type ParsedLayer struct {
 type ParsedLayerOption func(*ParsedLayer) error
 
 func WithParsedParameterValue(
-	source string,
 	key string, value interface{},
 	options ...parameters.ParseStepOption,
 ) ParsedLayerOption {
@@ -29,7 +28,7 @@ func WithParsedParameterValue(
 		p := &parameters.ParsedParameter{
 			ParameterDefinition: pd,
 		}
-		p.SetWithSource(source, value, options...)
+		p.Set(value, options...)
 		pl.Parameters.Set(key, p)
 
 		return nil

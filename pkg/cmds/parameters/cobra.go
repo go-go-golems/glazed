@@ -143,6 +143,7 @@ func (pds *ParameterDefinitions) GatherArguments(
 	_ = args
 	result := NewParsedParameters()
 	argsIdx := 0
+
 	err := pds.ForEachE(func(argument *ParameterDefinition) error {
 		p := &ParsedParameter{
 			ParameterDefinition: argument,
@@ -156,7 +157,9 @@ func (pds *ParameterDefinitions) GatherArguments(
 				return fmt.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
-					p.SetWithSource("default", argument.Default, parseOptions...)
+					parseOptions_ := append(parseOptions, WithParseStepSource("default"))
+
+					p.Set(argument.Default, parseOptions_...)
 					result.Set(argument.Name, p)
 				}
 				return nil
@@ -521,7 +524,9 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 		}
 		if !onlyProvided && !viper.IsSet(flagName) {
 			if p.Default != nil {
-				parsed.SetWithSource("default", p.Default)
+				options_ := append(options, WithParseStepSource("default"))
+
+				parsed.Set(p.Default, options_...)
 				ret.Set(p.Name, parsed)
 			}
 			continue

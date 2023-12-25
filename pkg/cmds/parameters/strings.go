@@ -143,8 +143,8 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 				// show that this was set out of the default
 				parseOptions_ := append(parseOptions, WithParseStepMetadata(map[string]interface{}{
 					"default": true,
-				}))
-				p.SetWithSource("default", param.Default, parseOptions_...)
+				}), WithParseStepSource("default"))
+				p.Set(param.Default, parseOptions_...)
 				result.Set(param.Name, p)
 			}
 		}

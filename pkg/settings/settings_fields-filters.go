@@ -86,6 +86,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	// if fields were manually specified, clear whatever default filters we might have set
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Parameters.Get("filter")
+		options_ := append(options, parameters.WithParseStepSource("override-fields-filter"))
 		if !ok {
 			pd, ok := f.ParameterDefinitions.Get("filter")
 			if !ok {
@@ -94,10 +95,10 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 			p := &parameters.ParsedParameter{
 				ParameterDefinition: pd,
 			}
-			p.SetWithSource("override-fields-filter", []string{}, options...)
+			p.Set([]string{}, options_...)
 			l.Parameters.Set("filter", p)
 		} else {
-			parsedFilter.SetWithSource("override-fields-filter", []string{}, options...)
+			parsedFilter.Set([]string{}, options_...)
 		}
 	}
 

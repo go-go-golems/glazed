@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+for i in ParameterDefinition ParameterDefinitions \
+         ParameterLayer ParameterLayers \
+         ParsedLayer ParsedLayers; do
+	oak go definitions --recurse pkg/ --name "$i" --definition-type struct,interface
+done

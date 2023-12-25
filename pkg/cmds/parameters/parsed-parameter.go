@@ -63,19 +63,6 @@ func (p *ParsedParameter) Set(value interface{}, options ...ParseStepOption) {
 	p.Log = append(p.Log, step)
 }
 
-func (p *ParsedParameter) SetWithSource(source string, value interface{}, options ...ParseStepOption) {
-	p.Value = value
-	step := ParseStep{
-		Source: source,
-		Value:  value,
-	}
-	for _, o := range options {
-		o(&step)
-	}
-
-	p.Log = append(p.Log, step)
-}
-
 func (p *ParsedParameter) Merge(v *ParsedParameter, options ...ParseStepOption) {
 	options = append(options, WithParseStepSource("merge"), WithParseStepValue(v.Value))
 	p.Log = append(p.Log, NewParseStep(options...))
@@ -137,20 +124,20 @@ func (p *ParsedParameters) Clone() *ParsedParameters {
 // UpdateExistingValue updates the value of an existing parameter, and returns true if the parameter existed.
 // If the parameter did not exist, it returns false.
 func (p *ParsedParameters) UpdateExistingValue(
-	key string, source string, v interface{},
+	key string, v interface{},
 	options ...ParseStepOption,
 ) bool {
 	v_, ok := p.Get(key)
 	if !ok {
 		return false
 	}
-	v_.SetWithSource(source, v, options...)
+	v_.Set(v, options...)
 	return true
 }
 
 func (p *ParsedParameters) UpdateValue(
 	key string, pd *ParameterDefinition,
-	source string, v interface{},
+	v interface{},
 	options ...ParseStepOption,
 ) {
 	v_, ok := p.Get(key)
@@ -160,19 +147,19 @@ func (p *ParsedParameters) UpdateValue(
 		}
 		p.Set(key, v_)
 	}
-	v_.SetWithSource(source, v, options...)
+	v_.Set(v, options...)
 }
 
 // SetAsDefault sets the current value of the parameter if no value has yet been set.
 func (p *ParsedParameters) SetAsDefault(
-	key string, pd *ParameterDefinition, source string, v interface{},
+	key string, pd *ParameterDefinition, v interface{},
 	options ...ParseStepOption) {
 	if _, ok := p.Get(key); !ok {
 		v_ := &ParsedParameter{
 			ParameterDefinition: pd,
 		}
 		p.Set(key, v_)
-		v_.SetWithSource(source, v, options...)
+		v_.Set(v, options...)
 	}
 }
 
