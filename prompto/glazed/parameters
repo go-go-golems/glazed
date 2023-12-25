@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 
-for i in ParameterDefinition ParameterDefinitions \
-         ParameterLayer ParameterLayers \
-         ParsedLayer ParsedLayers; do
-	oak go definitions --recurse pkg/ --name "$i" --definition-type struct,interface
-done
+prompto get glazed/parameter-types
+
+echo "package parameters"
+echo
+oak go definitions pkg/cmds/parameters/parameters.go
+echo
+oak go definitions pkg/cmds/parameters/parsed-parameter.go
+echo
+echo
+echo "package layers"
+echo
+oak go definitions pkg/cmds/layers/layer.go

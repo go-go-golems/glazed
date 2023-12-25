@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 cat <<EOF
+package parameters
+
 type ParameterType string
 const (
 	ParameterTypeString

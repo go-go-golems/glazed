@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+echo "package middlewares_test"
+oak go definitions pkg/cmds/middlewares/middlewares_test.go
+oak go definitions --with-body --function-name TestFillFromDefaults pkg/cmds/middlewares/middlewares_test.go
