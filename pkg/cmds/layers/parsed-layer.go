@@ -36,6 +36,15 @@ func WithParsedParameterValue(
 	}
 }
 
+func WithParsedParameters(pds *parameters.ParsedParameters) ParsedLayerOption {
+	return func(pl *ParsedLayer) error {
+		pds.ForEach(func(k string, v *parameters.ParsedParameter) {
+			pl.Parameters.Set(k, v)
+		})
+		return nil
+	}
+}
+
 func NewParsedLayer(layer ParameterLayer, options ...ParsedLayerOption) (*ParsedLayer, error) {
 	ret := &ParsedLayer{
 		Layer:      layer,

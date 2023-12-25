@@ -223,7 +223,7 @@ func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{},
 // If the layer has a prefix, the flags are added with that prefix.
 func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
-	err := parameters.AddParametersToCobraCommand(cmd, p.ParameterDefinitions, p.Prefix)
+	err := p.ParameterDefinitions.AddParametersToCobraCommand(cmd, p.Prefix)
 	if err != nil {
 		return err
 	}
@@ -239,8 +239,14 @@ func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
 //
 // This will return a map containing the value (or default value) of each flag
 // of the layer.
-func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(cmd *cobra.Command) (*ParsedLayer, error) {
-	ps, err := parameters.GatherFlagsFromCobraCommand(cmd, p.ParameterDefinitions, false, false, p.Prefix)
+func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(
+	cmd *cobra.Command,
+	options ...parameters.ParseStepOption,
+) (*ParsedLayer, error) {
+	ps, err := p.ParameterDefinitions.GatherFlagsFromCobraCommand(
+		cmd, false, false, p.Prefix,
+		options...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -251,9 +257,11 @@ func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(cmd *cobra.Command) (*Pa
 	}, nil
 }
 
-func (p *ParameterLayerImpl) ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error) {
-	// TODO(manuel, 2023-12-22) I think we should pass in the name of the step here for the log metadata
-	return parameters.GatherParametersFromMap(m, p.GetParameterDefinitions(), onlyProvided)
+func (p *ParameterLayerImpl) ParseFlagsFromJSON(
+	m map[string]interface{}, onlyProvided bool,
+	options ...parameters.ParseStepOption,
+) (*parameters.ParsedParameters, error) {
+	return parameters.GatherParametersFromMap(m, p.GetParameterDefinitions(), onlyProvided, options...)
 }
 
 func (p *ParameterLayerImpl) Clone() ParameterLayer {

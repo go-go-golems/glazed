@@ -25,6 +25,9 @@ type FieldsFiltersParameterLayer struct {
 	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
+var _ layers.CobraParameterLayer = &FieldsFiltersParameterLayer{}
+var _ layers.ParameterLayer = &FieldsFiltersParameterLayer{}
+
 func (f *FieldsFiltersParameterLayer) Clone() layers.ParameterLayer {
 	return &FieldsFiltersParameterLayer{
 		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
@@ -71,8 +74,11 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Command) (*layers.ParsedLayer, error) {
-	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd)
+func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
+	cmd *cobra.Command,
+	options ...parameters.ParseStepOption,
+) (*layers.ParsedLayer, error) {
+	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
@@ -88,10 +94,10 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(cmd *cobra.Comm
 			p := &parameters.ParsedParameter{
 				ParameterDefinition: pd,
 			}
-			p.SetWithSource("override-fields-filter", []string{})
+			p.SetWithSource("override-fields-filter", []string{}, options...)
 			l.Parameters.Set("filter", p)
 		} else {
-			parsedFilter.SetWithSource("override-fields-filter", []string{})
+			parsedFilter.SetWithSource("override-fields-filter", []string{}, options...)
 		}
 	}
 

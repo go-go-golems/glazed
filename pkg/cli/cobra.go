@@ -129,11 +129,13 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			// Need to update the parsedLayers from command line flags too...
 
 			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedLayer) error {
-				ps_, err := parameters.GatherFlagsFromCobraCommand(
+				definitions := layer.Layer.GetParameterDefinitions()
+				ps_, err := definitions.GatherFlagsFromCobraCommand(
 					cmd,
-					layer.Layer.GetParameterDefinitions(),
 					true, true,
-					layer.Layer.GetPrefix())
+					layer.Layer.GetPrefix(),
+					parameters.WithParseStepSource("cobra"),
+				)
 				if err != nil {
 					return err
 				}
@@ -155,7 +157,10 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 
 		layer := parsedLayers.GetDefaultParameterLayer()
 
-		arguments, err := parameters.GatherArguments(args, description.GetDefaultArguments(), true, true)
+		arguments, err := description.GetDefaultArguments().GatherArguments(
+			args, true, true,
+			parameters.WithParseStepSource("cobra"),
+		)
 		if err != nil {
 			cobra.CheckErr(err)
 		}
@@ -357,7 +362,10 @@ func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
 
 	minArgs := 0
 	argumentDefinitions := description.GetDefaultArguments()
-	provided, err := parameters.GatherArguments(alias.Arguments, argumentDefinitions, true, true)
+	provided, err := argumentDefinitions.GatherArguments(
+		alias.Arguments, true, true,
+		parameters.WithParseStepSource("cobra-alias"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -522,18 +530,22 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	return ret, nil
 }
 
-func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d layers.ParameterLayer) (*parameters.ParsedParameters, error) {
+func ParseFlagsFromViperAndCobraCommand(
+	cmd *cobra.Command,
+	d layers.ParameterLayer,
+	options ...parameters.ParseStepOption,
+) (*parameters.ParsedParameters, error) {
 	// actually hijack and load everything from viper instead of cobra...
 	parameterDefinitions := d.GetParameterDefinitions()
 	prefix := d.GetPrefix()
 
-	ps, err := parameters.GatherFlagsFromViper(parameterDefinitions, false, prefix)
+	ps, err := parameterDefinitions.GatherFlagsFromViper(false, prefix, options...)
 	if err != nil {
 		return nil, err
 	}
 
 	// now load from flag overrides
-	ps2, err := parameters.GatherFlagsFromCobraCommand(cmd, parameterDefinitions, true, false, prefix)
+	ps2, err := parameterDefinitions.GatherFlagsFromCobraCommand(cmd, true, false, prefix, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -542,7 +554,7 @@ func ParseFlagsFromViperAndCobraCommand(cmd *cobra.Command, d layers.ParameterLa
 	return ps, nil
 }
 
-func (c *CobraParser) Parse() (*layers.ParsedLayers, error) {
+func (c *CobraParser) Parse(options ...parameters.ParseStepOption) (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 
 	err := c.description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
@@ -552,7 +564,7 @@ func (c *CobraParser) Parse() (*layers.ParsedLayers, error) {
 		}
 
 		// parse the flags from commands
-		parsedLayer, err := cobraLayer.ParseLayerFromCobraCommand(c.Cmd)
+		parsedLayer, err := cobraLayer.ParseLayerFromCobraCommand(c.Cmd, options...)
 		if err != nil {
 			return err
 		}

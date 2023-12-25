@@ -10,7 +10,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 	tests := []struct {
 		name           string
 		args           []string
-		params         []*ParameterDefinition
+		params         *ParameterDefinitions
 		want           map[string]interface{}
 		wantArgs       []string
 		wantErr        bool
@@ -22,10 +22,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool, string",
 			args: []string{"--verbose", "-o", "file.txt"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
 				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"verbose": true,
 				"output":  "file.txt",
@@ -36,10 +36,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool, string",
 			args: []string{"--debug", "--log-level", "info"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "debug", ShortFlag: "", Type: ParameterTypeBool},
 				{Name: "log-level", ShortFlag: "l", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"debug":     true,
 				"log-level": "info",
@@ -50,10 +50,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool, string short flags",
 			args: []string{"-d", "-l", "info"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "debug", ShortFlag: "d", Type: ParameterTypeBool},
 				{Name: "log-level", ShortFlag: "l", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"debug":     true,
 				"log-level": "info",
@@ -64,10 +64,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "string, bool using =",
 			args: []string{"--output=file.txt", "--verbose=true"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"output":  "file.txt",
 				"verbose": true,
@@ -78,9 +78,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool false",
 			args: []string{"--verbose=false"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"verbose": false,
 			},
@@ -89,10 +89,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "string, bool",
 			args: []string{"--output", "file.txt", "-v"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"output":  "file.txt",
 				"verbose": true,
@@ -103,10 +103,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "string, bool another order",
 			args: []string{"--output", "file.txt", "--verbose"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"output":  "file.txt",
 				"verbose": true,
@@ -117,10 +117,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "integer, string",
 			args: []string{"--size", "100", "--color", "red"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "size", ShortFlag: "s", Type: ParameterTypeInteger},
 				{Name: "color", ShortFlag: "c", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"size":  100,
 				"color": "red",
@@ -131,10 +131,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "integer, string short flag",
 			args: []string{"--size", "100", "-c", "red"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "size", ShortFlag: "s", Type: ParameterTypeInteger},
 				{Name: "color", ShortFlag: "c", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"size":  100,
 				"color": "red",
@@ -145,9 +145,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool no value",
 			args: []string{"--enable-feature"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "enable-feature", ShortFlag: "e", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"enable-feature": true,
 			},
@@ -157,9 +157,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "bool short flag no value",
 			args: []string{"-e"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "enable-feature", ShortFlag: "e", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"enable-feature": true,
 			},
@@ -169,9 +169,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "float",
 			args: []string{"--float", "3.14"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "float", ShortFlag: "f", Type: ParameterTypeFloat},
-			},
+			})),
 			want: map[string]interface{}{
 				"float": 3.14,
 			},
@@ -181,9 +181,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "int list",
 			args: []string{"--int-list=1,2", "--int-list", "3,4", "--int-list=5"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "int-list", ShortFlag: "i", Type: ParameterTypeIntegerList},
-			},
+			})),
 			want: map[string]interface{}{
 				"int-list": []int{1, 2, 3, 4, 5},
 			},
@@ -192,9 +192,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "choice",
 			args: []string{"--choice", "A"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "choice", ShortFlag: "c", Type: ParameterTypeChoice, Choices: []string{"A", "B", "C"}},
-			},
+			})),
 			want: map[string]interface{}{
 				"choice": "A",
 			},
@@ -204,9 +204,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "string list",
 			args: []string{"--string-list", "item1,item2,item3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "string-list", ShortFlag: "s", Type: ParameterTypeStringList},
-			},
+			})),
 			want: map[string]interface{}{
 				"string-list": []string{"item1", "item2", "item3"},
 			},
@@ -216,9 +216,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "multiple string list",
 			args: []string{"--string-list", "item1", "--string-list", "item2", "--string-list", "item3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "string-list", ShortFlag: "s", Type: ParameterTypeStringList},
-			},
+			})),
 			want: map[string]interface{}{
 				"string-list": []string{"item1", "item2", "item3"},
 			},
@@ -228,10 +228,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "string list with integer",
 			args: []string{"--string-list", "item1", "--integer", "1", "--string-list", "item2", "--string-list", "item3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "string-list", ShortFlag: "s", Type: ParameterTypeStringList},
 				{Name: "integer", ShortFlag: "i", Type: ParameterTypeInteger},
-			},
+			})),
 			want: map[string]interface{}{
 				"string-list": []string{"item1", "item2", "item3"},
 				"integer":     1,
@@ -242,9 +242,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "integer list",
 			args: []string{"--integer-list", "1,2,3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "integer-list", ShortFlag: "il", Type: ParameterTypeIntegerList},
-			},
+			})),
 			want: map[string]interface{}{
 				"integer-list": []int{1, 2, 3},
 			},
@@ -254,9 +254,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "float list",
 			args: []string{"--float-list", "1.1,2.2,3.3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "float-list", ShortFlag: "fl", Type: ParameterTypeFloatList},
-			},
+			})),
 			want: map[string]interface{}{
 				"float-list": []float64{1.1, 2.2, 3.3},
 			},
@@ -266,9 +266,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "multiple float list",
 			args: []string{"--float-list", "1.1", "--float-list", "2", "--float-list", "3.3"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "float-list", ShortFlag: "fl", Type: ParameterTypeFloatList},
-			},
+			})),
 			want: map[string]interface{}{
 				"float-list": []float64{1.1, 2, 3.3},
 			},
@@ -278,9 +278,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "choice list",
 			args: []string{"--choice-list", "A,B,C"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "choice-list", ShortFlag: "cl", Type: ParameterTypeChoiceList, Choices: []string{"A", "B", "C"}},
-			},
+			})),
 			want: map[string]interface{}{
 				"choice-list": []string{"A", "B", "C"},
 			},
@@ -290,9 +290,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "key-value",
 			args: []string{"--key-value", "key1:value1,key2:value2"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "key-value", ShortFlag: "kv", Type: ParameterTypeKeyValue},
-			},
+			})),
 			want: map[string]interface{}{
 				"key-value": map[string]interface{}{
 					"key1": "value1",
@@ -305,46 +305,46 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "UnknownFlag",
 			args: []string{"--unknownFlag", "value"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "knownFlag", ShortFlag: "k", Type: ParameterTypeString},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--flag" (missing value for non-boolean flag)
 		{
 			name: "MissingValueForNonBooleanFlag",
 			args: []string{"--flag"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--size invalidValue" (invalid value for flag)
 		{
 			name: "InvalidValueForFlag",
 			args: []string{"--size", "invalidValue"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "size", ShortFlag: "s", Type: ParameterTypeInteger},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--flag value1 --flag value2" (repeated flags)
 		{
 			name: "RepeatedFlags",
 			args: []string{"--flag", "value1", "--flag", "value2"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--flag value1 -f value2" (repeated flags)
 		{
 			name: "BooleanFlags",
 			args: []string{"--flag", "--anotherFlag"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag", ShortFlag: "f", Type: ParameterTypeBool},
 				{Name: "anotherFlag", ShortFlag: "a", Type: ParameterTypeBool},
-			},
+			})),
 			want: map[string]interface{}{
 				"flag":        true,
 				"anotherFlag": true,
@@ -355,9 +355,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "EmptyArguments",
 			args: []string{},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-			},
+			})),
 			want:    map[string]interface{}{},
 			wantErr: false,
 		},
@@ -365,70 +365,51 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name:    "EmptyParameters",
 			args:    []string{"--flag", "value"},
-			params:  []*ParameterDefinition{},
+			params:  NewParameterDefinitions(),
 			wantErr: true,
 		},
 		// "--flag value" (parameters with empty ShortFlag)
 		{
 			name: "ParametersWithEmptyShortFlag",
 			args: []string{"--flag", "value"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag", ShortFlag: "", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"flag": "value",
 			},
 			wantErr: false,
 		},
 		// "--flag value -f value" (parameters with the same Name and ShortFlag)
-		{
-			name: "ParametersWithSameNameAndShortFlag",
-			args: []string{"--flag", "value", "-f", "value"},
-			params: []*ParameterDefinition{
-				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-			},
-			wantErr: true,
-		},
-		// "--flag value -a value" (parameters with the same Name but different ShortFlag)
-		{
-			name: "ParametersWithSameNameDifferentShortFlag",
-			args: []string{"--flag", "value", "-a", "value"},
-			params: []*ParameterDefinition{
-				{Name: "flag", ShortFlag: "f", Type: ParameterTypeString},
-				{Name: "flag", ShortFlag: "a", Type: ParameterTypeString},
-			},
-			wantErr: true,
-		},
 		// "--flag1 value1 -f value2" (parameters with different Name but the same ShortFlag)
 		{
 			name: "ParametersWithDifferentNameSameShortFlag",
 			args: []string{"-f", "value1", "-f", "value2"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag1", ShortFlag: "f", Type: ParameterTypeString},
 				{Name: "flag2", ShortFlag: "f", Type: ParameterTypeString},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--flag1 value1 --flag2 value2" (mix of valid and invalid parameters)
 		{
 			name: "MixOfValidAndInvalidParameters",
 			args: []string{"--flag1", "value1", "--flag2", "value2"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "flag1", ShortFlag: "f", Type: ParameterTypeString},
 				// Assuming invalid parameter doesn't have a type
 				{Name: "flag2", ShortFlag: "g"},
-			},
+			})),
 			wantErr: true,
 		},
 		// "--prefix-integer 1 --prefix-foobar 2" (prefix: integer, integer)
 		{
 			name: "Prefix: integer, integer",
 			args: []string{"--prefix-integer", "1", "--prefix-foobar", "2"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "integer", ShortFlag: "i", Type: ParameterTypeInteger},
 				{Name: "foobar", ShortFlag: "f", Type: ParameterTypeInteger},
-			},
+			})),
 			want: map[string]interface{}{
 				"integer": 1,
 				"foobar":  2,
@@ -440,9 +421,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "Param name with _: foobar_bla",
 			args: []string{"--foobar-bla", "foo"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "foobar_bla", ShortFlag: "f", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"foobar_bla": "foo",
 			},
@@ -452,9 +433,9 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "Required argument",
 			args: []string{"--required", "foo"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "required", ShortFlag: "r", Type: ParameterTypeString, Required: true},
-			},
+			})),
 			want: map[string]interface{}{
 				"required": "foo",
 			},
@@ -464,18 +445,18 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "Required argument missing",
 			args: []string{},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "required", ShortFlag: "r", Type: ParameterTypeString, Required: true},
-			},
+			})),
 			wantErr: true,
 		},
 		// "foobar: default 2, but missing on command line" (default value)
 		{
 			name: "Default value",
 			args: []string{},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "foobar", ShortFlag: "f", Type: ParameterTypeInteger, Default: 2},
-			},
+			})),
 			want: map[string]interface{}{
 				"foobar": 2,
 			},
@@ -485,10 +466,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 		{
 			name: "Gather arguments",
 			args: []string{"--verbose", "foobar", "--output", "file.txt", "another", "argument"},
-			params: []*ParameterDefinition{
+			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 				{Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
 				{Name: "output", ShortFlag: "o", Type: ParameterTypeString},
-			},
+			})),
 			want: map[string]interface{}{
 				"verbose": true,
 				"output":  "file.txt",
@@ -500,7 +481,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got_, args, err := GatherFlagsFromStringList(tt.args, tt.params, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
+			got_, args, err := tt.params.GatherFlagsFromStringList(tt.args, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GatherFlagsFromStringList() error = %v, wantErr %v", err, tt.wantErr)
 				return
