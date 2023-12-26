@@ -1,0 +1,191 @@
+- name: "Empty layers and parsedLayers"
+  parameterLayers: [ ]
+  parsedLayers: [ ]
+  expectedLayers: [ ]
+  expectedError: false
+
+- name: "Single layer with default"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "defaultVal"
+
+- name: "Multiple layers with defaults"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "integer"
+          default: 42
+    - name: "layer2"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+    - name: "layer2"
+      parameters: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "default1"
+        param2: 42
+    - name: "layer2"
+      values:
+        param3: true
+  expectedError: false
+
+- name: "Multiple layers with defaults (no defined target layers, should be created)"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "integer"
+          default: 42
+    - name: "layer2"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  parsedLayers: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "default1"
+        param2: 42
+    - name: "layer2"
+      values:
+        param3: true
+  expectedError: false
+
+- name: "Layer with no default values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+        - name: "param2"
+          type: "integer"
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values: { }
+  expectedError: false
+
+- name: "Layer with existing values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "integer"
+          default: 42
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue"
+        param2: 42
+  expectedError: false
+
+- name: "Layer with partially set values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "integer"
+          default: 42
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue"
+        param2: 42
+  expectedError: false
+
+- name: "Layer with invalid default values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "notAnInt"
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers: [ ]
+  expectedError: true
+
+- name: "Layer with required parameters without defaults"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          required: true
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values: { }
+  expectedError: false
+
+- name: "Layer with optional parameters without defaults"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values: { }
+  expectedError: false
+
+- name: "Error during parameter definition iteration"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+  parsedLayers:
+    - name: "layer1"
+      parameters: [ ]
+  expectedLayers: [ ]
+  expectedError: true

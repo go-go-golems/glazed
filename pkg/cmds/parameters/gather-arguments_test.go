@@ -389,7 +389,7 @@ func TestObjectListFromFilesParsing(t *testing.T) {
 func TestGenerateUseString_NoArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions()
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test", result)
 }
 
@@ -397,7 +397,7 @@ func TestGenerateUseString_RequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
 		[]*ParameterDefinition{{Name: "name", IsArgument: true, Required: true}}))
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test <name>", result)
 }
 
@@ -405,7 +405,7 @@ func TestGenerateUseString_OptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
 		[]*ParameterDefinition{{Name: "name", IsArgument: true}}))
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test [name]", result)
 }
 
@@ -415,7 +415,7 @@ func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
 		{Name: "name", Required: true, IsArgument: true},
 		{Name: "age", IsArgument: true},
 	}))
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test <name> [age]", result)
 }
 
@@ -423,7 +423,7 @@ func TestGenerateUseString_WithDefaultValue(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
 		[]*ParameterDefinition{{Name: "name", Default: "John", IsArgument: true}}))
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test [name (default: John)]", result)
 }
 
@@ -431,7 +431,7 @@ func TestGenerateUseString_WithMultipleValues(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
 		[]*ParameterDefinition{{Name: "name", IsArgument: true, Type: ParameterTypeStringList}}))
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test [name...]", result)
 }
 
@@ -441,6 +441,6 @@ func TestGenerateUseString_RequiredWithMultipleValues(t *testing.T) {
 		{Name: "name", Required: true, IsArgument: true, Type: ParameterTypeStringList},
 	}))
 
-	result := GenerateUseString(cmd, arguments)
+	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test <name...>", result)
 }
