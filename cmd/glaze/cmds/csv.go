@@ -29,14 +29,14 @@ func NewCsvCommand() (*CsvCommand, error) {
 		CommandDescription: cmds.NewCommandDescription(
 			"csv",
 			cmds.WithShort("Format CSV files"),
-			cmds.WithFlags(
+			cmds.WithArguments(
 				parameters.NewParameterDefinition(
 					"input-files",
 					parameters.ParameterTypeStringList,
 					parameters.WithRequired(true),
 				),
 			),
-			cmds.WithArguments(
+			cmds.WithFlags(
 				parameters.NewParameterDefinition(
 					"delimiter",
 					parameters.ParameterTypeString,
