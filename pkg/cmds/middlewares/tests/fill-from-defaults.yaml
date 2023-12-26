@@ -13,7 +13,6 @@
           default: "defaultVal"
   parsedLayers:
     - name: "layer1"
-      parameters: [ ]
   expectedLayers:
     - name: "layer1"
       values:

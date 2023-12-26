@@ -118,7 +118,7 @@ import (
 type TestParameterLayer struct {
 	Name        string                            `yaml:"name"`
 	Slug        string                            `yaml:"slug"`
-	Definitions []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+	Definitions []*parameters.ParameterDefinition `yaml:"definitions,omitempty"`
 	Prefix      string                            `yaml:"prefix"`
 }
 
