@@ -35,7 +35,9 @@ func FillFromDefaults(options ...parameters.ParseStepOption) Middleware {
 				}
 
 				pds.ForEach(func(pd *parameters.ParameterDefinition) {
-					parsedLayer.Parameters.SetAsDefault(pd.Name, pd, pd.Default, options...)
+					if pd.Default != nil {
+						parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
+					}
 				})
 
 				return nil

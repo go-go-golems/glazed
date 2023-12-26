@@ -455,7 +455,12 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			name: "Default value",
 			args: []string{},
 			params: NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
-				{Name: "foobar", ShortFlag: "f", Type: ParameterTypeInteger, Default: 2},
+				{
+					Name:      "foobar",
+					ShortFlag: "f",
+					Type:      ParameterTypeInteger,
+					Default:   interfaceAddr(2),
+				},
 			})),
 			want: map[string]interface{}{
 				"foobar": 2,

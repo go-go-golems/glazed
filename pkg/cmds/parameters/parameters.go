@@ -21,7 +21,7 @@ type ParameterDefinition struct {
 	ShortFlag  string        `yaml:"shortFlag,omitempty"`
 	Type       ParameterType `yaml:"type"`
 	Help       string        `yaml:"help,omitempty"`
-	Default    interface{}   `yaml:"default,omitempty"`
+	Default    *interface{}  `yaml:"default,omitempty"`
 	Choices    []string      `yaml:"choices,omitempty"`
 	Required   bool          `yaml:"required,omitempty"`
 	IsArgument bool          `yaml:"-"`
@@ -43,7 +43,7 @@ func WithShortFlag(shortFlag string) ParameterDefinitionOption {
 
 func WithDefault(defaultValue interface{}) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
-		p.Default = defaultValue
+		p.Default = &defaultValue
 	}
 }
 
@@ -99,7 +99,10 @@ func (p *ParameterDefinition) Clone() *ParameterDefinition {
 }
 
 func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
-	return reflect.DeepEqual(p.Default, i)
+	if p.Default == nil {
+		return false
+	}
+	return reflect.DeepEqual(*p.Default, i)
 }
 
 // SetDefaultFromValue sets the Default field of the ParameterDefinition
@@ -118,10 +121,12 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 		return errors.Errorf("invalid value for parameter %s: %v", p.Name, value.Interface())
 	}
 
+	v_ := value.Interface()
+
 	val := reflect.ValueOf(p).Elem()
 	f := val.FieldByName("Default")
 	if f.CanSet() {
-		f.Set(reflect.ValueOf(value.Interface()))
+		f.Set(reflect.ValueOf(&v_))
 	}
 
 	return nil
@@ -135,7 +140,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	}
 
 	if p.Default != nil {
-		return p.SetValueFromInterface(value, p.Default)
+		return p.SetValueFromInterface(value, *p.Default)
 	}
 	return p.InitializeValueToEmptyValue(value)
 }
@@ -384,8 +389,12 @@ func (pds *ParameterDefinitions) InitializeDefaultsFromMap(
 // CheckParameterDefaultValueValidity checks if the ParameterDefinition's Default is valid.
 // This is used when validating loading from a YAML file or setting up cobra flag definitions.
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
+	// no default at all is valid
+	if p.Default == nil {
+		return nil
+	}
 	// we can have no default
-	v := p.Default
+	v := *p.Default
 	return p.CheckValueValidity(v)
 }
 
@@ -650,10 +659,10 @@ func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 
 func (pds *ParameterDefinitions) GetDefaultValue(key string, defaultValue interface{}) interface{} {
 	v, ok := pds.Get(key)
-	if !ok {
+	if !ok || v.Default == nil {
 		return defaultValue
 	}
-	return v.Default
+	return *v.Default
 }
 
 // GetArguments returns a new ParameterDefinitions containing only the argument

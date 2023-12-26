@@ -27,7 +27,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 			if p.Default != nil {
 				options_ := append(options, WithParseStepSource("default"))
 
-				parsed.Set(p.Default, options_...)
+				parsed.Set(*p.Default, options_...)
 				ret.Set(p.Name, parsed)
 			}
 			continue

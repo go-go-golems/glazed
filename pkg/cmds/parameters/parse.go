@@ -84,8 +84,10 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 		if p.Required {
 			return nil, errors.Errorf("Argument %s not found", p.Name)
 		} else {
-			options_ := append(options, WithParseStepSource("default"))
-			ret.Set(p.Default, options_...)
+			if p.Default != nil {
+				options_ := append(options, WithParseStepSource("default"))
+				ret.Set(*p.Default, options_...)
+			}
 			return ret, nil
 		}
 	}
@@ -268,7 +270,10 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 	case ParameterTypeKeyValue:
 		switch {
 		case len(v) == 0:
-			v_ = p.Default
+			if p.Default == nil {
+				return ret, nil
+			}
+			v_ = *p.Default
 
 		case len(v) == 1 && strings.HasPrefix(v[0], "@"):
 			// load from file
@@ -338,7 +343,9 @@ func parseFromFileName(fileName string, p *ParameterDefinition, options ...Parse
 		ParameterDefinition: p,
 	}
 	if fileName == "" {
-		ret.Set(p.Default, append(options, WithParseStepSource("default"))...)
+		if p.Default != nil {
+			ret.Set(p.Default, append(options, WithParseStepSource("default"))...)
+		}
 		return ret, nil
 	}
 	var f io.Reader
@@ -669,8 +676,8 @@ func GatherParametersFromMap(
 			if onlyProvided {
 				continue
 			}
-			if !ok {
-				parsed.Set(p.Default)
+			if !ok && p.Default != nil {
+				parsed.Set(*p.Default)
 				ret.Set(name, parsed)
 				continue
 			}

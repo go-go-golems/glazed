@@ -35,7 +35,7 @@ func GenerateUseString(cmdName string, pds *ParameterDefinitions) string {
 		}
 		defaultValueStr = ""
 		if arg.Default != nil {
-			defaultValueStr = fmt.Sprintf(" (default: %v)", arg.Default)
+			defaultValueStr = fmt.Sprintf(" (default: %v)", *arg.Default)
 		}
 		left, right := "[", "]"
 		if arg.Required {
@@ -181,9 +181,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(string)
+				defaultValue, ok = (*parameter.Default).(string)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -196,9 +196,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := 0
 
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastNumberInterfaceToInt[int](parameter.Default)
+				defaultValue, ok = cast.CastNumberInterfaceToInt[int](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -212,9 +212,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := 0.0
 
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](parameter.Default)
+				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -228,9 +228,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := false
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(bool)
+				defaultValue, ok = (*parameter.Default).(bool)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a bool: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a bool: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -244,7 +244,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				switch v_ := parameter.Default.(type) {
+				switch v_ := (*parameter.Default).(type) {
 				case string:
 					_, err2 := ParseDate(v_)
 					if err2 != nil {
@@ -255,7 +255,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 					// nothing to do
 					defaultValue = v_.Format("2006-01-02")
 				default:
-					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -269,24 +269,24 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			var defaultValue []string
 
 			if parameter.Default != nil {
-				stringList, ok := parameter.Default.([]string)
+				stringList, ok := (*parameter.Default).([]string)
 				if !ok {
-					defaultValue, ok := parameter.Default.([]interface{})
+					defaultValue, ok := (*parameter.Default).([]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 
 					// convert to string list
 					stringList, ok = cast.CastList[string, interface{}](defaultValue)
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 				}
 
 				defaultValue = stringList
 			}
 			if err != nil {
-				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, *parameter.Default)
 			}
 
 			if parameter.ShortFlag != "" {
@@ -299,11 +299,11 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			var defaultValue []string
 
 			if parameter.Default != nil {
-				stringMap, ok := parameter.Default.(map[string]string)
+				stringMap, ok := (*parameter.Default).(map[string]string)
 				if !ok {
-					defaultValue, ok := parameter.Default.(map[string]interface{})
+					defaultValue, ok := (*parameter.Default).(map[string]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 
 					stringMap = make(map[string]string)
@@ -322,7 +322,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 				defaultValue = stringList
 			}
 			if err != nil {
-				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, *parameter.Default)
 			}
 
 			if parameter.ShortFlag != "" {
@@ -334,9 +334,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 		case ParameterTypeIntegerList:
 			var defaultValue []int
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToIntList[int](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToIntList[int](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -349,9 +349,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 		case ParameterTypeFloatList:
 			var defaultValue []float64
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToFloatList[float64](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToFloatList[float64](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, *parameter.Default)
 				}
 			}
 			if parameter.ShortFlag != "" {
@@ -364,9 +364,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(string)
+				defaultValue, ok = (*parameter.Default).(string)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}
 

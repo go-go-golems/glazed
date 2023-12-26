@@ -118,7 +118,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeString,
-				Default: "baz",
+				Default: interfaceAddr("baz"),
 			},
 		),
 	)
@@ -167,7 +167,7 @@ func TestOneOptionalArgument(t *testing.T) {
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
-				Default: "123",
+				Default: interfaceAddr("123"),
 				Type:    parameters.ParameterTypeString,
 			},
 		),
@@ -203,7 +203,7 @@ func TestDefaultIntValue(t *testing.T) {
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
-				Default: 123,
+				Default: interfaceAddr(123),
 				Type:    parameters.ParameterTypeInteger,
 			},
 		),
@@ -261,7 +261,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 			layers.WithArguments(
 				&parameters.ParameterDefinition{
 					Name:    "foo",
-					Default: failingType.Value,
+					Default: interfaceAddr(failingType.Value),
 					Type:    failingType.Type,
 				},
 			),
@@ -343,7 +343,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeStringList,
-				Default: []string{"baz"},
+				Default: interfaceAddr([]string{"baz"}),
 			},
 		),
 	)
@@ -451,7 +451,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
-				Default: []string{"blop"},
+				Default: interfaceAddr([]string{"blop"}),
 			},
 		),
 	)
@@ -464,6 +464,16 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{}))
 }
 
+func strAddr(v string) *interface{} {
+	v_ := interface{}(v)
+	return &v_
+}
+
+func interfaceAddr[T any](v T) *interface{} {
+	v_ := interface{}(v)
+	return &v_
+}
+
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
@@ -471,12 +481,12 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeString,
-				Default: "blop",
+				Default: interfaceAddr("blop"),
 			},
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
-				Default: []string{"bloppp"},
+				Default: interfaceAddr([]string{"bloppp"}),
 			},
 		),
 	)

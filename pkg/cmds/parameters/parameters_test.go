@@ -305,7 +305,7 @@ func TestSetValueFromDefaultChoice(t *testing.T) {
 	choiceFlag = &ParameterDefinition{
 		Name:    "choice-flag-with-invalid-default",
 		Type:    ParameterTypeChoice,
-		Default: "invalid",
+		Default: interfaceAddr("invalid"),
 		Choices: []string{"foo", "bar"},
 	}
 	err = choiceFlag.SetValueFromDefault(cValue)
@@ -332,7 +332,7 @@ func TestSetValueFromDefaultChoiceList(t *testing.T) {
 	choiceListFlag = &ParameterDefinition{
 		Name:    "choice-list-flag-with-invalid-default",
 		Type:    ParameterTypeChoiceList,
-		Default: []string{"invalid"},
+		Default: interfaceAddr([]string{"invalid"}),
 		Choices: []string{"foo", "bar"},
 	}
 	err = choiceListFlag.SetValueFromDefault(clValue)
@@ -575,7 +575,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeString,
-				Default: "default",
+				Default: interfaceAddr("default"),
 			},
 			value:   "test value",
 			wantErr: false,
@@ -585,7 +585,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeString,
-				Default: "default",
+				Default: interfaceAddr("default"),
 			},
 			value:   123,
 			wantErr: true,
@@ -595,7 +595,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeInteger,
-				Default: 1,
+				Default: interfaceAddr(1),
 			},
 			value:   2,
 			wantErr: false,
@@ -605,7 +605,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeInteger,
-				Default: 1,
+				Default: interfaceAddr(1),
 			},
 			value:   "test",
 			wantErr: true,
@@ -615,7 +615,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeChoice,
-				Default: "choice1",
+				Default: interfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
 			value:   "choice2",
@@ -626,7 +626,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeChoice,
-				Default: "choice1",
+				Default: interfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
 			value:   "choice3",
@@ -682,7 +682,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "boolTest",
 				Type:    ParameterTypeBool,
-				Default: false,
+				Default: interfaceAddr(false),
 			},
 			value:   true,
 			wantErr: false,
@@ -692,7 +692,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "boolTest",
 				Type:    ParameterTypeBool,
-				Default: false,
+				Default: interfaceAddr(false),
 			},
 			value:   "string instead of bool",
 			wantErr: true,

@@ -17,8 +17,9 @@ func TestGatherArguments_NoArguments(t *testing.T) {
 func TestGatherArguments_RequiredMissing(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name:     "Test",
-			Required: true,
+			Name:       "Test",
+			Required:   true,
+			IsArgument: true,
 		},
 	}))
 	_, err := arg.GatherArguments([]string{}, true, false)
@@ -31,8 +32,9 @@ func TestGatherArguments_RequiredMissing(t *testing.T) {
 func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "Test",
-			Type: ParameterTypeString,
+			Name:       "Test",
+			Type:       ParameterTypeString,
+			IsArgument: true,
 		},
 	}))
 	res, err := arg.GatherArguments([]string{"value"}, true, false)
@@ -46,8 +48,9 @@ func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 func TestGatherArguments_ListParameterParsing(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "Test",
-			Type: ParameterTypeStringList,
+			Name:       "Test",
+			Type:       ParameterTypeStringList,
+			IsArgument: true,
 		},
 	}))
 	res, err := arg.GatherArguments([]string{"value1", "value2"}, true, false)
@@ -57,13 +60,19 @@ func TestGatherArguments_ListParameterParsing(t *testing.T) {
 	assert.Equal(t, []string{"value1", "value2"}, v.Value)
 }
 
+func interfaceAddr[T any](v T) *interface{} {
+	v_ := interface{}(v)
+	return &v_
+}
+
 // Test handling of default values when onlyProvided is set to false
 func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name:    "Test",
-			Type:    ParameterTypeString,
-			Default: "default",
+			Name:       "Test",
+			Type:       ParameterTypeString,
+			Default:    interfaceAddr("default"),
+			IsArgument: true,
 		},
 	}))
 	res, err := arg.GatherArguments([]string{}, false, false)
@@ -77,9 +86,10 @@ func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
 func TestGatherArguments_NoDefaultsWhenProvidedTrue(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name:    "Test",
-			Type:    ParameterTypeString,
-			Default: "default",
+			Name:       "Test",
+			Type:       ParameterTypeString,
+			Default:    interfaceAddr("default"),
+			IsArgument: true,
 		},
 	}))
 	v, err := arg.GatherArguments([]string{}, true, false)
@@ -93,8 +103,9 @@ func TestGatherArguments_NoDefaultsWhenProvidedTrue(t *testing.T) {
 func TestGatherArguments_TooManyArguments(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "Test",
-			Type: ParameterTypeString,
+			Name:       "Test",
+			Type:       ParameterTypeString,
+			IsArgument: true,
 		},
 	}))
 	v, err := arg.GatherArguments([]string{"value1", "value2"}, true, false)
@@ -106,12 +117,14 @@ func TestGatherArguments_TooManyArguments(t *testing.T) {
 func TestGatherArguments_CorrectSequence(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "Test1",
-			Type: ParameterTypeString,
+			Name:       "Test1",
+			Type:       ParameterTypeString,
+			IsArgument: true,
 		},
 		{
-			Name: "Test2",
-			Type: ParameterTypeString,
+			Name:       "Test2",
+			Type:       ParameterTypeString,
+			IsArgument: true,
 		},
 	}))
 	res, err := arg.GatherArguments([]string{"value1", "value2"}, true, false)
@@ -128,12 +141,14 @@ func TestGatherArguments_CorrectSequence(t *testing.T) {
 func TestGatherArguments_CombinationsListNonList(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "Test1",
-			Type: ParameterTypeString,
+			Name:       "Test1",
+			Type:       ParameterTypeString,
+			IsArgument: true,
 		},
 		{
-			Name: "Test2",
-			Type: ParameterTypeStringList,
+			Name:       "Test2",
+			Type:       ParameterTypeStringList,
+			IsArgument: true,
 		},
 	}))
 	res, err := arg.GatherArguments([]string{"value1", "value2", "value3"}, true, false)
@@ -150,9 +165,10 @@ func TestListParsingWithDefaults(t *testing.T) {
 	args := []string{"data1", "data2"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name:    "arg1",
-			Type:    ParameterTypeStringList,
-			Default: []string{"default1", "default2"},
+			Name:       "arg1",
+			Type:       ParameterTypeStringList,
+			Default:    interfaceAddr([]string{"default1", "default2"}),
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -166,9 +182,10 @@ func TestListDefault(t *testing.T) {
 	args := []string{}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name:    "arg1",
-			Type:    ParameterTypeStringList,
-			Default: []string{"default1", "default2"},
+			Name:       "arg1",
+			Type:       ParameterTypeStringList,
+			Default:    interfaceAddr([]string{"default1", "default2"}),
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -182,8 +199,9 @@ func TestIntegerListParsing(t *testing.T) {
 	args := []string{"1", "2", "3"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeIntegerList,
+			Name:       "arg1",
+			Type:       ParameterTypeIntegerList,
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -197,8 +215,9 @@ func TestFloatListParsing(t *testing.T) {
 	args := []string{"1.1", "2.2", "3.3"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeFloatList,
+			Name:       "arg1",
+			Type:       ParameterTypeFloatList,
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -219,6 +238,7 @@ func TestChoiceListParsing(t *testing.T) {
 				"choice2",
 				"choice3",
 			},
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -232,8 +252,9 @@ func TestParsingErrorInvalidInt(t *testing.T) {
 	args := []string{"1", "2", "3", "notanint"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeIntegerList,
+			Name:       "arg1",
+			Type:       ParameterTypeIntegerList,
+			IsArgument: true,
 		},
 	}))
 	_, err := arguments.GatherArguments(args, false, false)
@@ -244,13 +265,15 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeInteger,
+			Name:       "arg1",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name:    "arg2",
-			Type:    ParameterTypeIntegerList,
-			Default: []int{4, 5, 6},
+			Name:       "arg2",
+			Type:       ParameterTypeIntegerList,
+			Default:    interfaceAddr([]int{4, 5, 6}),
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -267,21 +290,25 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3", "4"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeInteger,
+			Name:       "arg1",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name: "arg2",
-			Type: ParameterTypeInteger,
+			Name:       "arg2",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name: "arg3",
-			Type: ParameterTypeInteger,
+			Name:       "arg3",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name:    "arg4",
-			Type:    ParameterTypeIntegerList,
-			Default: []int{5, 6, 7},
+			Name:       "arg4",
+			Type:       ParameterTypeIntegerList,
+			Default:    interfaceAddr([]int{5, 6, 7}),
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -304,21 +331,25 @@ func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) 
 	args := []string{"1", "2", "3"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeInteger,
+			Name:       "arg1",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name: "arg2",
-			Type: ParameterTypeInteger,
+			Name:       "arg2",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name: "arg3",
-			Type: ParameterTypeInteger,
+			Name:       "arg3",
+			Type:       ParameterTypeInteger,
+			IsArgument: true,
 		},
 		{
-			Name:    "arg4",
-			Type:    ParameterTypeIntegerList,
-			Default: []int{5, 6, 7},
+			Name:       "arg4",
+			Type:       ParameterTypeIntegerList,
+			Default:    interfaceAddr([]int{5, 6, 7}),
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -342,8 +373,9 @@ func TestObjectListFromFileParsing(t *testing.T) {
 	args := []string{"test-data/objectList.json"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeObjectListFromFile,
+			Name:       "arg1",
+			Type:       ParameterTypeObjectListFromFile,
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -368,8 +400,9 @@ func TestObjectListFromFilesParsing(t *testing.T) {
 	args := []string{"test-data/objectList.json", "test-data/objectList2.yaml", "test-data/objectList3.csv"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
-			Name: "arg1",
-			Type: ParameterTypeObjectListFromFiles,
+			Name:       "arg1",
+			Type:       ParameterTypeObjectListFromFiles,
+			IsArgument: true,
 		},
 	}))
 	result, err := arguments.GatherArguments(args, false, false)
@@ -422,7 +455,7 @@ func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
 func TestGenerateUseString_WithDefaultValue(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
-		[]*ParameterDefinition{{Name: "name", Default: "John", IsArgument: true}}))
+		[]*ParameterDefinition{{Name: "name", Default: interfaceAddr("John"), IsArgument: true}}))
 	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test [name (default: John)]", result)
 }
