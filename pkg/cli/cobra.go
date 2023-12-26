@@ -49,8 +49,6 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		}
 	})
 
-	layers_ := description.Layers.Clone()
-
 	// TODO(manuel, 2023-12-21) Not sure if this cobra specific location is the best place to add the glazed-command layer
 	if addGlazedCommandLayer {
 		glazedCommandLayer, err := layers.NewParameterLayer(
@@ -89,10 +87,10 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		}
 
 		// NOTE(manuel, 2023-12-20) Should we clone the layer list here?
-		layers_.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
+		description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 	}
 
-	description.Layers = layers_
+	description.Layers = description.Layers
 
 	cobraParser, err := NewCobraParserFromCommandDescription(description)
 	if err != nil {
@@ -102,6 +100,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 	cmd := cobraParser.Cmd
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
+		// TODO(manuel, 2023-12-26) This should be a middleware
 		loadParametersFromJSON, err := cmd.Flags().GetString("load-parameters-from-json")
 		if err != nil {
 			cobra.CheckErr(err)
