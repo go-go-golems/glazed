@@ -1,6 +1,7 @@
 package parameters
 
 import (
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"reflect"
 	"testing"
 )
@@ -459,7 +460,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 					Name:      "foobar",
 					ShortFlag: "f",
 					Type:      ParameterTypeInteger,
-					Default:   interfaceAddr(2),
+					Default:   cast.InterfaceAddr(2),
 				},
 			})),
 			want: map[string]interface{}{

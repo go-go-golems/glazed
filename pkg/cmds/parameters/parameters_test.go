@@ -2,6 +2,7 @@ package parameters
 
 import (
 	_ "embed"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -305,7 +306,7 @@ func TestSetValueFromDefaultChoice(t *testing.T) {
 	choiceFlag = &ParameterDefinition{
 		Name:    "choice-flag-with-invalid-default",
 		Type:    ParameterTypeChoice,
-		Default: interfaceAddr("invalid"),
+		Default: cast.InterfaceAddr("invalid"),
 		Choices: []string{"foo", "bar"},
 	}
 	err = choiceFlag.SetValueFromDefault(cValue)
@@ -332,7 +333,7 @@ func TestSetValueFromDefaultChoiceList(t *testing.T) {
 	choiceListFlag = &ParameterDefinition{
 		Name:    "choice-list-flag-with-invalid-default",
 		Type:    ParameterTypeChoiceList,
-		Default: interfaceAddr([]string{"invalid"}),
+		Default: cast.InterfaceAddr([]string{"invalid"}),
 		Choices: []string{"foo", "bar"},
 	}
 	err = choiceListFlag.SetValueFromDefault(clValue)
@@ -575,7 +576,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeString,
-				Default: interfaceAddr("default"),
+				Default: cast.InterfaceAddr("default"),
 			},
 			value:   "test value",
 			wantErr: false,
@@ -585,7 +586,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeString,
-				Default: interfaceAddr("default"),
+				Default: cast.InterfaceAddr("default"),
 			},
 			value:   123,
 			wantErr: true,
@@ -595,7 +596,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeInteger,
-				Default: interfaceAddr(1),
+				Default: cast.InterfaceAddr(1),
 			},
 			value:   2,
 			wantErr: false,
@@ -605,7 +606,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeInteger,
-				Default: interfaceAddr(1),
+				Default: cast.InterfaceAddr(1),
 			},
 			value:   "test",
 			wantErr: true,
@@ -615,7 +616,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeChoice,
-				Default: interfaceAddr("choice1"),
+				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
 			value:   "choice2",
@@ -626,7 +627,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "test",
 				Type:    ParameterTypeChoice,
-				Default: interfaceAddr("choice1"),
+				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
 			value:   "choice3",
@@ -682,7 +683,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "boolTest",
 				Type:    ParameterTypeBool,
-				Default: interfaceAddr(false),
+				Default: cast.InterfaceAddr(false),
 			},
 			value:   true,
 			wantErr: false,
@@ -692,7 +693,7 @@ func TestCheckValueValidity(t *testing.T) {
 			param: ParameterDefinition{
 				Name:    "boolTest",
 				Type:    ParameterTypeBool,
-				Default: interfaceAddr(false),
+				Default: cast.InterfaceAddr(false),
 			},
 			value:   "string instead of bool",
 			wantErr: true,

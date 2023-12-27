@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -118,7 +119,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeString,
-				Default: interfaceAddr("baz"),
+				Default: cast.InterfaceAddr("baz"),
 			},
 		),
 	)
@@ -167,7 +168,7 @@ func TestOneOptionalArgument(t *testing.T) {
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
-				Default: interfaceAddr("123"),
+				Default: cast.InterfaceAddr("123"),
 				Type:    parameters.ParameterTypeString,
 			},
 		),
@@ -203,7 +204,7 @@ func TestDefaultIntValue(t *testing.T) {
 		layers.WithArguments(
 			&parameters.ParameterDefinition{
 				Name:    "foo",
-				Default: interfaceAddr(123),
+				Default: cast.InterfaceAddr(123),
 				Type:    parameters.ParameterTypeInteger,
 			},
 		),
@@ -261,7 +262,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 			layers.WithArguments(
 				&parameters.ParameterDefinition{
 					Name:    "foo",
-					Default: interfaceAddr(failingType.Value),
+					Default: cast.InterfaceAddr(failingType.Value),
 					Type:    failingType.Type,
 				},
 			),
@@ -343,7 +344,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeStringList,
-				Default: interfaceAddr([]string{"baz"}),
+				Default: cast.InterfaceAddr([]string{"baz"}),
 			},
 		),
 	)
@@ -451,7 +452,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
-				Default: interfaceAddr([]string{"blop"}),
+				Default: cast.InterfaceAddr([]string{"blop"}),
 			},
 		),
 	)
@@ -469,11 +470,6 @@ func strAddr(v string) *interface{} {
 	return &v_
 }
 
-func interfaceAddr[T any](v T) *interface{} {
-	v_ := interface{}(v)
-	return &v_
-}
-
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",
@@ -481,12 +477,12 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 			&parameters.ParameterDefinition{
 				Name:    "foo",
 				Type:    parameters.ParameterTypeString,
-				Default: interfaceAddr("blop"),
+				Default: cast.InterfaceAddr("blop"),
 			},
 			&parameters.ParameterDefinition{
 				Name:    "bar",
 				Type:    parameters.ParameterTypeStringList,
-				Default: interfaceAddr([]string{"bloppp"}),
+				Default: cast.InterfaceAddr([]string{"bloppp"}),
 			},
 		),
 	)

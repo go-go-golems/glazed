@@ -934,7 +934,7 @@ func TestValidDefaultValue(t *testing.T) {
 		t.Run(string(testCase.Type), func(t *testing.T) {
 			param := &ParameterDefinition{
 				Name:    "foo",
-				Default: interfaceAddr(testCase.Value),
+				Default: cast.InterfaceAddr(testCase.Value),
 				Type:    testCase.Type,
 				Choices: testCase.Choices,
 			}
@@ -947,7 +947,7 @@ func TestValidDefaultValue(t *testing.T) {
 func TestValidChoiceDefaultValue(t *testing.T) {
 	param := &ParameterDefinition{
 		Name:    "foo",
-		Default: interfaceAddr("bar"),
+		Default: cast.InterfaceAddr("bar"),
 		Type:    ParameterTypeChoice,
 		Choices: []string{"foo", "bar"},
 	}
@@ -964,7 +964,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 	for _, testCase := range testCases {
 		param := &ParameterDefinition{
 			Name:    "foo",
-			Default: interfaceAddr(testCase),
+			Default: cast.InterfaceAddr(testCase),
 			Type:    ParameterTypeChoice,
 			Choices: []string{"foo", "bar"},
 		}

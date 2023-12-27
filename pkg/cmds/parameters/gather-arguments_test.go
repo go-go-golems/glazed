@@ -1,6 +1,7 @@
 package parameters
 
 import (
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,18 +61,13 @@ func TestGatherArguments_ListParameterParsing(t *testing.T) {
 	assert.Equal(t, []string{"value1", "value2"}, v.Value)
 }
 
-func interfaceAddr[T any](v T) *interface{} {
-	v_ := interface{}(v)
-	return &v_
-}
-
 // Test handling of default values when onlyProvided is set to false
 func TestGatherArguments_DefaultsWhenProvidedFalse(t *testing.T) {
 	arg := NewParameterDefinitions(WithParameterDefinitionList([]*ParameterDefinition{
 		{
 			Name:       "Test",
 			Type:       ParameterTypeString,
-			Default:    interfaceAddr("default"),
+			Default:    cast.InterfaceAddr("default"),
 			IsArgument: true,
 		},
 	}))
@@ -88,7 +84,7 @@ func TestGatherArguments_NoDefaultsWhenProvidedTrue(t *testing.T) {
 		{
 			Name:       "Test",
 			Type:       ParameterTypeString,
-			Default:    interfaceAddr("default"),
+			Default:    cast.InterfaceAddr("default"),
 			IsArgument: true,
 		},
 	}))
@@ -167,7 +163,7 @@ func TestListParsingWithDefaults(t *testing.T) {
 		{
 			Name:       "arg1",
 			Type:       ParameterTypeStringList,
-			Default:    interfaceAddr([]string{"default1", "default2"}),
+			Default:    cast.InterfaceAddr([]string{"default1", "default2"}),
 			IsArgument: true,
 		},
 	}))
@@ -184,7 +180,7 @@ func TestListDefault(t *testing.T) {
 		{
 			Name:       "arg1",
 			Type:       ParameterTypeStringList,
-			Default:    interfaceAddr([]string{"default1", "default2"}),
+			Default:    cast.InterfaceAddr([]string{"default1", "default2"}),
 			IsArgument: true,
 		},
 	}))
@@ -272,7 +268,7 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 		{
 			Name:       "arg2",
 			Type:       ParameterTypeIntegerList,
-			Default:    interfaceAddr([]int{4, 5, 6}),
+			Default:    cast.InterfaceAddr([]int{4, 5, 6}),
 			IsArgument: true,
 		},
 	}))
@@ -307,7 +303,7 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 		{
 			Name:       "arg4",
 			Type:       ParameterTypeIntegerList,
-			Default:    interfaceAddr([]int{5, 6, 7}),
+			Default:    cast.InterfaceAddr([]int{5, 6, 7}),
 			IsArgument: true,
 		},
 	}))
@@ -348,7 +344,7 @@ func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) 
 		{
 			Name:       "arg4",
 			Type:       ParameterTypeIntegerList,
-			Default:    interfaceAddr([]int{5, 6, 7}),
+			Default:    cast.InterfaceAddr([]int{5, 6, 7}),
 			IsArgument: true,
 		},
 	}))
@@ -455,7 +451,7 @@ func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
 func TestGenerateUseString_WithDefaultValue(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	arguments := NewParameterDefinitions(WithParameterDefinitionList(
-		[]*ParameterDefinition{{Name: "name", Default: interfaceAddr("John"), IsArgument: true}}))
+		[]*ParameterDefinition{{Name: "name", Default: cast.InterfaceAddr("John"), IsArgument: true}}))
 	result := GenerateUseString(cmd.Use, arguments)
 	require.Equal(t, "test [name (default: John)]", result)
 }
