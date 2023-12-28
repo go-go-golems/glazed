@@ -201,50 +201,50 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 	return res, nil
 }
 
-func (g *GlazedParameterLayers) ParseFlagsFromJSON(
+func (g *GlazedParameterLayers) GatherParametersFromMap(
 	m map[string]interface{}, onlyProvided bool,
 	options ...parameters.ParseStepOption,
 ) (*parameters.ParsedParameters, error) {
-	ps, err := g.OutputParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps, err := g.OutputParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
-	ps_, err := g.SelectParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.RenameParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err := g.SelectParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.TemplateParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.RenameParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.FieldsFiltersParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.TemplateParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.ReplaceParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.FieldsFiltersParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.JqParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.ReplaceParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.SortParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.JqParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}
 	ps.Merge(ps_)
-	ps_, err = g.SkipLimitParameterLayer.ParseFlagsFromJSON(m, onlyProvided, options...)
+	ps_, err = g.SortParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
+	if err != nil {
+		return nil, err
+	}
+	ps.Merge(ps_)
+	ps_, err = g.SkipLimitParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
 	if err != nil {
 		return nil, err
 	}

@@ -115,6 +115,19 @@ func NewParsedLayers(options ...ParsedLayersOption) *ParsedLayers {
 	return ret
 }
 
+func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
+	slug := layer.GetSlug()
+	v, ok := p.Get(slug)
+	if !ok {
+		v = &ParsedLayer{
+			Layer:      nil,
+			Parameters: parameters.NewParsedParameters(),
+		}
+		p.Set(slug, v)
+	}
+	return v
+}
+
 // GetDataMap is useful when rendering out templates using all passed in layers.
 func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 	ps := map[string]interface{}{}

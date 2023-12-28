@@ -50,6 +50,7 @@ import (
 //    - name: "layer1"
 //      values:
 //        param1: "defaultVal"
+//  ... # potentially additional fields
 //
 //- name: "Multiple layers with defaults"
 //  parameterLayers:
@@ -68,6 +69,9 @@ import (
 //          default: true
 //  parsedLayers:
 //    - name: "layer1"
+//		parameters:
+//		  - name: "param1"
+//          value: "existingValue"
 //    - name: "layer2"
 //  expectedLayers:
 //    - name: "layer1"
@@ -78,6 +82,7 @@ import (
 //      values:
 //        param3: true
 //  expectedError: false
+//  ... # potentially additional fields
 //
 // ---
 //

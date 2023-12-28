@@ -1,10 +1,12 @@
 - name: "Empty layers and parsedLayers"
+  description: "Empty layers should result in empty parsed layers"
   parameterLayers: [ ]
   parsedLayers: [ ]
   expectedLayers: [ ]
   expectedError: false
 
 - name: "Single layer with default"
+  description: "Single layer with default values should result in a single layer with these values"
   parameterLayers:
     - name: "layer1"
       definitions:
@@ -18,7 +20,30 @@
       values:
         param1: "defaultVal"
 
+- name: "Layer with existing values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "integer"
+          default: 42
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue"
+        param2: 42
+  expectedError: false
+
 - name: "Multiple layers with defaults"
+  description: "Multiple layers with defaults should result in multiple layers with these values"
   parameterLayers:
     - name: "layer1"
       definitions:
@@ -49,6 +74,7 @@
   expectedError: false
 
 - name: "Multiple layers with defaults (no defined target layers, should be created)"
+  description: "Multiple layers with defaults should result in multiple layers with these values"
   parameterLayers:
     - name: "layer1"
       definitions:
@@ -88,28 +114,6 @@
   expectedLayers:
     - name: "layer1"
       values: { }
-  expectedError: false
-
-- name: "Layer with existing values"
-  parameterLayers:
-    - name: "layer1"
-      definitions:
-        - name: "param1"
-          type: "string"
-          default: "default1"
-        - name: "param2"
-          type: "integer"
-          default: 42
-  parsedLayers:
-    - name: "layer1"
-      parameters:
-        - name: "param1"
-          value: "existingValue"
-  expectedLayers:
-    - name: "layer1"
-      values:
-        param1: "existingValue"
-        param2: 42
   expectedError: false
 
 - name: "Layer with partially set values"

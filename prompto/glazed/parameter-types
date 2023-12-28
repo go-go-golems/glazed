@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+echo "---"
+echo "Here are the types that can be used to define parameters in glazed:"
+echo "---"
 cat <<EOF
 package parameters
 

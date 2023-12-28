@@ -641,7 +641,7 @@ func ParseDate(value string) (time.Time, error) {
 	return parsedDate, nil
 }
 
-// GatherParametersFromMap gathers parameter values from a map based on the provided ParameterDefinitions.
+// GatherParametersFromMap gathers parameter values from a map.
 //
 // For each ParameterDefinition, it checks if a matching value is present in the map:
 //
@@ -653,15 +653,14 @@ func ParseDate(value string) (time.Time, error) {
 //
 // The returned map contains the gathered parameter values, with defaults filled in
 // for any missing optional parameters.
-func GatherParametersFromMap(
+func (pds *ParameterDefinitions) GatherParametersFromMap(
 	m map[string]interface{},
-	ps *ParameterDefinitions,
 	onlyProvided bool,
 	options ...ParseStepOption,
 ) (*ParsedParameters, error) {
 	ret := NewParsedParameters()
 
-	for v := ps.Oldest(); v != nil; v = v.Next() {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
 		name, p := v.Key, v.Value
 
 		parsed := &ParsedParameter{
@@ -686,10 +685,12 @@ func GatherParametersFromMap(
 			"map-value": v_,
 		}))
 
+		// TODO(manuel, 2023-12-28) We need to check if nil means remove the value or use the default or whatever that means
 		err := p.CheckValueValidity(v_)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Invalid value for parameter %s", name)
 		}
+
 		// NOTE(manuel, 2023-12-22) We might want to pass in that name instead of just saying from-map
 		parsed.Set(v_, options_...)
 		ret.Set(name, parsed)

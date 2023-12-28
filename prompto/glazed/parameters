@@ -2,6 +2,9 @@
 
 prompto get glazed/parameter-types
 
+echo "---"
+echo "Here are all the types and method signatures for manipulating parameters and parsed parameters in glazed:"
+echo "---"
 echo "package parameters"
 echo
 oak go definitions pkg/cmds/parameters/parameters.go
@@ -9,6 +12,11 @@ echo
 oak go definitions pkg/cmds/parameters/parsed-parameter.go
 echo
 echo
+echo "---"
+echo "Here are all the types and method signatures for manipulating layers in glazed:"
+echo "---"
 echo "package layers"
 echo
 oak go definitions pkg/cmds/layers/layer.go
+echo
+oak go definitions pkg/cmds/layers/parsed-layer.go

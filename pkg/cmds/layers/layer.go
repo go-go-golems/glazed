@@ -27,8 +27,8 @@ type ParameterLayer interface {
 
 const DefaultSlug = "default"
 
-type JSONParameterLayer interface {
-	ParseFlagsFromJSON(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error)
+type FromMapLayer interface {
+	GatherParametersFromMap(m map[string]interface{}, onlyProvided bool, options ...parameters.ParseStepOption) (*parameters.ParsedParameters, error)
 }
 
 type ParameterLayers struct {
@@ -53,6 +53,18 @@ func NewParameterLayers(options ...ParameterLayersOption) *ParameterLayers {
 
 	for _, o := range options {
 		o(ret)
+	}
+
+	return ret
+}
+
+func (pl *ParameterLayers) Subset(slugs ...string) *ParameterLayers {
+	ret := NewParameterLayers()
+
+	for _, slug := range slugs {
+		if l, ok := pl.Get(slug); ok {
+			ret.Set(slug, l)
+		}
 	}
 
 	return ret

@@ -84,6 +84,8 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	}
 
 	// if fields were manually specified, clear whatever default filters we might have set
+	// TODO(manuel, 2023-12-28) This should be moved to somewhere outside of the cobra parsing, I think
+	// This means we'd have to store if a flag was changed in the parsed layer
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Parameters.Get("filter")
 		options_ := append(options, parameters.WithParseStepSource("override-fields-filter"))

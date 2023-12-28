@@ -213,11 +213,6 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 	return err
 }
 
-func (p *ParameterLayerImpl) GetParameterValuesFromMap(m map[string]interface{}, onlyProvided bool) (*parameters.ParsedParameters, error) {
-	ps := p.GetParameterDefinitions()
-	return parameters.GatherParametersFromMap(m, ps, onlyProvided)
-}
-
 // AddLayerToCobraCommand adds all flags of the layer to the given Cobra command.
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.
@@ -257,11 +252,11 @@ func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(
 	}, nil
 }
 
-func (p *ParameterLayerImpl) ParseFlagsFromJSON(
+func (p *ParameterLayerImpl) GatherParametersFromMap(
 	m map[string]interface{}, onlyProvided bool,
 	options ...parameters.ParseStepOption,
 ) (*parameters.ParsedParameters, error) {
-	return parameters.GatherParametersFromMap(m, p.GetParameterDefinitions(), onlyProvided, options...)
+	return p.ParameterDefinitions.GatherParametersFromMap(m, onlyProvided, options...)
 }
 
 func (p *ParameterLayerImpl) Clone() ParameterLayer {

@@ -2,12 +2,12 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	middlewares2 "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
@@ -41,56 +41,11 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
 	description := s.Description()
 
-	// check if we need to add the glazedCommandLayer
-	addGlazedCommandLayer := true
-	description.Layers.ForEach(func(_ string, layer layers.ParameterLayer) {
-		if layer.GetSlug() == "glazed-command" {
-			addGlazedCommandLayer = false
-		}
-	})
-
-	// TODO(manuel, 2023-12-21) Not sure if this cobra specific location is the best place to add the glazed-command layer
-	if addGlazedCommandLayer {
-		glazedCommandLayer, err := layers.NewParameterLayer(
-			"glazed-command",
-			"General purpose Command options",
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition(
-					"create-command",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("Create a new command for the query, with the defaults updated"),
-				),
-				parameters.NewParameterDefinition(
-					"create-alias",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("Create a CLI alias for the query"),
-				),
-				parameters.NewParameterDefinition(
-					"create-cliopatra",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("Print the CLIopatra YAML for the command"),
-				),
-				parameters.NewParameterDefinition(
-					"print-yaml",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Print the command's YAML"),
-				),
-				parameters.NewParameterDefinition(
-					"load-parameters-from-json",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("Load the command's flags from JSON"),
-				),
-			),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// NOTE(manuel, 2023-12-20) Should we clone the layer list here?
-		description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
+	glazedCommandLayer, err := NewGlazedCommandLayer()
+	if err != nil {
+		return nil, err
 	}
-
-	description.Layers = description.Layers
+	description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 
 	cobraParser, err := NewCobraParserFromCommandDescription(description)
 	if err != nil {
@@ -100,84 +55,53 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 	cmd := cobraParser.Cmd
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		// TODO(manuel, 2023-12-26) This should be a middleware
-		loadParametersFromJSON, err := cmd.Flags().GetString("load-parameters-from-json")
+		pds := glazedCommandLayer.GetParameterDefinitions()
+		parsedParameters, err := pds.GatherFlagsFromCobraCommand(cmd, true, true, glazedCommandLayer.GetPrefix())
+		cobra.CheckErr(err)
+
+		commandSettings := &GlazedCommandSettings{}
+		err = parsedParameters.InitializeStruct(commandSettings)
+		cobra.CheckErr(err)
+
+		middlewares := []middlewares2.Middleware{
+			middlewares2.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		}
+
+		if commandSettings.LoadParametersFromJSON != "" {
+			middlewares = append(middlewares,
+				middlewares2.LoadParametersFromJSON(commandSettings.LoadParametersFromJSON))
+		}
+
+		middlewares = append(middlewares,
+			middlewares2.ParseFromCobraCommand(cmd,
+				parameters.WithParseStepSource("cobra"),
+			),
+			middlewares2.GatherArguments(args, parameters.WithParseStepSource("arguments")),
+		)
+
+		parsedLayers := layers.NewParsedLayers()
+		err = middlewares2.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares...)
+		// show help if there is an error
 		if err != nil {
+			fmt.Println(err)
+			err := cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)
 		}
 
-		var parsedLayers *layers.ParsedLayers
+		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some layers
+		// This is what ParseLayerFromCobraCommand is gdoing currently, and it seems the only place
+		// it is actually used seems to be by the FieldsFilter galzed layer.
+		// See Muji (1) sketchbook p.21
 
-		if loadParametersFromJSON != "" {
-			result := map[string]interface{}{}
-			bytes, err := os.ReadFile(loadParametersFromJSON)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-			err = json.Unmarshal(bytes, &result)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-
-			parsedLayers, err = cmds.ParseCommandFromMap(description, result)
-			if err != nil {
-				cobra.CheckErr(err)
-			}
-
-			// Need to update the parsedLayers from command line flags too...
-
-			err = parsedLayers.ForEachE(func(_ string, layer *layers.ParsedLayer) error {
-				definitions := layer.Layer.GetParameterDefinitions()
-				ps_, err := definitions.GatherFlagsFromCobraCommand(
-					cmd,
-					true, true,
-					layer.Layer.GetPrefix(),
-					parameters.WithParseStepSource("cobra"),
-				)
-				if err != nil {
-					return err
-				}
-
-				layer.Parameters.Merge(ps_)
-				return nil
-			})
-			cobra.CheckErr(err)
-		} else {
-			parsedLayers, err = cobraParser.Parse()
-			// show help if there is an error
-			if err != nil {
-				fmt.Println(err)
-				err := cmd.Help()
-				cobra.CheckErr(err)
-				os.Exit(1)
-			}
-		}
-
-		layer := parsedLayers.GetDefaultParameterLayer()
-
-		arguments, err := description.GetDefaultArguments().GatherArguments(
-			args, true, true,
-			parameters.WithParseStepSource("cobra"),
-		)
-		if err != nil {
-			cobra.CheckErr(err)
-		}
-		layer.Parameters.Merge(arguments)
-
-		printYAML, err := cmd.Flags().GetBool("print-yaml")
-		cobra.CheckErr(err)
-
-		if printYAML {
+		// TODO(manuel, 2023-12-28) Handle GlazeCommandLayer options here
+		if commandSettings.PrintYAML {
 			err = s.ToYAML(os.Stdout)
 			cobra.CheckErr(err)
 			return
 		}
 
-		createCliopatra, err := cmd.Flags().GetString("create-cliopatra")
-		cobra.CheckErr(err)
-
-		if createCliopatra != "" {
+		if commandSettings.CreateCliopatra != "" {
 			verbs := GetVerbsFromCobraCommand(cmd)
 			if len(verbs) == 0 {
 				cobra.CheckErr(errors.New("could not get verbs from cobra command"))
@@ -186,7 +110,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 				s.Description(),
 				parsedLayers,
 				cliopatra.WithVerbs(verbs[1:]...),
-				cliopatra.WithName(createCliopatra),
+				cliopatra.WithName(commandSettings.CreateCliopatra),
 				cliopatra.WithPath(verbs[0]),
 			)
 
@@ -200,11 +124,9 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(0)
 		}
 
-		createCliAlias, err := cmd.Flags().GetString("create-alias")
-		cobra.CheckErr(err)
-		if createCliAlias != "" {
+		if commandSettings.CreateAlias != "" {
 			alias := &alias.CommandAlias{
-				Name:      createCliAlias,
+				Name:      commandSettings.CreateAlias,
 				AliasFor:  description.Name,
 				Arguments: args,
 				Flags:     map[string]string{},
@@ -240,7 +162,6 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 			os.Exit(0)
 		}
 
-		//createNewCommand, _ := cmd.Parameters().GetString("create-command")
 		// TODO(manuel, 2023-02-26) This only outputs the command description, not the actual command
 		// This is already helpful, but is really just half the story. To make this work
 		// generically, CreateNewCommand() should be part of the interface.
@@ -250,43 +171,25 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		// NOTE(manuel, 2023-12-21) Disabling this for now while I move flagand argument handling
 		// over to be done by the default layer'
 		//
-		//if createNewCommand != "" {
-		//	clonedArguments := []*parameters.ParameterDefinition{}
-		//	for _, arg := range description.Arguments {
-		//		newArg := arg.Copy()
-		//		v, ok := ps[arg.Name]
-		//		if ok {
-		//			newArg.Default = v
-		//		}
-		//		clonedArguments = append(clonedArguments, newArg)
-		//	}
-		//	clonedFlags := []*parameters.ParameterDefinition{}
-		//	for _, flag := range description.Parameters {
-		//		newFlag := flag.Copy()
-		//		v, ok := ps[flag.Name]
-		//		if ok {
-		//			newFlag.Default = v
-		//		}
-		//		clonedFlags = append(clonedFlags, newFlag)
-		//	}
-		//
-		//	cmd := &cmds.CommandDescription{
-		//		Name:      createNewCommand,
-		//		Short:     description.Short,
-		//		Long:      description.Long,
-		//		Arguments: clonedArguments,
-		//		Parameters:     clonedFlags,
-		//	}
-		//
-		//	// encode as yaml
-		//	sb := strings.Builder{}
-		//	encoder := yaml.NewEncoder(&sb)
-		//	err = encoder.Encode(cmd)
-		//	cobra.CheckErr(err)
-		//
-		//	fmt.Println(sb.String())
-		//	os.Exit(0)
-		//}
+		if commandSettings.CreateCommand != "" {
+			layers_ := description.Layers.Clone()
+
+			cmd := &cmds.CommandDescription{
+				Name:   commandSettings.CreateCommand,
+				Short:  description.Short,
+				Long:   description.Long,
+				Layers: layers_,
+			}
+
+			// encode as yaml
+			sb := strings.Builder{}
+			encoder := yaml.NewEncoder(&sb)
+			err = encoder.Encode(cmd)
+			cobra.CheckErr(err)
+
+			fmt.Println(sb.String())
+			os.Exit(0)
+		}
 
 		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
@@ -529,30 +432,6 @@ func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) 
 	return ret, nil
 }
 
-func ParseFlagsFromViperAndCobraCommand(
-	cmd *cobra.Command,
-	d layers.ParameterLayer,
-	options ...parameters.ParseStepOption,
-) (*parameters.ParsedParameters, error) {
-	// actually hijack and load everything from viper instead of cobra...
-	parameterDefinitions := d.GetParameterDefinitions()
-	prefix := d.GetPrefix()
-
-	ps, err := parameterDefinitions.GatherFlagsFromViper(false, prefix, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	// now load from flag overrides
-	ps2, err := parameterDefinitions.GatherFlagsFromCobraCommand(cmd, true, false, prefix, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps2)
-
-	return ps, nil
-}
-
 func (c *CobraParser) Parse(options ...parameters.ParseStepOption) (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 
@@ -578,6 +457,25 @@ func (c *CobraParser) Parse(options ...parameters.ParseStepOption) (*layers.Pars
 	return parsedLayers, nil
 }
 
+func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParameterLayer) (
+	*layers.ParsedLayers,
+	error,
+) {
+	// TODO(manuel, 2023-12-28) Use middlewares to do the parsing here
+	options := []layers.ParsedLayersOption{}
+
+	for _, layer := range layers_ {
+		ps, err := layer.ParseLayerFromCobraCommand(cmd)
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, layers.WithParsedLayer(layer.GetSlug(), ps))
+	}
+	ret := layers.NewParsedLayers(options...)
+
+	return ret, nil
+}
+
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
 // the glazed processing layer.
 //
@@ -597,14 +495,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, nil, err
 	}
 
-	var glazedLayer *layers.ParsedLayer
-
-	//glazedLayer, ok := parsedLayers["glazed"]
-	//if !ok {
-	//	return nil, errors.New("glazed layer not found")
-	//}
-
-	gp, err := settings.SetupTableProcessor(glazedLayer)
+	gp, err := settings.SetupTableProcessor(parsedLayer)
 	cobra.CheckErr(err)
 
 	of, err := settings.SetupProcessorOutput(gp, parsedLayer, os.Stdout)
@@ -659,22 +550,4 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 	}
 
 	return cmd, nil
-}
-
-func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParameterLayer) (
-	*layers.ParsedLayers,
-	error,
-) {
-	options := []layers.ParsedLayersOption{}
-
-	for _, layer := range layers_ {
-		ps, err := layer.ParseLayerFromCobraCommand(cmd)
-		if err != nil {
-			return nil, err
-		}
-		options = append(options, layers.WithParsedLayer(layer.GetSlug(), ps))
-	}
-	ret := layers.NewParsedLayers(options...)
-
-	return ret, nil
 }
