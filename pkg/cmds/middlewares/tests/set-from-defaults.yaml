@@ -28,7 +28,7 @@
           type: "string"
           default: "default1"
         - name: "param2"
-          type: "integer"
+          type: "int"
           default: 42
   parsedLayers:
     - name: "layer1"
@@ -51,7 +51,7 @@
           type: "string"
           default: "default1"
         - name: "param2"
-          type: "integer"
+          type: "int"
           default: 42
     - name: "layer2"
       definitions:
@@ -82,7 +82,7 @@
           type: "string"
           default: "default1"
         - name: "param2"
-          type: "integer"
+          type: "int"
           default: 42
     - name: "layer2"
       definitions:
@@ -107,7 +107,7 @@
         - name: "param1"
           type: "string"
         - name: "param2"
-          type: "integer"
+          type: "int"
   parsedLayers:
     - name: "layer1"
       parameters: [ ]
@@ -124,7 +124,7 @@
           type: "string"
           default: "default1"
         - name: "param2"
-          type: "integer"
+          type: "int"
           default: 42
   parsedLayers:
     - name: "layer1"
@@ -143,11 +143,19 @@
     - name: "layer1"
       definitions:
         - name: "param1"
-          type: "string"
+          type: "int"
           default: "notAnInt"
-  parsedLayers:
+  expectedLayers: [ ]
+  expectedError: true
+
+- name: "Layer with invalid default values"
+  parameterLayers:
     - name: "layer1"
-      parameters: [ ]
+      definitions:
+        - name: "param1"
+          type: "choice"
+          choices: [ "choice1", "choice2" ]
+          default: "none"
   expectedLayers: [ ]
   expectedError: true
 
@@ -179,16 +187,3 @@
     - name: "layer1"
       values: { }
   expectedError: false
-
-- name: "Error during parameter definition iteration"
-  parameterLayers:
-    - name: "layer1"
-      definitions:
-        - name: "param1"
-          type: "string"
-          default: "default1"
-  parsedLayers:
-    - name: "layer1"
-      parameters: [ ]
-  expectedLayers: [ ]
-  expectedError: true

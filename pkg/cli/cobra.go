@@ -38,16 +38,40 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	return verbs
 }
 
-func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cobra.Command, error) {
+// CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
+// It can be used to overload the default middlewares for cobra commands
+type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error)
+
+func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
+	middlewares_ := []cmd_middlewares.Middleware{
+		cmd_middlewares.ParseFromCobraCommand(cmd,
+			parameters.WithParseStepSource("cobra"),
+		),
+		cmd_middlewares.GatherArguments(args,
+			parameters.WithParseStepSource("arguments"),
+		),
+	}
+
+	if commandSettings.LoadParametersFromFile != "" {
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+	}
+
+	middlewares_ = append(middlewares_,
+		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+	)
+
+	return middlewares_, nil
+}
+
+func BuildCobraCommandFromCommandAndFunc(
+	s cmds.Command,
+	run CobraRunFunc,
+	options ...CobraParserOption,
+) (*cobra.Command, error) {
 	description := s.Description()
 
-	glazedCommandLayer, err := NewGlazedCommandLayer()
-	if err != nil {
-		return nil, err
-	}
-	description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
-
-	cobraParser, err := NewCobraParserFromCommandDescription(description)
+	cobraParser, err := NewCobraParserFromCommandDescription(description, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,38 +79,20 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 	cmd := cobraParser.Cmd
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		pds := glazedCommandLayer.GetParameterDefinitions()
-		parsedParameters, err := pds.GatherFlagsFromCobraCommand(cmd, true, true, glazedCommandLayer.GetPrefix())
-		cobra.CheckErr(err)
-
-		commandSettings := &GlazedCommandSettings{}
-		err = parsedParameters.InitializeStruct(commandSettings)
-		cobra.CheckErr(err)
-
-		middlewares_ := []cmd_middlewares.Middleware{
-			cmd_middlewares.ParseFromCobraCommand(cmd,
-				parameters.WithParseStepSource("cobra"),
-			),
-			cmd_middlewares.GatherArguments(args, parameters.WithParseStepSource("arguments")),
-		}
-
-		if commandSettings.LoadParametersFromFile != "" {
-			middlewares_ = append(middlewares_,
-				cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
-		}
-
-		middlewares_ = append(middlewares_,
-			cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
-		)
-
-		parsedLayers := layers.NewParsedLayers()
-		err = cmd_middlewares.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares_...)
+		parsedLayers, err := cobraParser.Parse(cmd, args)
 		// show help if there is an error
 		if err != nil {
 			fmt.Println(err)
 			err := cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)
+		}
+
+		// get the command settings
+		commandSettings := &GlazedCommandSettings{}
+		if glazeCommandLayer, ok := parsedLayers.Get(GlazedCommandSlug); ok {
+			err = glazeCommandLayer.InitializeStruct(commandSettings)
+			cobra.CheckErr(err)
 		}
 
 		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some layers
@@ -206,7 +212,7 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 	return cmd, nil
 }
 
-func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error) {
+func BuildCobraCommandFromBareCommand(c cmds.BareCommand, options ...CobraParserOption) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(c, func(
 		ctx context.Context,
 		parsedLayers *layers.ParsedLayers,
@@ -219,7 +225,7 @@ func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error
 			cobra.CheckErr(err)
 		}
 		return nil
-	})
+	}, options...)
 
 	if err != nil {
 		return nil, err
@@ -228,7 +234,7 @@ func BuildCobraCommandFromBareCommand(c cmds.BareCommand) (*cobra.Command, error
 	return cmd, nil
 }
 
-func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, error) {
+func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, options ...CobraParserOption) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(s, func(
 		ctx context.Context,
 		parsedLayers *layers.ParsedLayers,
@@ -241,7 +247,7 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand) (*cobra.Command, e
 			cobra.CheckErr(err)
 		}
 		return nil
-	})
+	}, options...)
 
 	if err != nil {
 		return nil, err
@@ -382,81 +388,6 @@ func AddCommandsToRootCommand(
 	return nil
 }
 
-// CobraParser takes a CommandDescription, and hooks it up to a cobra command.
-// It can then be used to parse the cobra flags and arguments back into a
-// set of ParsedLayer and a map[string]interface{} for the lose stuff.
-//
-// That command however doesn't have a Run* method, which is left to the caller to implement.
-//
-// This returns a CobraParser that can be used to parse the registered layers
-// from the description.
-//
-// NOTE(manuel, 2023-09-18) Now that I've removed the parserFunc, this feels a bit unnecessary too
-// Or it could be something that is actually an interface on top of Command, like a CobraCommand.
-type CobraParser struct {
-	Cmd         *cobra.Command
-	description *cmds.CommandDescription
-}
-
-func NewCobraParserFromCommandDescription(description *cmds.CommandDescription) (*CobraParser, error) {
-	cmd := &cobra.Command{
-		Use:   description.Name,
-		Short: description.Short,
-		Long:  description.Long,
-	}
-
-	ret := &CobraParser{
-		Cmd:         cmd,
-		description: description,
-	}
-
-	err := description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
-		// check that layer is a CobraParameterLayer
-		// if not, return an error
-		cobraLayer, ok := layer.(layers.CobraParameterLayer)
-		if !ok {
-			return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
-		}
-
-		err := cobraLayer.AddLayerToCobraCommand(cmd)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return ret, nil
-}
-
-func (c *CobraParser) Parse(options ...parameters.ParseStepOption) (*layers.ParsedLayers, error) {
-	parsedLayers := layers.NewParsedLayers()
-
-	err := c.description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
-		cobraLayer, ok := layer.(layers.CobraParameterLayer)
-		if !ok {
-			return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
-		}
-
-		// parse the flags from commands
-		parsedLayer, err := cobraLayer.ParseLayerFromCobraCommand(c.Cmd, options...)
-		if err != nil {
-			return err
-		}
-
-		parsedLayers.Set(layer.GetSlug(), parsedLayer)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return parsedLayers, nil
-}
-
 func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParameterLayer) (
 	*layers.ParsedLayers,
 	error,
@@ -505,7 +436,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*glazed_middlewares.Tab
 }
 
 // AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
-// the glazed processing layer.
+
 func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeParameterLayerOption) error {
 	gpl, err := settings.NewGlazedParameterLayers(options...)
 	if err != nil {
@@ -515,7 +446,7 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 	return gpl.AddLayerToCobraCommand(cmd)
 }
 
-func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, error) {
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraParserOption) (*cobra.Command, error) {
 	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
 		ctx context.Context,
 		parsedLayers *layers.ParsedLayers,
@@ -543,7 +474,8 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand) (*cobra.Command, 
 		cobra.CheckErr(err)
 
 		return nil
-	})
+	},
+		options...)
 
 	if err != nil {
 		return nil, err

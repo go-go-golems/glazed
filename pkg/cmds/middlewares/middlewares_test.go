@@ -24,7 +24,7 @@ type test struct {
 var setFromDefaultsTestsYAML string
 
 type setFromDefaultsTest struct {
-	test
+	test `yaml:",inline"`
 }
 
 func TestSetFromDefaults(t *testing.T) {
@@ -40,11 +40,6 @@ func TestSetFromDefaults(t *testing.T) {
 			err := middleware(func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 				return nil
 			})(layers_, parsedLayers)
-
-			if err != nil {
-				t.Errorf("SetFromDefaults() error = %v", err)
-				return
-			}
 
 			if tt.ExpectedError {
 				assert.Error(t, err)
@@ -95,6 +90,33 @@ func TestUpdateFromMap(t *testing.T) {
 			err = middlewares.ExecuteMiddlewares(
 				layers_, parsedLayers,
 				middlewares.UpdateFromMap(tt.UpdateMaps),
+			)
+
+			if tt.ExpectedError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+			}
+		})
+	}
+}
+
+//go:embed tests/update-from-map-as-default.yaml
+var updateFromMapAsDefaultsTestYAML string
+
+func TestUpdateFromMapAsDefault(t *testing.T) {
+	tests, err := yaml.LoadTestFromYAML[[]updateFromMapTest](updateFromMapAsDefaultsTestYAML)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers)
+
+			err = middlewares.ExecuteMiddlewares(
+				layers_, parsedLayers,
+				middlewares.UpdateFromMapAsDefault(tt.UpdateMaps),
 			)
 
 			if tt.ExpectedError {

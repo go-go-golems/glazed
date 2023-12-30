@@ -21,11 +21,20 @@ func SetFromDefaults(options ...parameters.ParseStepOption) Middleware {
 				pds := l.GetParameterDefinitions()
 				parsedLayer := parsedLayers.GetOrCreate(l)
 
-				pds.ForEach(func(pd *parameters.ParameterDefinition) {
+				err := pds.ForEachE(func(pd *parameters.ParameterDefinition) error {
+					err := pd.CheckParameterDefaultValueValidity()
+					if err != nil {
+						return err
+					}
 					if pd.Default != nil {
 						parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
 					}
+					return nil
 				})
+
+				if err != nil {
+					return err
+				}
 
 				return nil
 			})
@@ -134,4 +143,17 @@ func updateFromEnv(
 	})
 
 	return nil
+}
+
+func UpdateFromEnv(prefix string, options ...parameters.ParseStepOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return updateFromEnv(layers_, parsedLayers, prefix, options...)
+		}
+	}
 }

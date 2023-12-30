@@ -5,9 +5,11 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
+const GlazedCommandSlug = "glazed-command"
+
 func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 	glazedCommandLayer, err := layers.NewParameterLayer(
-		"glazed-command",
+		GlazedCommandSlug,
 		"General purpose Command options",
 		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
