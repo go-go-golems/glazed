@@ -27,10 +27,6 @@ type ParameterLayer interface {
 
 const DefaultSlug = "default"
 
-type FromMapLayer interface {
-	GatherParametersFromMap(m map[string]interface{}, onlyProvided bool, options ...parameters.ParseStepOption) (*parameters.ParsedParameters, error)
-}
-
 type ParameterLayers struct {
 	*orderedmap.OrderedMap[string, ParameterLayer]
 }
@@ -106,8 +102,8 @@ func (pl *ParameterLayers) PrependLayers(layers ...ParameterLayer) {
 }
 
 func (pl *ParameterLayers) Merge(p *ParameterLayers) *ParameterLayers {
-	pl.ForEach(func(k string, v ParameterLayer) {
-		p.Set(k, v.Clone())
+	p.ForEach(func(k string, v ParameterLayer) {
+		pl.Set(k, v.Clone())
 	})
 
 	return pl

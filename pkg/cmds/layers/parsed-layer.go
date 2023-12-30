@@ -120,7 +120,7 @@ func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
 	v, ok := p.Get(slug)
 	if !ok {
 		v = &ParsedLayer{
-			Layer:      nil,
+			Layer:      layer,
 			Parameters: parameters.NewParsedParameters(),
 		}
 		p.Set(slug, v)

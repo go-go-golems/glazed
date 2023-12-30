@@ -3,7 +3,6 @@ package helpers
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"gopkg.in/yaml.v3"
 )
 
 // Package parameters provides structures and helper functions required for
@@ -122,7 +121,6 @@ import (
 
 type TestParameterLayer struct {
 	Name        string                            `yaml:"name"`
-	Slug        string                            `yaml:"slug"`
 	Definitions []*parameters.ParameterDefinition `yaml:"definitions,omitempty"`
 	Prefix      string                            `yaml:"prefix"`
 }
@@ -137,16 +135,6 @@ type TestParsedLayer struct {
 	Parameters []TestParsedParameter `yaml:"parameters"`
 }
 
-func LoadTestFromYAML[T any](yaml_ string) (T, error) {
-	var ret T
-	err := yaml.Unmarshal([]byte(yaml_), &ret)
-	if err != nil {
-		var zero T
-		return zero, err
-	}
-	return ret, nil
-}
-
 type TestExpectedLayer struct {
 	Name   string
 	Values map[string]interface{}
@@ -155,9 +143,7 @@ type TestExpectedLayer struct {
 // NewTestParameterLayer is a helper function to create a ParameterLayer from parameterDefinition
 func NewTestParameterLayer(l TestParameterLayer) layers.ParameterLayer {
 	definitions_ := []*parameters.ParameterDefinition{}
-	for _, d := range l.Definitions {
-		definitions_ = append(definitions_, d)
-	}
+	definitions_ = append(definitions_, l.Definitions...)
 	ret, err := layers.NewParameterLayer(l.Name, l.Name,
 		layers.WithParameterDefinitions(definitions_...))
 	if err != nil {

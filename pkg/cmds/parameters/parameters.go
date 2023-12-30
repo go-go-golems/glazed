@@ -551,6 +551,9 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 		}
+
+	default:
+		return errors.Errorf("unknown parameter type %s", p.Type)
 	}
 
 	return nil

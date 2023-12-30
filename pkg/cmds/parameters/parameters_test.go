@@ -71,7 +71,7 @@ func loadParameterTypeTests(yamlData []byte) ([]ParameterTypeTest, error) {
 
 var testParameterTypeTests []ParameterTypeTest
 
-func init() {
+func initialParameterTests() {
 	testParameterDefinitions = LoadParameterDefinitionsFromYAML(testFlagsYaml)
 	var err error
 	testParameterValidList, err = loadValidityTestDataFromYAML(validityTestYaml)
@@ -86,6 +86,7 @@ func init() {
 }
 
 func TestParameterTypes(t *testing.T) {
+	initialParameterTests()
 	for _, test := range testParameterTypeTests {
 		t.Run(test.Type, func(t *testing.T) {
 			type_ := ParameterType(test.Type)
@@ -96,6 +97,7 @@ func TestParameterTypes(t *testing.T) {
 }
 
 func TestParameterValidity(t *testing.T) {
+	initialParameterTests()
 	for _, validityTest := range testParameterValidList {
 		t.Run(validityTest.Name, func(t *testing.T) {
 			err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
@@ -109,6 +111,7 @@ func TestParameterValidity(t *testing.T) {
 }
 
 func TestSetValueFromDefaultInt(t *testing.T) {
+	initialParameterTests()
 	intFlag, _ := testParameterDefinitions.Get("int-flag")
 
 	i := 234
@@ -134,6 +137,7 @@ func TestSetValueFromDefaultInt(t *testing.T) {
 }
 
 func TestSetValueFromDefaultInt32(t *testing.T) {
+	initialParameterTests()
 	intFlag, _ := testParameterDefinitions.Get("int-flag")
 
 	var i int32 = 234
@@ -160,6 +164,7 @@ func TestSetValueFromDefaultInt32(t *testing.T) {
 }
 
 func TestSetValueFromDefaultFloat(t *testing.T) {
+	initialParameterTests()
 	floatFlag, _ := testParameterDefinitions.Get("float-flag")
 
 	f := 234.0
@@ -190,6 +195,7 @@ func TestSetValueFromDefaultFloat(t *testing.T) {
 }
 
 func TestSetValueFromDefaultFloat32(t *testing.T) {
+	initialParameterTests()
 	floatFlag, _ := testParameterDefinitions.Get("float-flag")
 
 	var f float32 = 234.0
@@ -215,6 +221,7 @@ func TestSetValueFromDefaultFloat32(t *testing.T) {
 }
 
 func TestSetValueFromDefaultDate(t *testing.T) {
+	initialParameterTests()
 	dateFlag, _ := testParameterDefinitions.Get("date-flag")
 
 	d := time.Now()
@@ -237,6 +244,7 @@ func TestSetValueFromDefaultDate(t *testing.T) {
 }
 
 func TestSetValueFromDefaultString(t *testing.T) {
+	initialParameterTests()
 	stringFlag, _ := testParameterDefinitions.Get("string-flag")
 
 	s := "test"

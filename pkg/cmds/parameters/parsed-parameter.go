@@ -152,11 +152,7 @@ func (p *ParsedParameters) SetAsDefault(
 	key string, pd *ParameterDefinition, v interface{},
 	options ...ParseStepOption) {
 	if _, ok := p.Get(key); !ok {
-		v_ := &ParsedParameter{
-			ParameterDefinition: pd,
-		}
-		p.Set(key, v_)
-		v_.Set(v, options...)
+		p.UpdateValue(key, pd, v, options...)
 	}
 }
 
@@ -182,12 +178,15 @@ func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) e
 // current one.
 func (p *ParsedParameters) Merge(other *ParsedParameters, options ...ParseStepOption) *ParsedParameters {
 	other.ForEach(func(k string, v *ParsedParameter) {
-		v_, ok := p.Get(k)
-		if ok {
-			v_.Merge(v, options...)
-		} else {
-			p.Set(k, v)
-		}
+		p.UpdateValue(k, v.ParameterDefinition, v.Value, options...)
+	})
+	return p
+}
+
+// MergeAsDefault only sets the value if the key does not already exist in the map.
+func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...ParseStepOption) *ParsedParameters {
+	other.ForEach(func(k string, v *ParsedParameter) {
+		p.SetAsDefault(k, v.ParameterDefinition, v.Value, options...)
 	})
 	return p
 }

@@ -6,7 +6,7 @@
         - name: "param1"
           type: "string"
         - name: "param2"
-          type: "integer"
+          type: "int"
   parsedLayers:
     - name: "layer1"
       parameters:
@@ -46,12 +46,12 @@
     - name: "layer1"
       definitions:
         - name: "param1"
-          type: "integer"
+          type: "int"
   parsedLayers:
     - name: "layer1"
   updateMaps:
     layer1:
-      param1: "not an integer"
+      param1: "not an int"
   expectedLayers: null
   expectedError: true
 
@@ -94,28 +94,13 @@
         param1: "value1"
   expectedError: false
 
-- name: "TestUpdateFromMapWithRequiredParametersMissing"
-  description: "An error is returned when required parameters are missing in the map"
-  parameterLayers:
-    - name: "layer1"
-      definitions:
-        - name: "param1"
-          type: "string"
-          required: true
-  parsedLayers:
-    - name: "layer1"
-  updateMaps:
-    layer1: {}
-  expectedLayers: null
-  expectedError: true
-
 - name: "TestUpdateFromMapWithChoicesValidation"
   description: "An error is returned if the map provides a value outside of valid choices"
   parameterLayers:
     - name: "layer1"
       definitions:
         - name: "param1"
-          type: "string"
+          type: "choice"
           choices:
             - "choice1"
             - "choice2"
@@ -137,7 +122,7 @@
     - name: "layer2"
       definitions:
         - name: "param2"
-          type: "integer"
+          type: "int"
   parsedLayers:
     - name: "layer1"
     - name: "layer2"

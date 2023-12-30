@@ -7,12 +7,12 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	middlewares2 "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
+	glazed_middlewares "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -63,24 +63,24 @@ func BuildCobraCommandFromCommandAndFunc(s cmds.Command, run CobraRunFunc) (*cob
 		err = parsedParameters.InitializeStruct(commandSettings)
 		cobra.CheckErr(err)
 
-		middlewares := []middlewares2.Middleware{
-			middlewares2.SetFromDefaults(parameters.WithParseStepSource("defaults")),
-		}
-
-		if commandSettings.LoadParametersFromJSON != "" {
-			middlewares = append(middlewares,
-				middlewares2.LoadParametersFromJSON(commandSettings.LoadParametersFromJSON))
-		}
-
-		middlewares = append(middlewares,
-			middlewares2.ParseFromCobraCommand(cmd,
+		middlewares_ := []cmd_middlewares.Middleware{
+			cmd_middlewares.ParseFromCobraCommand(cmd,
 				parameters.WithParseStepSource("cobra"),
 			),
-			middlewares2.GatherArguments(args, parameters.WithParseStepSource("arguments")),
+			cmd_middlewares.GatherArguments(args, parameters.WithParseStepSource("arguments")),
+		}
+
+		if commandSettings.LoadParametersFromFile != "" {
+			middlewares_ = append(middlewares_,
+				cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+		}
+
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
 		)
 
 		parsedLayers := layers.NewParsedLayers()
-		err = middlewares2.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares...)
+		err = cmd_middlewares.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares_...)
 		// show help if there is an error
 		if err != nil {
 			fmt.Println(err)
@@ -484,7 +484,7 @@ func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParam
 // of the glazed ecosystem.
 //
 // If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
-func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, formatters.OutputFormatter, error) {
+func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*glazed_middlewares.TableProcessor, formatters.OutputFormatter, error) {
 	gpl, err := settings.NewGlazedParameterLayers()
 	if err != nil {
 		return nil, nil, err

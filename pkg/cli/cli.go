@@ -49,5 +49,5 @@ type GlazedCommandSettings struct {
 	CreateAlias            string `glazed.parameter:"create-alias"`
 	CreateCliopatra        string `glazed.parameter:"create-cliopatra"`
 	PrintYAML              bool   `glazed.parameter:"print-yaml"`
-	LoadParametersFromJSON string `glazed.parameter:"load-parameters-from-json"`
+	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
 }

@@ -465,11 +465,6 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	assert.Error(t, cmd.Args(cmd, []string{}))
 }
 
-func strAddr(v string) *interface{} {
-	v_ := interface{}(v)
-	return &v_
-}
-
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 	defaultLayer, err := layers.NewParameterLayer(layers.DefaultSlug, "Default",

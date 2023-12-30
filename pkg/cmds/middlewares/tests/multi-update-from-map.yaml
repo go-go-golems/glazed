@@ -14,7 +14,7 @@
       - name: "layer1"
         definitions:
           - name: "param1"
-            type: "ParameterTypeString"
+            type: "string"
             default: "original"
     parsedLayers:
       - name: "layer1"
@@ -37,10 +37,10 @@
       - name: "layer1"
         definitions:
           - name: "param1"
-            type: "ParameterTypeString"
+            type: "string"
             default: "original"
           - name: "param2"
-            type: "ParameterTypeInteger"
+            type: "int"
             default: 1
     parsedLayers:
       - name: "layer1"
@@ -70,7 +70,7 @@
       - name: "layer1"
         definitions:
           - name: "param1"
-            type: "ParameterTypeString"
+            type: "string"
             default: "original"
     parsedLayers:
       - name: "layer1"
@@ -92,10 +92,8 @@
       - name: "layer1"
         definitions:
           - name: "param1"
-            type: "ParameterTypeString"
+            type: "string"
             default: "original"
-    parsedLayers:
-      - name: "layer1"
     expectedLayers:
     expectedError: false
     updateMaps:
@@ -109,12 +107,12 @@
     - name: "layer1"
       definitions:
         - name: "param1"
-          type: "ParameterTypeString"
+          type: "string"
           default: "original"
     - name: "layer2"
       definitions:
         - name: "param1"
-          type: "ParameterTypeString"
+          type: "string"
           default: "original"
   parsedLayers:
     - name: "layer1"
@@ -137,12 +135,12 @@
     - name: "layer1"
       definitions:
         - name: "param1"
-          type: "ParameterTypeString"
+          type: "string"
           default: "original"
     - name: "layer2"
       definitions:
         - name: "param1"
-          type: "ParameterTypeString"
+          type: "string"
           default: "original"
   parsedLayers:
     - name: "layer1"

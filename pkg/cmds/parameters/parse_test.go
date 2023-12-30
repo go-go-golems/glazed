@@ -220,7 +220,7 @@ func TestParameterDate(t *testing.T) {
 	}
 }
 
-func TestParameters(t *testing.T) {
+func TestParseParameter(t *testing.T) {
 	tests := []ParameterTest{
 		{
 			Name:          "ParameterString",

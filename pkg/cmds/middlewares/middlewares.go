@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
 type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error
@@ -10,114 +9,21 @@ type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.Parse
 type Middleware func(HandlerFunc) HandlerFunc
 
 // layer middlewares:
-// - whitelist
-// - blacklist
-// - override
-// - set default
-// - fill from json
-// - from parameter definition defaults
-
-// SetFromDefaults fills the parsedLayers with all default values from the layers parameter definitions
-// for values that were not set, and then calls next.
-func SetFromDefaults(options ...parameters.ParseStepOption) Middleware {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
-			err := next(layers_, parsedLayers)
-			if err != nil {
-				return err
-			}
-			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
-				pds := l.GetParameterDefinitions()
-				parsedLayer := parsedLayers.GetOrCreate(l)
-
-				pds.ForEach(func(pd *parameters.ParameterDefinition) {
-					if pd.Default != nil {
-						parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
-					}
-				})
-
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-}
-
-func UpdateFromMap(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
-			err := next(layers_, parsedLayers)
-			if err != nil {
-				return err
-			}
-			for k, v := range m {
-				layer, ok := layers_.Get(k)
-				if !ok {
-					continue
-				}
-
-				parsedLayer := parsedLayers.GetOrCreate(layer)
-				ps, err := layer.GetParameterDefinitions().GatherParametersFromMap(v, true, options...)
-				if err != nil {
-					return err
-				}
-				parsedLayer.Parameters.Merge(ps)
-			}
-
-			return nil
-		}
-	}
-}
-
-func RestrictLayers(slugs []string, m Middleware) HandlerFunc {
-	slugsToDelete := map[string]interface{}{}
-	for _, s := range slugs {
-		slugsToDelete[s] = nil
-	}
-	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
-		layers_.ForEach(func(key string, l layers.ParameterLayer) {
-			if slugsToDelete[key] != nil {
-				layers_.Delete(key)
-			}
-		})
-		return nil
-	}
-}
+// - [x] whitelist (layers, parameters)
+// - [x] blacklist (layers, parameters)
+// - [x] override (updateFromMap)
+// - [ ] set defaults explicitly
+// - [x] fill from json (updateFromMap)
+// - [x] from parameter definition defaults
+// - [x] fill from cobra (flags, arguments)
+// - [x] fill from viper
 
 func Identity(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 	return nil
 }
 
-func WrapWithLayerModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware) Middleware {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
-			var chain Middleware
-			chain = Chain(nextMiddlewares...)
-
-			clonedLayers := layers_.Clone()
-			err := m(clonedLayers, parsedLayers)
-			if err != nil {
-				return err
-			}
-
-			err = chain(Identity)(clonedLayers, parsedLayers)
-			if err != nil {
-				return err
-			}
-
-			err = next(layers_, parsedLayers)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}
-	}
-}
-
+// Chain chains together a list of middlewares into a single middleware.
+// It does this by iteratively wrapping each middleware around the next handler.
 func Chain(ms ...Middleware) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
 		for _, m_ := range ms {
