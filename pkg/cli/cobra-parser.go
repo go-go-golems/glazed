@@ -34,17 +34,6 @@ func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserO
 	}
 }
 
-func WithAddGlazedCommandLayer() CobraParserOption {
-	return func(c *CobraParser) error {
-		glazedCommandLayer, err := NewGlazedCommandLayer()
-		if err != nil {
-			return err
-		}
-		c.description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
-		return nil
-	}
-}
-
 func NewCobraParserFromCommandDescription(
 	description *cmds.CommandDescription,
 	options ...CobraParserOption,
@@ -68,7 +57,14 @@ func NewCobraParserFromCommandDescription(
 		}
 	}
 
-	err := description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
+	// NOTE(manuel, 2023-12-30) I actually think we always want to have the glazed-command layer
+	glazedCommandLayer, err := NewGlazedCommandLayer()
+	if err != nil {
+		return nil, err
+	}
+	description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
+
+	err = description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
 		// check that layer is a CobraParameterLayer
 		// if not, return an error
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
