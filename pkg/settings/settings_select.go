@@ -48,3 +48,9 @@ func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectPa
 
 	return ret, nil
 }
+
+func (f *SelectParameterLayer) Clone() layers.ParameterLayer {
+	return &SelectParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}

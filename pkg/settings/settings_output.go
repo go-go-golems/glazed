@@ -65,6 +65,12 @@ func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputPa
 	return ret, nil
 }
 
+func (f *OutputParameterLayer) Clone() layers.ParameterLayer {
+	return &OutputParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
 func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)

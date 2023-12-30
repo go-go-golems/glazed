@@ -256,8 +256,11 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, options ...CobraPa
 	return cmd, nil
 }
 
-func BuildCobraCommandAlias(alias *alias.CommandAlias) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(alias.AliasedCommand)
+func BuildCobraCommandAlias(
+	alias *alias.CommandAlias,
+	options ...CobraParserOption,
+) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommand(alias.AliasedCommand, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,18 +325,21 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-func BuildCobraCommandFromCommand(command cmds.Command) (*cobra.Command, error) {
+func BuildCobraCommandFromCommand(
+	command cmds.Command,
+	options ...CobraParserOption,
+) (*cobra.Command, error) {
 	var cobraCommand *cobra.Command
 	var err error
 	switch c := command.(type) {
 	case cmds.BareCommand:
-		cobraCommand, err = BuildCobraCommandFromBareCommand(c)
+		cobraCommand, err = BuildCobraCommandFromBareCommand(c, options...)
 
 	case cmds.WriterCommand:
-		cobraCommand, err = BuildCobraCommandFromWriterCommand(c)
+		cobraCommand, err = BuildCobraCommandFromWriterCommand(c, options...)
 
 	case cmds.GlazeCommand:
-		cobraCommand, err = BuildCobraCommandFromGlazeCommand(c)
+		cobraCommand, err = BuildCobraCommandFromGlazeCommand(c, options...)
 
 	default:
 		return nil, errors.Errorf("Unknown command type %T", c)
@@ -349,6 +355,7 @@ func AddCommandsToRootCommand(
 	rootCmd *cobra.Command,
 	commands []cmds.Command,
 	aliases []*alias.CommandAlias,
+	options ...CobraParserOption,
 ) error {
 	commandsByName := map[string]cmds.Command{}
 
@@ -357,7 +364,7 @@ func AddCommandsToRootCommand(
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
 
-		cobraCommand, err := BuildCobraCommandFromCommand(command)
+		cobraCommand, err := BuildCobraCommandFromCommand(command, options...)
 		if err != nil {
 			log.Warn().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not build cobra command")
 			return nil
@@ -378,7 +385,7 @@ func AddCommandsToRootCommand(
 		alias.AliasedCommand = aliasedCommand
 
 		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
-		cobraCommand, err := BuildCobraCommandAlias(alias)
+		cobraCommand, err := BuildCobraCommandAlias(alias, options...)
 		if err != nil {
 			return err
 		}

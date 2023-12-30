@@ -54,6 +54,11 @@ func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*Replace
 
 	return ret, nil
 }
+func (f *ReplaceParameterLayer) Clone() layers.ParameterLayer {
+	return &ReplaceParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
 
 func NewReplaceSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}

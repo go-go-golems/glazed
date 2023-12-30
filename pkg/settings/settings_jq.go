@@ -30,6 +30,11 @@ func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterL
 
 	return ret, nil
 }
+func (f *JqParameterLayer) Clone() layers.ParameterLayer {
+	return &JqParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
 
 func NewJqSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*JqSettings, error) {
 	s := &JqSettings{}

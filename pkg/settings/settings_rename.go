@@ -66,6 +66,12 @@ func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenamePa
 	return ret, nil
 }
 
+func (f *RenameParameterLayer) Clone() layers.ParameterLayer {
+	return &RenameParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
 func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*RenameSettings, error) {
 	ps := glazedLayer.Parameters
 	rename := ps.GetValue("rename")

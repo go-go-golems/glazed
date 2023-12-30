@@ -38,3 +38,8 @@ func NewSkipLimitParameterLayer(options ...layers.ParameterLayerOptions) (*SkipL
 
 	return ret, nil
 }
+func (f *SkipLimitParameterLayer) Clone() layers.ParameterLayer {
+	return &SkipLimitParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}

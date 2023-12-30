@@ -40,6 +40,12 @@ func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParame
 	return ret, nil
 }
 
+func (f *SortParameterLayer) Clone() layers.ParameterLayer {
+	return &SortParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
 func (s *SortFlagsSettings) AddMiddlewares(p_ *middlewares.TableProcessor) {
 	if len(s.SortBy) == 0 {
 		return
