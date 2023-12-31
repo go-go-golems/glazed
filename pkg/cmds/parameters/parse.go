@@ -438,9 +438,7 @@ func (p *ParameterDefinition) ParseFromReader(
 	var err error
 	//exhaustive:ignore
 	switch p.Type {
-	case ParameterTypeStringListFromFiles:
-		fallthrough
-	case ParameterTypeStringListFromFile:
+	case ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
 		ret_ := make([]string, 0)
 
 		// check for json
@@ -508,9 +506,7 @@ func (p *ParameterDefinition) ParseFromReader(
 
 		return ret, nil
 
-	case ParameterTypeObjectListFromFiles:
-		fallthrough
-	case ParameterTypeObjectListFromFile:
+	case ParameterTypeObjectListFromFiles, ParameterTypeObjectListFromFile:
 		return p.parseObjectListFromReader(f, filename, options...)
 
 	case ParameterTypeKeyValue:
@@ -542,9 +538,7 @@ func (p *ParameterDefinition) ParseFromReader(
 
 		return ret, nil
 
-	case ParameterTypeStringFromFiles:
-		fallthrough
-	case ParameterTypeStringFromFile:
+	case ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
 		var b bytes.Buffer
 		_, err := io.Copy(&b, f)
 		if err != nil {

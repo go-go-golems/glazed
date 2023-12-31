@@ -11,12 +11,11 @@
   isFileLoading: true
 
 - type: stringFromFiles
-  isList: true
+  isList: false
   isFileLoading: true
 
 - type: objectListFromFile
-  # this is not a list because we actually parse a single file
-  isList: false
+  isList: true
   isFileLoading: true
 
 - type: objectListFromFiles
@@ -28,7 +27,7 @@
   isFileLoading: true
 
 - type: stringListFromFile
-  isList: false
+  isList: true
   isFileLoading: true
 
 - type: stringListFromFiles

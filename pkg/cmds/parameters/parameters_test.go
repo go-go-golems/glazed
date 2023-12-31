@@ -91,7 +91,7 @@ func TestParameterTypes(t *testing.T) {
 		t.Run(test.Type, func(t *testing.T) {
 			type_ := ParameterType(test.Type)
 			assert.Equal(t, test.IsList, type_.IsList())
-			assert.Equal(t, test.IsFileLoading, type_.IsFileLoading(test.Value))
+			assert.Equal(t, test.IsFileLoading, type_.NeedsFileContent(test.Value))
 		})
 	}
 }

@@ -121,3 +121,14 @@ func (pl *ParameterLayers) Clone() *ParameterLayers {
 	ret := NewParameterLayers()
 	return ret.Merge(pl)
 }
+
+func (pl *ParameterLayers) GetAllParameterDefinitions() *parameters.ParameterDefinitions {
+	ret := parameters.NewParameterDefinitions()
+	pl.ForEach(func(_ string, v ParameterLayer) {
+		v.GetParameterDefinitions().ForEach(func(p *parameters.ParameterDefinition) {
+			prefix := v.GetPrefix()
+			ret.Set(prefix+p.Name, p)
+		})
+	})
+	return ret
+}

@@ -45,10 +45,10 @@ const (
 	ParameterTypeChoiceList  ParameterType = "choiceList"
 )
 
-// IsFileLoading returns true if the parameter type is one that loads a file, when provided with the given
+// NeedsFileContent returns true if the parameter type is one that loads one or more files, when provided with the given
 // value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
 // beginning character of @ indicates a file.
-func (p ParameterType) IsFileLoading(value string) bool {
+func (p ParameterType) NeedsFileContent(value string) bool {
 	//exhaustive:ignore
 	switch p {
 	case ParameterTypeStringFromFile,
@@ -57,13 +57,38 @@ func (p ParameterType) IsFileLoading(value string) bool {
 		ParameterTypeStringListFromFile,
 		ParameterTypeObjectListFromFiles,
 		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
-		ParameterTypeFile,
-		ParameterTypeFileList:
+		ParameterTypeStringFromFiles:
 		return true
 
 	case ParameterTypeKeyValue:
 		return strings.HasPrefix(value, "@")
+	default:
+		return false
+	}
+}
+
+// NeedsMultipleFileContent returns true if the parameter type is one that loads multiple files.
+func (p ParameterType) NeedsMultipleFileContent() bool {
+	//exhaustive:ignore
+	switch p {
+	case ParameterTypeObjectListFromFiles,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringFromFiles,
+		ParameterTypeFileList:
+		return true
+
+	default:
+		return false
+	}
+}
+
+func (p ParameterType) IsFile() bool {
+	//exhaustive:ignore
+	switch p {
+	case ParameterTypeFile,
+		ParameterTypeFileList:
+		return true
+
 	default:
 		return false
 	}
