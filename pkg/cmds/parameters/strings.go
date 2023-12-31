@@ -78,7 +78,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 				return nil, nil, fmt.Errorf("unknown flag: --%s", flagName)
 			}
 			if len(splitArg) == 2 {
-				if IsListParameter(param.Type) {
+				if param.Type.IsList() {
 					value := strings.Trim(splitArg[1], "[]")
 					values := strings.Split(value, ",")
 					rawValues[flagName] = append(rawValues[flagName], values...)
@@ -106,7 +106,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 			}
 			value := args[i+1]
 			i++
-			if IsListParameter(param.Type) {
+			if param.Type.IsList() {
 				value = strings.Trim(value, "[]")
 				values := strings.Split(value, ",")
 				rawValues[flagName] = append(rawValues[flagName], values...)

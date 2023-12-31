@@ -3,6 +3,9 @@ package helpers
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // Package parameters provides structures and helper functions required for
@@ -191,4 +194,23 @@ func NewTestParsedLayers(pls *layers.ParameterLayers, ls []TestParsedLayer) *lay
 		ret.Set(l.Name, NewTestParsedLayer(pl, l))
 	}
 	return ret
+}
+
+func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parsedLayers *layers.ParsedLayers) {
+	expectedLayers_ := map[string]TestExpectedLayer{}
+	for _, l_ := range expectedLayers {
+		expectedLayers_[l_.Name] = l_
+		l, ok := parsedLayers.Get(l_.Name)
+		require.True(t, ok)
+
+		actual, err := l.Parameters.ToInterfaceMap()
+		require.NoError(t, err)
+		assert.Equal(t, l_.Values, actual)
+	}
+
+	parsedLayers.ForEach(func(key string, l *layers.ParsedLayer) {
+		if _, ok := expectedLayers_[key]; !ok {
+			t.Errorf("did not expect layer %s to be present", key)
+		}
+	})
 }

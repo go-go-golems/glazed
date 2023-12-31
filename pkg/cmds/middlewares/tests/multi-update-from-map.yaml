@@ -30,6 +30,75 @@
       - layer1:
           param1: "updated"
 
+  # Test 2a: Single Update with List type
+  - name: "Single Update with List type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "stringList"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: ["updated", "updated2"]
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: ["updated", "updated2"]
+
+  # Test 2b: Single Update with Object Type
+  - name: "Single Update with Object type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "objectFromFile"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: {"updated": "updated2"}
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: {"updated": "updated2"}
+
+  # Test 2c: Single Update with Object List Type
+  - name: "Single Update with Object List type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "objectListFromFile"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: [{"updated": "updated2"}, {"updated": "updated3"}]
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: [{"updated": "updated2"}, {"updated": "updated3"}]
+
   # Test 3: Multiple Updates
   - name: "Multiple Updates"
     description: "Multiple update maps should apply updates in sequence to the ParsedLayers."

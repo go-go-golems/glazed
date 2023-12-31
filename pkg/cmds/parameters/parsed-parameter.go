@@ -1,6 +1,7 @@
 package parameters
 
 import (
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/wk8/go-ordered-map/v2"
 )
 
@@ -77,6 +78,44 @@ func (p *ParsedParameter) Clone() *ParsedParameter {
 	return ret
 }
 
+// GetInterfaceValue returns the value as an interface{}. If the type of the parameter is a list,
+// it will return a []interface{}. If the type is an object, it will return a map[string]interface{}.
+// If the type is a list of objects, it will return a []interface{} of map[string]interface{}.
+func (p *ParsedParameter) GetInterfaceValue() (interface{}, error) {
+	parameterType := p.ParameterDefinition.Type
+	switch {
+	case parameterType.IsList():
+		ret, err := cast.CastListToInterfaceList(p.Value)
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
+
+	case parameterType.IsObject(),
+		parameterType.IsKeyValue():
+		return cast.ConvertMapToInterfaceMap(p.Value)
+
+	case parameterType.IsObjectList():
+		r_, err := cast.CastListToInterfaceList(p.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		ret := []interface{}{}
+		for _, m := range r_ {
+			m_, err := cast.ConvertMapToInterfaceMap(m)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, m_)
+		}
+		return ret, nil
+
+	default:
+		return p.Value, nil
+	}
+}
+
 type ParsedParameters struct {
 	*orderedmap.OrderedMap[string, *ParsedParameter]
 }
@@ -130,6 +169,17 @@ func (p *ParsedParameters) UpdateExistingValue(
 	}
 	v_.Set(v, options...)
 	return true
+}
+
+func (p *ParsedParameters) Update(
+	key string, pp *ParsedParameter,
+) {
+	v_, ok := p.Get(key)
+	if !ok {
+		p.Set(key, pp)
+	} else {
+		v_.Merge(pp)
+	}
 }
 
 func (p *ParsedParameters) UpdateValue(
@@ -197,4 +247,20 @@ func (p *ParsedParameters) ToMap() map[string]interface{} {
 		ret[k] = v.Value
 	})
 	return ret
+}
+
+func (p *ParsedParameters) ToInterfaceMap() (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+	err := p.ForEachE(func(k string, v *ParsedParameter) error {
+		var err error
+		ret[k], err = v.GetInterfaceValue()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }

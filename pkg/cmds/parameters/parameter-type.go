@@ -45,10 +45,10 @@ const (
 	ParameterTypeChoiceList  ParameterType = "choiceList"
 )
 
-// IsFileLoadingParameter returns true if the parameter type is one that loads a file, when provided with the given
+// IsFileLoading returns true if the parameter type is one that loads a file, when provided with the given
 // value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
 // beginning character of @ indicates a file.
-func IsFileLoadingParameter(p ParameterType, v string) bool {
+func (p ParameterType) IsFileLoading(value string) bool {
 	//exhaustive:ignore
 	switch p {
 	case ParameterTypeStringFromFile,
@@ -60,29 +60,63 @@ func IsFileLoadingParameter(p ParameterType, v string) bool {
 		ParameterTypeStringFromFiles,
 		ParameterTypeFile,
 		ParameterTypeFileList:
-
 		return true
+
 	case ParameterTypeKeyValue:
-		return strings.HasPrefix(v, "@")
+		return strings.HasPrefix(value, "@")
 	default:
 		return false
 	}
 }
 
-// IsListParameter returns true if the parameter has to be parsed from a list of strings,
+// IsList returns true if the parameter has to be parsed from a list of strings,
 // not if its value is actually a list.
-func IsListParameter(p ParameterType) bool {
+func (p ParameterType) IsList() bool {
 	//exhaustive:ignore
 	switch p {
-	case ParameterTypeObjectListFromFiles,
+	case ParameterTypeObjectListFromFile,
+		ParameterTypeObjectListFromFiles,
+		ParameterTypeStringListFromFile,
 		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
 		ParameterTypeStringList,
 		ParameterTypeIntegerList,
 		ParameterTypeFloatList,
 		ParameterTypeChoiceList,
 		ParameterTypeKeyValue,
 		ParameterTypeFileList:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p ParameterType) IsObject() bool {
+	//exhaustive:ignore
+	switch p {
+	case ParameterTypeObjectFromFile,
+		ParameterTypeObjectListFromFile,
+		ParameterTypeObjectListFromFiles:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p ParameterType) IsKeyValue() bool {
+	//exhaustive:ignore
+	switch p {
+	case ParameterTypeKeyValue:
+		return true
+	default:
+		return false
+	}
+}
+
+func (c ParameterType) IsObjectList() bool {
+	//exhaustive:ignore
+	switch c {
+	case ParameterTypeObjectListFromFile,
+		ParameterTypeObjectListFromFiles:
 		return true
 	default:
 		return false

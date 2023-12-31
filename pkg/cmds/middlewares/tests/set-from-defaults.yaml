@@ -20,6 +20,63 @@
       values:
         param1: "defaultVal"
 
+- name: "Single layer with list type default"
+  description: "Single layer with default values should result in a single layer with these values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "stringList"
+          default: ["defaultVal1", "defaultVal2"]
+  parsedLayers:
+    - name: "layer1"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: ["defaultVal1", "defaultVal2"]
+
+- name: "Single layer with objectFromFile type default"
+  description: "Single layer with default values should result in a single layer with these values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "objectFromFile"
+          default:
+            file: "test.json"
+            key: "key1"
+  parsedLayers:
+    - name: "layer1"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1:
+          file: "test.json"
+          key: "key1"
+
+- name: "Single layer with objectListFromFile type default"
+  description: "Single layer with default values should result in a single layer with these values"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "objectListFromFile"
+          default:
+            - file: "test.json"
+              key: "key1"
+            - file: "test2.json"
+              key: "key2"
+  parsedLayers:
+    - name: "layer1"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1:
+          - file: "test.json"
+            key: "key1"
+          - file: "test2.json"
+            key: "key2"
+
 - name: "Layer with existing values"
   parameterLayers:
     - name: "layer1"

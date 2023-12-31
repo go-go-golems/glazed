@@ -46,28 +46,10 @@ func TestSetFromDefaults(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 
-				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
 			}
 		})
 	}
-}
-
-func testExpectedOutputs(t *testing.T, expectedLayers []helpers.TestExpectedLayer, parsedLayers *layers.ParsedLayers) {
-	expectedLayers_ := map[string]helpers.TestExpectedLayer{}
-	for _, l_ := range expectedLayers {
-		expectedLayers_[l_.Name] = l_
-		l, ok := parsedLayers.Get(l_.Name)
-		require.True(t, ok)
-
-		actual := l.Parameters.ToMap()
-		assert.Equal(t, l_.Values, actual)
-	}
-
-	parsedLayers.ForEach(func(key string, l *layers.ParsedLayer) {
-		if _, ok := expectedLayers_[key]; !ok {
-			t.Errorf("did not expect layer %s to be present", key)
-		}
-	})
 }
 
 type updateFromMapTest struct {
@@ -96,7 +78,7 @@ func TestUpdateFromMap(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
 			}
 		})
 	}
@@ -123,7 +105,7 @@ func TestUpdateFromMapAsDefault(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
 			}
 		})
 	}
@@ -164,7 +146,7 @@ func TestMultiUpdateFromMap(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
 			}
 		})
 	}
@@ -219,7 +201,7 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 
-				testExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
 			}
 		})
 	}

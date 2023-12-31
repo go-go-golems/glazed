@@ -56,7 +56,7 @@ func (pds *ParameterDefinitions) GatherArguments(
 
 		v := []string{args[argsIdx]}
 
-		if IsListParameter(argument.Type) {
+		if argument.Type.IsList() {
 			v = args[argsIdx:]
 			argsIdx = len(args)
 		} else {

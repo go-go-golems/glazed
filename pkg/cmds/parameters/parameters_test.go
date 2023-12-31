@@ -90,8 +90,8 @@ func TestParameterTypes(t *testing.T) {
 	for _, test := range testParameterTypeTests {
 		t.Run(test.Type, func(t *testing.T) {
 			type_ := ParameterType(test.Type)
-			assert.Equal(t, test.IsList, IsListParameter(type_))
-			assert.Equal(t, test.IsFileLoading, IsFileLoadingParameter(type_, test.Value))
+			assert.Equal(t, test.IsList, type_.IsList())
+			assert.Equal(t, test.IsFileLoading, type_.IsFileLoading(test.Value))
 		})
 	}
 }

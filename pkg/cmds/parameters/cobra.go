@@ -96,7 +96,7 @@ func (pds *ParameterDefinitions) addArgumentsToCobraCommand(cmd *cobra.Command) 
 			hadOptional = true
 		}
 		maxArgs++
-		if IsListParameter(argument.Type) {
+		if argument.Type.IsList() {
 			maxArgs = -1
 		}
 
