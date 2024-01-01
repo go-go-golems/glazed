@@ -7,7 +7,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
@@ -36,32 +35,6 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	list.Reverse(verbs)
 
 	return verbs
-}
-
-// CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
-// It can be used to overload the default middlewares for cobra commands
-type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error)
-
-func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
-	middlewares_ := []cmd_middlewares.Middleware{
-		cmd_middlewares.ParseFromCobraCommand(cmd,
-			parameters.WithParseStepSource("cobra"),
-		),
-		cmd_middlewares.GatherArguments(args,
-			parameters.WithParseStepSource("arguments"),
-		),
-	}
-
-	if commandSettings.LoadParametersFromFile != "" {
-		middlewares_ = append(middlewares_,
-			cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
-	}
-
-	middlewares_ = append(middlewares_,
-		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
-	)
-
-	return middlewares_, nil
 }
 
 func BuildCobraCommandFromCommandAndFunc(
@@ -325,6 +298,44 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraParserOption) (*cobra.Command, error) {
+	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
+		ctx context.Context,
+		parsedLayers *layers.ParsedLayers,
+	) error {
+		glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+		if !ok {
+			return errors.New("glazed layer not found")
+		}
+		gp, err := settings.SetupTableProcessor(glazedLayer)
+		cobra.CheckErr(err)
+
+		_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
+		cobra.CheckErr(err)
+
+		err = cmd_.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
+		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
+			return nil
+		}
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
+
+		// Close will run the TableMiddlewares
+		err = gp.Close(ctx)
+		cobra.CheckErr(err)
+
+		return nil
+	},
+		options...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
+}
+
 func BuildCobraCommandFromCommand(
 	command cmds.Command,
 	options ...CobraParserOption,
@@ -443,7 +454,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*glazed_middlewares.Tab
 }
 
 // AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
-
+// the glazed processing layer to their CLI flags.
 func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeParameterLayerOption) error {
 	gpl, err := settings.NewGlazedParameterLayers(options...)
 	if err != nil {
@@ -451,42 +462,4 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 	}
 
 	return gpl.AddLayerToCobraCommand(cmd)
-}
-
-func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraParserOption) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
-		ctx context.Context,
-		parsedLayers *layers.ParsedLayers,
-	) error {
-		glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
-		if !ok {
-			return errors.New("glazed layer not found")
-		}
-		gp, err := settings.SetupTableProcessor(glazedLayer)
-		cobra.CheckErr(err)
-
-		_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
-		cobra.CheckErr(err)
-
-		err = cmd_.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
-		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			return nil
-		}
-		if err != context.Canceled {
-			cobra.CheckErr(err)
-		}
-
-		// Close will run the TableMiddlewares
-		err = gp.Close(ctx)
-		cobra.CheckErr(err)
-
-		return nil
-	},
-		options...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
 }

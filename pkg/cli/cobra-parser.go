@@ -5,8 +5,35 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/spf13/cobra"
 )
+
+// CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
+// It can be used to overload the default middlewares for cobra commands
+type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error)
+
+func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
+	middlewares_ := []cmd_middlewares.Middleware{
+		cmd_middlewares.ParseFromCobraCommand(cmd,
+			parameters.WithParseStepSource("cobra"),
+		),
+		cmd_middlewares.GatherArguments(args,
+			parameters.WithParseStepSource("arguments"),
+		),
+	}
+
+	if commandSettings.LoadParametersFromFile != "" {
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+	}
+
+	middlewares_ = append(middlewares_,
+		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+	)
+
+	return middlewares_, nil
+}
 
 // CobraParser takes a CommandDescription, and hooks it up to a cobra command.
 // It can then be used to parse the cobra flags and arguments back into a
