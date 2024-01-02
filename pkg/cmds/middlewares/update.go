@@ -62,6 +62,22 @@ func UpdateFromMap(m map[string]map[string]interface{}, options ...parameters.Pa
 	}
 }
 
+// UpdateFromMapFirst takes a map where the keys are layer slugs and the values are
+// maps of parameter name -> value. It calls next, and then merges the provided
+// values into the parsed layers, skipping any layers not present in layers_.
+func UpdateFromMapFirst(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := updateFromMap(layers_, parsedLayers, m, options...)
+			if err != nil {
+				return err
+			}
+
+			return next(layers_, parsedLayers)
+		}
+	}
+}
+
 // UpdateFromMapAsDefault takes a map where the keys are layer slugs and the values are
 // maps of parameter name -> value. It calls next, and then merges the provided
 // values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
@@ -74,6 +90,22 @@ func UpdateFromMapAsDefault(m map[string]map[string]interface{}, options ...para
 			}
 
 			return updateFromMapAsDefault(layers_, parsedLayers, m, options...)
+		}
+	}
+}
+
+// UpdateFromMapAsDefaultFirst takes a map where the keys are layer slugs and the values are
+// maps of parameter name -> value. It calls next, and then merges the provided
+// values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
+func UpdateFromMapAsDefaultFirst(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := updateFromMapAsDefault(layers_, parsedLayers, m, options...)
+			if err != nil {
+				return err
+			}
+
+			return next(layers_, parsedLayers)
 		}
 	}
 }

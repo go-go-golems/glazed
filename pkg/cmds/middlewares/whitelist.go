@@ -4,10 +4,10 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 )
 
-// WhitelistLayers only leaves the specified layers from the given ParameterLayers.
+// WhitelistLayersHandler only leaves the specified layers from the given ParameterLayers.
 // It takes a slice of layer slugs, and deletes any layers in the ParameterLayers
 // that don't match those slugs.
-func WhitelistLayers(slugs []string) HandlerFunc {
+func WhitelistLayersHandler(slugs []string) HandlerFunc {
 	slugsToKeep := map[string]interface{}{}
 	for _, s := range slugs {
 		slugsToKeep[s] = nil
@@ -26,7 +26,7 @@ func WhitelistLayers(slugs []string) HandlerFunc {
 	}
 }
 
-func WhitelistLayerParameters(parameters_ map[string][]string) HandlerFunc {
+func WhitelistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
 	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 		layersToDelete := []string{}
 		layersToUpdate := map[string]layers.ParameterLayer{}
@@ -52,10 +52,62 @@ func WhitelistLayerParameters(parameters_ map[string][]string) HandlerFunc {
 	}
 }
 
-// BlacklistLayers removes the specified layers from the given ParameterLayers.
+func WhitelistLayers(slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return WhitelistLayersHandler(slugs)(layers_, parsedLayers)
+		}
+	}
+}
+
+func WhitelistLayersFirst(slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := WhitelistLayersHandler(slugs)(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return next(layers_, parsedLayers)
+		}
+	}
+}
+
+func WhitelistLayerParameters(parameters_ map[string][]string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return WhitelistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+		}
+	}
+}
+
+func WhitelistLayerParametersFirst(parameters_ map[string][]string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := WhitelistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return next(layers_, parsedLayers)
+		}
+	}
+}
+
+// BlacklistLayersHandler removes the specified layers from the given ParameterLayers.
 // It takes a slice of layer slugs, and deletes any layers in the ParameterLayers
 // that match those slugs.
-func BlacklistLayers(slugs []string) HandlerFunc {
+func BlacklistLayersHandler(slugs []string) HandlerFunc {
 	slugsToDelete := map[string]interface{}{}
 	for _, s := range slugs {
 		slugsToDelete[s] = nil
@@ -74,7 +126,7 @@ func BlacklistLayers(slugs []string) HandlerFunc {
 	}
 }
 
-func BlacklistLayerParameters(parameters_ map[string][]string) HandlerFunc {
+func BlacklistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
 	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 		layersToDelete := []string{}
 		layersToUpdate := map[string]layers.ParameterLayer{}
@@ -96,6 +148,62 @@ func BlacklistLayerParameters(parameters_ map[string][]string) HandlerFunc {
 			layers_.Set(key, l)
 		}
 		return nil
+	}
+}
+
+// BlacklistLayers is a middleware that removes the given layers from ParameterLayers after running `next`.
+func BlacklistLayers(slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return BlacklistLayersHandler(slugs)(layers_, parsedLayers)
+		}
+	}
+}
+
+// BlacklistLayersFirst is a middleware that removes the given layers from ParameterLayers before running `next`.
+func BlacklistLayersFirst(slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return BlacklistLayersHandler(slugs)(layers_, parsedLayers)
+		}
+	}
+}
+
+// BlacklistLayerParameters is a middleware that removes the given parameters from ParameterLayers after running `next`.
+func BlacklistLayerParameters(parameters_ map[string][]string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return BlacklistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+		}
+	}
+}
+
+// BlacklistLayerParametersFirst is a middleware that removes the given parameters from ParameterLayers before running `next`.
+func BlacklistLayerParametersFirst(parameters_ map[string][]string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := BlacklistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return next(layers_, parsedLayers)
+		}
 	}
 }
 
@@ -138,11 +246,11 @@ func WrapWithLayerModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware)
 // It makes it possible to apply a subset of middlewares to only
 // certain restricted layers.
 func WrapWithWhitelistedLayers(slugs []string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(WhitelistLayers(slugs), nextMiddlewares...)
+	return WrapWithLayerModifyingHandler(WhitelistLayersHandler(slugs), nextMiddlewares...)
 }
 
 func WrapWithWhitelistedParameterLayers(parameters_ map[string][]string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(WhitelistLayerParameters(parameters_), nextMiddlewares...)
+	return WrapWithLayerModifyingHandler(WhitelistLayerParametersHandler(parameters_), nextMiddlewares...)
 }
 
 // WrapWithBlacklistedLayers wraps a middleware that restricts layers
@@ -150,9 +258,9 @@ func WrapWithWhitelistedParameterLayers(parameters_ map[string][]string, nextMid
 // It makes it possible to apply a subset of middlewares to only
 // certain restricted layers.
 func WrapWithBlacklistedLayers(slugs []string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(BlacklistLayers(slugs), nextMiddlewares...)
+	return WrapWithLayerModifyingHandler(BlacklistLayersHandler(slugs), nextMiddlewares...)
 }
 
 func WrapWithBlacklistedParameterLayers(parameters_ map[string][]string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(BlacklistLayerParameters(parameters_), nextMiddlewares...)
+	return WrapWithLayerModifyingHandler(BlacklistLayerParametersHandler(parameters_), nextMiddlewares...)
 }
