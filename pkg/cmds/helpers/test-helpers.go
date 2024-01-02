@@ -184,7 +184,7 @@ func NewTestParsedLayer(pl layers.ParameterLayer, l TestParsedLayer) *layers.Par
 	return ret
 }
 
-func NewTestParsedLayers(pls *layers.ParameterLayers, ls []TestParsedLayer) *layers.ParsedLayers {
+func NewTestParsedLayers(pls *layers.ParameterLayers, ls ...TestParsedLayer) *layers.ParsedLayers {
 	ret := layers.NewParsedLayers()
 	for _, l := range ls {
 		pl, ok := pls.Get(l.Name)

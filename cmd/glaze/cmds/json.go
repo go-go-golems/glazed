@@ -66,7 +66,7 @@ func NewJsonCommand() (*JsonCommand, error) {
 					parameters.WithRequired(true),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),

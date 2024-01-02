@@ -182,7 +182,7 @@ func TestSingleLayer(t *testing.T) {
 	require.NoError(t, err2)
 
 	d := cmds.NewCommandDescription("test",
-		cmds.WithLayers(
+		cmds.WithLayersList(
 			layer,
 		),
 	)

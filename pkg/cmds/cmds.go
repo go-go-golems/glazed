@@ -49,11 +49,17 @@ func WithLong(s string) CommandDescriptionOption {
 	}
 }
 
-func WithLayers(ls ...layers.ParameterLayer) CommandDescriptionOption {
+func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range ls {
 			c.Layers.Set(l.GetSlug(), l)
 		}
+	}
+}
+
+func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layers.Merge(ls)
 	}
 }
 

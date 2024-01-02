@@ -77,7 +77,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayers(defaultLayer))
+	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -174,7 +174,7 @@ func TestOneOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayers(defaultLayer))
+	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 
@@ -349,7 +349,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayers(defaultLayer))
+	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
 	err = defaultLayer.AddLayerToCobraCommand(cmd)
 	require.Nil(t, err)
 

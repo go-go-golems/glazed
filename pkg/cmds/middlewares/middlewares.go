@@ -48,7 +48,8 @@ func Chain(ms ...Middleware) Middleware {
 //     For example, executeMiddlewares(SetFromArgs(), SetFromEnv(), SetFromDefaults())
 //     will first set the defaults, then the environment value, and finally the command line arguments.
 //   - if you want to modify the layers before parsing, use the
-//     call `next` last. This means that the lower level firmwares
+//     call `next` last. This means that the middlewares further down the list will
+//     get the newly updated ParameterLayers and thus potentially restrict which parameters they parse.
 func ExecuteMiddlewares(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers, middlewares ...Middleware) error {
 	handler := Identity
 	for _, m_ := range middlewares {

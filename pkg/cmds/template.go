@@ -29,6 +29,19 @@ type TemplateCommandDescription struct {
 	Template  string                            `yaml:"template"`
 }
 
+func NewTemplateCommand(name string, template string, options ...CommandDescriptionOption) *TemplateCommand {
+	tc := &TemplateCommand{
+		CommandDescription: NewCommandDescription(name),
+		Template:           template,
+	}
+
+	for _, option := range options {
+		option(tc.Description())
+	}
+
+	return tc
+}
+
 var _ WriterCommand = (*TemplateCommand)(nil)
 
 func (t *TemplateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
@@ -38,7 +51,7 @@ func (t *TemplateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layer
 		return errors.Wrap(err, "failed to parse template")
 	}
 
-	err = tmpl.Execute(w, parsedLayers.GetAllParsedParameters())
+	err = tmpl.Execute(w, parsedLayers.GetDataMap())
 	if err != nil {
 		return errors.Wrap(err, "failed to execute template")
 	}
@@ -87,8 +100,8 @@ func (tcl *TemplateCommandLoader) LoadCommandFromYAML(
 	options_ := []CommandDescriptionOption{
 		WithShort(tcd.Short),
 		WithLong(tcd.Long),
-		WithLayers(tcd.Layers.AsList()...),
-		WithLayers(defaultLayer),
+		WithLayersList(tcd.Layers.AsList()...),
+		WithLayersList(defaultLayer),
 		WithLayout(&layout.Layout{
 			Sections: tcd.Layout,
 		}),

@@ -61,7 +61,7 @@ func NewYamlCommand() (*YamlCommand, error) {
 					parameters.WithRequired(true),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),

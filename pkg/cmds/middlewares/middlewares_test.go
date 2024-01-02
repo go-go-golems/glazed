@@ -34,7 +34,7 @@ func TestSetFromDefaults(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
 			middleware := middlewares.SetFromDefaults()
 			err := middleware(func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
@@ -67,7 +67,7 @@ func TestUpdateFromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
 			err = middlewares.ExecuteMiddlewares(
 				layers_, parsedLayers,
@@ -94,7 +94,7 @@ func TestUpdateFromMapAsDefault(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
 			err = middlewares.ExecuteMiddlewares(
 				layers_, parsedLayers,
@@ -126,7 +126,7 @@ func TestMultiUpdateFromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
 			middlewares_ := []middlewares.Middleware{}
 			for _, m := range tt.UpdateMaps {

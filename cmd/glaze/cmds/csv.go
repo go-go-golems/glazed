@@ -68,7 +68,7 @@ func NewCsvCommand() (*CsvCommand, error) {
 					parameters.WithDefault(false),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),

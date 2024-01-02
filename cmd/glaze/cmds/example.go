@@ -51,7 +51,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 					parameters.WithDefault(false),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),

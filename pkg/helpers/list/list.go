@@ -22,3 +22,7 @@ func SliceToCSV[T any](items []T) string {
 	}
 	return sb.String()
 }
+
+func Prepend[T any](l []T, elts ...T) []T {
+	return append(elts, l...)
+}
