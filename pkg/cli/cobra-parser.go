@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
@@ -10,9 +11,17 @@ import (
 )
 
 // CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
-// It can be used to overload the default middlewares for cobra commands
+// It can be used to overload the default middlewares for cobra commands.
+// It is mostly used to add a "load from json" layer set in the GlazedCommandSettings.
 type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error)
 
+// CobraCommandDefaultMiddlewares is the default implementation for creating
+// the middlewares used in a Cobra command. It handles parsing parameters
+// from Cobra flags, command line arguments, environment variables, and
+// default values. The middlewares gather all these parameters into a
+// ParsedParameters object.
+//
+// If the commandSettings specify parameters to be loaded from a file, this gets added as a middleware.
 func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
 	middlewares_ := []cmd_middlewares.Middleware{
 		cmd_middlewares.ParseFromCobraCommand(cmd,
@@ -43,12 +52,16 @@ func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd 
 //
 // This returns a CobraParser that can be used to parse the registered layers
 // from the description.
-//
-// NOTE(manuel, 2023-09-18) Now that I've removed the parserFunc, this feels a bit unnecessary too
-// Or it could be something that is actually an interface on top of Command, like a CobraCommand.
 type CobraParser struct {
-	Cmd             *cobra.Command
-	description     *cmds.CommandDescription
+	Cmd         *cobra.Command
+	description *cmds.CommandDescription
+	// middlewaresFunc is called after the command has been executed, once the
+	// GlazedCommandSettings struct has been filled. At this point, cobra has done the parsing
+	// of CLI flags and arguments, but these haven't yet been parsed into ParsedLayers
+	// by the glazed framework.
+	//
+	// This hooks allows the implementor to specify additional ways of loading parameters
+	// (for example, sqleton loads the dbt and sql connection parameters from env and viper as well).
 	middlewaresFunc CobraMiddlewaresFunc
 }
 
@@ -61,6 +74,9 @@ func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserO
 	}
 }
 
+// NewCobraParserFromCommandDescription creates a new CobraParser instance from a
+// CommandDescription, initializes the underlying cobra.Command, and adds all the
+// parameters specified in the layers CommandDescription to the cobra command.
 func NewCobraParserFromCommandDescription(
 	description *cmds.CommandDescription,
 	options ...CobraParserOption,
@@ -91,6 +107,8 @@ func NewCobraParserFromCommandDescription(
 	}
 	description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 
+	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the layers/parameters that get added to the CLI
+	// If we want to remove some parameters from the CLI args (for example some output settings or so)
 	err = description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
 		// check that layer is a CobraParameterLayer
 		// if not, return an error
@@ -142,6 +160,23 @@ func (c *CobraParser) Parse(
 	}
 
 	err = cmd_middlewares.ExecuteMiddlewares(c.description.Layers, parsedLayers, middlewares_...)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedLayers, nil
+}
+
+func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ *layers.ParameterLayers) (
+	*layers.ParsedLayers,
+	error,
+) {
+	middlewares := []cmd_middlewares.Middleware{
+		cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")),
+		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+	}
+	parsedLayers := layers.NewParsedLayers()
+	err := cmd_middlewares.ExecuteMiddlewares(layers_, parsedLayers, middlewares...)
 	if err != nil {
 		return nil, err
 	}

@@ -406,25 +406,6 @@ func AddCommandsToRootCommand(
 	return nil
 }
 
-func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ []layers.CobraParameterLayer) (
-	*layers.ParsedLayers,
-	error,
-) {
-	// TODO(manuel, 2023-12-28) Use middlewares to do the parsing here
-	options := []layers.ParsedLayersOption{}
-
-	for _, layer := range layers_ {
-		ps, err := layer.ParseLayerFromCobraCommand(cmd)
-		if err != nil {
-			return nil, err
-		}
-		options = append(options, layers.WithParsedLayer(layer.GetSlug(), ps))
-	}
-	ret := layers.NewParsedLayers(options...)
-
-	return ret, nil
-}
-
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
 // the glazed processing layer.
 //
