@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,8 +131,10 @@ func TestMultiUpdateFromMap(t *testing.T) {
 			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
 			middlewares_ := []middlewares.Middleware{}
+			// we want the first updates to be handled as the last middlewares, since middlewares
+			// at the end are executed first
 			for _, m := range tt.UpdateMaps {
-				middlewares_ = append(middlewares_, middlewares.UpdateFromMap(m))
+				middlewares_ = list.Prepend(middlewares_, middlewares.UpdateFromMap(m))
 			}
 			err = middlewares.ExecuteMiddlewares(
 				layers_, parsedLayers,
@@ -177,8 +180,8 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 
 			ms_ := []middlewares.Middleware{}
 
-			if tt.BeforeUpdateMaps != nil {
-				ms_ = append(ms_, middlewares.UpdateFromMap(tt.BeforeUpdateMaps))
+			if tt.AfterUpdateMaps != nil {
+				ms_ = append(ms_, middlewares.UpdateFromMap(tt.AfterUpdateMaps))
 			}
 			if tt.BlacklistedUpdateMaps != nil {
 				ms_ = append(ms_, middlewares.WrapWithBlacklistedLayers(tt.BlacklistedSlugs,
@@ -188,8 +191,8 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 				ms_ = append(ms_, middlewares.WrapWithWhitelistedLayers(tt.WhitelistedSlugs,
 					middlewares.UpdateFromMap(tt.WhitelistedUpdateMaps)))
 			}
-			if tt.AfterUpdateMaps != nil {
-				ms_ = append(ms_, middlewares.UpdateFromMap(tt.AfterUpdateMaps))
+			if tt.BeforeUpdateMaps != nil {
+				ms_ = append(ms_, middlewares.UpdateFromMap(tt.BeforeUpdateMaps))
 			}
 
 			err = middlewares.ExecuteMiddlewares(
