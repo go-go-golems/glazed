@@ -19,6 +19,10 @@
     - name: "layer1"
       values:
         param1: "defaultVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
 
 - name: "Single layer with list type default"
   description: "Single layer with default values should result in a single layer with these values"
@@ -34,6 +38,10 @@
     - name: "layer1"
       values:
         param1: ["defaultVal1", "defaultVal2"]
+      logs:
+        param1:
+          - source: "defaults"
+            value: ["defaultVal1", "defaultVal2"]
 
 - name: "Single layer with objectFromFile type default"
   description: "Single layer with default values should result in a single layer with these values"
@@ -76,6 +84,14 @@
             key: "key1"
           - file: "test2.json"
             key: "key2"
+      logs:
+        param1:
+          - source: "defaults"
+            value:
+              - file: "test.json"
+                key: "key1"
+              - file: "test2.json"
+                key: "key2"
 
 - name: "Layer with existing values"
   parameterLayers:

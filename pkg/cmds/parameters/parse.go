@@ -86,7 +86,7 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 		} else {
 			if p.Default != nil {
 				options_ := append(options, WithParseStepSource("default"))
-				ret.Set(*p.Default, options_...)
+				ret.Update(*p.Default, options_...)
 			}
 			return ret, nil
 		}
@@ -334,7 +334,7 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 	options_ := append(options, WithParseStepMetadata(map[string]interface{}{
 		"parsed-strings": v,
 	}))
-	ret.Set(v_, options_...)
+	ret.Update(v_, options_...)
 	return ret, nil
 }
 
@@ -344,7 +344,7 @@ func parseFromFileName(fileName string, p *ParameterDefinition, options ...Parse
 	}
 	if fileName == "" {
 		if p.Default != nil {
-			ret.Set(p.Default, append(options, WithParseStepSource("default"))...)
+			ret.Update(p.Default, append(options, WithParseStepSource("default"))...)
 		}
 		return ret, nil
 	}
@@ -447,14 +447,14 @@ func (p *ParameterDefinition) ParseFromReader(
 			if err != nil {
 				return nil, err
 			}
-			ret.Set(ret_, options...)
+			ret.Update(ret_, options...)
 			return ret, nil
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&ret_)
 			if err != nil {
 				return nil, err
 			}
-			ret.Set(ret_, options...)
+			ret.Update(ret_, options...)
 			return ret, nil
 		} else {
 			scanner := bufio.NewScanner(f)
@@ -470,9 +470,9 @@ func (p *ParameterDefinition) ParseFromReader(
 				}
 				// remove headers
 				ret_ = ret_[1:]
-				ret.Set(ret_, options...)
+				ret.Update(ret_, options...)
 			} else {
-				ret.Set(ret_, options...)
+				ret.Update(ret_, options...)
 			}
 		}
 
@@ -482,10 +482,10 @@ func (p *ParameterDefinition) ParseFromReader(
 		object := interface{}(nil)
 		if filename == "-" || strings.HasSuffix(filename, ".json") {
 			err = json.NewDecoder(f).Decode(&object)
-			ret.Set(object, options...)
+			ret.Update(object, options...)
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&object)
-			ret.Set(object, options...)
+			ret.Update(object, options...)
 		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 			objects, err := parseObjectListFromCSV(f, filename)
 			if err != nil {
@@ -495,7 +495,7 @@ func (p *ParameterDefinition) ParseFromReader(
 				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
 			}
 			object = objects[0]
-			ret.Set(object, options...)
+			ret.Update(object, options...)
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
@@ -516,13 +516,13 @@ func (p *ParameterDefinition) ParseFromReader(
 			if err != nil {
 				return nil, err
 			}
-			ret.Set(ret_, options...)
+			ret.Update(ret_, options...)
 		} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 			err = yaml.NewDecoder(f).Decode(&ret_)
 			if err != nil {
 				return nil, err
 			}
-			ret.Set(ret_, options...)
+			ret.Update(ret_, options...)
 		} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 			objects, err := parseObjectListFromCSV(f, filename)
 			if err != nil {
@@ -531,7 +531,7 @@ func (p *ParameterDefinition) ParseFromReader(
 			if len(objects) != 1 {
 				return nil, errors.Errorf("File %s does not contain exactly one object", filename)
 			}
-			ret.Set(objects[0], options...)
+			ret.Update(objects[0], options...)
 		} else {
 			return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 		}
@@ -544,7 +544,7 @@ func (p *ParameterDefinition) ParseFromReader(
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not read from stdin")
 		}
-		ret.Set(b.String(), options...)
+		ret.Update(b.String(), options...)
 		return ret, nil
 
 	default:
@@ -577,7 +577,7 @@ func (p *ParameterDefinition) parseObjectListFromReader(
 			}
 			objectList = []interface{}{object}
 		}
-		ret.Set(objectList, options...)
+		ret.Update(objectList, options...)
 	} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 		b, err := io.ReadAll(f)
 		if err != nil {
@@ -593,7 +593,7 @@ func (p *ParameterDefinition) parseObjectListFromReader(
 			objectList = []interface{}{object}
 		}
 
-		ret.Set(objectList, options...)
+		ret.Update(objectList, options...)
 	} else if strings.HasSuffix(filename, ".csv") || strings.HasSuffix(filename, ".tsv") {
 		var err error
 		objectList, err = parseObjectListFromCSV(f, filename)
@@ -601,7 +601,7 @@ func (p *ParameterDefinition) parseObjectListFromReader(
 			return nil, err
 		}
 
-		ret.Set(objectList, options...)
+		ret.Update(objectList, options...)
 	} else {
 		return nil, errors.Errorf("Could not parse file %s: unknown file type", filename)
 	}

@@ -27,7 +27,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 			if p.Default != nil {
 				options_ := append(options, WithParseStepSource("default"))
 
-				parsed.Set(*p.Default, options_...)
+				parsed.Update(*p.Default, options_...)
 				ret.Set(p.Name, parsed)
 			}
 			continue
@@ -43,29 +43,29 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 		//exhaustive:ignore
 		switch p.Type {
 		case ParameterTypeString:
-			parsed.Set(viper.GetString(flagName), options...)
+			parsed.Update(viper.GetString(flagName), options...)
 		case ParameterTypeInteger:
-			parsed.Set(viper.GetInt(flagName), options...)
+			parsed.Update(viper.GetInt(flagName), options...)
 		case ParameterTypeFloat:
-			parsed.Set(viper.GetFloat64(flagName), options...)
+			parsed.Update(viper.GetFloat64(flagName), options...)
 		case ParameterTypeBool:
-			parsed.Set(viper.GetBool(flagName), options...)
+			parsed.Update(viper.GetBool(flagName), options...)
 		case ParameterTypeStringList:
-			parsed.Set(viper.GetStringSlice(flagName), options...)
+			parsed.Update(viper.GetStringSlice(flagName), options...)
 		case ParameterTypeIntegerList:
-			parsed.Set(viper.GetIntSlice(flagName), options...)
+			parsed.Update(viper.GetIntSlice(flagName), options...)
 		case ParameterTypeKeyValue:
-			parsed.Set(viper.GetStringMapString(flagName), options...)
+			parsed.Update(viper.GetStringMapString(flagName), options...)
 		case ParameterTypeStringListFromFile:
-			parsed.Set(viper.GetStringSlice(flagName), options...)
+			parsed.Update(viper.GetStringSlice(flagName), options...)
 		case ParameterTypeStringFromFile:
 			// not sure if this is the best here, maybe it should be the filename?
-			parsed.Set(viper.GetString(flagName), options...)
+			parsed.Update(viper.GetString(flagName), options...)
 		case ParameterTypeChoice:
 			// probably should do some checking here
-			parsed.Set(viper.GetString(flagName), options...)
+			parsed.Update(viper.GetString(flagName), options...)
 		case ParameterTypeObjectFromFile:
-			parsed.Set(viper.GetStringMap(flagName), options...)
+			parsed.Update(viper.GetStringMap(flagName), options...)
 			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
 			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)

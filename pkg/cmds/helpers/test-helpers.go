@@ -1,7 +1,9 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,8 +141,96 @@ type TestParsedLayer struct {
 }
 
 type TestExpectedLayer struct {
-	Name   string
-	Values map[string]interface{}
+	Name   string                            `yaml:"name"`
+	Values map[string]interface{}            `yaml:"values"`
+	Logs   map[string][]parameters.ParseStep `yaml:"logs"`
+}
+
+type TestMiddlewareName string
+
+const TestMiddlewareSetFromDefaults = "setFromDefaults"
+const TestMiddlewareUpdateFromMap = "updateFromMap"
+const TestMiddlewareUpdateFromMapAsDefault = "updateFromMapAsDefault"
+const TestMiddlewareUpdateFromEnv = "updateFromEnv"
+const TestWhitelistLayers = "whitelistLayers"
+const TestWhitelistLayersFirst = "whitelistLayersFirst"
+const TestWhitelistLayerParameters = "whitelistLayerParameters"
+const TestWhitelistLayerParametersFirst = "whitelistLayerParametersFirst"
+const TestBlacklistLayers = "blacklistLayers"
+const TestBlacklistLayersFirst = "blacklistLayersFirst"
+const TestBlacklistLayerParameters = "blacklistLayerParameters"
+const TestBlacklistLayerParametersFirst = "blacklistLayerParametersFirst"
+
+type TestParseStepOptionName string
+
+const TestParseStepOptionSource = "source"
+const TestParseStepOptionValue = "value"
+const TestParseStepOptionMetadata = "metadata"
+
+type TestParseStepOption struct {
+	Name  TestParseStepOptionName `yaml:"name"`
+	Value interface{}             `yaml:"value"`
+}
+
+type TestMiddleware struct {
+	Name       TestMiddlewareName                 `yaml:"name"`
+	Options    []TestParseStepOption              `yaml:"options"`
+	Map        *map[string]map[string]interface{} `yaml:"map"`
+	Prefix     *string                            `yaml:"prefix"`
+	Layers     *[]string                          `yaml:"layers"`
+	Parameters *map[string][]string               `yaml:"parameters"`
+}
+
+type TestMiddlewares []TestMiddleware
+
+func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
+	ret := []middlewares.Middleware{}
+	for _, m := range t {
+		options := []parameters.ParseStepOption{}
+		for _, o := range m.Options {
+			switch o.Name {
+			case TestParseStepOptionSource:
+				options = append(options, parameters.WithParseStepSource(o.Value.(string)))
+			case TestParseStepOptionValue:
+				options = append(options, parameters.WithParseStepValue(o.Value))
+			case TestParseStepOptionMetadata:
+				options = append(options, parameters.WithParseStepMetadata(o.Value.(map[string]interface{})))
+			default:
+				return nil, fmt.Errorf("unknown option name %s", o.Name)
+			}
+		}
+
+		switch m.Name {
+		case TestMiddlewareSetFromDefaults:
+			ret = append(ret, middlewares.SetFromDefaults(options...))
+		case TestMiddlewareUpdateFromMap:
+			ret = append(ret, middlewares.UpdateFromMap(*m.Map, options...))
+		case TestMiddlewareUpdateFromMapAsDefault:
+			ret = append(ret, middlewares.UpdateFromMapAsDefault(*m.Map, options...))
+		case TestMiddlewareUpdateFromEnv:
+			ret = append(ret, middlewares.UpdateFromEnv(*m.Prefix, options...))
+		case TestWhitelistLayers:
+			ret = append(ret, middlewares.WhitelistLayers(*m.Layers))
+		case TestWhitelistLayersFirst:
+			ret = append(ret, middlewares.WhitelistLayersFirst(*m.Layers))
+		case TestWhitelistLayerParameters:
+			ret = append(ret, middlewares.WhitelistLayerParameters(*m.Parameters))
+		case TestWhitelistLayerParametersFirst:
+			ret = append(ret, middlewares.WhitelistLayerParametersFirst(*m.Parameters))
+		case TestBlacklistLayers:
+			ret = append(ret, middlewares.BlacklistLayers(*m.Layers))
+		case TestBlacklistLayersFirst:
+			ret = append(ret, middlewares.BlacklistLayersFirst(*m.Layers))
+		case TestBlacklistLayerParameters:
+			ret = append(ret, middlewares.BlacklistLayerParameters(*m.Parameters))
+		case TestBlacklistLayerParametersFirst:
+			ret = append(ret, middlewares.BlacklistLayerParametersFirst(*m.Parameters))
+		default:
+			return nil, fmt.Errorf("unknown middleware name %s", m.Name)
+		}
+	}
+
+	return ret, nil
 }
 
 // NewTestParameterLayer is a helper function to create a ParameterLayer from parameterDefinition
@@ -206,6 +296,12 @@ func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parse
 		actual, err := l.Parameters.ToInterfaceMap()
 		require.NoError(t, err)
 		assert.Equal(t, l_.Values, actual)
+
+		for k, v := range l_.Logs {
+			actual, ok := l.Parameters.Get(k)
+			require.True(t, ok)
+			assert.Equal(t, v, actual.Log)
+		}
 	}
 
 	parsedLayers.ForEach(func(key string, l *layers.ParsedLayer) {

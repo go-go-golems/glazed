@@ -36,7 +36,7 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 			}
 			if !ok {
 				if p.Default != nil {
-					parsed.Set(*p.Default)
+					parsed.Update(*p.Default)
 					ret.Set(p.Name, parsed)
 					return nil
 				}
@@ -46,9 +46,10 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 				}
 			}
 		}
-		options_ := append(options, WithParseStepMetadata(map[string]interface{}{
-			"map-value": v_,
-		}))
+		options_ := append(options,
+			WithParseStepMetadata(map[string]interface{}{
+				"map-value": v_,
+			}))
 
 		// TODO(manuel, 2023-12-28) We need to check if nil means remove the value or use the default or whatever that means
 		err := p.CheckValueValidity(v_)
@@ -57,7 +58,7 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 		}
 
 		// NOTE(manuel, 2023-12-22) We might want to pass in that name instead of just saying from-map
-		parsed.Set(v_, options_...)
+		parsed.Update(v_, options_...)
 		ret.Set(p.Name, parsed)
 		return nil
 	})

@@ -28,7 +28,7 @@ func WithParsedParameterValue(
 		p := &parameters.ParsedParameter{
 			ParameterDefinition: pd,
 		}
-		p.Set(value, options...)
+		p.Update(value, options...)
 		pl.Parameters.Set(key, p)
 
 		return nil

@@ -37,8 +37,10 @@ func Chain(ms ...Middleware) Middleware {
 // It starts with an initial empty handler, then iteratively wraps it with each middleware.
 // Finally, it calls the resulting handler with the provided layers and parsedLayers.
 //
-// Middlewares basically get executed in the order they are provided.
-// [f1, f2, f3] will be executed as f3(f2(f1(handler)))
+// Middlewares basically get executed in the reverse order they are provided,
+// which means the first given middleware's handler will be called first.
+//
+// [f1, f2, f3] will be executed as f1(f2(f3(handler)))(layers_, parsedLayers).
 //
 // How they call the next handler is up to them, but they should always call it.
 //
@@ -52,7 +54,11 @@ func Chain(ms ...Middleware) Middleware {
 //     get the newly updated ParameterLayers and thus potentially restrict which parameters they parse.
 func ExecuteMiddlewares(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers, middlewares ...Middleware) error {
 	handler := Identity
-	for _, m_ := range middlewares {
+	reversedMiddlewares := make([]Middleware, len(middlewares))
+	for i, m_ := range middlewares {
+		reversedMiddlewares[len(middlewares)-1-i] = m_
+	}
+	for _, m_ := range reversedMiddlewares {
 		handler = m_(handler)
 	}
 

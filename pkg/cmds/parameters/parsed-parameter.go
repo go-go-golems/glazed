@@ -48,7 +48,8 @@ func NewParseStep(options ...ParseStepOption) ParseStep {
 	return ret
 }
 
-func (p *ParsedParameter) Set(value interface{}, options ...ParseStepOption) {
+// Update sets the value of the parsedParameter, and appends a new parseStep.
+func (p *ParsedParameter) Update(value interface{}, options ...ParseStepOption) {
 	p.Value = value
 	step := ParseStep{
 		Value:  value,
@@ -59,6 +60,18 @@ func (p *ParsedParameter) Set(value interface{}, options ...ParseStepOption) {
 	}
 
 	p.Log = append(p.Log, step)
+}
+
+// UpdateWithLog sets the value of the parsedParameter, and appends the given log.
+func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) {
+	p.Value = value
+	p.Log = append(p.Log, log...)
+}
+
+// Set sets the value of the parsedParameter, and manually updates the log
+func (p *ParsedParameter) Set(value interface{}, log ...ParseStep) {
+	p.Value = value
+	p.Log = log
 }
 
 func (p *ParsedParameter) Merge(v *ParsedParameter, options ...ParseStepOption) {
@@ -167,7 +180,7 @@ func (p *ParsedParameters) UpdateExistingValue(
 	if !ok {
 		return false
 	}
-	v_.Set(v, options...)
+	v_.Update(v, options...)
 	return true
 }
 
@@ -194,7 +207,22 @@ func (p *ParsedParameters) UpdateValue(
 		}
 		p.Set(key, v_)
 	}
-	v_.Set(v, options...)
+	v_.Update(v, options...)
+}
+
+func (p *ParsedParameters) UpdateWithLog(
+	key string, pd *ParameterDefinition,
+	v interface{},
+	log ...ParseStep,
+) {
+	v_, ok := p.Get(key)
+	if !ok {
+		v_ = &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+		p.Set(key, v_)
+	}
+	v_.UpdateWithLog(v, log...)
 }
 
 // SetAsDefault sets the current value of the parameter if no value has yet been set.
@@ -226,9 +254,9 @@ func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) e
 // Merge is actually more complex than it seems, other takes precedence. If the key already exists in the map,
 // we actually merge the ParsedParameter themselves, by appending the entire history of the other parameter to the
 // current one.
-func (p *ParsedParameters) Merge(other *ParsedParameters, options ...ParseStepOption) *ParsedParameters {
+func (p *ParsedParameters) Merge(other *ParsedParameters) *ParsedParameters {
 	other.ForEach(func(k string, v *ParsedParameter) {
-		p.UpdateValue(k, v.ParameterDefinition, v.Value, options...)
+		p.UpdateWithLog(k, v.ParameterDefinition, v.Value, v.Log...)
 	})
 	return p
 }

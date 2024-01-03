@@ -97,10 +97,10 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 			p := &parameters.ParsedParameter{
 				ParameterDefinition: pd,
 			}
-			p.Set([]string{}, options_...)
+			p.Update([]string{}, options_...)
 			l.Parameters.Set("filter", p)
 		} else {
-			parsedFilter.Set([]string{}, options_...)
+			parsedFilter.Update([]string{}, options_...)
 		}
 	}
 

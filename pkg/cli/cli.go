@@ -37,6 +37,11 @@ func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Load the command's flags from JSON"),
 			),
+			parameters.NewParameterDefinition(
+				"print-parsed-parameters",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Print the parsed parameters"),
+			),
 		),
 	)
 	if err != nil {
@@ -51,5 +56,6 @@ type GlazedCommandSettings struct {
 	CreateAlias            string `glazed.parameter:"create-alias"`
 	CreateCliopatra        string `glazed.parameter:"create-cliopatra"`
 	PrintYAML              bool   `glazed.parameter:"print-yaml"`
+	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
 	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
 }

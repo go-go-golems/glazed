@@ -5,6 +5,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/helpers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ func TestSetFromDefaults(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
 			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
-			middleware := middlewares.SetFromDefaults()
+			middleware := middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults"))
 			err := middleware(func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 				return nil
 			})(layers_, parsedLayers)
@@ -194,6 +195,40 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 			err = middlewares.ExecuteMiddlewares(
 				layers_, parsedLayers,
 				ms_...)
+			require.NoError(t, err)
+
+			if tt.ExpectedError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+			}
+		})
+	}
+}
+
+//go:embed tests/middlewares.yaml
+var middlewaresTestsYAML string
+
+type middlewaresTest struct {
+	test        `yaml:",inline"`
+	Middlewares helpers.TestMiddlewares `yaml:"middlewares"`
+}
+
+func TestMiddlewares(t *testing.T) {
+	tests, err := yaml.LoadTestFromYAML[[]middlewaresTest](middlewaresTestsYAML)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
+			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
+
+			middlewares_, err := helpers.TestMiddlewares(tt.Middlewares).ToMiddlewares()
+			require.NoError(t, err)
+
+			err = middlewares.ExecuteMiddlewares(layers_, parsedLayers, middlewares_...)
 			require.NoError(t, err)
 
 			if tt.ExpectedError {

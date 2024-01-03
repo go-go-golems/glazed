@@ -475,7 +475,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeInteger:
@@ -483,7 +483,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeBool:
@@ -491,7 +491,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeObjectListFromFiles,
@@ -514,7 +514,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeKeyValue:
@@ -530,7 +530,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 						"flag":      flagName,
 						"emptyFlag": true,
 					}))
-				p.Set(map[string]string{}, options_...)
+				p.Update(map[string]string{}, options_...)
 				ps.Set(pd.Name, p)
 			} else {
 				v2, err := pd.ParseParameter(v, options...)
@@ -546,7 +546,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 
 		case ParameterTypeFloatList:
@@ -555,7 +555,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			p.Set(v, options...)
+			p.Update(v, options...)
 			ps.Set(pd.Name, p)
 		}
 
