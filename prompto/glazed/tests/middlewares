@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+FUNCTION_NAME=${1:-TestUpdateFromMap}
+
+echo "---"
+echo "Here are the types used to load table-driven tests from YAML:"
+echo "---"
+echo "package middlewares_test"
+oak go definitions pkg/cmds/middlewares/middlewares_test.go
+echo "---"
+echo "package helpers"
+oak go definitions pkg/cmds/helpers/test-helpers.go
+echo ""
+
+echo "---"
+echo "Example of how a test runner is defined"
+echo "---"
+oak go definitions --with-body --function-name ${FUNCTION_NAME} pkg/cmds/middlewares/middlewares_test.go
+echo ""

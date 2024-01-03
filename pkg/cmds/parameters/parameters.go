@@ -2,14 +2,14 @@ package parameters
 
 import (
 	"fmt"
+	"reflect"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
-	"github.com/go-go-golems/glazed/pkg/helpers/maps"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
-	"reflect"
-	"strings"
-	"time"
 )
 
 // ParameterDefinition is a declarative way of describing a command line parameter.
@@ -17,45 +17,17 @@ import (
 // Along with metadata (Name, Help) that is useful for help,
 // it also specifies a Type, a Default value and if it is Required.
 type ParameterDefinition struct {
-	Name      string        `yaml:"name"`
-	ShortFlag string        `yaml:"shortFlag,omitempty"`
-	Type      ParameterType `yaml:"type"`
-	Help      string        `yaml:"help,omitempty"`
-	Default   interface{}   `yaml:"default,omitempty"`
-	Choices   []string      `yaml:"choices,omitempty"`
-	Required  bool          `yaml:"required,omitempty"`
-}
-
-func (p *ParameterDefinition) String() string {
-	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
-}
-
-func (p *ParameterDefinition) Copy() *ParameterDefinition {
-	return &ParameterDefinition{
-		Name:      p.Name,
-		ShortFlag: p.ShortFlag,
-		Type:      p.Type,
-		Help:      p.Help,
-		Default:   p.Default,
-		Choices:   p.Choices,
-		Required:  p.Required,
-	}
+	Name       string        `yaml:"name"`
+	ShortFlag  string        `yaml:"shortFlag,omitempty"`
+	Type       ParameterType `yaml:"type"`
+	Help       string        `yaml:"help,omitempty"`
+	Default    *interface{}  `yaml:"default,omitempty"`
+	Choices    []string      `yaml:"choices,omitempty"`
+	Required   bool          `yaml:"required,omitempty"`
+	IsArgument bool          `yaml:"-"`
 }
 
 type ParameterDefinitionOption func(*ParameterDefinition)
-
-func NewParameterDefinition(name string, parameterType ParameterType, options ...ParameterDefinitionOption) *ParameterDefinition {
-	ret := &ParameterDefinition{
-		Name: name,
-		Type: parameterType,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
 
 func WithHelp(help string) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
@@ -71,7 +43,7 @@ func WithShortFlag(shortFlag string) ParameterDefinitionOption {
 
 func WithDefault(defaultValue interface{}) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
-		p.Default = defaultValue
+		p.Default = &defaultValue
 	}
 }
 
@@ -87,10 +59,55 @@ func WithRequired(required bool) ParameterDefinitionOption {
 	}
 }
 
-func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
-	return reflect.DeepEqual(p.Default, i)
+func WithIsArgument(isArgument bool) ParameterDefinitionOption {
+	return func(p *ParameterDefinition) {
+		p.IsArgument = isArgument
+	}
 }
 
+func NewParameterDefinition(
+	name string,
+	parameterType ParameterType,
+	options ...ParameterDefinitionOption,
+) *ParameterDefinition {
+	ret := &ParameterDefinition{
+		Name: name,
+		Type: parameterType,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func (p *ParameterDefinition) String() string {
+	return fmt.Sprintf("{Parameter: %s - %s}", p.Name, p.Type)
+}
+
+func (p *ParameterDefinition) Clone() *ParameterDefinition {
+	return &ParameterDefinition{
+		Name:      p.Name,
+		ShortFlag: p.ShortFlag,
+		Type:      p.Type,
+		Help:      p.Help,
+		Default:   p.Default,
+		Choices:   p.Choices,
+		Required:  p.Required,
+	}
+}
+
+func (p *ParameterDefinition) IsEqualToDefault(i interface{}) bool {
+	if p.Default == nil {
+		return false
+	}
+	return reflect.DeepEqual(*p.Default, i)
+}
+
+// SetDefaultFromValue sets the Default field of the ParameterDefinition
+// to the provided value. It handles nil values and dereferencing pointers.
+// The value is type checked before being set.
 func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 	// check if value is pointer, do nothing if nil, otherwise dereference
 	if value.Kind() == reflect.Ptr {
@@ -104,10 +121,12 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 		return errors.Errorf("invalid value for parameter %s: %v", p.Name, value.Interface())
 	}
 
+	v_ := value.Interface()
+
 	val := reflect.ValueOf(p).Elem()
 	f := val.FieldByName("Default")
 	if f.CanSet() {
-		f.Set(reflect.ValueOf(value.Interface()))
+		f.Set(reflect.ValueOf(&v_))
 	}
 
 	return nil
@@ -121,7 +140,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 	}
 
 	if p.Default != nil {
-		return p.SetValueFromInterface(value, p.Default)
+		return p.SetValueFromInterface(value, *p.Default)
 	}
 	return p.InitializeValueToEmptyValue(value)
 }
@@ -135,7 +154,10 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 		value.SetBool(false)
 	case ParameterTypeInteger, ParameterTypeFloat:
 		return reflect2.SetReflectValue(value, 0)
-	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+	case ParameterTypeStringList,
+		ParameterTypeChoiceList,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile:
 		value.Set(reflect.ValueOf([]string{}))
 	case ParameterTypeDate:
 		value.Set(reflect.ValueOf(time.Time{}))
@@ -159,7 +181,9 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 	return nil
 }
 
-// SetValueFromInterface assigns the given value to the given reflect.Value.
+// SetValueFromInterface assigns the value v to the given reflect.Value based on the
+// ParameterDefinition's type. It handles type checking and conversion for the
+// various supported parameter types.
 func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {
 	err := p.CheckValueValidity(v)
 	if err != nil {
@@ -184,7 +208,10 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	case ParameterTypeInteger, ParameterTypeFloat:
 		return reflect2.SetReflectValue(value, v)
 
-	case ParameterTypeStringList, ParameterTypeChoiceList, ParameterTypeStringListFromFiles, ParameterTypeStringListFromFile:
+	case ParameterTypeStringList,
+		ParameterTypeChoiceList,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile:
 		list, ok := cast.CastList2[string, interface{}](v)
 		if !ok {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, v)
@@ -246,15 +273,12 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	return nil
 }
 
-// InitializeStructFromParameterDefinitions initializes a struct from a map of parameter definitions.
+// InitializeStructFromDefaults initializes a struct from a map of parameter definitions.
 //
 // Each field in the struct annotated with tag `glazed.parameter` will be set to the default value of
 // the corresponding `ParameterDefinition`. If no `ParameterDefinition` is found for a field, an error
 // is returned.
-func InitializeStructFromParameterDefinitions(
-	s interface{},
-	parameterDefinitions map[string]*ParameterDefinition,
-) error {
+func (pds *ParameterDefinitions) InitializeStructFromDefaults(s interface{}) error {
 	// check that s is indeed a pointer to a struct
 	if reflect.TypeOf(s).Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
@@ -270,7 +294,7 @@ func InitializeStructFromParameterDefinitions(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions[v]
+		parameter, ok := pds.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -281,7 +305,7 @@ func InitializeStructFromParameterDefinitions(
 				value.Set(reflect.New(field.Type.Elem()))
 			}
 			if field.Type.Elem().Kind() == reflect.Struct {
-				err := InitializeStructFromParameterDefinitions(value.Interface(), parameterDefinitions)
+				err := pds.InitializeStructFromDefaults(value.Interface())
 				if err != nil {
 					return errors.Wrapf(err, "failed to initialize struct for %s", v)
 				}
@@ -303,13 +327,12 @@ func InitializeStructFromParameterDefinitions(
 	return nil
 }
 
-// InitializeParameterDefinitionsFromStruct initializes a map of parameter definitions from a struct.
+// InitializeDefaultsFromStruct initializes the parameters definitions from a struct.
 // Each field in the struct annotated with tag `glazed.parameter` will be used to set
 // the default value of the corresponding definition in `parameterDefinitions`.
 // If no `ParameterDefinition` is found for a field, an error is returned.
-// This is the inverse of InitializeStructFromParameterDefinitions.
-func InitializeParameterDefinitionsFromStruct(
-	parameterDefinitions map[string]*ParameterDefinition,
+// This is the inverse of InitializeStructFromDefaults.
+func (pds *ParameterDefinitions) InitializeDefaultsFromStruct(
 	s interface{},
 ) error {
 	// check that s is indeed a pointer to a struct
@@ -331,7 +354,7 @@ func InitializeParameterDefinitionsFromStruct(
 		if !ok {
 			continue
 		}
-		parameter, ok := parameterDefinitions[v]
+		parameter, ok := pds.Get(v)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", v)
 		}
@@ -346,36 +369,11 @@ func InitializeParameterDefinitionsFromStruct(
 	return nil
 }
 
-func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
-	ret := map[string]interface{}{}
-
-	// check that s is indeed a pointer to a struct
-	if !maps.IsStructPointer(s) {
-		return nil, errors.Errorf("s is not a pointer to a struct")
-	}
-
-	st := reflect.TypeOf(s).Elem()
-
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		parameterName, ok := field.Tag.Lookup("glazed.parameter")
-		if !ok {
-			continue
-		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-
-		ret[parameterName] = value
-	}
-
-	return ret, nil
-}
-
-func InitializeParameterDefaultsFromParameters(
-	parameterDefinitions map[string]*ParameterDefinition,
+func (pds *ParameterDefinitions) InitializeDefaultsFromMap(
 	ps map[string]interface{},
 ) error {
 	for k, v := range ps {
-		parameter, ok := parameterDefinitions[k]
+		parameter, ok := pds.Get(k)
 		if !ok {
 			return errors.Errorf("unknown parameter %s", k)
 		}
@@ -388,153 +386,15 @@ func InitializeParameterDefaultsFromParameters(
 	return nil
 }
 
-func InitializeStructFromParameters(s interface{}, ps map[string]interface{}) error {
-	if s == nil {
-		return errors.Errorf("Can't initialize nil struct")
-	}
-	// check that s is indeed a pointer to a struct
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
-		return errors.Errorf("s is not a pointer")
-	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
-		return errors.Errorf("s is not a pointer to a struct")
-	}
-	st := reflect.TypeOf(s).Elem()
-
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		v, ok := field.Tag.Lookup("glazed.parameter")
-		if !ok {
-			continue
-		}
-		v_, ok := ps[v]
-		if !ok {
-			continue
-		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-
-		if field.Type.Kind() == reflect.Ptr {
-			elem := field.Type.Elem()
-			if value.IsNil() {
-				value.Set(reflect.New(elem))
-			}
-			//exhaustive:ignore
-			switch elem.Kind() {
-			case reflect.Struct:
-				err := InitializeStructFromParameters(value.Interface(), ps)
-				if err != nil {
-					return errors.Wrapf(err, "failed to initialize struct for %s", v)
-				}
-			default:
-				err := reflect2.SetReflectValue(value.Elem(), v_)
-				if err != nil {
-					return errors.Wrapf(err, "failed to set value for %s", v)
-				}
-			}
-
-		} else {
-			err := reflect2.SetReflectValue(value, v_)
-			if err != nil {
-				return errors.Wrapf(err, "failed to set value for %s", v)
-			}
-		}
-	}
-
-	return nil
-}
-
-type ParameterType string
-
-const (
-	ParameterTypeString ParameterType = "string"
-
-	// TODO(2023-02-13, manuel) Should the "default" of a stringFromFile be the filename, or the string?
-	//
-	// See https://github.com/go-go-golems/glazed/issues/137
-
-	ParameterTypeStringFromFile  ParameterType = "stringFromFile"
-	ParameterTypeStringFromFiles ParameterType = "stringFromFiles"
-
-	// ParameterTypeFile and ParameterTypeFileList are a more elaborate version that loads and parses
-	// the file content and returns a list of FileData objects (or a single object in the case
-	// of ParameterTypeFile).
-	ParameterTypeFile     ParameterType = "file"
-	ParameterTypeFileList ParameterType = "fileList"
-
-	// TODO(manuel, 2023-09-19) Add some more types and maybe revisit the entire concept of loading things from files
-	// - string (potentially from file if starting with @)
-	// - string/int/float list from file is another useful type
-
-	ParameterTypeObjectListFromFile  ParameterType = "objectListFromFile"
-	ParameterTypeObjectListFromFiles ParameterType = "objectListFromFiles"
-	ParameterTypeObjectFromFile      ParameterType = "objectFromFile"
-	ParameterTypeStringListFromFile  ParameterType = "stringListFromFile"
-	ParameterTypeStringListFromFiles ParameterType = "stringListFromFiles"
-
-	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
-	// or when beginning with @, a file with key-value options
-	ParameterTypeKeyValue ParameterType = "keyValue"
-
-	ParameterTypeInteger     ParameterType = "int"
-	ParameterTypeFloat       ParameterType = "float"
-	ParameterTypeBool        ParameterType = "bool"
-	ParameterTypeDate        ParameterType = "date"
-	ParameterTypeStringList  ParameterType = "stringList"
-	ParameterTypeIntegerList ParameterType = "intList"
-	ParameterTypeFloatList   ParameterType = "floatList"
-	ParameterTypeChoice      ParameterType = "choice"
-	ParameterTypeChoiceList  ParameterType = "choiceList"
-)
-
-// IsFileLoadingParameter returns true if the parameter type is one that loads a file, when provided with the given
-// value. This slightly odd API is because some types like ParameterTypeKeyValue can be either a string or a file. A
-// beginning character of @ indicates a file.
-func IsFileLoadingParameter(p ParameterType, v string) bool {
-	//exhaustive:ignore
-	switch p {
-	case ParameterTypeStringFromFile,
-		ParameterTypeObjectListFromFile,
-		ParameterTypeObjectFromFile,
-		ParameterTypeStringListFromFile,
-		ParameterTypeObjectListFromFiles,
-		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
-		ParameterTypeFile,
-		ParameterTypeFileList:
-
-		return true
-	case ParameterTypeKeyValue:
-		return strings.HasPrefix(v, "@")
-	default:
-		return false
-	}
-}
-
-// IsListParameter returns if the parameter has to be parsed from a list of strings,
-// not if its value is actually a string.
-func IsListParameter(p ParameterType) bool {
-	//exhaustive:ignore
-	switch p {
-	case ParameterTypeObjectListFromFiles,
-		ParameterTypeStringListFromFiles,
-		ParameterTypeStringFromFiles,
-		ParameterTypeStringList,
-		ParameterTypeIntegerList,
-		ParameterTypeFloatList,
-		ParameterTypeChoiceList,
-		ParameterTypeKeyValue,
-		ParameterTypeFileList:
-		return true
-	default:
-		return false
-	}
-}
-
 // CheckParameterDefaultValueValidity checks if the ParameterDefinition's Default is valid.
 // This is used when validating loading from a YAML file or setting up cobra flag definitions.
 func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
+	// no default at all is valid
+	if p.Default == nil {
+		return nil
+	}
 	// we can have no default
-	v := p.Default
+	v := *p.Default
 	return p.CheckValueValidity(v)
 }
 
@@ -691,6 +551,9 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
 			}
 		}
+
+	default:
+		return errors.Errorf("unknown parameter type %s", p.Type)
 	}
 
 	return nil
@@ -712,9 +575,8 @@ func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
 // LoadParameterDefinitionsFromYAML loads a map of ParameterDefinitions from a YAML file.
 // It checks that default values are valid.
 // It returns the ParameterDefinitions as a map indexed by name, and as a list.
-func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*ParameterDefinition, []*ParameterDefinition) {
-	flags := make(map[string]*ParameterDefinition)
-	flagList := make([]*ParameterDefinition, 0)
+func LoadParameterDefinitionsFromYAML(yamlContent []byte) *ParameterDefinitions {
+	parameters_ := NewParameterDefinitions()
 
 	var err error
 	var parameters []*ParameterDefinition
@@ -729,9 +591,135 @@ func LoadParameterDefinitionsFromYAML(yamlContent []byte) (map[string]*Parameter
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
 		}
-		flags[p.Name] = p
-		flagList = append(flagList, p)
+		parameters_.Set(p.Name, p)
 	}
 
-	return flags, flagList
+	return parameters_
+}
+
+// ParameterDefinitions is an ordered map of ParameterDefinition.
+type ParameterDefinitions struct {
+	*orderedmap.OrderedMap[string, *ParameterDefinition]
+}
+
+type ParameterDefinitionsOption func(*ParameterDefinitions)
+
+func WithParameterDefinitions(parameterDefinitions *ParameterDefinitions) ParameterDefinitionsOption {
+	return func(p *ParameterDefinitions) {
+		p.Merge(parameterDefinitions)
+	}
+}
+
+func WithParameterDefinitionList(parameterDefinitions []*ParameterDefinition) ParameterDefinitionsOption {
+	return func(p *ParameterDefinitions) {
+		for _, pd := range parameterDefinitions {
+			p.Set(pd.Name, pd)
+		}
+	}
+}
+
+func NewParameterDefinitions(options ...ParameterDefinitionsOption) *ParameterDefinitions {
+	ret := &ParameterDefinitions{
+		orderedmap.New[string, *ParameterDefinition](),
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+// Clone returns a cloned copy of the ParameterDefinitions.
+// The parameter definitions are cloned as well.
+func (pds *ParameterDefinitions) Clone() *ParameterDefinitions {
+	return NewParameterDefinitions().Merge(pds)
+}
+
+// Merge merges the parameter definitions from m into p.
+// It clones each parameter definition before adding it to p
+// so that updates to p do not affect m.
+func (pds *ParameterDefinitions) Merge(m *ParameterDefinitions) *ParameterDefinitions {
+	for v := m.Oldest(); v != nil; v = v.Next() {
+		pds.Set(v.Key, v.Value.Clone())
+	}
+	return pds
+}
+
+// GetFlags returns a new ParameterDefinitions containing only the flag
+// parameters. The parameter definitions are not cloned.
+func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		if !v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+func (pds *ParameterDefinitions) GetDefaultValue(key string, defaultValue interface{}) interface{} {
+	v, ok := pds.Get(key)
+	if !ok || v.Default == nil {
+		return defaultValue
+	}
+	return *v.Default
+}
+
+// GetArguments returns a new ParameterDefinitions containing only the argument
+// parameters. The parameter definitions are not cloned.
+func (pds *ParameterDefinitions) GetArguments() *ParameterDefinitions {
+	ret := NewParameterDefinitions()
+
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		if v.Value.IsArgument {
+			ret.Set(v.Key, v.Value)
+		}
+	}
+
+	return ret
+}
+
+// ForEachE calls the given function f on each parameter definition in p.
+// If f returns an error, ForEachE stops iterating and returns the error immediately.
+func (pds *ParameterDefinitions) ForEachE(f func(definition *ParameterDefinition) error) error {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		err := f(v.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ForEach calls the given function f on each parameter definition in p.
+func (pds *ParameterDefinitions) ForEach(f func(definition *ParameterDefinition)) {
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		f(v.Value)
+	}
+}
+
+func (pds *ParameterDefinitions) MarshalYAML() (interface{}, error) {
+	ret := []*ParameterDefinition{}
+	pds.ForEach(func(definition *ParameterDefinition) {
+		ret = append(ret, definition)
+	})
+	return ret, nil
+}
+
+func (pds *ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
+	var parameterDefinitions []*ParameterDefinition
+	err := value.Decode(&parameterDefinitions)
+	if err != nil {
+		return err
+	}
+
+	for _, pd_ := range parameterDefinitions {
+		pds.Set(pd_.Name, pd_)
+	}
+
+	return nil
 }

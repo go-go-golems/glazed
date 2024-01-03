@@ -1,0 +1,224 @@
+- name: "Test with empty input maps"
+  description: "Verify that calling UpdateFromMapAsDefault with an empty map does not alter parsedParameters."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+        - name: "param2"
+          type: "int"
+          default: 42
+        - name: "param3"
+          type: "bool"
+          default: true
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "userString"
+        - name: "param2"
+          value: 24
+        - name: "param3"
+          value: false
+  updateMaps: {}
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "userString"
+        param2: 24
+        param3: false
+  expectedError: false
+
+- name: "Test with non-empty input maps but empty parsedParameters"
+  description: "Ensure that all default values from the input map are set in parsedParameters."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  parsedLayers: []
+  updateMaps:
+    layer1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "defaultValue1"
+        param2: 10
+  expectedError: false
+
+- name: "Test with existing values in parsedParameters"
+  description: "Confirm that existing values in parsedParameters are not overwritten by the defaults in the input map."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue"
+  updateMaps:
+    layer1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue"
+        param2: 10
+  expectedError: false
+
+- name: "Test with partial overlap of keys"
+  description: "Check that only the non-existing keys in parsedParameters are updated with the default values from the input map."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue"
+  updateMaps:
+    layer1:
+      param2: 10
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue"
+        param2: 10
+  expectedError: false
+
+- name: "Test with all keys overlapping but different values"
+  description: "Ensure that none of the values in parsedParameters are changed when the input map contains all the same keys but with different values."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingValue1"
+        - name: "param2"
+          value: 20
+  updateMaps:
+    layer1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingValue1"
+        param2: 20
+  expectedError: false
+
+- name: "Test with invalid data types"
+  description: "Attempt to update parsedParameters with defaults of incorrect types and verify that it results in an error."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+        - name: "param2"
+          type: "int"
+          default: 42
+  parsedLayers:
+    - name: "layer1"
+      parameters: []
+  updateMaps:
+    layer1:
+      param1: 123  # Invalid type: expecting a string, got an integer
+      param2: "NaN"  # Invalid type: expecting an integer, got a string
+  expectedLayers: []
+  expectedError: true
+
+- name: "Test with ParameterLayer not present in layers_"
+  description: "Confirm that the middleware skips any layers not present in layers_ and does not throw an error."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+  parsedLayers: []
+  updateMaps:
+    layer2:  # This layer is not defined in parameterLayers
+      param1: "defaultValue"
+  expectedLayers: []
+  expectedError: false
+
+- name: "Test with ParameterDefinition choices"
+  description: "When a parameter has specific choices, verify that defaults not in the choices do not get set and result in an error."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "choice"
+          choices: ["option1", "option2"]
+          default: "option1"
+  parsedLayers:
+    - name: "layer1"
+      parameters: []
+  updateMaps:
+    layer1:
+      param1: "invalidOption"  # Invalid choice: not in the list of valid choices
+  expectedLayers: []
+  expectedError: true
+
+- name: "Test with multiple layers"
+  description: "Verify that the middleware correctly updates defaults across multiple layers without affecting already set parameters in any layer."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString1"
+    - name: "layer2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 42
+  parsedLayers:
+    - name: "layer1"
+      parameters:
+        - name: "param1"
+          value: "existingString1"
+    - name: "layer2"
+      parameters: []
+  updateMaps:
+    layer1:
+      param1: "defaultString1"  # Should not update because it's already set
+    layer2:
+      param2: 42  # Should update because it's not set
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "existingString1"
+    - name: "layer2"
+      values:
+        param2: 42
+  expectedError: false

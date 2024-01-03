@@ -2,17 +2,56 @@ package parameters
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
-	"strings"
-	"time"
 )
 
-// AddArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
+// GenerateUseString creates a string representation of the 'Use' field for a given cobra command and a list of parameter definitions. The first word of the existing 'Use' field is treated as the verb for the command.
+// The resulting string briefly describes how to use the command respecting the following conventions:
+//   - Required parameters are enclosed in '<>'.
+//   - Optional parameters are enclosed in '[]'.
+//   - Optional parameters that accept multiple input (ParameterTypeStringList or ParameterTypeIntegerList) are followed by '...'.
+//   - If a parameter has a default value, it is specified after parameter name like 'parameter (default: value)'.
+//
+// For example:
+//   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
+//   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
+func GenerateUseString(cmdName string, pds *ParameterDefinitions) string {
+	fields := strings.Fields(cmdName)
+	if len(fields) == 0 {
+		return ""
+	}
+	verb := fields[0]
+	useStr := verb
+	var defaultValueStr string
+
+	pds.ForEach(func(arg *ParameterDefinition) {
+		if !arg.IsArgument {
+			return
+		}
+		defaultValueStr = ""
+		if arg.Default != nil {
+			defaultValueStr = fmt.Sprintf(" (default: %v)", *arg.Default)
+		}
+		left, right := "[", "]"
+		if arg.Required {
+			left, right = "<", ">"
+		}
+		if arg.Type == ParameterTypeStringList || arg.Type == ParameterTypeIntegerList {
+			useStr += " " + left + arg.Name + "..." + defaultValueStr + right
+		} else {
+			useStr += " " + left + arg.Name + defaultValueStr + right
+		}
+	})
+
+	return useStr
+}
+
+// addArgumentsToCobraCommand adds each ParameterDefinition from `arguments` as positional arguments to the provided `cmd` cobra command.
 // Argument ordering, optionality, and multiplicity constraints are respected:
 //   - Required arguments (argument.Required == true) should come before the optional.
 //   - Only one list argument (either ParameterTypeStringList or ParameterTypeIntegerList) is allowed and it should be the last one.
@@ -25,13 +64,20 @@ import (
 // and list arguments.
 // If everything is successful, it assigns an argument validator (either MinimumNArgs or RangeArgs)
 // to the cobra command's Args attribute.
-func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefinition) error {
+func (pds *ParameterDefinitions) addArgumentsToCobraCommand(cmd *cobra.Command) error {
 	minArgs := 0
 	// -1 signifies unbounded
 	maxArgs := 0
 	hadOptional := false
 
-	for _, argument := range arguments {
+	if pds.Len() == 0 {
+		return nil
+	}
+
+	err := pds.ForEachE(func(argument *ParameterDefinition) error {
+		if !argument.IsArgument {
+			return nil
+		}
 		if maxArgs == -1 {
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
@@ -50,9 +96,15 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 			hadOptional = true
 		}
 		maxArgs++
-		if IsListParameter(argument.Type) {
+		if argument.Type.IsList() {
 			maxArgs = -1
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	cmd.Args = cobra.MinimumNArgs(minArgs)
@@ -60,156 +112,25 @@ func AddArgumentsToCobraCommand(cmd *cobra.Command, arguments []*ParameterDefini
 		cmd.Args = cobra.RangeArgs(minArgs, maxArgs)
 	}
 
-	cmd.Use = GenerateUseString(cmd, arguments)
+	cmd.Use = GenerateUseString(cmd.Use, pds)
 
 	return nil
 }
 
-// GenerateUseString creates a string representation of the 'Use' field for a given cobra command and a list of parameter definitions. The first word of the existing 'Use' field is treated as the verb for the command.
-// The resulting string briefly describes how to use the command respecting the following conventions:
-//   - Required parameters are enclosed in '<>'.
-//   - Optional parameters are enclosed in '[]'.
-//   - Optional parameters that accept multiple input (ParameterTypeStringList or ParameterTypeIntegerList) are followed by '...'.
-//   - If a parameter has a default value, it is specified after parameter name like 'parameter (default: value)'.
-//
-// For example:
-//   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
-//   - If there is a required parameter 'name', and an optional parameter 'colors' of type ParameterTypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
-func GenerateUseString(cmd *cobra.Command, arguments []*ParameterDefinition) string {
-	fields := strings.Fields(cmd.Use)
-	if len(fields) == 0 {
-		return ""
-	}
-	verb := fields[0]
-	useStr := verb
-	var defaultValueStr string
-
-	for _, arg := range arguments {
-		defaultValueStr = ""
-		if arg.Default != nil {
-			defaultValueStr = fmt.Sprintf(" (default: %v)", arg.Default)
-		}
-		left, right := "[", "]"
-		if arg.Required {
-			left, right = "<", ">"
-		}
-		if arg.Type == ParameterTypeStringList || arg.Type == ParameterTypeIntegerList {
-			useStr += " " + left + arg.Name + "..." + defaultValueStr + right
-		} else {
-			useStr += " " + left + arg.Name + defaultValueStr + right
-		}
-	}
-
-	return useStr
-}
-
-// GatherArguments parses positional string arguments into a map of values.
-//
-// It takes the command-line arguments, the expected argument definitions,
-// and a boolean indicating whether to only include explicitly provided arguments,
-// not the default values of missing arguments.
-//
-// Only the last parameter definitions can be a list parameter type.
-//
-// Required arguments missing from the input will result in an error.
-// Arguments with default values can be included based on the onlyProvided flag.
-//
-// The result is a map with argument names as keys and parsed values.
-// Argument order is maintained.
-//
-// Any extra arguments not defined will result in an error.
-// Parsing errors for individual arguments will also return errors.
-func GatherArguments(
-	args []string,
-	arguments []*ParameterDefinition,
-	onlyProvided bool,
-	ignoreRequired bool,
-) (*orderedmap.OrderedMap[string, interface{}], error) {
-	_ = args
-	result := orderedmap.New[string, interface{}]()
-	argsIdx := 0
-	for _, argument := range arguments {
-		if argsIdx >= len(args) {
-			if argument.Required {
-				if ignoreRequired {
-					continue
-				}
-				return nil, fmt.Errorf("Argument %s not found", argument.Name)
-			} else {
-				if argument.Default != nil && !onlyProvided {
-					result.Set(argument.Name, argument.Default)
-				}
-				continue
-			}
-		}
-
-		v := []string{args[argsIdx]}
-
-		if IsListParameter(argument.Type) {
-			v = args[argsIdx:]
-			argsIdx = len(args)
-		} else {
-			argsIdx++
-		}
-		i2, err := argument.ParseParameter(v)
-		if err != nil {
-			return nil, err
-		}
-
-		result.Set(argument.Name, i2)
-	}
-	if argsIdx < len(args) {
-		return nil, fmt.Errorf("Too many arguments")
-	}
-	return result, nil
-}
-
-// AddFlagsToCobraCommand takes the parameters from a CommandDescription and converts them
-// to cobra flags, before adding them to the Flags() of a the passed cobra command.
-//
-// # TODO(manuel, 2023-02-12) We need to handle arbitrary defaults here
-//
-// See https://github.com/go-go-golems/glazed/issues/132
-//
-// Currently, usage of this functions just passes the defaults encoded in
-// the metadata YAML files (for glazed flags at least), but really we want
-// to override this on a per command basis easily without having to necessarily
-// copy or mutate the parameters loaded from yaml.
-//
-// One option would be to remove the defaults structs, and do the overloading
-// by command with ParameterList manipulating functions, so that it is easy for the
-// library user to override and further tweak the defaults.
-//
-// Currently, that behaviour is encoded in the AddFieldsFilterFlags function itself.
-//
-// What also needs to be considered is the bigger context that these declarative flags
-// and arguments definitions are going to be used in a lot of different contexts,
-// and might need to be overloaded and initialized in different ways.
-//
-// For example:
-// - REST API
-// - CLI
-// - GRPC service
-// - TUI bubbletea UI
-// - Web UI
-// - declarative config files
-//
-// --- 2023-02-12 - manuel
-//
-// I went with the following solution:
-//
-// One other option would be to pass this function a map with overloaded default,
-// but while that feels easier and cleaner in the short term, I think it limits the
-// concept of what it means for a library user to overload the defaults handling
-// mechanism. This already becomes apparent in the FieldsFilterDefaults handling, where
-// an empty list or a list containing "all" should be treated the same.
-func AddFlagsToCobraCommand(
-	flagSet *pflag.FlagSet,
-	flags []*ParameterDefinition,
+// AddParametersToCobraCommand takes the parameters from a CommandDescription and converts them
+// to cobra flags, before adding them to the Parameters() of a the passed cobra command.
+func (pds *ParameterDefinitions) AddParametersToCobraCommand(
+	cmd *cobra.Command,
 	prefix string,
-
 ) error {
-	for _, parameter := range flags {
+	flagSet := cmd.Flags()
+
+	err := pds.GetArguments().addArgumentsToCobraCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	err = pds.GetFlags().ForEachE(func(parameter *ParameterDefinition) error {
 		err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
@@ -260,9 +181,9 @@ func AddFlagsToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(string)
+				defaultValue, ok = (*parameter.Default).(string)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -275,9 +196,9 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0
 
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastNumberInterfaceToInt[int](parameter.Default)
+				defaultValue, ok = cast.CastNumberInterfaceToInt[int](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -291,9 +212,9 @@ func AddFlagsToCobraCommand(
 			defaultValue := 0.0
 
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](parameter.Default)
+				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -307,9 +228,9 @@ func AddFlagsToCobraCommand(
 			defaultValue := false
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(bool)
+				defaultValue, ok = (*parameter.Default).(bool)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a bool: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a bool: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -323,7 +244,7 @@ func AddFlagsToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				switch v_ := parameter.Default.(type) {
+				switch v_ := (*parameter.Default).(type) {
 				case string:
 					_, err2 := ParseDate(v_)
 					if err2 != nil {
@@ -334,7 +255,7 @@ func AddFlagsToCobraCommand(
 					// nothing to do
 					defaultValue = v_.Format("2006-01-02")
 				default:
-					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -348,24 +269,24 @@ func AddFlagsToCobraCommand(
 			var defaultValue []string
 
 			if parameter.Default != nil {
-				stringList, ok := parameter.Default.([]string)
+				stringList, ok := (*parameter.Default).([]string)
 				if !ok {
-					defaultValue, ok := parameter.Default.([]interface{})
+					defaultValue, ok := (*parameter.Default).([]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 
 					// convert to string list
 					stringList, ok = cast.CastList[string, interface{}](defaultValue)
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 				}
 
 				defaultValue = stringList
 			}
 			if err != nil {
-				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, *parameter.Default)
 			}
 
 			if parameter.ShortFlag != "" {
@@ -378,11 +299,11 @@ func AddFlagsToCobraCommand(
 			var defaultValue []string
 
 			if parameter.Default != nil {
-				stringMap, ok := parameter.Default.(map[string]string)
+				stringMap, ok := (*parameter.Default).(map[string]string)
 				if !ok {
-					defaultValue, ok := parameter.Default.(map[string]interface{})
+					defaultValue, ok := (*parameter.Default).(map[string]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, parameter.Default)
+						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
 					}
 
 					stringMap = make(map[string]string)
@@ -401,7 +322,7 @@ func AddFlagsToCobraCommand(
 				defaultValue = stringList
 			}
 			if err != nil {
-				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, parameter.Default)
+				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, *parameter.Default)
 			}
 
 			if parameter.ShortFlag != "" {
@@ -413,9 +334,9 @@ func AddFlagsToCobraCommand(
 		case ParameterTypeIntegerList:
 			var defaultValue []int
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToIntList[int](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToIntList[int](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -428,9 +349,9 @@ func AddFlagsToCobraCommand(
 		case ParameterTypeFloatList:
 			var defaultValue []float64
 			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToFloatList[float64](parameter.Default)
+				defaultValue, ok = cast.CastInterfaceToFloatList[float64](*parameter.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, *parameter.Default)
 				}
 			}
 			if parameter.ShortFlag != "" {
@@ -443,9 +364,9 @@ func AddFlagsToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = parameter.Default.(string)
+				defaultValue, ok = (*parameter.Default).(string)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, parameter.Default)
+					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}
 
@@ -460,63 +381,14 @@ func AddFlagsToCobraCommand(
 		default:
 			return errors.Errorf("Unknown parameter type for parameter %s: %s", parameter.Name, parameter.Type)
 		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
-}
-
-func GatherFlagsFromViper(
-	params []*ParameterDefinition,
-	onlyProvided bool,
-	prefix string,
-) (map[string]interface{}, error) {
-	ret := map[string]interface{}{}
-
-	for _, p := range params {
-		flagName := prefix + p.Name
-		if onlyProvided && !viper.IsSet(flagName) {
-			continue
-		}
-		if !onlyProvided && !viper.IsSet(flagName) {
-			if p.Default != nil {
-				ret[p.Name] = p.Default
-			}
-			continue
-		}
-
-		//exhaustive:ignore
-		switch p.Type {
-		case ParameterTypeString:
-			ret[p.Name] = viper.GetString(flagName)
-		case ParameterTypeInteger:
-			ret[p.Name] = viper.GetInt(flagName)
-		case ParameterTypeFloat:
-			ret[p.Name] = viper.GetFloat64(flagName)
-		case ParameterTypeBool:
-			ret[p.Name] = viper.GetBool(flagName)
-		case ParameterTypeStringList:
-			ret[p.Name] = viper.GetStringSlice(flagName)
-		case ParameterTypeIntegerList:
-			ret[p.Name] = viper.GetIntSlice(flagName)
-		case ParameterTypeKeyValue:
-			ret[p.Name] = viper.GetStringMapString(flagName)
-		case ParameterTypeStringListFromFile:
-			ret[p.Name] = viper.GetStringSlice(flagName)
-		case ParameterTypeStringFromFile:
-			// not sure if this is the best here, maybe it should be the filename?
-			ret[p.Name] = viper.GetString(flagName)
-		case ParameterTypeChoice:
-			// probably should do some checking here
-			ret[p.Name] = viper.GetString(flagName)
-		case ParameterTypeObjectFromFile:
-			ret[p.Name] = viper.GetStringMap(flagName)
-			// TODO(manuel, 2023-09-19) Add more of the newer types here too
-		default:
-			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
-		}
-	}
-
-	return ret, nil
 }
 
 // GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
@@ -532,39 +404,54 @@ func GatherFlagsFromViper(
 // The required argument checks that all the required parameter definitions are present.
 // The provided argument only checks that the provided flags are passed.
 // Prefix is prepended to all flag names.
-func GatherFlagsFromCobraCommand(
+func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 	cmd *cobra.Command,
-	params []*ParameterDefinition,
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
-) (map[string]interface{}, error) {
-	ps := map[string]interface{}{}
+	options ...ParseStepOption,
+) (*ParsedParameters, error) {
+	ps := NewParsedParameters()
 
-	for _, parameter := range params {
+	err := pds.ForEachE(func(pd *ParameterDefinition) error {
+		p := &ParsedParameter{
+			ParameterDefinition: pd,
+		}
+
+		if pd.IsArgument {
+			return nil
+		}
+
 		// check if the flag is set
-		flagName := prefix + parameter.Name
+		flagName := prefix + pd.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 
 		if !cmd.Flags().Changed(flagName) {
-			if parameter.Required {
+			if pd.Required {
 				if ignoreRequired {
-					continue
+					return nil
 				}
 
-				return nil, errors.Errorf("Parameter %s is required", parameter.Name)
+				return errors.Errorf("Parameter %s is required", pd.Name)
 			}
 
-			if parameter.Default == nil {
-				continue
+			if pd.Default == nil {
+				return nil
 			}
 
 			if onlyProvided {
-				continue
+				return nil
 			}
 		}
 
-		switch parameter.Type {
+		options := append([]ParseStepOption{
+			WithParseStepMetadata(map[string]interface{}{
+				"flag": flagName,
+			}),
+			WithParseStepSource("cobra"),
+		}, options...)
+
+		switch pd.Type {
 		case ParameterTypeObjectFromFile,
 			ParameterTypeObjectListFromFile,
 			ParameterTypeStringFromFile,
@@ -575,34 +462,37 @@ func GatherFlagsFromCobraCommand(
 			ParameterTypeChoice:
 			v, err := cmd.Flags().GetString(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			v2, err := parameter.ParseParameter([]string{v})
+			v2, err := pd.ParseParameter([]string{v}, options...)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v2
+			ps.Set(pd.Name, v2)
 
 		case ParameterTypeFloat:
 			v, err := cmd.Flags().GetFloat64(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeInteger:
 			v, err := cmd.Flags().GetInt(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeBool:
 			v, err := cmd.Flags().GetBool(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeObjectListFromFiles,
 			ParameterTypeStringFromFiles,
@@ -610,55 +500,69 @@ func GatherFlagsFromCobraCommand(
 			ParameterTypeFileList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			v2, err := parameter.ParseParameter(v)
+			v2, err := pd.ParseParameter(v, options...)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v2
+			ps.Set(pd.Name, v2)
 
 		case ParameterTypeStringList,
 			ParameterTypeChoiceList:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeKeyValue:
 			v, err := cmd.Flags().GetStringSlice(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			// if it was changed and is empty, then skip setting from default
 			if cmd.Flags().Changed(flagName) && len(v) == 0 {
-				ps[parameter.Name] = map[string]string{}
+				options_ := append(options,
+					WithParseStepMetadata(map[string]interface{}{
+						"flag":      flagName,
+						"emptyFlag": true,
+					}))
+				p.Update(map[string]string{}, options_...)
+				ps.Set(pd.Name, p)
 			} else {
-				v2, err := parameter.ParseParameter(v)
+				v2, err := pd.ParseParameter(v, options...)
 				if err != nil {
-					return nil, err
+					return err
 				}
-				ps[parameter.Name] = v2
+				ps.Set(pd.Name, v2)
 			}
 
 		case ParameterTypeIntegerList:
 			// NOTE(manuel, 2023-04-01) Do we not check for default here?
 			v, err := cmd.Flags().GetIntSlice(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 
 		case ParameterTypeFloatList:
 			// NOTE(manuel, 2023-04-01) Do we not check for default here?
 			v, err := cmd.Flags().GetFloat64Slice(flagName)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			ps[parameter.Name] = v
+			p.Update(v, options...)
+			ps.Set(pd.Name, p)
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return ps, nil
 }

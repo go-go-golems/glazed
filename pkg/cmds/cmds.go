@@ -14,14 +14,13 @@ import (
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
 type CommandDescription struct {
-	Name           string                            `yaml:"name"`
-	Short          string                            `yaml:"short"`
-	Long           string                            `yaml:"long,omitempty"`
-	Layout         []*layout.Section                 `yaml:"layout,omitempty"`
-	Flags          []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
-	Arguments      []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
-	Layers         []layers.ParameterLayer           `yaml:"layers,omitempty"`
-	AdditionalData map[string]interface{}            `yaml:"additionalData,omitempty"`
+	Name  string `yaml:"name"`
+	Short string `yaml:"short"`
+	Long  string `yaml:"long,omitempty"`
+	// TODO(manuel, 2023-12-21) Does this need to be a list of pointers? Could it just be a list of struct?
+	Layout         []*layout.Section       `yaml:"layout,omitempty"`
+	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
+	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -31,81 +30,6 @@ type CommandDescription struct {
 // Steal the builder API from https://github.com/bbkane/warg
 
 type CommandDescriptionOption func(*CommandDescription)
-
-func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
-	ret := &CommandDescription{
-		Name: name,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
-
-func (c *CommandDescription) GetFlagMap() map[string]*parameters.ParameterDefinition {
-	ret := make(map[string]*parameters.ParameterDefinition)
-	for _, f := range c.Flags {
-		ret[f.Name] = f
-	}
-	return ret
-}
-
-func (c *CommandDescription) GetArgumentMap() map[string]*parameters.ParameterDefinition {
-	ret := make(map[string]*parameters.ParameterDefinition)
-	for _, a := range c.Arguments {
-		ret[a.Name] = a
-	}
-	return ret
-}
-
-func (c *CommandDescription) Clone(cloneFlagsAndArguments bool, options ...CommandDescriptionOption) *CommandDescription {
-	// clone flags
-	flags := make([]*parameters.ParameterDefinition, len(c.Flags))
-	for i, f := range c.Flags {
-		if !cloneFlagsAndArguments {
-			flags[i] = f
-		} else {
-			flags[i] = f.Copy()
-		}
-	}
-
-	// clone arguments
-	arguments := make([]*parameters.ParameterDefinition, len(c.Arguments))
-	for i, a := range c.Arguments {
-		if !cloneFlagsAndArguments {
-			arguments[i] = a
-		} else {
-			arguments[i] = a.Copy()
-		}
-	}
-
-	// clone layers
-	layers_ := make([]layers.ParameterLayer, len(c.Layers))
-	copy(layers_, c.Layers)
-
-	// copy parents
-	parents := make([]string, len(c.Parents))
-	copy(parents, c.Parents)
-
-	ret := &CommandDescription{
-		Name:      c.Name,
-		Short:     c.Short,
-		Long:      c.Long,
-		Flags:     flags,
-		Arguments: arguments,
-		Layers:    layers_,
-		Parents:   parents,
-		Source:    c.Source,
-	}
-
-	for _, o := range options {
-		o(ret)
-	}
-
-	return ret
-}
 
 func WithName(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
@@ -125,21 +49,81 @@ func WithLong(s string) CommandDescriptionOption {
 	}
 }
 
-func WithFlags(f ...*parameters.ParameterDefinition) CommandDescriptionOption {
+func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Flags = append(c.Flags, f...)
+		for _, l := range ls {
+			c.Layers.Set(l.GetSlug(), l)
+		}
 	}
 }
 
-func WithArguments(a ...*parameters.ParameterDefinition) CommandDescriptionOption {
+func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Arguments = append(c.Arguments, a...)
+		c.Layers.Merge(ls)
 	}
 }
 
-func WithLayers(l ...layers.ParameterLayer) CommandDescriptionOption {
+// WithFlags is a convenience function to add arguments to the default layer, useful
+// to make the transition from explicit flags and arguments to a default layer a bit easier.
+func WithFlags(
+	flags ...*parameters.ParameterDefinition,
+) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Layers = append(c.Layers, l...)
+		layer, ok := c.GetDefaultLayer()
+		var err error
+		if !ok {
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
+			if err != nil {
+				panic(err)
+			}
+			c.Layers.Set(layer.GetSlug(), layer)
+		}
+		layer.AddFlags(flags...)
+	}
+}
+
+// WithArguments is a convenience function to add arguments to the default layer, useful
+// to make the transition from explicit flags and arguments to a default layer a bit easier.
+func WithArguments(
+	arguments ...*parameters.ParameterDefinition,
+) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		layer, ok := c.GetDefaultLayer()
+		var err error
+		if !ok {
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
+			if err != nil {
+				panic(err)
+			}
+			c.Layers.Set(layer.GetSlug(), layer)
+		}
+
+		for _, arg := range arguments {
+			arg.IsArgument = true
+		}
+		layer.AddFlags(arguments...)
+	}
+}
+
+func WithDefaultLayer(
+	flags []*parameters.ParameterDefinition,
+	arguments []*parameters.ParameterDefinition,
+) CommandDescriptionOption {
+
+	for _, arg := range arguments {
+		arg.IsArgument = true
+	}
+	return func(c *CommandDescription) {
+		layer, err := layers.NewParameterLayer(
+			layers.DefaultSlug,
+			"Default",
+			layers.WithParameterDefinitions(flags...),
+			layers.WithParameterDefinitions(arguments...),
+		)
+		if err != nil {
+			panic(err)
+		}
+		c.Layers.Set(layer.GetSlug(), layer)
 	}
 }
 
@@ -151,42 +135,8 @@ func WithLayout(l *layout.Layout) CommandDescriptionOption {
 
 func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-	outerLoop:
 		for _, l := range layers_ {
-			for i, ll := range c.Layers {
-				if ll.GetSlug() == l.GetSlug() {
-					c.Layers[i] = l
-					continue outerLoop
-				}
-			}
-		}
-	}
-}
-
-func WithReplaceFlags(flags ...*parameters.ParameterDefinition) CommandDescriptionOption {
-	return func(c *CommandDescription) {
-	outerLoop:
-		for _, f := range flags {
-			for i, ff := range c.Flags {
-				if ff.Name == f.Name {
-					c.Flags[i] = f
-					continue outerLoop
-				}
-			}
-		}
-	}
-}
-
-func WithReplaceArguments(args ...*parameters.ParameterDefinition) CommandDescriptionOption {
-	return func(c *CommandDescription) {
-	outerLoop:
-		for _, a := range args {
-			for i, aa := range c.Arguments {
-				if aa.Name == a.Name {
-					c.Arguments[i] = a
-					continue outerLoop
-				}
-			}
+			c.Layers.Set(l.GetSlug(), l)
 		}
 	}
 }
@@ -227,6 +177,71 @@ func WithPrependSource(s string) CommandDescriptionOption {
 	}
 }
 
+func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
+	ret := &CommandDescription{
+		Name:   name,
+		Layers: layers.NewParameterLayers(),
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
+func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
+	return cd.GetLayer(layers.DefaultSlug)
+}
+
+func (cd *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
+	l, ok := cd.GetDefaultLayer()
+	if !ok {
+		return parameters.NewParameterDefinitions()
+	}
+	return l.GetParameterDefinitions().GetFlags()
+}
+
+func (cd *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
+	l, ok := cd.GetDefaultLayer()
+	if !ok {
+		return parameters.NewParameterDefinitions()
+	}
+
+	return l.GetParameterDefinitions().GetArguments()
+}
+
+func (cd *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
+	return cd.Layers.Get(name)
+}
+
+func (cd *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
+	// clone flags
+	layers_ := layers.NewParameterLayers()
+	if cloneLayers {
+		layers_ = cd.Layers.Clone()
+	}
+
+	// copy parents
+	parents := make([]string, len(cd.Parents))
+	copy(parents, cd.Parents)
+
+	ret := &CommandDescription{
+		Name:    cd.Name,
+		Short:   cd.Short,
+		Long:    cd.Long,
+		Layers:  layers_,
+		Parents: parents,
+		Source:  cd.Source,
+	}
+
+	for _, o := range options {
+		o(ret)
+	}
+
+	return ret
+}
+
 func (cd *CommandDescription) ToYAML(w io.Writer) error {
 	enc := yaml.NewEncoder(w)
 	defer func(enc *yaml.Encoder) {
@@ -247,11 +262,7 @@ type Command interface {
 
 type CommandWithMetadata interface {
 	Command
-	Metadata(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		ps map[string]interface{},
-	) (map[string]interface{}, error)
+	Metadata(ctx context.Context, parsedLayers *layers.ParsedLayers) (map[string]interface{}, error)
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
@@ -263,26 +274,17 @@ type CommandWithMetadata interface {
 
 type BareCommand interface {
 	Command
-	Run(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		ps map[string]interface{},
-	) error
+	Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
 }
 
 type WriterCommand interface {
 	Command
-	RunIntoWriter(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		ps map[string]interface{},
-		w io.Writer,
-	) error
+	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
 }
 
 type GlazeCommand interface {
 	Command
-	// Run is called to actually execute the command.
+	// RunIntoGlazeProcessor is called to actually execute the command.
 	//
 	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
 	//
@@ -296,12 +298,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	Run(
-		ctx context.Context,
-		parsedLayers map[string]*layers.ParsedParameterLayer,
-		ps map[string]interface{},
-		gp middlewares.Processor,
-	) error
+	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
 }
 
 type ExitWithoutGlazeError struct{}

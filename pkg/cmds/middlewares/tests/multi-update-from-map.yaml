@@ -1,0 +1,230 @@
+  # Test 1: Empty Update Sequence
+  - name: "Empty Update Sequence"
+    description: "Applying an empty sequence of update maps should not change ParameterLayers or ParsedLayers."
+    parameterLayers: []
+    parsedLayers: []
+    expectedLayers: []
+    expectedError: false
+    updateMaps: []
+
+  # Test 2: Single Update
+  - name: "Single Update"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "string"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: "updated"
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: "updated"
+
+  # Test 2a: Single Update with List type
+  - name: "Single Update with List type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "stringList"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: ["updated", "updated2"]
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: ["updated", "updated2"]
+
+  # Test 2b: Single Update with Object Type
+  - name: "Single Update with Object type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "objectFromFile"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: {"updated": "updated2"}
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: {"updated": "updated2"}
+
+  # Test 2c: Single Update with Object List Type
+  - name: "Single Update with Object List type"
+    description: "A single update map should correctly apply updates to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "objectListFromFile"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: [{"updated": "updated2"}, {"updated": "updated3"}]
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: [{"updated": "updated2"}, {"updated": "updated3"}]
+
+  # Test 3: Multiple Updates
+  - name: "Multiple Updates"
+    description: "Multiple update maps should apply updates in sequence to the ParsedLayers."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "string"
+            default: "original"
+          - name: "param2"
+            type: "int"
+            default: 1
+    parsedLayers:
+      - name: "layer1"
+        parameters:
+          - name: param1
+            value: "initial"
+          - name: param2
+            value: 2
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: "second-update"
+          param2: 3
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: "first-update"
+          param2: 2
+      - layer1:
+          param1: "second-update"
+          param2: 3
+
+  # Test 4: Conflicting Updates
+  - name: "Conflicting Updates"
+    description: "Later updates should overwrite values set by earlier updates."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "string"
+            default: "original"
+    parsedLayers:
+      - name: "layer1"
+    expectedLayers:
+      - name: "layer1"
+        values:
+          param1: "final-value"
+    expectedError: false
+    updateMaps:
+      - layer1:
+          param1: "first-value"
+      - layer1:
+          param1: "final-value"
+
+  # Test 5: Non-Existent Layers
+  - name: "Non-Existent Layers"
+    description: "Updates that reference non-existent layers should be ignored."
+    parameterLayers:
+      - name: "layer1"
+        definitions:
+          - name: "param1"
+            type: "string"
+            default: "original"
+    expectedLayers:
+    expectedError: false
+    updateMaps:
+      - layer2: # This layer does not exist in parameterLayers
+          param1: "should-be-ignored"
+
+# Test 6: New Layers
+- name: "New Layers"
+  description: "Update maps that reference new layers should create those layers."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "original"
+    - name: "layer2"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "original"
+  parsedLayers:
+    - name: "layer1"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "original"
+    - name: "layer2"
+      values:
+        param1: "new-layer-value"
+  expectedError: false
+  updateMaps:
+    - layer2:
+        param1: "new-layer-value"
+
+# Test 7: New inexistent layers
+- name: "New inexistent layers"
+  description: "Update maps that reference new layers should create those layers."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "original"
+    - name: "layer2"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "original"
+  parsedLayers:
+    - name: "layer1"
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "layer1-value"
+    - name: "layer2"
+      values:
+        param1: "new-layer-value"
+  expectedError: false
+  updateMaps:
+    - layer2:
+        param1: "new-layer-value"
+    - inexistent:
+        param1: "inexistent-layer-value"
+      layer1:
+        param1: "layer1-value"

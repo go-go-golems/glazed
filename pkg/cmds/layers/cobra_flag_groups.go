@@ -2,12 +2,13 @@ package layers
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
 )
 
 // FlagGroup is a group of flags that can be added to a cobra command.
@@ -65,7 +66,7 @@ func (f *FlagGroupUsage) AddFlagUsage(flag *FlagUsage) {
 
 // CommandFlagGroupUsage is used to render the flags for an entire command.
 // This gets parsed at rendering time, and passed along the command to the usage or help
-// template. Flags that are not assigned to any group are passed as the "" group, with the
+// template. Parameters that are not assigned to any group are passed as the "" group, with the
 // name "Other flags".
 type CommandFlagGroupUsage struct {
 	LocalGroupUsages     []*FlagGroupUsage
@@ -280,11 +281,12 @@ func AddFlagGroupToCobraCommand(
 	cmd *cobra.Command,
 	id string,
 	name string,
-	flags []*parameters.ParameterDefinition,
+	flags *parameters.ParameterDefinitions,
 	prefix string,
 ) {
 	flagNames := []string{}
-	for _, f := range flags {
+	for v := flags.Oldest(); v != nil; v = v.Next() {
+		f := v.Value
 		flagNames = append(flagNames, f.Name)
 	}
 

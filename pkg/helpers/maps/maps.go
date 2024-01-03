@@ -1,6 +1,7 @@
 package maps
 
 import (
+	"github.com/pkg/errors"
 	"reflect"
 	"strings"
 )
@@ -48,4 +49,33 @@ func IsStructPointer(s interface{}) bool {
 	}
 
 	return true
+}
+
+// GlazedStructToMap converts a struct pointer to a map of parameter names to values.
+// It iterates through the struct fields looking for the "glazed.parameter" tag.
+// For each field with the tag, it will add an entry to the returned map with the
+// tag value as the key and the field's value as the map value.
+// Returns an error if s is not a pointer to a struct.
+func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
+	ret := map[string]interface{}{}
+
+	// check that s is indeed a pointer to a struct
+	if !IsStructPointer(s) {
+		return nil, errors.Errorf("s is not a pointer to a struct")
+	}
+
+	st := reflect.TypeOf(s).Elem()
+
+	for i := 0; i < st.NumField(); i++ {
+		field := st.Field(i)
+		parameterName, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+
+		ret[parameterName] = value
+	}
+
+	return ret, nil
 }

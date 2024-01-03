@@ -3,7 +3,6 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 )
 
@@ -15,9 +14,9 @@ type SkipLimitSettings struct {
 	Limit int `glazed.parameter:"glazed-limit"`
 }
 
-func NewSkipLimitSettingsFromParameters(ps map[string]interface{}) (*SkipLimitSettings, error) {
+func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from parameters")
 	}
@@ -38,4 +37,9 @@ func NewSkipLimitParameterLayer(options ...layers.ParameterLayerOptions) (*SkipL
 	ret.ParameterLayerImpl = layer
 
 	return ret, nil
+}
+func (f *SkipLimitParameterLayer) Clone() layers.ParameterLayer {
+	return &SkipLimitParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
 }

@@ -17,6 +17,8 @@ type CsvCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*CsvCommand)(nil)
+
 func NewCsvCommand() (*CsvCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -66,49 +68,42 @@ func NewCsvCommand() (*CsvCommand, error) {
 					parameters.WithDefault(false),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),
 	}, nil
 }
 
-func (c *CsvCommand) Run(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
-	gp middlewares.Processor,
-) error {
-	inputFiles, ok := ps["input-files"].([]string)
-	if !ok {
-		return errors.New("input-files argument is not a string list")
+type CsvSettings struct {
+	InputFiles       []string `glazed.parameter:"input-files"`
+	Delimiter        string   `glazed.parameter:"delimiter"`
+	Comment          string   `glazed.parameter:"comment"`
+	FieldsPerRecord  int      `glazed.parameter:"fields-per-record"`
+	TrimLeadingSpace bool     `glazed.parameter:"trim-leading-space"`
+	LazyQuotes       bool     `glazed.parameter:"lazy-quotes"`
+}
+
+func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	s := &CsvSettings{}
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize csv settings from parameters")
 	}
 
-	comma, _ := ps["delimiter"].(string)
-	if len(comma) != 1 {
-		return errors.New("delimiter must be a single character")
-	}
-	commaRune := rune(comma[0])
+	commaRune := rune(s.Delimiter[0])
 
-	comment, _ := ps["comment"].(string)
-	if len(comment) != 1 {
-		return errors.New("comment must be a single character")
-	}
-	commentRune := rune(comment[0])
-
-	fieldsPerRecord, _ := ps["fields-per-record"].(int)
-	trimLeadingSpace, _ := ps["trim-leading-space"].(bool)
-	lazyQuotes, _ := ps["lazy-quotes"].(bool)
+	commentRune := rune(s.Comment[0])
 
 	options := []csv.ParseCSVOption{
 		csv.WithComma(commaRune),
 		csv.WithComment(commentRune),
-		csv.WithFieldsPerRecord(fieldsPerRecord),
-		csv.WithTrimLeadingSpace(trimLeadingSpace),
-		csv.WithLazyQuotes(lazyQuotes),
+		csv.WithFieldsPerRecord(s.FieldsPerRecord),
+		csv.WithTrimLeadingSpace(s.TrimLeadingSpace),
+		csv.WithLazyQuotes(s.LazyQuotes),
 	}
 
-	for _, arg := range inputFiles {
+	for _, arg := range s.InputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}

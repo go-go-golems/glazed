@@ -57,15 +57,21 @@ func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*Templa
 	return ret, nil
 }
 
-func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, error) {
+func (f *TemplateParameterLayer) Clone() layers.ParameterLayer {
+	return &TemplateParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
+func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 
-	templateArgument, ok := parameters["template"].(string)
+	templateArgument, ok := layer.Parameters.GetValue("template").(string)
 	if ok && templateArgument != "" {
 		templates["_0"] = templateArgument
 	} else {
-		templateFields, ok := parameters["template-field"].(map[string]interface{})
+		templateFields, ok := layer.Parameters.GetValue("template-field").(map[string]interface{})
 		if ok && len(templateFields) > 0 {
 			for k, v := range templateFields {
 				vString, ok := v.(string)
@@ -77,7 +83,7 @@ func NewTemplateSettings(parameters map[string]interface{}) (*TemplateSettings, 
 		}
 	}
 
-	useRowTemplates, ok := parameters["use-row-templates"].(bool)
+	useRowTemplates, ok := layer.Parameters.GetValue("use-row-templates").(bool)
 	if !ok {
 		useRowTemplates = false
 	}

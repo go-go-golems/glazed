@@ -3,7 +3,6 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
@@ -55,10 +54,15 @@ func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*Replace
 
 	return ret, nil
 }
+func (f *ReplaceParameterLayer) Clone() layers.ParameterLayer {
+	return &ReplaceParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
 
-func NewReplaceSettingsFromParameters(ps map[string]interface{}) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
 	}

@@ -18,6 +18,13 @@ type ExampleCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*ExampleCommand)(nil)
+
+type ExampleSettings struct {
+	Count int  `glazed.parameter:"count"`
+	Test  bool `glazed.parameter:"test"`
+}
+
 func NewExampleCommand() (*ExampleCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -44,14 +51,14 @@ func NewExampleCommand() (*ExampleCommand, error) {
 					parameters.WithDefault(false),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),
 	}, nil
 }
 
-// Run is called to actually execute the command.
+// RunIntoGlazeProcessor is called to actually execute the command.
 //
 // parsedLayers contains the result of parsing each layer that has been
 // registered with the command description. These layers can be glazed structured data
@@ -60,22 +67,20 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
-func (c *ExampleCommand) Run(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
-	gp middlewares.Processor,
-) error {
-	count := ps["count"].(int)
-	test := ps["test"].(bool)
+func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	s := &ExampleSettings{}
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize example settings from parameters")
+	}
 
-	for i := 0; i < count; i++ {
+	for i := 0; i < s.Count; i++ {
 		row := types.NewRow(
 			types.MRP("id", i),
 			types.MRP("name", "foobar-"+strconv.Itoa(i)),
 		)
 
-		if test {
+		if s.Test {
 			row.Set("test", rand.Intn(100)+1)
 		}
 

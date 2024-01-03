@@ -1,39 +1,38 @@
 #!/usr/bin/env bash
 
+echo "---"
+echo "Here are the types that can be used to define parameters in glazed:"
+echo "---"
 cat <<EOF
+package parameters
+
 type ParameterType string
 const (
-	ParameterTypeString
+	ParameterTypeString = "string"
 
-	ParameterTypeStringFromFile
-	ParameterTypeStringFromFiles -> string
+	ParameterTypeStringFromFile = "stringFromFile"
+	ParameterTypeStringFromFiles = "stringFromFiles" -> string
 
-	ParameterTypeFile -> *FileData
-	ParameterTypeFileList -> []*FileData
+	ParameterTypeFile = "file" -> *FileData
+	ParameterTypeFileList = "fileList" -> []*FileData
 
-	// TODO(manuel, 2023-09-19) Add some more types and maybe revisit the entire concept of loading things from files
-	// - string (potentially from file if starting with @)
-	// - string/int/float list from file is another useful type
+	ParameterTypeObjectListFromFile = "objectListFromFile" -> []map[string]interface{}
+	ParameterTypeObjectListFromFiles = "objectListFromFiles" -> []map[string]interface{}
+	ParameterTypeObjectFromFile = "objectFromFile" -> map[string]interface{}
+	ParameterTypeStringListFromFile = "stringListFromFile" -> []string
+	ParameterTypeStringListFromFiles = "stringListFromFiles" -> []string
 
-	ParameterTypeObjectListFromFile
-	ParameterTypeObjectListFromFiles
-	ParameterTypeObjectFromFile
-	ParameterTypeStringListFromFile
-	ParameterTypeStringListFromFiles
+	ParameterTypeKeyValue = "keyValue" -> map[string]string
 
-	// ParameterTypeKeyValue signals either a string with comma separate key-value options,
-	// or when beginning with @, a file with key-value options
-	ParameterTypeKeyValue
-
-	ParameterTypeInteger
-	ParameterTypeFloat
-	ParameterTypeBool
-	ParameterTypeDate
-	ParameterTypeStringList
-	ParameterTypeIntegerList
-	ParameterTypeFloatList
-	ParameterTypeChoice
-	ParameterTypeChoiceList
+	ParameterTypeInteger = "int"
+	ParameterTypeFloat = "float"
+	ParameterTypeBool = "bool"
+	ParameterTypeDate = "date" -> time.Time/string
+	ParameterTypeStringList = "stringList"
+	ParameterTypeIntegerList = "intList"
+	ParameterTypeFloatList = "floatList"
+	ParameterTypeChoice = "choice" -> string
+	ParameterTypeChoiceList = "choiceList" -> []string
 )
 EOF
 

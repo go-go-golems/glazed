@@ -25,6 +25,15 @@ type FieldsFiltersParameterLayer struct {
 	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
+var _ layers.CobraParameterLayer = &FieldsFiltersParameterLayer{}
+var _ layers.ParameterLayer = &FieldsFiltersParameterLayer{}
+
+func (f *FieldsFiltersParameterLayer) Clone() layers.ParameterLayer {
+	return &FieldsFiltersParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
 type FieldsFilterSettings struct {
 	Filters          []string `glazed.parameter:"filter"`
 	Fields           []string `glazed.parameter:"fields"`
@@ -45,7 +54,7 @@ func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*F
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command) error {
+func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	defaults := &FieldsFilterFlagsDefaults{}
 	err := f.ParameterLayerImpl.InitializeStructFromParameterDefaults(defaults)
 	if err != nil {
@@ -62,26 +71,45 @@ func (f *FieldsFiltersParameterLayer) AddFlagsToCobraCommand(cmd *cobra.Command)
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.ParameterLayerImpl.AddFlagsToCobraCommand(cmd)
+	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseFlagsFromCobraCommand(cmd *cobra.Command) (map[string]interface{}, error) {
-	ps, err := f.ParameterLayerImpl.ParseFlagsFromCobraCommand(cmd)
+func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
+	cmd *cobra.Command,
+	options ...parameters.ParseStepOption,
+) (*layers.ParsedLayer, error) {
+	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
 	// if fields were manually specified, clear whatever default filters we might have set
+	// TODO(manuel, 2023-12-28) This should be moved to somewhere outside of the cobra parsing, I think
+	// This means we'd have to store if a flag was changed in the parsed layer
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		ps["filter"] = []string{}
+		parsedFilter, ok := l.Parameters.Get("filter")
+		options_ := append(options, parameters.WithParseStepSource("override-fields-filter"))
+		if !ok {
+			pd, ok := f.ParameterDefinitions.Get("filter")
+			if !ok {
+				return nil, errors.New("Failed to find default filter parameter definition")
+			}
+			p := &parameters.ParsedParameter{
+				ParameterDefinition: pd,
+			}
+			p.Update([]string{}, options_...)
+			l.Parameters.Set("filter", p)
+		} else {
+			parsedFilter.Update([]string{}, options_...)
+		}
 	}
 
-	return ps, nil
+	return l, nil
 }
 
-func NewFieldsFilterSettings(ps map[string]interface{}) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, err
 	}

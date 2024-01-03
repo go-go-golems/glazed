@@ -1,0 +1,234 @@
+- name: "Blacklist Single Layer"
+  description: "A single layer is blacklisted and should be removed from ParameterLayers."
+  parameterLayers:
+    - name: layer1
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: layer2
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+  parsedLayers: []
+  blacklistedUpdateMaps:
+    layer1:
+      param1: "newValue1"
+  blacklistedSlugs:
+    - "layer1"
+  expectedError: false
+
+- name: "Blacklist Multiple Layers"
+  description: "Multiple layers are blacklisted and should be removed from ParameterLayers."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "layer2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "layer3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  expectedLayers:
+    - name: layer2
+      values:
+        param2: 22
+  blacklistedUpdateMaps:
+    layer1:
+      param1: "newValue1"
+    layer2:
+      param2: 22
+    layer3:
+      param3: false
+  blacklistedSlugs:
+    - "layer1"
+    - "layer3"
+  expectedError: false
+
+- name: "Blacklist does not affect before and after update map"
+  description: "Blacklisting should not affect the before and after update maps."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "layer2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "layer3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+    - name: "layer4"
+      definitions:
+        - name: "param4"
+          type: "string"
+          default: "default4"
+  parsedLayers: []
+  blacklistedUpdateMaps:
+    layer2:
+      param2: 13
+    layer4:
+      param4: "newValue4BlackListed"
+  blacklistedSlugs:
+    - "layer1"
+    - "layer3"
+  expectedError: false
+  expectedLayers:
+    - name: layer1
+      values:
+        param1: "newValue1After"
+    - name: layer2
+      values:
+        param2: 13
+    - name: layer3
+      values:
+        param3: true
+    - name: layer4
+      values:
+        param4: "newValue4After"
+  beforeUpdateMaps:
+    layer1:
+      param1: "newValue1Before"
+    layer2:
+      param2: 222
+    layer3:
+      param3: false
+  afterUpdateMaps:
+    layer1:
+      param1: "newValue1After"
+    layer3:
+      param3: true
+    layer4:
+      param4: "newValue4After"
+
+- name: "Whitelist single layer"
+  description: "A single layer is whitelisted and should be kept in ParameterLayers."
+  parameterLayers:
+    - name: layer1
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: layer2
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+  parsedLayers: []
+  expectedLayers:
+    - name: layer1
+      values:
+        param1: "newValue1"
+  whitelistedUpdateMaps:
+    layer1:
+      param1: "newValue1"
+  whitelistedSlugs:
+    - "layer1"
+  expectedError: false
+
+- name: "Whitelist multiple layers"
+  description: "Multiple layers are whitelisted and should be kept in ParameterLayers."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "layer2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "layer3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  expectedLayers:
+    - name: layer1
+      values:
+        param1: "newValue1"
+    - name: layer3
+      values:
+        param3: false
+  whitelistedUpdateMaps:
+    layer1:
+      param1: "newValue1"
+    layer3:
+      param3: false
+  whitelistedSlugs:
+    - "layer1"
+    - "layer3"
+  expectedError: false
+
+- name: "Whitelist does not affect before and after update map"
+  description: "Whitelisting should not affect the before and after update maps."
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "layer2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "layer3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+    - name: "layer4"
+      definitions:
+        - name: "param4"
+          type: "string"
+          default: "default4"
+  parsedLayers: []
+  whitelistedUpdateMaps:
+    layer1:
+      param1: "newValue1Whitelisted"
+    layer3:
+      param3: true
+  whitelistedSlugs:
+    - "layer1"
+    - "layer3"
+  expectedError: false
+  expectedLayers:
+    - name: layer1
+      values:
+        param1: "newValue1After"
+    - name: layer2
+      values:
+        param2: 222
+    - name: layer3
+      values:
+        param3: true
+    - name: layer4
+      values:
+        param4: "newValue4After"
+  beforeUpdateMaps:
+    layer1:
+      param1: "newValue1Before"
+    layer2:
+      param2: 222
+    layer3:
+      param3: false
+  afterUpdateMaps:
+    layer1:
+      param1: "newValue1After"
+    layer4:
+      param4: "newValue4After"

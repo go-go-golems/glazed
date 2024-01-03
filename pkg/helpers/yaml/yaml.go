@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"gopkg.in/yaml.v3"
 	"regexp"
 	"strings"
 )
@@ -116,4 +117,14 @@ func getIndentLevel(line string) (int, bool) {
 		}
 	}
 	return indent, isWhitespace
+}
+
+func LoadTestFromYAML[T any](yaml_ string) (T, error) {
+	var ret T
+	err := yaml.Unmarshal([]byte(yaml_), &ret)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+	return ret, nil
 }

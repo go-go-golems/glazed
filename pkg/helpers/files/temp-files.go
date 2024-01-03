@@ -1,9 +1,12 @@
 package files
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 type fileInfo struct {
@@ -63,4 +66,55 @@ func GarbageCollectTemporaryFiles(tempDir string, mask string, n int) ([]string,
 	}
 
 	return deletedFiles, nil
+}
+
+// WriteTemporaryFile creates a temporary file with a given prefix, name and writes data into it.
+//
+// In the event of any errors, it cleans up by deleting the file and returns the error.
+//
+// Returns: Path of the temp file and error if any.
+func WriteTemporaryFile(prefix string, name string, body []byte) (string, error) {
+	f, err := getTempFile(prefix, name)
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write(body)
+	if err != nil {
+		// delete file
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+		return "", err
+	}
+	_ = f.Close()
+
+	return f.Name(), nil
+}
+
+func getTempFile(prefix string, name string) (*os.File, error) {
+	date := time.Now().Format("02-01-2006--15-04-05")
+	fileTemplate := fmt.Sprintf("%s-%s-%s-*", prefix, name, date)
+	f, err := os.CreateTemp(os.TempDir(), fileTemplate)
+	return f, err
+}
+
+// CopyReaderToTemporaryFile creates a temporary file with a given prefix, name and copies data from a reader into it.
+//
+// In the event of any errors during the file creation or data copying, it cleans up by deleting the file and returns the error.
+//
+// Returns the path to the temporary file on success.
+func CopyReaderToTemporaryFile(prefix string, name string, r io.Reader) (string, error) {
+	f, err := getTempFile(prefix, name)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(f, r)
+	if err != nil {
+		// delete file
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+		return "", err
+	}
+	_ = f.Close()
+
+	return f.Name(), nil
 }

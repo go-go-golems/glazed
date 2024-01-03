@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
@@ -66,9 +65,15 @@ func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputPa
 	return ret, nil
 }
 
-func NewOutputFormatterSettings(ps map[string]interface{}) (*OutputFormatterSettings, error) {
+func (f *OutputParameterLayer) Clone() layers.ParameterLayer {
+	return &OutputParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
+}
+
+func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}

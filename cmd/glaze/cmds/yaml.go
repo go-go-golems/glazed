@@ -22,6 +22,8 @@ type YamlCommand struct {
 	*cmds.CommandDescription
 }
 
+var _ cmds.GlazeCommand = (*YamlCommand)(nil)
+
 func NewYamlCommand() (*YamlCommand, error) {
 	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
 	if err != nil {
@@ -59,52 +61,40 @@ func NewYamlCommand() (*YamlCommand, error) {
 					parameters.WithRequired(true),
 				),
 			),
-			cmds.WithLayers(
+			cmds.WithLayersList(
 				glazedParameterLayer,
 			),
 		),
 	}, nil
 }
 
-func (y *YamlCommand) Run(
-	ctx context.Context,
-	_ map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
-	gp middlewares.Processor,
-) error {
-	inputIsArray, ok := ps["input-is-array"].(bool)
-	if !ok {
-		return fmt.Errorf("input-is-array flag is not a bool")
+type YamlSettings struct {
+	InputIsArray bool     `glazed.parameter:"input-is-array"`
+	Sanitize     bool     `glazed.parameter:"sanitize"`
+	FromMarkdown bool     `glazed.parameter:"from-markdown"`
+	InputFiles   []string `glazed.parameter:"input-files"`
+}
+
+func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	s := &YamlSettings{}
+	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
 	}
 
-	sanitize, ok := ps["sanitize"].(bool)
-	if !ok {
-		return fmt.Errorf("sanitize flag is not a bool")
-	}
-
-	inputFiles, ok := ps["input-files"].([]string)
-	if !ok {
-		return fmt.Errorf("input-files is not a string list")
-	}
-
-	fromMarkdown, ok := ps["from-markdown"].(bool)
-	if !ok {
-		return fmt.Errorf("from-markdown flag is not a bool")
-	}
-
-	for _, arg := range inputFiles {
+	for _, arg := range s.InputFiles {
 		if arg == "-" {
 			arg = "/dev/stdin"
 		}
 		var f io.Reader
 		var err error
 
-		if sanitize || fromMarkdown {
+		if s.Sanitize || s.FromMarkdown {
 			// read in file
 			data, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			cleanData := yaml2.Clean(string(data), fromMarkdown)
+			cleanData := yaml2.Clean(string(data), s.FromMarkdown)
 			f = strings.NewReader(cleanData)
 		} else {
 			f, err = os.Open(arg)
@@ -117,7 +107,7 @@ func (y *YamlCommand) Run(
 			}(f.(*os.File))
 		}
 
-		if inputIsArray {
+		if s.InputIsArray {
 			// TODO(manuel, 2023-06-25) We should implement an unmarshaller for maprow from yaml
 			// See https://github.com/go-go-golems/glazed/issues/305
 			data := make([]types.Row, 0)

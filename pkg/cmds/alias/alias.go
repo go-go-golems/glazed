@@ -6,7 +6,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -114,6 +113,9 @@ func NewCommandAliasFromYAML(s io.Reader, options ...Option) (*CommandAlias, err
 	return a, nil
 }
 
+var _ cmds.GlazeCommand = (*CommandAlias)(nil)
+var _ cmds.WriterCommand = (*CommandAlias)(nil)
+
 func (a *CommandAlias) String() string {
 	return fmt.Sprintf("CommandAlias{Name: %s, AliasFor: %s, Parents: %v, Source: %s}",
 		a.Name, a.AliasFor, a.Parents, a.Source)
@@ -128,12 +130,7 @@ func (a *CommandAlias) ToYAML(w io.Writer) error {
 	return enc.Encode(a)
 }
 
-func (a *CommandAlias) Run(
-	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
-	gp middlewares.Processor,
-) error {
+func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
@@ -141,7 +138,18 @@ func (a *CommandAlias) Run(
 	if !ok {
 		return errors.New("aliased command is not a GlazeCommand")
 	}
-	return glazeCommand.Run(ctx, parsedLayers, ps, gp)
+	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
+}
+
+func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+	if a.AliasedCommand == nil {
+		return errors.New("no aliased command")
+	}
+	writerCommand, ok := a.AliasedCommand.(cmds.WriterCommand)
+	if !ok {
+		return errors.New("aliased command is not a GlazeCommand")
+	}
+	return writerCommand.RunIntoWriter(ctx, parsedLayers, w)
 }
 
 func (a *CommandAlias) IsValid() bool {
@@ -162,73 +170,17 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 	if layout_ == nil {
 		layout_ = s.Layout
 	}
+
+	newLayers := s.Layers.Clone()
+
 	ret := &cmds.CommandDescription{
-		Name:      a.Name,
-		Short:     s.Short,
-		Long:      s.Long,
-		Flags:     []*parameters.ParameterDefinition{},
-		Arguments: []*parameters.ParameterDefinition{},
-		Layout:    layout_,
-		Layers:    s.Layers,
-		Parents:   a.Parents,
-		Source:    a.Source,
-	}
-
-	for _, flag := range s.Flags {
-		newFlag := flag.Copy()
-		// newFlag.Required = false
-		ret.Flags = append(ret.Flags, newFlag)
-	}
-
-	for _, argument := range s.Arguments {
-		newArgument := argument.Copy()
-
-		// ## Parsing the overloaded strings to actual types to store as flag defaults
-		//
-		// NOTE(2023-04-20) We can't easily return overloaded flags and arguments as defaults in the CommandDescription
-		//
-		// This was created before layers being a thing, so that the overloads are not really type specific.
-		// This is a problem already when capturing the aliases, but it should be much easier now.
-		//
-		// For now, we still use strings, and as such need the overloading of an alias to be caught at the primitive
-		// parsing step (cobra for CLI, HTTP parsers for parka).
-		//
-		// See https://github.com/go-go-golems/glazed/issues/287
-		//
-		// For now, parka handling takes an explicit list of defaults in its parser functions,
-		// which might not be the worst idea for overloading things at registration time either.
-
-		// ## Handling argument count
-		//
-		// See also the note in glazed_layer.go about checking the argument count. This might all
-		// refer to overloading arguments, and not just flags. This seems to make sense given the
-		// talk about argument counts.
-		//
-		// ---
-		//
-		// TODO(2022-12-22, manuel) this needs to be handled, overriding arguments and figuring out which order
-		// is a bitch
-		//
-		// so iN command.go in cobra, prerun is run before the arg validation is done
-		// so that we could potentially override the args here
-		//
-		// the args are gotten from c.Flags().Args()
-		//
-		// it looks like in prerun, we could check if args is empty,
-		// and if so, pass in our arguments  by calling Parse() a second time,
-		// and then going over the newly set arg?
-		//
-		// It's of course going to be relying on cobra internals a bit,
-		// by assuming that calling parse a second time is not going to interfere with already set flags
-		// so maybe the best solution is really just to interleave the flags at the outset
-		// by doing our own little scanning, which is probably useful anyway if done in glazed
-		// so that we can handle different types of arg parsing.
-		//
-		// if defaultValue, ok := a.ArgumentDefaults[argument.Name]; ok {
-		//	newArgument.Default = defaultValue
-		// }
-		// newArgument.Required = false
-		ret.Arguments = append(ret.Arguments, newArgument)
+		Name:    a.Name,
+		Short:   s.Short,
+		Long:    s.Long,
+		Layout:  layout_,
+		Layers:  newLayers,
+		Parents: a.Parents,
+		Source:  a.Source,
 	}
 
 	return ret

@@ -22,13 +22,14 @@ import (
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
 type Parameter struct {
-	Name    string                   `yaml:"name"`
-	Flag    string                   `yaml:"flag,omitempty"`
-	Short   string                   `yaml:"short"`
-	Type    parameters.ParameterType `yaml:"type"`
-	Value   interface{}              `yaml:"value"`
-	Raw     string                   `yaml:"raw,omitempty"`
-	NoValue bool                     `yaml:"noValue,omitempty"`
+	Name       string                   `yaml:"name"`
+	Flag       string                   `yaml:"flag,omitempty"`
+	Short      string                   `yaml:"short"`
+	Type       parameters.ParameterType `yaml:"type"`
+	Value      interface{}              `yaml:"value"`
+	Raw        string                   `yaml:"raw,omitempty"`
+	NoValue    bool                     `yaml:"noValue,omitempty"`
+	IsArgument bool                     `yaml:"isArgument,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files
@@ -317,8 +318,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
-	ps map[string]interface{},
+	parsedLayers *layers.ParsedLayers,
 	w io.Writer) error {
 	var err error
 	path := p.Path
@@ -328,6 +328,8 @@ func (p *Program) RunIntoWriter(
 			return errors.Wrapf(err, "could not find executable %s", p.Name)
 		}
 	}
+
+	ps := parsedLayers.GetAllParsedParameters()
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {
@@ -357,7 +359,7 @@ func (p *Program) RunIntoWriter(
 	return nil
 }
 
-func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
+func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error) {
 	var err error
 
 	args := []string{}
@@ -384,12 +386,12 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 			continue
 		}
 
-		value, ok := ps[flag.Name]
+		value, ok := ps.Get(flag.Name)
 		value_ := ""
 		if !ok {
 			value_ = flag.Raw
 		} else {
-			value_, err = parameters.RenderValue(flag.Type, value)
+			value_, err = parameters.RenderValue(flag.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}
@@ -406,12 +408,12 @@ func (p *Program) ComputeArgs(ps map[string]interface{}) ([]string, error) {
 	}
 
 	for _, arg := range p.Args {
-		value, ok := ps[arg.Name]
+		value, ok := ps.Get(arg.Name)
 		value_ := ""
 		if !ok {
 			value_ = arg.Raw
 		} else {
-			value_, err = parameters.RenderValue(arg.Type, value)
+			value_, err = parameters.RenderValue(arg.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}

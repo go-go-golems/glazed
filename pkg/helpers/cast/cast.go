@@ -381,3 +381,8 @@ func GetAndCastPtr[T any](ps map[string]interface{}, name string, default_ *T) (
 	}
 	return default_, false, nil
 }
+
+func InterfaceAddr[T any](t T) *interface{} {
+	t_ := interface{}(t)
+	return &t_
+}

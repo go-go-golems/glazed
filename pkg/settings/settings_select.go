@@ -3,7 +3,6 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -17,9 +16,9 @@ type SelectSettings struct {
 	SelectTemplate  string `glazed.parameter:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(ps map[string]interface{}) (*SelectSettings, error) {
+func NewSelectSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SelectSettings, error) {
 	s := &SelectSettings{}
-	err := parameters.InitializeStructFromParameters(s, ps)
+	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize select settings from parameters")
 	}
@@ -48,4 +47,10 @@ func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectPa
 	ret.ParameterLayerImpl = layer
 
 	return ret, nil
+}
+
+func (f *SelectParameterLayer) Clone() layers.ParameterLayer {
+	return &SelectParameterLayer{
+		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+	}
 }

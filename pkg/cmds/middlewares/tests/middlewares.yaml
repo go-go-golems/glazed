@@ -1,0 +1,78 @@
+- name: "Empty middlewares and parsedLayers"
+  description: "Empty middlewares should result in empty parsed layers"
+  parameterLayers: [ ]
+  parsedLayers: [ ]
+  expectedLayers: [ ]
+  expectedError: false
+  middlewares: []
+
+- name: "Empty parsedLayers, set from defaults"
+  description: "Only set from defaults middlewares, with empty parsed layers"
+  parameterLayers: [ ]
+  parsedLayers: [ ]
+  expectedLayers: [ ]
+  expectedError: false
+  middlewares:
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"
+
+- name: "Single parameter, set from defaults"
+  description: "Only set from defaults middlewares, with single parameter"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  parsedLayers: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "defaultVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
+  expectedError: false
+  middlewares:
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"
+
+- name: "Single parameter, set from defaults and then update from map"
+  description: "Set from defaults then map middlewares, with single parameter"
+  parameterLayers:
+    - name: "layer1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  parsedLayers: [ ]
+  expectedLayers:
+    - name: "layer1"
+      values:
+        param1: "mapVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
+          - source: "map"
+            value: "mapVal"
+            metadata:
+              "map-value": "mapVal"
+  expectedError: false
+  middlewares:
+    - name: "updateFromMap"
+      options:
+        - name: "source"
+          value: "map"
+      map:
+        layer1:
+          param1: "mapVal"
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"

@@ -5,86 +5,65 @@ import (
 	"strings"
 )
 
-// GatherFlagsFromStringList is a function that parses command line flags according to a list of parameter definitions.
-// It returns a map of parameter names to parsed values.
+// GatherFlagsFromStringList parses command line arguments into a ParsedParameters
+// map. It accepts a slice of string arguments, bools to control required/provided
+// flag handling, and a prefix to prepend to flag names.
 //
-// ### Usage
+// It returns the parsed parameters map, any non-flag arguments, and any error
+// encountered during parsing.
 //
-// The function takes two arguments:
+// onlyProvided controls whether to only include flags that were explicitly
+// provided on the command line. If false, default values will be included
+// for any flags that were not provided.
 //
-// - `args`: a slice of strings representing the command line arguments.
-// - `params`: a slice of `*ParameterDefinition` representing the parameter definitions.
+// ignoreRequired controls whether required flags are enforced.
+// If true, missing required flags will not trigger an error.
 //
-// The function returns a map where the keys are the parameter names and the values are the parsed values.
-// If a flag is not recognized or its value cannot be parsed, an error is returned.
-//
-// ### Internals
-//
-// The function first creates a map of possible flag names from the list of parameter definitions.
-// It then iterates over the command line arguments. If an argument starts with `--` or `-`,
-// it is considered a flag. The function then checks if the flag is recognized by looking it up in
-// the map of flag names. If the flag is recognized, its value is collected.
-//
-// The system sets the flag to "true" automatically if it's a boolean flag. If a flag repeats,
-// the system collects all its values in a slice. Once the system has collected all flags and their raw values,
-// it parses the raw values based on the parameter definitions.
-//
-// The `ParseParameter` method of the corresponding `ParameterDefinition` performs the parsing.
-// This method receives a slice of strings and returns the parsed value and an error.
-// The system stores the parsed values in the result map.
-//
-// ### Example
-//
-// Here is an example of how to use the function:
-//
-// ```go
-//
-//	params := []*ParameterDefinition{
-//	   {Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-//	   {Name: "output", ShortFlag: "o", Type: ParameterTypeString},
-//	}
-//
-// args := []string{"--verbose", "-o", "file.txt"}
-// result, args, err := GatherFlagsFromStringList(args, params, false, false, "")
-//
-//	if err != nil {
-//	   log.Fatal(err)
-//	}
-//
-// fmt.Println(result) // prints: map[verbose:true output:file.txt]
-// ```
-//
-// In this example, the function parses the `--verbose` and `-o` flags according to the provided parameter definitions. The `--verbose` flag is a boolean flag and is set to "true". The `-o` flag is a string flag and its value is "file.txt".
-func GatherFlagsFromStringList(
+// prefix allows prepending a string to flag names to namespace them.
+// For example, a prefix of "user" would namespace flags like "--name"
+// to "--user-name". This allows reuse of a flag set across different
+// sub-commands. The prefix has "-" appended automatically.
+func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 	args []string,
-	params []*ParameterDefinition,
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
-) (map[string]interface{}, []string, error) {
-	flagMap := make(map[string]*ParameterDefinition)
+	parseOptions ...ParseStepOption,
+) (*ParsedParameters, []string, error) {
+	flagMap := NewParameterDefinitions()
 	flagNames := map[string]string{}
 	remainingArgs := []string{}
 
-	for _, param := range params {
+	// build a map of flag names to parameter definitions, including through shortflags
+	err := pds.ForEachE(func(param *ParameterDefinition) error {
+		if param.IsArgument {
+			return nil
+		}
 		flagName := prefix + param.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
-		if _, ok := flagMap[flagName]; ok {
-			return nil, nil, fmt.Errorf("duplicate flag: --%s", flagName)
+		if _, ok := flagMap.Get(flagName); ok {
+			return fmt.Errorf("duplicate flag: --%s", flagName)
 		}
-		flagMap[flagName] = param
+		flagMap.Set(flagName, param)
 		flagNames[flagName] = param.Name
 
 		if prefix == "" {
 			if param.ShortFlag != "" {
-				if _, ok := flagMap[param.ShortFlag]; ok {
-					return nil, nil, fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
+				if _, ok := flagMap.Get(param.ShortFlag); ok {
+					return fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
 				}
-				flagMap[param.ShortFlag] = param
+				flagMap.Set(param.ShortFlag, param)
 			}
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
 	}
 
+	// TODO(manuel, 2023-12-25) Handle -- and switch to full flags
+	// See: https://github.com/go-go-golems/glazed/issues/399
 	rawValues := make(map[string][]string)
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -94,12 +73,12 @@ func GatherFlagsFromStringList(
 		if strings.HasPrefix(arg, "--") {
 			splitArg := strings.SplitN(arg[2:], "=", 2)
 			flagName = splitArg[0]
-			param, ok = flagMap[flagName]
+			param, ok = flagMap.Get(flagName)
 			if !ok {
 				return nil, nil, fmt.Errorf("unknown flag: --%s", flagName)
 			}
 			if len(splitArg) == 2 {
-				if IsListParameter(param.Type) {
+				if param.Type.IsList() {
 					value := strings.Trim(splitArg[1], "[]")
 					values := strings.Split(value, ",")
 					rawValues[flagName] = append(rawValues[flagName], values...)
@@ -110,7 +89,7 @@ func GatherFlagsFromStringList(
 			}
 		} else if strings.HasPrefix(arg, "-") {
 			flagName = arg[1:]
-			param, ok = flagMap[flagName]
+			param, ok = flagMap.Get(flagName)
 			if !ok {
 				return nil, nil, fmt.Errorf("unknown flag: -%s", flagName)
 			}
@@ -127,7 +106,7 @@ func GatherFlagsFromStringList(
 			}
 			value := args[i+1]
 			i++
-			if IsListParameter(param.Type) {
+			if param.Type.IsList() {
 				value = strings.Trim(value, "[]")
 				values := strings.Split(value, ",")
 				rawValues[flagName] = append(rawValues[flagName], values...)
@@ -137,30 +116,43 @@ func GatherFlagsFromStringList(
 		}
 	}
 
-	result := make(map[string]interface{})
+	result := NewParsedParameters()
 	for paramName, values := range rawValues {
-		param := flagMap[paramName]
-		if param == nil {
+		param, ok := flagMap.Get(paramName)
+		if !ok || param == nil {
 			return nil, nil, fmt.Errorf("unknown flag: --%s", paramName)
 		}
-		parsedValue, err := param.ParseParameter(values)
+		parsedValue, err := param.ParseParameter(values, parseOptions...)
 		if err != nil {
 			return nil, nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
 		}
-		result[param.Name] = parsedValue
+		result.Set(param.Name, parsedValue)
 	}
 
-	for _, param := range params {
+	err = pds.ForEachE(func(param *ParameterDefinition) error {
 		if param.Required && !ignoreRequired {
 			if _, ok := rawValues[param.Name]; !ok {
-				return nil, nil, fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
+				return fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
 			}
 		}
 		if !onlyProvided {
-			if _, ok := result[param.Name]; !ok && param.Default != nil {
-				result[param.Name] = param.Default
+			if _, ok := result.Get(param.Name); !ok && param.Default != nil {
+				p := &ParsedParameter{
+					ParameterDefinition: param,
+				}
+				// show that this was set out of the default
+				parseOptions_ := append(parseOptions, WithParseStepMetadata(map[string]interface{}{
+					"default": true,
+				}), WithParseStepSource("default"))
+				p.Update(*param.Default, parseOptions_...)
+				result.Set(param.Name, p)
 			}
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return result, remainingArgs, nil
