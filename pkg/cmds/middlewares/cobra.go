@@ -76,6 +76,7 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 			}
 			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
 				options_ := append([]parameters.ParseStepOption{
+					parameters.WithParseStepSource("viper"),
 					parameters.WithParseStepMetadata(map[string]interface{}{
 						"layer": l.GetName(),
 					}),
@@ -85,7 +86,7 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 				parameterDefinitions := l.GetParameterDefinitions()
 				prefix := l.GetPrefix()
 
-				ps, err := parameterDefinitions.GatherFlagsFromViper(false, prefix, options_...)
+				ps, err := parameterDefinitions.GatherFlagsFromViper(true, prefix, options_...)
 				if err != nil {
 					return err
 				}

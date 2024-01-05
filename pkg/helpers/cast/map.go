@@ -30,3 +30,44 @@ func ConvertMapToInterfaceMap(input interface{}) (map[string]interface{}, error)
 
 	return result, nil
 }
+
+func CastStringMap[To any, From any](m map[string]From) (map[string]To, bool) {
+	ret := map[string]To{}
+
+	for k, v := range m {
+		var item interface{} = v
+		casted, ok := item.(To)
+		if !ok {
+			return ret, false
+		}
+
+		ret[k] = casted
+	}
+
+	return ret, true
+}
+
+func CastInterfaceToStringMap[To any, From any](m interface{}) (map[string]To, bool) {
+	ret := map[string]To{}
+
+	switch m := m.(type) {
+	case map[string]To:
+		return m, true
+	case map[string]interface{}:
+		return CastStringMap[To, interface{}](m)
+	case map[string]From:
+		return CastStringMap[To, From](m)
+	default:
+		return ret, false
+	}
+}
+
+func CastMapToInterfaceMap[From any](m map[string]From) map[string]interface{} {
+	ret := map[string]interface{}{}
+
+	for k, v := range m {
+		ret[k] = v
+	}
+
+	return ret
+}

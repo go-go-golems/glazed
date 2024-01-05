@@ -189,3 +189,44 @@ func UpdateFromEnv(prefix string, options ...parameters.ParseStepOption) Middlew
 		}
 	}
 }
+
+func updateFromStringList(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers, prefix string, args []string, options ...parameters.ParseStepOption) error {
+	err := layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+		parsedLayer := parsedLayers.GetOrCreate(l)
+		pds := l.GetParameterDefinitions()
+		ps, remainingArgs, err := pds.GatherFlagsFromStringList(args, true, true, prefix, options...)
+		if err != nil {
+			return err
+		}
+
+		parsedLayer.Parameters.Merge(ps)
+
+		ps, err = pds.GatherArguments(remainingArgs, true, true, options...)
+		if err != nil {
+			return err
+		}
+
+		parsedLayer.Parameters.Merge(ps)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateFromStringList(prefix string, args []string, options ...parameters.ParseStepOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			return updateFromStringList(layers_, parsedLayers, prefix, args, options...)
+		}
+	}
+}

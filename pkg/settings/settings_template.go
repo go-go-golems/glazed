@@ -3,6 +3,7 @@ package settings
 import (
 	_ "embed"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -46,6 +47,8 @@ type TemplateParameterLayer struct {
 	*layers.ParameterLayerImpl `yaml:",inline"`
 }
 
+const GlazedTemplateLayerSlug = "glazed-template"
+
 func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {
 	ret := &TemplateParameterLayer{}
 	layer, err := layers.NewParameterLayerFromYAML(templateFlagsYaml, options...)
@@ -64,6 +67,8 @@ func (f *TemplateParameterLayer) Clone() layers.ParameterLayer {
 }
 
 func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
+	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStruct I think
+
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 
@@ -71,15 +76,17 @@ func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
 	if ok && templateArgument != "" {
 		templates["_0"] = templateArgument
 	} else {
-		templateFields, ok := layer.Parameters.GetValue("template-field").(map[string]interface{})
-		if ok && len(templateFields) > 0 {
-			for k, v := range templateFields {
-				vString, ok := v.(string)
-				if !ok {
-					return nil, errors.Errorf("template-field %s is not a string", k)
-				}
-				templates[k] = vString
+		v := layer.Parameters.GetValue("template-field")
+		templateFields, err := cast.ConvertMapToInterfaceMap(v)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to convert template-field to map[string]interface{}")
+		}
+		for k, v := range templateFields {
+			vString, ok := v.(string)
+			if !ok {
+				return nil, errors.Errorf("template-field %s is not a string", k)
 			}
+			templates[k] = vString
 		}
 	}
 

@@ -1,35 +1,30 @@
 package settings
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func makeCommand(t *testing.T, defaults *TemplateFlagsDefaults) *cobra.Command {
-	cmd := &cobra.Command{}
-	tpl, err := NewTemplateParameterLayer()
-	require.NoError(t, err)
-	err = tpl.InitializeParameterDefaultsFromStruct(defaults)
-	require.NoError(t, err)
-
-	err = tpl.AddLayerToCobraCommand(cmd)
-	require.NoError(t, err)
-
-	return cmd
-}
-
 func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string) *TemplateSettings {
-	cmd := makeCommand(t, defaults)
-	err := cmd.ParseFlags(args)
+	layer, err := NewTemplateParameterLayer()
+	require.NoError(t, err)
+	err = layer.InitializeParameterDefaultsFromStruct(defaults)
 	require.NoError(t, err)
 
-	tpl, err := NewTemplateParameterLayer()
+	layers_ := layers.NewParameterLayers(layers.WithLayers(layer))
+	parsedLayers := layers.NewParsedLayers()
+	err = middlewares.ExecuteMiddlewares(layers_, parsedLayers,
+		middlewares.UpdateFromStringList("", args, parameters.WithParseStepSource("string-list")),
+		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+	)
 	require.NoError(t, err)
 
-	ps, err := tpl.ParseLayerFromCobraCommand(cmd)
-	require.NoError(t, err)
+	ps, ok := parsedLayers.Get(GlazedTemplateLayerSlug)
+	require.True(t, ok)
 
 	settings, err := NewTemplateSettings(ps)
 	require.NoError(t, err)

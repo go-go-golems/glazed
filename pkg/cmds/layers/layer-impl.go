@@ -239,7 +239,9 @@ func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(
 	options ...parameters.ParseStepOption,
 ) (*ParsedLayer, error) {
 	ps, err := p.ParameterDefinitions.GatherFlagsFromCobraCommand(
-		cmd, false, false, p.Prefix,
+		// TODO(manuel, 2024-01-05) We probably need to move the required check to a higher level middleware, because
+		// we are not relying on cobra so much anymore since we introduced middlewares
+		cmd, true, false, p.Prefix,
 		options...,
 	)
 	if err != nil {
