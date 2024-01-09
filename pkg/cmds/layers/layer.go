@@ -2,6 +2,7 @@ package layers
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/spf13/cobra"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
@@ -131,4 +132,17 @@ func (pl *ParameterLayers) GetAllParameterDefinitions() *parameters.ParameterDef
 		})
 	})
 	return ret
+}
+
+func (pl *ParameterLayers) AddToCobraCommand(cmd *cobra.Command) error {
+	return pl.ForEachE(func(_ string, v ParameterLayer) error {
+		if v.(CobraParameterLayer) != nil {
+			err := v.(CobraParameterLayer).AddLayerToCobraCommand(cmd)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }

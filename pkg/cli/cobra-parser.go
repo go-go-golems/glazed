@@ -50,11 +50,10 @@ func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd 
 //
 // That command however doesn't have a Run* method, which is left to the caller to implement.
 //
-// This returns a CobraParser that can be used to parse the registered layers
+// This returns a CobraParser that can be used to parse the registered Layers
 // from the description.
 type CobraParser struct {
-	Cmd         *cobra.Command
-	description *cmds.CommandDescription
+	Layers *layers.ParameterLayers
 	// middlewaresFunc is called after the command has been executed, once the
 	// GlazedCommandSettings struct has been filled. At this point, cobra has done the parsing
 	// of CLI flags and arguments, but these haven't yet been parsed into ParsedLayers
@@ -74,22 +73,26 @@ func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserO
 	}
 }
 
-// NewCobraParserFromCommandDescription creates a new CobraParser instance from a
-// CommandDescription, initializes the underlying cobra.Command, and adds all the
-// parameters specified in the layers CommandDescription to the cobra command.
-func NewCobraParserFromCommandDescription(
+func NewCobraCommandFromCommandDescription(
 	description *cmds.CommandDescription,
-	options ...CobraParserOption,
-) (*CobraParser, error) {
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   description.Name,
 		Short: description.Short,
 		Long:  description.Long,
 	}
+	return cmd
+}
 
+// NewCobraParserFromLayers creates a new CobraParser instance from a
+// CommandDescription, initializes the underlying cobra.Command, and adds all the
+// parameters specified in the Layers CommandDescription to the cobra command.
+func NewCobraParserFromLayers(
+	layers *layers.ParameterLayers,
+	options ...CobraParserOption,
+) (*CobraParser, error) {
 	ret := &CobraParser{
-		Cmd:             cmd,
-		description:     description,
+		Layers:          layers,
 		middlewaresFunc: CobraCommandDefaultMiddlewares,
 	}
 
@@ -105,11 +108,16 @@ func NewCobraParserFromCommandDescription(
 	if err != nil {
 		return nil, err
 	}
-	description.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
+	ret.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 
-	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the layers/parameters that get added to the CLI
+	return ret, nil
+}
+
+func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
+
+	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the Layers/parameters that get added to the CLI
 	// If we want to remove some parameters from the CLI args (for example some output settings or so)
-	err = description.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
+	err := c.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
 		// check that layer is a CobraParameterLayer
 		// if not, return an error
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
@@ -125,10 +133,10 @@ func NewCobraParserFromCommandDescription(
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return ret, nil
+	return nil
 }
 
 func (c *CobraParser) Parse(
@@ -159,7 +167,7 @@ func (c *CobraParser) Parse(
 		return nil, err
 	}
 
-	err = cmd_middlewares.ExecuteMiddlewares(c.description.Layers, parsedLayers, middlewares_...)
+	err = cmd_middlewares.ExecuteMiddlewares(c.Layers, parsedLayers, middlewares_...)
 	if err != nil {
 		return nil, err
 	}
