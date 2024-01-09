@@ -42,12 +42,15 @@ func BuildCobraCommandFromCommandAndFunc(
 ) (*cobra.Command, error) {
 	description := s.Description()
 
-	cobraParser, err := NewCobraParserFromCommandDescription(description, options...)
+	cmd := NewCobraCommandFromCommandDescription(description)
+	cobraParser, err := NewCobraParserFromLayers(description.Layers, options...)
 	if err != nil {
 		return nil, err
 	}
-
-	cmd := cobraParser.Cmd
+	err = cobraParser.AddToCobraCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
 
 	cmd.Run = func(cmd *cobra.Command, args []string) {
 		parsedLayers, err := cobraParser.Parse(cmd, args)
@@ -66,7 +69,7 @@ func BuildCobraCommandFromCommandAndFunc(
 			cobra.CheckErr(err)
 		}
 
-		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some layers
+		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some Layers
 		// This is what ParseLayerFromCobraCommand is gdoing currently, and it seems the only place
 		// it is actually used seems to be by the FieldsFilter galzed layer.
 		// See Muji (1) sketchbook p.21

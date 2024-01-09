@@ -113,10 +113,8 @@ func ExtractQuotedBlocks(input string, withQuotes bool) []string {
 // If there are non-code contents left at the end without a following code block, they are appended
 // as comments to the last code block.
 //
-// **Usage**:
-// Call this function with a markdown string and a boolean `withQuotes`. If `withQuotes` is set to true,
-// the output will include the enclosing ``` for each code block. Otherwise, only the inner content of
-// the code block (and the preceding comments) is returned.
+// If `withQuotes` is set to true,  the output will include the enclosing ``` for each code block.
+// Otherwise, only the inner content of the code block (and the preceding comments) is returned.
 func ExtractCodeBlocksWithComments(input string, withQuotes bool) []string {
 	blocks := ExtractAllBlocks(input)
 	var result []string

@@ -15,7 +15,7 @@ import (
 // the glazed processing layer.
 //
 // If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `parameters.ParameterDefinition`
-// abstraction to define your CLI applications, which allows you to use layers and other nice features
+// abstraction to define your CLI applications, which allows you to use Layers and other nice features
 // of the glazed ecosystem.
 //
 // If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
