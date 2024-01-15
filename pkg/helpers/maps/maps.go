@@ -2,6 +2,7 @@ package maps
 
 import (
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 	"reflect"
 	"strings"
 )
@@ -24,6 +25,23 @@ func StructToMap(i interface{}, lowerCaseKeys bool) map[string]interface{} {
 	}
 
 	return m
+}
+
+func StructToMapThroughYAML(s interface{}) (map[string]interface{}, error) {
+	// Marshal the struct to YAML
+	yamlData, err := yaml.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the YAML into a map
+	var m map[string]interface{}
+	err = yaml.Unmarshal(yamlData, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 func GetValues[Key comparable, Value any](m map[Key]Value) []Value {
