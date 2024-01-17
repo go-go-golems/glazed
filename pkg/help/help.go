@@ -371,6 +371,8 @@ func (hs *HelpSystem) SetupCobraRootCommand(cmd *cobra.Command) {
 	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
 	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
 
+	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
+
 	cmd.SetHelpFunc(helpFunc)
 	cmd.SetUsageFunc(usageFunc)
 	cmd.SetHelpTemplate(helpTemplate)

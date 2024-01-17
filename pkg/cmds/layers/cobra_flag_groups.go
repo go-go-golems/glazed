@@ -48,6 +48,7 @@ type FlagUsage struct {
 // It consists of the group Name for rendering purposes, and a single string per
 // flag in the group
 type FlagGroupUsage struct {
+	Slug          string
 	Name          string
 	FlagUsages    []*FlagUsage
 	MaxFlagLength int
@@ -78,8 +79,10 @@ func (c *CommandFlagGroupUsage) String() string {
 		len(c.LocalGroupUsages), len(c.InheritedGroupUsages))
 }
 
+const GlobalDefaultSlug = "global-default"
+
 // ComputeCommandFlagGroupUsage is used to compute the flag groups to be shown in the
-// usage help function.
+// Usage help function.
 //
 // It is a fairly complex function that gathers all LocalFlags() and InheritedFlags()
 // from the cobra backend. It then iterated over the FlagGroups that have been added
@@ -98,13 +101,15 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 
 	flagToGroups := map[string][]string{}
 
-	localGroupedFlags[""] = &FlagGroupUsage{
+	localGroupedFlags[DefaultSlug] = &FlagGroupUsage{
 		Name:       "Flags",
 		FlagUsages: []*FlagUsage{},
+		Slug:       DefaultSlug,
 	}
-	inheritedGroupedFlags[""] = &FlagGroupUsage{
-		Name:       "flags",
+	inheritedGroupedFlags[GlobalDefaultSlug] = &FlagGroupUsage{
+		Name:       "flags", // This will get displayed as "Global flags"
 		FlagUsages: []*FlagUsage{},
+		Slug:       GlobalDefaultSlug,
 	}
 
 	// Get an overview of which flag to assign to whom.
@@ -114,10 +119,12 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	for _, group := range flagGroups {
 		localGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
+			Slug:       group.ID,
 			FlagUsages: []*FlagUsage{},
 		}
 		inheritedGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
+			Slug:       group.ID,
 			FlagUsages: []*FlagUsage{},
 		}
 
@@ -146,7 +153,7 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 				localGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			localGroupedFlags[""].AddFlagUsage(flagUsage)
+			localGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
 		}
 	})
 
@@ -157,24 +164,34 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 			return
 		}
 
+		// We move the help commands to the local group so that they always get displayed
+		if f.Name == "long-help" {
+			localGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
+			return
+		}
+
 		if groups, ok := flagToGroups[f.Name]; ok {
 			for _, group := range groups {
 				inheritedGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			inheritedGroupedFlags[""].AddFlagUsage(flagUsage)
+			inheritedGroupedFlags[GlobalDefaultSlug].AddFlagUsage(flagUsage)
 		}
 	})
 
 	ret.LocalGroupUsages = []*FlagGroupUsage{
-		localGroupedFlags[""],
+		localGroupedFlags[DefaultSlug],
 	}
 	ret.InheritedGroupUsages = []*FlagGroupUsage{
-		inheritedGroupedFlags[""],
+		inheritedGroupedFlags[GlobalDefaultSlug],
 	}
 
 	// now add them in sorted order
 	for _, group := range flagGroups {
+		// Skip the default slug since it is always added, since it also contains the general purpose flags
+		if group.ID == DefaultSlug || group.ID == GlobalDefaultSlug {
+			continue
+		}
 		if _, ok := localGroupedFlags[group.ID]; ok {
 			if len(localGroupedFlags[group.ID].FlagUsages) > 0 {
 				ret.LocalGroupUsages = append(ret.LocalGroupUsages, localGroupedFlags[group.ID])
@@ -203,7 +220,6 @@ func isZeroValue(v flag.Value, defValue string) bool {
 		return defValue == "false"
 	case "int":
 		return defValue == "0"
-	case "stringSlice", "intSlice", "stringArray", "intArray":
 	default:
 		switch defValue {
 		case "0", "false", "", "[]", "map[]", "<nil>":
@@ -212,8 +228,6 @@ func isZeroValue(v flag.Value, defValue string) bool {
 			return false
 		}
 	}
-
-	return false
 }
 
 // getFlagUsage returns the FlagUsage for a given flag.
@@ -287,7 +301,9 @@ func AddFlagGroupToCobraCommand(
 	flagNames := []string{}
 	for v := flags.Oldest(); v != nil; v = v.Next() {
 		f := v.Value
-		flagNames = append(flagNames, f.Name)
+		// replace _ with -
+		name_ := strings.ReplaceAll(f.Name, "_", "-")
+		flagNames = append(flagNames, name_)
 	}
 
 	if cmd.Annotations == nil {

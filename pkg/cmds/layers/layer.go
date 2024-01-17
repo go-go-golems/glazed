@@ -2,6 +2,7 @@ package layers
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/spf13/cobra"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
@@ -92,8 +93,7 @@ func (pl *ParameterLayers) AppendLayers(layers ...ParameterLayer) {
 }
 
 func (pl *ParameterLayers) PrependLayers(layers ...ParameterLayer) {
-	// reverse layers
-	layers = append(layers[:0], layers[len(layers):]...)
+	list.Reverse[ParameterLayer](layers)
 
 	for _, l := range layers {
 		slug := l.GetSlug()

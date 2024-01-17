@@ -10,7 +10,7 @@ const GlazedCommandSlug = "glazed-command"
 func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 	glazedCommandLayer, err := layers.NewParameterLayer(
 		GlazedCommandSlug,
-		"General purpose Command options",
+		"General purpose command options",
 		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
 				"create-command",
