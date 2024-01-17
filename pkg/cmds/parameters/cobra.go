@@ -151,6 +151,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			return errors.Errorf("Flag '%s' already exists", flagName)
 		}
 
+		helpText := parameter.Help
+		helpText = fmt.Sprintf("%s - <%s>", helpText, parameter.Type)
+
 		switch parameter.Type {
 		case ParameterTypeStringListFromFile,
 			ParameterTypeStringFromFile,
@@ -160,9 +163,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeStringListFromFiles,
@@ -172,9 +175,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := []string{}
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeString:
@@ -188,9 +191,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, helpText)
 			}
 		case ParameterTypeInteger:
 			defaultValue := 0
@@ -203,9 +206,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.IntP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.Int(flagName, defaultValue, parameter.Help)
+				flagSet.Int(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeFloat:
@@ -219,9 +222,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.Float64P(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.Float64P(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.Float64(flagName, defaultValue, parameter.Help)
+				flagSet.Float64(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeBool:
@@ -235,9 +238,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.BoolP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.BoolP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.Bool(flagName, defaultValue, parameter.Help)
+				flagSet.Bool(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeDate:
@@ -260,9 +263,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.String(flagName, defaultValue, parameter.Help)
+				flagSet.String(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeStringList, ParameterTypeChoiceList:
@@ -290,9 +293,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeKeyValue:
@@ -326,9 +329,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.StringSlice(flagName, defaultValue, parameter.Help)
+				flagSet.StringSlice(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeIntegerList:
@@ -341,9 +344,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			}
 
 			if parameter.ShortFlag != "" {
-				flagSet.IntSliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.IntSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.IntSlice(flagName, defaultValue, parameter.Help)
+				flagSet.IntSlice(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeFloatList:
@@ -355,9 +358,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 				}
 			}
 			if parameter.ShortFlag != "" {
-				flagSet.Float64SliceP(flagName, shortFlag, defaultValue, parameter.Help)
+				flagSet.Float64SliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
-				flagSet.Float64Slice(flagName, defaultValue, parameter.Help)
+				flagSet.Float64Slice(flagName, defaultValue, helpText)
 			}
 
 		case ParameterTypeChoice:
@@ -373,9 +376,9 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			choiceString := strings.Join(parameter.Choices, ",")
 
 			if parameter.ShortFlag != "" {
-				flagSet.StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", helpText, choiceString))
 			} else {
-				flagSet.String(flagName, defaultValue, fmt.Sprintf("%s (%s)", parameter.Help, choiceString))
+				flagSet.String(flagName, defaultValue, fmt.Sprintf("%s (%s)", helpText, choiceString))
 			}
 
 		default:
