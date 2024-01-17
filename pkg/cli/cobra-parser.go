@@ -22,7 +22,11 @@ type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobr
 // ParsedParameters object.
 //
 // If the commandSettings specify parameters to be loaded from a file, this gets added as a middleware.
-func CobraCommandDefaultMiddlewares(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
+func CobraCommandDefaultMiddlewares(
+	commandSettings *GlazedCommandSettings,
+	cmd *cobra.Command,
+	args []string,
+) ([]cmd_middlewares.Middleware, error) {
 	middlewares_ := []cmd_middlewares.Middleware{
 		cmd_middlewares.ParseFromCobraCommand(cmd,
 			parameters.WithParseStepSource("cobra"),
@@ -114,7 +118,6 @@ func NewCobraParserFromLayers(
 }
 
 func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
-
 	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the Layers/parameters that get added to the CLI
 	// If we want to remove some parameters from the CLI args (for example some output settings or so)
 	err := c.Layers.ForEachE(func(_ string, layer layers.ParameterLayer) error {
@@ -168,23 +171,6 @@ func (c *CobraParser) Parse(
 	}
 
 	err = cmd_middlewares.ExecuteMiddlewares(c.Layers, parsedLayers, middlewares_...)
-	if err != nil {
-		return nil, err
-	}
-
-	return parsedLayers, nil
-}
-
-func ParseLayersFromCobraCommand(cmd *cobra.Command, layers_ *layers.ParameterLayers) (
-	*layers.ParsedLayers,
-	error,
-) {
-	middlewares := []cmd_middlewares.Middleware{
-		cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")),
-		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
-	}
-	parsedLayers := layers.NewParsedLayers()
-	err := cmd_middlewares.ExecuteMiddlewares(layers_, parsedLayers, middlewares...)
 	if err != nil {
 		return nil, err
 	}

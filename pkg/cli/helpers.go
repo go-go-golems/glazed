@@ -25,9 +25,20 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, nil, err
 	}
 
-	parsedLayer, err := gpl.ParseLayerFromCobraCommand(cmd)
+	layers_ := layers.NewParameterLayers(layers.WithLayers(gpl))
+	parser, err := NewCobraParserFromLayers(layers_,
+		WithCobraMiddlewaresFunc(CobraCommandDefaultMiddlewares))
 	if err != nil {
 		return nil, nil, err
+	}
+	parsedLayers, err := parser.Parse(cmd, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	parsedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+	if !ok {
+		return nil, nil, fmt.Errorf("layer %s not found", settings.GlazedSlug)
 	}
 
 	gp, err := settings.SetupTableProcessor(parsedLayer)

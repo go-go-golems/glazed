@@ -217,7 +217,6 @@ func (p *ParameterLayerImpl) InitializeStructFromParameterDefaults(s interface{}
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.
 func (p *ParameterLayerImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
-	// NOTE(manuel, 2023-02-21) Do we need to allow flags that are not "persistent"?
 	err := p.ParameterDefinitions.AddParametersToCobraCommand(cmd, p.Prefix)
 	if err != nil {
 		return err
@@ -241,6 +240,11 @@ func (p *ParameterLayerImpl) ParseLayerFromCobraCommand(
 	ps, err := p.ParameterDefinitions.GatherFlagsFromCobraCommand(
 		// TODO(manuel, 2024-01-05) We probably need to move the required check to a higher level middleware, because
 		// we are not relying on cobra so much anymore since we introduced middlewares
+		//
+		// NOTE(manuel, 2024-01-17) I'm moving onlyProvided back to false because we need the default values when adding flags to individual manual commands.
+		// See MD WHITE (2) p.26
+		// NOTE(manuel, 2024-01-17) I'm setting it back to true, because we want each middleware (including ParseFromCobraCommand) to only override the defaults
+		// because defaults are now set through a middleware as well.
 		cmd, true, false, p.Prefix,
 		options...,
 	)
