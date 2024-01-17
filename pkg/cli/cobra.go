@@ -62,17 +62,17 @@ func BuildCobraCommandFromCommandAndFunc(
 			os.Exit(1)
 		}
 
+		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some Layers
+		// This is what ParseLayerFromCobraCommand is doing currently, and it seems the only place
+		// it is actually used seems to be by the FieldsFilter glazed layer.
+		// See Muji (1) sketchbook p.21
 		// get the command settings
+
 		commandSettings := &GlazedCommandSettings{}
 		if glazeCommandLayer, ok := parsedLayers.Get(GlazedCommandSlug); ok {
 			err = glazeCommandLayer.InitializeStruct(commandSettings)
 			cobra.CheckErr(err)
 		}
-
-		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some Layers
-		// This is what ParseLayerFromCobraCommand is gdoing currently, and it seems the only place
-		// it is actually used seems to be by the FieldsFilter galzed layer.
-		// See Muji (1) sketchbook p.21
 
 		if commandSettings.PrintParsedParameters {
 			printParsedParameters(parsedLayers)

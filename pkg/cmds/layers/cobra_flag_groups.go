@@ -79,7 +79,7 @@ func (c *CommandFlagGroupUsage) String() string {
 }
 
 // ComputeCommandFlagGroupUsage is used to compute the flag groups to be shown in the
-// usage help function.
+// Usage help function.
 //
 // It is a fairly complex function that gathers all LocalFlags() and InheritedFlags()
 // from the cobra backend. It then iterated over the FlagGroups that have been added
@@ -103,7 +103,7 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		FlagUsages: []*FlagUsage{},
 	}
 	inheritedGroupedFlags[""] = &FlagGroupUsage{
-		Name:       "flags",
+		Name:       "flags", // This will get displayed as "Global flags"
 		FlagUsages: []*FlagUsage{},
 	}
 
@@ -146,7 +146,7 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 				localGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			localGroupedFlags[""].AddFlagUsage(flagUsage)
+			localGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
 		}
 	})
 
@@ -162,19 +162,23 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 				inheritedGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			inheritedGroupedFlags[""].AddFlagUsage(flagUsage)
+			inheritedGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
 		}
 	})
 
 	ret.LocalGroupUsages = []*FlagGroupUsage{
-		localGroupedFlags[""],
+		localGroupedFlags[DefaultSlug],
 	}
 	ret.InheritedGroupUsages = []*FlagGroupUsage{
-		inheritedGroupedFlags[""],
+		inheritedGroupedFlags[DefaultSlug],
 	}
 
 	// now add them in sorted order
 	for _, group := range flagGroups {
+		// Skip the default slug since it is always added, since it also contains the general purpose flags
+		if group.ID == DefaultSlug {
+			continue
+		}
 		if _, ok := localGroupedFlags[group.ID]; ok {
 			if len(localGroupedFlags[group.ID].FlagUsages) > 0 {
 				ret.LocalGroupUsages = append(ret.LocalGroupUsages, localGroupedFlags[group.ID])
@@ -203,7 +207,6 @@ func isZeroValue(v flag.Value, defValue string) bool {
 		return defValue == "false"
 	case "int":
 		return defValue == "0"
-	case "stringSlice", "intSlice", "stringArray", "intArray":
 	default:
 		switch defValue {
 		case "0", "false", "", "[]", "map[]", "<nil>":
@@ -287,7 +290,9 @@ func AddFlagGroupToCobraCommand(
 	flagNames := []string{}
 	for v := flags.Oldest(); v != nil; v = v.Next() {
 		f := v.Value
-		flagNames = append(flagNames, f.Name)
+		// replace _ with -
+		name_ := strings.ReplaceAll(f.Name, "_", "-")
+		flagNames = append(flagNames, name_)
 	}
 
 	if cmd.Annotations == nil {

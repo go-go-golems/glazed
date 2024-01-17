@@ -49,6 +49,12 @@ func WithLong(s string) CommandDescriptionOption {
 	}
 }
 
+func WithPrependLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Layers.PrependLayers(ls...)
+	}
+}
+
 func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range ls {
@@ -72,11 +78,15 @@ func WithFlags(
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Flags")
 			if err != nil {
 				panic(err)
 			}
 			c.Layers.Set(layer.GetSlug(), layer)
+			err = c.Layers.MoveToFront(layer.GetSlug())
+			if err != nil {
+				panic(err)
+			}
 		}
 		layer.AddFlags(flags...)
 	}
@@ -91,39 +101,21 @@ func WithArguments(
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Default")
+			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Arguments")
 			if err != nil {
 				panic(err)
 			}
 			c.Layers.Set(layer.GetSlug(), layer)
+			err = c.Layers.MoveToFront(layer.GetSlug())
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		for _, arg := range arguments {
 			arg.IsArgument = true
 		}
 		layer.AddFlags(arguments...)
-	}
-}
-
-func WithDefaultLayer(
-	flags []*parameters.ParameterDefinition,
-	arguments []*parameters.ParameterDefinition,
-) CommandDescriptionOption {
-
-	for _, arg := range arguments {
-		arg.IsArgument = true
-	}
-	return func(c *CommandDescription) {
-		layer, err := layers.NewParameterLayer(
-			layers.DefaultSlug,
-			"Default",
-			layers.WithParameterDefinitions(flags...),
-			layers.WithParameterDefinitions(arguments...),
-		)
-		if err != nil {
-			panic(err)
-		}
-		c.Layers.Set(layer.GetSlug(), layer)
 	}
 }
 
