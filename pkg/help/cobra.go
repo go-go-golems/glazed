@@ -41,8 +41,6 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			ShowShortTopic:  true,
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
-		// TODO(manuel, 2023-02-19) Here is where we would compute grouped flags
-		// See #59
 		return renderCommandHelpPage(c, options, hs)
 	}
 
