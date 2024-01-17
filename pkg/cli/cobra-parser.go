@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -66,6 +67,8 @@ type CobraParser struct {
 	// This hooks allows the implementor to specify additional ways of loading parameters
 	// (for example, sqleton loads the dbt and sql connection parameters from env and viper as well).
 	middlewaresFunc CobraMiddlewaresFunc
+	// List of layers to be shown in short help, empty: always show all
+	shortHelpLayers []string
 }
 
 type CobraParserOption func(*CobraParser) error
@@ -73,6 +76,13 @@ type CobraParserOption func(*CobraParser) error
 func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserOption {
 	return func(c *CobraParser) error {
 		c.middlewaresFunc = middlewaresFunc
+		return nil
+	}
+}
+
+func WithCobraShortHelpLayers(layers ...string) CobraParserOption {
+	return func(c *CobraParser) error {
+		c.shortHelpLayers = layers
 		return nil
 	}
 }
@@ -137,6 +147,11 @@ func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	if len(c.shortHelpLayers) > 0 {
+		shortHelperLayer := strings.Join(c.shortHelpLayers, ",")
+		cmd.Annotations["shortHelpLayers"] = shortHelperLayer
 	}
 
 	return nil

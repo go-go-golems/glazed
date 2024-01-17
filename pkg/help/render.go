@@ -54,6 +54,7 @@ type RenderOptions struct {
 	ShowAllSections bool
 	ShowShortTopic  bool
 	HelpCommand     string
+	LongHelp        bool
 	ListSections    bool
 }
 

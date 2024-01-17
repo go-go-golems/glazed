@@ -48,6 +48,7 @@ type FlagUsage struct {
 // It consists of the group Name for rendering purposes, and a single string per
 // flag in the group
 type FlagGroupUsage struct {
+	Slug          string
 	Name          string
 	FlagUsages    []*FlagUsage
 	MaxFlagLength int
@@ -78,6 +79,8 @@ func (c *CommandFlagGroupUsage) String() string {
 		len(c.LocalGroupUsages), len(c.InheritedGroupUsages))
 }
 
+const GlobalDefaultSlug = "global-default"
+
 // ComputeCommandFlagGroupUsage is used to compute the flag groups to be shown in the
 // Usage help function.
 //
@@ -98,13 +101,15 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 
 	flagToGroups := map[string][]string{}
 
-	localGroupedFlags[""] = &FlagGroupUsage{
+	localGroupedFlags[DefaultSlug] = &FlagGroupUsage{
 		Name:       "Flags",
 		FlagUsages: []*FlagUsage{},
+		Slug:       DefaultSlug,
 	}
-	inheritedGroupedFlags[""] = &FlagGroupUsage{
+	inheritedGroupedFlags[GlobalDefaultSlug] = &FlagGroupUsage{
 		Name:       "flags", // This will get displayed as "Global flags"
 		FlagUsages: []*FlagUsage{},
+		Slug:       GlobalDefaultSlug,
 	}
 
 	// Get an overview of which flag to assign to whom.
@@ -114,10 +119,12 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	for _, group := range flagGroups {
 		localGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
+			Slug:       group.ID,
 			FlagUsages: []*FlagUsage{},
 		}
 		inheritedGroupedFlags[group.ID] = &FlagGroupUsage{
 			Name:       group.Name,
+			Slug:       group.ID,
 			FlagUsages: []*FlagUsage{},
 		}
 
@@ -157,12 +164,18 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 			return
 		}
 
+		// We move the help commands to the local group so that they always get displayed
+		if f.Name == "long-help" {
+			localGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
+			return
+		}
+
 		if groups, ok := flagToGroups[f.Name]; ok {
 			for _, group := range groups {
 				inheritedGroupedFlags[group].AddFlagUsage(flagUsage)
 			}
 		} else {
-			inheritedGroupedFlags[DefaultSlug].AddFlagUsage(flagUsage)
+			inheritedGroupedFlags[GlobalDefaultSlug].AddFlagUsage(flagUsage)
 		}
 	})
 
@@ -170,13 +183,13 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 		localGroupedFlags[DefaultSlug],
 	}
 	ret.InheritedGroupUsages = []*FlagGroupUsage{
-		inheritedGroupedFlags[DefaultSlug],
+		inheritedGroupedFlags[GlobalDefaultSlug],
 	}
 
 	// now add them in sorted order
 	for _, group := range flagGroups {
 		// Skip the default slug since it is always added, since it also contains the general purpose flags
-		if group.ID == DefaultSlug {
+		if group.ID == DefaultSlug || group.ID == GlobalDefaultSlug {
 			continue
 		}
 		if _, ok := localGroupedFlags[group.ID]; ok {

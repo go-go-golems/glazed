@@ -20,10 +20,13 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		qb := NewSectionQuery().
 			ReturnAllTypes()
 
+		longHelp, _ := c.Flags().GetBool("long-help")
+
 		options := &RenderOptions{
 			Query:           qb,
 			ShowAllSections: false,
 			ShowShortTopic:  false,
+			LongHelp:        longHelp,
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
 
@@ -35,10 +38,13 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		qb := NewSectionQuery().
 			ReturnExamples()
 
+		longHelp, _ := c.Flags().GetBool("long-help")
+
 		options := &RenderOptions{
 			Query:           qb,
 			ShowAllSections: false,
 			ShowShortTopic:  true,
+			LongHelp:        longHelp,
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
 		return renderCommandHelpPage(c, options, hs)
@@ -87,7 +93,35 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	template.Must(t.Parse(tmpl))
 
 	flagGroupUsage := glazed_cobra.ComputeCommandFlagGroupUsage(c)
-	_ = flagGroupUsage
+
+	// if we are showing the short help and shortHelpLayers annotation was set,
+	// skip all the groups that are not in the list
+	if !options.LongHelp {
+		shortHelpLayers_, ok := c.Annotations["shortHelpLayers"]
+		if ok {
+			shortHelpLayers := map[string]interface{}{}
+			for _, v := range strings.Split(shortHelpLayers_, ",") {
+				shortHelpLayers[v] = true
+			}
+
+			localGroupUsages := []*glazed_cobra.FlagGroupUsage{}
+			inheritedGroupUsages := []*glazed_cobra.FlagGroupUsage{}
+			for _, f := range flagGroupUsage.LocalGroupUsages {
+				if _, ok = shortHelpLayers[f.Slug]; ok {
+					localGroupUsages = append(localGroupUsages, f)
+				}
+			}
+			for _, f := range flagGroupUsage.InheritedGroupUsages {
+				if _, ok = shortHelpLayers[f.Slug]; ok {
+					inheritedGroupUsages = append(inheritedGroupUsages, f)
+				}
+			}
+
+			flagGroupUsage.LocalGroupUsages = localGroupUsages
+			flagGroupUsage.InheritedGroupUsages = inheritedGroupUsages
+		}
+
+	}
 
 	// really this is where we need to compute the max length, not on a group basis
 	maxLength := 0
@@ -104,6 +138,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	data["FlagUsageMaxLength"] = maxLength
 	data["HelpCommand"] = options.HelpCommand
 	data["Slug"] = c.Name()
+	data["LongHelp"] = options.LongHelp
 
 	maxCommandNameLen := 0
 	for _, c := range c.Commands() {
