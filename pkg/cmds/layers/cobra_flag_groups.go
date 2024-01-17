@@ -228,8 +228,6 @@ func isZeroValue(v flag.Value, defValue string) bool {
 			return false
 		}
 	}
-
-	return false
 }
 
 // getFlagUsage returns the FlagUsage for a given flag.
