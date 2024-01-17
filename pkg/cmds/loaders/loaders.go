@@ -47,8 +47,9 @@ func LoadCommandOrAliasFromReader(
 	cmds_, err := rawLoadCommand(br, options, aliasOptions)
 	if err != nil {
 		br = strings.NewReader(string(bytes))
-		aliases, err := LoadCommandAliasFromYAML(br, aliasOptions...)
-		if err != nil {
+		aliases, errAlias := LoadCommandAliasFromYAML(br, aliasOptions...)
+		if errAlias != nil {
+			// return the first error, as it's probably more salient
 			return nil, err
 		}
 		aliases_, b := cast.CastList[cmds.Command](aliases)
@@ -118,16 +119,16 @@ func LoadCommandsFromFS(
 				aliasOptions_ := append([]alias.Option{
 					alias.WithParents(fromDir...),
 				}, aliasOptions...)
-				commands_, err := loader.LoadCommands(f, fileName, options_, aliasOptions_)
-				if err != nil {
-					log.Debug().Err(err).Str("file", fileName).Msg("Could not load command from file")
-					return nil, err
+				commands_, err_ := loader.LoadCommands(f, fileName, options_, aliasOptions_)
+				if err_ != nil {
+					log.Debug().Err(err_).Str("file", fileName).Msg("Could not load command from file")
+					return nil, err_
 				}
 				if len(commands_) != 1 {
 					return nil, errors.New("Expected exactly one command")
 				}
 
-				return commands_, err
+				return commands_, err_
 			}()
 			if err != nil {
 				log.Warn().Err(err).Str("file", fileName).Msg("Could not load command from file")
