@@ -124,9 +124,6 @@ func LoadCommandsFromFS(
 					log.Debug().Err(err_).Str("file", fileName).Msg("Could not load command from file")
 					return nil, err_
 				}
-				if len(commands_) != 1 {
-					return nil, errors.New("Expected exactly one command")
-				}
 
 				return commands_, err_
 			}()
