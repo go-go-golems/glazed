@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"strings"
 )
 
@@ -14,8 +15,8 @@ import (
 //
 // The returned rows are SimpleRows
 type FieldsFilterMiddleware struct {
-	fields        map[string]interface{}
-	filters       map[string]interface{}
+	fields        *orderedmap.OrderedMap[string, interface{}]
+	filters       *orderedmap.OrderedMap[string, interface{}]
 	prefixFields  []string
 	prefixFilters []string
 
@@ -29,7 +30,7 @@ func (ffm *FieldsFilterMiddleware) Close(ctx context.Context) error {
 }
 
 func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterMiddleware {
-	fieldHash := map[string]interface{}{}
+	fieldHash := orderedmap.New[string, interface{}]()
 	prefixFields := []string{}
 	prefixFilters := []string{}
 
@@ -37,15 +38,15 @@ func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterM
 		if strings.HasSuffix(field, ".") {
 			prefixFields = append(prefixFields, field)
 		} else {
-			fieldHash[field] = nil
+			fieldHash.Set(field, nil)
 		}
 	}
-	filterHash := map[string]interface{}{}
+	filterHash := orderedmap.New[string, interface{}]()
 	for _, filter := range filters {
 		if strings.HasSuffix(filter, ".") {
 			prefixFilters = append(prefixFilters, filter)
 		} else {
-			filterHash[filter] = nil
+			filterHash.Set(filter, nil)
 		}
 	}
 	return &FieldsFilterMiddleware{
@@ -58,7 +59,7 @@ func NewFieldsFilterMiddleware(fields []string, filters []string) *FieldsFilterM
 }
 
 func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, row types.Row) ([]types.Row, error) {
-	if len(ffm.fields) == 0 && len(ffm.filters) == 0 {
+	if ffm.fields.Len() == 0 && ffm.filters.Len() == 0 {
 		return []types.Row{row}, nil
 	}
 
@@ -76,9 +77,9 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, row types.Row) (
 			prefixFilterMatchFound := false
 
 			// go through all the fields and prefix fields and check if the current field matches
-			if len(ffm.fields) > 0 || len(ffm.prefixFields) > 0 {
+			if ffm.fields.Len() > 0 || len(ffm.prefixFields) > 0 {
 				// first go through exact matches
-				if _, ok := ffm.fields[rowField]; ok {
+				if _, ok := ffm.fields.Get(rowField); ok {
 					exactMatchFound = true
 				} else {
 					// else, test against all prefixes
@@ -95,9 +96,9 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, row types.Row) (
 				}
 			}
 
-			if len(ffm.filters) > 0 || len(ffm.prefixFilters) > 0 {
+			if ffm.filters.Len() > 0 || len(ffm.prefixFilters) > 0 {
 				// if an exact filter matches, move on
-				if _, ok := ffm.filters[rowField]; ok {
+				if _, ok := ffm.filters.Get(rowField); ok {
 					exactFilterMatchFound = true
 					continue
 				} else {
@@ -125,7 +126,7 @@ func (ffm *FieldsFilterMiddleware) Process(ctx context.Context, row types.Row) (
 				}
 			} else if exactFilterMatchFound {
 				continue
-			} else if len(ffm.fields) == 0 {
+			} else if ffm.fields.Len() == 0 {
 				ffm.newColumns[rowField] = nil
 			}
 		}
