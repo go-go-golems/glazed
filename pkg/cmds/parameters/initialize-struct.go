@@ -1,9 +1,11 @@
 package parameters
 
 import (
+	"encoding/json"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
 	"reflect"
+	"strings"
 )
 
 // InitializeStruct initializes a struct from a ParsedParameters map.
@@ -27,52 +29,118 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 		return errors.Errorf("Can't initialize nil struct")
 	}
 	// check that s is indeed a pointer to a struct
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
+	of := reflect.TypeOf(s)
+	if of.Kind() != reflect.Ptr {
 		return errors.Errorf("s is not a pointer")
 	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
+	if of.Elem().Kind() != reflect.Struct {
 		return errors.Errorf("s is not a pointer to a struct")
 	}
-	st := reflect.TypeOf(s).Elem()
+	st := of.Elem()
 
 	for i := 0; i < st.NumField(); i++ {
 		field := st.Field(i)
-		v, ok := field.Tag.Lookup("glazed.parameter")
+		tag, ok := field.Tag.Lookup("glazed.parameter")
 		if !ok {
 			continue
 		}
-		v_, ok := p.Get(v)
-		if !ok {
-			continue
+		options, err := parsedTagOptions(tag)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse glazed.parameter tag for field %s", field.Name)
 		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 
-		if field.Type.Kind() == reflect.Ptr {
+		parameter, ok := p.Get(options.Name)
+		if !ok {
+			continue
+		}
+		dst := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+		kind := field.Type.Kind()
+
+		if dst.Type() == reflect.TypeOf(parameter.Value) {
+			dst.Set(reflect.ValueOf(parameter.Value))
+			continue
+		}
+
+		wasPointer := false
+		if kind == reflect.Ptr {
 			elem := field.Type.Elem()
-			if value.IsNil() {
-				value.Set(reflect.New(elem))
+			if dst.IsNil() {
+				value := reflect.New(elem)
+				dst.Set(value)
+				dst = value
+				kind = elem.Kind()
 			}
-			//exhaustive:ignore
-			switch elem.Kind() {
-			case reflect.Struct:
-				err := p.InitializeStruct(value.Interface())
+			wasPointer = true
+		}
+
+		if options.FromJson {
+			if !wasPointer {
+				return errors.Errorf("from_json tag can only be used on pointer fields")
+			}
+
+			switch parameter.Value.(type) {
+			case *FileData:
+				err := json.Unmarshal([]byte(parameter.Value.(*FileData).Content), dst.Interface())
 				if err != nil {
-					return errors.Wrapf(err, "failed to initialize struct for %s", v)
+					return errors.Wrapf(err, "failed to unmarshal json for %s", options.Name)
+				}
+			case string:
+				err := json.Unmarshal([]byte(parameter.Value.(string)), dst.Interface())
+				if err != nil {
+					return errors.Wrapf(err, "failed to unmarshal json for %s", options.Name)
+				}
+			case []byte:
+				err := json.Unmarshal(parameter.Value.([]byte), dst.Interface())
+				if err != nil {
+					return errors.Wrapf(err, "failed to unmarshal json for %s", options.Name)
 				}
 			default:
-				err := reflect2.SetReflectValue(value.Elem(), v_.Value)
-				if err != nil {
-					return errors.Wrapf(err, "failed to set value for %s", v)
-				}
+				return errors.Errorf("unsupported type for %s", options.Name)
 			}
 
-		} else {
-			err := reflect2.SetReflectValue(value, v_.Value)
+			continue
+		}
+
+		if kind == reflect.Struct {
+			err := p.InitializeStruct(dst.Interface())
 			if err != nil {
-				return errors.Wrapf(err, "failed to set value for %s", v)
+				return errors.Wrapf(err, "failed to initialize struct for %s", options.Name)
 			}
+			continue
+		}
+
+		err = reflect2.SetReflectValue(dst, parameter.Value)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set value for %s", options.Name)
 		}
 	}
 
 	return nil
+}
+
+type tagOptions struct {
+	Name     string
+	FromJson bool
+}
+
+func parsedTagOptions(tag string) (*tagOptions, error) {
+	options := strings.Split(tag, ",")
+	if len(options) == 0 {
+		return nil, errors.Errorf("invalid empty glazed.parameter tag")
+	}
+	name := options[0]
+	options = options[1:]
+
+	fromJson := false
+	for _, o := range options {
+		if o == "from_json" {
+			fromJson = true
+			break
+		}
+	}
+
+	return &tagOptions{
+		Name:     name,
+		FromJson: fromJson,
+	}, nil
 }
