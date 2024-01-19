@@ -117,6 +117,7 @@ func LoadCommandsFromFS(
 					cmds.WithParents(fromDir...),
 				}, options...)
 				aliasOptions_ := append([]alias.Option{
+					alias.WithSource(fileName),
 					alias.WithParents(fromDir...),
 				}, aliasOptions...)
 				commands_, err_ := loader.LoadCommands(f, fileName, options_, aliasOptions_)

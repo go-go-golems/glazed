@@ -84,10 +84,12 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
 			tmpl += c.UsageTemplate()
 		}
-		if options.ShowAllSections {
-			tmpl += HELP_LONG_SECTION_TEMPLATE
-		} else {
-			tmpl += HELP_SHORT_SECTION_TEMPLATE
+		if options.LongHelp {
+			if options.ShowAllSections {
+				tmpl += HELP_LONG_SECTION_TEMPLATE
+			} else {
+				tmpl += HELP_SHORT_SECTION_TEMPLATE
+			}
 		}
 	}
 	template.Must(t.Parse(tmpl))

@@ -49,12 +49,6 @@ func WithLong(s string) CommandDescriptionOption {
 	}
 }
 
-func WithPrependLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
-	return func(c *CommandDescription) {
-		c.Layers.PrependLayers(ls...)
-	}
-}
-
 func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range ls {
@@ -136,12 +130,6 @@ func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOptio
 func WithParents(p ...string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Parents = p
-	}
-}
-
-func WithPrependParents(p ...string) CommandDescriptionOption {
-	return func(c *CommandDescription) {
-		c.Parents = append(p, c.Parents...)
 	}
 }
 
