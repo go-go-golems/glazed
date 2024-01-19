@@ -47,7 +47,7 @@ func WithDefault(defaultValue interface{}) ParameterDefinitionOption {
 	}
 }
 
-func WithChoices(choices []string) ParameterDefinitionOption {
+func WithChoices(choices ...string) ParameterDefinitionOption {
 	return func(p *ParameterDefinition) {
 		p.Choices = choices
 	}
