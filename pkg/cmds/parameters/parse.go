@@ -23,6 +23,8 @@ type ParseStep struct {
 	Metadata map[string]interface{}
 }
 
+const SourceDefaults = "defaults"
+
 // ParseParameter parses command line arguments according to the given ParameterDefinition.
 // It returns the parsed parameter value and a non-nil error if parsing failed.
 //

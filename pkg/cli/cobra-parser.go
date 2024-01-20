@@ -43,7 +43,7 @@ func CobraCommandDefaultMiddlewares(
 	}
 
 	middlewares_ = append(middlewares_,
-		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
 	)
 
 	return middlewares_, nil

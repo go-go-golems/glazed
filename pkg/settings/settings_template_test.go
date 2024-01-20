@@ -19,7 +19,7 @@ func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string)
 	parsedLayers := layers.NewParsedLayers()
 	err = middlewares.ExecuteMiddlewares(layers_, parsedLayers,
 		middlewares.UpdateFromStringList("", args, parameters.WithParseStepSource("string-list")),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
 	)
 	require.NoError(t, err)
 

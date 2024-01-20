@@ -30,6 +30,7 @@ type Parameter struct {
 	Raw        string                   `yaml:"raw,omitempty"`
 	NoValue    bool                     `yaml:"noValue,omitempty"`
 	IsArgument bool                     `yaml:"isArgument,omitempty"`
+	Log        []parameters.ParseStep   `yaml:"log,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files
@@ -37,15 +38,8 @@ type Parameter struct {
 // NOTE(manuel, 2023-03-16) What about measuring profiling regression
 
 func (p *Parameter) Clone() *Parameter {
-	return &Parameter{
-		Name:    p.Name,
-		Flag:    p.Flag,
-		Short:   p.Short,
-		Type:    p.Type,
-		Value:   p.Value,
-		Raw:     p.Raw,
-		NoValue: p.NoValue,
-	}
+	p_ := *p
+	return &p_
 }
 
 // Program describes a program to be executed by cliopatra.
@@ -319,7 +313,8 @@ func (p *Program) AddRawFlag(raw ...string) {
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
 	parsedLayers *layers.ParsedLayers,
-	w io.Writer) error {
+	w io.Writer,
+) error {
 	var err error
 	path := p.Path
 	if path == "" {
