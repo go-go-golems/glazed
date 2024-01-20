@@ -341,7 +341,7 @@ func TestParseParameter(t *testing.T) {
 		parameter := NewParameterDefinition(
 			"test",
 			tt.ParameterType,
-			WithChoices(tt.Choices),
+			WithChoices(tt.Choices...),
 			WithDefault(tt.DefaultValue))
 
 		for _, tc := range tt.Cases {

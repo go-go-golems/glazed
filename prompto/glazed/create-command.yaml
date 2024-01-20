@@ -166,6 +166,7 @@ template: |
 
   ```go
   import 	"github.com/go-go-golems/glazed/pkg/settings"
+  
   glazedParameterLayer, err := settings.NewGlazedParameterLayers()
   if err != nil {
       return nil, errors.Wrap(err, "could not create Glazed parameter layer")
@@ -197,6 +198,15 @@ template: |
       ),
   }, nil
   ```
+  
+  You can then create a struct to represent those parameters and map them to flags using the glazed.parameter tag:
+  
+  ```go
+  type ExampleSettings struct {
+      Count int `glazed.parameter:"count"`
+      Test  bool `glazed.parameter:"test"`
+  }
+  ```
   {{ end }}
   
   {{ if .run }}
@@ -224,8 +234,7 @@ template: |
       Command
       Run(
           ctx context.Context,
-          parsedLayers map[string]*layers.ParsedParameterLayer,
-          ps map[string]interface{},
+          parsedLayers *layers.ParsedLayers,
       ) error
   }
   ```
@@ -243,7 +252,6 @@ template: |
       Command
       RunIntoWriter(
           ctx context.Context,
-          parsedLayers map[string]*layers.ParsedParameterLayer,
           ps map[string]interface{},
           w io.Writer,
       ) error
@@ -262,10 +270,9 @@ template: |
   package "github.com/go-go-golems/glazed/pkg/cmds"
   type GlazeCommand interface {
       Command
-      Run(
+      RunIntoGlazeProcessor(
           ctx context.Context,
-          parsedLayers map[string]*layers.ParsedParameterLayer,
-          ps map[string]interface{},
+          parsedLayers *layers.ParsedLayers,
           gp middlewares.Processor,
       ) error
   }
@@ -285,20 +292,21 @@ template: |
 
     func (c *ExampleCommand) Run(
       ctx context.Context,
-      parsedLayers map[string]*layers.ParsedParameterLayer,
-      ps map[string]interface{},
+      parsedLayers *layers.ParsedLayers,
       gp middlewares.Processor,
     ) error {
-      count := ps["count"].(int)
-      test := ps["test"].(bool)
+    s := &ExampleSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+      return err
+    }
     
-    for i := 0; i < count; i++ {
+    for i := 0; i < s.Count; i++ {
       row := types.NewRow(
         types.MRP("id", i),
         types.MRP("name", "foobar-"+strconv.Itoa(i)),
       )
       
-      if test {
+      if s.Test {
         row.Set("test", rand.Intn(100)+1)
       }
       

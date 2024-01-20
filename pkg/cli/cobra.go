@@ -186,6 +186,7 @@ func BuildCobraCommandFromCommandAndFunc(
 			os.Exit(0)
 		}
 
+		cobra.CheckErr(err)
 	}
 
 	return cmd, nil

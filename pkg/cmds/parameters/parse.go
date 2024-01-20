@@ -231,7 +231,7 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 		if err != nil {
 			return nil, err
 		}
-		v_ = v__
+		v_ = v__.Value
 
 	case ParameterTypeStringFromFile:
 		fallthrough
@@ -297,7 +297,7 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 			if err != nil {
 				return nil, err
 			}
-			v_ = v__
+			v_ = v__.Value
 
 		default:
 			ret_ := map[string]interface{}{}
