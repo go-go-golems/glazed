@@ -9,10 +9,10 @@ import (
 
 func SetReflectValue(dst reflect.Value, src interface{}) error {
 	if !dst.IsValid() {
-		return fmt.Errorf("cannot set invalid reflect.Value")
+		return fmt.Errorf("cannot set invalid reflect.Value of type %s", dst.Kind())
 	}
 	if !dst.CanSet() {
-		return fmt.Errorf("cannot set reflect.Value")
+		return fmt.Errorf("cannot set reflect.Value of type %s", dst.Kind())
 	}
 
 	if src == nil {
