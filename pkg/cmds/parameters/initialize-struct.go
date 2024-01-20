@@ -64,12 +64,13 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 		wasPointer := false
 		if kind == reflect.Ptr {
 			elem := field.Type.Elem()
+			kind = elem.Kind()
 			if dst.IsNil() {
+				kind = elem.Kind()
 				value := reflect.New(elem)
 				dst.Set(value)
-				dst = value
-				kind = elem.Kind()
 			}
+			dst = dst.Elem()
 			wasPointer = true
 		}
 
@@ -109,9 +110,11 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 			continue
 		}
 
+		kind2 := dst.Kind()
+		_ = kind2
 		err = reflect2.SetReflectValue(dst, parameter.Value)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set value for %s", options.Name)
+			return errors.Wrapf(err, "failed to set value %v for %s from value %v", options.Name, dst, parameter.Value)
 		}
 	}
 
