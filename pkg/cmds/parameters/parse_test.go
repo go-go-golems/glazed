@@ -599,6 +599,7 @@ func TestParseObjectListFromFile(t *testing.T) {
 	// ndjson with a single object
 	v, err = parseObjectListFromString(parameter, `{"test":"test"}`, "test.ndjson")
 	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// fail on non object line
 	_, err = parseObjectListFromString(parameter, `{"test":"test"}
