@@ -586,6 +586,25 @@ func TestParseObjectListFromFile(t *testing.T) {
 	_, err = parseObjectListFromString(parameter, `["test"]`, "test.json")
 	assert.Error(t, err)
 
+	// now ndjson
+	v, err = parseObjectListFromString(parameter, `{"test":"test"}
+{"test2":"test2"}`, "test.ndjson")
+	require.NoError(t, err)
+	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
+
+	// fail on ndjson with no newline
+	_, err = parseObjectListFromString(parameter, `{"test":"test"}{"test2":"test2"}`, "test.ndjson")
+	assert.Error(t, err)
+
+	// ndjson with a single object
+	v, err = parseObjectListFromString(parameter, `{"test":"test"}`, "test.ndjson")
+	require.NoError(t, err)
+
+	// fail on non object line
+	_, err = parseObjectListFromString(parameter, `{"test":"test"}
+"test"`, "test.ndjson")
+	assert.Error(t, err)
+
 	// now yaml
 	v, err = parseObjectListFromString(parameter, `- test: test`, "test.yaml")
 	require.NoError(t, err)

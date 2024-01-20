@@ -578,6 +578,20 @@ func (p *ParameterDefinition) parseObjectListFromReader(
 			objectList = []interface{}{object}
 		}
 		ret.Update(objectList, options...)
+	} else if strings.HasSuffix(filename, ".ndjson") {
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := scanner.Text()
+			err := json.Unmarshal([]byte(line), &object)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Could not parse line %s as JSON", line)
+			}
+			objectList = append(objectList, object)
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+		ret.Update(objectList, options...)
 	} else if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 		b, err := io.ReadAll(f)
 		if err != nil {
