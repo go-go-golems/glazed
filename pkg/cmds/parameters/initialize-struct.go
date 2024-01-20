@@ -2,7 +2,7 @@ package parameters
 
 import (
 	"encoding/json"
-	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
+	reflect_helpers "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -14,11 +14,56 @@ import (
 // "glazed.parameter". For each tagged field, it will lookup the corresponding
 // parameter value in the ParsedParameters map and set the field's value.
 //
+// If the tag open `from_json` is appended to `glazed.parameter` and the parameter
+// value is a string, bytes, rawMessage or FileData, the value is parsed from json.
+//
 // Struct fields that are pointers to other structs are handled recursively.
+//
+// Struct fields that are pointers will be dereferenced. If the pointer is nil, a new value
+// will be allocated and set.
 //
 // s should be a pointer to the struct to initialize.
 //
 // ps is the ParsedParameters map to lookup parameter values from.
+//
+// Example struct:
+//
+//	type CreateIndexSettings struct {
+//		Index               string               `glazed.parameter:"index"`
+//		Settings            *IndexSettings       `glazed.parameter:"settings,from_json"`
+//		Mappings            *parameters.FileData `glazed.parameter:"mappings"`
+//		Aliases             *map[string]Alias    `glazed.parameter:"aliases,from_json"`
+//		WaitForActiveShards string               `glazed.parameter:"wait_for_active_shards"`
+//	}
+//
+// Corresponding ParameterDefinitions:
+//
+//	parameters.NewParameterDefinition(
+//		"index",
+//		parameters.ParameterTypeString,
+//		parameters.WithHelp("Name of the index to create"),
+//		parameters.WithRequired(true),
+//	),
+//	parameters.NewParameterDefinition(
+//		"settings",
+//		parameters.ParameterTypeFile,
+//		parameters.WithHelp("JSON file containing index settings"),
+//	),
+//	parameters.NewParameterDefinition(
+//		"mappings",
+//		parameters.ParameterTypeFile,
+//		parameters.WithHelp("JSON file containing index mappings"),
+//	),
+//	parameters.NewParameterDefinition(
+//		"aliases",
+//		parameters.ParameterTypeFile,
+//		parameters.WithHelp("JSON file containing index aliases"),
+//	),
+//	parameters.NewParameterDefinition(
+//		"wait_for_active_shards",
+//		parameters.ParameterTypeString,
+//		parameters.WithHelp("Set the number of active shards to wait for before the operation returns."),
+//	),
 //
 // Returns an error if:
 // - s is not a pointer to a struct
@@ -28,6 +73,7 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 	if s == nil {
 		return errors.Errorf("Can't initialize nil struct")
 	}
+
 	// check that s is indeed a pointer to a struct
 	of := reflect.TypeOf(s)
 	if of.Kind() != reflect.Ptr {
@@ -56,7 +102,7 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 		dst := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 		kind := field.Type.Kind()
 
-		if dst.Type() == reflect.TypeOf(parameter.Value) {
+		if dst.Type() == reflect.TypeOf(parameter.Value) && !options.FromJson {
 			dst.Set(reflect.ValueOf(parameter.Value))
 			continue
 		}
@@ -90,7 +136,7 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 				if err != nil {
 					return errors.Wrapf(err, "failed to unmarshal json for %s", options.Name)
 				}
-			case []byte:
+			case []byte, json.RawMessage:
 				err := json.Unmarshal(parameter.Value.([]byte), dst.Interface())
 				if err != nil {
 					return errors.Wrapf(err, "failed to unmarshal json for %s", options.Name)
@@ -112,7 +158,7 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 
 		kind2 := dst.Kind()
 		_ = kind2
-		err = reflect2.SetReflectValue(dst, parameter.Value)
+		err = reflect_helpers.SetReflectValue(dst, parameter.Value)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set value %v for %s from value %v", options.Name, dst, parameter.Value)
 		}
