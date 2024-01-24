@@ -74,6 +74,8 @@ type Program struct {
 	ExpectedFiles      map[string]string `yaml:"expectedFiles,omitempty"`
 }
 
+//var _ glazedcmds.WriterCommand = (*Program)(nil)
+
 type ProgramOption func(*Program)
 
 func WithName(name string) ProgramOption {
@@ -381,12 +383,12 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 			continue
 		}
 
-		value, ok := ps.Get(flag.Name)
+		parsedParameter, ok := ps.Get(flag.Name)
 		value_ := ""
 		if !ok {
 			value_ = flag.Raw
 		} else {
-			value_, err = parameters.RenderValue(flag.Type, value.Value)
+			value_, err = parsedParameter.RenderValue()
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}

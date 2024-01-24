@@ -62,6 +62,10 @@ func (p *ParsedParameter) Update(value interface{}, options ...ParseStepOption) 
 	p.Log = append(p.Log, step)
 }
 
+func (p *ParsedParameter) RenderValue() (string, error) {
+	return RenderValue(p.ParameterDefinition.Type, p.Value)
+}
+
 // UpdateWithLog sets the value of the parsedParameter, and appends the given log.
 func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) {
 	p.Value = value
