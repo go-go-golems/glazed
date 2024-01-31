@@ -160,7 +160,8 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 		_ = kind2
 		err = reflect_helpers.SetReflectValue(dst, parameter.Value)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set value %v for %s from value %v", options.Name, dst, parameter.Value)
+			return errors.Wrapf(err, "failed to set value %v for %s from value %v",
+				dst, options.Name, parameter.Value)
 		}
 	}
 

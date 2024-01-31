@@ -250,7 +250,31 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 			return SetStringMapListReflectValue[interface{}](dst, src)
 
 		default:
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			// try to cast each element of src into type of dst
+			dstElemType := dst.Type().Elem()
+			srcVal := reflect.ValueOf(src)
+			newSlice := reflect.MakeSlice(reflect.SliceOf(dstElemType), srcVal.Len(), srcVal.Cap())
+
+			for i := 0; i < srcVal.Len(); i++ {
+				srcElem := srcVal.Index(i)
+				if srcElem.Kind() == reflect.Interface && !srcElem.IsNil() {
+					srcElem = srcElem.Elem()
+				}
+				dstElem := reflect.New(dstElemType).Elem()
+
+				if srcElem.Type().AssignableTo(dstElemType) {
+					dstElem.Set(srcElem)
+				} else if srcElem.Type().ConvertibleTo(dstElemType) {
+					dstElem.Set(srcElem.Convert(dstElemType))
+				} else {
+					return fmt.Errorf("cannot convert element %d of type %s to %s", i, srcElem.Type(), dstElemType)
+				}
+
+				newSlice.Index(i).Set(dstElem)
+			}
+
+			dst.Set(newSlice)
+			return nil
 		}
 
 	case reflect.Map:

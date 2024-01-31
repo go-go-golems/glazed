@@ -270,6 +270,10 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 			list, _ := c.Flags().GetBool("list")
 
+			if showAllSections || topics || examples || applications || tutorials {
+				list = true
+			}
+
 			options := &RenderOptions{
 				Query:           qb,
 				ShowAllSections: showAllSections,
@@ -300,6 +304,10 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 					_, _ = fmt.Fprint(c.OutOrStderr(), s)
 					return
 				}
+			} else {
+				// TODO(manuel, 2022-12-09): We could show a main help page if specified
+				cobra.CheckErr(renderCommandHelpPage(root, options, hs))
+				return
 			}
 
 			// if we couldn't find an explicit help page, show command help
@@ -314,7 +322,6 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 				}
 			} else {
 				cobra.CheckErr(renderCommandHelpPage(cmd, options, hs))
-
 			}
 		},
 	}
