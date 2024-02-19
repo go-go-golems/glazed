@@ -660,6 +660,14 @@ func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 	return ret
 }
 
+func (pds *ParameterDefinitions) ToList() []*ParameterDefinition {
+	ret := []*ParameterDefinition{}
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		ret = append(ret, v.Value)
+	}
+	return ret
+}
+
 func (pds *ParameterDefinitions) GetDefaultValue(key string, defaultValue interface{}) interface{} {
 	v, ok := pds.Get(key)
 	if !ok || v.Default == nil {

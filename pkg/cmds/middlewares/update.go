@@ -17,27 +17,7 @@ func SetFromDefaults(options ...parameters.ParseStepOption) Middleware {
 			if err != nil {
 				return err
 			}
-			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
-				pds := l.GetParameterDefinitions()
-				parsedLayer := parsedLayers.GetOrCreate(l)
-
-				err := pds.ForEachE(func(pd *parameters.ParameterDefinition) error {
-					err := pd.CheckParameterDefaultValueValidity()
-					if err != nil {
-						return err
-					}
-					if pd.Default != nil {
-						parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
-					}
-					return nil
-				})
-
-				if err != nil {
-					return err
-				}
-
-				return nil
-			})
+			err = layers_.UpdateWithDefaults(parsedLayers, options...)
 			if err != nil {
 				return err
 			}

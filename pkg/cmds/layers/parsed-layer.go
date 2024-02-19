@@ -115,6 +115,14 @@ func NewParsedLayers(options ...ParsedLayersOption) *ParsedLayers {
 	return ret
 }
 
+func (p *ParsedLayers) Clone() *ParsedLayers {
+	ret := NewParsedLayers()
+	p.ForEach(func(k string, v *ParsedLayer) {
+		ret.Set(k, v.Clone())
+	})
+	return ret
+}
+
 func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
 	slug := layer.GetSlug()
 	v, ok := p.Get(slug)

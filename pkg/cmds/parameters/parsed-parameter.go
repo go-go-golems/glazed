@@ -2,6 +2,7 @@ package parameters
 
 import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
 	"github.com/wk8/go-ordered-map/v2"
 )
 
@@ -212,6 +213,19 @@ func (p *ParsedParameters) UpdateValue(
 		p.Set(key, v_)
 	}
 	v_.Update(v, options...)
+}
+
+func (p *ParsedParameters) MustUpdateValue(
+	key string,
+	v interface{},
+	options ...ParseStepOption,
+) error {
+	v_, ok := p.Get(key)
+	if !ok {
+		return errors.Errorf("parameter %s not found", key)
+	}
+	v_.Update(v, options...)
+	return nil
 }
 
 func (p *ParsedParameters) UpdateWithLog(
