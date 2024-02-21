@@ -67,7 +67,7 @@ func (f *TemplateParameterLayer) Clone() layers.ParameterLayer {
 }
 
 func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
-	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStruct I think
+	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStructFromLayer I think
 
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}

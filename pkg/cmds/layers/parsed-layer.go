@@ -147,11 +147,11 @@ func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 	return ps
 }
 
-// InitializeStruct initializes a struct with values from a ParsedLayer specified by the key.
+// InitializeStructFromLayer initializes a struct with values from a ParsedLayer specified by the key.
 // If the key is "default", it creates a fresh empty default layer for defaults and initializes the struct with it.
 // If the layer specified by the key is not found, it returns an error.
 // The struct must be passed by reference as the s parameter.
-func (p *ParsedLayers) InitializeStruct(key string, s interface{}) error {
+func (p *ParsedLayers) InitializeStructFromLayer(key string, s interface{}) error {
 	// We special case Default because we will create a fresh empty default layer for defaults.
 	// Not sure how necessary that is, honestly
 	if key == DefaultSlug {

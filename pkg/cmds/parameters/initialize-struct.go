@@ -198,6 +198,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 		return fmt.Errorf("destination is not a map")
 	}
 	elemType = dst.Type().Elem()
+	keyType := dst.Type().Key()
 
 	if dst.IsNil() {
 		dst.Set(reflect.MakeMapWithSize(reflect.MapOf(reflect.TypeOf(""), elemType), 0))
@@ -210,8 +211,29 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 				return fmt.Errorf("type mismatch: expected type %s, got %s", elemType, reflect.TypeOf(parameter.Value))
 			}
 
+			paramValue := reflect.ValueOf(parameter.Value)
+
+			// Check if the type of parameter.Value is directly assignable to the map's value type
+			if !paramValue.Type().AssignableTo(elemType) {
+				// Check if the type of parameter.Value can be converted to the map's value type
+				if paramValue.Type().ConvertibleTo(elemType) {
+					paramValue = paramValue.Convert(elemType)
+				} else {
+					return fmt.Errorf("type mismatch: cannot assign type %s to type %s", paramValue.Type(), elemType)
+				}
+			}
+
 			// Set the value in the map
-			dst.SetMapIndex(reflect.ValueOf(paramName), reflect.ValueOf(parameter.Value))
+			keyValue := reflect.ValueOf(paramName)
+			if !keyValue.Type().AssignableTo(keyType) {
+				if keyValue.Type().ConvertibleTo(keyType) {
+					keyValue = keyValue.Convert(keyType)
+				} else {
+					return fmt.Errorf("type mismatch: cannot assign type %s to type %s", keyValue.Type(), keyType)
+				}
+			}
+
+			dst.SetMapIndex(keyValue, paramValue)
 		}
 		return nil
 	})

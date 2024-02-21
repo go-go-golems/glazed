@@ -28,9 +28,11 @@ func ToInterfaceValue(value interface{}) (interface{}, error) {
 	case reflect.Map:
 		return processMap(val)
 
-	default:
+	case reflect.Invalid, reflect.Complex64, reflect.Complex128, reflect.Chan, reflect.Func, reflect.Interface, reflect.Ptr, reflect.Struct, reflect.UnsafePointer:
 		return nil, errors.New("unsupported type")
 	}
+
+	return nil, errors.New("unsupported type")
 }
 
 // processSlice takes a reflect.Value representing a slice or an array and converts it into []interface{}.

@@ -274,6 +274,8 @@ func ValueToGoCode(v reflect.Value) (string, error) {
 		return fmt.Sprintf("%d", v.Int()), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return fmt.Sprintf("%d", v.Uint()), nil
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", v.Float()), nil
 	case reflect.Bool:
 		return fmt.Sprintf("%t", v.Bool()), nil
 	case reflect.Slice, reflect.Array:
@@ -316,9 +318,11 @@ func ValueToGoCode(v reflect.Value) (string, error) {
 		}
 		return ValueToGoCode(v.Elem())
 	// Add more types as needed
-	default:
+	case reflect.Invalid, reflect.Uintptr, reflect.Complex64, reflect.Complex128, reflect.Chan, reflect.Func, reflect.UnsafePointer:
 		return fmt.Sprintf("/* Unsupported type: %s */", v.Type().String()), errors.Errorf("unsupported type %s", v.Kind())
 	}
+
+	return "", errors.Errorf("unsupported type %s", v.Kind())
 }
 
 func SliceToGoCode(v reflect.Value) (string, error) {

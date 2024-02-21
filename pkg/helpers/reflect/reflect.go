@@ -345,6 +345,8 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 			if err != nil {
 				return err
 			}
+		} else {
+			return err
 		}
 	}
 
@@ -492,8 +494,7 @@ func SetFloatListReflectValue[To cast.FloatNumber](value reflect.Value, v interf
 
 func SetStringMapListReflectValue[To interface{}](mapSlice reflect.Value, v interface{}) error {
 	keyKind := mapSlice.Type().Elem().Key().Kind()
-	switch keyKind {
-	case reflect.String:
+	if keyKind == reflect.String {
 		r, ok := cast.CastList2[map[string]interface{}, interface{}](v)
 		if !ok {
 			return fmt.Errorf("cannot cast %T to []map[string]interface{}", v)
