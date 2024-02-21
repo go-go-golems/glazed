@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Define a struct that matches the expected structure for InitializeStructFromLayer
+// Define a struct that matches the expected structure for InitializeStruct
 type TestStruct struct {
 	Name string `glazed.parameter:"name"`
 	Age  int    `glazed.parameter:"age"`
