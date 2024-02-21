@@ -252,12 +252,16 @@ func (p *ParsedParameters) SetAsDefault(
 	}
 }
 
+// ForEach applies the passed function to each key-value pair from oldest to newest
+// in ParsedParameters.
 func (p *ParsedParameters) ForEach(f func(key string, value *ParsedParameter)) {
 	for v := p.Oldest(); v != nil; v = v.Next() {
 		f(v.Key, v.Value)
 	}
 }
 
+// ForEachE applies the passed function (that returns an error) to each pair in
+// ParsedParameters. It stops at, and returns, the first error encountered.
 func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) error) error {
 	for v := p.Oldest(); v != nil; v = v.Next() {
 		err := f(v.Key, v.Value)
@@ -287,6 +291,7 @@ func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...Pa
 	return p
 }
 
+// ToMap converts ParsedParameters to map[string]interface{} by assigning each ParsedParameter's value to its key.
 func (p *ParsedParameters) ToMap() map[string]interface{} {
 	ret := map[string]interface{}{}
 	p.ForEach(func(k string, v *ParsedParameter) {
@@ -295,6 +300,8 @@ func (p *ParsedParameters) ToMap() map[string]interface{} {
 	return ret
 }
 
+// ToInterfaceMap converts ParsedParameters to map[string]interface{} by converting each ParsedParameter's value to interface{}.
+// It returns an error if it fails to convert any ParsedParameter's value.
 func (p *ParsedParameters) ToInterfaceMap() (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
 	err := p.ForEachE(func(k string, v *ParsedParameter) error {
