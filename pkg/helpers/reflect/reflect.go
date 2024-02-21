@@ -21,304 +21,334 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 		return nil
 	}
 
-	//exhaustive:ignore
-	switch kind {
-	case reflect.String:
-		if s, ok := src.(string); ok {
-			dst.SetString(s)
-			return nil
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if s, ok := src.(string); ok {
-			i, err := strconv.ParseUint(s, 10, 64)
-			if err != nil {
-				return err
-			}
-			dst.SetUint(i)
-			return nil
-		}
-		if i, ok := src.(uint64); ok {
-			dst.SetUint(i)
-			return nil
-		}
-		if i, ok := src.(uint); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(uint8); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(uint16); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(uint32); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(int64); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(int); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(int8); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(int16); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		if i, ok := src.(int32); ok {
-			dst.SetUint(uint64(i))
-			return nil
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if s, ok := src.(string); ok {
-			i, err := strconv.ParseInt(s, 10, 64)
-			if err != nil {
-				return err
-			}
-			dst.SetInt(i)
-			return nil
-		}
-		if i, ok := src.(int64); ok {
-			dst.SetInt(i)
-			return nil
-		}
-		if i, ok := src.(int); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(int8); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(int16); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(int32); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-
-		if i, ok := src.(uint64); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(uint); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(uint8); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(uint16); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		if i, ok := src.(uint32); ok {
-			dst.SetInt(int64(i))
-			return nil
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-
-	case reflect.Float32, reflect.Float64:
-		if f, ok := src.(float64); ok {
-			dst.SetFloat(f)
-			return nil
-		}
-		if f, ok := src.(float32); ok {
-			dst.SetFloat(float64(f))
-			return nil
-		}
-		if i, ok := src.(int64); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(int); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(int8); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(int16); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(int32); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(uint64); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(uint); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(uint8); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(uint16); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		if i, ok := src.(uint32); ok {
-			dst.SetFloat(float64(i))
-			return nil
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-	case reflect.Bool:
-		if b, ok := src.(bool); ok {
-			dst.SetBool(b)
-			return nil
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-	case reflect.Slice:
+	setValue := func(src interface{}) error {
 		//exhaustive:ignore
-		sliceKind := dst.Type().Elem().Kind()
-		//exhaustive:ignore
-		switch sliceKind {
+		switch kind {
 		case reflect.String:
-			if s, ok := src.([]string); ok {
-				dst.Set(reflect.ValueOf(s))
+			if s, ok := src.(string); ok {
+				dst.SetString(s)
 				return nil
 			}
-			if s, ok := src.([]interface{}); ok {
-				v2_, ok := cast.CastList[string, interface{}](s)
-				if !ok {
-					return fmt.Errorf("cannot cast %T to []string", src)
-				}
-				dst.Set(reflect.ValueOf(v2_))
-				return nil
-			}
-
 			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
-		case reflect.Int:
-			return SetIntListReflectValue[int](dst, src)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			if s, ok := src.(string); ok {
+				i, err := strconv.ParseUint(s, 10, 64)
+				if err != nil {
+					return err
+				}
+				dst.SetUint(i)
+				return nil
+			}
+			if i, ok := src.(uint64); ok {
+				dst.SetUint(i)
+				return nil
+			}
+			if i, ok := src.(uint); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(uint8); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(uint16); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(uint32); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(int64); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(int); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(int8); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(int16); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			if i, ok := src.(int32); ok {
+				dst.SetUint(uint64(i))
+				return nil
+			}
+			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
-		case reflect.Int8:
-			return SetIntListReflectValue[int8](dst, src)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if s, ok := src.(string); ok {
+				i, err := strconv.ParseInt(s, 10, 64)
+				if err != nil {
+					return err
+				}
+				dst.SetInt(i)
+				return nil
+			}
+			if i, ok := src.(int64); ok {
+				dst.SetInt(i)
+				return nil
+			}
+			if i, ok := src.(int); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(int8); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(int16); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(int32); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
 
-		case reflect.Int16:
-			return SetIntListReflectValue[int16](dst, src)
+			if i, ok := src.(uint64); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(uint); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(uint8); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(uint16); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			if i, ok := src.(uint32); ok {
+				dst.SetInt(int64(i))
+				return nil
+			}
+			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
-		case reflect.Int32:
-			return SetIntListReflectValue[int32](dst, src)
+		case reflect.Float32, reflect.Float64:
+			if f, ok := src.(float64); ok {
+				dst.SetFloat(f)
+				return nil
+			}
+			if f, ok := src.(float32); ok {
+				dst.SetFloat(float64(f))
+				return nil
+			}
+			if i, ok := src.(int64); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(int); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(int8); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(int16); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(int32); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(uint64); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(uint); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(uint8); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(uint16); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			if i, ok := src.(uint32); ok {
+				dst.SetFloat(float64(i))
+				return nil
+			}
+			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+		case reflect.Bool:
+			if b, ok := src.(bool); ok {
+				dst.SetBool(b)
+				return nil
+			}
+			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+		case reflect.Slice:
+			//exhaustive:ignore
+			sliceKind := dst.Type().Elem().Kind()
+			//exhaustive:ignore
+			switch sliceKind {
+			case reflect.String:
+				if s, ok := src.([]string); ok {
+					dst.Set(reflect.ValueOf(s))
+					return nil
+				}
+				if s, ok := src.([]interface{}); ok {
+					v2_, ok := cast.CastList[string, interface{}](s)
+					if !ok {
+						return fmt.Errorf("cannot cast %T to []string", src)
+					}
+					dst.Set(reflect.ValueOf(v2_))
+					return nil
+				}
 
-		case reflect.Int64:
-			return SetIntListReflectValue[int64](dst, src)
+				if s, ok := src.(*interface{}); ok {
+					s_, ok := (*s).([]interface{})
+					if !ok {
+						return fmt.Errorf("cannot cast %T to []string", src)
+					}
+					v2_, ok := cast.CastList[string, interface{}](s_)
+					if !ok {
+						return fmt.Errorf("cannot cast %T to []string", src)
+					}
+					dst.Set(reflect.ValueOf(v2_))
+					return nil
+				}
 
-		case reflect.Uint:
-			return SetIntListReflectValue[uint](dst, src)
+				return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
-		case reflect.Uint8:
-			return SetIntListReflectValue[uint8](dst, src)
+			case reflect.Int:
+				return SetIntListReflectValue[int](dst, src)
 
-		case reflect.Uint16:
-			return SetIntListReflectValue[uint16](dst, src)
+			case reflect.Int8:
+				return SetIntListReflectValue[int8](dst, src)
 
-		case reflect.Uint32:
-			return SetIntListReflectValue[uint32](dst, src)
+			case reflect.Int16:
+				return SetIntListReflectValue[int16](dst, src)
 
-		case reflect.Uint64:
-			return SetIntListReflectValue[uint64](dst, src)
+			case reflect.Int32:
+				return SetIntListReflectValue[int32](dst, src)
 
-		case reflect.Float32:
-			return SetFloatListReflectValue[float32](dst, src)
+			case reflect.Int64:
+				return SetIntListReflectValue[int64](dst, src)
 
-		case reflect.Float64:
-			return SetFloatListReflectValue[float64](dst, src)
+			case reflect.Uint:
+				return SetIntListReflectValue[uint](dst, src)
+
+			case reflect.Uint8:
+				return SetIntListReflectValue[uint8](dst, src)
+
+			case reflect.Uint16:
+				return SetIntListReflectValue[uint16](dst, src)
+
+			case reflect.Uint32:
+				return SetIntListReflectValue[uint32](dst, src)
+
+			case reflect.Uint64:
+				return SetIntListReflectValue[uint64](dst, src)
+
+			case reflect.Float32:
+				return SetFloatListReflectValue[float32](dst, src)
+
+			case reflect.Float64:
+				return SetFloatListReflectValue[float64](dst, src)
+
+			case reflect.Map:
+				return SetStringMapListReflectValue[interface{}](dst, src)
+
+			default:
+				// try to cast each element of src into type of dst
+				dstElemType := dst.Type().Elem()
+				srcVal := reflect.ValueOf(src)
+				newSlice := reflect.MakeSlice(reflect.SliceOf(dstElemType), srcVal.Len(), srcVal.Cap())
+
+				for i := 0; i < srcVal.Len(); i++ {
+					srcElem := srcVal.Index(i)
+					if srcElem.Kind() == reflect.Interface && !srcElem.IsNil() {
+						srcElem = srcElem.Elem()
+					}
+					dstElem := reflect.New(dstElemType).Elem()
+
+					if srcElem.Type().AssignableTo(dstElemType) {
+						dstElem.Set(srcElem)
+					} else if srcElem.Type().ConvertibleTo(dstElemType) {
+						dstElem.Set(srcElem.Convert(dstElemType))
+					} else {
+						return fmt.Errorf("cannot convert element %d of type %s to %s", i, srcElem.Type(), dstElemType)
+					}
+
+					newSlice.Index(i).Set(dstElem)
+				}
+
+				dst.Set(newSlice)
+				return nil
+			}
 
 		case reflect.Map:
-			return SetStringMapListReflectValue[interface{}](dst, src)
-
-		default:
-			// try to cast each element of src into type of dst
-			dstElemType := dst.Type().Elem()
-			srcVal := reflect.ValueOf(src)
-			newSlice := reflect.MakeSlice(reflect.SliceOf(dstElemType), srcVal.Len(), srcVal.Cap())
-
-			for i := 0; i < srcVal.Len(); i++ {
-				srcElem := srcVal.Index(i)
-				if srcElem.Kind() == reflect.Interface && !srcElem.IsNil() {
-					srcElem = srcElem.Elem()
-				}
-				dstElem := reflect.New(dstElemType).Elem()
-
-				if srcElem.Type().AssignableTo(dstElemType) {
-					dstElem.Set(srcElem)
-				} else if srcElem.Type().ConvertibleTo(dstElemType) {
-					dstElem.Set(srcElem.Convert(dstElemType))
-				} else {
-					return fmt.Errorf("cannot convert element %d of type %s to %s", i, srcElem.Type(), dstElemType)
+			//exhaustive:ignore
+			switch dst.Type().Elem().Kind() {
+			case reflect.String:
+				if m, ok := src.(map[string]string); ok {
+					dst.Set(reflect.ValueOf(m))
+					return nil
 				}
 
-				newSlice.Index(i).Set(dstElem)
-			}
-
-			dst.Set(newSlice)
-			return nil
-		}
-
-	case reflect.Map:
-		//exhaustive:ignore
-		switch dst.Type().Elem().Kind() {
-		case reflect.String:
-			if m, ok := src.(map[string]string); ok {
-				dst.Set(reflect.ValueOf(m))
-				return nil
-			}
-
-			if m, ok := src.(map[string]interface{}); ok {
-				v2_, ok := cast.CastStringMap[string, interface{}](m)
-				if !ok {
-					return fmt.Errorf("cannot cast %T to map[string]string", src)
+				if m, ok := src.(map[string]interface{}); ok {
+					v2_, ok := cast.CastStringMap[string, interface{}](m)
+					if !ok {
+						return fmt.Errorf("cannot cast %T to map[string]string", src)
+					}
+					dst.Set(reflect.ValueOf(v2_))
+					return nil
 				}
-				dst.Set(reflect.ValueOf(v2_))
-				return nil
-			}
 
-		case reflect.Interface:
-			if m, ok := src.(map[string]interface{}); ok {
-				dst.Set(reflect.ValueOf(m))
-				return nil
-			}
-
-			if m, ok := src.(map[string]string); ok {
-				v2_, ok := cast.CastStringMap[interface{}, string](m)
-				if !ok {
-					return fmt.Errorf("cannot cast %T to map[string]interface{}", src)
+			case reflect.Interface:
+				if m, ok := src.(map[string]interface{}); ok {
+					dst.Set(reflect.ValueOf(m))
+					return nil
 				}
-				dst.Set(reflect.ValueOf(v2_))
-				return nil
 
+				if m, ok := src.(map[string]string); ok {
+					v2_, ok := cast.CastStringMap[interface{}, string](m)
+					if !ok {
+						return fmt.Errorf("cannot cast %T to map[string]interface{}", src)
+					}
+					dst.Set(reflect.ValueOf(v2_))
+					return nil
+
+				}
+
+			default:
+				return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 			}
-
-		default:
 			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
-		}
-		return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
-	default:
-		return fmt.Errorf("unsupported reflect.Value type %s", kind)
+		default:
+			return fmt.Errorf("unsupported reflect.Value type %s", kind)
+		}
+
 	}
+
+	err := setValue(src)
+	if err != nil {
+		// try again, checking if src is an *interface{} and unwrapping that
+		if i, ok := src.(*interface{}); ok {
+			src = *i
+			err = setValue(src)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) error {

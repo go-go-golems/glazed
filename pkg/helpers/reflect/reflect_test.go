@@ -526,3 +526,16 @@ func testSetReflectFloatList[T cast.FloatNumber](t *testing.T, sValue reflect.Va
 	err = SetReflectValue(sValue, []interface{}{1.1, "world"})
 	require.Error(t, err)
 }
+
+// Test that passing a list of strings as an interface{} gets unwrapped properly
+func TestSetReflectStringListInterface(t *testing.T) {
+	s := []string{}
+	sValue := reflect.ValueOf(&s).Elem()
+
+	err := SetReflectValue(sValue, []interface{}{"hello", "world"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"hello", "world"}, sValue.Interface())
+
+	err = SetReflectValue(sValue, []interface{}{"hello", 1})
+	require.Error(t, err)
+}
