@@ -76,14 +76,14 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 //
 // Example struct:
 //
-//		type CreateIndexSettings struct {
-//			Index               string               `glazed.parameter:"index"`
-//			Settings            *IndexSettings       `glazed.parameter:"settings,from_json"`
-//			Mappings            *parameters.FileData `glazed.parameter:"mappings"`
-//			Aliases             *map[string]Alias    `glazed.parameter:"aliases,from_json"`
-//			WaitForActiveShards string               `glazed.parameter:"wait_for_active_shards"`
-//	        ApiKeys             map[string]string    `glazed.parameter:"*_api_key"`
-//		}
+//	type CreateIndexSettings struct {
+//		Index               string               `glazed.parameter:"index"`
+//		Settings            *IndexSettings       `glazed.parameter:"settings,from_json"`
+//		Mappings            *parameters.FileData `glazed.parameter:"mappings"`
+//		Aliases             *map[string]Alias    `glazed.parameter:"aliases,from_json"`
+//		WaitForActiveShards string               `glazed.parameter:"wait_for_active_shards"`
+//		ApiKeys             map[string]string    `glazed.parameter:"*_api_key"`
+//	}
 //
 // Corresponding ParameterDefinitions:
 //
