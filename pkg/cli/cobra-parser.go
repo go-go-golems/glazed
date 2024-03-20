@@ -169,6 +169,10 @@ func (c *CobraParser) Parse(
 	}
 
 	pds := glazedCommandLayer.GetParameterDefinitions()
+
+	// TODO(manuel, 2024-03-20) We should use a proper parsedLayer and a set of middlewares here maybe?
+	// This was added inthe context of adding profiles, but we can't pass the "default" value of the profile
+	// because we don't load the default values of the CommandSettings layer, as we pass onlyProvided=true
 	parsedParameters, err := pds.GatherFlagsFromCobraCommand(cmd, true, true, glazedCommandLayer.GetPrefix())
 	if err != nil {
 		return nil, err

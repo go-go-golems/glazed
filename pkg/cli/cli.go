@@ -42,6 +42,17 @@ func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeBool,
 				parameters.WithHelp("Print the parsed parameters"),
 			),
+			parameters.NewParameterDefinition(
+				"profile-file",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Load the profile from a file"),
+			),
+			parameters.NewParameterDefinition(
+				"profile",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Load the profile"),
+				parameters.WithDefault("default"),
+			),
 		),
 	)
 	if err != nil {
@@ -58,4 +69,6 @@ type GlazedCommandSettings struct {
 	PrintYAML              bool   `glazed.parameter:"print-yaml"`
 	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
 	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
+	Profile                string `glazed.parameter:"profile"`
+	ProfileFile            string `glazed.parameter:"profile-file"`
 }
