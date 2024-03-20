@@ -252,7 +252,7 @@ template: |
       Command
       RunIntoWriter(
           ctx context.Context,
-          ps map[string]interface{},
+          ps *layers.ParsedLayers,
           w io.Writer,
       ) error
   }

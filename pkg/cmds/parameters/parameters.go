@@ -2,6 +2,7 @@ package parameters
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -273,58 +274,27 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	return nil
 }
 
+// ParsedParametersFromDefaults uses the parameter definitions default values to create a ParsedParameters
+// object.
+func (pds *ParameterDefinitions) ParsedParametersFromDefaults() *ParsedParameters {
+	ret := NewParsedParameters()
+	pds.ForEach(func(definition *ParameterDefinition) {
+		ret.UpdateValue(definition.Name, definition, definition.Default,
+			WithParseStepSource("defaults"),
+			WithParseStepValue(definition.Default),
+		)
+	})
+	return ret
+}
+
 // InitializeStructFromDefaults initializes a struct from a map of parameter definitions.
 //
 // Each field in the struct annotated with tag `glazed.parameter` will be set to the default value of
 // the corresponding `ParameterDefinition`. If no `ParameterDefinition` is found for a field, an error
 // is returned.
 func (pds *ParameterDefinitions) InitializeStructFromDefaults(s interface{}) error {
-	// check that s is indeed a pointer to a struct
-	if reflect.TypeOf(s).Kind() != reflect.Ptr {
-		return errors.Errorf("s is not a pointer")
-	}
-	if reflect.TypeOf(s).Elem().Kind() != reflect.Struct {
-		return errors.Errorf("s is not a pointer to a struct")
-	}
-	st := reflect.TypeOf(s).Elem()
-
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		v, ok := field.Tag.Lookup("glazed.parameter")
-		if !ok {
-			continue
-		}
-		parameter, ok := pds.Get(v)
-		if !ok {
-			return errors.Errorf("unknown parameter %s", v)
-		}
-		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
-
-		if field.Type.Kind() == reflect.Ptr {
-			if value.IsNil() {
-				value.Set(reflect.New(field.Type.Elem()))
-			}
-			if field.Type.Elem().Kind() == reflect.Struct {
-				err := pds.InitializeStructFromDefaults(value.Interface())
-				if err != nil {
-					return errors.Wrapf(err, "failed to initialize struct for %s", v)
-				}
-			} else {
-				err := parameter.SetValueFromDefault(value.Elem())
-				if err != nil {
-					return errors.Wrapf(err, "failed to set value for %s", v)
-				}
-			}
-
-		}
-
-		err := parameter.SetValueFromDefault(value)
-		if err != nil {
-			return errors.Wrapf(err, "failed to set value for %s", v)
-		}
-	}
-
-	return nil
+	parsedParameters := pds.ParsedParametersFromDefaults()
+	return parsedParameters.InitializeStruct(s)
 }
 
 // InitializeDefaultsFromStruct initializes the parameters definitions from a struct.
@@ -350,19 +320,55 @@ func (pds *ParameterDefinitions) InitializeDefaultsFromStruct(
 
 	for i := 0; i < st.NumField(); i++ {
 		field := st.Field(i)
-		v, ok := field.Tag.Lookup("glazed.parameter")
+		tag, ok := field.Tag.Lookup("glazed.parameter")
 		if !ok {
 			continue
 		}
-		parameter, ok := pds.Get(v)
+
+		tagOptions, err := parsedTagOptions(tag)
+		if err != nil {
+			return err
+		}
+
+		if tagOptions.IsWildcard {
+			err = pds.ForEachE(func(pd *ParameterDefinition) error {
+				if matched, _ := filepath.Match(tagOptions.Name, pd.Name); matched {
+					mapValue := reflect.ValueOf(s).Elem().FieldByName(field.Name)
+
+					// check that mapValue is a map of strings
+					if mapValue.Kind() != reflect.Map {
+						return errors.Errorf("wildcard parameters require a map field, field %s is not a map", field.Name)
+					}
+					if mapValue.Type().Key().Kind() != reflect.String {
+						return errors.Errorf("wildcard parameters require a map of strings, field %s is not a map of strings", field.Name)
+					}
+
+					// look up pd.Name in the map and if present, set the default
+					value := mapValue.MapIndex(reflect.ValueOf(pd.Name))
+					if value.IsValid() {
+						err = pd.SetDefaultFromValue(value)
+						if err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		parameter, ok := pds.Get(tagOptions.Name)
 		if !ok {
-			return errors.Errorf("unknown parameter %s", v)
+			return errors.Errorf("unknown parameter %s", tag)
 		}
 		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 
-		err := parameter.SetDefaultFromValue(value)
+		err = parameter.SetDefaultFromValue(value)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set default value for %s", v)
+			return errors.Wrapf(err, "failed to set default value for %s", tag)
 		}
 	}
 
@@ -657,6 +663,14 @@ func (pds *ParameterDefinitions) GetFlags() *ParameterDefinitions {
 		}
 	}
 
+	return ret
+}
+
+func (pds *ParameterDefinitions) ToList() []*ParameterDefinition {
+	ret := []*ParameterDefinition{}
+	for v := pds.Oldest(); v != nil; v = v.Next() {
+		ret = append(ret, v.Value)
+	}
 	return ret
 }
 

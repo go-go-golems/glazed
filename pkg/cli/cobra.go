@@ -56,7 +56,7 @@ func BuildCobraCommandFromCommandAndFunc(
 		parsedLayers, err := cobraParser.Parse(cmd, args)
 		// show help if there is an error
 		if err != nil {
-			fmt.Println(err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			err := cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)

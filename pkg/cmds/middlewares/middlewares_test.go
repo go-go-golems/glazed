@@ -38,7 +38,7 @@ func TestSetFromDefaults(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
 			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
-			middleware := middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults"))
+			middleware := middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults))
 			err := middleware(func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 				return nil
 			})(layers_, parsedLayers)

@@ -33,6 +33,7 @@ func getCliopatraParameters(
 			Short: p.Help,
 			Type:  p.Type,
 			Value: v.Value,
+			Log:   v.Log,
 		}
 		if p.Type == parameters.ParameterTypeBool {
 			param.NoValue = true
@@ -44,12 +45,14 @@ func getCliopatraParameters(
 
 		param.IsArgument = p.IsArgument
 
-		// TODO(manuel, 2023-03-21) This would be easier if we knew why and from where something is set
-		//
-		// Right now we can only kind of guess, by doing some comparison.
-		//
-		// See https://github.com/go-go-golems/glazed/issues/239
-		if !p.IsEqualToDefault(v.Value) {
+		isFromDefault := true
+		for _, l := range v.Log {
+			if l.Source != parameters.SourceDefaults {
+				isFromDefault = false
+				break
+			}
+		}
+		if !isFromDefault || !p.IsEqualToDefault(v.Value) {
 			ret = append(ret, param)
 		}
 	})
@@ -60,7 +63,7 @@ func getCliopatraParameters(
 // NewProgramFromCapture is a helper function to help capture a cliopatra Program from
 // the description and the parsed layers a glazed command.
 //
-// It will go over all the ParameterDefinition (from the layers, which now also include the default layers).
+// It will go over all the ParameterDefinition (from all layers, which now also include the default layers).
 // and will try to create the best cliopatra map it can. It tries to resolve the prefixes
 // of layered parameters.
 //
@@ -77,10 +80,11 @@ func NewProgramFromCapture(
 		Description: description.Short,
 	}
 
-	// NOTE(manuel, 2023-03-21) Maybe we should add layers to the program capture too, to expose all the parameters
-	//
-	// See https://github.com/go-go-golems/cliopatra/issues/6
 	description.Layers.ForEach(func(_ string, layer layers.ParameterLayer) {
+		if layer.GetSlug() == "glazed-command" {
+			// skip the meta glazed command flags, which also contain the create-cliopatra flag
+			return
+		}
 		parsedLayer, ok := parsedLayers.Get(layer.GetSlug())
 		if !ok {
 			return

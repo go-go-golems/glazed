@@ -1,9 +1,11 @@
 package codegen
 
 import (
+	"fmt"
 	"github.com/dave/jennifer/jen"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 )
 
 func StructTypeToJen(typ reflect.Type) (jen.Code, error) {
@@ -258,4 +260,124 @@ func LiteralToJen(v reflect.Value) (jen.Code, error) {
 		// Default case for unsupported types
 		return nil, errors.Errorf("unsupported type %s", v.Kind())
 	}
+}
+
+func ToGoCode(v interface{}) (string, error) {
+	return ValueToGoCode(reflect.ValueOf(v))
+}
+
+func ValueToGoCode(v reflect.Value) (string, error) {
+	switch v.Kind() {
+	case reflect.String:
+		return strconv.Quote(v.String()), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", v.Int()), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("%d", v.Uint()), nil
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", v.Float()), nil
+	case reflect.Bool:
+		return fmt.Sprintf("%t", v.Bool()), nil
+	case reflect.Slice, reflect.Array:
+		return SliceToGoCode(v)
+	case reflect.Struct:
+		return StructToGoCode(v)
+	case reflect.Map:
+		return MapToGoCode(v)
+	case reflect.Ptr:
+		if v.IsNil() {
+			return "nil", nil
+		}
+
+		if v.Elem().Kind() == reflect.Interface {
+			// We have a pointer to an interface, now let's see if it contains a string
+			actualValue := v.Elem().Elem() // This will dereference the interface to get the actual value
+			if actualValue.Kind() == reflect.String {
+				// We found a string inside the interface, return it quoted
+				return strconv.Quote(actualValue.String()), nil
+			} else {
+				// It's not a string, handle other types or return an error
+				return ValueToGoCode(actualValue)
+			}
+		}
+
+		code, err := ValueToGoCode(v.Elem())
+		if err != nil {
+			return "", err
+		}
+		// Use a temporary variable for the pointer's value
+		s := v.Elem().Type().String()
+		if s != "interface {}" {
+			s = "*" + s
+		}
+		return fmt.Sprintf("func() %s { tmp := %s; return &tmp }()", s, code), nil
+
+	case reflect.Interface:
+		if v.IsNil() {
+			return "nil", nil
+		}
+		return ValueToGoCode(v.Elem())
+	// Add more types as needed
+	case reflect.Invalid, reflect.Uintptr, reflect.Complex64, reflect.Complex128, reflect.Chan, reflect.Func, reflect.UnsafePointer:
+		return fmt.Sprintf("/* Unsupported type: %s */", v.Type().String()), errors.Errorf("unsupported type %s", v.Kind())
+	}
+
+	return "", errors.Errorf("unsupported type %s", v.Kind())
+}
+
+func SliceToGoCode(v reflect.Value) (string, error) {
+	result := "[]"
+	if v.Len() == 0 {
+		result += v.Type().Elem().String() + "{}"
+		return result, nil
+	}
+
+	result += v.Type().Elem().String() + "{"
+	for i := 0; i < v.Len(); i++ {
+		if i > 0 {
+			result += ", "
+		}
+		code, err := ValueToGoCode(v.Index(i))
+		if err != nil {
+			return "", err
+		}
+		result += code
+	}
+	result += "}"
+	return result, nil
+}
+
+func StructToGoCode(v reflect.Value) (string, error) {
+	result := "&" + v.Type().String() + "{"
+	for i := 0; i < v.NumField(); i++ {
+		if i > 0 {
+			result += ", "
+		}
+		field := v.Type().Field(i)
+		code, err := ValueToGoCode(v.Field(i))
+		if err != nil {
+			return "", err
+		}
+		result += field.Name + ": " + code
+	}
+	result += "}"
+	return result, nil
+}
+
+func MapToGoCode(v reflect.Value) (string, error) {
+	result := "map[" + v.Type().Key().String() + "]" + v.Type().Elem().String() + "{"
+	for _, key := range v.MapKeys() {
+		val := v.MapIndex(key)
+		code, err := ValueToGoCode(val)
+		if err != nil {
+			return "", err
+		}
+		keyCode, err := ValueToGoCode(key)
+		if err != nil {
+			return "", err
+		}
+		result += keyCode + ": " + code + ", "
+	}
+	result = result[:len(result)-2] + "}" // Remove the last ", "
+	return result, nil
 }

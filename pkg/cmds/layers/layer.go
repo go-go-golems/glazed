@@ -146,3 +146,47 @@ func (pl *ParameterLayers) AddToCobraCommand(cmd *cobra.Command) error {
 		return nil
 	})
 }
+
+func (pl *ParameterLayers) InitializeFromDefaults(options ...parameters.ParseStepOption) (*ParsedLayers, error) {
+	ret := NewParsedLayers()
+	err := pl.UpdateWithDefaults(ret, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func InitializeParameterLayerWithDefaults(
+	v ParameterLayer,
+	parsedLayer *ParsedLayer,
+	options ...parameters.ParseStepOption,
+) error {
+	pds := v.GetParameterDefinitions()
+
+	err := pds.ForEachE(func(pd *parameters.ParameterDefinition) error {
+		err := pd.CheckParameterDefaultValueValidity()
+		if err != nil {
+			return err
+		}
+		if pd.Default != nil {
+			parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pl *ParameterLayers) UpdateWithDefaults(parsedLayers *ParsedLayers, options ...parameters.ParseStepOption) error {
+	err := pl.ForEachE(func(_ string, v ParameterLayer) error {
+		parsedLayer := parsedLayers.GetOrCreate(v)
+		return InitializeParameterLayerWithDefaults(v, parsedLayer, options...)
+	})
+
+	return err
+}

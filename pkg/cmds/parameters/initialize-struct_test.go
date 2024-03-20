@@ -2,6 +2,7 @@ package parameters_test
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters" // Replace with the actual package path
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,6 @@ type TestStruct struct {
 
 // TestInitializeStructWithValidStruct tests initializing a struct with valid parameters
 func TestInitializeStructWithValidStruct(t *testing.T) {
-	// Create an instance of ParsedParameters with test data
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -30,13 +30,10 @@ func TestInitializeStructWithValidStruct(t *testing.T) {
 			"age", 30),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStruct{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that there is no error and the struct is initialized correctly
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
 	assert.Equal(t, 30, testStruct.Age)
@@ -44,10 +41,8 @@ func TestInitializeStructWithValidStruct(t *testing.T) {
 
 // TestInitializeStructWithNilInput tests initializing a struct with a nil input
 func TestInitializeStructWithNilInput(t *testing.T) {
-	// Create an instance of ParsedParameters (can be empty for this test)
 	parsedParams := &parameters.ParsedParameters{}
 
-	// Call InitializeStruct with a nil pointer
 	err := parsedParams.InitializeStruct(nil)
 
 	assert.Error(t, err)
@@ -56,35 +51,28 @@ func TestInitializeStructWithNilInput(t *testing.T) {
 
 // TestInitializeStructWithNonPointerInput tests initializing a struct with a non-pointer input
 func TestInitializeStructWithNonPointerInput(t *testing.T) {
-	// Create an instance of ParsedParameters (can be empty for this test)
 	parsedParams := &parameters.ParsedParameters{}
 
-	// Call InitializeStruct with a non-pointer value (struct value)
 	testStruct := TestStruct{}
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that an error is returned and the error message is correct
 	assert.Error(t, err)
 	assert.Equal(t, "s is not a pointer", err.Error())
 }
 
 // TestInitializeStructWithNonStructPointer tests initializing a struct with a pointer to a non-struct type
 func TestInitializeStructWithNonStructPointer(t *testing.T) {
-	// Create an instance of ParsedParameters (can be empty for this test)
 	parsedParams := &parameters.ParsedParameters{}
 
-	// Call InitializeStruct with a pointer to a non-struct type (e.g., string)
 	nonStruct := "I am not a struct"
 	err := parsedParams.InitializeStruct(&nonStruct)
 
-	// Assert that an error is returned and the error message is correct
 	assert.Error(t, err)
 	assert.Equal(t, "s is not a pointer to a struct", err.Error())
 }
 
 // TestInitializeStructWithMissingParameters tests initializing a struct with missing parameters
 func TestInitializeStructWithMissingParameters(t *testing.T) {
-	// Create an instance of ParsedParameters with only one parameter defined
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -94,13 +82,10 @@ func TestInitializeStructWithMissingParameters(t *testing.T) {
 			"John Doe"),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStruct{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that there is no error and the struct is partially initialized correctly
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
 	assert.Equal(t, 0, testStruct.Age) // Age should be the zero value since it's missing from parsedParams
@@ -108,12 +93,10 @@ func TestInitializeStructWithMissingParameters(t *testing.T) {
 
 // TestInitializeStructWithJSONTagOnNonPointerField tests initializing a struct with a `from_json` tag on a non-pointer field
 func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
-	// Define a struct with a `from_json` tag on a non-pointer field
 	type TestStructWithJSONTag struct {
 		Config string `glazed.parameter:"config,from_json"`
 	}
 
-	// Create an instance of ParsedParameters with a JSON parameter
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -123,25 +106,20 @@ func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
 			`{"key": "value"}`),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStructWithJSONTag{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that an error is returned and the error message is correct
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "from_json tag can only be used on pointer fields")
 }
 
 // TestParseStringListSuccessfully tests parsing a string list successfully
 func TestParseStringListSuccessfully(t *testing.T) {
-	// Define a struct that matches the expected structure for InitializeStruct
 	type TestStruct struct {
 		Tags []string `glazed.parameter:"tags"`
 	}
 
-	// Create an instance of ParsedParameters with test data
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -151,25 +129,20 @@ func TestParseStringListSuccessfully(t *testing.T) {
 			[]string{"go", "testing", "glazed"}),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStruct{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that there is no error and the struct is initialized correctly
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"go", "testing", "glazed"}, testStruct.Tags)
 }
 
 // TestParseIntListSuccessfully tests parsing an integer list successfully
 func TestParseIntListSuccessfully(t *testing.T) {
-	// Define a struct that matches the expected structure for InitializeStruct
 	type TestStruct struct {
 		Numbers []int `glazed.parameter:"numbers"`
 	}
 
-	// Create an instance of ParsedParameters with test data
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -179,25 +152,20 @@ func TestParseIntListSuccessfully(t *testing.T) {
 			[]int{1, 2, 3, 4, 5}),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStruct{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that there is no error and the struct is initialized correctly
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, testStruct.Numbers)
 }
 
 // TestParseObjectFromFileSuccessfully tests parsing an object from file successfully
 func TestParseObjectFromFileSuccessfully(t *testing.T) {
-	// Define a struct that matches the expected structure for InitializeStruct
 	type TestStruct struct {
 		Config map[string]interface{} `glazed.parameter:"config"`
 	}
 
-	// Create an instance of ParsedParameters with test data
 	parsedParams := parameters.NewParsedParameters(
 		parameters.WithParsedParameter(
 			parameters.NewParameterDefinition(
@@ -210,13 +178,10 @@ func TestParseObjectFromFileSuccessfully(t *testing.T) {
 			}),
 	)
 
-	// Create an instance of the struct to be initialized
 	testStruct := &TestStruct{}
 
-	// Call InitializeStruct with the test struct and parsed parameters
 	err := parsedParams.InitializeStruct(testStruct)
 
-	// Assert that there is no error and the struct is initialized correctly
 	assert.NoError(t, err)
 	expectedConfig := map[string]interface{}{
 		"key1": "value1",
@@ -245,7 +210,7 @@ func TestInitializeStructWithInvalidJSON(t *testing.T) {
 	err := parsedParams.InitializeStruct(testStruct)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unmarshal json for config")
+	assert.Contains(t, err.Error(), "failed to unmarshal JSON")
 }
 
 // TestInitializeStructWithUnsupportedTypeForJSON tests initializing a struct with an unsupported type for JSON
@@ -269,4 +234,176 @@ func TestInitializeStructWithUnsupportedTypeForJSON(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "from_json tag can only be used on pointer fields")
+}
+
+// TestStruct for wildcard functionality
+type TestStructWithWildcard struct {
+	ApiKeys map[string]string `glazed.parameter:"*_api_key"`
+}
+
+// TestInitializeStructWithWildcardMultipleMatches tests wildcard pattern matching multiple parameters
+func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"openai_api_key",
+				parameters.ParameterTypeString),
+			"openai_api_key",
+			"openai-secret"),
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"google_api_key",
+				parameters.ParameterTypeString),
+			"google_api_key",
+			"google-secret"),
+	)
+
+	testStruct := &TestStructWithWildcard{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"openai_api_key": "openai-secret",
+		"google_api_key": "google-secret",
+	}, testStruct.ApiKeys)
+}
+
+// TestInitializeStructWithWildcardNoMatches tests wildcard pattern matching no parameters
+func TestInitializeStructWithWildcardNoMatches(t *testing.T) {
+	parsedParams := parameters.NewParsedParameters()
+
+	testStruct := &TestStructWithWildcard{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Empty(t, testStruct.ApiKeys)
+}
+
+// TestInitializeStructWithWildcardOnNonMapField tests wildcard pattern used on a non-map field
+func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
+	type TestStructNonMapWildcard struct {
+		ApiKeys string `glazed.parameter:"*_api_key"`
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"openai_api_key",
+				parameters.ParameterTypeString),
+			"openai_api_key",
+			"openai-secret"),
+	)
+
+	testStruct := &TestStructNonMapWildcard{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "wildcard parameters require a map field")
+}
+
+// TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes tests wildcard pattern on a map with incorrect value types
+func TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes(t *testing.T) {
+	type TestStructMapWildcardIncorrectTypes struct {
+		ApiKeys map[string]int `glazed.parameter:"*_api_key"`
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"openai_api_key",
+				parameters.ParameterTypeString),
+			"openai_api_key",
+			"openai-secret"),
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"google_api_key",
+				parameters.ParameterTypeString),
+			"google_api_key",
+			"google-secret"),
+	)
+
+	testStruct := &TestStructMapWildcardIncorrectTypes{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to set wildcard values for ")
+}
+
+// TestInitializeStructWithWildcardOnMapWithCorrectValueTypes tests wildcard pattern on a map with correct value types
+func TestInitializeStructWithWildcardOnMapWithCorrectValueTypes(t *testing.T) {
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"openai_api_key",
+				parameters.ParameterTypeString),
+			"openai_api_key",
+			"openai-secret"),
+	)
+
+	testStruct := &TestStructWithWildcard{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"openai_api_key": "openai-secret",
+	}, testStruct.ApiKeys)
+}
+
+// TestInitializeStructWithWildcardComplexPatterns tests wildcard pattern with complex patterns
+func TestInitializeStructWithWildcardComplexPatterns(t *testing.T) {
+	type TestStructComplexWildcard struct {
+		ApiKeys map[string]string `glazed.parameter:"*api_key"`
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"openai_api_key",
+				parameters.ParameterTypeString),
+			"openai_api_key",
+			"openai-secret"),
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"google_api_key",
+				parameters.ParameterTypeString),
+			"google_api_key",
+			"google-secret"),
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"api_key_unrelated",
+				parameters.ParameterTypeString),
+			"api_key_unrelated",
+			"should-not-match"),
+	)
+
+	testStruct := &TestStructComplexWildcard{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"openai_api_key": "openai-secret",
+		"google_api_key": "google-secret",
+	}, testStruct.ApiKeys)
+}
+
+// TestInitializeStructNormalBehavior tests the normal behavior without wildcards
+func TestInitializeStructNormalBehavior(t *testing.T) {
+	type TestStructNormal struct {
+		Name string `glazed.parameter:"name"`
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"name",
+				parameters.ParameterTypeString),
+			"name",
+			"John Doe"),
+	)
+
+	testStruct := &TestStructNormal{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, "John Doe", testStruct.Name)
 }
