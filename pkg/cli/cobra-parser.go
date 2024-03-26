@@ -14,7 +14,11 @@ import (
 // CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
 // It can be used to overload the default middlewares for cobra commands.
 // It is mostly used to add a "load from json" layer set in the GlazedCommandSettings.
-type CobraMiddlewaresFunc func(commandSettings *GlazedCommandSettings, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error)
+type CobraMiddlewaresFunc func(
+	commandSettings *GlazedCommandSettings,
+	cmd *cobra.Command,
+	args []string,
+) ([]cmd_middlewares.Middleware, error)
 
 // CobraCommandDefaultMiddlewares is the default implementation for creating
 // the middlewares used in a Cobra command. It handles parsing parameters
@@ -163,24 +167,35 @@ func (c *CobraParser) Parse(
 ) (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 
+	// We parse the glazed command settings first, since they will influence the following parsing
+	// steps.
 	glazedCommandLayer, err := NewGlazedCommandLayer()
 	if err != nil {
 		return nil, err
 	}
 
-	pds := glazedCommandLayer.GetParameterDefinitions()
-	parsedParameters, err := pds.GatherFlagsFromCobraCommand(cmd, true, true, glazedCommandLayer.GetPrefix())
+	glazedCommandLayers := layers.NewParameterLayers(layers.WithLayers(glazedCommandLayer))
+
+	// Parse the glazed command settings from the cobra command and config file
+	middlewares_ := []cmd_middlewares.Middleware{
+		cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")),
+		cmd_middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")),
+	}
+
+	err = cmd_middlewares.ExecuteMiddlewares(glazedCommandLayers, parsedLayers, middlewares_...)
 	if err != nil {
 		return nil, err
 	}
 
 	commandSettings := &GlazedCommandSettings{}
-	err = parsedParameters.InitializeStruct(commandSettings)
+	err = parsedLayers.InitializeStruct(GlazedCommandSlug, commandSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	middlewares_, err := c.middlewaresFunc(commandSettings, cmd, args)
+	// Create the middlewares by invoking the passed in middlewares constructor.
+	// This is where applications can specify their own middlewares.
+	middlewares_, err = c.middlewaresFunc(commandSettings, cmd, args)
 	if err != nil {
 		return nil, err
 	}
