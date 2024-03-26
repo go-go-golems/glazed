@@ -151,17 +151,17 @@ func (p *ParsedLayers) GetDataMap() map[string]interface{} {
 // If the key is "default", it creates a fresh empty default layer for defaults and initializes the struct with it.
 // If the layer specified by the key is not found, it returns an error.
 // The struct must be passed by reference as the s parameter.
-func (p *ParsedLayers) InitializeStruct(key string, s interface{}) error {
+func (p *ParsedLayers) InitializeStruct(layerKey string, dst interface{}) error {
 	// We special case Default because we will create a fresh empty default layer for defaults.
 	// Not sure how necessary that is, honestly
-	if key == DefaultSlug {
-		return p.GetDefaultParameterLayer().InitializeStruct(s)
+	if layerKey == DefaultSlug {
+		return p.GetDefaultParameterLayer().InitializeStruct(dst)
 	}
-	v, ok := p.Get(key)
+	v, ok := p.Get(layerKey)
 	if !ok {
-		return errors.Errorf("layer %s not found", key)
+		return errors.Errorf("layer %s not found", layerKey)
 	}
-	return v.InitializeStruct(s)
+	return v.InitializeStruct(dst)
 }
 
 // GetAllParsedParameters returns a new instance of parameters.ParsedParameters
