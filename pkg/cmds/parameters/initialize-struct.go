@@ -201,7 +201,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 	keyType := dst.Type().Key()
 
 	if dst.IsNil() {
-		dst.Set(reflect.MakeMapWithSize(reflect.MapOf(reflect.TypeOf(""), elemType), 0))
+		dst.Set(reflect.MakeMapWithSize(reflect.MapOf(keyType, elemType), 0))
 	}
 
 	err := p.ForEachE(func(paramName string, parameter *ParsedParameter) error {
