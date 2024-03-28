@@ -40,8 +40,9 @@ flags:
     type: choice
     help: Type of the section
     choices: [GeneralTopic, Tutorial, Example, Application]
+    default: GeneralTopic
   - name: example
-    type: string
+    type: stringFromFile
     help: Example content for the document
     default: |
       ```markdown
