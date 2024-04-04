@@ -31,6 +31,9 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 		}
 
 		c.NamePadding()
+		if c.Parent() == nil {
+			options.OnlyTopLevel = true
+		}
 		cobra.CheckErr(renderCommandHelpPage(c, options, hs))
 	}
 
@@ -47,6 +50,9 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 			LongHelp:        longHelp,
 			HelpCommand:     c.Root().CommandPath() + " help",
 		}
+		if c.Parent() == nil {
+			options.OnlyTopLevel = true
+		}
 		return renderCommandHelpPage(c, options, hs)
 	}
 
@@ -59,12 +65,9 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	isTopLevel := c.Parent() == nil
 
 	userQuery := options.Query
+	userQuery.OnlyTopLevel = options.OnlyTopLevel
 
-	if isTopLevel {
-		// we need to clone the userQuery because we need to modify it to restrict the search to the command
-		// but however the initial data is computed from the incoming userQuery
-		userQuery = userQuery.ReturnOnlyTopLevel()
-	} else {
+	if !isTopLevel {
 		userQuery = userQuery.SearchForCommand(c.Name())
 	}
 
@@ -242,24 +245,28 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			topics, _ := c.Flags().GetBool("topics")
 			if topics {
 				qb = qb.ReturnTopics()
+				qb.OnlyTopLevel = false
 				showAllSections = true
 				showShortTopic = true
 			}
 			examples, _ := c.Flags().GetBool("examples")
 			if examples {
 				qb = qb.ReturnExamples()
+				qb.OnlyTopLevel = false
 				showAllSections = true
 				showShortTopic = true
 			}
 			applications, _ := c.Flags().GetBool("applications")
 			if applications {
 				qb = qb.ReturnApplications()
+				qb.OnlyTopLevel = false
 				showAllSections = true
 				showShortTopic = true
 			}
 			tutorials, _ := c.Flags().GetBool("tutorials")
 			if tutorials {
 				qb = qb.ReturnTutorials()
+				qb.OnlyTopLevel = false
 				showAllSections = true
 				showShortTopic = true
 			}
@@ -311,6 +318,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			}
 
 			// if we couldn't find an explicit help page, show command help
+			// NOTE(manuel, 2024-04-04) This code is never reached, is it?
 			cmd, _, e := root.Find(args)
 			if cmd == nil || e != nil {
 				c.Printf("Unknown help topic %#q\n", args)

@@ -56,6 +56,7 @@ type RenderOptions struct {
 	HelpCommand     string
 	LongHelp        bool
 	ListSections    bool
+	OnlyTopLevel    bool
 }
 
 func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {
