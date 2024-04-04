@@ -20,6 +20,8 @@ type Option func(*CommandAlias)
 type CommandAlias struct {
 	Name      string            `yaml:"name"`
 	AliasFor  string            `yaml:"aliasFor"`
+	Short     string            `yaml:"short,omitempty"`
+	Long      string            `yaml:"long,omitempty"`
 	Flags     map[string]string `yaml:"flags,omitempty"`
 	Arguments []string          `yaml:"arguments,omitempty"`
 	Layout    []*layout.Section `yaml:"layout,omitempty"`
