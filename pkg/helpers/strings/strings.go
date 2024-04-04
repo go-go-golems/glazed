@@ -20,6 +20,9 @@ func InterfaceListToStringList(list []interface{}) []string {
 }
 
 func InterfaceToStringList(list interface{}) []string {
+	if list == nil {
+		return nil
+	}
 	return InterfaceListToStringList(list.([]interface{}))
 }
 
