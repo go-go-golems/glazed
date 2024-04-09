@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"io"
 	"strings"
+	"time"
 )
 
 type OutputFormatter struct {
@@ -36,6 +37,9 @@ func valToSQL(i interface{}) (string, error) {
 		}
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		result = fmt.Sprintf("%v", v)
+
+	case time.Time:
+		result = fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05"))
 
 	default:
 		// serialize to json and output as string
