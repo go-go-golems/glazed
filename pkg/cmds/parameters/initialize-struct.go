@@ -246,7 +246,9 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 }
 
 func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, fromJson bool) error {
-	// Handle pointer fields
+	valueType := reflect.TypeOf(value)
+
+	// Handle pointer destination
 	wasPointer := false
 	if dst.Kind() == reflect.Ptr {
 		wasPointer = true
@@ -254,6 +256,8 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 			newValue := reflect.New(dst.Type().Elem())
 			dst.Set(newValue)
 		}
+
+		// The destination is now the value pointed to by the pointer
 		dst = dst.Elem()
 	}
 
@@ -277,8 +281,14 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 	}
 
 	// Direct assignment if types are compatible
-	if dst.Type() == reflect.TypeOf(value) {
+	if dst.Type() == valueType {
 		dst.Set(reflect.ValueOf(value))
+		return nil
+	}
+
+	// if valueType is a pointer to a value of dst.Type(), we can assign it directly
+	if valueType.Kind() == reflect.Ptr && valueType.Elem() == dst.Type() {
+		dst.Set(reflect.ValueOf(value).Elem())
 		return nil
 	}
 
