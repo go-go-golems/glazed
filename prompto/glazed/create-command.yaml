@@ -192,7 +192,7 @@ template: |
                   parameters.WithDefault(false),
               ),
           ),
-          cmds.WithLayers(
+          cmds.WithLayersList(
               glazedParameterLayer,
           ),
       ),
