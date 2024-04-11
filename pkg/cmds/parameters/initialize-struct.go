@@ -304,3 +304,76 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 
 	return nil
 }
+
+// StructToDataMap transforms a struct into a map[string]interface{} based on the `glazed.parameter` annotations.
+//
+// If a struct field is annotated with `glazed.parameter:"<pattern>*"` (contains a wildcard `*`), the field
+// is expected to be a map. The function will match the map keys against the wildcard pattern and include
+// the matching key-value pairs in the resulting data map.
+//
+// Returns an error if:
+// - Parsing the `glazed.parameter` tag fails for any field.
+// - A field annotated with a wildcard is not a map.
+func StructToDataMap(s interface{}) (map[string]interface{}, error) {
+	if s == nil {
+		return nil, errors.New("cannot convert nil struct to data map")
+	}
+
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return nil, errors.New("input must be a struct or a pointer to a struct")
+	}
+
+	dataMap := make(map[string]interface{})
+
+	structType := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := structType.Field(i)
+		tag, ok := field.Tag.Lookup("glazed.parameter")
+		if !ok {
+			continue
+		}
+
+		options, err := parsedTagOptions(tag)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse glazed.parameter tag for field %s", field.Name)
+		}
+
+		fieldValue := v.Field(i)
+		if options.IsWildcard {
+			if fieldValue.Kind() != reflect.Map {
+				return nil, errors.Errorf("wildcard parameters require a map field, field %s is not a map", field.Name)
+			}
+			if err := setWildcardDataMapValues(dataMap, fieldValue, options.Name); err != nil {
+				return nil, errors.Wrapf(err, "failed to set wildcard values for %s", options.Name)
+			}
+		} else {
+			if err := setDataMapValue(dataMap, options.Name, fieldValue.Interface(), options.FromJson); err != nil {
+				return nil, errors.Wrapf(err, "failed to set value for %s", options.Name)
+			}
+		}
+	}
+
+	return dataMap, nil
+}
+
+func setWildcardDataMapValues(dataMap map[string]interface{}, fieldValue reflect.Value, pattern string) error {
+	iter := fieldValue.MapRange()
+	for iter.Next() {
+		key := iter.Key().String()
+		if matched, _ := filepath.Match(pattern, key); matched {
+			value := iter.Value().Interface()
+			dataMap[key] = value
+		}
+	}
+	return nil
+}
+
+func setDataMapValue(dataMap map[string]interface{}, key string, value interface{}, fromJson bool) error {
+	dataMap[key] = value
+	return nil
+}

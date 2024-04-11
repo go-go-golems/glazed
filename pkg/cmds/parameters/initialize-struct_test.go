@@ -407,3 +407,104 @@ func TestInitializeStructNormalBehavior(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
 }
+
+func TestStructToDataMapWithWildcardMultipleMatches(t *testing.T) {
+	testStruct := &TestStructWithWildcard{
+		ApiKeys: map[string]string{
+			"openai_api_key": "openai-secret",
+			"google_api_key": "google-secret",
+		},
+	}
+
+	dataMap, err := parameters.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"openai_api_key": "openai-secret",
+		"google_api_key": "google-secret",
+	}, dataMap)
+}
+
+func TestStructToDataMapWithWildcardNoMatches(t *testing.T) {
+	testStruct := &TestStructWithWildcard{
+		ApiKeys: map[string]string{},
+	}
+
+	dataMap, err := parameters.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Empty(t, dataMap)
+}
+
+func TestStructToDataMapWithWildcardOnNonMapField(t *testing.T) {
+	type TestStructNonMapWildcard struct {
+		ApiKeys string `glazed.parameter:"*_api_key"`
+	}
+
+	testStruct := &TestStructNonMapWildcard{
+		ApiKeys: "invalid",
+	}
+
+	_, err := parameters.StructToDataMap(testStruct)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "wildcard parameters require a map field")
+}
+
+type TestStructWithJSON struct {
+	Data map[string]interface{} `glazed.parameter:"data,from_json"`
+}
+
+type TestStructWithTags struct {
+	Name string `glazed.parameter:"name"`
+	Age  int    `glazed.parameter:"age"`
+}
+
+func TestStructToDataMapWithJSON(t *testing.T) {
+	testStruct := &TestStructWithJSON{
+		Data: map[string]interface{}{
+			"key1": "value1",
+			"key2": 42,
+		},
+	}
+
+	dataMap, err := parameters.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"data": map[string]interface{}{
+			"key1": "value1",
+			"key2": 42,
+		},
+	}, dataMap)
+}
+
+func TestStructToDataMapWithTags(t *testing.T) {
+	testStruct := &TestStructWithTags{
+		Name: "John Doe",
+		Age:  30,
+	}
+
+	dataMap, err := parameters.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"name": "John Doe",
+		"age":  30,
+	}, dataMap)
+}
+
+func TestStructToDataMapWithNilInput(t *testing.T) {
+	_, err := parameters.StructToDataMap(nil)
+
+	assert.Error(t, err)
+	assert.Equal(t, "cannot convert nil struct to data map", err.Error())
+}
+
+func TestStructToDataMapWithNonStructInput(t *testing.T) {
+	nonStruct := "I am not a struct"
+	_, err := parameters.StructToDataMap(nonStruct)
+
+	assert.Error(t, err)
+	assert.Equal(t, "input must be a struct or a pointer to a struct", err.Error())
+}
