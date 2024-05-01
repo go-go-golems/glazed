@@ -29,3 +29,8 @@ flags:
     type: stringList
     help: List of columns to consider for duplicate removal (requires results to be sorted)
     default: []
+
+  - name: reorder-columns
+    type: stringList
+    help: List of columns to reorder
+    default: []

@@ -86,7 +86,7 @@ type Section struct {
 	// Used to give some rough sense of order, not sure how useful this is going to be
 	Order int
 
-	HelpSystem *HelpSystem
+	HelpSystem *HelpSystem `yaml:"_"`
 }
 
 func (s *Section) IsForCommand(command string) bool {

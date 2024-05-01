@@ -40,7 +40,7 @@ type FieldsFilterSettings struct {
 	SortColumns      bool     `glazed.parameter:"sort-columns"`
 	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
 	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
-	ReorderColumns   []string
+	ReorderColumns   []string `glazed.parameter:"reorder-columns"`
 }
 
 func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*FieldsFiltersParameterLayer, error) {
@@ -117,7 +117,9 @@ func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSett
 	if len(s.Fields) == 1 && s.Fields[0] == "all" {
 		s.Fields = []string{}
 	}
-	s.ReorderColumns = s.Fields
+	if s.ReorderColumns == nil {
+		s.ReorderColumns = s.Fields
+	}
 	return s, nil
 }
 
