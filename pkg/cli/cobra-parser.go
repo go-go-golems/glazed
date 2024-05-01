@@ -86,7 +86,7 @@ func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserO
 
 func WithCobraShortHelpLayers(layers ...string) CobraParserOption {
 	return func(c *CobraParser) error {
-		c.shortHelpLayers = layers
+		c.shortHelpLayers = append(c.shortHelpLayers, layers...)
 		return nil
 	}
 }
