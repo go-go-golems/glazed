@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"gopkg.in/yaml.v3"
 	"io"
+	"strings"
 )
 
 // CommandDescription contains the necessary information for registering
@@ -168,6 +169,10 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	}
 
 	return ret
+}
+
+func (cd *CommandDescription) FullPath() string {
+	return strings.Join(cd.Parents, " ") + " " + cd.Name
 }
 
 func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
