@@ -79,7 +79,8 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.Co
 // See https://github.com/go-go-golems/glazed/issues/218
 func LoadCommandsFromFS(
 	f fs.FS,
-	dir string, source string,
+	dir string,
+	source string,
 	loader CommandLoader,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
@@ -114,11 +115,11 @@ func LoadCommandsFromFS(
 			commands_, err := func() ([]cmds.Command, error) {
 				log.Debug().Str("file", fileName).Msg("Loading command from file")
 				options_ := append([]cmds.CommandDescriptionOption{
-					cmds.WithSource(source + ":" + fileName),
+					cmds.WithSource(source + "/" + fileName),
 					cmds.WithParents(fromDir...),
 				}, options...)
 				aliasOptions_ := append([]alias.Option{
-					alias.WithSource(source + ":" + fileName),
+					alias.WithSource(source + "/" + fileName),
 					alias.WithParents(fromDir...),
 				}, aliasOptions...)
 				commands_, err_ := loader.LoadCommands(f, fileName, options_, aliasOptions_)
