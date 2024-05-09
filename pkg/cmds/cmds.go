@@ -172,6 +172,9 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 }
 
 func (cd *CommandDescription) FullPath() string {
+	if len(cd.Parents) == 0 {
+		return cd.Name
+	}
 	return strings.Join(cd.Parents, " ") + " " + cd.Name
 }
 
