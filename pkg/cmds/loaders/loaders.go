@@ -78,7 +78,8 @@ func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.Co
 // See https://github.com/go-go-golems/glazed/issues/55
 // See https://github.com/go-go-golems/glazed/issues/218
 func LoadCommandsFromFS(
-	f fs.FS, dir string, source string,
+	f fs.FS,
+	dir string, source string,
 	loader CommandLoader,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
