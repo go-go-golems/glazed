@@ -51,6 +51,14 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 				"map-value": v_,
 			}))
 
+		if s, ok := v_.(string); ok {
+			v__, err := p.ParseParameter([]string{s})
+			if err != nil {
+				return errors.Wrapf(err, "Invalid value for parameter %s", p.Name)
+			}
+			v_ = v__.Value
+		}
+
 		// TODO(manuel, 2023-12-28) We need to check if nil means remove the value or use the default or whatever that means
 		err := p.CheckValueValidity(v_)
 		if err != nil {
