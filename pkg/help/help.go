@@ -2,7 +2,6 @@ package help
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/adrg/frontmatter"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
@@ -235,7 +234,7 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 	}
 
 	if section.Slug == "" || section.Title == "" {
-		return nil, fmt.Errorf("missing slug or title")
+		return nil, errors.New("missing slug or title")
 	}
 
 	return section, nil
@@ -267,7 +266,7 @@ func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
 			return section, nil
 		}
 	}
-	return nil, fmt.Errorf("no section with slug %s found", slug)
+	return nil, errors.Errorf("no section with slug %s found", slug)
 }
 
 func NewHelpPage(sections []*Section) *HelpPage {

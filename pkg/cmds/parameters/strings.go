@@ -1,7 +1,7 @@
 package parameters
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -42,7 +42,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 		flagName := prefix + param.Name
 		flagName = strings.ReplaceAll(flagName, "_", "-")
 		if _, ok := flagMap.Get(flagName); ok {
-			return fmt.Errorf("duplicate flag: --%s", flagName)
+			return errors.Errorf("duplicate flag: --%s", flagName)
 		}
 		flagMap.Set(flagName, param)
 		flagNames[flagName] = param.Name
@@ -50,7 +50,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 		if prefix == "" {
 			if param.ShortFlag != "" {
 				if _, ok := flagMap.Get(param.ShortFlag); ok {
-					return fmt.Errorf("duplicate flag: -%s", param.ShortFlag)
+					return errors.Errorf("duplicate flag: -%s", param.ShortFlag)
 				}
 				flagMap.Set(param.ShortFlag, param)
 			}
@@ -75,7 +75,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 			flagName = splitArg[0]
 			param, ok = flagMap.Get(flagName)
 			if !ok {
-				return nil, nil, fmt.Errorf("unknown flag: --%s", flagName)
+				return nil, nil, errors.Errorf("unknown flag: --%s", flagName)
 			}
 			if len(splitArg) == 2 {
 				if param.Type.IsList() {
@@ -91,7 +91,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 			flagName = arg[1:]
 			param, ok = flagMap.Get(flagName)
 			if !ok {
-				return nil, nil, fmt.Errorf("unknown flag: -%s", flagName)
+				return nil, nil, errors.Errorf("unknown flag: -%s", flagName)
 			}
 		} else {
 			remainingArgs = append(remainingArgs, arg)
@@ -102,7 +102,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 			rawValues[flagName] = append(rawValues[flagName], "true")
 		} else {
 			if i+1 >= len(args) {
-				return nil, nil, fmt.Errorf("missing value for flag: -%s", flagName)
+				return nil, nil, errors.Errorf("missing value for flag: -%s", flagName)
 			}
 			value := args[i+1]
 			i++
@@ -120,11 +120,11 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 	for paramName, values := range rawValues {
 		param, ok := flagMap.Get(paramName)
 		if !ok || param == nil {
-			return nil, nil, fmt.Errorf("unknown flag: --%s", paramName)
+			return nil, nil, errors.Errorf("unknown flag: --%s", paramName)
 		}
 		parsedValue, err := param.ParseParameter(values, parseOptions...)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid value for flag --%s: %v", paramName, err)
+			return nil, nil, errors.Wrapf(err, "invalid value for flag --%s", paramName)
 		}
 		result.Set(param.Name, parsedValue)
 	}
@@ -132,7 +132,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 	err = pds.ForEachE(func(param *ParameterDefinition) error {
 		if param.Required && !ignoreRequired {
 			if _, ok := rawValues[param.Name]; !ok {
-				return fmt.Errorf("missing required flag: --%s", flagNames[param.Name])
+				return errors.Errorf("missing required flag: --%s", flagNames[param.Name])
 			}
 		}
 		if !onlyProvided {

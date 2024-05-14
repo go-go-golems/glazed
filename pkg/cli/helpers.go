@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -38,7 +39,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 
 	parsedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
 	if !ok {
-		return nil, nil, fmt.Errorf("layer %s not found", settings.GlazedSlug)
+		return nil, nil, errors.Errorf("layer %s not found", settings.GlazedSlug)
 	}
 
 	gp, err := settings.SetupTableProcessor(parsedLayer)

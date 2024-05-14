@@ -1,12 +1,12 @@
 package helpers
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/errgo.v2/fmt/errors"
 	"testing"
 )
 
@@ -196,7 +196,7 @@ func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 			case TestParseStepOptionMetadata:
 				options = append(options, parameters.WithParseStepMetadata(o.Value.(map[string]interface{})))
 			default:
-				return nil, fmt.Errorf("unknown option name %s", o.Name)
+				return nil, errors.Newf("unknown option name %s", o.Name)
 			}
 		}
 
@@ -226,7 +226,7 @@ func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 		case TestBlacklistLayerParametersFirst:
 			ret = append(ret, middlewares.BlacklistLayerParametersFirst(*m.Parameters))
 		default:
-			return nil, fmt.Errorf("unknown middleware name %s", m.Name)
+			return nil, errors.Newf("unknown middleware name %s", m.Name)
 		}
 	}
 

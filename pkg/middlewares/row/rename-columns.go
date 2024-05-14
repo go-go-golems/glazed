@@ -2,9 +2,9 @@ package row
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"regexp"
 )
@@ -62,7 +62,7 @@ type RegexpReplacements []*RegexpReplacement
 
 func (rr *RegexpReplacements) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("expected a mapping node, got %v", value.Kind)
+		return errors.Errorf("expected a mapping node, got %v", value.Kind)
 	}
 	*rr = RegexpReplacements{}
 	for i := 0; i < len(value.Content); i += 2 {
@@ -70,10 +70,10 @@ func (rr *RegexpReplacements) UnmarshalYAML(value *yaml.Node) error {
 		val := value.Content[i+1]
 
 		if key.Kind != yaml.ScalarNode {
-			return fmt.Errorf("expected a scalar node, got %v", key.Kind)
+			return errors.Errorf("expected a scalar node, got %v", key.Kind)
 		}
 		if val.Kind != yaml.ScalarNode {
-			return fmt.Errorf("expected a scalar node, got %v", val.Kind)
+			return errors.Errorf("expected a scalar node, got %v", val.Kind)
 		}
 		re, err := regexp.Compile(key.Value)
 		if err != nil {
