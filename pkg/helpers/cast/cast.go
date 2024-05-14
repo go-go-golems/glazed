@@ -3,6 +3,7 @@ package cast
 import (
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 )
 
 type Number interface {
@@ -197,6 +198,12 @@ func CastNumberInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bo
 		return To(i), true
 	case uintptr:
 		return To(i), true
+	case string:
+		// check if string is an integer
+		if v, err := strconv.Atoi(i); err == nil {
+			return To(v), true
+		}
+		return 0, false
 	default:
 		return 0, false
 	}
