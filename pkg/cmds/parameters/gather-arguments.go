@@ -1,6 +1,8 @@
 package parameters
 
-import "fmt"
+import (
+	"github.com/pkg/errors"
+)
 
 // GatherArguments parses positional string arguments into a map of values.
 //
@@ -42,7 +44,7 @@ func (pds *ParameterDefinitions) GatherArguments(
 				if ignoreRequired {
 					return nil
 				}
-				return fmt.Errorf("Argument %s not found", argument.Name)
+				return errors.Errorf("Argument %s not found", argument.Name)
 			} else {
 				if argument.Default != nil && !onlyProvided {
 					parseOptions_ := append(parseOptions, WithParseStepSource("default"))
@@ -76,7 +78,7 @@ func (pds *ParameterDefinitions) GatherArguments(
 	}
 
 	if argsIdx < len(args) {
-		return nil, fmt.Errorf("Too many arguments")
+		return nil, errors.New("Too many arguments")
 	}
 	return result, nil
 }

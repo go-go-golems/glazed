@@ -2,7 +2,6 @@ package cliopatra
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
@@ -272,7 +271,7 @@ func (p *Program) SetFlagValue(name string, value interface{}) error {
 		}
 	}
 
-	return fmt.Errorf("could not find flag %s", name)
+	return errors.Errorf("could not find flag %s", name)
 }
 
 func (p *Program) SetFlagRaw(name string, raw string) error {
@@ -283,7 +282,7 @@ func (p *Program) SetFlagRaw(name string, raw string) error {
 		}
 	}
 
-	return fmt.Errorf("could not find flag %s", name)
+	return errors.Errorf("could not find flag %s", name)
 }
 
 func (p *Program) SetArgValue(name string, value interface{}) error {
@@ -294,7 +293,7 @@ func (p *Program) SetArgValue(name string, value interface{}) error {
 		}
 	}
 
-	return fmt.Errorf("could not find arg %s", name)
+	return errors.Errorf("could not find arg %s", name)
 }
 
 func (p *Program) SetArgRaw(name string, raw string) error {
@@ -305,7 +304,7 @@ func (p *Program) SetArgRaw(name string, raw string) error {
 		}
 	}
 
-	return fmt.Errorf("could not find arg %s", name)
+	return errors.Errorf("could not find arg %s", name)
 }
 
 func (p *Program) AddRawFlag(raw ...string) {
@@ -375,7 +374,7 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 		}
 		if flag.NoValue {
 			if flag.Type != parameters.ParameterTypeBool {
-				return nil, fmt.Errorf("flag %s is not a bool flag, only bool flags can be noValue", flag.Name)
+				return nil, errors.Errorf("flag %s is not a bool flag, only bool flags can be noValue", flag.Name)
 			}
 			if flag.Value.(bool) {
 				args = append(args, flag_)

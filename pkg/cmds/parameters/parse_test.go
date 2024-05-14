@@ -3,6 +3,7 @@ package parameters
 import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strings"
@@ -683,7 +684,7 @@ func parseObjectListFromString(parameter *ParameterDefinition, input string, fil
 	}
 	v, ok := cast.CastList[map[string]interface{}, interface{}](i.Value.([]interface{}))
 	if !ok {
-		return nil, fmt.Errorf("failed to cast")
+		return nil, errors.New("failed to cast")
 	}
 	return v, nil
 }
@@ -696,7 +697,7 @@ func parseObjectFromString(parameter *ParameterDefinition, input string, fileNam
 	}
 	v, ok := i.Value.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("failed to cast")
+		return nil, errors.New("failed to cast")
 	}
 	return v, nil
 }

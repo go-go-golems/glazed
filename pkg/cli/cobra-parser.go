@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -139,7 +139,7 @@ func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
 		// if not, return an error
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
 		if !ok {
-			return fmt.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+			return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
 		}
 
 		err := cobraLayer.AddLayerToCobraCommand(cmd)

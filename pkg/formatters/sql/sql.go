@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"io"
 	"strings"
 	"time"
@@ -148,7 +149,7 @@ func NewOutputFormatter(opts ...OutputFormatterOption) *OutputFormatter {
 
 func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
 	if f.TableName == "" {
-		return fmt.Errorf("table name is empty")
+		return errors.New("table name is empty")
 	}
 
 	if row.Len() == 0 {

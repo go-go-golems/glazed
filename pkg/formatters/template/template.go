@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"text/template"
@@ -46,7 +47,7 @@ func (t *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, 
 
 	if t.OutputMultipleFiles {
 		if t.OutputFileTemplate == "" && t.OutputFile == "" {
-			return fmt.Errorf("neither output file or output file template is set")
+			return errors.New("neither output file or output file template is set")
 		}
 
 		for i, row := range table_.Rows {

@@ -1,9 +1,9 @@
 package table
 
 import (
-	"fmt"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
 )
@@ -161,49 +161,49 @@ func styleFromYAML(r io.Reader) (*table.Style, error) {
 
 	indexColumnColors, ok := colorStringListToColors(style.Color.IndexColumn)
 	if !ok {
-		return nil, fmt.Errorf("invalid index column colors: %v", style.Color.IndexColumn)
+		return nil, errors.Errorf("invalid index column colors: %v", style.Color.IndexColumn)
 	}
 	footerColors, ok := colorStringListToColors(style.Color.Footer)
 	if !ok {
-		return nil, fmt.Errorf("invalid footer colors: %v", style.Color.Footer)
+		return nil, errors.Errorf("invalid footer colors: %v", style.Color.Footer)
 	}
 	headerColors, ok := colorStringListToColors(style.Color.Header)
 	if !ok {
-		return nil, fmt.Errorf("invalid header colors: %v", style.Color.Header)
+		return nil, errors.Errorf("invalid header colors: %v", style.Color.Header)
 	}
 	rowColors, ok := colorStringListToColors(style.Color.Row)
 	if !ok {
-		return nil, fmt.Errorf("invalid row colors: %v", style.Color.Row)
+		return nil, errors.Errorf("invalid row colors: %v", style.Color.Row)
 	}
 	rowAlternateColors, ok := colorStringListToColors(style.Color.RowAlternate)
 	if !ok {
-		return nil, fmt.Errorf("invalid row alternate colors: %v", style.Color.RowAlternate)
+		return nil, errors.Errorf("invalid row alternate colors: %v", style.Color.RowAlternate)
 	}
 
 	footerFormat, ok := formatStringToFormat[style.Format.Footer]
 	if !ok {
-		return nil, fmt.Errorf("invalid footer format: %v", style.Format.Footer)
+		return nil, errors.Errorf("invalid footer format: %v", style.Format.Footer)
 	}
 	headerFormat, ok := formatStringToFormat[style.Format.Header]
 	if !ok {
-		return nil, fmt.Errorf("invalid header format: %v", style.Format.Header)
+		return nil, errors.Errorf("invalid header format: %v", style.Format.Header)
 	}
 	rowFormat, ok := formatStringToFormat[style.Format.Row]
 	if !ok {
-		return nil, fmt.Errorf("invalid row format: %v", style.Format.Row)
+		return nil, errors.Errorf("invalid row format: %v", style.Format.Row)
 	}
 
 	titleAlign, ok := alignStringToAlign[style.Title.Align]
 	if !ok {
-		return nil, fmt.Errorf("invalid title align: %v", style.Title.Align)
+		return nil, errors.Errorf("invalid title align: %v", style.Title.Align)
 	}
 	titleColors, ok := colorStringListToColors(style.Title.Colors)
 	if !ok {
-		return nil, fmt.Errorf("invalid title colors: %v", style.Title.Colors)
+		return nil, errors.Errorf("invalid title colors: %v", style.Title.Colors)
 	}
 	titleFormat, ok := formatStringToFormat[style.Title.Format]
 	if !ok {
-		return nil, fmt.Errorf("invalid title format: %v", style.Title.Format)
+		return nil, errors.Errorf("invalid title format: %v", style.Title.Format)
 	}
 
 	ret := &table.Style{

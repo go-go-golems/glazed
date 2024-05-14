@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -16,7 +17,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
-	"gopkg.in/errgo.v2/fmt/errors"
 	"os"
 	"strings"
 )
@@ -159,7 +159,7 @@ var parseCmd = &cobra.Command{
 			} else if parser_ == "split" {
 				err = splitByHeading(ctx, md, s, gp)
 			} else {
-				cobra.CheckErr(errors.Newf("unknown parser: %s", parser_))
+				cobra.CheckErr(errors.Errorf("unknown parser: %s", parser_))
 			}
 			cobra.CheckErr(err)
 		}

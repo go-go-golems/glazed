@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -35,7 +36,7 @@ func (f *OutputFormatter) RegisterRowMiddlewares(mw *middlewares.TableProcessor)
 func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if f.OutputMultipleFiles {
 		if f.OutputFileTemplate == "" && f.OutputFile == "" {
-			return fmt.Errorf("neither output file or output file template is set")
+			return errors.New("neither output file or output file template is set")
 		}
 
 		for i, row := range table_.Rows {
@@ -67,7 +68,7 @@ func (f *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, 
 
 	if f.OutputIndividualRows {
 		if len(table_.Rows) > 1 {
-			return fmt.Errorf("output individual rows is set but there are multiple rows in the table")
+			return errors.New("output individual rows is set but there are multiple rows in the table")
 		}
 
 		if f.OutputFile != "" {

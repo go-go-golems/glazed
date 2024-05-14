@@ -2,7 +2,6 @@ package parameters
 
 import (
 	"encoding/json"
-	"fmt"
 	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
 	"github.com/pkg/errors"
 	"path/filepath"
@@ -195,7 +194,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 	// Get the type of elements in dst
 	var elemType reflect.Type
 	if dst.Kind() != reflect.Map {
-		return fmt.Errorf("destination is not a map")
+		return errors.New("destination is not a map")
 	}
 	elemType = dst.Type().Elem()
 	keyType := dst.Type().Key()
@@ -208,7 +207,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 		if matched, _ := filepath.Match(pattern, paramName); matched {
 			// Check if the type of parameter.Value is compatible with the map's value type
 			if reflect.TypeOf(parameter.Value) != elemType {
-				return fmt.Errorf("type mismatch: expected type %s, got %s", elemType, reflect.TypeOf(parameter.Value))
+				return errors.Errorf("type mismatch: expected type %s, got %s", elemType, reflect.TypeOf(parameter.Value))
 			}
 
 			paramValue := reflect.ValueOf(parameter.Value)
@@ -219,7 +218,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 				if paramValue.Type().ConvertibleTo(elemType) {
 					paramValue = paramValue.Convert(elemType)
 				} else {
-					return fmt.Errorf("type mismatch: cannot assign type %s to type %s", paramValue.Type(), elemType)
+					return errors.Errorf("type mismatch: cannot assign type %s to type %s", paramValue.Type(), elemType)
 				}
 			}
 
@@ -229,7 +228,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 				if keyValue.Type().ConvertibleTo(keyType) {
 					keyValue = keyValue.Convert(keyType)
 				} else {
-					return fmt.Errorf("type mismatch: cannot assign type %s to type %s", keyValue.Type(), keyType)
+					return errors.Errorf("type mismatch: cannot assign type %s to type %s", keyValue.Type(), keyType)
 				}
 			}
 

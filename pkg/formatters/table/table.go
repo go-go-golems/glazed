@@ -142,7 +142,7 @@ func (tof *OutputFormatter) ContentType() string {
 func (tof *OutputFormatter) OutputTable(ctx context.Context, table_ *types.Table, w io.Writer) error {
 	if tof.OutputMultipleFiles {
 		if tof.OutputFileTemplate == "" && tof.OutputFile == "" {
-			return fmt.Errorf("neither output file or output file template is set")
+			return errors.New("neither output file or output file template is set")
 		}
 
 		for i, row := range table_.Rows {

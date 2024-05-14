@@ -1,8 +1,8 @@
 package reflect
 
 import (
-	"fmt"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
 )
@@ -10,10 +10,10 @@ import (
 func SetReflectValue(dst reflect.Value, src interface{}) error {
 	kind := dst.Kind()
 	if !dst.IsValid() {
-		return fmt.Errorf("cannot set invalid reflect.Value of type %s", kind)
+		return errors.Errorf("cannot set invalid reflect.Value of type %s", kind)
 	}
 	if !dst.CanSet() {
-		return fmt.Errorf("cannot set reflect.Value of type %s", kind)
+		return errors.Errorf("cannot set reflect.Value of type %s", kind)
 	}
 
 	if src == nil {
@@ -29,7 +29,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				dst.SetString(s)
 				return nil
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			if s, ok := src.(string); ok {
@@ -80,7 +80,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				dst.SetUint(uint64(i))
 				return nil
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			if s, ok := src.(string); ok {
@@ -132,7 +132,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				dst.SetInt(int64(i))
 				return nil
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 		case reflect.Float32, reflect.Float64:
 			if f, ok := src.(float64); ok {
@@ -183,13 +183,13 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				dst.SetFloat(float64(i))
 				return nil
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 		case reflect.Bool:
 			if b, ok := src.(bool); ok {
 				dst.SetBool(b)
 				return nil
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 		case reflect.Slice:
 			//exhaustive:ignore
 			sliceKind := dst.Type().Elem().Kind()
@@ -203,7 +203,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				if s, ok := src.([]interface{}); ok {
 					v2_, ok := cast.CastList[string, interface{}](s)
 					if !ok {
-						return fmt.Errorf("cannot cast %T to []string", src)
+						return errors.Errorf("cannot cast %T to []string", src)
 					}
 					dst.Set(reflect.ValueOf(v2_))
 					return nil
@@ -212,17 +212,17 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				if s, ok := src.(*interface{}); ok {
 					s_, ok := (*s).([]interface{})
 					if !ok {
-						return fmt.Errorf("cannot cast %T to []string", src)
+						return errors.Errorf("cannot cast %T to []string", src)
 					}
 					v2_, ok := cast.CastList[string, interface{}](s_)
 					if !ok {
-						return fmt.Errorf("cannot cast %T to []string", src)
+						return errors.Errorf("cannot cast %T to []string", src)
 					}
 					dst.Set(reflect.ValueOf(v2_))
 					return nil
 				}
 
-				return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+				return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 			case reflect.Int:
 				return SetIntListReflectValue[int](dst, src)
@@ -281,7 +281,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 					} else if srcElem.Type().ConvertibleTo(dstElemType) {
 						dstElem.Set(srcElem.Convert(dstElemType))
 					} else {
-						return fmt.Errorf("cannot convert element %d of type %s to %s", i, srcElem.Type(), dstElemType)
+						return errors.Errorf("cannot convert element %d of type %s to %s", i, srcElem.Type(), dstElemType)
 					}
 
 					newSlice.Index(i).Set(dstElem)
@@ -303,7 +303,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				if m, ok := src.(map[string]interface{}); ok {
 					v2_, ok := cast.CastStringMap[string, interface{}](m)
 					if !ok {
-						return fmt.Errorf("cannot cast %T to map[string]string", src)
+						return errors.Errorf("cannot cast %T to map[string]string", src)
 					}
 					dst.Set(reflect.ValueOf(v2_))
 					return nil
@@ -318,7 +318,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				if m, ok := src.(map[string]string); ok {
 					v2_, ok := cast.CastStringMap[interface{}, string](m)
 					if !ok {
-						return fmt.Errorf("cannot cast %T to map[string]interface{}", src)
+						return errors.Errorf("cannot cast %T to map[string]interface{}", src)
 					}
 					dst.Set(reflect.ValueOf(v2_))
 					return nil
@@ -326,12 +326,12 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				}
 
 			default:
-				return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+				return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 			}
-			return fmt.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
+			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 		default:
-			return fmt.Errorf("unsupported reflect.Value type %s", kind)
+			return errors.Errorf("unsupported reflect.Value type %s", kind)
 		}
 
 	}
@@ -357,7 +357,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]int64); ok {
 		s2, ok := cast.CastToNumberList[To, int64](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -366,7 +366,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]int); ok {
 		s2, ok := cast.CastToNumberList[To, int](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -375,7 +375,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]int8); ok {
 		s2, ok := cast.CastToNumberList[To, int8](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -384,7 +384,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]int16); ok {
 		s2, ok := cast.CastToNumberList[To, int16](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -393,7 +393,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]int32); ok {
 		s2, ok := cast.CastToNumberList[To, int32](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -402,7 +402,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]uint64); ok {
 		s2, ok := cast.CastToNumberList[To, uint64](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -411,7 +411,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]uint); ok {
 		s2, ok := cast.CastToNumberList[To, uint](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -420,7 +420,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]uint8); ok {
 		s2, ok := cast.CastToNumberList[To, uint8](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -429,7 +429,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]uint16); ok {
 		s2, ok := cast.CastToNumberList[To, uint16](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -438,7 +438,7 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]uint32); ok {
 		s2, ok := cast.CastToNumberList[To, uint32](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -447,24 +447,24 @@ func SetIntListReflectValue[To cast.Number](value reflect.Value, v interface{}) 
 	if s, ok := v.([]interface{}); ok {
 		v2_, ok := cast.CastList[int, interface{}](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		v3_, ok := cast.CastToNumberList[To, int](v2_)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(v3_))
 		return nil
 	}
 
-	return fmt.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
+	return errors.Errorf("cannot set reflect.Value of type %s from %T", value.Kind(), v)
 }
 
 func SetFloatListReflectValue[To cast.FloatNumber](value reflect.Value, v interface{}) error {
 	if s, ok := v.([]float64); ok {
 		s2, ok := cast.CastToNumberList[To, float64](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -473,7 +473,7 @@ func SetFloatListReflectValue[To cast.FloatNumber](value reflect.Value, v interf
 	if s, ok := v.([]float32); ok {
 		s2, ok := cast.CastToNumberList[To, float32](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 		value.Set(reflect.ValueOf(s2))
 		return nil
@@ -482,7 +482,7 @@ func SetFloatListReflectValue[To cast.FloatNumber](value reflect.Value, v interf
 	if s, ok := v.([]interface{}); ok {
 		v2_, ok := cast.CastInterfaceListToFloatList[To](s)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []%T", v, To(0))
+			return errors.Errorf("cannot cast %T to []%T", v, To(0))
 		}
 
 		value.Set(reflect.ValueOf(v2_))
@@ -497,10 +497,10 @@ func SetStringMapListReflectValue[To interface{}](mapSlice reflect.Value, v inte
 	if keyKind == reflect.String {
 		r, ok := cast.CastList2[map[string]interface{}, interface{}](v)
 		if !ok {
-			return fmt.Errorf("cannot cast %T to []map[string]interface{}", v)
+			return errors.Errorf("cannot cast %T to []map[string]interface{}", v)
 		}
 		mapSlice.Set(reflect.ValueOf(r))
 		return nil
 	}
-	return fmt.Errorf("cannot set reflect.Value of type %s from %T", keyKind, v)
+	return errors.Errorf("cannot set reflect.Value of type %s from %T", keyKind, v)
 }

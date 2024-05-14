@@ -1,7 +1,7 @@
 package cast
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
 )
 
@@ -10,7 +10,7 @@ func ConvertMapToInterfaceMap(input interface{}) (map[string]interface{}, error)
 
 	// Check if the input is a map
 	if value.Kind() != reflect.Map {
-		return nil, fmt.Errorf("input is not a map")
+		return nil, errors.New("input is not a map")
 	}
 
 	// Initialize the result map
