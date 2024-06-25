@@ -2,7 +2,6 @@ package layers
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -135,7 +134,7 @@ func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 	for f_ := p.ParameterDefinitions.Oldest(); f_ != nil; f_ = f_.Next() {
 		err := f_.Value.CheckParameterDefaultValueValidity()
 		if err != nil {
-			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
+			return err
 		}
 	}
 
