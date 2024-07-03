@@ -15,9 +15,15 @@ func TestNewParameterLayers(t *testing.T) {
 }
 
 func TestParameterLayersSubset(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
-	layer3, _ := NewParameterLayer("layer3", "Layer 3")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
+	layer3, err := NewParameterLayer("layer3", "Layer 3")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer3)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2, layer3))
 
@@ -36,8 +42,12 @@ func TestParameterLayersSubset(t *testing.T) {
 }
 
 func TestParameterLayersForEach(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -51,13 +61,17 @@ func TestParameterLayersForEach(t *testing.T) {
 }
 
 func TestParameterLayersForEachE(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
 	count := 0
-	err := layers.ForEachE(func(key string, p ParameterLayer) error {
+	err = layers.ForEachE(func(key string, p ParameterLayer) error {
 		count++
 		return nil
 	})
@@ -68,8 +82,12 @@ func TestParameterLayersForEachE(t *testing.T) {
 
 func TestParameterLayersAppendLayers(t *testing.T) {
 	layers := NewParameterLayers()
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 
 	layers.AppendLayers(layer1, layer2)
 
@@ -89,8 +107,12 @@ func TestParameterLayersPrependLayers(t *testing.T) {
 	layers := NewParameterLayers(
 		WithLayers(layer),
 	)
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 
 	layers.PrependLayers(layer1, layer2)
 
@@ -108,8 +130,12 @@ func TestParameterLayersPrependLayers(t *testing.T) {
 }
 
 func TestParameterLayersMerge(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 	layers1 := NewParameterLayers(WithLayers(layer1))
 	layers2 := NewParameterLayers(WithLayers(layer2))
 
@@ -125,8 +151,12 @@ func TestParameterLayersMerge(t *testing.T) {
 }
 
 func TestParameterLayersAsList(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer2)
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
 	list := layers.AsList()
@@ -137,7 +167,9 @@ func TestParameterLayersAsList(t *testing.T) {
 }
 
 func TestParameterLayersClone(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	assert.NoError(t, err)
+	assert.NotNil(t, layer1)
 	layers := NewParameterLayers(WithLayers(layer1))
 
 	cloned := layers.Clone()
@@ -154,7 +186,7 @@ func TestParameterLayersClone(t *testing.T) {
 }
 
 func TestParameterLayersGetAllParameterDefinitions(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1",
+	layer1, err := NewParameterLayer("layer1", "Layer 1",
 		WithPrefix("l1_"),
 		WithParameterDefinitions(
 			parameters.NewParameterDefinition(
@@ -162,13 +194,15 @@ func TestParameterLayersGetAllParameterDefinitions(t *testing.T) {
 			),
 		),
 	)
-	layer2, _ := NewParameterLayer("layer2", "Layer 2",
+	require.NoError(t, err)
+	layer2, err := NewParameterLayer("layer2", "Layer 2",
 		WithPrefix("l2_"),
 		WithParameterDefinitions(
 			parameters.NewParameterDefinition(
 				"param2", parameters.ParameterTypeInteger),
 		),
 	)
+	require.NoError(t, err)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -275,4 +309,205 @@ func TestParameterLayersWithUnicodeLayerNames(t *testing.T) {
 	val, present = layers.Get("layer2")
 	assert.True(t, present)
 	assert.Equal(t, "Layer 2 - こんにちは", val.GetName())
+}
+
+func TestNewParsedLayers(t *testing.T) {
+	parsedLayers := NewParsedLayers()
+	assert.NotNil(t, parsedLayers)
+	assert.Equal(t, 0, parsedLayers.Len())
+}
+
+func TestParsedLayersWithParsedLayer(t *testing.T) {
+	layer, err := NewParameterLayer("test", "Test Layer")
+	require.NoError(t, err)
+	parsedLayer, err := NewParsedLayer(layer)
+	require.NoError(t, err)
+
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	assert.Equal(t, 1, parsedLayers.Len())
+	val, present := parsedLayers.Get("test")
+	assert.True(t, present)
+	assert.Equal(t, parsedLayer, val)
+}
+
+func TestParsedLayersClone(t *testing.T) {
+	layer, _ := NewParameterLayer("test", "Test Layer")
+	parsedLayer, _ := NewParsedLayer(layer)
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	cloned := parsedLayers.Clone()
+
+	assert.Equal(t, parsedLayers.Len(), cloned.Len())
+	originalVal, _ := parsedLayers.Get("test")
+	clonedVal, present := cloned.Get("test")
+	assert.True(t, present)
+	assert.NotSame(t, originalVal, clonedVal)
+	assert.Equal(t, originalVal.Layer, clonedVal.Layer)
+}
+
+func TestParsedLayersGetOrCreate(t *testing.T) {
+	parsedLayers := NewParsedLayers()
+	layer, _ := NewParameterLayer("test", "Test Layer")
+
+	// Get non-existent layer (should create)
+	parsedLayer := parsedLayers.GetOrCreate(layer)
+	assert.NotNil(t, parsedLayer)
+	assert.Equal(t, layer, parsedLayer.Layer)
+
+	// Get existing layer
+	sameLayer := parsedLayers.GetOrCreate(layer)
+	assert.Equal(t, parsedLayer, sameLayer)
+}
+
+func TestParsedLayersGetDataMap(t *testing.T) {
+	layer1, err := NewParameterLayer("layer1", "Layer 1",
+		WithParameterDefinitions(
+			parameters.NewParameterDefinition(
+				"param1", parameters.ParameterTypeString)))
+	assert.NoError(t, err)
+	require.NotNil(t, layer1)
+	parsedLayer1, err := NewParsedLayer(layer1, WithParsedParameterValue("param1", "value1"))
+	assert.NoError(t, err)
+	require.NotNil(t, parsedLayer1)
+
+	layer2, err := NewParameterLayer("layer2", "Layer 2",
+		WithParameterDefinitions(
+			parameters.NewParameterDefinition(
+				"param2", parameters.ParameterTypeInteger)))
+	assert.NoError(t, err)
+	require.NotNil(t, layer2)
+	parsedLayer2, err := NewParsedLayer(layer2, WithParsedParameterValue("param2", 42))
+	assert.NoError(t, err)
+	require.NotNil(t, parsedLayer2)
+
+	parsedLayers := NewParsedLayers(
+		WithParsedLayer("layer1", parsedLayer1),
+		WithParsedLayer("layer2", parsedLayer2),
+	)
+
+	dataMap := parsedLayers.GetDataMap()
+	assert.Equal(t, 2, len(dataMap))
+	assert.Equal(t, "value1", dataMap["param1"])
+	assert.Equal(t, 42, dataMap["param2"])
+}
+
+func TestParsedLayersInitializeStruct(t *testing.T) {
+	type TestStruct struct {
+		Param1 string `glazed.parameter:"param1"`
+		Param2 int    `glazed.parameter:"param2"`
+	}
+
+	layer, _ := NewParameterLayer("test", "Test Layer")
+	parsedLayer, _ := NewParsedLayer(layer,
+		WithParsedParameterValue("param1", "value1"),
+		WithParsedParameterValue("param2", 42),
+	)
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	var result TestStruct
+	err := parsedLayers.InitializeStruct("test", &result)
+	assert.NoError(t, err)
+	assert.Equal(t, "value1", result.Param1)
+	assert.Equal(t, 42, result.Param2)
+}
+
+func TestParsedLayersGetAllParsedParameters(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	parsedLayer1, _ := NewParsedLayer(layer1, WithParsedParameterValue("param1", "value1"))
+
+	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	parsedLayer2, _ := NewParsedLayer(layer2, WithParsedParameterValue("param2", 42))
+
+	parsedLayers := NewParsedLayers(
+		WithParsedLayer("layer1", parsedLayer1),
+		WithParsedLayer("layer2", parsedLayer2),
+	)
+
+	allParams := parsedLayers.GetAllParsedParameters()
+	assert.Equal(t, 2, allParams.Len())
+	param1, present := allParams.Get("param1")
+	assert.True(t, present)
+	assert.Equal(t, "value1", param1.Value)
+	param2, present := allParams.Get("param2")
+	assert.True(t, present)
+	assert.Equal(t, 42, param2.Value)
+}
+
+func TestParsedLayersGetParameter(t *testing.T) {
+	layer, _ := NewParameterLayer("test", "Test Layer")
+	parsedLayer, _ := NewParsedLayer(layer, WithParsedParameterValue("param", "value"))
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	param, present := parsedLayers.GetParameter("test", "param")
+	assert.True(t, present)
+	assert.Equal(t, "value", param.Value)
+
+	_, present = parsedLayers.GetParameter("non_existent", "param")
+	assert.False(t, present)
+
+	_, present = parsedLayers.GetParameter("test", "non_existent")
+	assert.False(t, present)
+}
+
+func TestParsedLayersGetDefaultParameterLayer(t *testing.T) {
+	parsedLayers := NewParsedLayers()
+
+	defaultLayer := parsedLayers.GetDefaultParameterLayer()
+	assert.NotNil(t, defaultLayer)
+	assert.Equal(t, DefaultSlug, defaultLayer.Layer.GetSlug())
+
+	// Calling it again should return the same layer
+	sameDefaultLayer := parsedLayers.GetDefaultParameterLayer()
+	assert.Equal(t, defaultLayer, sameDefaultLayer)
+}
+
+func TestParsedLayersForEach(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	parsedLayer1, _ := NewParsedLayer(layer1)
+
+	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	parsedLayer2, _ := NewParsedLayer(layer2)
+
+	parsedLayers := NewParsedLayers(
+		WithParsedLayer("layer1", parsedLayer1),
+		WithParsedLayer("layer2", parsedLayer2),
+	)
+
+	count := 0
+	parsedLayers.ForEach(func(k string, v *ParsedLayer) {
+		count++
+		assert.Contains(t, []string{"layer1", "layer2"}, k)
+	})
+	assert.Equal(t, 2, count)
+}
+
+func TestParsedLayersForEachE(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	parsedLayer1, _ := NewParsedLayer(layer1)
+
+	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	parsedLayer2, _ := NewParsedLayer(layer2)
+
+	parsedLayers := NewParsedLayers(
+		WithParsedLayer("layer1", parsedLayer1),
+		WithParsedLayer("layer2", parsedLayer2),
+	)
+
+	count := 0
+	err := parsedLayers.ForEachE(func(k string, v *ParsedLayer) error {
+		count++
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
+
+	// Test with error
+	errorOnSecond := parsedLayers.ForEachE(func(k string, v *ParsedLayer) error {
+		if k == "layer2" {
+			return assert.AnError
+		}
+		return nil
+	})
+	assert.Error(t, errorOnSecond)
 }
