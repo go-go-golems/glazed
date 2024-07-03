@@ -8,6 +8,26 @@ import (
 	"testing"
 )
 
+// Helper function to create a parameter layer
+func createParameterLayer(t *testing.T, slug, name string, paramDefs ...*parameters.ParameterDefinition) ParameterLayer {
+	layer, err := NewParameterLayer(slug, name, WithParameterDefinitions(paramDefs...))
+	require.NoError(t, err)
+	require.NotNil(t, layer)
+	return layer
+}
+
+// Helper function to create a parsed layer
+func createParsedLayer(t *testing.T, layer ParameterLayer, parsedValues map[string]interface{}) *ParsedLayer {
+	options := make([]ParsedLayerOption, 0, len(parsedValues))
+	for key, value := range parsedValues {
+		options = append(options, WithParsedParameterValue(key, value))
+	}
+	parsedLayer, err := NewParsedLayer(layer, options...)
+	require.NoError(t, err)
+	require.NotNil(t, parsedLayer)
+	return parsedLayer
+}
+
 func TestNewParameterLayers(t *testing.T) {
 	layers := NewParameterLayers()
 	assert.NotNil(t, layers)
@@ -15,15 +35,9 @@ func TestNewParameterLayers(t *testing.T) {
 }
 
 func TestParameterLayersSubset(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
-	layer3, err := NewParameterLayer("layer3", "Layer 3")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer3)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
+	layer3 := createParameterLayer(t, "layer3", "Layer 3")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2, layer3))
 
@@ -42,12 +56,8 @@ func TestParameterLayersSubset(t *testing.T) {
 }
 
 func TestParameterLayersForEach(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -61,17 +71,13 @@ func TestParameterLayersForEach(t *testing.T) {
 }
 
 func TestParameterLayersForEachE(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
 	count := 0
-	err = layers.ForEachE(func(key string, p ParameterLayer) error {
+	err := layers.ForEachE(func(key string, p ParameterLayer) error {
 		count++
 		return nil
 	})
@@ -82,12 +88,8 @@ func TestParameterLayersForEachE(t *testing.T) {
 
 func TestParameterLayersAppendLayers(t *testing.T) {
 	layers := NewParameterLayers()
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 
 	layers.AppendLayers(layer1, layer2)
 
@@ -101,18 +103,13 @@ func TestParameterLayersAppendLayers(t *testing.T) {
 }
 
 func TestParameterLayersPrependLayers(t *testing.T) {
-	layer, err := NewParameterLayer("layer0", "Layer 0")
-	require.NoError(t, err)
+	layer0 := createParameterLayer(t, "layer0", "Layer 0")
 
 	layers := NewParameterLayers(
-		WithLayers(layer),
+		WithLayers(layer0),
 	)
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 
 	layers.PrependLayers(layer1, layer2)
 
@@ -130,12 +127,8 @@ func TestParameterLayersPrependLayers(t *testing.T) {
 }
 
 func TestParameterLayersMerge(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 	layers1 := NewParameterLayers(WithLayers(layer1))
 	layers2 := NewParameterLayers(WithLayers(layer2))
 
@@ -151,12 +144,8 @@ func TestParameterLayersMerge(t *testing.T) {
 }
 
 func TestParameterLayersAsList(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer2)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
 	list := layers.AsList()
@@ -167,9 +156,7 @@ func TestParameterLayersAsList(t *testing.T) {
 }
 
 func TestParameterLayersClone(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	assert.NoError(t, err)
-	assert.NotNil(t, layer1)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
 	layers := NewParameterLayers(WithLayers(layer1))
 
 	cloned := layers.Clone()
@@ -186,42 +173,29 @@ func TestParameterLayersClone(t *testing.T) {
 }
 
 func TestParameterLayersGetAllParameterDefinitions(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1",
-		WithPrefix("l1_"),
-		WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"param1", parameters.ParameterTypeString,
-			),
-		),
+	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
 	)
-	require.NoError(t, err)
-	layer2, err := NewParameterLayer("layer2", "Layer 2",
-		WithPrefix("l2_"),
-		WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"param2", parameters.ParameterTypeInteger),
-		),
+	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
 	)
-	require.NoError(t, err)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
 	allDefs := layers.GetAllParameterDefinitions()
 
 	assert.Equal(t, 2, allDefs.Len())
-	val, present := allDefs.Get("l1_param1")
+	val, present := allDefs.Get("param1")
 	assert.True(t, present)
 	assert.NotNil(t, val)
-	val, present = allDefs.Get("l2_param2")
+	val, present = allDefs.Get("param2")
 	assert.True(t, present)
 	assert.NotNil(t, val)
 }
 
 func TestParameterLayersWithLayers(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	require.NoError(t, err)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	require.NoError(t, err)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -235,8 +209,8 @@ func TestParameterLayersWithLayers(t *testing.T) {
 }
 
 func TestParameterLayersWithDuplicateSlugs(t *testing.T) {
-	layer1, _ := NewParameterLayer("duplicate", "Layer 1")
-	layer2, _ := NewParameterLayer("duplicate", "Layer 2")
+	layer1 := createParameterLayer(t, "duplicate", "Layer 1")
+	layer2 := createParameterLayer(t, "duplicate", "Layer 2")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -247,7 +221,7 @@ func TestParameterLayersWithDuplicateSlugs(t *testing.T) {
 }
 
 func TestParameterLayersSubsetWithNonExistentLayers(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	layer1 := createParameterLayer(t, "layer1", "Layer 1")
 	layers := NewParameterLayers(WithLayers(layer1))
 
 	subset := layers.Subset("layer1", "non_existent")
@@ -260,12 +234,12 @@ func TestParameterLayersSubsetWithNonExistentLayers(t *testing.T) {
 }
 
 func TestParameterLayersMergeWithOverlappingLayers(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1 - Original")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layer1 := createParameterLayer(t, "layer1", "Layer 1 - Original")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2")
 	layers1 := NewParameterLayers(WithLayers(layer1, layer2))
 
-	layer1Duplicate, _ := NewParameterLayer("layer1", "Layer 1 - Duplicate")
-	layer3, _ := NewParameterLayer("layer3", "Layer 3")
+	layer1Duplicate := createParameterLayer(t, "layer1", "Layer 1 - Duplicate")
+	layer3 := createParameterLayer(t, "layer3", "Layer 3")
 	layers2 := NewParameterLayers(WithLayers(layer1Duplicate, layer3))
 
 	merged := layers1.Merge(layers2)
@@ -285,7 +259,7 @@ func TestParameterLayersWithLargeNumberOfLayers(t *testing.T) {
 	layers := NewParameterLayers()
 
 	for i := 0; i < numLayers; i++ {
-		layer, _ := NewParameterLayer(fmt.Sprintf("layer%d", i), fmt.Sprintf("Layer %d", i))
+		layer := createParameterLayer(t, fmt.Sprintf("layer%d", i), fmt.Sprintf("Layer %d", i))
 		layers.AppendLayers(layer)
 	}
 
@@ -297,8 +271,8 @@ func TestParameterLayersWithLargeNumberOfLayers(t *testing.T) {
 }
 
 func TestParameterLayersWithUnicodeLayerNames(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1 - 你好")
-	layer2, _ := NewParameterLayer("layer2", "Layer 2 - こんにちは")
+	layer1 := createParameterLayer(t, "layer1", "Layer 1 - 你好")
+	layer2 := createParameterLayer(t, "layer2", "Layer 2 - こんにちは")
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))
 
@@ -318,10 +292,10 @@ func TestNewParsedLayers(t *testing.T) {
 }
 
 func TestParsedLayersWithParsedLayer(t *testing.T) {
-	layer, err := NewParameterLayer("test", "Test Layer")
-	require.NoError(t, err)
-	parsedLayer, err := NewParsedLayer(layer)
-	require.NoError(t, err)
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+	)
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"param": "value"})
 
 	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
 
@@ -332,8 +306,10 @@ func TestParsedLayersWithParsedLayer(t *testing.T) {
 }
 
 func TestParsedLayersClone(t *testing.T) {
-	layer, _ := NewParameterLayer("test", "Test Layer")
-	parsedLayer, _ := NewParsedLayer(layer)
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+	)
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"param": "value"})
 	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
 
 	cloned := parsedLayers.Clone()
@@ -348,7 +324,9 @@ func TestParsedLayersClone(t *testing.T) {
 
 func TestParsedLayersGetOrCreate(t *testing.T) {
 	parsedLayers := NewParsedLayers()
-	layer, _ := NewParameterLayer("test", "Test Layer")
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+	)
 
 	// Get non-existent layer (should create)
 	parsedLayer := parsedLayers.GetOrCreate(layer)
@@ -361,25 +339,15 @@ func TestParsedLayersGetOrCreate(t *testing.T) {
 }
 
 func TestParsedLayersGetDataMap(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1",
-		WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"param1", parameters.ParameterTypeString)))
-	assert.NoError(t, err)
-	require.NotNil(t, layer1)
-	parsedLayer1, err := NewParsedLayer(layer1, WithParsedParameterValue("param1", "value1"))
-	assert.NoError(t, err)
-	require.NotNil(t, parsedLayer1)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+	)
+	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2, err := NewParameterLayer("layer2", "Layer 2",
-		WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"param2", parameters.ParameterTypeInteger)))
-	assert.NoError(t, err)
-	require.NotNil(t, layer2)
-	parsedLayer2, err := NewParsedLayer(layer2, WithParsedParameterValue("param2", 42))
-	assert.NoError(t, err)
-	require.NotNil(t, parsedLayer2)
+	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+	)
+	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
 	parsedLayers := NewParsedLayers(
 		WithParsedLayer("layer1", parsedLayer1),
@@ -398,11 +366,14 @@ func TestParsedLayersInitializeStruct(t *testing.T) {
 		Param2 int    `glazed.parameter:"param2"`
 	}
 
-	layer, _ := NewParameterLayer("test", "Test Layer")
-	parsedLayer, _ := NewParsedLayer(layer,
-		WithParsedParameterValue("param1", "value1"),
-		WithParsedParameterValue("param2", 42),
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
 	)
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{
+		"param1": "value1",
+		"param2": 42,
+	})
 	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
 
 	var result TestStruct
@@ -413,11 +384,15 @@ func TestParsedLayersInitializeStruct(t *testing.T) {
 }
 
 func TestParsedLayersGetAllParsedParameters(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	parsedLayer1, _ := NewParsedLayer(layer1, WithParsedParameterValue("param1", "value1"))
+	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+	)
+	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
-	parsedLayer2, _ := NewParsedLayer(layer2, WithParsedParameterValue("param2", 42))
+	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+	)
+	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
 	parsedLayers := NewParsedLayers(
 		WithParsedLayer("layer1", parsedLayer1),
@@ -435,8 +410,10 @@ func TestParsedLayersGetAllParsedParameters(t *testing.T) {
 }
 
 func TestParsedLayersGetParameter(t *testing.T) {
-	layer, _ := NewParameterLayer("test", "Test Layer")
-	parsedLayer, _ := NewParsedLayer(layer, WithParsedParameterValue("param", "value"))
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+	)
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"param": "value"})
 	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
 
 	param, present := parsedLayers.GetParameter("test", "param")
@@ -463,11 +440,15 @@ func TestParsedLayersGetDefaultParameterLayer(t *testing.T) {
 }
 
 func TestParsedLayersForEach(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	parsedLayer1, _ := NewParsedLayer(layer1)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+	)
+	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
-	parsedLayer2, _ := NewParsedLayer(layer2)
+	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+	)
+	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
 	parsedLayers := NewParsedLayers(
 		WithParsedLayer("layer1", parsedLayer1),
@@ -483,11 +464,15 @@ func TestParsedLayersForEach(t *testing.T) {
 }
 
 func TestParsedLayersForEachE(t *testing.T) {
-	layer1, _ := NewParameterLayer("layer1", "Layer 1")
-	parsedLayer1, _ := NewParsedLayer(layer1)
+	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+	)
+	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2, _ := NewParameterLayer("layer2", "Layer 2")
-	parsedLayer2, _ := NewParsedLayer(layer2)
+	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+	)
+	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
 	parsedLayers := NewParsedLayers(
 		WithParsedLayer("layer1", parsedLayer1),
