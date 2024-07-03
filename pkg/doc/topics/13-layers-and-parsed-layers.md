@@ -28,10 +28,24 @@ A layer is a logical grouping of related parameter definitions. It consists of s
 1. **ParameterLayer**: An interface that groups parameter definitions and provides metadata.
 2. **ParameterLayers**: A collection of ParameterLayer objects.
 
-### Creating a ParameterLayer
+## Creating and Working with Parameter Layers
+
+The `ParameterLayerImpl` struct provides a straightforward implementation of the
+`ParameterLayer` interface.
+
+### Creating a Parameter Layer
+
+You can create a new parameter layer using the `NewParameterLayer` function:
 
 ```go
-layer, err := NewParameterLayer("config", "Configuration")
+layer, err := NewParameterLayer("config", "Configuration",
+    WithDescription("Configuration options for the application"),
+    WithPrefix("config-"),
+    WithParameterDefinitions(
+        parameters.NewParameterDefinition("verbose", parameters.ParameterTypeBool),
+        parameters.NewParameterDefinition("output", parameters.ParameterTypeString),
+    ),
+)
 if err != nil {
     // Handle error
 }
@@ -39,11 +53,100 @@ if err != nil {
 
 ### Adding Parameters to a Layer
 
+You can add parameters to an existing layer using the `AddFlags` method:
+
 ```go
 layer.AddFlags(
-    parameters.NewParameterDefinition("verbose", parameters.ParameterTypeBool),
-    parameters.NewParameterDefinition("output", parameters.ParameterTypeString),
+    parameters.NewParameterDefinition("log-level", parameters.ParameterTypeString),
+    parameters.NewParameterDefinition("max-retries", parameters.ParameterTypeInteger),
 )
+```
+
+### Initializing Parameter Defaults from a Struct
+
+You can initialize the default values of parameters in a layer using a struct:
+
+```go
+type Config struct {
+    Verbose bool   `glazed.parameter:"verbose"`
+    Output  string `glazed.parameter:"output"`
+    LogLevel string `glazed.parameter:"log-level"`
+    MaxRetries int `glazed.parameter:"max-retries"`
+}
+
+defaultConfig := Config{
+    Verbose: true,
+    Output: "stdout",
+    LogLevel: "info",
+    MaxRetries: 3,
+}
+
+err := layer.InitializeParameterDefaultsFromStruct(&defaultConfig)
+if err != nil {
+    // Handle error
+}
+```
+
+### Initializing Parameter Defaults from a Map
+
+Alternatively, you can initialize defaults using a map:
+
+```go
+defaultValues := map[string]interface{}{
+    "verbose": true,
+    "output": "stdout",
+    "log-level": "info",
+    "max-retries": 3,
+}
+
+err := layer.InitializeParameterDefaultsFromParameters(defaultValues)
+if err != nil {
+    // Handle error
+}
+```
+
+### Initializing a Struct from Parameter Defaults
+
+You can also populate a struct with the default values from the parameter layer:
+
+```go
+var config Config
+err := layer.InitializeStructFromParameterDefaults(&config)
+if err != nil {
+    // Handle error
+}
+```
+
+### Loading a Parameter Layer from YAML
+
+You can create a parameter layer from a YAML definition:
+
+```go
+yamlContent := []byte(`
+name: Configuration
+slug: config
+description: Configuration options for the application
+flags:
+  - name: verbose
+    type: bool
+    help: Enable verbose output
+  - name: output
+    type: string
+    help: Output destination
+`)
+
+layer, err := NewParameterLayerFromYAML(yamlContent)
+if err != nil {
+    // Handle error
+}
+```
+
+### Cloning a Parameter Layer
+
+To create a deep copy of a parameter layer:
+
+```go
+clonedLayer := layer.Clone()
 ```
 
 ### Creating ParameterLayers
