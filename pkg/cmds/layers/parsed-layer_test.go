@@ -306,3 +306,65 @@ func TestParsedLayersForEachEWithError(t *testing.T) {
 	assert.Equal(t, "intentional error", err.Error())
 	assert.Equal(t, 2, count) // The loop should have proceeded to the second layer before stopping
 }
+
+func TestParsedLayersInitializeStructStringTypes(t *testing.T) {
+	// Define custom types
+	type StringAlias string
+	type StringDeclaration = string
+
+	// Define the test struct
+	type TestStruct struct {
+		StringField            string              `glazed.parameter:"string_field"`
+		StringAliasField       StringAlias         `glazed.parameter:"string_alias_field"`
+		StringDeclarationField StringDeclaration   `glazed.parameter:"string_declaration_field"`
+		StringListField        []string            `glazed.parameter:"string_list_field"`
+		StringAliasListField   []StringAlias       `glazed.parameter:"string_alias_list_field"`
+		StringDeclListField    []StringDeclaration `glazed.parameter:"string_decl_list_field"`
+	}
+
+	// Create a parameter layer with all the necessary definitions
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("string_field", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("string_alias_field", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("string_declaration_field", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("string_list_field", parameters.ParameterTypeStringList),
+		parameters.NewParameterDefinition("string_alias_list_field", parameters.ParameterTypeStringList),
+		parameters.NewParameterDefinition("string_decl_list_field", parameters.ParameterTypeStringList),
+	)
+
+	// Create a parsed layer with test values
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{
+		"string_field":             "regular string",
+		"string_alias_field":       "aliased string",
+		"string_declaration_field": "declared string",
+		"string_list_field":        []string{"a", "b", "c"},
+		"string_alias_list_field":  []string{"x", "y", "z"},
+		"string_decl_list_field":   []string{"1", "2", "3"},
+	})
+
+	// Create ParsedLayers and add the parsed layer
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	// Initialize the struct
+	var result TestStruct
+	err := parsedLayers.InitializeStruct("test", &result)
+
+	// Assert no error occurred
+	assert.NoError(t, err)
+
+	// Verify each field was correctly initialized
+	assert.Equal(t, "regular string", result.StringField)
+	assert.Equal(t, StringAlias("aliased string"), result.StringAliasField)
+	assert.Equal(t, StringDeclaration("declared string"), result.StringDeclarationField)
+	assert.Equal(t, []string{"a", "b", "c"}, result.StringListField)
+	assert.Equal(t, []StringAlias{"x", "y", "z"}, result.StringAliasListField)
+	assert.Equal(t, []StringDeclaration{"1", "2", "3"}, result.StringDeclListField)
+
+	// Additional type checks
+	assert.IsType(t, "", result.StringField)
+	assert.IsType(t, StringAlias(""), result.StringAliasField)
+	assert.IsType(t, StringDeclaration(""), result.StringDeclarationField)
+	assert.IsType(t, []string{}, result.StringListField)
+	assert.IsType(t, []StringAlias{}, result.StringAliasListField)
+	assert.IsType(t, []StringDeclaration{}, result.StringDeclListField)
+}
