@@ -38,6 +38,11 @@ func CastListToStringList(list interface{}) ([]string, error) {
 		return nil, fmt.Errorf("the provided value is not a list")
 	}
 
+	elemKind := val.Type().Elem().Kind()
+	if elemKind != reflect.String && elemKind != reflect.Interface {
+		return nil, fmt.Errorf("the list does not contain strings")
+	}
+
 	result := make([]string, val.Len())
 	for i := 0; i < val.Len(); i++ {
 		str, err := ToString(val.Index(i).Interface())
