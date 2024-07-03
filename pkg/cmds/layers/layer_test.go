@@ -1,6 +1,7 @@
 package layers
 
 import (
+	"fmt"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,23 +12,6 @@ func TestNewParameterLayers(t *testing.T) {
 	layers := NewParameterLayers()
 	assert.NotNil(t, layers)
 	assert.Equal(t, 0, layers.Len())
-}
-
-func TestParameterLayersWithLayers(t *testing.T) {
-	layer1, err := NewParameterLayer("layer1", "Layer 1")
-	require.NoError(t, err)
-	layer2, err := NewParameterLayer("layer2", "Layer 2")
-	require.NoError(t, err)
-
-	layers := NewParameterLayers(WithLayers(layer1, layer2))
-
-	assert.Equal(t, 2, layers.Len())
-	val, present := layers.Get("layer1")
-	assert.True(t, present)
-	assert.Equal(t, layer1, val)
-	val, present = layers.Get("layer2")
-	assert.True(t, present)
-	assert.Equal(t, layer2, val)
 }
 
 func TestParameterLayersSubset(t *testing.T) {
@@ -199,4 +183,96 @@ func TestParameterLayersGetAllParameterDefinitions(t *testing.T) {
 	assert.NotNil(t, val)
 }
 
-// Add more tests for edge cases and other methods as needed
+func TestParameterLayersWithLayers(t *testing.T) {
+	layer1, err := NewParameterLayer("layer1", "Layer 1")
+	require.NoError(t, err)
+	layer2, err := NewParameterLayer("layer2", "Layer 2")
+	require.NoError(t, err)
+
+	layers := NewParameterLayers(WithLayers(layer1, layer2))
+
+	assert.Equal(t, 2, layers.Len())
+	val, present := layers.Get("layer1")
+	assert.True(t, present)
+	assert.Equal(t, layer1, val)
+	val, present = layers.Get("layer2")
+	assert.True(t, present)
+	assert.Equal(t, layer2, val)
+}
+
+func TestParameterLayersWithDuplicateSlugs(t *testing.T) {
+	layer1, _ := NewParameterLayer("duplicate", "Layer 1")
+	layer2, _ := NewParameterLayer("duplicate", "Layer 2")
+
+	layers := NewParameterLayers(WithLayers(layer1, layer2))
+
+	assert.Equal(t, 1, layers.Len())
+	val, present := layers.Get("duplicate")
+	assert.True(t, present)
+	assert.Equal(t, "Layer 2", val.GetName())
+}
+
+func TestParameterLayersSubsetWithNonExistentLayers(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1")
+	layers := NewParameterLayers(WithLayers(layer1))
+
+	subset := layers.Subset("layer1", "non_existent")
+
+	assert.Equal(t, 1, subset.Len())
+	_, present := subset.Get("layer1")
+	assert.True(t, present)
+	_, present = subset.Get("non_existent")
+	assert.False(t, present)
+}
+
+func TestParameterLayersMergeWithOverlappingLayers(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1 - Original")
+	layer2, _ := NewParameterLayer("layer2", "Layer 2")
+	layers1 := NewParameterLayers(WithLayers(layer1, layer2))
+
+	layer1Duplicate, _ := NewParameterLayer("layer1", "Layer 1 - Duplicate")
+	layer3, _ := NewParameterLayer("layer3", "Layer 3")
+	layers2 := NewParameterLayers(WithLayers(layer1Duplicate, layer3))
+
+	merged := layers1.Merge(layers2)
+
+	assert.Equal(t, 3, merged.Len())
+	val, present := merged.Get("layer1")
+	assert.True(t, present)
+	assert.Equal(t, "Layer 1 - Duplicate", val.GetName())
+	_, present = merged.Get("layer2")
+	assert.True(t, present)
+	_, present = merged.Get("layer3")
+	assert.True(t, present)
+}
+
+func TestParameterLayersWithLargeNumberOfLayers(t *testing.T) {
+	numLayers := 1000
+	layers := NewParameterLayers()
+
+	for i := 0; i < numLayers; i++ {
+		layer, _ := NewParameterLayer(fmt.Sprintf("layer%d", i), fmt.Sprintf("Layer %d", i))
+		layers.AppendLayers(layer)
+	}
+
+	assert.Equal(t, numLayers, layers.Len())
+	_, present := layers.Get("layer0")
+	assert.True(t, present)
+	_, present = layers.Get(fmt.Sprintf("layer%d", numLayers-1))
+	assert.True(t, present)
+}
+
+func TestParameterLayersWithUnicodeLayerNames(t *testing.T) {
+	layer1, _ := NewParameterLayer("layer1", "Layer 1 - 你好")
+	layer2, _ := NewParameterLayer("layer2", "Layer 2 - こんにちは")
+
+	layers := NewParameterLayers(WithLayers(layer1, layer2))
+
+	assert.Equal(t, 2, layers.Len())
+	val, present := layers.Get("layer1")
+	assert.True(t, present)
+	assert.Equal(t, "Layer 1 - 你好", val.GetName())
+	val, present = layers.Get("layer2")
+	assert.True(t, present)
+	assert.Equal(t, "Layer 2 - こんにちは", val.GetName())
+}
