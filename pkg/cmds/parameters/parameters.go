@@ -517,12 +517,12 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		v_, ok := v.(string)
-		if !ok {
+		v_, err := cast.ToString(v)
+		if err != nil {
 			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
-		err := p.checkChoiceValidity(v_)
+		err = p.checkChoiceValidity(v_)
 		if err != nil {
 			return err
 		}
