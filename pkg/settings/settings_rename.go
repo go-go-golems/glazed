@@ -82,8 +82,8 @@ func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*RenameSe
 		}, nil
 	}
 
-	renameFields, ok := cast.CastList2[string, interface{}](rename)
-	if !ok {
+	renameFields, err := cast.CastListToStringList(rename)
+	if err != nil {
 		return nil, errors.Errorf("Invalid rename fields %s", rename)
 	}
 	renamesFieldsMap := map[types.FieldName]types.FieldName{}

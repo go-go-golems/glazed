@@ -184,8 +184,8 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = (*parameter.Default).(string)
-				if !ok {
+				defaultValue, err = cast.ToString(*parameter.Default)
+				if err != nil {
 					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}
@@ -367,8 +367,8 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 			defaultValue := ""
 
 			if parameter.Default != nil {
-				defaultValue, ok = (*parameter.Default).(string)
-				if !ok {
+				defaultValue, err = cast.ToString(*parameter.Default)
+				if err != nil {
 					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
 				}
 			}

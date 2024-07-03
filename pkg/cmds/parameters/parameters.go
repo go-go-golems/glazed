@@ -159,7 +159,7 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 		ParameterTypeChoiceList,
 		ParameterTypeStringListFromFiles,
 		ParameterTypeStringListFromFile:
-		value.Set(reflect.ValueOf([]string{}))
+		return reflect2.SetReflectValue(value, []string{})
 	case ParameterTypeDate:
 		value.Set(reflect.ValueOf(time.Time{}))
 	case ParameterTypeIntegerList:
@@ -213,11 +213,11 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 		ParameterTypeChoiceList,
 		ParameterTypeStringListFromFiles,
 		ParameterTypeStringListFromFile:
-		list, ok := cast.CastList2[string, interface{}](v)
-		if !ok {
+		list, err := cast.CastListToStringList(v)
+		if err != nil {
 			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, v)
 		}
-		value.Set(reflect.ValueOf(list))
+		return reflect2.SetReflectValue(value, list)
 
 	case ParameterTypeDate:
 		strVal, ok := v.(string)
@@ -416,8 +416,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeStringFromFiles:
 		fallthrough
 	case ParameterTypeString:
-		_, ok := v.(string)
-		if !ok {
+		_, err := cast.ToString(v)
+		if err != nil {
 			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
@@ -485,16 +485,16 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeStringListFromFiles:
 		fallthrough
 	case ParameterTypeStringList:
-		_, ok := v.([]string)
-		if !ok {
+		_, err := cast.CastListToStringList(v)
+		if err != nil {
 			v_, ok := v.([]interface{})
 			if !ok {
 				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
 
 			// convert to string list
-			fixedDefault, ok := cast.CastList[string, interface{}](v_)
-			if !ok {
+			fixedDefault, err := cast.CastListToStringList(v_)
+			if err != nil {
 				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
 			_ = fixedDefault
@@ -517,12 +517,12 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		v_, ok := v.(string)
-		if !ok {
+		v_, err := cast.ToString(v)
+		if err != nil {
 			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
-		err := p.checkChoiceValidity(v_)
+		err = p.checkChoiceValidity(v_)
 		if err != nil {
 			return err
 		}
@@ -532,8 +532,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		v_, ok := cast.CastList2[string, interface{}](v)
-		if !ok {
+		v_, err := cast.CastListToStringList(v)
+		if err != nil {
 			return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 		}
 

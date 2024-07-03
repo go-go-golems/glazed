@@ -96,8 +96,8 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		ParameterTypeStringListFromFile,
 		ParameterTypeStringList,
 		ParameterTypeChoiceList:
-		l, ok := cast.CastList2[string, interface{}](value)
-		if !ok {
+		l, err := cast.CastListToStringList(value)
+		if err != nil {
 			return "", errors.Errorf("expected []string, got %T", value)
 		}
 		return strings.Join(l, ","), nil

@@ -7,6 +7,10 @@ import (
 	"strconv"
 )
 
+// NOTE(manuel, 2024-07-03) This is quite a mess of a function and I'm not even entirely sure
+// what it's purpose is, and what the src can be (it tries to handle *interface{} but doesn't seem to handle
+// other point values that easily?
+
 func SetReflectValue(dst reflect.Value, src interface{}) error {
 	kind := dst.Kind()
 	if !dst.IsValid() {
@@ -25,10 +29,21 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 		//exhaustive:ignore
 		switch kind {
 		case reflect.String:
-			if s, ok := src.(string); ok {
-				dst.SetString(s)
+			srcValue := reflect.ValueOf(src)
+			srcKind := srcValue.Kind()
+
+			assignableToString := srcValue.Type().AssignableTo(reflect.TypeOf(""))
+
+			if srcKind == reflect.String || (srcKind == reflect.Ptr && srcValue.Elem().Kind() == reflect.String) {
+				dst.SetString(srcValue.String())
 				return nil
 			}
+
+			if assignableToString {
+				dst.Set(srcValue)
+				return nil
+			}
+
 			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -192,33 +207,35 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 			return errors.Errorf("cannot set reflect.Value of type %s from %T", kind, src)
 		case reflect.Slice:
 			//exhaustive:ignore
-			sliceKind := dst.Type().Elem().Kind()
+			dstElementKind := dst.Type().Elem().Kind()
 			//exhaustive:ignore
-			switch sliceKind {
+			switch dstElementKind {
 			case reflect.String:
-				if s, ok := src.([]string); ok {
+				s, err := cast.CastListToStringList(src)
+				if err != nil {
+					return errors.Errorf("cannot cast %T to []string", src)
+				}
+
+				// Get the type of the target slice elements
+				targetElemType := dst.Type().Elem()
+
+				// Get the type of the source slice elements
+				sourceElemType := reflect.TypeOf(src).Elem()
+
+				// Check if the source slice is assignable to the target slice
+				if reflect.TypeOf(s).AssignableTo(dst.Type()) {
+					// Direct assignment is possible
 					dst.Set(reflect.ValueOf(s))
 					return nil
 				}
-				if s, ok := src.([]interface{}); ok {
-					v2_, ok := cast.CastList[string, interface{}](s)
-					if !ok {
-						return errors.Errorf("cannot cast %T to []string", src)
-					}
-					dst.Set(reflect.ValueOf(v2_))
-					return nil
-				}
 
-				if s, ok := src.(*interface{}); ok {
-					s_, ok := (*s).([]interface{})
-					if !ok {
-						return errors.Errorf("cannot cast %T to []string", src)
+				if sourceElemType.Kind() == dstElementKind {
+					// Direct assignment is not possible, perform type conversion
+					newSlice := reflect.MakeSlice(dst.Type(), len(s), len(s))
+					for i, s := range s {
+						newSlice.Index(i).Set(reflect.ValueOf(s).Convert(targetElemType))
 					}
-					v2_, ok := cast.CastList[string, interface{}](s_)
-					if !ok {
-						return errors.Errorf("cannot cast %T to []string", src)
-					}
-					dst.Set(reflect.ValueOf(v2_))
+					dst.Set(newSlice)
 					return nil
 				}
 
@@ -340,6 +357,11 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 	if err != nil {
 		// try again, checking if src is an *interface{} and unwrapping that
 		if i, ok := src.(*interface{}); ok {
+			// if i == nil, we can't do anything
+			if i == nil {
+				return nil
+			}
+
 			src = *i
 			err = setValue(src)
 			if err != nil {

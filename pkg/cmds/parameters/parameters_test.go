@@ -25,6 +25,9 @@ type ValidityTest struct {
 	parameterDefinition *ParameterDefinition
 }
 
+type StringAlias = string
+type StringDeclaration string
+
 //go:embed "test-data/parameters_validity_test.yaml"
 var validityTestYaml []byte
 
@@ -269,6 +272,57 @@ func TestSetValueFromDefaultString(t *testing.T) {
 	assert.Equal(t, "", s)
 }
 
+func TestSetValueFromDefaultStringAlias(t *testing.T) {
+	initialParameterTests()
+	stringFlag, _ := testParameterDefinitions.Get("string-flag")
+
+	var s StringAlias = "test"
+
+	// get values of testStruct.StringAlias
+	sValue := reflect.ValueOf(&s).Elem()
+
+	err := stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias("default"), s)
+
+	stringFlag, _ = testParameterDefinitions.Get("string-flag-without-default")
+	err = stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias(""), s)
+
+	s = "foo"
+
+	stringFlag, _ = testParameterDefinitions.Get("string-flag-with-empty-default")
+	err = stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias(""), s)
+}
+
+func TestSetValueFromDefaultStringDeclaration(t *testing.T) {
+	initialParameterTests()
+	stringFlag, _ := testParameterDefinitions.Get("string-flag")
+
+	var s StringDeclaration = "test"
+
+	// get values of testStruct.StringDeclaration
+	sValue := reflect.ValueOf(&s).Elem()
+
+	err := stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringDeclaration("default"), s)
+
+	stringFlag, _ = testParameterDefinitions.Get("string-flag-without-default")
+	err = stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringDeclaration(""), s)
+
+	s = "foo"
+
+	stringFlag, _ = testParameterDefinitions.Get("string-flag-with-empty-default")
+	err = stringFlag.SetValueFromDefault(sValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringDeclaration(""), s)
+}
 func TestSetValueFromDefaultBool(t *testing.T) {
 	boolFlag, _ := testParameterDefinitions.Get("bool-flag")
 
@@ -337,6 +391,118 @@ func TestSetValueFromDefaultChoiceList(t *testing.T) {
 	err = choiceListFlag.SetValueFromDefault(clValue)
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, cl)
+
+	choiceListFlag = &ParameterDefinition{
+		Name:    "choice-list-flag-with-invalid-default",
+		Type:    ParameterTypeChoiceList,
+		Default: cast.InterfaceAddr([]string{"invalid"}),
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.Error(t, err)
+}
+
+func TestSetValueFromDefaultChoiceAlias(t *testing.T) {
+	initialParameterTests()
+	choiceFlag, _ := testParameterDefinitions.Get("choice-flag")
+
+	var c StringAlias = "foo"
+
+	// get values of testStruct.ChoiceAlias
+	cValue := reflect.ValueOf(&c).Elem()
+
+	err := choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias("default"), c)
+
+	choiceFlag, _ = testParameterDefinitions.Get("choice-flag-without-default")
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias(""), c)
+
+	choiceFlag = &ParameterDefinition{
+		Name:    "choice-flag-with-invalid-default",
+		Type:    ParameterTypeChoice,
+		Default: cast.InterfaceAddr("invalid"),
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.Error(t, err)
+}
+
+func TestSetValueFromDefaultChoiceDeclaration(t *testing.T) {
+	initialParameterTests()
+	choiceFlag, _ := testParameterDefinitions.Get("choice-flag")
+
+	var c StringDeclaration = "foo"
+
+	// get values of testStruct.ChoiceDeclaration
+	cValue := reflect.ValueOf(&c).Elem()
+
+	err := choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringDeclaration("default"), c)
+
+	choiceFlag, _ = testParameterDefinitions.Get("choice-flag-without-default")
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.NoError(t, err)
+	assert.Equal(t, StringDeclaration(""), c)
+
+	choiceFlag = &ParameterDefinition{
+		Name:    "choice-flag-with-invalid-default",
+		Type:    ParameterTypeChoice,
+		Default: cast.InterfaceAddr("invalid"),
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceFlag.SetValueFromDefault(cValue)
+	require.Error(t, err)
+}
+
+func TestSetValueFromDefaultChoiceListAlias(t *testing.T) {
+	initialParameterTests()
+	choiceListFlag, _ := testParameterDefinitions.Get("choice-list-flag")
+
+	var cl []StringAlias = []StringAlias{"foo", "bar"}
+
+	// get values of testStruct.ChoiceListAlias
+	clValue := reflect.ValueOf(&cl).Elem()
+
+	err := choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringAlias{"default", "choice1", "choice2"}, cl)
+
+	choiceListFlag, _ = testParameterDefinitions.Get("choice-list-flag-without-default")
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringAlias{}, cl)
+
+	choiceListFlag = &ParameterDefinition{
+		Name:    "choice-list-flag-with-invalid-default",
+		Type:    ParameterTypeChoiceList,
+		Default: cast.InterfaceAddr([]string{"invalid"}),
+		Choices: []string{"foo", "bar"},
+	}
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.Error(t, err)
+}
+
+func TestSetValueFromDefaultChoiceListDeclaration(t *testing.T) {
+	initialParameterTests()
+	choiceListFlag, _ := testParameterDefinitions.Get("choice-list-flag")
+
+	var cl []StringDeclaration = []StringDeclaration{"foo", "bar"}
+
+	// get values of testStruct.ChoiceListDeclaration
+	clValue := reflect.ValueOf(&cl).Elem()
+
+	err := choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{"default", "choice1", "choice2"}, cl)
+
+	choiceListFlag, _ = testParameterDefinitions.Get("choice-list-flag-without-default")
+	err = choiceListFlag.SetValueFromDefault(clValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{}, cl)
 
 	choiceListFlag = &ParameterDefinition{
 		Name:    "choice-list-flag-with-invalid-default",
@@ -549,6 +715,58 @@ func TestSetValueFromDefaultStringListFromFile(t *testing.T) {
 	assert.Equal(t, []string{}, fl)
 }
 
+func TestSetValueFromDefaultStringListAlias(t *testing.T) {
+	initialParameterTests()
+	stringListFlag, _ := testParameterDefinitions.Get("string-list-flag")
+
+	var sl []StringAlias = []StringAlias{"test"}
+
+	// get values of testStruct.StringListAlias
+	slValue := reflect.ValueOf(&sl).Elem()
+
+	err := stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringAlias{"default1", "default2"}, sl)
+
+	stringListFlag, _ = testParameterDefinitions.Get("string-list-flag-without-default")
+	err = stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringAlias{}, sl)
+
+	sl = []StringAlias{"foo"}
+
+	stringListFlag, _ = testParameterDefinitions.Get("string-list-flag-with-empty-default")
+	err = stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringAlias{}, sl)
+}
+
+func TestSetValueFromDefaultStringListDeclaration(t *testing.T) {
+	initialParameterTests()
+	stringListFlag, _ := testParameterDefinitions.Get("string-list-flag")
+
+	var sl []StringDeclaration = []StringDeclaration{"test"}
+
+	// get values of testStruct.StringListDeclaration
+	slValue := reflect.ValueOf(&sl).Elem()
+
+	err := stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{"default1", "default2"}, sl)
+
+	stringListFlag, _ = testParameterDefinitions.Get("string-list-flag-without-default")
+	err = stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{}, sl)
+
+	sl = []StringDeclaration{"foo"}
+
+	stringListFlag, _ = testParameterDefinitions.Get("string-list-flag-with-empty-default")
+	err = stringListFlag.SetValueFromDefault(slValue)
+	require.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{}, sl)
+}
+
 func TestSetValueFromDefaultKeyValue(t *testing.T) {
 	keyValueFlag, _ := testParameterDefinitions.Get("key-value-flag")
 
@@ -754,6 +972,184 @@ func TestCheckValueValidity(t *testing.T) {
 			name: "invalid string list value",
 			param: ParameterDefinition{
 				Name:    "stringListTest",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   "string instead of string list",
+			wantErr: true,
+		},
+
+		// StringAlias tests
+		{
+			name: "valid string alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: cast.InterfaceAddr("default"),
+			},
+			value:   StringAlias("test value"),
+			wantErr: false,
+		},
+		{
+			name: "invalid string alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: cast.InterfaceAddr("default"),
+			},
+			value:   123,
+			wantErr: true,
+		},
+		// StringDeclaration tests
+		{
+			name: "valid string declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: cast.InterfaceAddr("default"),
+			},
+			value:   StringDeclaration("test value"),
+			wantErr: false,
+		},
+		{
+			name: "invalid string declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeString,
+				Default: cast.InterfaceAddr("default"),
+			},
+			value:   123,
+			wantErr: true,
+		},
+		// ChoiceAlias tests
+		{
+			name: "valid choice alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: cast.InterfaceAddr("choice1"),
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   StringAlias("choice2"),
+			wantErr: false,
+		},
+		{
+			name: "invalid choice alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: cast.InterfaceAddr("choice1"),
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   StringAlias("choice3"),
+			wantErr: true,
+		},
+		// ChoiceDeclaration tests
+		{
+			name: "valid choice declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: cast.InterfaceAddr("choice1"),
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   StringDeclaration("choice2"),
+			wantErr: false,
+		},
+		{
+			name: "invalid choice declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoice,
+				Default: cast.InterfaceAddr("choice1"),
+				Choices: []string{"choice1", "choice2"},
+			},
+			value:   StringDeclaration("choice3"),
+			wantErr: true,
+		},
+		// ChoiceListAlias tests
+		{
+			name: "valid choice list alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoiceList,
+				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
+				Choices: []string{"choice1", "choice2", "choice3"},
+			},
+			value:   []StringAlias{"choice1", "choice3"},
+			wantErr: false,
+		},
+		{
+			name: "invalid choice list alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoiceList,
+				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
+				Choices: []string{"choice1", "choice2", "choice3"},
+			},
+			value:   []StringAlias{"choice4"},
+			wantErr: true,
+		},
+		// ChoiceListDeclaration tests
+		{
+			name: "valid choice list declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoiceList,
+				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
+				Choices: []string{"choice1", "choice2", "choice3"},
+			},
+			value:   []StringDeclaration{"choice1", "choice3"},
+			wantErr: false,
+		},
+		{
+			name: "invalid choice list declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeChoiceList,
+				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
+				Choices: []string{"choice1", "choice2", "choice3"},
+			},
+			value:   []StringDeclaration{"choice4"},
+			wantErr: true,
+		},
+
+		// StringListAlias tests
+		{
+			name: "valid string list alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   []StringAlias{"a", "b", "c"},
+			wantErr: false,
+		},
+		{
+			name: "invalid string list alias value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   "string instead of string list",
+			wantErr: true,
+		},
+		// StringListDeclaration tests
+		{
+			name: "valid string list declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
+				Type:    ParameterTypeStringList,
+				Default: nil,
+			},
+			value:   []StringDeclaration{"a", "b", "c"},
+			wantErr: false,
+		},
+		{
+			name: "invalid string list declaration value",
+			param: ParameterDefinition{
+				Name:    "test",
 				Type:    ParameterTypeStringList,
 				Default: nil,
 			},

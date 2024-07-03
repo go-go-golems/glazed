@@ -294,54 +294,6 @@ func CastInterfaceToFloatList[To FloatNumber](i interface{}) ([]To, bool) {
 	}
 }
 
-func CastStringMap2[To any, From any](m interface{}) (map[string]To, bool) {
-	casted, ok := m.(map[string]From)
-	if !ok {
-		// try to cast to map[string]interface{}
-		casted2, ok := m.(map[string]interface{})
-		if !ok {
-			return map[string]To{}, false
-		}
-		return CastStringMap[To, interface{}](casted2)
-	}
-
-	return CastStringMap[To, From](casted)
-}
-
-func CastMapMember[To any](m map[string]interface{}, k string) (*To, bool) {
-	v, ok := m[k]
-	if !ok {
-		return nil, false
-	}
-
-	casted, ok := v.(To)
-	if !ok {
-		return nil, false
-	}
-
-	return &casted, true
-}
-
-func GetAndCast[T any](ps map[string]interface{}, name string, default_ T) (T, bool, error) {
-	if val, ok := ps[name]; ok {
-		if castedVal, ok := val.(T); ok {
-			return castedVal, true, nil
-		}
-		return default_, false, errors.Errorf("could not cast %s to %T", name, val)
-	}
-	return default_, false, nil
-}
-
-func GetAndCastPtr[T any](ps map[string]interface{}, name string, default_ *T) (*T, bool, error) {
-	if val, ok := ps[name]; ok {
-		if castedVal, ok := val.(T); ok {
-			return &castedVal, true, nil
-		}
-		return default_, true, errors.Errorf("could not cast %s to %T", name, val)
-	}
-	return default_, false, nil
-}
-
 func InterfaceAddr[T any](t T) *interface{} {
 	t_ := interface{}(t)
 	return &t_
