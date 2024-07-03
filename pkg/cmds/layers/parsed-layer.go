@@ -124,6 +124,9 @@ func (p *ParsedLayers) Clone() *ParsedLayers {
 }
 
 func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
+	if layer == nil {
+		panic("layer must not be nil")
+	}
 	slug := layer.GetSlug()
 	v, ok := p.Get(slug)
 	if !ok {

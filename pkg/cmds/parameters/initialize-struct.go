@@ -279,6 +279,11 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 		return nil
 	}
 
+	dstTypeS := dst.Type().String()
+	valueTypeS := valueType.String()
+	_ = dstTypeS
+	_ = valueTypeS
+
 	// Direct assignment if types are compatible
 	if dst.Type() == valueType {
 		dst.Set(reflect.ValueOf(value))
