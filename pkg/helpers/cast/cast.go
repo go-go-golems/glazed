@@ -293,3 +293,8 @@ func CastInterfaceToFloatList[To FloatNumber](i interface{}) ([]To, bool) {
 		return nil, false
 	}
 }
+
+func InterfaceAddr[T any](t T) *interface{} {
+	t_ := interface{}(t)
+	return &t_
+}
