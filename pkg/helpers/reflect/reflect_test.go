@@ -539,3 +539,151 @@ func TestSetReflectStringListInterface(t *testing.T) {
 	err = SetReflectValue(sValue, []interface{}{"hello", 1})
 	require.Error(t, err)
 }
+
+type StringAlias string
+type StringDeclaration string
+
+func TestSetReflectString(t *testing.T) {
+	var s string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), "test")
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s)
+}
+
+func TestSetReflectStringFromAlias(t *testing.T) {
+	var s string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringAlias("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s)
+}
+
+func TestSetReflectStringFromDeclaration(t *testing.T) {
+	var s string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringDeclaration("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s)
+}
+
+func TestSetReflectStringAlias(t *testing.T) {
+	var s StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), "test")
+	assert.NoError(t, err)
+	assert.Equal(t, StringAlias("test"), s)
+}
+
+func TestSetReflectStringAliasFromAlias(t *testing.T) {
+	var s StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringAlias("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, StringAlias("test"), s)
+}
+
+func TestSetReflectStringAliasFromDeclaration(t *testing.T) {
+	var s StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringDeclaration("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, StringAlias("test"), s)
+}
+
+func TestSetReflectStringDeclaration(t *testing.T) {
+	var s StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), "test")
+	assert.NoError(t, err)
+	assert.Equal(t, StringDeclaration("test"), s)
+}
+
+func TestSetReflectStringDeclarationFromAlias(t *testing.T) {
+	var s StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringAlias("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, StringDeclaration("test"), s)
+}
+
+func TestSetReflectStringDeclarationFromDeclaration(t *testing.T) {
+	var s StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), StringDeclaration("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, StringDeclaration("test"), s)
+}
+
+func TestSetReflectStringSlice(t *testing.T) {
+	var s []string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []string{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, s)
+}
+
+func TestSetReflectStringSliceFromAlias(t *testing.T) {
+	var s []string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringAlias{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, s)
+}
+
+func TestSetReflectStringSliceFromDeclaration(t *testing.T) {
+	var s []string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringDeclaration{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, s)
+}
+
+func TestSetReflectStringAliasSlice(t *testing.T) {
+	var s []StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []string{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringAlias{"a", "b"}, s)
+}
+
+func TestSetReflectStringAliasSliceFromAlias(t *testing.T) {
+	var s []StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringAlias{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringAlias{"a", "b"}, s)
+}
+
+func TestSetReflectStringAliasSliceFromDeclaration(t *testing.T) {
+	var s []StringAlias
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringDeclaration{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringAlias{"a", "b"}, s)
+}
+
+func TestSetReflectStringDeclarationSlice(t *testing.T) {
+	var s []StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []string{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{"a", "b"}, s)
+}
+
+func TestSetReflectStringDeclarationSliceFromAlias(t *testing.T) {
+	var s []StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringAlias{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{"a", "b"}, s)
+}
+
+func TestSetReflectStringDeclarationSliceFromDeclaration(t *testing.T) {
+	var s []StringDeclaration
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []StringDeclaration{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []StringDeclaration{"a", "b"}, s)
+}
+
+func TestSetReflectStringSliceFromInterface(t *testing.T) {
+	var s []string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []interface{}{"a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, s)
+}
+
+func TestSetReflectStringError(t *testing.T) {
+	var s string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), 42)
+	assert.Error(t, err)
+}
+
+func TestSetReflectStringSliceError(t *testing.T) {
+	var s []string
+	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []int{1, 2})
+	assert.Error(t, err)
+}
