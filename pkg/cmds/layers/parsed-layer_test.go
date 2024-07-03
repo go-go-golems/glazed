@@ -368,3 +368,54 @@ func TestParsedLayersInitializeStructStringTypes(t *testing.T) {
 	assert.IsType(t, []StringAlias{}, result.StringAliasListField)
 	assert.IsType(t, []StringDeclaration{}, result.StringDeclListField)
 }
+
+func TestParsedLayersInitializeStructStringPointerTypes(t *testing.T) {
+	// Define custom types
+	type StringAlias string
+	type StringDeclaration = string
+
+	// Define the test struct with pointer fields
+	type TestStruct struct {
+		StringPtrField            *string            `glazed.parameter:"string_ptr_field"`
+		StringAliasPtrField       *StringAlias       `glazed.parameter:"string_alias_ptr_field"`
+		StringDeclarationPtrField *StringDeclaration `glazed.parameter:"string_declaration_ptr_field"`
+	}
+
+	// Create a parameter layer with all the necessary definitions
+	layer := createParameterLayer(t, "test", "Test Layer",
+		parameters.NewParameterDefinition("string_ptr_field", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("string_alias_ptr_field", parameters.ParameterTypeString),
+		parameters.NewParameterDefinition("string_declaration_ptr_field", parameters.ParameterTypeString),
+	)
+
+	// Create a parsed layer with test values
+	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{
+		"string_ptr_field":             "regular string",
+		"string_alias_ptr_field":       "aliased string",
+		"string_declaration_ptr_field": "declared string",
+	})
+
+	// Create ParsedLayers and add the parsed layer
+	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
+
+	// Initialize the struct
+	var result TestStruct
+	err := parsedLayers.InitializeStruct("test", &result)
+
+	// Assert no error occurred
+	assert.NoError(t, err)
+
+	// Verify each field was correctly initialized
+	assert.NotNil(t, result.StringPtrField)
+	assert.NotNil(t, result.StringAliasPtrField)
+	assert.NotNil(t, result.StringDeclarationPtrField)
+
+	assert.Equal(t, "regular string", *result.StringPtrField)
+	assert.Equal(t, StringAlias("aliased string"), *result.StringAliasPtrField)
+	assert.Equal(t, StringDeclaration("declared string"), *result.StringDeclarationPtrField)
+
+	// Additional type checks
+	assert.IsType(t, (*string)(nil), result.StringPtrField)
+	assert.IsType(t, (*StringAlias)(nil), result.StringAliasPtrField)
+	assert.IsType(t, (*StringDeclaration)(nil), result.StringDeclarationPtrField)
+}
