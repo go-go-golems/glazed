@@ -29,23 +29,11 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 		//exhaustive:ignore
 		switch kind {
 		case reflect.String:
-			// Use reflection to get the type of src
 			srcValue := reflect.ValueOf(src)
 			srcKind := srcValue.Kind()
 
-			srcType := srcValue.Type()
-			srcTypeS := srcType.String()
-			_ = srcTypeS
-			srcTypeKind := srcType.Kind()
-			_ = srcTypeKind
-
-			// Check if src is a string alias
-			convertibleToString := srcValue.Type().ConvertibleTo(reflect.TypeOf(""))
-			_ = convertibleToString
 			assignableToString := srcValue.Type().AssignableTo(reflect.TypeOf(""))
-			_ = assignableToString
 
-			// Check if src is a string or can be converted to a string
 			if srcKind == reflect.String || (srcKind == reflect.Ptr && srcValue.Elem().Kind() == reflect.String) {
 				dst.SetString(srcValue.String())
 				return nil
