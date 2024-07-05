@@ -172,14 +172,9 @@ func (c *CobraParser) Parse(
 		return nil, err
 	}
 
-	middlewares_ := []cmd_middlewares.Middleware{
-		cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")),
-		cmd_middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")),
-	}
-
 	// Create the middlewares by invoking the passed in middlewares constructor.
 	// This is where applications can specify their own middlewares.
-	middlewares_, err = c.middlewaresFunc(commandSettings, cmd, args)
+	middlewares_, err := c.middlewaresFunc(commandSettings, cmd, args)
 	if err != nil {
 		return nil, err
 	}
