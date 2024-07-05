@@ -167,36 +167,38 @@ template: |
   ```go
   import 	"github.com/go-go-golems/glazed/pkg/settings"
   
-  glazedParameterLayer, err := settings.NewGlazedParameterLayers()
-  if err != nil {
-      return nil, errors.Wrap(err, "could not create Glazed parameter layer")
-  }
+  func NewExampleCommand() (*ExampleCommand, error) {
+    glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+    if err != nil {
+        return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+    }
 
-  return &ExampleCommand{
-      CommandDescription: cmds.NewCommandDescription(
-          "example",
-          cmds.WithShort("Example command"),
-          cmds.WithFlags(
-              parameters.NewParameterDefinition(
-                  "count",
-                  parameters.ParameterTypeInteger,
-                  parameters.WithHelp("Number of rows to output"),
-                  parameters.WithDefault(10),
-              ),
-          ),
-          cmds.WithArguments(
-              parameters.NewParameterDefinition(
-                  "test",
-                  parameters.ParameterTypeBool,
-                  parameters.WithHelp("Whether to add a test column"),
-                  parameters.WithDefault(false),
-              ),
-          ),
-          cmds.WithLayersList(
-              glazedParameterLayer,
-          ),
-      ),
-  }, nil
+    return &ExampleCommand{
+        CommandDescription: cmds.NewCommandDescription(
+            "example",
+            cmds.WithShort("Example command"),
+            cmds.WithFlags(
+                parameters.NewParameterDefinition(
+                    "count",
+                    parameters.ParameterTypeInteger,
+                    parameters.WithHelp("Number of rows to output"),
+                    parameters.WithDefault(10),
+                ),
+            ),
+            cmds.WithArguments(
+                parameters.NewParameterDefinition(
+                    "test",
+                    parameters.ParameterTypeBool,
+                    parameters.WithHelp("Whether to add a test column"),
+                    parameters.WithDefault(false),
+                ),
+            ),
+            cmds.WithLayersList(
+                glazedParameterLayer,
+            ),
+        ),
+    }, nil
+  }
   ```
   
   You can then create a struct to represent those parameters and map them to flags using the glazed.parameter tag:
@@ -383,19 +385,13 @@ template: |
     
     helpSystem.SetupCobraRootCommand(rootCmd)
   
-    // For a GlazeCommand
     glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
     cobra.CheckErr(err)
 
-    command, err := cli.BuildCobraCommandFromGlazeCommand(glazeCmdInstance)
+    command, err := cli.BuildCobraCommandFromCommand(glazeCmdInstance)
     cobra.CheckErr(err)
 
     rootCmd.AddCommand(command)
-
-    // Similarly, for WriterCommand or BareCommand
-    // writerCmdInstance, err := NewMyWriterCommand()
-    // command, err = BuildCobraCommandFromWriterCommand(writerCmdInstance)
-    // rootCmd.AddCommand(command)
     
     err = rootCmd.Execute()
     cobra.CheckErr(err)

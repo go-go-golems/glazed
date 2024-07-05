@@ -175,7 +175,12 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 
 		}
 	} else if ofs.Output == "yaml" {
-		return nil, &ErrorRowFormatUnsupported{"yaml"}
+		of = yaml.NewOutputFormatter(
+			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
+			yaml.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
+			yaml.WithOutputFileTemplate(ofs.OutputFileTemplate),
+			yaml.WithYAMLOutputFile(ofs.OutputFile),
+		)
 	} else if ofs.Output == "excel" {
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")

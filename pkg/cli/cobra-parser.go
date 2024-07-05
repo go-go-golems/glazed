@@ -165,10 +165,33 @@ func (c *CobraParser) Parse(
 	cmd *cobra.Command,
 	args []string,
 ) (*layers.ParsedLayers, error) {
-	parsedLayers := layers.NewParsedLayers()
-
 	// We parse the glazed command settings first, since they will influence the following parsing
 	// steps.
+	commandSettings, err := ParseGlazedCommandLayer(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the middlewares by invoking the passed in middlewares constructor.
+	// This is where applications can specify their own middlewares.
+	middlewares_, err := c.middlewaresFunc(commandSettings, cmd, args)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedLayers := layers.NewParsedLayers()
+	err = cmd_middlewares.ExecuteMiddlewares(c.Layers, parsedLayers, middlewares_...)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedLayers, nil
+}
+
+// ParseGlazedCommandLayer parses the global glazed settings from the given cobra.Command, if not nil,
+// and from the configured viper config file.
+func ParseGlazedCommandLayer(cmd *cobra.Command) (*GlazedCommandSettings, error) {
+	parsedLayers := layers.NewParsedLayers()
 	glazedCommandLayer, err := NewGlazedCommandLayer()
 	if err != nil {
 		return nil, err
@@ -177,10 +200,13 @@ func (c *CobraParser) Parse(
 	glazedCommandLayers := layers.NewParameterLayers(layers.WithLayers(glazedCommandLayer))
 
 	// Parse the glazed command settings from the cobra command and config file
-	middlewares_ := []cmd_middlewares.Middleware{
-		cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")),
-		cmd_middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")),
+	middlewares_ := []cmd_middlewares.Middleware{}
+
+	if cmd != nil {
+		middlewares_ = append(middlewares_, cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")))
 	}
+
+	middlewares_ = append(middlewares_, cmd_middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")))
 
 	err = cmd_middlewares.ExecuteMiddlewares(glazedCommandLayers, parsedLayers, middlewares_...)
 	if err != nil {
@@ -193,17 +219,5 @@ func (c *CobraParser) Parse(
 		return nil, err
 	}
 
-	// Create the middlewares by invoking the passed in middlewares constructor.
-	// This is where applications can specify their own middlewares.
-	middlewares_, err = c.middlewaresFunc(commandSettings, cmd, args)
-	if err != nil {
-		return nil, err
-	}
-
-	err = cmd_middlewares.ExecuteMiddlewares(c.Layers, parsedLayers, middlewares_...)
-	if err != nil {
-		return nil, err
-	}
-
-	return parsedLayers, nil
+	return commandSettings, nil
 }

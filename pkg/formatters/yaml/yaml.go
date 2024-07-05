@@ -19,6 +19,23 @@ type OutputFormatter struct {
 	OutputIndividualRows bool
 }
 
+func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
+	m := types.RowToMap(row)
+
+	encoder := yaml.NewEncoder(w)
+	err := encoder.Encode(m)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(w, "\n---\n\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var _ formatters.TableOutputFormatter = (*OutputFormatter)(nil)
 
 func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
