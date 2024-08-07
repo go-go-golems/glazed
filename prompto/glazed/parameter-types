@@ -1,39 +1,9 @@
 #!/usr/bin/env bash
 
-echo "---"
-echo "Here are the types that can be used to define parameters in glazed:"
-echo "---"
-cat <<EOF
-package parameters
-
-type ParameterType string
-const (
-	ParameterTypeString = "string"
-
-	ParameterTypeStringFromFile = "stringFromFile"
-	ParameterTypeStringFromFiles = "stringFromFiles" -> string
-
-	ParameterTypeFile = "file" -> *FileData
-	ParameterTypeFileList = "fileList" -> []*FileData
-
-	ParameterTypeObjectListFromFile = "objectListFromFile" -> []map[string]interface{}
-	ParameterTypeObjectListFromFiles = "objectListFromFiles" -> []map[string]interface{}
-	ParameterTypeObjectFromFile = "objectFromFile" -> map[string]interface{}
-	ParameterTypeStringListFromFile = "stringListFromFile" -> []string
-	ParameterTypeStringListFromFiles = "stringListFromFiles" -> []string
-
-	ParameterTypeKeyValue = "keyValue" -> map[string]string
-
-	ParameterTypeInteger = "int"
-	ParameterTypeFloat = "float"
-	ParameterTypeBool = "bool"
-	ParameterTypeDate = "date" -> time.Time/string
-	ParameterTypeStringList = "stringList"
-	ParameterTypeIntegerList = "intList"
-	ParameterTypeFloatList = "floatList"
-	ParameterTypeChoice = "choice" -> string
-	ParameterTypeChoiceList = "choiceList" -> []string
-)
-EOF
-
+echo "// Here are the types that can be used to define parameters in glazed:"
+echo
+echo "package github.com/go-go-golems/glazed/pkg/cmds/parameters"
+echo 
+oak go consts pkg/cmds/parameters/parameter-type.go
+echo
 oak go definitions pkg/cmds/parameters/file.go --name "FileData" --definition-type struct,interface

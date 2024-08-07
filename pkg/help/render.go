@@ -3,10 +3,11 @@ package help
 import (
 	_ "embed"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 
 	"github.com/charmbracelet/glamour"
 	tsize "github.com/kopoli/go-terminal-size"
@@ -114,7 +115,10 @@ func (hs *HelpSystem) RenderTopicHelp(
 	options *RenderOptions) (string, error) {
 	userQuery := options.Query
 
+	// TODO(manuel, 2024-08-07) This should also include information about the program itself (that it's embedded in, maybe coming from the helpSystem metadata itself)
 	data, noResultsFound := hs.ComputeRenderData(userQuery)
+
+	// TODO(manuel, 2024-08-07) Render templated sections (IsTemplate = true)
 
 	t := template.New("topic")
 	t.Funcs(templating.TemplateFuncs)
