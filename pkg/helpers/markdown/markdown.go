@@ -77,7 +77,6 @@ func ExtractAllBlocks(input string) []MarkdownBlock {
 		content := strings.Join(blockLines, "\n") // excluding the language line
 		result = append(result, MarkdownBlock{Type: Code, Language: language, Content: content})
 		blockLines = nil // reset blockLines
-		language = ""
 	}
 
 	// Handle any remaining normal content outside of code blocks

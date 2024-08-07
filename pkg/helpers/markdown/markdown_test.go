@@ -60,8 +60,7 @@ func TestExtractQuotedBlocks(t *testing.T) {
 			name:  "Incomplete Code Block",
 			input: "```python\nprint(\"Hello, World!\"",
 			expected: []MarkdownBlock{
-				{Type: Normal, Content: "```python"},
-				{Type: Normal, Content: "print(\"Hello, World!\""},
+				{Type: Code, Language: "python", Content: "print(\"Hello, World!\""},
 			},
 		},
 		{
