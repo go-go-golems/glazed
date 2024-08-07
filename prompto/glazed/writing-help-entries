@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+glaze help writing-help-entries 2>&1
