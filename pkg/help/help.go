@@ -5,6 +5,7 @@ import (
 	"github.com/adrg/frontmatter"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"io/fs"
 	"path/filepath"
@@ -333,14 +334,16 @@ func NewHelpSystem() *HelpSystem {
 func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 	entries, err := fs.ReadDir(f, dir)
 	if err != nil {
-		return err
+		log.Warn().Err(err).Str("dir", dir).Msg("Failed to read directory")
+		return nil
 	}
 	for _, entry := range entries {
 		filePath := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
 			err = hs.LoadSectionsFromFS(f, filePath)
 			if err != nil {
-				return err
+				log.Warn().Err(err).Str("dir", filePath).Msg("Failed to load sections from directory")
+				continue
 			}
 		} else {
 			if !strings.HasSuffix(entry.Name(), ".md") {
@@ -348,11 +351,13 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 			}
 			b, err := fs.ReadFile(f, filePath)
 			if err != nil {
-				return errors.Wrapf(err, "failed to read file %s", filePath)
+				log.Warn().Err(err).Str("file", filePath).Msg("Failed to read file")
+				continue
 			}
 			section, err := LoadSectionFromMarkdown(b)
 			if err != nil {
-				return errors.Wrapf(err, "failed to load section from file %s", filePath)
+				log.Warn().Err(err).Str("file", filePath).Msg("Failed to load section from file")
+				continue
 			}
 			hs.AddSection(section)
 		}
