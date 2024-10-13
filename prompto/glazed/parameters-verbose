@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+glaze help parameter-layers-and-parsed-layers 2>&1
+
+echo
+echo
+
+prompto get glazed/parameters
