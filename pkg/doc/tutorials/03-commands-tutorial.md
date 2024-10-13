@@ -12,7 +12,7 @@ ShowPerDefault: true
 SectionType: Tutorial
 ---
 
-DISCLAIMER: This was generated with o1-preview and was not validated yet.
+DISCLAIMER: This was generated with o1-preview and was not validated yet. However it should be pretty close.
 
 # Building Commands with Glazed: A Step-by-Step Tutorial
 
@@ -42,7 +42,9 @@ Add the `glazed` package to your project.
 go get github.com/go-go-golems/glazed
 ```
 
-## Step 3: Creating a New Command
+## Part 1: Creating Commands Manually
+
+### Step 3: Creating a New Command
 
 Let's create a command called `generate` that generates a specified number of user records.
 
@@ -62,7 +64,6 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds/parameters"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/types"
-    "math/rand"
 )
 
 type GenerateCommand struct {
@@ -87,19 +88,57 @@ func NewGenerateCommand() (*GenerateCommand, error) {
                     parameters.WithHelp("Enable verbose output"),
                     parameters.WithDefault(false),
                 ),
+                parameters.NewParameterDefinition(
+                    "prefix",
+                    parameters.ParameterTypeString,
+                    parameters.WithHelp("Prefix for usernames"),
+                    parameters.WithDefault("User"),
+                ),
             ),
             cmds.WithArguments(),
         ),
     }, nil
 }
+
+func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+    type GenerateSettings struct {
+        Count   int    `glazed.parameter:"count"`
+        Verbose bool   `glazed.parameter:"verbose"`
+        Prefix  string `glazed.parameter:"prefix"`
+    }
+
+    settings := &GenerateSettings{}
+    if err := parsedLayers.InitializeStruct("default", settings); err != nil {
+        return err
+    }
+
+    for i := 1; i <= settings.Count; i++ {
+        user := types.NewRow(
+            types.MRP("id", i),
+            types.MRP("name", settings.Prefix+"-"+strconv.Itoa(i)),
+            types.MRP("email", "user"+strconv.Itoa(i)+"@example.com"),
+        )
+
+        if settings.Verbose {
+            user.Set("debug", "Verbose mode enabled")
+        }
+
+        if err := gp.AddRow(ctx, user); err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
 ```
 
 ## Step 4: Adding Flags and Arguments
 
-In the previous step, we added two flags: `count` and `verbose`. These flags allow users to specify the number of user records to generate and whether to enable verbose output.
+In the previous step, we added three flags: `count`, `verbose`, and `prefix`. These flags allow users to specify the number of user records to generate, whether to enable verbose output, and a prefix for usernames.
 
 - **count** (`int`): Specifies how many user records to generate. Defaults to `10`.
 - **verbose** (`bool`): Enables verbose output. Defaults to `false`.
+- **prefix** (`string`): Specifies a prefix for usernames. Defaults to `User`.
 
 ## Step 5: Implementing Run Methods
 
@@ -112,8 +151,9 @@ For commands that emit structured data using `GlazeProcessor`.
 ```go
 func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
     type GenerateSettings struct {
-        Count   int  `glazed.parameter:"count"`
-        Verbose bool `glazed.parameter:"verbose"`
+        Count   int    `glazed.parameter:"count"`
+        Verbose bool   `glazed.parameter:"verbose"`
+        Prefix  string `glazed.parameter:"prefix"`
     }
 
     settings := &GenerateSettings{}
@@ -124,7 +164,7 @@ func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayer
     for i := 1; i <= settings.Count; i++ {
         user := types.NewRow(
             types.MRP("id", i),
-            types.MRP("name", "User-"+strconv.Itoa(i)),
+            types.MRP("name", settings.Prefix+"-"+strconv.Itoa(i)),
             types.MRP("email", "user"+strconv.Itoa(i)+"@example.com"),
         )
 
@@ -164,7 +204,7 @@ func (c *GenerateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layer
     }
 
     for i := 1; i <= settings.Count; i++ {
-        output := fmt.Sprintf("User %d: %s <user%d@example.com>\n", i, "User-"+strconv.Itoa(i), i)
+        output := fmt.Sprintf("User %d: %s <user%d@example.com>\n", i, settings.Prefix+"-"+strconv.Itoa(i), i)
         _, err := w.Write([]byte(output))
         if err != nil {
             return err
@@ -175,11 +215,13 @@ func (c *GenerateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layer
 }
 ```
 
-## Step 6: Loading Commands from YAML
+## Part 2: Loading Commands from YAML
 
-Let's create a simple YAML command loader that leverages existing Glazed structures.
+Now, let's explore how to create commands using YAML configurations.
 
-### 6.1 Create `commands.yaml`
+### Step 6: Creating a YAML Command Loader
+
+First, let's create a YAML file that describes our command:
 
 ```yaml
 name: generate
@@ -203,159 +245,189 @@ flags:
 arguments: []
 ```
 
-### 6.2 Create a Simple YAML Command Loader
-
-Create a new file called `yaml_loader.go` in your project:
+Now, let's create a YAML command loader:
 
 ```go
 package main
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/alias"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"gopkg.in/yaml.v3"
-	"io"
-	"io/fs"
-	"path/filepath"
+    "context"
+    "fmt"
+    "io/fs"
+    "path/filepath"
+    "strconv"
+
+    "github.com/go-go-golems/glazed/pkg/cmds"
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/middlewares"
+    "github.com/go-go-golems/glazed/pkg/types"
+    "gopkg.in/yaml.v3"
 )
 
 type YAMLCommandLoader struct{}
 
 func NewYAMLCommandLoader() *YAMLCommandLoader {
-	return &YAMLCommandLoader{}
+    return &YAMLCommandLoader{}
 }
 
 type YAMLCommandDescription struct {
-	Name      string                            `yaml:"name"`
-	Short     string                            `yaml:"short"`
-	Long      string                            `yaml:"long,omitempty"`
-	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
-	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
+    Name      string                            `yaml:"name"`
+    Short     string                            `yaml:"short"`
+    Long      string                            `yaml:"long,omitempty"`
+    Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+    Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
 }
 
 func (l *YAMLCommandLoader) LoadCommands(
-	f fs.FS,
-	entryName string,
-	options []cmds.CommandDescriptionOption,
-	aliasOptions []alias.Option,
+    f fs.FS,
+    entryName string,
+    options []cmds.CommandDescriptionOption,
+    aliasOptions []alias.Option,
 ) ([]cmds.Command, error) {
-	file, err := f.Open(entryName)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
+    file, err := f.Open(entryName)
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
 
-	var yamlCmd YAMLCommandDescription
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&yamlCmd)
-	if err != nil {
-		return nil, err
-	}
+    var yamlCmd YAMLCommandDescription
+    decoder := yaml.NewDecoder(file)
+    err = decoder.Decode(&yamlCmd)
+    if err != nil {
+        return nil, err
+    }
 
-	cmdOptions := []cmds.CommandDescriptionOption{
-		cmds.WithShort(yamlCmd.Short),
-		cmds.WithLong(yamlCmd.Long),
-		cmds.WithFlags(yamlCmd.Flags...),
-		cmds.WithArguments(yamlCmd.Arguments...),
-	}
-	cmdOptions = append(cmdOptions, options...)
+    cmdOptions := []cmds.CommandDescriptionOption{
+        cmds.WithShort(yamlCmd.Short),
+        cmds.WithLong(yamlCmd.Long),
+        cmds.WithFlags(yamlCmd.Flags...),
+        cmds.WithArguments(yamlCmd.Arguments...),
+    }
+    cmdOptions = append(cmdOptions, options...)
 
-	cmd := cmds.NewCommandDescription(yamlCmd.Name, cmdOptions...)
+    cmd := cmds.NewCommandDescription(yamlCmd.Name, cmdOptions...)
 
-	// Here you would implement the actual command logic
-	// For this example, we'll use a simple placeholder function
-	glazedCmd := cmds.NewCommandFromDescription(cmd, func(
-		ctx context.Context,
-		parsedLayers *layers.ParsedLayers,
-		gp glazed.GlobalParameters,
-	) error {
-		fmt.Println("Executing command:", yamlCmd.Name)
-		return nil
-	})
+    glazedCmd := &GenerateCommand{
+        CommandDescription: cmd,
+    }
 
-	return []cmds.Command{glazedCmd}, nil
+    return []cmds.Command{glazedCmd}, nil
 }
 
 func (l *YAMLCommandLoader) IsFileSupported(f fs.FS, fileName string) bool {
-	ext := filepath.Ext(fileName)
-	return ext == ".yaml" || ext == ".yml"
+    ext := filepath.Ext(fileName)
+    return ext == ".yaml" || ext == ".yml"
+}
+
+type GenerateCommand struct {
+    *cmds.CommandDescription
+}
+
+func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+    type GenerateSettings struct {
+        Count   int    `glazed.parameter:"count"`
+        Verbose bool   `glazed.parameter:"verbose"`
+        Prefix  string `glazed.parameter:"prefix"`
+    }
+
+    settings := &GenerateSettings{}
+    if err := parsedLayers.InitializeStruct("default", settings); err != nil {
+        return err
+    }
+
+    for i := 1; i <= settings.Count; i++ {
+        user := types.NewRow(
+            types.MRP("id", i),
+            types.MRP("name", settings.Prefix+"-"+strconv.Itoa(i)),
+            types.MRP("email", "user"+strconv.Itoa(i)+"@example.com"),
+        )
+
+        if settings.Verbose {
+            user.Set("debug", "Verbose mode enabled")
+        }
+
+        if err := gp.AddRow(ctx, user); err != nil {
+            return err
+        }
+    }
+
+    return nil
 }
 ```
 
-This loader now uses a `YAMLCommandDescription` struct that closely mirrors the Glazed `CommandDescription` structure, making it easier to parse YAML files directly into Glazed-compatible structures.
+### Step 7: Using the YAML Command Loader
 
-### 6.3 Load Commands in Your Application
-
-Modify your `main.go` to use the YAML loader:
+Now, let's modify our `main.go` to use the YAML command loader:
 
 ```go
 package main
 
 import (
-	"fmt"
-	"os"
+    "fmt"
+    "os"
 
-	"github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/help"
-	"github.com/spf13/cobra"
+    "github.com/go-go-golems/glazed/pkg/cli"
+    "github.com/go-go-golems/glazed/pkg/cmds"
+    "github.com/go-go-golems/glazed/pkg/help"
+    "github.com/spf13/cobra"
 )
 
 func main() {
-	rootCmd := &cobra.Command{
-		Use:   "glazed-cli",
-		Short: "A CLI application using Glazed",
-	}
+    rootCmd := &cobra.Command{
+        Use:   "glazed-cli",
+        Short: "A CLI application using Glazed",
+    }
 
-	helpSystem := help.NewHelpSystem()
-	helpSystem.SetupCobraRootCommand(rootCmd)
+    helpSystem := help.NewHelpSystem()
+    helpSystem.SetupCobraRootCommand(rootCmd)
 
-	yamlLoader := NewYAMLCommandLoader()
+    yamlLoader := NewYAMLCommandLoader()
 
-	commands, err := yamlLoader.LoadCommands(os.DirFS("."), "commands.yaml", nil, nil)
-	if err != nil {
-		fmt.Println("Error loading commands:", err)
-		os.Exit(1)
-	}
+    commands, err := yamlLoader.LoadCommands(os.DirFS("."), "commands.yaml", nil, nil)
+    if err != nil {
+        fmt.Println("Error loading commands:", err)
+        os.Exit(1)
+    }
 
-	for _, cmd := range commands {
-		cobraCmd, err := cli.BuildCobraCommandFromCommand(cmd)
-		if err != nil {
-			fmt.Println("Error building Cobra command:", err)
-			os.Exit(1)
-		}
-		rootCmd.AddCommand(cobraCmd)
-	}
+    for _, cmd := range commands {
+        cobraCmd, err := cli.BuildCobraCommandFromCommand(cmd)
+        if err != nil {
+            fmt.Println("Error building Cobra command:", err)
+            os.Exit(1)
+        }
+        rootCmd.AddCommand(cobraCmd)
+    }
 
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+    if err := rootCmd.Execute(); err != nil {
+        os.Exit(1)
+    }
 }
 ```
 
+This setup allows you to define your commands in a YAML file and have them loaded and executed by the Glazed framework. The `GenerateCommand` structure is created by the loader based on the YAML configuration, and the command logic is implemented in the `RunIntoGlazeProcessor` method.
 
-## Step 7: Testing Your Command
+## Step 8: Testing Your Command
 
 Run your application and test the `generate` command.
 
 ```bash
-go run main.go generate --count 5 --verbose
+go run main.go generate --count 5 --verbose --prefix Custom
 ```
 
 You should see output similar to:
 
 ```
-User 1: User-1 <user1@example.com>
-User 2: User-2 <user2@example.com>
-User 3: User-3 <user3@example.com>
-User 4: User-4 <user4@example.com>
-User 5: User-5 <user5@example.com>
+User 1: Custom-1 <user1@example.com>
+User 2: Custom-2 <user2@example.com>
+User 3: Custom-3 <user3@example.com>
+User 4: Custom-4 <user4@example.com>
+User 5: Custom-5 <user5@example.com>
 ```
 
 With verbose mode enabled, additional debug information will be included.
 
-## Step 8: Extending the Command
+## Step 9: Extending the Command
 
 Enhance your command by adding more flags, arguments, or integrating with other systems like databases or APIs.
 
