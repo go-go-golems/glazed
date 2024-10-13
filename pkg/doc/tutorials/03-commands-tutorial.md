@@ -177,14 +177,16 @@ func (c *GenerateCommand) RunIntoWriter(ctx context.Context, parsedLayers *layer
 
 ## Step 6: Loading Commands from YAML
 
-Define your command in a YAML file for easier configuration and management.
+Let's create a simple YAML command loader that leverages existing Glazed structures.
 
 ### 6.1 Create `commands.yaml`
 
 ```yaml
----
 name: generate
 short: Generate user records
+long: |
+  This command generates a specified number of user records
+  with optional verbose output and username prefix.
 flags:
   - name: count
     type: int
@@ -199,12 +201,11 @@ flags:
     help: Prefix for usernames
     default: User
 arguments: []
----
 ```
 
 ### 6.2 Create a Simple YAML Command Loader
 
-For this tutorial, we'll create a simple YAML command loader that implements the `CommandLoader` interface. Create a new file called `yaml_loader.go` in your project:
+Create a new file called `yaml_loader.go` in your project:
 
 ```go
 package main
@@ -225,6 +226,14 @@ func NewYAMLCommandLoader() *YAMLCommandLoader {
 	return &YAMLCommandLoader{}
 }
 
+type YAMLCommandDescription struct {
+	Name      string                            `yaml:"name"`
+	Short     string                            `yaml:"short"`
+	Long      string                            `yaml:"long,omitempty"`
+	Flags     []*parameters.ParameterDefinition `yaml:"flags,omitempty"`
+	Arguments []*parameters.ParameterDefinition `yaml:"arguments,omitempty"`
+}
+
 func (l *YAMLCommandLoader) LoadCommands(
 	f fs.FS,
 	entryName string,
@@ -237,41 +246,35 @@ func (l *YAMLCommandLoader) LoadCommands(
 	}
 	defer file.Close()
 
-	var yamlCmd struct {
-		Name   string `yaml:"name"`
-		Short  string `yaml:"short"`
-		Flags  []struct {
-			Name    string      `yaml:"name"`
-			Type    string      `yaml:"type"`
-			Help    string      `yaml:"help"`
-			Default interface{} `yaml:"default"`
-		} `yaml:"flags"`
-	}
-
+	var yamlCmd YAMLCommandDescription
 	decoder := yaml.NewDecoder(file)
 	err = decoder.Decode(&yamlCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	flags := make([]*parameters.ParameterDefinition, len(yamlCmd.Flags))
-	for i, flag := range yamlCmd.Flags {
-		paramType := parameters.ParameterTypeFromString(flag.Type)
-		flags[i] = parameters.NewParameterDefinition(
-			flag.Name,
-			paramType,
-			parameters.WithHelp(flag.Help),
-			parameters.WithDefault(flag.Default),
-		)
-	}
-
-	cmd := cmds.NewCommandDescription(
-		yamlCmd.Name,
+	cmdOptions := []cmds.CommandDescriptionOption{
 		cmds.WithShort(yamlCmd.Short),
-		cmds.WithFlags(flags...),
-	)
+		cmds.WithLong(yamlCmd.Long),
+		cmds.WithFlags(yamlCmd.Flags...),
+		cmds.WithArguments(yamlCmd.Arguments...),
+	}
+	cmdOptions = append(cmdOptions, options...)
 
-	return []cmds.Command{cmd}, nil
+	cmd := cmds.NewCommandDescription(yamlCmd.Name, cmdOptions...)
+
+	// Here you would implement the actual command logic
+	// For this example, we'll use a simple placeholder function
+	glazedCmd := cmds.NewCommandFromDescription(cmd, func(
+		ctx context.Context,
+		parsedLayers *layers.ParsedLayers,
+		gp glazed.GlobalParameters,
+	) error {
+		fmt.Println("Executing command:", yamlCmd.Name)
+		return nil
+	})
+
+	return []cmds.Command{glazedCmd}, nil
 }
 
 func (l *YAMLCommandLoader) IsFileSupported(f fs.FS, fileName string) bool {
@@ -280,17 +283,16 @@ func (l *YAMLCommandLoader) IsFileSupported(f fs.FS, fileName string) bool {
 }
 ```
 
-This simple YAML loader reads the command structure from a YAML file and creates a `CommandDescription` based on the file contents.
+This loader now uses a `YAMLCommandDescription` struct that closely mirrors the Glazed `CommandDescription` structure, making it easier to parse YAML files directly into Glazed-compatible structures.
 
 ### 6.3 Load Commands in Your Application
 
-Now, modify your `main.go` to use the YAML loader:
+Modify your `main.go` to use the YAML loader:
 
 ```go
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -306,21 +308,17 @@ func main() {
 		Short: "A CLI application using Glazed",
 	}
 
-	// Initialize the help system
 	helpSystem := help.NewHelpSystem()
 	helpSystem.SetupCobraRootCommand(rootCmd)
 
-	// Create a YAML loader
 	yamlLoader := NewYAMLCommandLoader()
 
-	// Load commands from YAML
 	commands, err := yamlLoader.LoadCommands(os.DirFS("."), "commands.yaml", nil, nil)
 	if err != nil {
 		fmt.Println("Error loading commands:", err)
 		os.Exit(1)
 	}
 
-	// Add loaded commands to root
 	for _, cmd := range commands {
 		cobraCmd, err := cli.BuildCobraCommandFromCommand(cmd)
 		if err != nil {
@@ -330,14 +328,12 @@ func main() {
 		rootCmd.AddCommand(cobraCmd)
 	}
 
-	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 ```
 
-This setup allows you to define your commands in YAML files and load them dynamically into your application.
 
 ## Step 7: Testing Your Command
 
