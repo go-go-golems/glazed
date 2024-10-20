@@ -371,7 +371,38 @@ template: |
 
   Now, the core part: adding your `glazed` command to the Cobra root command.
   This requires converting the `glazed` command into a Cobra command using the provided utility functions.
-
+  
+  ```go
+  import "github.com/go-go-golems/glazed/pkg/cli"
+  
+  func GetVerbsFromCobraCommand(cmd *cobra.Command) []string 
+  func BuildCobraCommandFromCommandAndFunc(
+     s cmds.Command,
+     run CobraRunFunc,
+     options ...CobraParserOption,
+  ) (*cobra.Command, error)
+  func BuildCobraCommandFromBareCommand(c cmds.BareCommand, options ...CobraParserOption) (*cobra.Command, error)
+  func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, options ...CobraParserOption) (*cobra.Command, error)
+  func BuildCobraCommandAlias(
+     alias *alias.CommandAlias,
+     options ...CobraParserOption,
+  ) (*cobra.Command, error)
+  // findOrCreateParentCommand will create empty commands to anchor the passed in parents.
+  func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.Command
+  func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraParserOption) (*cobra.Command, error)
+  func BuildCobraCommandFromCommand(
+     command cmds.Command,
+     options ...CobraParserOption,
+  ) (*cobra.Command, error)
+  func AddCommandsToRootCommand(
+     rootCmd *cobra.Command,
+     commands []cmds.Command,
+     aliases []*alias.CommandAlias,
+     options ...CobraParserOption,
+  ) error
+  ```
+  
+  
   ```go
   import "github.com/go-go-golems/glazed/pkg/cli"
   
@@ -388,7 +419,7 @@ template: |
     glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function
     cobra.CheckErr(err)
 
-    command, err := cli.BuildCobraCommandFromCommand(glazeCmdInstance)
+    command, err := cli.BuildCobraCommandFromGlazedCommand(glazeCmdInstance)
     cobra.CheckErr(err)
 
     rootCmd.AddCommand(command)
