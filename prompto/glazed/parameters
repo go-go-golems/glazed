@@ -3,7 +3,7 @@
 prompto get glazed/parameter-types
 
 echo "---"
-echo "Here are all the types and method signatures for manipulating parameters and parsed parameters in glazed:"
+echo "Here are all the types and method signatures for manipulating parameters and parsed parameters in glazed (github.com/go-go-golems/glazed is the base package):"
 echo "---"
 echo "package parameters"
 echo
