@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+cat pkg/cmds/middlewares/TUTORIAL.md
+
+echo "---"
+echo
+
+echo "Middlewares api for githu.bomc/go-go-golems/glazed/pkg/cmds/middlewares"
+
+oak go definitions pkg/cmds/middlewares/middlewares.go
+echo
+oak go definitions pkg/cmds/middlewares/profiles.go
+echo
+oak go definitions pkg/cmds/middlewares/update.go
+echo
+oak go definitions pkg/cmds/middlewares/whitelist.go
+echo
+oak go definitions pkg/cmds/middlewares/cobra.go
+
+echo

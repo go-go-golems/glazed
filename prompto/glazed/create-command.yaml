@@ -201,7 +201,8 @@ template: |
   }
   ```
   
-  You can then create a struct to represent those parameters and map them to flags using the glazed.parameter tag:
+  You can then create a struct to represent those parameters and map them to flags using the glazed.parameter tag. The tag has to match
+  the parameter definition name exactly.
   
   ```go
   type ExampleSettings struct {
