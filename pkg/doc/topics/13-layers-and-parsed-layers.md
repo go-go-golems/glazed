@@ -13,10 +13,10 @@ IsTopLevel: false
 ShowPerDefault: true
 SectionType: GeneralTopic
 ---
+
 ## Parameter Layers
 
-Layers in the glazed package provide a way to group and organize parameter definitions. They allow for better structure
-and modularity in command-line interfaces and other parameter-driven systems.
+Layers in the glazed package provide a way to group and organize parameter definitions. They allow for better structure and modularity in command-line interfaces and other parameter-driven systems.
 
 A layer is a logical grouping of related parameter definitions. It consists of several components:
 1. **Name**: A human-readable name for the layer.
@@ -24,6 +24,10 @@ A layer is a logical grouping of related parameter definitions. It consists of s
 3. **Description**: A brief explanation of the layer's purpose.
 4. **Prefix**: An optional prefix for parameter names within the layer.
 5. **Parameter Definitions**: A collection of parameter definitions that belong to this layer.
+
+### Parameter Definitions
+
+A `ParameterDefinition` defines a parameter's properties, including name, type, default value, choices, and required status.
 
 1. **ParameterLayer**: An interface that groups parameter definitions and provides metadata.
 2. **ParameterLayers**: A collection of ParameterLayer objects.
@@ -343,76 +347,62 @@ clonedParsedLayers := parsedLayers.Clone()
 ```
 
 
-## Real-world Usage Example
+## Middleware Integration
 
-Here's an example of how layers are used in a real-world scenario:
+Middlewares in the Glazed framework provide a powerful mechanism to manage parameter values from various sources such as environment variables, configuration files, and command-line arguments. They allow for flexible and modular parameter handling in your applications.
+
+### Key Middleware Concepts
+
+- **Middleware Structure**: Each middleware processes parameters before and/or after calling the next handler in the chain. They work with `ParameterLayers` and `ParsedLayers` to manage parameter definitions and values.
+
+- **Order of Execution**: Middlewares are executed in reverse order of how they're provided. This means the last middleware added is executed first.
+
+### Common Middlewares
+
+1. **SetFromDefaults**: Populates parameters with their default values if no value exists.
+   ```go
+   middleware := middlewares.SetFromDefaults(
+       parameters.WithParseStepSource("defaults"),
+   )
+   ```
+
+2. **UpdateFromEnv**: Loads values from environment variables.
+   ```go
+   middleware := middlewares.UpdateFromEnv("APP", 
+       parameters.WithParseStepSource("env"),
+   )
+   ```
+
+3. **LoadParametersFromFile**: Loads parameters from JSON or YAML files.
+   ```go
+   middleware := middlewares.LoadParametersFromFile("config.yaml",
+       parameters.WithParseStepSource("config"),
+   )
+   ```
+
+4. **ParseFromCobraCommand**: Parses parameter values from a Cobra command, typically used for CLI applications.
+   ```go
+   middleware := middlewares.ParseFromCobraCommand(cmd,
+       parameters.WithParseStepSource("flags"),
+   )
+   ```
+
+### Using Middlewares
+
+To use middlewares, chain them together and execute them with your parameter layers and parsed layers:
+
 
 ```go
-package repo
-
-import (
-    "context"
-    cmds2 "github.com/go-go-golems/clay/pkg/cmds"
-    "github.com/go-go-golems/clay/pkg/repositories"
-    "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
-    "github.com/go-go-golems/glazed/pkg/middlewares"
-    "github.com/go-go-golems/glazed/pkg/settings"
+middlewares.ExecuteMiddlewares(layers, parsedLayers,
+    middlewares.SetFromDefaults(),
+    middlewares.UpdateFromEnv("APP"),
+    middlewares.LoadParametersFromFile("config.yaml"),
+    middlewares.ParseFromCobraCommand(cmd),
 )
-
-type ListCommand struct {
-    *cmds.CommandDescription
-}
-
-func NewListCommand(options ...cmds.CommandDescriptionOption) (*ListCommand, error) {
-    glazeParameterLayer, err := settings.NewGlazedParameterLayers()
-    if err != nil {
-        return nil, err
-    }
-    
-    options = append(options,
-        cmds.WithShort("Import a command directory or individual files into a database"),
-        cmds.WithFlags(),
-        cmds.WithArguments(
-            parameters.NewParameterDefinition(
-                "inputs",
-                parameters.ParameterTypeStringList,
-                parameters.WithHelp("The command directory or individual files to import"),
-                parameters.WithRequired(true),
-            ),
-        ),
-        cmds.WithLayersList(glazeParameterLayer),
-    )
-    
-    return &ListCommand{
-        CommandDescription: cmds.NewCommandDescription("list", options...),
-    }, nil
-}
-
-type ListSettings struct {
-    Inputs []string `glazed.parameter:"inputs"`
-}
-
-func (c *ListCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
-    s := &ListSettings{}
-    d := parsedLayers.GetDefaultParameterLayer()
-    err := d.InitializeStruct(s)
-    if err != nil {
-        return err
-    }
-    
-    // Use the parsed parameters
-    commands, err := repositories.LoadCommandsFromInputs(cmds2.NewRawCommandLoader(), s.Inputs)
-    if err != nil {
-        return err
-    }
-    
-    err2 := cmds2.ListCommandsIntoProcessor(ctx, commands, gp)
-    if err2 != nil {
-        return err2
-    }
-    
-    return nil
-}
 ```
+
+### Advanced Middleware Usage
+
+- **Chaining Middlewares**: Combine multiple middlewares using `Chain` to create a single middleware.
+- **Layer Filtering**: Apply middlewares to specific layers using whitelisting or blacklisting.
+- **Source Tracking**: Use `WithParseStepSource` to track where parameter values originate.

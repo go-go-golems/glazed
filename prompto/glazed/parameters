@@ -5,11 +5,12 @@ prompto get glazed/parameter-types
 echo "---"
 echo "Here are all the types and method signatures for manipulating parameters and parsed parameters in glazed (github.com/go-go-golems/glazed is the base package):"
 echo "---"
-echo "package parameters"
+echo "package github.com/go-go-golems/glazed/pkg/cmds/parameters"
 echo
-oak go definitions pkg/cmds/parameters/parameters.go
+oak go definitions --only-public pkg/cmds/parameters/parameters.go
 echo
-oak go definitions pkg/cmds/parameters/parsed-parameter.go
+oak go definitions --only-public pkg/cmds/parameters/parsed-parameter.go
+
 echo
 echo
 echo "---"
@@ -17,6 +18,6 @@ echo "Here are all the types and method signatures for manipulating layers in gl
 echo "---"
 echo "package layers"
 echo
-oak go definitions pkg/cmds/layers/layer.go
+oak go definitions --only-public pkg/cmds/layers/layer.go
 echo
-oak go definitions pkg/cmds/layers/parsed-layer.go
+oak go definitions --only-public pkg/cmds/layers/parsed-layer.go

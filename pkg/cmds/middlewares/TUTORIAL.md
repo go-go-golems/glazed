@@ -6,6 +6,39 @@ Glazed provides a flexible middleware system for loading parameter values from v
 
 ## Key Concepts
 
+### Middleware Function Signature
+
+A middleware function in the Glazed framework has the following signature:
+
+```go
+type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error
+type Middleware func(next HandlerFunc) HandlerFunc
+```
+
+### Relationship between ParameterLayers and ParsedLayers
+
+- **ParameterLayers**: These are collections of parameter definitions. They define the structure and metadata of parameters, such as their names, types, and default values.
+
+- **ParsedLayers**: These are collections of parsed parameter values. They store the actual values obtained from various sources like command-line arguments, environment variables, or configuration files.
+
+Middlewares operate on these two structures to manage and transform parameter values.
+
+### Purpose of Middlewares
+
+Middlewares in the Glazed framework serve several purposes:
+
+1. **Modular Parameter Handling**: They allow for modular and reusable parameter processing logic. Each middleware can focus on a specific source or transformation of parameter values.
+
+2. **Logging and Tracking**: Each middleware can log its actions, providing a trace of how parameter values were derived.
+
+### Adding Information to Parsed Parameters
+
+Each middleware can add information to the parsed parameters by:
+
+- Setting default values if no value exists.
+- Overriding existing values with those from a more specific source.
+- Logging the source and transformation steps for each parameter value.
+
 ### Middleware Structure
 
 Each middleware follows a consistent pattern:
