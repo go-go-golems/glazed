@@ -28,7 +28,7 @@ func WithTableMiddleware(tm ...TableMiddleware) TableProcessorOption {
 	}
 }
 
-func WIthPrependTableMiddleware(tm ...TableMiddleware) TableProcessorOption {
+func WithPrependTableMiddleware(tm ...TableMiddleware) TableProcessorOption {
 	return func(p *TableProcessor) {
 		p.TableMiddlewares = append(tm, p.TableMiddlewares...)
 	}

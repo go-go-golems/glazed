@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 
+echo "---"
 glaze help parameter-layers-and-parsed-layers 2>&1
 
+echo 
+echo "---"
+glaze help parsing-parameters 2>&1
+
 echo
-echo
+echo "---"
 
 prompto get glazed/parameters
+
+echo
+echo "---"
+
+prompto get glazed/middlewares

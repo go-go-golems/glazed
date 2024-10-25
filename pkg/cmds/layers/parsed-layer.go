@@ -3,7 +3,7 @@ package layers
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
-	"github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 // ParsedLayer is the result of "parsing" input data using a ParameterLayer
@@ -121,6 +121,23 @@ func (p *ParsedLayers) Clone() *ParsedLayers {
 		ret.Set(k, v.Clone())
 	})
 	return ret
+}
+
+func (p *ParsedLayers) Merge(other *ParsedLayers) {
+	p.ForEach(func(k string, v *ParsedLayer) {
+		o, ok := other.Get(k)
+		if ok {
+			v.MergeParameters(o)
+		}
+	})
+	other.ForEach(func(k string, v *ParsedLayer) {
+		o_, ok := p.Get(k)
+		if !ok {
+			p.Set(k, v)
+		} else {
+			o_.MergeParameters(v)
+		}
+	})
 }
 
 func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {

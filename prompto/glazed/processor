@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+echo ---
+echo
+
+echo "package github.com/go-go-golems/glazed/pkg/types"
+echo
+
+oak go definitions --only-public pkg/types --recurse
+
+echo 
+echo "---"
+echo
+echo "package github.com/go-go-golems/glazed/pkg/middlewares"
+echo
+oak go definitions --only-public pkg/middlewares/processor.go
