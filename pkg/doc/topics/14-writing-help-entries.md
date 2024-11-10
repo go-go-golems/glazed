@@ -49,8 +49,6 @@ ShowPerDefault: true # Whether this section should be shown by default
 SectionType: GeneralTopic # The type of the section
 ---
 
-# The main content of the section
-
 This is where you can write the full Markdown content for the section.
 ```
 
@@ -68,6 +66,8 @@ Let's go through each of the fields in the YAML frontmatter:
 10. **SectionType**: The type of the section (GeneralTopic, Example, Application, or Tutorial).
 
 After the YAML frontmatter, you can write the full Markdown content for the section. This content will be displayed in the help output.
+
+Note that there is no toplevel "#" title, because that one is added by the help system.
 
 ## Organizing Sections
 
