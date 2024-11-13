@@ -1,0 +1,18 @@
+# v0.5.21
+
+## Add Lua integration for executing Glazed commands from Lua scripts
+
+This release introduces Lua integration for Glazed, allowing users to
+execute Glazed commands directly from Lua scripts. Key features include:
+
+- Execute Glazed commands (GlazeCommand, BareCommand, WriterCommand) in Lua
+- Convert between Lua and Glazed data structures
+- Parse Lua tables into Glazed parameter layers
+- Comprehensive documentation and tutorials for Lua integration
+
+To get started, refer to the new Lua integration tutorial and
+documentation using `glaze help lua` and `glaze help lua-tutorial`.
+
+This feature opens up new possibilities for automating and
+customizing Glazed command execution within Lua scripts.
+
