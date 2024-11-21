@@ -2,9 +2,11 @@ package files
 
 import (
 	"encoding/json"
-	"gopkg.in/yaml.v3"
+	"fmt"
 	"io"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 func LoadJSONFile(path string, target interface{}) error {
@@ -46,4 +48,19 @@ func ConcatFiles(filePaths ...string) (io.Reader, error) {
 
 	// Combine all readers into a single MultiReader.
 	return io.MultiReader(readers...), nil
+}
+
+// CreateTemporaryFile creates a new temporary file with the given prefix and name.
+// The file will be created in the system's temporary directory.
+// The caller is responsible for closing the file when done.
+func CreateTemporaryFile(prefix, name string) (*os.File, error) {
+	// Ensure the temporary directory exists
+	tmpDir := os.TempDir()
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+
+	// Create a unique filename using the prefix and name
+	pattern := fmt.Sprintf("%s_%s_*.tmp", prefix, name)
+	return os.CreateTemp(tmpDir, pattern)
 }

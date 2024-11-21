@@ -2,11 +2,12 @@ package parameters
 
 import (
 	"encoding/json"
-	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
-	"github.com/pkg/errors"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	reflect2 "github.com/go-go-golems/glazed/pkg/helpers/reflect"
+	"github.com/pkg/errors"
 )
 
 type tagOptions struct {
@@ -281,6 +282,7 @@ func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) 
 		return false, nil
 	}
 
+	//exhaustive:ignore
 	switch dst.Kind() {
 	case reflect.String:
 		dst.SetString(fd.Content)
@@ -360,15 +362,6 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 	}
 
 	return nil
-}
-
-func isFileData(value interface{}) bool {
-	switch value.(type) {
-	case FileData, *FileData:
-		return true
-	default:
-		return false
-	}
 }
 
 // StructToDataMap transforms a struct into a map[string]interface{} based on the `glazed.parameter` annotations.
