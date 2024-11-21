@@ -244,9 +244,73 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 	return nil
 }
 
-func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, fromJson bool) error {
-	valueType := reflect.TypeOf(value)
+func (p *ParsedParameters) handleFromJSON(dst reflect.Value, value interface{}) error {
+	// The destination must be a pointer for JSON unmarshaling
+	if dst.Kind() != reflect.Ptr {
+		return errors.Errorf("from_json tag can only be used on pointer fields")
+	}
 
+	jsonData, ok := value.([]byte)
+	if !ok {
+		str, ok := value.(string)
+		if !ok {
+			// Try to marshal the value to JSON if it's not a string or []byte
+			var err error
+			jsonData, err = json.Marshal(value)
+			if err != nil {
+				return errors.Errorf("failed to marshal value of type %T to JSON: %v", value, err)
+			}
+		} else {
+			jsonData = []byte(str)
+		}
+	}
+	if err := json.Unmarshal(jsonData, dst.Interface()); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal JSON")
+	}
+	return nil
+}
+
+func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) (bool, error) {
+	var fd *FileData
+	switch v := value.(type) {
+	case FileData:
+		fd = &v
+	case *FileData:
+		fd = v
+	default:
+		return false, nil
+	}
+
+	switch dst.Kind() {
+	case reflect.String:
+		dst.SetString(fd.Content)
+	case reflect.Slice:
+		if dst.Type().Elem().Kind() == reflect.Uint8 {
+			dst.SetBytes(fd.RawContent)
+		} else {
+			return true, errors.Errorf("cannot set FileData to slice of type %v", dst.Type().Elem().Kind())
+		}
+	default:
+		if fd.ParsedContent != nil {
+			dstVal := reflect.ValueOf(fd.ParsedContent)
+			if dstVal.Type().AssignableTo(dst.Type()) {
+				dst.Set(dstVal)
+				return true, nil
+			}
+			// Try JSON marshaling as a fallback
+			jsonData, err := json.Marshal(fd.ParsedContent)
+			if err != nil {
+				return true, errors.Wrapf(err, "failed to marshal ParsedContent to JSON")
+			}
+			if err := json.Unmarshal(jsonData, dst.Addr().Interface()); err != nil {
+				return true, errors.Wrapf(err, "failed to unmarshal ParsedContent as JSON")
+			}
+		}
+	}
+	return true, nil
+}
+
+func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, fromJson bool) error {
 	// Handle pointer destination
 	wasPointer := false
 	if dst.Kind() == reflect.Ptr {
@@ -255,38 +319,32 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 			newValue := reflect.New(dst.Type().Elem())
 			dst.Set(newValue)
 		}
-
-		// The destination is now the value pointed to by the pointer
 		dst = dst.Elem()
 	}
 
-	// Handle JSON unmarshalling
+	// First try to handle FileData if the value is of that type
+	if handled, err := p.handleFileData(dst, value); err != nil {
+		return err
+	} else if handled {
+		return nil
+	}
+
+	// If fromJson is true, handle JSON unmarshaling
 	if fromJson {
 		if !wasPointer {
 			return errors.Errorf("from_json tag can only be used on pointer fields")
 		}
-		jsonData, ok := value.([]byte)
-		if !ok {
-			str, ok := value.(string)
-			if !ok {
-				return errors.Errorf("expected string or []byte for JSON unmarshalling, got %T", value)
-			}
-			jsonData = []byte(str)
-		}
-		if err := json.Unmarshal(jsonData, dst.Addr().Interface()); err != nil {
-			return errors.Wrapf(err, "failed to unmarshal JSON")
-		}
-		return nil
+		return p.handleFromJSON(dst.Addr(), value)
 	}
 
 	// Direct assignment if types are compatible
-	if dst.Type() == valueType {
+	if dst.Type() == reflect.TypeOf(value) {
 		dst.Set(reflect.ValueOf(value))
 		return nil
 	}
 
-	// if valueType is a pointer to a value of dst.Type(), we can assign it directly
-	if valueType.Kind() == reflect.Ptr && valueType.Elem() == dst.Type() {
+	// if value is a pointer to a value of dst.Type(), we can assign it directly
+	if reflect.TypeOf(value).Kind() == reflect.Ptr && reflect.TypeOf(value).Elem() == dst.Type() {
 		dst.Set(reflect.ValueOf(value).Elem())
 		return nil
 	}
@@ -302,6 +360,15 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 	}
 
 	return nil
+}
+
+func isFileData(value interface{}) bool {
+	switch value.(type) {
+	case FileData, *FileData:
+		return true
+	default:
+		return false
+	}
 }
 
 // StructToDataMap transforms a struct into a map[string]interface{} based on the `glazed.parameter` annotations.
