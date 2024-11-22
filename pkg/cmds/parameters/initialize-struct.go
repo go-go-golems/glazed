@@ -2,6 +2,7 @@ package parameters
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -245,6 +246,38 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 	return nil
 }
 
+// sanitizeMapForJSON converts map[interface{}]interface{} to map[string]interface{} recursively
+// and handles other types that might need conversion for JSON marshaling
+func sanitizeMapForJSON(v interface{}) interface{} {
+	switch v := v.(type) {
+	case map[interface{}]interface{}:
+		result := make(map[string]interface{})
+		for k, val := range v {
+			// Convert key to string
+			strKey := fmt.Sprintf("%v", k)
+			// Recursively sanitize the value
+			result[strKey] = sanitizeMapForJSON(val)
+		}
+		return result
+	case map[string]interface{}:
+		result := make(map[string]interface{})
+		for k, val := range v {
+			// Recursively sanitize the value
+			result[k] = sanitizeMapForJSON(val)
+		}
+		return result
+	case []interface{}:
+		// Handle slices by recursively sanitizing each element
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = sanitizeMapForJSON(val)
+		}
+		return result
+	default:
+		return v
+	}
+}
+
 func (p *ParsedParameters) handleFromJSON(dst reflect.Value, value interface{}) error {
 	// The destination must be a pointer for JSON unmarshaling
 	if dst.Kind() != reflect.Ptr {
@@ -294,13 +327,16 @@ func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) 
 		}
 	default:
 		if fd.ParsedContent != nil {
-			dstVal := reflect.ValueOf(fd.ParsedContent)
+			// First try direct assignment
+			dstVal := reflect.ValueOf(sanitizeMapForJSON(fd.ParsedContent))
 			if dstVal.Type().AssignableTo(dst.Type()) {
 				dst.Set(dstVal)
 				return true, nil
 			}
+
 			// Try JSON marshaling as a fallback
-			jsonData, err := json.Marshal(fd.ParsedContent)
+			sanitizedContent := sanitizeMapForJSON(fd.ParsedContent)
+			jsonData, err := json.Marshal(sanitizedContent)
 			if err != nil {
 				return true, errors.Wrapf(err, "failed to marshal ParsedContent to JSON")
 			}

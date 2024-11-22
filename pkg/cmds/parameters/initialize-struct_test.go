@@ -1,9 +1,10 @@
 package parameters_test
 
 import (
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters" // Replace with the actual package path
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -717,4 +718,66 @@ func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot set FileData to slice of type int")
+}
+
+// TestInitializeStructWithFileDataContainingInterfaceMap tests handling FileData with map[interface{}]interface{}
+func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
+	type TestStruct struct {
+		Config map[string]interface{} `glazed.parameter:"config"`
+	}
+
+	// Create a map[interface{}]interface{} with nested maps and slices
+	inputMap := map[interface{}]interface{}{
+		"key1": "value1",
+		123:    "value2",
+		true:   "value3",
+		"nested": map[interface{}]interface{}{
+			"subkey": []interface{}{
+				map[interface{}]interface{}{"arrayKey": "arrayValue"},
+				"simple string",
+				42,
+			},
+		},
+	}
+
+	fileData := &parameters.FileData{
+		ParsedContent: inputMap,
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	require.NotNil(t, testStruct.Config)
+
+	// Verify the map was properly sanitized
+	assert.Equal(t, "value1", testStruct.Config["key1"])
+	assert.Equal(t, "value2", testStruct.Config["123"])
+	assert.Equal(t, "value3", testStruct.Config["true"])
+
+	// Verify nested structures
+	nested, ok := testStruct.Config["nested"].(map[string]interface{})
+	require.True(t, ok)
+
+	subArray, ok := nested["subkey"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, subArray, 3)
+
+	// Check the nested map in the array
+	arrayMap, ok := subArray[0].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "arrayValue", arrayMap["arrayKey"])
+
+	// Check other array values
+	assert.Equal(t, "simple string", subArray[1])
+	assert.Equal(t, int(42), subArray[2]) // JSON numbers are float64
 }
