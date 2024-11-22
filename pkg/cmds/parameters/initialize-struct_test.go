@@ -1,9 +1,10 @@
 package parameters_test
 
 import (
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters" // Replace with the actual package path
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -507,4 +508,276 @@ func TestStructToDataMapWithNonStructInput(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Equal(t, "input must be a struct or a pointer to a struct", err.Error())
+}
+
+// TestInitializeStructWithJSONFromStruct tests initializing a struct field from a struct value
+func TestInitializeStructWithJSONFromStruct(t *testing.T) {
+	type Config struct {
+		Host string `json:"host"`
+		Port int    `json:"port"`
+	}
+
+	type TestStructWithJSONPtr struct {
+		Config *Config `glazed.parameter:"config,from_json"`
+	}
+
+	inputConfig := Config{
+		Host: "localhost",
+		Port: 8080,
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			inputConfig),
+	)
+
+	testStruct := &TestStructWithJSONPtr{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	require.NotNil(t, testStruct.Config)
+	assert.Equal(t, "localhost", testStruct.Config.Host)
+	assert.Equal(t, 8080, testStruct.Config.Port)
+}
+
+// TestInitializeStructWithJSONFromMap tests initializing a struct field from a map value
+func TestInitializeStructWithJSONFromMap(t *testing.T) {
+	type Config struct {
+		Settings map[string]interface{} `json:"settings"`
+	}
+
+	type TestStructWithJSONPtr struct {
+		Config *Config `glazed.parameter:"config,from_json"`
+	}
+
+	inputMap := map[string]interface{}{
+		"settings": map[string]interface{}{
+			"debug": true,
+			"rate":  123.45,
+		},
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			inputMap),
+	)
+
+	testStruct := &TestStructWithJSONPtr{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	require.NotNil(t, testStruct.Config)
+	require.NotNil(t, testStruct.Config.Settings)
+	assert.Equal(t, true, testStruct.Config.Settings["debug"])
+	assert.Equal(t, 123.45, testStruct.Config.Settings["rate"])
+}
+
+// TestInitializeStructWithJSONFromUnmarshallable tests initializing a struct field from an unmarshallable value
+func TestInitializeStructWithJSONFromUnmarshallable(t *testing.T) {
+	type TestStructWithJSONPtr struct {
+		Config *struct{} `glazed.parameter:"config,from_json"`
+	}
+
+	// Create a channel which cannot be marshaled to JSON
+	ch := make(chan int)
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			ch),
+	)
+
+	testStruct := &TestStructWithJSONPtr{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to marshal value of type chan int to JSON")
+}
+
+// TestInitializeStructWithFileDataToString tests initializing a string field from FileData
+func TestInitializeStructWithFileDataToString(t *testing.T) {
+	type TestStruct struct {
+		Content string `glazed.parameter:"content"`
+	}
+
+	fileData := &parameters.FileData{
+		Content: "test content",
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"content",
+				parameters.ParameterTypeString),
+			"content",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, "test content", testStruct.Content)
+}
+
+// TestInitializeStructWithFileDataToBytes tests initializing a []byte field from FileData
+func TestInitializeStructWithFileDataToBytes(t *testing.T) {
+	type TestStruct struct {
+		RawContent []byte `glazed.parameter:"raw_content"`
+	}
+
+	fileData := &parameters.FileData{
+		RawContent: []byte("test content"),
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"raw_content",
+				parameters.ParameterTypeString),
+			"raw_content",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, []byte("test content"), testStruct.RawContent)
+}
+
+// TestInitializeStructWithFileDataToParsedContent tests initializing a struct field from FileData's ParsedContent
+func TestInitializeStructWithFileDataToParsedContent(t *testing.T) {
+	type Config struct {
+		Host string `json:"host"`
+		Port int    `json:"port"`
+	}
+
+	type TestStruct struct {
+		Config Config `glazed.parameter:"config"`
+	}
+
+	parsedConfig := Config{
+		Host: "localhost",
+		Port: 8080,
+	}
+
+	fileData := &parameters.FileData{
+		ParsedContent: parsedConfig,
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, "localhost", testStruct.Config.Host)
+	assert.Equal(t, 8080, testStruct.Config.Port)
+}
+
+// TestInitializeStructWithFileDataToIncompatibleType tests initializing an incompatible field type from FileData
+func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
+	type TestStruct struct {
+		Content []int `glazed.parameter:"content"` // incompatible with FileData.RawContent
+	}
+
+	fileData := &parameters.FileData{
+		RawContent: []byte("test content"),
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"content",
+				parameters.ParameterTypeString),
+			"content",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot set FileData to slice of type int")
+}
+
+// TestInitializeStructWithFileDataContainingInterfaceMap tests handling FileData with map[interface{}]interface{}
+func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
+	type TestStruct struct {
+		Config map[string]interface{} `glazed.parameter:"config"`
+	}
+
+	// Create a map[interface{}]interface{} with nested maps and slices
+	inputMap := map[interface{}]interface{}{
+		"key1": "value1",
+		123:    "value2",
+		true:   "value3",
+		"nested": map[interface{}]interface{}{
+			"subkey": []interface{}{
+				map[interface{}]interface{}{"arrayKey": "arrayValue"},
+				"simple string",
+				42,
+			},
+		},
+	}
+
+	fileData := &parameters.FileData{
+		ParsedContent: inputMap,
+	}
+
+	parsedParams := parameters.NewParsedParameters(
+		parameters.WithParsedParameter(
+			parameters.NewParameterDefinition(
+				"config",
+				parameters.ParameterTypeString),
+			"config",
+			fileData),
+	)
+
+	testStruct := &TestStruct{}
+	err := parsedParams.InitializeStruct(testStruct)
+
+	require.NoError(t, err)
+	require.NotNil(t, testStruct.Config)
+
+	// Verify the map was properly sanitized
+	assert.Equal(t, "value1", testStruct.Config["key1"])
+	assert.Equal(t, "value2", testStruct.Config["123"])
+	assert.Equal(t, "value3", testStruct.Config["true"])
+
+	// Verify nested structures
+	nested, ok := testStruct.Config["nested"].(map[string]interface{})
+	require.True(t, ok)
+
+	subArray, ok := nested["subkey"].([]interface{})
+	require.True(t, ok)
+	require.Len(t, subArray, 3)
+
+	// Check the nested map in the array
+	arrayMap, ok := subArray[0].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "arrayValue", arrayMap["arrayKey"])
+
+	// Check other array values
+	assert.Equal(t, "simple string", subArray[1])
+	assert.Equal(t, int(42), subArray[2]) // JSON numbers are float64
 }
