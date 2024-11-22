@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -17,8 +20,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
-	"os"
-	"strings"
 )
 
 type ExtensionFlag struct {
@@ -207,9 +208,14 @@ func splitByHeading(ctx context.Context, md goldmark.Markdown, s []byte, gp midd
 	// fuck my brain can't deal with stacks right now lol, i need paper
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
+			text := ""
+			for i := 0; i < node.Lines().Len(); i++ {
+				line := node.Lines().At(i)
+				text += string(line.Value(s)) + "\n"
+			}
 			elt := types.NewRow(
 				types.MRP("kind", node.Kind().String()),
-				types.MRP("text", string(node.Text(s))),
+				types.MRP("text", text),
 			)
 			switch node.Kind() {
 			case ast.KindHeading:
@@ -283,15 +289,17 @@ func simpleLinearize(ctx context.Context, md goldmark.Markdown, s []byte, gp mid
 	err := ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
 			nodeKind := node.Kind().String()
-			nodeText := string(node.Text(s))
+			text := ""
+			for i := 0; i < node.Lines().Len(); i++ {
+				line := node.Lines().At(i)
+				text += string(line.Value(s)) + "\n"
+			}
+			nodeText := text
 			if nodeKind == "FencedCodeBlock" {
 				block := node.(*ast.FencedCodeBlock)
 				language := string(block.Language(s))
 				_ = language
-				info := string(block.Info.Text(s))
-				_ = info
 				lines := node.Lines()
-				_ = lines
 				l := lines.Len()
 				var s_ strings.Builder
 				for i := 0; i < l; i++ {
