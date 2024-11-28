@@ -549,12 +549,12 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 		if !ok {
 			v_, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
 			}
 
 			_, ok = cast.CastStringMap[string, interface{}](v_)
 			if !ok {
-				return errors.Errorf("Value for parameter %s is not a key value list: %v", p.Name, v)
+				return errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
 			}
 		}
 
