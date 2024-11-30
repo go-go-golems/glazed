@@ -3,13 +3,15 @@ package yaml
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
 )
 
 type OutputFormatter struct {
@@ -21,6 +23,17 @@ type OutputFormatter struct {
 
 func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
 	m := types.RowToMap(row)
+
+	// Convert *time.Time to time.Time for YAML encoding, otherwise the yaml lib crashes
+	for k, v := range m {
+		if timePtr, ok := v.(*time.Time); ok {
+			if timePtr != nil {
+				m[k] = *timePtr
+			} else {
+				delete(m, k)
+			}
+		}
+	}
 
 	encoder := yaml.NewEncoder(w)
 	err := encoder.Encode(m)
