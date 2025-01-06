@@ -1,9 +1,11 @@
 package parameters
 
 import (
+	"encoding/json"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
-	"github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type ParsedParameter struct {
@@ -316,4 +318,14 @@ func (p *ParsedParameters) ToInterfaceMap() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return ret, nil
+}
+
+// MarshalYAML implements yaml.Marshaler for ParsedParameters
+func (p *ParsedParameters) MarshalYAML() (interface{}, error) {
+	return ToSerializableParsedParameters(p), nil
+}
+
+// MarshalJSON implements json.Marshaler for ParsedParameters
+func (p *ParsedParameters) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ToSerializableParsedParameters(p))
 }

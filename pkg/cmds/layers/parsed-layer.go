@@ -1,6 +1,8 @@
 package layers
 
 import (
+	"encoding/json"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -237,4 +239,24 @@ func (p *ParsedLayers) ForEachE(fn func(k string, v *ParsedLayer) error) error {
 		}
 	}
 	return nil
+}
+
+// MarshalYAML implements yaml.Marshaler for ParsedLayer
+func (pl *ParsedLayer) MarshalYAML() (interface{}, error) {
+	return ToSerializableParsedLayer(pl), nil
+}
+
+// MarshalJSON implements json.Marshaler for ParsedLayer
+func (pl *ParsedLayer) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ToSerializableParsedLayer(pl))
+}
+
+// MarshalYAML implements yaml.Marshaler for ParsedLayers
+func (pl *ParsedLayers) MarshalYAML() (interface{}, error) {
+	return ToSerializableParsedLayers(pl), nil
+}
+
+// MarshalJSON implements json.Marshaler for ParsedLayers
+func (pl *ParsedLayers) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ToSerializableParsedLayers(pl))
 }

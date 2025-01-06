@@ -1,6 +1,8 @@
 package layers
 
 import (
+	"encoding/json"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/spf13/cobra"
@@ -189,4 +191,14 @@ func (pl *ParameterLayers) UpdateWithDefaults(parsedLayers *ParsedLayers, option
 	})
 
 	return err
+}
+
+// MarshalYAML implements yaml.Marshaler interface
+func (pl *ParameterLayers) MarshalYAML() (interface{}, error) {
+	return LayersToSerializable(pl), nil
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (pl *ParameterLayers) MarshalJSON() ([]byte, error) {
+	return json.Marshal(LayersToSerializable(pl))
 }
