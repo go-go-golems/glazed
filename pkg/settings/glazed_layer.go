@@ -2,6 +2,8 @@ package settings
 
 import (
 	_ "embed"
+	"io"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -12,7 +14,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 // Helpers for cobra commands
@@ -44,6 +45,7 @@ func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
 		TemplateParameterLayer:      g.TemplateParameterLayer.Clone().(*TemplateParameterLayer),
 		JqParameterLayer:            g.JqParameterLayer.Clone().(*JqParameterLayer),
 		SortParameterLayer:          g.SortParameterLayer.Clone().(*SortParameterLayer),
+		SkipLimitParameterLayer:     g.SkipLimitParameterLayer.Clone().(*SkipLimitParameterLayer),
 	}
 }
 
