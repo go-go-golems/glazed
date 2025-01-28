@@ -1,10 +1,11 @@
 package middlewares
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"os"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
 // SetFromDefaults is a middleware that sets default values from parameter definitions.

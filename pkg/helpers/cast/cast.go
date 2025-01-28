@@ -1,8 +1,10 @@
 package cast
 
 import (
-	"github.com/pkg/errors"
+	"math"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 type Number interface {
@@ -197,6 +199,16 @@ func CastNumberInterfaceToInt[To SignedInt | UnsignedInt](i interface{}) (To, bo
 		return To(i), true
 	case uintptr:
 		return To(i), true
+	case float32:
+		if math.Trunc(float64(i)) != float64(i) {
+			return 0, false
+		}
+		return To(int64(i)), true
+	case float64:
+		if math.Trunc(i) != i {
+			return 0, false
+		}
+		return To(int64(i)), true
 	default:
 		return 0, false
 	}
@@ -297,4 +309,39 @@ func CastInterfaceToFloatList[To FloatNumber](i interface{}) ([]To, bool) {
 func InterfaceAddr[T any](t T) *interface{} {
 	t_ := interface{}(t)
 	return &t_
+}
+
+func CastNumberInterfaceToIntWithTruncation[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
+	switch i := i.(type) {
+	case To:
+		return i, true
+	case int:
+		return To(i), true
+	case int8:
+		return To(i), true
+	case int16:
+		return To(i), true
+	case int32:
+		return To(i), true
+	case int64:
+		return To(i), true
+	case uint:
+		return To(i), true
+	case uint8:
+		return To(i), true
+	case uint16:
+		return To(i), true
+	case uint32:
+		return To(i), true
+	case uint64:
+		return To(i), true
+	case uintptr:
+		return To(i), true
+	case float32:
+		return To(int64(i)), true
+	case float64:
+		return To(int64(i)), true
+	default:
+		return 0, false
+	}
 }

@@ -94,13 +94,37 @@ In this example, the `docs` directory contains all the help sections, organized 
 
 ## Loading Sections into the Help System
 
-To load the Markdown sections into the Glazed help system, you can use the `AddDocToHelpSystem` function provided in the `glazed/pkg/doc` package:
+To load the Markdown sections into the Glazed help system, you need to implement a way to load your documentation files. The recommended approach is to create a `doc` package in your application with an `AddDocToHelpSystem` function that uses Go's embed functionality.
+
+Here's how to set it up:
+
+1. Create a `doc` package in your application with a `doc.go` file:
+
+```go
+package doc
+
+import (
+    "embed"
+    "github.com/go-go-golems/glazed/pkg/help"
+)
+
+//go:embed *
+var docFS embed.FS
+
+func AddDocToHelpSystem(helpSystem *help.HelpSystem) error {
+    return helpSystem.LoadSectionsFromFS(docFS, ".")
+}
+```
+
+2. Place your Markdown documentation files in the same directory as `doc.go` or in subdirectories.
+
+3. Use the `AddDocToHelpSystem` function in your application:
 
 ```go
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/doc"
+    "yourapp/pkg/doc"  // Import your doc package
     "github.com/go-go-golems/glazed/pkg/help"
 )
 
@@ -115,7 +139,7 @@ func main() {
 }
 ```
 
-This function will recursively load all Markdown files from the `docs` directory (or any other directory you specify) and add them to the `HelpSystem`.
+The embed directive will include all files in the doc package directory in your binary, making them available at runtime.
 
 ## Accessing Help Sections
 

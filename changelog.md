@@ -27,4 +27,11 @@ Added ability to serialize parsed layers to YAML/JSON format, combining layer de
 - Added SerializableParsedLayers struct for serializing collections of parsed layers
 - Added conversion functions for ParsedLayer and ParsedLayers
 - Implemented YAML and JSON marshaling for ParsedLayer and ParsedLayers
-- Included both layer definitions and parsed parameters in serialized output 
+- Included both layer definitions and parsed parameters in serialized output
+
+## Documentation Clarification for Help System Implementation
+
+Clarified the documentation about implementing AddDocToHelpSystem, explaining the recommended approach of creating a doc package with embedded documentation files.
+
+- Updated help entry to show how to properly implement AddDocToHelpSystem in user's own package
+- Added example of doc.go implementation with embed functionality 
