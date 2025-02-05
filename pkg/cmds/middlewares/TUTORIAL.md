@@ -137,6 +137,66 @@ middleware := middlewares.GatherFlagsFromViper(
 )
 ```
 
+### 6. Default Map Updates
+
+Set values only if they haven't been set already:
+
+```go
+middleware := middlewares.UpdateFromMapAsDefault(values,
+    parameters.WithParseStepSource("defaults"),
+)
+```
+
+### 7. Layer Manipulation
+
+Glazed provides several middlewares for manipulating parsed layers directly:
+
+#### Replacing Layers
+
+Replace a single layer:
+```go
+// Replace the "config" layer with a new one
+middleware := middlewares.ReplaceParsedLayer("config", newLayer)
+```
+
+Replace multiple layers at once:
+```go
+// Replace multiple layers with new ones
+middleware := middlewares.ReplaceParsedLayers(newLayers)
+```
+
+#### Merging Layers
+
+Merge a single layer:
+```go
+// Merge a layer into the "config" layer
+middleware := middlewares.MergeParsedLayer("config", layerToMerge)
+```
+
+Merge multiple layers:
+```go
+// Merge multiple layers into existing ones
+middleware := middlewares.MergeParsedLayers(layersToMerge)
+```
+
+These layer manipulation middlewares are useful when you need to:
+- Override configuration from different sources
+- Combine multiple configuration profiles
+- Apply temporary parameter changes
+- Handle dynamic configuration updates
+
+Example combining multiple operations:
+```go
+middlewares.ExecuteMiddlewares(layers, parsedLayers,
+    // Replace base configuration
+    middlewares.ReplaceParsedLayer("base", baseConfig),
+    // Merge environment-specific settings
+    middlewares.MergeParsedLayer("env", envSettings),
+    // Apply user preferences
+    middlewares.MergeParsedLayer("user", userPrefs),
+)
+```
+
 ## Advanced Usage
 
 ### 1. Chaining Middlewares
@@ -183,16 +243,6 @@ values := map[string]map[string]interface{}{
 
 middleware := middlewares.UpdateFromMap(values,
     parameters.WithParseStepSource("map"),
-)
-```
-
-### 4. Default Map Updates
-
-Set values only if they haven't been set already:
-
-```go
-middleware := middlewares.UpdateFromMapAsDefault(values,
-    parameters.WithParseStepSource("defaults"),
 )
 ```
 
