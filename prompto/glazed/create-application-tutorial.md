@@ -1,306 +1,179 @@
 # Building a Full Glazed Application
 
-This tutorial builds upon the [Creating a New Command](create-command-tutorial.md) guide and shows how to create a complete application with multiple commands, custom layers, and middleware. We'll use a Slack CLI application as an example.
+This tutorial explains how to build a complete application using the glazed framework. It focuses on best practices and architectural patterns, building upon these core concepts:
+- [Creating Individual Commands](create-command-tutorial.md) - Understanding basic command creation
+- [Command Description Structure](command-description.md) - Deep dive into command metadata and configuration
+- [Working with Rows and Middlewares](TUTORIAL.md) - Understanding data processing in glazed
 
-## 1. Project Structure
+## 1. Best Practices
 
-A typical glazed application has the following structure:
+### 1.1 Layer Design
+
+1. **Single Responsibility**
+   - Each layer should handle one aspect of configuration (e.g., authentication, database, output formatting)
+   - Keep parameter definitions focused and cohesive
+   - Avoid mixing unrelated parameters in the same layer
+
+2. **Clear Naming**
+   - Use descriptive slugs that indicate the layer's purpose (e.g., "auth", "db", "output")
+   - Follow consistent naming patterns across layers
+   - Document the purpose of each layer
+
+3. **Parameter Organization**
+   - Group related parameters together
+   - Use clear, descriptive parameter names
+   - Provide helpful descriptions and defaults
+   - Consider validation requirements
+
+4. **Reusability**
+   - Design layers to be reusable across commands
+   - Extract common parameters into shared layers
+   - Use composition to combine layers
+
+### 1.2 Middleware Organization
+
+1. **Composability**
+   - Keep middleware functions small and focused
+   - Chain middleware in a logical order
+   - Make dependencies explicit
+   - Allow for easy insertion/removal of middleware
+
+2. **Error Handling**
+   - Provide clear error messages
+   - Handle edge cases gracefully
+   - Propagate errors with context
+   - Log appropriate debugging information
+
+3. **Performance**
+   - Consider the order of middleware execution
+   - Avoid unnecessary processing
+   - Cache results when appropriate
+   - Profile and optimize hot paths
+
+4. **Configuration**
+   - Use whitelisting to control layer access
+   - Support multiple configuration sources
+   - Handle defaults appropriately
+   - Validate configuration early
+
+### 1.3 Command Structure
+
+1. **Organization**
+   - Group related commands together
+   - Use a consistent hierarchy
+   - Keep command groups focused
+   - Consider command dependencies
+
+2. **Documentation**
+   - Provide clear short and long descriptions
+   - Document all flags and arguments
+   - Include examples in help text
+   - Keep help messages concise but informative
+
+3. **Error Handling**
+   - Use descriptive error messages
+   - Handle user input errors gracefully
+   - Provide suggestions for common mistakes
+   - Log errors with appropriate context
+
+4. **Testing**
+   - Test each command independently
+   - Mock external dependencies
+   - Test error conditions
+   - Verify help text and documentation
+
+### 1.4 Data Processing
+
+1. **Row Handling**
+   - Use appropriate row types for your data
+   - Handle missing or invalid data gracefully
+   - Consider memory usage with large datasets
+   - Implement proper cleanup
+
+2. **Output Formatting**
+   - Support multiple output formats
+   - Handle special characters properly
+   - Consider terminal capabilities
+   - Format output for readability
+
+3. **Performance**
+   - Process data in chunks when possible
+   - Use appropriate data structures
+   - Consider memory vs. CPU tradeoffs
+   - Profile and optimize as needed
+
+## 2. Project Organization
+
+A typical project structure following these best practices:
 
 ```
 cmd/
   myapp/
-    main.go                 # Main application entry point
-    cmds/
-      root.go              # Root command definition
-      users/               # User-related commands
-        root.go            # Users root command
-        list.go            # List users command
-        get.go             # Get user command
-      channels/            # Channel-related commands
-        root.go            # Channels root command
-        list.go           # List channels command
-        get.go            # Get channel command
+    main.go                 # Application entry point
+    cmds/                  # Command implementations
+      root.go             # Root command setup
+      command_group/      # Related commands
+        root.go          # Group command setup
+        command1.go      # Individual command
+        command2.go      # Individual command
     pkg/
-      layers/             # Custom parameter layers
-        myapp.go          # Application-specific layer
-      middlewares/        # Custom middleware functions
-        middlewares.go    # Shared middleware functions
-      client/            # Application-specific client code
-        client.go        # Client implementation
-      utils/            # Shared utilities
-        utils.go        # Utility functions
+      layers/            # Custom parameter layers
+        auth.go         # Authentication layer
+        db.go          # Database layer
+        output.go      # Output formatting layer
+      middlewares/       # Custom middleware
+        parse.go       # Parameter parsing
+        validate.go    # Validation logic
+        transform.go   # Data transformation
+      domain/           # Application-specific code
+      utils/           # Shared utilities
 ```
 
-## 2. Creating Custom Parameter Layers
+## 3. Common Patterns
 
-Custom parameter layers allow you to define reusable sets of parameters that can be shared across commands.
+1. **Layer Definition**
+   ```go
+   // Define focused, single-purpose layers
+   type AuthSettings struct {
+       Token string `glazed.parameter:"token"`
+   }
 
-```go
-// pkg/layers/myapp.go
-package layers
+   func NewAuthLayer() (layers.ParameterLayer, error) {
+       return layers.NewParameterLayer(
+           "auth",
+           "Authentication settings",
+           // ... focused parameter definitions
+       )
+   }
+   ```
 
-import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
-)
+2. **Middleware Chain**
+   ```go
+   // Compose middleware in a logical order
+   middlewares := []middlewares.Middleware{
+       // 1. Parse input
+       middlewares.ParseFromCobraCommand(cmd),
+       // 2. Load configuration
+       middlewares.GatherFlagsFromViper(),
+       // 3. Validate
+       customMiddlewares.ValidateSettings(),
+       // 4. Transform
+       customMiddlewares.TransformData(),
+   }
+   ```
 
-const MyAppSlug = "myapp"
+3. **Error Handling**
+   ```go
+   // Provide helpful error messages
+   if err := validateInput(input); err != nil {
+       return fmt.Errorf("invalid input %q: %w. Expected format: %s",
+           input, err, expectedFormat)
+   }
+   ```
 
-type MyAppSettings struct {
-    Token string `glazed.parameter:"token"`
-}
+## 4. Component Sketches
 
-func NewMyAppParameterLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
-        MyAppSlug,
-        "MyApp authentication settings",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
-                "token",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("API Token"),
-                parameters.WithRequired(false),
-            ),
-        ),
-    )
-}
-```
-
-## 3. Creating Custom Middleware
-
-Middleware functions allow you to customize how parameters are parsed and processed:
-
-```go
-// pkg/middlewares/middlewares.go
-package middlewares
-
-import (
-    "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
-    "github.com/spf13/cobra"
-    "myapp/pkg/layers"
-)
-
-func GetCobraCommandMiddlewares(
-    commandSettings *cli.GlazedCommandSettings,
-    cmd *cobra.Command,
-    args []string,
-) ([]middlewares.Middleware, error) {
-    middlewares_ := []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd,
-            parameters.WithParseStepSource("cobra"),
-        ),
-        middlewares.GatherArguments(args,
-            parameters.WithParseStepSource("arguments"),
-        ),
-    }
-
-    if commandSettings.LoadParametersFromFile != "" {
-        middlewares_ = append(middlewares_,
-            middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
-    }
-
-    // Allow settings to be set from a config file or environment variables
-    appMiddleware := middlewares.WrapWithWhitelistedLayers(
-        []string{layers.MyAppSlug},
-        middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")),
-    )
-    middlewares_ = append(middlewares_, appMiddleware,
-        middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
-    )
-
-    return middlewares_, nil
-}
-```
-
-## 4. Creating Commands
-
-### 4.1 Root Command
-
-The root command sets up the application and initializes shared components:
-
-```go
-// cmds/root.go
-package cmds
-
-import (
-    "github.com/spf13/cobra"
-    "myapp/cmds/users"
-    "myapp/cmds/channels"
-)
-
-func NewRootCmd() (*cobra.Command, error) {
-    rootCmd := &cobra.Command{
-        Use:   "myapp",
-        Short: "MyApp CLI tool",
-        Long:  "A CLI tool for interacting with MyApp",
-    }
-
-    // Add subcommands
-    usersCmd, err := users.NewUsersCmd()
-    if err != nil {
-        return nil, fmt.Errorf("could not create users command: %w", err)
-    }
-    rootCmd.AddCommand(usersCmd)
-
-    channelsCmd, err := channels.NewChannelsCmd()
-    if err != nil {
-        return nil, fmt.Errorf("could not create channels command: %w", err)
-    }
-    rootCmd.AddCommand(channelsCmd)
-
-    return rootCmd, nil
-}
-```
-
-### 4.2 Subcommand Groups
-
-Create root commands for each group of related commands:
-
-```go
-// cmds/users/root.go
-package users
-
-import (
-    "github.com/spf13/cobra"
-)
-
-func NewUsersCmd() (*cobra.Command, error) {
-    cmd := &cobra.Command{
-        Use:   "users",
-        Short: "User management commands",
-        Long:  "Commands for managing users",
-    }
-
-    listCmd, err := NewListCmd()
-    if err != nil {
-        return nil, err
-    }
-    cmd.AddCommand(listCmd)
-
-    getCmd, err := NewGetCmd()
-    if err != nil {
-        return nil, err
-    }
-    cmd.AddCommand(getCmd)
-
-    return cmd, nil
-}
-```
-
-### 4.3 Individual Commands
-
-Create individual commands that use the shared layers and middleware:
-
-```go
-// cmds/users/list.go
-package users
-
-import (
-    "context"
-    "fmt"
-
-    "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/middlewares"
-    "github.com/go-go-golems/glazed/pkg/settings"
-    "github.com/spf13/cobra"
-    "myapp/pkg/client"
-    appLayers "myapp/pkg/layers"
-    appMiddlewares "myapp/pkg/middlewares"
-)
-
-type ListCommand struct {
-    *cmds.CommandDescription
-}
-
-type ListSettings struct {
-    appLayers.MyAppSettings
-}
-
-func NewListCmd() (*cobra.Command, error) {
-    glazedCmd, err := NewListGlazedCmd()
-    if err != nil {
-        return nil, fmt.Errorf("could not create list users glazed command: %w", err)
-    }
-
-    cmd, err := cli.BuildCobraCommandFromCommand(glazedCmd,
-        cli.WithCobraShortHelpLayers(appLayers.MyAppSlug),
-        cli.WithCobraMiddlewaresFunc(appMiddlewares.GetCobraCommandMiddlewares),
-    )
-    if err != nil {
-        return nil, fmt.Errorf("could not create list users cobra command: %w", err)
-    }
-
-    return cmd, nil
-}
-
-func NewListGlazedCmd() (*ListCommand, error) {
-    glazedParameterLayer, err := settings.NewGlazedParameterLayers()
-    if err != nil {
-        return nil, fmt.Errorf("could not create Glazed parameter layer: %w", err)
-    }
-
-    appLayer, err := appLayers.NewMyAppParameterLayer()
-    if err != nil {
-        return nil, fmt.Errorf("could not create MyApp parameter layer: %w", err)
-    }
-
-    layers_ := layers.NewParameterLayers(layers.WithLayers(
-        glazedParameterLayer,
-        appLayer,
-    ))
-
-    return &ListCommand{
-        CommandDescription: cmds.NewCommandDescription(
-            "list",
-            cmds.WithShort("List users"),
-            cmds.WithLong("List all users in the system"),
-            cmds.WithLayers(layers_),
-        ),
-    }, nil
-}
-
-func (c *ListCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    s := &ListSettings{}
-    if err := parsedLayers.InitializeStruct(appLayers.MyAppSlug, &s.MyAppSettings); err != nil {
-        return err
-    }
-
-    if s.Token == "" {
-        return fmt.Errorf("token is required")
-    }
-
-    cl := client.New(s.Token)
-    users, err := cl.ListUsers(ctx)
-    if err != nil {
-        return fmt.Errorf("failed to list users: %w", err)
-    }
-
-    for _, user := range users {
-        row := types.NewRow(
-            types.MRP("id", user.ID),
-            types.MRP("name", user.Name),
-            types.MRP("email", user.Email),
-        )
-        if err := gp.AddRow(ctx, row); err != nil {
-            return fmt.Errorf("failed to add row: %w", err)
-        }
-    }
-
-    return nil
-}
-```
-
-## 5. Main Application
-
-The main application ties everything together:
+### 4.1 Main Application
 
 ```go
 // main.go
@@ -318,110 +191,227 @@ import (
 )
 
 func main() {
-    // Initialize logging
-    zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-    log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
-    // Create root command
+    // 2. Create root command
     rootCmd, err := cmds.NewRootCmd()
     if err != nil {
         log.Fatal().Err(err).Msg("Failed to create root command")
     }
 
-    // Setup logging for all commands
+    // 3. Setup logging for all commands
     rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
         err := clay.InitLogger()
         cobra.CheckErr(err)
     }
 
-    // Initialize viper for configuration
+    // 4. Initialize configuration and logger
     err = clay.InitViper("myapp", rootCmd)
     cobra.CheckErr(err)
-    err = clay.InitLogger()
-    cobra.CheckErr(err)
+	err = clay.InitLogger()
+	cobra.CheckErr(err)
 
-    // Setup help system
+
+    // 5. Setup help system
     helpSystem := help.NewHelpSystem()
     helpSystem.SetupCobraRootCommand(rootCmd)
 
-    // Execute
+    // 6. Execute
     if err := rootCmd.Execute(); err != nil {
         log.Fatal().Err(err).Msg("Failed to execute root command")
     }
 }
 ```
 
-## 6. Configuration
+### 4.2 Root Command
 
-The application can be configured through:
-- Command line flags
-- Environment variables (prefixed with MYAPP_)
-- Configuration file (myapp.yaml)
+```go
+// cmds/root.go
+package cmds
 
-Example configuration file:
-```yaml
-token: "your-api-token"
+import (
+    "github.com/spf13/cobra"
+    "myapp/cmds/group1"
+    "myapp/cmds/group2"
+)
+
+func NewRootCmd() (*cobra.Command, error) {
+    rootCmd := &cobra.Command{
+        Use:   "myapp",
+        Short: "MyApp CLI tool",
+        Long:  "A CLI tool for interacting with MyApp",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// reinitialize the logger because we can now parse --log-level and co
+			// from the command line flag
+			err := clay.InitLogger()
+			cobra.CheckErr(err)
+		}}
+    }
+
+    // Add command groups
+    group1Cmd, err := group1.NewGroup1Cmd()
+    if err != nil {
+        return nil, fmt.Errorf("could not create group1 command: %w", err)
+    }
+    rootCmd.AddCommand(group1Cmd)
+
+    group2Cmd, err := group2.NewGroup2Cmd()
+    if err != nil {
+        return nil, fmt.Errorf("could not create group2 command: %w", err)
+    }
+    rootCmd.AddCommand(group2Cmd)
+
+    return rootCmd, nil
+}
 ```
 
-Environment variables:
-```bash
-export MYAPP_TOKEN="your-api-token"
+### 4.3 Command Group
+
+```go
+// cmds/group1/root.go
+package group1
+
+import (
+    "github.com/spf13/cobra"
+)
+
+func NewGroup1Cmd() (*cobra.Command, error) {
+    cmd := &cobra.Command{
+        Use:   "group1",
+        Short: "Group1 commands",
+        Long:  "Commands for managing group1 resources",
+    }
+
+    // Add subcommands
+    listCmd, err := NewListCmd()
+    if err != nil {
+        return nil, err
+    }
+    cmd.AddCommand(listCmd)
+
+    getCmd, err := NewGetCmd()
+    if err != nil {
+        return nil, err
+    }
+    cmd.AddCommand(getCmd)
+
+    return cmd, nil
+}
 ```
 
-## 7. Running the Application
+### 4.4 Individual Command
 
-The application can be run with various commands:
+```go
+// cmds/group1/list.go
+package group1
 
-```bash
-# List users
-myapp users list
+import (
+    "context"
+    "fmt"
 
-# Get specific user
-myapp users get --id 123
+    "github.com/go-go-golems/glazed/pkg/cli"
+    "github.com/go-go-golems/glazed/pkg/cmds"
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/middlewares"
+    "github.com/go-go-golems/glazed/pkg/settings"
+    "github.com/spf13/cobra"
+    "myapp/pkg/layers"
+)
 
-# List channels
-myapp channels list
+type ListCommand struct {
+    *cmds.CommandDescription
+}
 
-# Get specific channel
-myapp channels get --id general
+type ListSettings struct {
+    layers.AppSettings
+}
 
-# Use configuration file
-myapp users list --config myapp.yaml
+func NewListCmd() (*cobra.Command, error) {
+    glazedCmd, err := NewListGlazedCmd()
+    if err != nil {
+        return nil, fmt.Errorf("could not create list glazed command: %w", err)
+    }
 
-# Override token
-myapp users list --token "different-token"
+    cmd, err := cli.BuildCobraCommandFromCommand(glazedCmd,
+        cli.WithCobraShortHelpLayers(layers.AppSlug),
+        cli.WithCobraMiddlewaresFunc(middlewares.GetCobraCommandMiddlewares),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("could not create list cobra command: %w", err)
+    }
+
+    return cmd, nil
+}
+
+func NewListGlazedCmd() (*ListCommand, error) {
+    // 1. Create glazed parameter layer
+    glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+    if err != nil {
+        return nil, fmt.Errorf("could not create Glazed parameter layer: %w", err)
+    }
+
+    // 2. Create app layer
+    appLayer, err := layers.NewAppParameterLayer()
+    if err != nil {
+        return nil, fmt.Errorf("could not create App parameter layer: %w", err)
+    }
+
+    // 3. Combine layers
+    layers_ := layers.NewParameterLayers(layers.WithLayers(
+        glazedParameterLayer,
+        appLayer,
+    ))
+
+    // 4. Create command
+    return &ListCommand{
+        CommandDescription: cmds.NewCommandDescription(
+            "list",
+            cmds.WithShort("List resources"),
+            cmds.WithLong("List all resources in the system"),
+            cmds.WithLayers(layers_),
+        ),
+    }, nil
+}
+
+func (c *ListCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // 1. Parse settings
+    s := &ListSettings{}
+    if err := parsedLayers.InitializeStruct(layers.AppSlug, &s.AppSettings); err != nil {
+        return err
+    }
+
+    // 2. Validate
+    if err := s.Validate(); err != nil {
+        return err
+    }
+
+    // 3. Process data
+    items, err := c.fetchItems(ctx, s)
+    if err != nil {
+        return fmt.Errorf("failed to fetch items: %w", err)
+    }
+
+    // 4. Output rows
+    for _, item := range items {
+        row := types.NewRow(
+            types.MRP("id", item.ID),
+            types.MRP("name", item.Name),
+        )
+        if err := gp.AddRow(ctx, row); err != nil {
+            return fmt.Errorf("failed to add row: %w", err)
+        }
+    }
+
+    return nil
+}
 ```
 
-## 8. Best Practices
+## 5. Further Reading
 
-1. **Layer Organization**
-   - Keep related parameters in their own layer
-   - Use meaningful slugs for layer identification
-   - Document layer parameters thoroughly
+- [Command Description Documentation](command-description.md) - Detailed command configuration
+- [Middlewares Tutorial](TUTORIAL.md) - Data processing and transformation
+- [Creating Commands Tutorial](create-command-tutorial.md) - Basic command creation
 
-2. **Middleware**
-   - Keep middleware functions focused and composable
-   - Use whitelisting to control which layers can be set from different sources
-   - Handle errors gracefully
-
-3. **Command Structure**
-   - Group related commands together
-   - Use consistent naming conventions
-   - Provide helpful short and long descriptions
-
-4. **Error Handling**
-   - Use descriptive error messages
-   - Wrap errors with context
-   - Log errors appropriately
-
-5. **Configuration**
-   - Use viper for flexible configuration
-   - Support multiple configuration methods
-   - Document configuration options
-
-6. **Testing**
-   - Test each command independently
-   - Mock external dependencies
-   - Test error conditions
-
-This tutorial demonstrates how to build a complete glazed application with multiple commands, custom layers, and middleware. The example shows how to organize code, handle configuration, and follow best practices for building maintainable CLI applications. 
+This guide focuses on best practices for building glazed applications. For specific implementation details, refer to the linked documentation. 
