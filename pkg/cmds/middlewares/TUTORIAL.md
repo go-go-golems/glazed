@@ -179,6 +179,38 @@ Merge multiple layers:
 middleware := middlewares.MergeParsedLayers(layersToMerge)
 ```
 
+#### Selective Layer Operations
+
+For more fine-grained control, you can use selective middlewares that only operate on specific layers:
+
+```go
+// Replace only specific layers
+middleware := middlewares.ReplaceParsedLayersSelective(newLayers, []string{"config", "env"})
+
+// Merge only specific layers
+middleware := middlewares.MergeParsedLayersSelective(layersToMerge, []string{"user", "profile"})
+```
+
+These selective middlewares are useful when you want to:
+- Update only certain configuration layers while preserving others
+- Merge specific profiles while keeping others untouched
+- Apply partial configuration updates
+- Handle targeted configuration overrides
+
+Example using selective operations:
+```go
+middlewares.ExecuteMiddlewares(layers, parsedLayers,
+    // Replace only the base configuration layers
+    middlewares.ReplaceParsedLayersSelective(baseConfig, []string{"system", "defaults"}),
+    
+    // Merge only user-specific settings
+    middlewares.MergeParsedLayersSelective(userConfig, []string{"preferences", "history"}),
+    
+    // Apply full environment config
+    middlewares.ReplaceParsedLayers(envConfig),
+)
+```
+
 These layer manipulation middlewares are useful when you need to:
 - Override configuration from different sources
 - Combine multiple configuration profiles

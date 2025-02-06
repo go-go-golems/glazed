@@ -49,6 +49,31 @@ func ReplaceParsedLayers(newLayers *layers.ParsedLayers) Middleware {
 	}
 }
 
+// ReplaceParsedLayersSelective is a middleware that replaces only the specified layers from the provided ParsedLayers.
+// It first calls next, then replaces only the layers specified in slugs with clones from newLayers.
+// If a layer in slugs doesn't exist in newLayers, it is skipped.
+func ReplaceParsedLayersSelective(newLayers *layers.ParsedLayers, slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			if newLayers == nil {
+				return errors.New("cannot replace with nil layers")
+			}
+
+			for _, slug := range slugs {
+				if layer, ok := newLayers.Get(slug); ok {
+					parsedLayers.Set(slug, layer.Clone())
+				}
+			}
+			return nil
+		}
+	}
+}
+
 // MergeParsedLayer is a middleware that merges a parsed layer into an existing one.
 // It first calls next, then merges the provided layer into the specified one.
 // If the target layer doesn't exist, it will be created.
@@ -92,6 +117,37 @@ func MergeParsedLayers(layersToMerge *layers.ParsedLayers) Middleware {
 			}
 
 			parsedLayers.Merge(layersToMerge)
+			return nil
+		}
+	}
+}
+
+// MergeParsedLayersSelective is a middleware that merges only the specified layers from the provided ParsedLayers.
+// It first calls next, then merges only the layers specified in slugs from layersToMerge into the existing layers.
+// If a layer in slugs doesn't exist in layersToMerge, it is skipped.
+// If a target layer doesn't exist in parsedLayers, it will be created.
+func MergeParsedLayersSelective(layersToMerge *layers.ParsedLayers, slugs []string) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			err := next(layers_, parsedLayers)
+			if err != nil {
+				return err
+			}
+
+			if layersToMerge == nil {
+				return errors.New("cannot merge nil layers")
+			}
+
+			for _, slug := range slugs {
+				if layer, ok := layersToMerge.Get(slug); ok {
+					targetLayer, exists := parsedLayers.Get(slug)
+					if !exists {
+						parsedLayers.Set(slug, layer.Clone())
+					} else {
+						targetLayer.MergeParameters(layer)
+					}
+				}
+			}
 			return nil
 		}
 	}
