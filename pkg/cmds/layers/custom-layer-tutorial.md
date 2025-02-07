@@ -168,7 +168,11 @@ func main() {
     customCmd, err := NewMyCustomCommand()
     cobra.CheckErr(err)
 
-    cobraCmd, err := cli.BuildCobraCommandFromGlazeCommand(customCmd)
+    // Build the cobra command with short help for our custom layer
+    cobraCmd, err := cli.BuildCobraCommandFromGlazeCommand(
+        customCmd,
+        cli.WithCobraShortHelpLayers("custom-layer"),
+    )
     cobra.CheckErr(err)
 
     rootCmd.AddCommand(cobraCmd)
@@ -177,5 +181,7 @@ func main() {
     cobra.CheckErr(err)
 }
 ```
+
+The `WithCobraShortHelpLayers` option specifies which parameter layers should be shown in the short help output (when running `myapp my-custom-command -h`). This helps keep the help output clean and focused on the most important parameters, while still allowing users to see all parameters with `--help`.
 
 This tutorial demonstrates how to create a custom parameters layer, parse it into a settings struct, and incorporate it into a Glazed command. By following these steps, you can extend the functionality of your Glazed-based CLI applications with custom parameter layers.
