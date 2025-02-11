@@ -3,15 +3,10 @@ package templating
 import (
 	"bytes"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"github.com/bmatcuk/doublestar/v4"
-	"github.com/go-go-golems/glazed/pkg/helpers/cast"
-	"github.com/go-go-golems/glazed/pkg/helpers/list"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	html "html/template"
 	"io"
 	"io/fs"
+	"math/rand"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -20,6 +15,13 @@ import (
 	"text/template"
 	"time"
 	"unicode"
+
+	"github.com/Masterminds/sprig"
+	"github.com/bmatcuk/doublestar/v4"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/go-go-golems/glazed/pkg/helpers/list"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 // These templating helpers have been lifted from cobra, to maintain compatibility
@@ -94,6 +96,16 @@ var TemplateFuncs = template.FuncMap{
 	"toUrlParameter": toUrlParameter,
 
 	"styleBold": styleBold,
+
+	// Random functions
+	"randomChoice":     randomChoice,
+	"randomSubset":     randomSubset,
+	"randomPermute":    randomPermute,
+	"randomInt":        randomInt,
+	"randomFloat":      randomFloat,
+	"randomBool":       randomBool,
+	"randomString":     randomString,
+	"randomStringList": randomStringList,
 }
 
 func toDate(s interface{}) (string, error) {
@@ -651,4 +663,114 @@ func ParseHTMLFS(t *html.Template, f fs.FS, patterns []string, baseDir string) e
 	}
 
 	return nil
+}
+
+// randomChoice returns a random element from a list
+func randomChoice(list interface{}) (interface{}, error) {
+	v := reflect.ValueOf(list)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return nil, errors.New("input must be a slice or array")
+	}
+	if v.Len() == 0 {
+		return nil, errors.New("input slice is empty")
+	}
+	return v.Index(rand.Intn(v.Len())).Interface(), nil
+}
+
+// randomSubset returns a random subset of size n from a list
+func randomSubset(list interface{}, n int) (interface{}, error) {
+	v := reflect.ValueOf(list)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return nil, errors.New("input must be a slice or array")
+	}
+	if v.Len() == 0 {
+		return nil, errors.New("input slice is empty")
+	}
+	if n > v.Len() {
+		n = v.Len()
+	}
+	if n < 0 {
+		return nil, errors.New("n must be non-negative")
+	}
+
+	// Create a new slice of the same type as the input
+	result := reflect.MakeSlice(v.Type(), n, n)
+	indices := rand.Perm(v.Len())
+	for i := 0; i < n; i++ {
+		result.Index(i).Set(v.Index(indices[i]))
+	}
+	return result.Interface(), nil
+}
+
+// randomPermute returns a random permutation of a list
+func randomPermute(list interface{}) (interface{}, error) {
+	v := reflect.ValueOf(list)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return nil, errors.New("input must be a slice or array")
+	}
+	if v.Len() == 0 {
+		return nil, errors.New("input slice is empty")
+	}
+
+	// Create a new slice of the same type as the input
+	result := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
+	indices := rand.Perm(v.Len())
+	for i := 0; i < v.Len(); i++ {
+		result.Index(i).Set(v.Index(indices[i]))
+	}
+	return result.Interface(), nil
+}
+
+// randomInt returns a random integer between min and max (inclusive)
+func randomInt(min_, max_ interface{}) int {
+	minVal, ok := cast.CastNumberInterfaceToInt[int](min_)
+	if !ok {
+		panic("min must be an int")
+	}
+	maxVal, ok := cast.CastNumberInterfaceToInt[int](max_)
+	if !ok {
+		panic("max must be an int")
+	}
+	if minVal > maxVal {
+		minVal, maxVal = maxVal, minVal
+	}
+	return rand.Intn(maxVal-minVal+1) + minVal
+}
+
+// randomFloat returns a random float between min and max
+func randomFloat(min_, max_ interface{}) float64 {
+	minVal, ok := cast.CastNumberInterfaceToFloat[float64](min_)
+	if !ok {
+		panic("min must be a float")
+	}
+	maxVal, ok := cast.CastNumberInterfaceToFloat[float64](max_)
+	if !ok {
+		panic("max must be a float")
+	}
+	return minVal + rand.Float64()*(maxVal-minVal)
+}
+
+// randomBool returns a random boolean value
+func randomBool() bool {
+	return rand.Intn(2) == 1
+}
+
+// randomString returns a random string of the given length
+func randomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+// randomStringList returns a list of random strings
+func randomStringList(count, minLength, maxLength int) []string {
+	result := make([]string, count)
+	for i := range result {
+		length := randomInt(minLength, maxLength)
+		result[i] = randomString(length)
+	}
+	return result
 }

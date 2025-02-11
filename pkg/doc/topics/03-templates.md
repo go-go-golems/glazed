@@ -178,25 +178,24 @@ Author: Edgar Allan Poe
 - a: 100
 ```
 
-
 ## Templating functions
 
 Glazed uses the [sprig](http://masterminds.github.io/sprig/) templating 
 library to provide many useful functions.
 
-Furthermore, there is support for a variety of legacy templating functions that
-will be phased out in the future.
+Furthermore, there is support for a variety of additional templating functions.
 
 ### Number functions
 
-The following functions are available for computing inside template: 
-- add
-- sub
-- mul
-- div
-- parseFloat(s)
-- parseInt(s)
+The following functions are available for computing inside templates:
 
+- `add(a, b interface{})` - Add two numbers (supports int, uint, float)
+- `sub(a, b interface{})` - Subtract b from a (supports int, uint, float)
+- `mul(a, b interface{})` - Multiply two numbers (supports int, uint, float)
+- `div(a, b interface{})` - Divide a by b (supports int, uint, float)
+- `parseFloat(s string) float64` - Parse string to float64
+- `parseInt(s string) int64` - Parse string to int64
+- `currency(n interface{}) string` - Format number as currency with 2 decimal places
 
 ```
 ❯ glaze json misc/test-data/[123].json \
@@ -214,18 +213,23 @@ The following functions are available for computing inside template:
 ### String functions 
 
 The following functions are available to manipulate strings:
-- trim(s) - remove spaces
-- trimRightSpace(s) - remove spaces from the right
-- trimTrailingWhitespaces(s) - remove trailing whitespaces
-- rpad(s, n) - right pad a string
-- quote(s) - quote a string
-- stripNewlines(s) - remove newlines
-- toUpper(s) - convert to uppercase
-- toLower(s) - convert to lowercase
-- replace(s, old, new) - replace old with new in s
-- replaceRegexp(s, old, new) - replace old with new in s using regexp
-- padLeft(s, n) - pad s with spaces on the left
-- padRight(s, n) - pad s with spaces on the right
+
+- `trim(s string) string` - Remove spaces from both ends
+- `trimRightSpace(s string) string` - Remove spaces from the right
+- `trimTrailingWhitespaces(s string) string` - Remove trailing whitespaces
+- `rpad(s string, n int) string` - Right pad a string with spaces
+- `quote(s string) string` - Quote a string with backticks
+- `stripNewlines(s string) string` - Remove newlines
+- `quoteNewlines(s string) string` - Replace newlines with \n
+- `toUpper(s string) string` - Convert to uppercase
+- `toLower(s string) string` - Convert to lowercase
+- `replaceRegexp(s, old, new string) string` - Replace using regexp
+- `padLeft(s string, n int) string` - Pad with spaces on the left
+- `padRight(s string, n int) string` - Pad with spaces on the right
+- `padCenter(s string, n int) string` - Center text with spaces
+- `toUrlParameter(v interface{}) string` - Convert value to URL parameter format
+- `toYaml(v interface{}) string` - Convert value to YAML format
+- `indentBlock(indent int, value string) string` - Indent text block
 
 ```
 ❯ glaze json misc/test-data/book.json \
@@ -242,13 +246,49 @@ The following functions are available to manipulate strings:
 
 The following templates make generating markdown easier:
 
-- bold(s) - make text bold
-- italic(s) - make text italic
-- underline(s) - make text underlined
-- strikethrough(s) - make text strikethrough
-- code(s) - make text code
-- codeBlock(s, lang) - make text a code block
+- `bold(s string) string` - Make text bold with **
+- `italic(s string) string` - Make text italic with *
+- `underline(s string) string` - Make text underlined with __
+- `strikethrough(s string) string` - Make text strikethrough with ~~
+- `code(s string) string` - Make text code with backticks
+- `codeBlock(s, lang string) string` - Make text a code block with language
 
-### Miscellanous functions
+### Date functions
 
-- currency(n) - format a number as a currency (int, float, uint)
+- `toDate(v interface{}) string` - Convert value to YYYY-MM-DD format (supports string and time.Time)
+
+### Random functions
+
+The following functions are available for randomization:
+
+- `randomChoice(list interface{}) interface{}` - Return random element from list
+- `randomSubset(list interface{}, n int) interface{}` - Return n random elements from list
+- `randomPermute(list interface{}) interface{}` - Return random permutation of list
+- `randomInt(min, max interface{}) int` - Return random integer between min and max (inclusive)
+- `randomFloat(min, max interface{}) float64` - Return random float between min and max
+- `randomBool() bool` - Return random boolean
+- `randomString(length int) string` - Return random alphanumeric string of given length
+- `randomStringList(count, minLength, maxLength int) []string` - Return list of random strings
+
+```
+❯ glaze json misc/test-data/[123].json \
+    --template-field 'random:{{ randomChoice .c }},subset:{{ randomSubset .c 2 }}' \
+    --use-row-templates
++-----+--------+-------------+
+| a   | random | subset      |
++-----+--------+-------------+
+| 1   | 4      | [3 5]       |
+| 10  | 30     | [40 50]     |
+| 100 | 300    | [300]       |
++-----+--------+-------------+
+```
+
+### Style functions
+
+- `styleBold(s string) string` - Make text bold with ANSI escape codes
+
+### Sprig functions
+
+In addition to the functions above, all functions from the [sprig](http://masterminds.github.io/sprig/) library are available.
+These include many useful functions for string manipulation, math, lists, dictionaries, and more.
+
