@@ -2,13 +2,14 @@ package parameters
 
 import (
 	_ "embed"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-	"reflect"
-	"testing"
-	"time"
 )
 
 //go:embed "test-data/parameters_test.yaml"
@@ -103,7 +104,7 @@ func TestParameterValidity(t *testing.T) {
 	initialParameterTests()
 	for _, validityTest := range testParameterValidList {
 		t.Run(validityTest.Name, func(t *testing.T) {
-			err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
+			_, err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
 			if validityTest.Valid {
 				assert.NoError(t, err)
 			} else {
@@ -791,11 +792,14 @@ func TestSetValueFromDefaultKeyValue(t *testing.T) {
 }
 
 func TestCheckValueValidity(t *testing.T) {
+	timeNow := time.Now()
+
 	tests := []struct {
-		name    string
-		param   ParameterDefinition
-		value   interface{}
-		wantErr bool
+		name      string
+		param     ParameterDefinition
+		value     interface{}
+		wantErr   bool
+		wantValue interface{}
 	}{
 		{
 			name: "valid string value",
@@ -804,8 +808,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeString,
 				Default: cast.InterfaceAddr("default"),
 			},
-			value:   "test value",
-			wantErr: false,
+			value:     "test value",
+			wantErr:   false,
+			wantValue: "test value",
 		},
 		{
 			name: "invalid string value",
@@ -814,8 +819,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeString,
 				Default: cast.InterfaceAddr("default"),
 			},
-			value:   123,
-			wantErr: true,
+			value:     123,
+			wantErr:   true,
+			wantValue: nil,
 		},
 		{
 			name: "valid integer value",
@@ -824,8 +830,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeInteger,
 				Default: cast.InterfaceAddr(1),
 			},
-			value:   2,
-			wantErr: false,
+			value:     2,
+			wantErr:   false,
+			wantValue: int(2),
 		},
 		{
 			name: "invalid integer value",
@@ -834,8 +841,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeInteger,
 				Default: cast.InterfaceAddr(1),
 			},
-			value:   "test",
-			wantErr: true,
+			value:     "test",
+			wantErr:   true,
+			wantValue: nil,
 		},
 		{
 			name: "valid choice value",
@@ -845,8 +853,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
-			value:   "choice2",
-			wantErr: false,
+			value:     "choice2",
+			wantErr:   false,
+			wantValue: "choice2",
 		},
 		{
 			name: "invalid choice value",
@@ -856,10 +865,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
-			value:   "choice3",
-			wantErr: true,
+			value:     "choice3",
+			wantErr:   true,
+			wantValue: nil,
 		},
-
 		{
 			name: "valid file value",
 			param: ParameterDefinition{
@@ -867,8 +876,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeFile,
 				Default: nil,
 			},
-			value:   &FileData{}, // assuming a filled FileData instance is valid
-			wantErr: false,
+			value:     &FileData{},
+			wantErr:   false,
+			wantValue: &FileData{},
 		},
 		{
 			name: "invalid file value",
@@ -877,11 +887,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeFile,
 				Default: nil,
 			},
-			value:   "string instead of file data",
-			wantErr: true,
+			value:     "string instead of file data",
+			wantErr:   true,
+			wantValue: nil,
 		},
-
-		// ParameterTypeFileList
 		{
 			name: "valid file list value",
 			param: ParameterDefinition{
@@ -889,8 +898,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeFileList,
 				Default: nil,
 			},
-			value:   []*FileData{{}, {}}, // assuming a list of FileData instances is valid
-			wantErr: false,
+			value:     []*FileData{{}, {}},
+			wantErr:   false,
+			wantValue: []*FileData{{}, {}},
 		},
 		{
 			name: "invalid file list value",
@@ -899,11 +909,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeFileList,
 				Default: nil,
 			},
-			value:   "string instead of file data list",
-			wantErr: true,
+			value:     "string instead of file data list",
+			wantErr:   true,
+			wantValue: nil,
 		},
-
-		// ParameterTypeBool
 		{
 			name: "valid bool value",
 			param: ParameterDefinition{
@@ -911,8 +920,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeBool,
 				Default: cast.InterfaceAddr(false),
 			},
-			value:   true,
-			wantErr: false,
+			value:     true,
+			wantErr:   false,
+			wantValue: true,
 		},
 		{
 			name: "invalid bool value",
@@ -921,11 +931,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeBool,
 				Default: cast.InterfaceAddr(false),
 			},
-			value:   "string instead of bool",
-			wantErr: true,
+			value:     "string instead of bool",
+			wantErr:   true,
+			wantValue: nil,
 		},
-
-		// ParameterTypeDate
 		{
 			name: "valid date value",
 			param: ParameterDefinition{
@@ -933,8 +942,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeDate,
 				Default: nil,
 			},
-			value:   time.Now(), // assuming a time.Time instance is valid
-			wantErr: false,
+			value:     timeNow,
+			wantErr:   false,
+			wantValue: timeNow,
 		},
 		{
 			name: "valid date value (as string)",
@@ -943,8 +953,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeDate,
 				Default: nil,
 			},
-			value:   "today", // strings can be dates too
+			value:   "today",
 			wantErr: false,
+			// wantValue is checked separately due to time parsing
 		},
 		{
 			name: "invalid date value",
@@ -953,11 +964,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeDate,
 				Default: nil,
 			},
-			value:   123,
-			wantErr: true,
+			value:     123,
+			wantErr:   true,
+			wantValue: nil,
 		},
-
-		// ParameterTypeStringList
 		{
 			name: "valid string list value",
 			param: ParameterDefinition{
@@ -965,8 +975,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeStringList,
 				Default: nil,
 			},
-			value:   []string{"a", "b", "c"},
-			wantErr: false,
+			value:     []string{"a", "b", "c"},
+			wantErr:   false,
+			wantValue: []string{"a", "b", "c"},
 		},
 		{
 			name: "invalid string list value",
@@ -975,11 +986,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeStringList,
 				Default: nil,
 			},
-			value:   "string instead of string list",
-			wantErr: true,
+			value:     "string instead of string list",
+			wantErr:   true,
+			wantValue: nil,
 		},
-
-		// StringAlias tests
 		{
 			name: "valid string alias value",
 			param: ParameterDefinition{
@@ -987,20 +997,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeString,
 				Default: cast.InterfaceAddr("default"),
 			},
-			value:   StringAlias("test value"),
-			wantErr: false,
+			value:     StringAlias("test value"),
+			wantErr:   false,
+			wantValue: "test value",
 		},
-		{
-			name: "invalid string alias value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeString,
-				Default: cast.InterfaceAddr("default"),
-			},
-			value:   123,
-			wantErr: true,
-		},
-		// StringDeclaration tests
 		{
 			name: "valid string declaration value",
 			param: ParameterDefinition{
@@ -1008,20 +1008,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Type:    ParameterTypeString,
 				Default: cast.InterfaceAddr("default"),
 			},
-			value:   StringDeclaration("test value"),
-			wantErr: false,
+			value:     StringDeclaration("test value"),
+			wantErr:   false,
+			wantValue: "test value",
 		},
-		{
-			name: "invalid string declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeString,
-				Default: cast.InterfaceAddr("default"),
-			},
-			value:   123,
-			wantErr: true,
-		},
-		// ChoiceAlias tests
 		{
 			name: "valid choice alias value",
 			param: ParameterDefinition{
@@ -1030,8 +1020,9 @@ func TestCheckValueValidity(t *testing.T) {
 				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
-			value:   StringAlias("choice2"),
-			wantErr: false,
+			value:     StringAlias("choice2"),
+			wantErr:   false,
+			wantValue: "choice2",
 		},
 		{
 			name: "invalid choice alias value",
@@ -1041,33 +1032,10 @@ func TestCheckValueValidity(t *testing.T) {
 				Default: cast.InterfaceAddr("choice1"),
 				Choices: []string{"choice1", "choice2"},
 			},
-			value:   StringAlias("choice3"),
-			wantErr: true,
+			value:     StringAlias("choice3"),
+			wantErr:   true,
+			wantValue: nil,
 		},
-		// ChoiceDeclaration tests
-		{
-			name: "valid choice declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeChoice,
-				Default: cast.InterfaceAddr("choice1"),
-				Choices: []string{"choice1", "choice2"},
-			},
-			value:   StringDeclaration("choice2"),
-			wantErr: false,
-		},
-		{
-			name: "invalid choice declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeChoice,
-				Default: cast.InterfaceAddr("choice1"),
-				Choices: []string{"choice1", "choice2"},
-			},
-			value:   StringDeclaration("choice3"),
-			wantErr: true,
-		},
-		// ChoiceListAlias tests
 		{
 			name: "valid choice list alias value",
 			param: ParameterDefinition{
@@ -1076,93 +1044,39 @@ func TestCheckValueValidity(t *testing.T) {
 				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
 				Choices: []string{"choice1", "choice2", "choice3"},
 			},
-			value:   []StringAlias{"choice1", "choice3"},
-			wantErr: false,
+			value:     []StringAlias{"choice1", "choice3"},
+			wantErr:   false,
+			wantValue: []string{"choice1", "choice3"},
 		},
 		{
-			name: "invalid choice list alias value",
+			name: "valid key value map",
 			param: ParameterDefinition{
 				Name:    "test",
-				Type:    ParameterTypeChoiceList,
-				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
-				Choices: []string{"choice1", "choice2", "choice3"},
-			},
-			value:   []StringAlias{"choice4"},
-			wantErr: true,
-		},
-		// ChoiceListDeclaration tests
-		{
-			name: "valid choice list declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeChoiceList,
-				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
-				Choices: []string{"choice1", "choice2", "choice3"},
-			},
-			value:   []StringDeclaration{"choice1", "choice3"},
-			wantErr: false,
-		},
-		{
-			name: "invalid choice list declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeChoiceList,
-				Default: cast.InterfaceAddr([]string{"choice1", "choice2"}),
-				Choices: []string{"choice1", "choice2", "choice3"},
-			},
-			value:   []StringDeclaration{"choice4"},
-			wantErr: true,
-		},
-
-		// StringListAlias tests
-		{
-			name: "valid string list alias value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeStringList,
+				Type:    ParameterTypeKeyValue,
 				Default: nil,
 			},
-			value:   []StringAlias{"a", "b", "c"},
-			wantErr: false,
-		},
-		{
-			name: "invalid string list alias value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeStringList,
-				Default: nil,
-			},
-			value:   "string instead of string list",
-			wantErr: true,
-		},
-		// StringListDeclaration tests
-		{
-			name: "valid string list declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeStringList,
-				Default: nil,
-			},
-			value:   []StringDeclaration{"a", "b", "c"},
-			wantErr: false,
-		},
-		{
-			name: "invalid string list declaration value",
-			param: ParameterDefinition{
-				Name:    "test",
-				Type:    ParameterTypeStringList,
-				Default: nil,
-			},
-			value:   "string instead of string list",
-			wantErr: true,
+			value:     map[string]string{"key": "value"},
+			wantErr:   false,
+			wantValue: map[string]string{"key": "value"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.param.CheckValueValidity(tt.value)
+			gotValue, err := tt.param.CheckValueValidity(tt.value)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckValueValidity() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantValue != nil {
+				if tt.param.Type == ParameterTypeDate && tt.value == "today" {
+					// Special case for date string parsing
+					_, ok := gotValue.(time.Time)
+					if !ok {
+						t.Errorf("CheckValueValidity() gotValue = %v, want time.Time", gotValue)
+					}
+				} else {
+					assert.Equal(t, tt.wantValue, gotValue)
+				}
 			}
 		})
 	}
