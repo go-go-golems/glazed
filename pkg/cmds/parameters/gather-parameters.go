@@ -1,6 +1,10 @@
 package parameters
 
-import "github.com/pkg/errors"
+import (
+	"reflect"
+
+	"github.com/pkg/errors"
+)
 
 // GatherParametersFromMap gathers parameter values from a map.
 //
@@ -60,13 +64,13 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 		}
 
 		// TODO(manuel, 2023-12-28) We need to check if nil means remove the value or use the default or whatever that means
-		err := p.CheckValueValidity(v_)
+		v2, err := p.CheckValueValidity(v_)
 		if err != nil {
 			return errors.Wrapf(err, "Invalid value for parameter %s", p.Name)
 		}
 
 		// NOTE(manuel, 2023-12-22) We might want to pass in that name instead of just saying from-map
-		parsed.Update(v_, options_...)
+		parsed.Update(v2, options_...)
 		ret.Set(p.Name, parsed)
 		return nil
 	})
@@ -76,4 +80,19 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 	}
 
 	return ret, nil
+}
+
+func (p *ParameterDefinition) GatherValueFromInterface(value reflect.Value) error {
+	if !value.IsValid() {
+		return nil
+	}
+
+	// Check if the value is valid
+	castValue, err := p.CheckValueValidity(value.Interface())
+	if err != nil {
+		return err
+	}
+
+	// Set the value
+	return p.setReflectValue(value, castValue)
 }

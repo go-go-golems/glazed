@@ -118,7 +118,8 @@ func (p *ParameterDefinition) SetDefaultFromValue(value reflect.Value) error {
 		value = value.Elem()
 	}
 
-	if p.CheckValueValidity(value.Interface()) != nil {
+	_, err := p.CheckValueValidity(value.Interface())
+	if err != nil {
 		return errors.Errorf("invalid value for parameter %s: %v", p.Name, value.Interface())
 	}
 
@@ -186,7 +187,7 @@ func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) e
 // ParameterDefinition's type. It handles type checking and conversion for the
 // various supported parameter types.
 func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {
-	err := p.CheckValueValidity(v)
+	_, err := p.CheckValueValidity(v)
 	if err != nil {
 		return err
 	}
@@ -401,13 +402,17 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
 	}
 	// we can have no default
 	v := *p.Default
-	return p.CheckValueValidity(v)
+	_, err := p.CheckValueValidity(v)
+	if err != nil {
+		return errors.Wrapf(err, "invalid default value for parameter %s", p.Name)
+	}
+	return nil
 }
 
 // CheckValueValidity checks if the given value is valid for the ParameterDefinition.
-func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
+func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, error) {
 	if v == nil {
-		return nil
+		return nil, nil
 	}
 
 	switch p.Type {
@@ -416,166 +421,174 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) error {
 	case ParameterTypeStringFromFiles:
 		fallthrough
 	case ParameterTypeString:
-		_, err := cast.ToString(v)
+		s, err := cast.ToString(v)
 		if err != nil {
-			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
+		return s, nil
 
 	case ParameterTypeObjectListFromFile:
 		fallthrough
 	case ParameterTypeObjectListFromFiles:
-		_, ok := v.([]interface{})
+		l, ok := v.([]interface{})
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a list of objects: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a list of objects: %v", p.Name, v)
 		}
+		return l, nil
 
 	case ParameterTypeObjectFromFile:
-		_, ok := v.(map[string]interface{})
+		m, ok := v.(map[string]interface{})
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not an object: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not an object: %v", p.Name, v)
 		}
+		return m, nil
 
 	case ParameterTypeInteger:
-		_, ok := cast.CastNumberInterfaceToInt[int64](v)
+		i, ok := cast.CastNumberInterfaceToInt[int](v)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not an integer: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not an integer: %v", p.Name, v)
 		}
+		return i, nil
 
 	case ParameterTypeFloat:
-		_, ok := cast.CastNumberInterfaceToFloat[float64](v)
+		f, ok := cast.CastNumberInterfaceToFloat[float64](v)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a float: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a float: %v", p.Name, v)
 		}
+		return f, nil
 
 	case ParameterTypeBool:
-		_, ok := v.(bool)
+		b, ok := v.(bool)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a bool: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a bool: %v", p.Name, v)
 		}
+		return b, nil
 
 	case ParameterTypeDate:
 		switch v_ := v.(type) {
 		case string:
-			_, err := ParseDate(v_)
+			d, err := ParseDate(v_)
 			if err != nil {
-				return errors.Wrapf(err, "Value for parameter %s is not a valid date: %v", p.Name, v)
+				return nil, errors.Wrapf(err, "Value for parameter %s is not a valid date: %v", p.Name, v)
 			}
+			return d, nil
 		case time.Time:
-			return nil
+			return v_, nil
 		default:
-			return errors.Errorf("Value for parameter %s is not a valid date: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a valid date: %v", p.Name, v)
 		}
 
 	case ParameterTypeFile:
-		_, ok := v.(*FileData)
+		f, ok := v.(*FileData)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a file: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a file: %v", p.Name, v)
 		}
-		return nil
+		return f, nil
 
 	case ParameterTypeFileList:
-		_, ok := cast.CastList2[*FileData, interface{}](v)
+		l, ok := cast.CastList2[*FileData, interface{}](v)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a file list: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a file list: %v", p.Name, v)
 		}
-		return nil
+		return l, nil
 
 	case ParameterTypeStringListFromFile:
 		fallthrough
 	case ParameterTypeStringListFromFiles:
 		fallthrough
 	case ParameterTypeStringList:
-		_, err := cast.CastListToStringList(v)
+		l, err := cast.CastListToStringList(v)
 		if err != nil {
 			v_, ok := v.([]interface{})
 			if !ok {
-				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
+				return nil, errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
 
 			// convert to string list
 			fixedDefault, err := cast.CastListToStringList(v_)
 			if err != nil {
-				return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
+				return nil, errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 			}
-			_ = fixedDefault
+			return fixedDefault, nil
 		}
+		return l, nil
 
 	case ParameterTypeIntegerList:
-		_, ok := cast.CastInterfaceToIntList[int64](v)
+		l, ok := cast.CastInterfaceToIntList[int](v)
 		if !ok {
-			return errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, v)
+			return nil, errors.Errorf("Default value for parameter %s is not an integer list: %v", p.Name, v)
 		}
+		return l, nil
 
 	case ParameterTypeFloatList:
-		_, ok := cast.CastInterfaceToFloatList[float64](v)
+		l, ok := cast.CastInterfaceToFloatList[float64](v)
 		if !ok {
-			return errors.Errorf("Value for parameter %s is not a float list: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a float list: %v", p.Name, v)
 		}
+		return l, nil
 
 	case ParameterTypeChoice:
 		if len(p.Choices) == 0 {
-			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
+			return nil, errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		v_, err := cast.ToString(v)
+		s, err := cast.ToString(v)
 		if err != nil {
-			return errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
 		}
 
-		err = p.checkChoiceValidity(v_)
+		err = p.checkChoiceValidity(s)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		return s, nil
 
 	case ParameterTypeChoiceList:
 		if len(p.Choices) == 0 {
-			return errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
+			return nil, errors.Errorf("ParameterDefinition %s is a choice parameter but has no choices", p.Name)
 		}
 
-		v_, err := cast.CastListToStringList(v)
+		l, err := cast.CastListToStringList(v)
 		if err != nil {
-			return errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
 		}
 
-		for _, choice := range v_ {
+		for _, choice := range l {
 			err := p.checkChoiceValidity(choice)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
+		return l, nil
 
 	case ParameterTypeKeyValue:
-		_, ok := v.(map[string]string)
+		m, ok := v.(map[string]string)
+		if ok {
+			return m, nil
+		}
+		m_, ok := v.(map[string]interface{})
 		if !ok {
-			v_, ok := v.(map[string]interface{})
-			if !ok {
-				return errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
-			}
-
-			_, ok = cast.CastStringMap[string, interface{}](v_)
-			if !ok {
-				return errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
-			}
+			return nil, errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
 		}
 
-	default:
-		return errors.Errorf("unknown parameter type %s", p.Type)
-	}
+		m__, ok := cast.CastStringMap[string, interface{}](m_)
+		if !ok {
+			return nil, errors.Errorf("Value for parameter %s is not a key value map: %v", p.Name, v)
+		}
+		return m__, nil
 
-	return nil
+	default:
+		return nil, errors.Errorf("unknown parameter type %s", p.Type)
+	}
 }
 
 func (p *ParameterDefinition) checkChoiceValidity(choice string) error {
-	found := false
-	for _, choice2 := range p.Choices {
-		if choice == choice2 {
-			found = true
+	for _, validChoice := range p.Choices {
+		if choice == validChoice {
+			return nil
 		}
 	}
-	if !found {
-		return errors.Errorf("Value for parameter %s is not a valid choice: %v", p.Name, choice)
-	}
-	return nil
+	return errors.Errorf("Value %s is not a valid choice for parameter %s. Valid choices are: %v", choice, p.Name, p.Choices)
 }
 
 // LoadParameterDefinitionsFromYAML loads a map of ParameterDefinitions from a YAML file.
@@ -735,5 +748,85 @@ func (pds *ParameterDefinitions) UnmarshalYAML(value *yaml.Node) error {
 		pds.Set(pd_.Name, pd_)
 	}
 
+	return nil
+}
+
+func (p *ParameterDefinition) setReflectValue(v reflect.Value, value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	switch p.Type {
+	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+		strVal, ok := value.(string)
+		if !ok {
+			return errors.Errorf("expected string value for parameter %s, got %T", p.Name, value)
+		}
+		v.SetString(strVal)
+
+	case ParameterTypeBool:
+		boolVal, ok := value.(bool)
+		if !ok {
+			return errors.Errorf("expected bool value for parameter %s, got %T", p.Name, value)
+		}
+		v.SetBool(boolVal)
+
+	case ParameterTypeInteger, ParameterTypeFloat:
+		return reflect2.SetReflectValue(v, value)
+
+	case ParameterTypeStringList,
+		ParameterTypeChoiceList,
+		ParameterTypeStringListFromFiles,
+		ParameterTypeStringListFromFile:
+		list, ok := value.([]string)
+		if !ok {
+			return errors.Errorf("expected string list for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(list))
+
+	case ParameterTypeDate:
+		dateTime, ok := value.(time.Time)
+		if !ok {
+			return errors.Errorf("expected time.Time value for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(dateTime))
+
+	case ParameterTypeIntegerList, ParameterTypeFloatList:
+		return reflect2.SetReflectValue(v, value)
+
+	case ParameterTypeFile:
+		return reflect2.SetReflectValue(v, value)
+
+	case ParameterTypeFileList:
+		list, ok := value.([]*FileData)
+		if !ok {
+			return errors.Errorf("expected list of files for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(list))
+
+	case ParameterTypeObjectListFromFiles, ParameterTypeObjectListFromFile:
+		list, ok := value.([]interface{})
+		if !ok {
+			return errors.Errorf("expected list of maps for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(list))
+
+	case ParameterTypeObjectFromFile:
+		mapVal, ok := value.(map[string]interface{})
+		if !ok {
+			return errors.Errorf("expected map for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(mapVal))
+
+	case ParameterTypeKeyValue:
+		mapVal, ok := value.(map[string]string)
+		if !ok {
+			return errors.Errorf("expected map of strings for parameter %s, got %T", p.Name, value)
+		}
+		v.Set(reflect.ValueOf(mapVal))
+
+	default:
+		return errors.Errorf("unknown parameter type %s", p.Type)
+	}
 	return nil
 }

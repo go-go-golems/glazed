@@ -103,7 +103,7 @@ func TestParameterValidity(t *testing.T) {
 	initialParameterTests()
 	for _, validityTest := range testParameterValidList {
 		t.Run(validityTest.Name, func(t *testing.T) {
-			err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
+			_, err := validityTest.parameterDefinition.CheckValueValidity(validityTest.Value)
 			if validityTest.Valid {
 				assert.NoError(t, err)
 			} else {
@@ -1160,7 +1160,7 @@ func TestCheckValueValidity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.param.CheckValueValidity(tt.value)
+			_, err := tt.param.CheckValueValidity(tt.value)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckValueValidity() error = %v, wantErr %v", err, tt.wantErr)
 			}
