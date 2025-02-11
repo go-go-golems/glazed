@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -73,6 +74,8 @@ type CobraParser struct {
 	middlewaresFunc CobraMiddlewaresFunc
 	// List of layers to be shown in short help, empty: always show all
 	shortHelpLayers []string
+	// skipGlazedCommandLayer controls whether the GlazedCommandLayer should be automatically added
+	skipGlazedCommandLayer bool
 }
 
 type CobraParserOption func(*CobraParser) error
@@ -87,6 +90,13 @@ func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserO
 func WithCobraShortHelpLayers(layers ...string) CobraParserOption {
 	return func(c *CobraParser) error {
 		c.shortHelpLayers = append(c.shortHelpLayers, layers...)
+		return nil
+	}
+}
+
+func WithSkipGlazedCommandLayer() CobraParserOption {
+	return func(c *CobraParser) error {
+		c.skipGlazedCommandLayer = true
 		return nil
 	}
 }
@@ -121,12 +131,14 @@ func NewCobraParserFromLayers(
 		}
 	}
 
-	// NOTE(manuel, 2023-12-30) I actually think we always want to have the glazed-command layer
-	glazedCommandLayer, err := NewGlazedCommandLayer()
-	if err != nil {
-		return nil, err
+	// Only add the glazed command layer if not explicitly skipped
+	if !ret.skipGlazedCommandLayer {
+		glazedCommandLayer, err := NewGlazedCommandLayer()
+		if err != nil {
+			return nil, err
+		}
+		ret.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 	}
-	ret.Layers.Set(glazedCommandLayer.GetSlug(), glazedCommandLayer)
 
 	return ret, nil
 }

@@ -34,4 +34,12 @@ Added ability to serialize parsed layers to YAML/JSON format, combining layer de
 Clarified the documentation about implementing AddDocToHelpSystem, explaining the recommended approach of creating a doc package with embedded documentation files.
 
 - Updated help entry to show how to properly implement AddDocToHelpSystem in user's own package
-- Added example of doc.go implementation with embed functionality 
+- Added example of doc.go implementation with embed functionality
+
+# Optional GlazedCommandLayer in CobraParser
+
+Added ability to skip adding the GlazedCommandLayer when creating a new CobraParser.
+
+- Added skipGlazedCommandLayer flag to CobraParser struct
+- Added WithSkipGlazedCommandLayer option function
+- Modified NewCobraParserFromLayers to respect the skip flag 
