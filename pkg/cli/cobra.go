@@ -161,6 +161,7 @@ func BuildCobraCommandFromCommandAndFunc(
 			}
 
 			if createCommandSettings.CreateCommand != "" {
+				// XXX this is broken now I think anyway
 				layers_ := description.Layers.Clone()
 
 				cmd := &cmds.CommandDescription{
