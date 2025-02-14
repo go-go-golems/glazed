@@ -10,7 +10,7 @@ const CreateCommandSettingsSlug = "create-command-settings"
 func NewCreateCommandSettingsLayer() (layers.ParameterLayer, error) {
 	createCommandSettingsLayer, err := layers.NewParameterLayer(
 		CreateCommandSettingsSlug,
-		"General purpose command options",
+		"Create command settings",
 		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
 				"create-command",
@@ -86,7 +86,7 @@ const CommandSettingsSlug = "command-settings"
 func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
 	glazedMinimalCommandLayer, err := layers.NewParameterLayer(
 		CommandSettingsSlug,
-		"Minimal set of general purpose command options",
+		"General purpose command options",
 		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
 				"print-yaml",
