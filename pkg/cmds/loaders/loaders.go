@@ -1,16 +1,17 @@
 package loaders
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/alias"
-	"github.com/go-go-golems/glazed/pkg/helpers/cast"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/alias"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 // CommandLoader is an interface that describes the most generic loader type,
@@ -162,9 +163,14 @@ func GetParentsFromDir(dir string) []string {
 	}
 	pathToFile := dir
 	parents := strings.Split(pathToFile, "/")
-	if len(parents) > 0 && parents[len(parents)-1] == "" {
-		parents = parents[:len(parents)-1]
+	// Filter out empty strings from parents
+	filteredParents := make([]string, 0, len(parents))
+	for _, p := range parents {
+		if p != "" {
+			filteredParents = append(filteredParents, p)
+		}
 	}
+	parents = filteredParents
 	return parents
 }
 
