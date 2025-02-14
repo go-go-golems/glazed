@@ -42,4 +42,14 @@ Added ability to skip adding the GlazedCommandLayer when creating a new CobraPar
 
 - Added skipGlazedCommandLayer flag to CobraParser struct
 - Added WithSkipGlazedCommandLayer option function
-- Modified NewCobraParserFromLayers to respect the skip flag 
+- Modified NewCobraParserFromLayers to respect the skip flag
+
+# Optional Profile and Create Command Settings Layers in CobraParser
+
+Added ability to enable ProfileSettingsLayer and CreateCommandSettingsLayer when creating a new CobraParser. These layers are disabled by default and must be explicitly enabled.
+
+- Added enableProfileSettingsLayer flag to CobraParser struct
+- Added enableCreateCommandSettingsLayer flag to CobraParser struct
+- Added WithProfileSettingsLayer option function to enable profile settings
+- Added WithCreateCommandSettingsLayer option function to enable create command settings
+- Modified NewCobraParserFromLayers to only add these layers when explicitly enabled 
