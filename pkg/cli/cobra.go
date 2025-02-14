@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -87,8 +88,12 @@ func BuildCobraCommandFromCommandAndFunc(
 			}
 
 			if printSchema {
-				// TODO(manuel, 2024-01-09) Implement schema printing
-				log.Warn().Msg("Schema printing not yet implemented")
+				schema, err := s.Description().ToJsonSchema()
+				cobra.CheckErr(err)
+				encoder := json.NewEncoder(os.Stdout)
+				encoder.SetIndent("", "  ")
+				err = encoder.Encode(schema)
+				cobra.CheckErr(err)
 				return
 			}
 		}
