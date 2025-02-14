@@ -5,11 +5,11 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
-const GlazedCommandSlug = "glazed-command"
+const CreateCommandSettingsSlug = "create-command-settings"
 
-func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
-	glazedCommandLayer, err := layers.NewParameterLayer(
-		GlazedCommandSlug,
+func NewCreateCommandSettingsLayer() (layers.ParameterLayer, error) {
+	createCommandSettingsLayer, err := layers.NewParameterLayer(
+		CreateCommandSettingsSlug,
 		"General purpose command options",
 		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
@@ -27,31 +27,42 @@ func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Print the CLIopatra YAML for the command"),
 			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return createCommandSettingsLayer, nil
+}
+
+type CreateCommandSettings struct {
+	CreateCommand   string `glazed.parameter:"create-command"`
+	CreateAlias     string `glazed.parameter:"create-alias"`
+	CreateCliopatra string `glazed.parameter:"create-cliopatra"`
+}
+
+type ProfileSettings struct {
+	Profile     string `glazed.parameter:"profile"`
+	ProfileFile string `glazed.parameter:"profile-file"`
+}
+
+const ProfileSettingsSlug = "profile-settings"
+
+func NewProfileSettingsLayer() (layers.ParameterLayer, error) {
+	profileSettingsLayer, err := layers.NewParameterLayer(
+		ProfileSettingsSlug,
+		"Profile settings",
+		layers.WithParameterDefinitions(
 			parameters.NewParameterDefinition(
-				"print-yaml",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the command's YAML"),
-			),
-			parameters.NewParameterDefinition(
-				"load-parameters-from-json",
+				"profile",
 				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the command's flags from JSON"),
-			),
-			parameters.NewParameterDefinition(
-				"print-parsed-parameters",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the parsed parameters"),
+				parameters.WithHelp("Load the profile"),
 			),
 			parameters.NewParameterDefinition(
 				"profile-file",
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Load the profile from a file"),
-			),
-			parameters.NewParameterDefinition(
-				"profile",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the profile"),
-				parameters.WithDefault("default"),
 			),
 		),
 	)
@@ -59,16 +70,49 @@ func NewGlazedCommandLayer() (layers.ParameterLayer, error) {
 		return nil, err
 	}
 
-	return glazedCommandLayer, nil
+	return profileSettingsLayer, nil
 }
 
-type GlazedCommandSettings struct {
-	CreateCommand          string `glazed.parameter:"create-command"`
-	CreateAlias            string `glazed.parameter:"create-alias"`
-	CreateCliopatra        string `glazed.parameter:"create-cliopatra"`
+// GlazedMinimalCommandSettings contains a subset of the most commonly used settings
+type CommandSettings struct {
 	PrintYAML              bool   `glazed.parameter:"print-yaml"`
 	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
 	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
-	Profile                string `glazed.parameter:"profile"`
-	ProfileFile            string `glazed.parameter:"profile-file"`
+	PrintSchema            bool   `glazed.parameter:"print-schema"`
+}
+
+const CommandSettingsSlug = "command-settings"
+
+func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
+	glazedMinimalCommandLayer, err := layers.NewParameterLayer(
+		CommandSettingsSlug,
+		"Minimal set of general purpose command options",
+		layers.WithParameterDefinitions(
+			parameters.NewParameterDefinition(
+				"print-yaml",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Print the command's YAML"),
+			),
+			parameters.NewParameterDefinition(
+				"print-parsed-parameters",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Print the parsed parameters"),
+			),
+			parameters.NewParameterDefinition(
+				"load-parameters-from-file",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Load the command's flags from file"),
+			),
+			parameters.NewParameterDefinition(
+				"print-schema",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Print the command's schema"),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return glazedMinimalCommandLayer, nil
 }

@@ -3,6 +3,10 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
@@ -16,9 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
-	"os"
-	"os/signal"
-	"strings"
 )
 
 type CobraRunFunc func(ctx context.Context, parsedLayers *layers.ParsedLayers) error
@@ -62,118 +63,122 @@ func BuildCobraCommandFromCommandAndFunc(
 			os.Exit(1)
 		}
 
-		// TODO(manuel, 2023-12-28) After loading all the parameters, we potentially need to post process some Layers
-		// This is what ParseLayerFromCobraCommand is doing currently, and it seems the only place
-		// it is actually used seems to be by the FieldsFilter glazed layer.
-		// See Muji (1) sketchbook p.21
-		// get the command settings
+		// Handle both full and minimal command settings
 
-		commandSettings := &GlazedCommandSettings{}
-		if glazeCommandLayer, ok := parsedLayers.Get(GlazedCommandSlug); ok {
-			err = glazeCommandLayer.InitializeStruct(commandSettings)
+		// Try minimal command settings
+		commandSettings := &CommandSettings{}
+		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
+			var printYAML, printParsedParameters_, printSchema bool
+			err = minimalLayer.InitializeStruct(commandSettings)
 			cobra.CheckErr(err)
-		}
+			printYAML = commandSettings.PrintYAML
+			printParsedParameters_ = commandSettings.PrintParsedParameters
+			printSchema = commandSettings.PrintSchema
 
-		if commandSettings.PrintParsedParameters {
-			printParsedParameters(parsedLayers)
-			return
-		}
-
-		// TODO(manuel, 2023-12-28) Handle GlazeCommandLayer options here
-		if commandSettings.PrintYAML {
-			err = s.ToYAML(os.Stdout)
-			cobra.CheckErr(err)
-			return
-		}
-
-		if commandSettings.CreateCliopatra != "" {
-			verbs := GetVerbsFromCobraCommand(cmd)
-			if len(verbs) == 0 {
-				cobra.CheckErr(errors.New("could not get verbs from cobra command"))
-			}
-			p := cliopatra.NewProgramFromCapture(
-				s.Description(),
-				parsedLayers,
-				cliopatra.WithVerbs(verbs[1:]...),
-				cliopatra.WithName(commandSettings.CreateCliopatra),
-				cliopatra.WithPath(verbs[0]),
-			)
-
-			// print as yaml
-			sb := strings.Builder{}
-			encoder := yaml.NewEncoder(&sb)
-			err = encoder.Encode(p)
-			cobra.CheckErr(err)
-
-			fmt.Println(sb.String())
-			os.Exit(0)
-		}
-
-		if commandSettings.CreateAlias != "" {
-			alias := &alias.CommandAlias{
-				Name:      commandSettings.CreateAlias,
-				AliasFor:  description.Name,
-				Arguments: args,
-				Flags:     map[string]string{},
+			if printParsedParameters_ {
+				printParsedParameters(parsedLayers)
+				return
 			}
 
-			cmd.Flags().Visit(func(flag *pflag.Flag) {
-				if flag.Name != "create-alias" {
-					switch flag.Value.Type() {
-					case "stringSlice":
-						slice, _ := cmd.Flags().GetStringSlice(flag.Name)
-						alias.Flags[flag.Name] = strings.Join(slice, ",")
-					case "intSlice":
-						slice, _ := cmd.Flags().GetIntSlice(flag.Name)
-						alias.Flags[flag.Name] = strings.Join(strings2.IntSliceToStringSlice(slice), ",")
+			if printYAML {
+				err = s.ToYAML(os.Stdout)
+				cobra.CheckErr(err)
+				return
+			}
 
-					case "floatSlice":
-						slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
-						alias.Flags[flag.Name] = strings.Join(strings2.Float64SliceToStringSlice(slice), ",")
+			if printSchema {
+				// TODO(manuel, 2024-01-09) Implement schema printing
+				log.Warn().Msg("Schema printing not yet implemented")
+				return
+			}
+		}
 
-					default:
-						alias.Flags[flag.Name] = flag.Value.String()
-					}
+		// Handle the rest of the full command settings if available
+		if createCommandLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
+			createCommandSettings := &CreateCommandSettings{}
+			err = createCommandLayer.InitializeStruct(createCommandSettings)
+			cobra.CheckErr(err)
+
+			if createCommandSettings.CreateCliopatra != "" {
+				verbs := GetVerbsFromCobraCommand(cmd)
+				if len(verbs) == 0 {
+					cobra.CheckErr(errors.New("could not get verbs from cobra command"))
 				}
-			})
+				p := cliopatra.NewProgramFromCapture(
+					s.Description(),
+					parsedLayers,
+					cliopatra.WithVerbs(verbs[1:]...),
+					cliopatra.WithName(createCommandSettings.CreateCliopatra),
+					cliopatra.WithPath(verbs[0]),
+				)
 
-			// marshal alias to yaml
-			sb := strings.Builder{}
-			encoder := yaml.NewEncoder(&sb)
-			err = encoder.Encode(alias)
-			cobra.CheckErr(err)
+				// print as yaml
+				sb := strings.Builder{}
+				encoder := yaml.NewEncoder(&sb)
+				err = encoder.Encode(p)
+				cobra.CheckErr(err)
 
-			fmt.Println(sb.String())
-			os.Exit(0)
-		}
-
-		// TODO(manuel, 2023-02-26) This only outputs the command description, not the actual command
-		// This is already helpful, but is really just half the story. To make this work
-		// generically, CreateNewCommand() should be part of the interface.
-		//
-		// See https://github.com/go-go-golems/glazed/issues/170
-		//
-		// NOTE(manuel, 2023-12-21) Disabling this for now while I move flagand argument handling
-		// over to be done by the default layer'
-		//
-		if commandSettings.CreateCommand != "" {
-			layers_ := description.Layers.Clone()
-
-			cmd := &cmds.CommandDescription{
-				Name:   commandSettings.CreateCommand,
-				Short:  description.Short,
-				Long:   description.Long,
-				Layers: layers_,
+				fmt.Println(sb.String())
+				os.Exit(0)
 			}
 
-			// encode as yaml
-			sb := strings.Builder{}
-			encoder := yaml.NewEncoder(&sb)
-			err = encoder.Encode(cmd)
-			cobra.CheckErr(err)
+			if createCommandSettings.CreateAlias != "" {
+				alias := &alias.CommandAlias{
+					Name:      createCommandSettings.CreateAlias,
+					AliasFor:  description.Name,
+					Arguments: args,
+					Flags:     map[string]string{},
+				}
 
-			fmt.Println(sb.String())
-			os.Exit(0)
+				cmd.Flags().Visit(func(flag *pflag.Flag) {
+					if flag.Name != "create-alias" {
+						switch flag.Value.Type() {
+						case "stringSlice":
+							slice, _ := cmd.Flags().GetStringSlice(flag.Name)
+							alias.Flags[flag.Name] = strings.Join(slice, ",")
+						case "intSlice":
+							slice, _ := cmd.Flags().GetIntSlice(flag.Name)
+							alias.Flags[flag.Name] = strings.Join(strings2.IntSliceToStringSlice(slice), ",")
+
+						case "floatSlice":
+							slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
+							alias.Flags[flag.Name] = strings.Join(strings2.Float64SliceToStringSlice(slice), ",")
+
+						default:
+							alias.Flags[flag.Name] = flag.Value.String()
+						}
+					}
+				})
+
+				// marshal alias to yaml
+				sb := strings.Builder{}
+				encoder := yaml.NewEncoder(&sb)
+				err = encoder.Encode(alias)
+				cobra.CheckErr(err)
+
+				fmt.Println(sb.String())
+				os.Exit(0)
+			}
+
+			if createCommandSettings.CreateCommand != "" {
+				layers_ := description.Layers.Clone()
+
+				cmd := &cmds.CommandDescription{
+					Name:   createCommandSettings.CreateCommand,
+					Short:  description.Short,
+					Long:   description.Long,
+					Layers: layers_,
+				}
+
+				// encode as yaml
+				sb := strings.Builder{}
+				encoder := yaml.NewEncoder(&sb)
+				err = encoder.Encode(cmd)
+				cobra.CheckErr(err)
+
+				fmt.Println(sb.String())
+				os.Exit(0)
+			}
 		}
 
 		ctx, cancel := context.WithCancel(cmd.Context())
