@@ -142,7 +142,7 @@ middleware := middlewares.ParseFromCobraCommand(cmd,
 )
 ```
 
-For positional arguments:
+For positional arguments (from command line):
 ```go
 middleware := middlewares.GatherArguments(args,
     parameters.WithParseStepSource("args"),

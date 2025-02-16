@@ -269,6 +269,152 @@ func main() {
 }
 ```
 
+## Running Commands Programmatically
+
+The `glazed/pkg/cmds/runner` package provides a flexible way to run commands programmatically without using Cobra. This is useful when embedding Glazed commands in your own applications or when you need more control over parameter parsing and command execution.
+
+### Basic Command Execution
+
+The simplest way to run a command is using the `ParseAndRun` function:
+
+```go
+import (
+    "context"
+    "github.com/go-go-golems/glazed/pkg/cmds/runner"
+)
+
+func executeCommand(cmd cmds.Command) error {
+    ctx := context.Background()
+    return runner.ParseAndRun(ctx, cmd, nil, nil)
+}
+```
+
+### Configuring Parameter Parsing
+
+The runner package provides several options to customize how parameters are parsed:
+
+```go
+// Set up parsing options
+parseOptions := []runner.ParseOption{
+    // Load from environment variables with prefix
+    runner.WithEnvMiddleware("APP_"),
+    
+    // Load from Viper configuration
+    runner.WithViper(),
+    
+    // Provide values for specific layers
+    runner.WithValuesForLayers(map[string]map[string]interface{}{
+        "config": {
+            "host": "localhost",
+            "port": 8080,
+        },
+        "api": {
+            "timeout": 30,
+            "retries": 3,
+        },
+    }),
+    
+    // Add custom middleware
+    runner.WithAdditionalMiddlewares(customMiddleware),
+}
+
+// Parse parameters
+parsedLayers, err := runner.ParseCommandParameters(cmd, parseOptions...)
+if err != nil {
+    return err
+}
+```
+
+### Configuring Command Execution
+
+You can customize how commands are executed using run options:
+
+```go
+// Set up run options
+runOptions := []runner.RunOption{
+    // Specify output writer for WriterCommand
+    runner.WithWriter(customWriter),
+    
+    // Provide custom processor for GlazeCommand
+    runner.WithGlazeProcessor(customProcessor),
+}
+
+// Run the command with parsed parameters
+err = runner.RunCommand(ctx, cmd, parsedLayers, runOptions...)
+```
+
+### Parameter Loading Order
+
+When using the default middleware chain, parameters are loaded in the following order (later sources override earlier ones):
+
+1. Base parameter defaults (from parameter definitions)
+2. Layer values (via `WithValuesForLayers`)
+3. Environment variables (if enabled via `WithEnvMiddleware`)
+4. Viper configuration (if enabled via `WithViper`)
+5. Custom middlewares (via `WithAdditionalMiddlewares`)
+
+### Separate Parsing and Execution
+
+For more control, you can separate parameter parsing from command execution:
+
+```go
+func executeWithCustomParsing(cmd cmds.Command) error {
+    ctx := context.Background()
+    
+    // Parse parameters
+    parsedLayers, err := runner.ParseCommandParameters(cmd,
+        runner.WithEnvMiddleware("APP_"),
+        runner.WithValuesForLayers(defaultValues),
+    )
+    if err != nil {
+        return err
+    }
+    
+    // Modify parsed parameters if needed
+    // ...
+    
+    // Execute command
+    return runner.RunCommand(ctx, cmd, parsedLayers,
+        runner.WithWriter(os.Stdout),
+    )
+}
+```
+
+### Example: Complete Command Execution
+
+Here's a complete example showing how to run a command with custom configuration:
+
+```go
+func runCustomCommand(cmd cmds.Command) error {
+    ctx := context.Background()
+    
+    // Define default values
+    values := map[string]map[string]interface{}{
+        "config": {
+            "environment": "development",
+            "logLevel": "debug",
+        },
+    }
+    
+    // Setup parsing options
+    parseOptions := []runner.ParseOption{
+        runner.WithValuesForLayers(values),
+        runner.WithEnvMiddleware("APP_"),
+        runner.WithViper(),
+    }
+    
+    // Setup run options
+    runOptions := []runner.RunOption{
+        runner.WithWriter(os.Stdout),
+    }
+    
+    // Parse and run in one step
+    return runner.ParseAndRun(ctx, cmd, parseOptions, runOptions)
+}
+```
+
+This approach provides a flexible way to run Glazed commands programmatically while maintaining control over parameter parsing and command execution.
+
 ## Summary
 
 By following this guide, you can effectively create, configure, run, and manage commands in the `glazed` framework. Whether you're building simple utilities or complex applications, `glazed` provides the tools necessary to streamline your command-line interface development.
