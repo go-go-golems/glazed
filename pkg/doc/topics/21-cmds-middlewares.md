@@ -1,3 +1,25 @@
+---
+Title: Glazed Middlewares Guide
+Slug: glazed-middlewares
+Short: Learn how to use Glazed's middleware system to load parameter values from various sources
+Topics:
+- middlewares
+- parameters
+- configuration
+Commands:
+- ExecuteMiddlewares
+- SetFromDefaults
+- UpdateFromEnv
+- LoadParametersFromFile
+- ParseFromCobraCommand
+Flags:
+- none
+IsTopLevel: true
+IsTemplate: false
+ShowPerDefault: true
+SectionType: GeneralTopic
+---
+
 # Glazed Middlewares Guide: Loading Parameter Values
 
 ## Overview
@@ -120,7 +142,7 @@ middleware := middlewares.ParseFromCobraCommand(cmd,
 )
 ```
 
-For positional arguments:
+For positional arguments (from command line):
 ```go
 middleware := middlewares.GatherArguments(args,
     parameters.WithParseStepSource("args"),
@@ -473,3 +495,288 @@ middlewares.WrapWithWhitelistedLayers(
     middlewares.UpdateFromEnv("APP_"),
 )
 ```
+
+## Tutorial: Practical Implementation
+
+This section provides concrete examples of implementing and using the middleware system. While the previous sections explained the architectural concepts, here we'll see how these concepts translate into working code.
+
+### 1. Basic Setup
+
+The foundation of Glazed's parameter system is the `ParameterLayer`. Before we can use middlewares, we need to define our parameter structure. This example shows how to create a layer that matches the architectural concepts discussed earlier:
+
+```go
+package main
+
+import (
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+)
+
+func main() {
+    // Create a new parameter layer
+    layer, err := layers.NewParameterLayer(
+        "config",
+        "Configuration Options",
+        layers.WithParameterDefinitions(
+            parameters.NewParameterDefinition(
+                "host",
+                parameters.ParameterTypeString,
+                parameters.WithDefault("localhost"),
+                parameters.WithHelp("Server hostname"),
+            ),
+            parameters.NewParameterDefinition(
+                "port",
+                parameters.ParameterTypeInteger,
+                parameters.WithDefault(8080),
+                parameters.WithHelp("Server port"),
+            ),
+        ),
+    )
+    if err != nil {
+        panic(err)
+    }
+
+    // Create parameter layers container
+    parameterLayers := layers.NewParameterLayers(
+        layers.WithLayers(layer),
+    )
+}
+```
+
+This setup demonstrates several key concepts:
+- Parameter definitions with types, defaults, and help text
+- Layer organization with meaningful names and descriptions
+- Error handling for layer creation
+- Container structure for managing multiple layers
+
+### 2. Using Individual Middlewares
+
+Now that we understand the middleware signature and execution order, let's see how to implement specific middlewares. These examples show how the middleware chain processes parameters in practice.
+
+#### SetFromDefaults Middleware
+
+The `SetFromDefaults` middleware demonstrates the basic middleware pattern of processing parameters after the next handler:
+
+```go
+func useDefaultsMiddleware() {
+    // Create empty parsed layers
+    parsedLayers := layers.NewParsedLayers()
+
+    // Create and execute the middleware
+    middleware := middlewares.SetFromDefaults(
+        parameters.WithParseStepSource(parameters.SourceDefaults),
+    )
+
+    err := middlewares.ExecuteMiddlewares(
+        parameterLayers,
+        parsedLayers,
+        middleware,
+    )
+    if err != nil {
+        panic(err)
+    }
+
+    // Access the parsed values
+    configLayer, _ := parsedLayers.Get("config")
+    hostValue, _ := configLayer.GetParameter("host")
+    // hostValue will be "localhost"
+}
+```
+
+This example shows:
+- Creation of empty ParsedLayers to store results
+- Source tracking using ParseStepSource
+- Middleware execution order
+- Access to parsed values
+- Error handling in middleware chains
+
+#### UpdateFromMap Middleware
+
+The `UpdateFromMap` middleware shows how to override values from an external source:
+
+```go
+func useMapMiddleware() {
+    parsedLayers := layers.NewParsedLayers()
+
+    // Define the update map
+    updateMap := map[string]map[string]interface{}{
+        "config": {
+            "host": "example.com",
+            "port": 9090,
+        },
+    }
+
+    err := middlewares.ExecuteMiddlewares(
+        parameterLayers,
+        parsedLayers,
+        middlewares.UpdateFromMap(updateMap),
+    )
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+This demonstrates:
+- Structured data input through maps
+- Layer-specific updates
+- Value override patterns
+- Integration with the middleware chain
+
+### 3. Accessing Parsed Values
+
+After middlewares process the parameters, there are several ways to access the results. These patterns align with different use cases in the architecture:
+
+```go
+func accessParsedValues(parsedLayers *layers.ParsedLayers) {
+    // 1. Direct access through layer
+    configLayer, _ := parsedLayers.Get("config")
+    hostValue, _ := configLayer.GetParameter("host")
+
+    // 2. Get all parameters as a map
+    dataMap := parsedLayers.GetDataMap()
+    host := dataMap["host"]
+
+    // 3. Initialize a struct
+    type Config struct {
+        Host string `glazed.parameter:"host"`
+        Port int    `glazed.parameter:"port"`
+    }
+    
+    var config Config
+    err := parsedLayers.InitializeStruct("config", &config)
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+These access patterns support:
+- Direct layer access for fine-grained control
+- Map-based access for dynamic parameter handling
+- Struct initialization for type-safe parameter usage
+- Integration with Go's type system through struct tags
+
+### 4. Tracking Parameter History
+
+One of the key features of Glazed's middleware system is its ability to track parameter changes. This helps debug parameter processing and understand value origins:
+
+```go
+func checkParameterHistory(parsedLayers *layers.ParsedLayers) {
+    configLayer, _ := parsedLayers.Get("config")
+    hostParam, _ := configLayer.Parameters.Get("host")
+
+    // View the parsing history
+    for _, step := range hostParam.Log {
+        fmt.Printf("Source: %s, Value: %v\n", step.Source, step.Value)
+    }
+}
+```
+
+The history tracking shows:
+- Source identification for each update
+- Value transformation tracking
+- Middleware execution order verification
+- Debugging support for parameter processing
+
+### 5. Complex Middleware Chaining
+
+This example demonstrates how multiple middlewares work together in the chain, following the execution order principles discussed earlier:
+
+```go
+func chainMiddlewares() {
+    parsedLayers := layers.NewParsedLayers()
+
+    // Define different parameter sources
+    configMap := map[string]map[string]interface{}{
+        "config": {
+            "host": "config.com",
+            "port": 5000,
+        },
+    }
+
+    defaultMap := map[string]map[string]interface{}{
+        "config": {
+            "host": "default.com",
+            "port": 8080,
+        },
+    }
+
+    // Execute middlewares in order (last middleware has highest precedence)
+    err := middlewares.ExecuteMiddlewares(
+        parameterLayers,
+        parsedLayers,
+        middlewares.UpdateFromMapAsDefault(defaultMap),  // Lowest precedence
+        middlewares.SetFromDefaults(
+            parameters.WithParseStepSource(parameters.SourceDefaults),
+        ),
+        middlewares.UpdateFromMap(configMap),  // Highest precedence
+    )
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+This complex example illustrates:
+- Priority-based middleware ordering
+- Multiple data source handling
+- Default value management
+- Value override patterns
+- Error propagation through the chain
+
+### 6. Working with Restricted Layers
+
+Layer restriction is a powerful feature that implements the modular parameter handling concept discussed in the architecture:
+
+```go
+func useRestrictedLayers() {
+    parsedLayers := layers.NewParsedLayers()
+
+    updateMap := map[string]map[string]interface{}{
+        "config": {
+            "host": "restricted.com",
+        },
+    }
+
+    // Only apply to whitelisted layers
+    whitelistedMiddleware := middlewares.WrapWithWhitelistedLayers(
+        []string{"config"},
+        middlewares.UpdateFromMap(updateMap),
+    )
+
+    // Or blacklist specific layers
+    blacklistedMiddleware := middlewares.WrapWithBlacklistedLayers(
+        []string{"other-layer"},
+        middlewares.UpdateFromMap(updateMap),
+    )
+
+    err := middlewares.ExecuteMiddlewares(
+        parameterLayers,
+        parsedLayers,
+        whitelistedMiddleware,
+        blacklistedMiddleware,
+    )
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+This demonstrates advanced concepts:
+- Selective middleware application
+- Layer isolation
+- Parameter scope control
+- Middleware composition
+- Complex configuration scenarios
+
+### Integration with Larger Systems
+
+These examples can be combined to create sophisticated parameter handling systems. For instance, a typical application might:
+
+1. Define multiple parameter layers for different concerns
+2. Set up a chain of middlewares to handle various input sources
+3. Use layer restrictions to manage parameter scope
+4. Track parameter history for debugging
+5. Access parsed values through the most appropriate pattern
