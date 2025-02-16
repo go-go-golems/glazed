@@ -2,13 +2,14 @@ package cmds
 
 import (
 	"context"
+	"io"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"gopkg.in/yaml.v3"
-	"io"
-	"strings"
 )
 
 // CommandDescription contains the necessary information for registering
@@ -22,6 +23,7 @@ type CommandDescription struct {
 	Layout         []*layout.Section       `yaml:"layout,omitempty"`
 	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
 	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
+	Type           string                  `yaml:"type,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -47,6 +49,12 @@ func WithShort(s string) CommandDescriptionOption {
 func WithLong(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Long = s
+	}
+}
+
+func WithType(t string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Type = t
 	}
 }
 
@@ -175,7 +183,7 @@ func (cd *CommandDescription) FullPath() string {
 	if len(cd.Parents) == 0 {
 		return cd.Name
 	}
-	return strings.Join(cd.Parents, " ") + " " + cd.Name
+	return strings.Join(cd.Parents, "/") + "/" + cd.Name
 }
 
 func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
