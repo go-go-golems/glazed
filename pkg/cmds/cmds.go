@@ -22,6 +22,7 @@ type CommandDescription struct {
 	Layout         []*layout.Section       `yaml:"layout,omitempty"`
 	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
 	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
+	Type           string                  `yaml:"type,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -47,6 +48,12 @@ func WithShort(s string) CommandDescriptionOption {
 func WithLong(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Long = s
+	}
+}
+
+func WithType(t string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Type = t
 	}
 }
 
