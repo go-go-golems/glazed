@@ -2,13 +2,14 @@ package cmds
 
 import (
 	"context"
+	"io"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"gopkg.in/yaml.v3"
-	"io"
-	"strings"
 )
 
 // CommandDescription contains the necessary information for registering
@@ -182,7 +183,7 @@ func (cd *CommandDescription) FullPath() string {
 	if len(cd.Parents) == 0 {
 		return cd.Name
 	}
-	return strings.Join(cd.Parents, " ") + " " + cd.Name
+	return strings.Join(cd.Parents, "/") + "/" + cd.Name
 }
 
 func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
