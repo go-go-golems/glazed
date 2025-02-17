@@ -24,6 +24,8 @@ type CommandDescription struct {
 	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
 	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
 	Type           string                  `yaml:"type,omitempty"`
+	Tags           []string                `yaml:"tags,omitempty"`
+	Metadata       map[string]interface{}  `yaml:"metadata,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
