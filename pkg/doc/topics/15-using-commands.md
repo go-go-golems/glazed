@@ -508,4 +508,7 @@ File-Based Types:
 
 ## Summary
 
-By following this guide, you can effectively create, configure, run, and manage commands in the `glazed` framework. Whether you're building simple utilities or complex applications, `glazed` provides the tools necessary to streamline your command-line interface development.
+By following this guide, you can effectively create, configure, run, and manage
+commands in the `glazed` framework. Whether you're building simple utilities or
+complex applications, `glazed` provides the tools necessary to streamline your
+command-line interface development.
