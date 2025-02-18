@@ -60,6 +60,18 @@ func WithType(t string) CommandDescriptionOption {
 	}
 }
 
+func WithTags(tags ...string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Tags = tags
+	}
+}
+
+func WithMetadata(metadata map[string]interface{}) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Metadata = metadata
+	}
+}
+
 func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range ls {
