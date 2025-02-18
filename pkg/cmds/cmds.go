@@ -24,6 +24,8 @@ type CommandDescription struct {
 	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
 	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
 	Type           string                  `yaml:"type,omitempty"`
+	Tags           []string                `yaml:"tags,omitempty"`
+	Metadata       map[string]interface{}  `yaml:"metadata,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -55,6 +57,18 @@ func WithLong(s string) CommandDescriptionOption {
 func WithType(t string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Type = t
+	}
+}
+
+func WithTags(tags ...string) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Tags = tags
+	}
+}
+
+func WithMetadata(metadata map[string]interface{}) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		c.Metadata = metadata
 	}
 }
 
