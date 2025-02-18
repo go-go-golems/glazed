@@ -82,7 +82,7 @@ func (pds *ParameterDefinitions) addArgumentsToCobraCommand(cmd *cobra.Command) 
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
 		}
-		err := argument.CheckParameterDefaultValueValidity()
+		_, err := argument.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", argument.Name)
 		}
@@ -131,7 +131,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 	}
 
 	err = pds.GetFlags().ForEachE(func(parameter *ParameterDefinition) error {
-		err := parameter.CheckParameterDefaultValueValidity()
+		_, err := parameter.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
 		}

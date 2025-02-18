@@ -1,9 +1,10 @@
 package codegen
 
 import (
+	"reflect"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"reflect"
 )
 
 const GlazedCommandsPath = "github.com/go-go-golems/glazed/pkg/cmds"
@@ -38,12 +39,11 @@ func ParameterDefinitionToDict(p *parameters.ParameterDefinition) (jen.Code, err
 }
 
 func FlagValueToJen(p *parameters.ParameterDefinition) (jen.Code, error) {
-	err := p.CheckParameterDefaultValueValidity()
+	d, err := p.CheckParameterDefaultValueValidity()
 	if err != nil {
 		return nil, err
 	}
 
-	d := p.Default
 	return LiteralToJen(reflect.ValueOf(d))
 }
 
