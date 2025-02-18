@@ -132,7 +132,7 @@ func (p *ParameterLayerImpl) LoadFromYAML(s []byte) error {
 	}
 
 	for f_ := p.ParameterDefinitions.Oldest(); f_ != nil; f_ = f_.Next() {
-		err := f_.Value.CheckParameterDefaultValueValidity()
+		_, err := f_.Value.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return err
 		}

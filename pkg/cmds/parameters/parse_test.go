@@ -2,13 +2,14 @@ package parameters
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strings"
-	"testing"
-	"time"
 )
 
 type ExpectError string
@@ -959,7 +960,7 @@ func TestValidDefaultValue(t *testing.T) {
 				Type:    testCase.Type,
 				Choices: testCase.Choices,
 			}
-			err := param.CheckParameterDefaultValueValidity()
+			_, err := param.CheckParameterDefaultValueValidity()
 			assert.Nil(t, err)
 		})
 	}
@@ -972,7 +973,7 @@ func TestValidChoiceDefaultValue(t *testing.T) {
 		Type:    ParameterTypeChoice,
 		Choices: []string{"foo", "bar"},
 	}
-	err := param.CheckParameterDefaultValueValidity()
+	_, err := param.CheckParameterDefaultValueValidity()
 	assert.Nil(t, err)
 }
 
@@ -989,7 +990,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 			Type:    ParameterTypeChoice,
 			Choices: []string{"foo", "bar"},
 		}
-		err := param.CheckParameterDefaultValueValidity()
+		_, err := param.CheckParameterDefaultValueValidity()
 		assert.Error(t, err)
 	}
 }

@@ -2,6 +2,10 @@ package settings
 
 import (
 	_ "embed"
+	"os"
+	"regexp"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -9,9 +13,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"os"
-	"regexp"
-	"strings"
 )
 
 type RenameSettings struct {
@@ -96,21 +97,17 @@ func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*RenameSe
 	}
 
 	regexpReplacements := row.RegexpReplacements{}
-	renameRegexpFields, ok := ps.GetValue("rename-regexp").(map[string]interface{})
+	renameRegexpFields, ok := ps.GetValue("rename-regexp").(map[string]string)
 	if !ok {
 		return nil, errors.Errorf("Invalid rename regexp fields")
 	}
 	for regex, replacement := range renameRegexpFields {
-		replacement_, ok := replacement.(string)
-		if !ok {
-			return nil, errors.Errorf("Invalid rename regexp replacement: %s", replacement)
-		}
 		re, err := regexp.Compile(regex)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Invalid regexp: %s", regex)
 		}
 		regexpReplacements = append(regexpReplacements,
-			&row.RegexpReplacement{Regexp: re, Replacement: replacement_})
+			&row.RegexpReplacement{Regexp: re, Replacement: replacement})
 	}
 
 	renameYaml, ok := ps.GetValue("rename-yaml").(string)

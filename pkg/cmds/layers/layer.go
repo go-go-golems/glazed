@@ -167,12 +167,12 @@ func InitializeParameterLayerWithDefaults(
 	pds := v.GetParameterDefinitions()
 
 	err := pds.ForEachE(func(pd *parameters.ParameterDefinition) error {
-		err := pd.CheckParameterDefaultValueValidity()
+		v, err := pd.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return err
 		}
-		if pd.Default != nil {
-			parsedLayer.Parameters.SetAsDefault(pd.Name, pd, *pd.Default, options...)
+		if v != nil {
+			parsedLayer.Parameters.SetAsDefault(pd.Name, pd, v, options...)
 		}
 		return nil
 	})

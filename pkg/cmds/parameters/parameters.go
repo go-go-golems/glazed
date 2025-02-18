@@ -395,18 +395,18 @@ func (pds *ParameterDefinitions) InitializeDefaultsFromMap(
 
 // CheckParameterDefaultValueValidity checks if the ParameterDefinition's Default is valid.
 // This is used when validating loading from a YAML file or setting up cobra flag definitions.
-func (p *ParameterDefinition) CheckParameterDefaultValueValidity() error {
+func (p *ParameterDefinition) CheckParameterDefaultValueValidity() (interface{}, error) {
 	// no default at all is valid
 	if p.Default == nil {
-		return nil
+		return nil, nil
 	}
 	// we can have no default
 	v := *p.Default
-	_, err := p.CheckValueValidity(v)
+	v, err := p.CheckValueValidity(v)
 	if err != nil {
-		return errors.Wrapf(err, "invalid default value for parameter %s", p.Name)
+		return nil, errors.Wrapf(err, "invalid default value for parameter %s", p.Name)
 	}
-	return nil
+	return v, nil
 }
 
 // CheckValueValidity checks if the given value is valid for the ParameterDefinition.
@@ -606,7 +606,7 @@ func LoadParameterDefinitionsFromYAML(yamlContent []byte) *ParameterDefinitions 
 	}
 
 	for _, p := range parameters {
-		err := p.CheckParameterDefaultValueValidity()
+		_, err := p.CheckParameterDefaultValueValidity()
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
 		}
