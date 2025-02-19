@@ -1,11 +1,12 @@
 package reflect
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"reflect"
-	"testing"
 )
 
 func TestSetReflectInt(t *testing.T) {
@@ -686,4 +687,143 @@ func TestSetReflectStringSliceError(t *testing.T) {
 	var s []string
 	err := SetReflectValue(reflect.ValueOf(&s).Elem(), []int{1, 2})
 	assert.Error(t, err)
+}
+
+func TestStripInterface(t *testing.T) {
+	type CustomString string
+	type CustomInt int
+	type Wrapper struct {
+		Value interface{}
+	}
+
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected reflect.Type
+	}{
+		{
+			name:     "plain string",
+			input:    "hello",
+			expected: reflect.TypeOf(""),
+		},
+		{
+			name:     "pointer to string",
+			input:    func() interface{} { s := "hello"; return &s }(),
+			expected: reflect.TypeOf(""),
+		},
+		{
+			name:     "empty interface",
+			input:    interface{}(nil),
+			expected: nil,
+		},
+		{
+			name:     "interface containing string",
+			input:    interface{}("hello"),
+			expected: reflect.TypeOf(""),
+		},
+		{
+			name: "nested interfaces and pointers",
+			input: func() interface{} {
+				s := interface{}("test")
+				return &s
+			}(),
+			expected: reflect.TypeOf(""),
+		},
+		{
+			name:     "custom string type",
+			input:    CustomString("hello"),
+			expected: reflect.TypeOf(CustomString("")),
+		},
+		{
+			name:     "interface containing custom string",
+			input:    interface{}(CustomString("hello")),
+			expected: reflect.TypeOf(CustomString("")),
+		},
+		{
+			name: "pointer to interface containing custom string",
+			input: func() interface{} {
+				i := interface{}(CustomString("hello"))
+				return &i
+			}(),
+			expected: reflect.TypeOf(CustomString("")),
+		},
+		{
+			name:     "int",
+			input:    42,
+			expected: reflect.TypeOf(0),
+		},
+		{
+			name:     "custom int",
+			input:    CustomInt(42),
+			expected: reflect.TypeOf(CustomInt(0)),
+		},
+		{
+			name: "deeply nested interfaces",
+			input: func() interface{} {
+				s := "test"
+				i1 := interface{}(s)
+				i2 := interface{}(&i1)
+				i3 := interface{}(&i2)
+				return &i3
+			}(),
+			expected: reflect.TypeOf(""),
+		},
+		{
+			name: "struct containing interface",
+			input: Wrapper{
+				Value: "hello",
+			},
+			expected: reflect.TypeOf(Wrapper{}),
+		},
+		{
+			name:     "nil pointer to string",
+			input:    (*string)(nil),
+			expected: nil,
+		},
+		{
+			name: "interface containing nil pointer",
+			input: func() interface{} {
+				var s *string
+				return s
+			}(),
+			expected: nil,
+		},
+		{
+			name:     "slice of strings",
+			input:    []string{"hello", "world"},
+			expected: reflect.TypeOf([]string{}),
+		},
+		{
+			name:     "interface containing slice",
+			input:    interface{}([]string{"hello", "world"}),
+			expected: reflect.TypeOf([]string{}),
+		},
+		{
+			name:     "map of strings",
+			input:    map[string]string{"hello": "world"},
+			expected: reflect.TypeOf(map[string]string{}),
+		},
+		{
+			name: "interface containing map",
+			input: interface{}(map[string]string{
+				"hello": "world",
+			}),
+			expected: reflect.TypeOf(map[string]string{}),
+		},
+		{
+			name: "interface containing interface containing string",
+			input: func() interface{} {
+				s := interface{}("hello")
+				return interface{}(s)
+			}(),
+			expected: reflect.TypeOf(""),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StripInterface(reflect.ValueOf(tt.input))
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
