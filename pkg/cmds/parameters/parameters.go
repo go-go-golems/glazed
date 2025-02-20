@@ -373,13 +373,13 @@ func (pds *ParameterDefinitions) InitializeDefaultsFromStruct(
 
 		parameter, ok := pds.Get(tagOptions.Name)
 		if !ok {
-			return errors.Errorf("unknown parameter %s", tag)
+			return errors.Errorf("unknown parameter %s when initializing defaults from struct", tag)
 		}
 		value := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 
 		err = parameter.SetDefaultFromValue(value)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set default value for %s", tag)
+			return errors.Wrapf(err, "failed to set default value for %s when initializing defaults from struct", tag)
 		}
 	}
 
@@ -392,11 +392,11 @@ func (pds *ParameterDefinitions) InitializeDefaultsFromMap(
 	for k, v := range ps {
 		parameter, ok := pds.Get(k)
 		if !ok {
-			return errors.Errorf("unknown parameter %s", k)
+			return errors.Errorf("unknown parameter when initializing defaults from map: %s", k)
 		}
 		err := parameter.SetDefaultFromValue(reflect.ValueOf(v))
 		if err != nil {
-			return errors.Wrapf(err, "failed to set default value for %s", k)
+			return errors.Wrapf(err, "failed to set default value for %s from map", k)
 		}
 	}
 
@@ -424,6 +424,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 	if v == nil {
 		return nil, nil
 	}
+
+	v = reflect2.StripInterfaceValue(v)
 
 	switch p.Type {
 	case ParameterTypeStringFromFile:
@@ -491,7 +493,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 	case ParameterTypeFile:
 		f, ok := v.(*FileData)
 		if !ok {
-			return nil, errors.Errorf("Value for parameter %s is not a file: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a file (got type %T): %v", p.Name, v, v)
 		}
 		return f, nil
 
@@ -560,7 +562,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 
 		l, err := cast.CastListToStringList(v)
 		if err != nil {
-			return nil, errors.Errorf("Value for parameter %s is not a string list: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s is not a choice list: %v", p.Name, v)
 		}
 
 		for _, choice := range l {

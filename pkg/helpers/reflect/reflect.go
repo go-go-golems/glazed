@@ -529,15 +529,15 @@ func SetStringMapListReflectValue[To interface{}](mapSlice reflect.Value, v inte
 }
 
 // StripInterface takes a reflect.Value and returns the underlying type by recursively
-// stripping off interface{} and pointer types.
+// stripping off interface{} types while preserving pointer types.
 //
 // For example:
 // - string -> string
 // - interface{}(string) -> string
-// - *string -> string
-// - interface{}(*string) -> string
-// - *interface{}(string) -> string
-// - interface{}(*interface{}(string)) -> string
+// - *string -> *string
+// - interface{}(*string) -> *string
+// - *interface{}(string) -> *string
+// - interface{}(*interface{}(string)) -> *string
 //
 // If the value is invalid or nil, returns nil.
 func StripInterface(v reflect.Value) reflect.Type {
@@ -545,28 +545,24 @@ func StripInterface(v reflect.Value) reflect.Type {
 		return nil
 	}
 
-	// Keep stripping until we hit a non-interface, non-pointer type
-	for v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
-		// Handle nil interface or pointer
-		if v.IsNil() {
-			return nil
-		}
-		v = v.Elem()
+	v = StripInterfaceFromValue(v)
+	if !v.IsValid() {
+		return nil
 	}
 
 	return v.Type()
 }
 
 // StripInterfaceFromValue takes a reflect.Value and returns the underlying value by recursively
-// stripping off interface{} and pointer types.
+// stripping off interface{} types while preserving pointer types.
 //
 // For example:
 // - string -> string value
 // - interface{}(string) -> string value
-// - *string -> string value
-// - interface{}(*string) -> string value
-// - *interface{}(string) -> string value
-// - interface{}(*interface{}(string)) -> string value
+// - *string -> *string value
+// - interface{}(*string) -> *string value
+// - *interface{}(string) -> *string value
+// - interface{}(*interface{}(string)) -> *string value
 //
 // If the value is invalid or nil, returns an invalid reflect.Value.
 func StripInterfaceFromValue(v reflect.Value) reflect.Value {
@@ -574,13 +570,28 @@ func StripInterfaceFromValue(v reflect.Value) reflect.Value {
 		return v
 	}
 
-	// Keep stripping until we hit a non-interface, non-pointer type
-	for v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
-		// Handle nil interface or pointer
+	// If it's a pointer type, we want to keep the pointer but strip interfaces from the element type
+	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
 			return reflect.Value{}
 		}
-		v = v.Elem()
+		// Get the element value after stripping interfaces
+		elemValue := StripInterfaceFromValue(v.Elem())
+		if !elemValue.IsValid() {
+			return reflect.Value{}
+		}
+		// Create a new pointer to the stripped element value
+		ptr := reflect.New(elemValue.Type())
+		ptr.Elem().Set(elemValue)
+		return ptr
+	}
+
+	// Handle interface stripping
+	for v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return reflect.Value{}
+		}
+		v = StripInterfaceFromValue(v.Elem())
 	}
 
 	return v
