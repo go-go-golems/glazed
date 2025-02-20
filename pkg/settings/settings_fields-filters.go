@@ -97,10 +97,16 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 			p := &parameters.ParsedParameter{
 				ParameterDefinition: pd,
 			}
-			p.Update([]string{}, options_...)
+			err := p.Update([]string{}, options_...)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to update filter parameter")
+			}
 			l.Parameters.Set("filter", p)
 		} else {
-			parsedFilter.Update([]string{}, options_...)
+			err := parsedFilter.Update([]string{}, options_...)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to update filter parameter")
+			}
 		}
 	}
 

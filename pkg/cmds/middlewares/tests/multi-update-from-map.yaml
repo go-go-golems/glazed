@@ -43,7 +43,7 @@
       - name: "layer1"
         parameters:
           - name: param1
-            value: "initial"
+            value: ["initial"]
     expectedLayers:
       - name: "layer1"
         values:
@@ -61,12 +61,16 @@
         definitions:
           - name: "param1"
             type: "objectFromFile"
-            default: "original"
+            default: 
+              original:
+                param2: "original"
     parsedLayers:
       - name: "layer1"
         parameters:
           - name: param1
-            value: "initial"
+            value:
+              original:
+                param2: "initial"
     expectedLayers:
       - name: "layer1"
         values:
@@ -84,12 +88,18 @@
         definitions:
           - name: "param1"
             type: "objectListFromFile"
-            default: "original"
+            default:
+              - original:
+                  param2: "original"
+              - original:
+                  param2: "original2"
     parsedLayers:
       - name: "layer1"
         parameters:
           - name: param1
-            value: "initial"
+            value:
+              - original:
+                  param2: "initial"
     expectedLayers:
       - name: "layer1"
         values:

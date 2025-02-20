@@ -104,43 +104,23 @@ func (g *GlazedParameterLayers) GetParameterDefinitions() *parameters.ParameterD
 }
 
 func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error {
-	err := g.OutputParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.FieldsFiltersParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.SelectParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.TemplateParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.RenameParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.ReplaceParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.JqParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.SortParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
-	}
-	err = g.SkipLimitParameterLayer.AddLayerToCobraCommand(cmd)
-	if err != nil {
-		return err
+	layers := []layers.CobraParameterLayer{
+		g.OutputParameterLayer,
+		g.FieldsFiltersParameterLayer,
+		g.SelectParameterLayer,
+		g.TemplateParameterLayer,
+		g.RenameParameterLayer,
+		g.ReplaceParameterLayer,
+		g.JqParameterLayer,
+		g.SortParameterLayer,
+		g.SkipLimitParameterLayer,
 	}
 
+	for _, layer := range layers {
+		if err := layer.AddLayerToCobraCommand(cmd); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -152,54 +132,30 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 		Layer: g,
 	}
 	ps := parameters.NewParsedParameters()
-	l, err := g.OutputParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
+
+	layers := []layers.CobraParameterLayer{
+		g.OutputParameterLayer,
+		g.SelectParameterLayer,
+		g.RenameParameterLayer,
+		g.TemplateParameterLayer,
+		g.FieldsFiltersParameterLayer,
+		g.ReplaceParameterLayer,
+		g.JqParameterLayer,
+		g.SortParameterLayer,
+		g.SkipLimitParameterLayer,
 	}
-	ps.Merge(l.Parameters)
-	l, err = g.SelectParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
+
+	for _, layer := range layers {
+		l, err := layer.ParseLayerFromCobraCommand(cmd, options...)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = ps.Merge(l.Parameters); err != nil {
+			return nil, err
+		}
 	}
-	ps.Merge(l.Parameters)
-	l, err = g.RenameParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.TemplateParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.FieldsFiltersParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.ReplaceParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.JqParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.SortParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
-	l, err = g.SkipLimitParameterLayer.ParseLayerFromCobraCommand(cmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(l.Parameters)
 
 	res.Parameters = ps
-
 	return res, nil
 }
 
@@ -207,92 +163,50 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 	m map[string]interface{}, onlyProvided bool,
 	options ...parameters.ParseStepOption,
 ) (*parameters.ParsedParameters, error) {
-	ps, err := g.OutputParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
+	ps := parameters.NewParsedParameters()
+
+	layers := []layers.ParameterLayer{
+		g.OutputParameterLayer,
+		g.SelectParameterLayer,
+		g.RenameParameterLayer,
+		g.TemplateParameterLayer,
+		g.FieldsFiltersParameterLayer,
+		g.ReplaceParameterLayer,
+		g.JqParameterLayer,
+		g.SortParameterLayer,
+		g.SkipLimitParameterLayer,
 	}
-	ps_, err := g.SelectParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
+
+	for _, layer := range layers {
+		ps_, err := layer.GetParameterDefinitions().GatherParametersFromMap(m, onlyProvided, options...)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = ps.Merge(ps_); err != nil {
+			return nil, err
+		}
 	}
-	ps.Merge(ps_)
-	ps_, err = g.RenameParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.TemplateParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.FieldsFiltersParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.ReplaceParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.JqParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.SortParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
-	ps_, err = g.SkipLimitParameterLayer.GatherParametersFromMap(m, onlyProvided, options...)
-	if err != nil {
-		return nil, err
-	}
-	ps.Merge(ps_)
 
 	return ps, nil
-
 }
 
 func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interface{}) error {
-	err := g.OutputParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.FieldsFiltersParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
+	layers := []layers.ParameterLayer{
+		g.OutputParameterLayer,
+		g.FieldsFiltersParameterLayer,
+		g.SelectParameterLayer,
+		g.TemplateParameterLayer,
+		g.RenameParameterLayer,
+		g.ReplaceParameterLayer,
+		g.JqParameterLayer,
+		g.SortParameterLayer,
+		g.SkipLimitParameterLayer,
 	}
 
-	err = g.SelectParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.TemplateParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.RenameParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.ReplaceParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.JqParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.SortParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
-	}
-	err = g.SkipLimitParameterLayer.InitializeParameterDefaultsFromStruct(s)
-	if err != nil {
-		return err
+	for _, layer := range layers {
+		if err := layer.InitializeParameterDefaultsFromStruct(s); err != nil {
+			return err
+		}
 	}
 	return nil
 }

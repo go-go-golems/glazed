@@ -277,15 +277,22 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 
 // ParsedParametersFromDefaults uses the parameter definitions default values to create a ParsedParameters
 // object.
-func (pds *ParameterDefinitions) ParsedParametersFromDefaults() *ParsedParameters {
+func (pds *ParameterDefinitions) ParsedParametersFromDefaults() (*ParsedParameters, error) {
 	ret := NewParsedParameters()
-	pds.ForEach(func(definition *ParameterDefinition) {
-		ret.UpdateValue(definition.Name, definition, definition.Default,
+	err := pds.ForEachE(func(definition *ParameterDefinition) error {
+		err := ret.UpdateValue(definition.Name, definition, definition.Default,
 			WithParseStepSource("defaults"),
 			WithParseStepValue(definition.Default),
 		)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	return ret
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 // InitializeStructFromDefaults initializes a struct from a map of parameter definitions.
@@ -294,7 +301,10 @@ func (pds *ParameterDefinitions) ParsedParametersFromDefaults() *ParsedParameter
 // the corresponding `ParameterDefinition`. If no `ParameterDefinition` is found for a field, an error
 // is returned.
 func (pds *ParameterDefinitions) InitializeStructFromDefaults(s interface{}) error {
-	parsedParameters := pds.ParsedParametersFromDefaults()
+	parsedParameters, err := pds.ParsedParametersFromDefaults()
+	if err != nil {
+		return err
+	}
 	return parsedParameters.InitializeStruct(s)
 }
 
@@ -409,7 +419,7 @@ func (p *ParameterDefinition) CheckParameterDefaultValueValidity() (interface{},
 	return v, nil
 }
 
-// CheckValueValidity checks if the given value is valid for the ParameterDefinition.
+// CheckValueValidity checks if the given value is valid for the ParameterDefinition, and returns the value cast to the correct type.
 func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -562,6 +572,7 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 		return l, nil
 
 	case ParameterTypeKeyValue:
+		// TypeKeyValue is map[string]string
 		m, ok := v.(map[string]string)
 		if ok {
 			return m, nil

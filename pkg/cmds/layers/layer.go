@@ -172,7 +172,10 @@ func InitializeParameterLayerWithDefaults(
 			return err
 		}
 		if v != nil {
-			parsedLayer.Parameters.SetAsDefault(pd.Name, pd, v, options...)
+			err := parsedLayer.Parameters.SetAsDefault(pd.Name, pd, v, options...)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

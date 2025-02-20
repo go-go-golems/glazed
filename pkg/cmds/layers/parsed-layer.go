@@ -30,7 +30,10 @@ func WithParsedParameterValue(
 		p := &parameters.ParsedParameter{
 			ParameterDefinition: pd,
 		}
-		p.Update(value, options...)
+		err := p.Update(value, options...)
+		if err != nil {
+			return err
+		}
 		pl.Parameters.Set(key, p)
 
 		return nil
@@ -65,9 +68,13 @@ func NewParsedLayer(layer ParameterLayer, options ...ParsedLayerOption) (*Parsed
 // Clone returns a copy of the parsedParameterLayer with a fresh Parameters map.
 // However, neither the Layer nor the Parameters are deep copied.
 func (ppl *ParsedLayer) Clone() *ParsedLayer {
+	parameters_, err := parameters.NewParsedParameters().Merge(ppl.Parameters)
+	if err != nil {
+		panic(err)
+	}
 	ret := &ParsedLayer{
 		Layer:      ppl.Layer,
-		Parameters: parameters.NewParsedParameters().Merge(ppl.Parameters),
+		Parameters: parameters_,
 	}
 	ppl.Parameters.ForEach(func(k string, v *parameters.ParsedParameter) {
 		ret.Parameters.Set(k, v)
@@ -77,8 +84,9 @@ func (ppl *ParsedLayer) Clone() *ParsedLayer {
 
 // MergeParameters merges the other ParsedLayer into this one, overwriting any
 // existing values. This doesn't replace the actual Layer pointer.
-func (ppl *ParsedLayer) MergeParameters(other *ParsedLayer) {
-	ppl.Parameters.Merge(other.Parameters)
+func (ppl *ParsedLayer) MergeParameters(other *ParsedLayer) error {
+	_, err := ppl.Parameters.Merge(other.Parameters)
+	return err
 }
 
 func (ppl *ParsedLayer) GetParameter(k string) (interface{}, bool) {
@@ -125,21 +133,36 @@ func (p *ParsedLayers) Clone() *ParsedLayers {
 	return ret
 }
 
-func (p *ParsedLayers) Merge(other *ParsedLayers) {
-	p.ForEach(func(k string, v *ParsedLayer) {
+func (p *ParsedLayers) Merge(other *ParsedLayers) error {
+	err := p.ForEachE(func(k string, v *ParsedLayer) error {
 		o, ok := other.Get(k)
 		if ok {
-			v.MergeParameters(o)
+			err := v.MergeParameters(o)
+			if err != nil {
+				panic(err)
+			}
 		}
+		return nil
 	})
-	other.ForEach(func(k string, v *ParsedLayer) {
+	if err != nil {
+		return err
+	}
+	err = other.ForEachE(func(k string, v *ParsedLayer) error {
 		o_, ok := p.Get(k)
 		if !ok {
 			p.Set(k, v)
 		} else {
-			o_.MergeParameters(v)
+			err := o_.MergeParameters(v)
+			if err != nil {
+				return err
+			}
 		}
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
@@ -193,7 +216,11 @@ func (p *ParsedLayers) GetAllParsedParameters() *parameters.ParsedParameters {
 	ret := parameters.NewParsedParameters()
 	p.ForEach(
 		func(_ string, v *ParsedLayer) {
-			ret.Merge(v.Parameters.Clone())
+			_, err := ret.Merge(v.Parameters.Clone())
+			if err != nil {
+				// this should never happen, we don't try to do any interesting type coercion here
+				panic(err)
+			}
 		})
 
 	return ret

@@ -95,7 +95,10 @@ func MergeParsedLayer(layerSlug string, layerToMerge *layers.ParsedLayer) Middle
 				return nil
 			}
 
-			targetLayer.MergeParameters(layerToMerge)
+			err = targetLayer.MergeParameters(layerToMerge)
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -116,7 +119,10 @@ func MergeParsedLayers(layersToMerge *layers.ParsedLayers) Middleware {
 				return errors.New("cannot merge nil layers")
 			}
 
-			parsedLayers.Merge(layersToMerge)
+			err = parsedLayers.Merge(layersToMerge)
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -144,7 +150,10 @@ func MergeParsedLayersSelective(layersToMerge *layers.ParsedLayers, slugs []stri
 					if !exists {
 						parsedLayers.Set(slug, layer.Clone())
 					} else {
-						targetLayer.MergeParameters(layer)
+						err = targetLayer.MergeParameters(layer)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}

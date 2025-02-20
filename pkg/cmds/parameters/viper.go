@@ -27,7 +27,10 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 			if p.Default != nil {
 				options_ := append(options, WithParseStepSource("default"))
 
-				parsed.Update(*p.Default, options_...)
+				err := parsed.Update(*p.Default, options_...)
+				if err != nil {
+					return nil, err
+				}
 				ret.Set(p.Name, parsed)
 			}
 			continue
@@ -43,29 +46,62 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 		//exhaustive:ignore
 		switch p.Type {
 		case ParameterTypeString:
-			parsed.Update(viper.GetString(flagName), options...)
+			err := parsed.Update(viper.GetString(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeInteger:
-			parsed.Update(viper.GetInt(flagName), options...)
+			err := parsed.Update(viper.GetInt(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeFloat:
-			parsed.Update(viper.GetFloat64(flagName), options...)
+			err := parsed.Update(viper.GetFloat64(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeBool:
-			parsed.Update(viper.GetBool(flagName), options...)
+			err := parsed.Update(viper.GetBool(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeStringList:
-			parsed.Update(viper.GetStringSlice(flagName), options...)
+			err := parsed.Update(viper.GetStringSlice(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeIntegerList:
-			parsed.Update(viper.GetIntSlice(flagName), options...)
+			err := parsed.Update(viper.GetIntSlice(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeKeyValue:
-			parsed.Update(viper.GetStringMapString(flagName), options...)
+			err := parsed.Update(viper.GetStringMapString(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeStringListFromFile:
-			parsed.Update(viper.GetStringSlice(flagName), options...)
+			err := parsed.Update(viper.GetStringSlice(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeStringFromFile:
 			// not sure if this is the best here, maybe it should be the filename?
-			parsed.Update(viper.GetString(flagName), options...)
+			err := parsed.Update(viper.GetString(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeChoice:
 			// probably should do some checking here
-			parsed.Update(viper.GetString(flagName), options...)
+			err := parsed.Update(viper.GetString(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 		case ParameterTypeObjectFromFile:
-			parsed.Update(viper.GetStringMap(flagName), options...)
+			err := parsed.Update(viper.GetStringMap(flagName), options...)
+			if err != nil {
+				return nil, err
+			}
 			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
 			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)

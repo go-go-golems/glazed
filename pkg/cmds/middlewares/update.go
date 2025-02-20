@@ -107,7 +107,10 @@ func updateFromMap(
 		if err != nil {
 			return err
 		}
-		parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Parameters.Merge(ps)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -128,7 +131,10 @@ func updateFromMapAsDefault(
 		if err != nil {
 			return err
 		}
-		parsedLayer.Parameters.MergeAsDefault(ps)
+		_, err = parsedLayer.Parameters.MergeAsDefault(ps)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,10 +145,10 @@ func updateFromEnv(
 	prefix string,
 	options ...parameters.ParseStepOption,
 ) error {
-	layers_.ForEach(func(key string, l layers.ParameterLayer) {
+	err := layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
 		parsedLayer := parsedLayers.GetOrCreate(l)
 		pds := l.GetParameterDefinitions()
-		pds.ForEach(func(p *parameters.ParameterDefinition) {
+		err := pds.ForEachE(func(p *parameters.ParameterDefinition) error {
 			name := p.Name
 			if prefix != "" {
 				name = prefix + "_" + name
@@ -150,12 +156,20 @@ func updateFromEnv(
 			name = strings.ToUpper(name)
 
 			if v, ok := os.LookupEnv(name); ok {
-				parsedLayer.Parameters.UpdateValue(name, p, v, options...)
+				err := parsedLayer.Parameters.UpdateValue(name, p, v, options...)
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 
-	return nil
+	return err
 }
 
 func UpdateFromEnv(prefix string, options ...parameters.ParseStepOption) Middleware {
@@ -180,14 +194,20 @@ func updateFromStringList(layers_ *layers.ParameterLayers, parsedLayers *layers.
 			return err
 		}
 
-		parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Parameters.Merge(ps)
+		if err != nil {
+			return err
+		}
 
 		ps, err = pds.GatherArguments(remainingArgs, true, true, options...)
 		if err != nil {
 			return err
 		}
 
-		parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Parameters.Merge(ps)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
