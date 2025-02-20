@@ -294,18 +294,13 @@ func NewTestParsedLayers(pls *layers.ParameterLayers, ls ...TestParsedLayer) *la
 
 // compareValues handles comparison of values with special cases for slice types
 func compareValues(t *testing.T, expected, actual interface{}, key string) {
-	// Check if we're dealing with a string slice and interface slice
-	if actualStrSlice, ok := actual.([]string); ok {
-		if expectedInterfaceSlice, ok := expected.([]interface{}); ok {
-			// Try to convert the expected interface slice to string slice
-			expectedStrSlice, err := cast.CastListToStringList(expectedInterfaceSlice)
-			require.NoError(t, err)
-			assert.Equal(t, expectedStrSlice, actualStrSlice, "mismatch for key %s", key)
-			return
-		}
-	}
-	// Default comparison for other types
-	assert.Equal(t, expected, actual, "mismatch for key %s", key)
+	normalizedExpected, err := cast.NormalizeValue(expected)
+	require.NoError(t, err, "failed to normalize expected value for key %s", key)
+
+	normalizedActual, err := cast.NormalizeValue(actual)
+	require.NoError(t, err, "failed to normalize actual value for key %s", key)
+
+	assert.Equal(t, normalizedExpected, normalizedActual, "mismatch for key %s", key)
 }
 
 func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parsedLayers *layers.ParsedLayers) {

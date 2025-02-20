@@ -280,7 +280,10 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 func (pds *ParameterDefinitions) ParsedParametersFromDefaults() (*ParsedParameters, error) {
 	ret := NewParsedParameters()
 	err := pds.ForEachE(func(definition *ParameterDefinition) error {
-		err := ret.UpdateValue(definition.Name, definition, definition.Default,
+		if definition.Default == nil {
+			return nil
+		}
+		err := ret.UpdateValue(definition.Name, definition, *definition.Default,
 			WithParseStepSource("defaults"),
 			WithParseStepValue(definition.Default),
 		)
@@ -442,9 +445,9 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 	case ParameterTypeObjectListFromFile:
 		fallthrough
 	case ParameterTypeObjectListFromFiles:
-		l, ok := v.([]interface{})
+		l, ok := cast.CastList2[map[string]interface{}, interface{}](v)
 		if !ok {
-			return nil, errors.Errorf("Value for parameter %s is not a list of objects: %v", p.Name, v)
+			return nil, errors.Errorf("Value for parameter %s (type %T) is not a list of objects: %v", p.Name, v, v)
 		}
 		return l, nil
 

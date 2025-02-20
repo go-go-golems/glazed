@@ -1,11 +1,12 @@
 package parameters
 
 import (
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // Test no arguments are passed to the function
@@ -378,12 +379,12 @@ func TestObjectListFromFileParsing(t *testing.T) {
 	assert.NoError(t, err)
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
-	assert.Equal(t, []interface{}{
-		map[string]interface{}{
+	assert.Equal(t, []map[string]interface{}{
+		{
 			"name": "objectList1",
 			"type": "object",
 		},
-		map[string]interface{}{
+		{
 			"name": "objectList2",
 			"type": "object",
 		},
@@ -406,12 +407,31 @@ func TestObjectListFromFilesParsing(t *testing.T) {
 	v1, present := result.Get("arg1")
 	assert.True(t, present)
 	assert.Equal(t,
-		[]interface{}{map[string]interface{}{"name": "objectList1", "type": "object"},
-			map[string]interface{}{"name": "objectList2", "type": "object"},
-			map[string]interface{}{"name": "objectList3", "type": "object"},
-			map[string]interface{}{"name": "objectList4", "type": "object"},
-			map[string]interface{}{"name": "objectList5", "type": "object"},
-			map[string]interface{}{"name": "objectList6", "type": "object"},
+		[]map[string]interface{}{
+			{
+				"name": "objectList1",
+				"type": "object",
+			},
+			{
+				"name": "objectList2",
+				"type": "object",
+			},
+			{
+				"name": "objectList3",
+				"type": "object",
+			},
+			{
+				"name": "objectList4",
+				"type": "object",
+			},
+			{
+				"name": "objectList5",
+				"type": "object",
+			},
+			{
+				"name": "objectList6",
+				"type": "object",
+			},
 		}, v1.Value)
 }
 

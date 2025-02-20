@@ -223,7 +223,8 @@ func (p *ParsedParameters) Update(
 
 // XXX Add proper error return handling here
 func (p *ParsedParameters) UpdateValue(
-	key string, pd *ParameterDefinition,
+	key string,
+	pd *ParameterDefinition,
 	v interface{},
 	options ...ParseStepOption,
 ) error {
