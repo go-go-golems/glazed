@@ -689,423 +689,322 @@ func TestSetReflectStringSliceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStripInterface(t *testing.T) {
-	type CustomString string
-	type CustomInt int
-	type Wrapper struct {
-		Value interface{}
-	}
-
-	tests := []struct {
-		name     string
-		input    interface{}
-		expected reflect.Type
-	}{
-		{
-			name:     "plain string",
-			input:    "hello",
-			expected: reflect.TypeOf(""),
-		},
-		{
-			name:     "pointer to string",
-			input:    func() interface{} { s := "hello"; return &s }(),
-			expected: reflect.TypeOf(""),
-		},
-		{
-			name:     "empty interface",
-			input:    interface{}(nil),
-			expected: nil,
-		},
-		{
-			name:     "interface containing string",
-			input:    interface{}("hello"),
-			expected: reflect.TypeOf(""),
-		},
-		{
-			name: "nested interfaces and pointers",
-			input: func() interface{} {
-				s := interface{}("test")
-				return &s
-			}(),
-			expected: reflect.TypeOf(""),
-		},
-		{
-			name:     "custom string type",
-			input:    CustomString("hello"),
-			expected: reflect.TypeOf(CustomString("")),
-		},
-		{
-			name:     "interface containing custom string",
-			input:    interface{}(CustomString("hello")),
-			expected: reflect.TypeOf(CustomString("")),
-		},
-		{
-			name: "pointer to interface containing custom string",
-			input: func() interface{} {
-				i := interface{}(CustomString("hello"))
-				return &i
-			}(),
-			expected: reflect.TypeOf(CustomString("")),
-		},
-		{
-			name:     "int",
-			input:    42,
-			expected: reflect.TypeOf(0),
-		},
-		{
-			name:     "custom int",
-			input:    CustomInt(42),
-			expected: reflect.TypeOf(CustomInt(0)),
-		},
-		{
-			name: "deeply nested interfaces",
-			input: func() interface{} {
-				s := "test"
-				i1 := interface{}(s)
-				i2 := interface{}(&i1)
-				i3 := interface{}(&i2)
-				return &i3
-			}(),
-			expected: reflect.TypeOf(""),
-		},
-		{
-			name: "struct containing interface",
-			input: Wrapper{
-				Value: "hello",
-			},
-			expected: reflect.TypeOf(Wrapper{}),
-		},
-		{
-			name:     "nil pointer to string",
-			input:    (*string)(nil),
-			expected: nil,
-		},
-		{
-			name: "interface containing nil pointer",
-			input: func() interface{} {
-				var s *string
-				return s
-			}(),
-			expected: nil,
-		},
-		{
-			name:     "slice of strings",
-			input:    []string{"hello", "world"},
-			expected: reflect.TypeOf([]string{}),
-		},
-		{
-			name:     "interface containing slice",
-			input:    interface{}([]string{"hello", "world"}),
-			expected: reflect.TypeOf([]string{}),
-		},
-		{
-			name:     "map of strings",
-			input:    map[string]string{"hello": "world"},
-			expected: reflect.TypeOf(map[string]string{}),
-		},
-		{
-			name: "interface containing map",
-			input: interface{}(map[string]string{
-				"hello": "world",
-			}),
-			expected: reflect.TypeOf(map[string]string{}),
-		},
-		{
-			name: "interface containing interface containing string",
-			input: func() interface{} {
-				s := interface{}("hello")
-				return interface{}(s)
-			}(),
-			expected: reflect.TypeOf(""),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := StripInterface(reflect.ValueOf(tt.input))
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+func TestStripInterfaceValue_PlainString(t *testing.T) {
+	result := StripInterfaceValue("hello")
+	assert.Equal(t, "hello", result)
 }
 
-func TestStripInterfaceFromValue(t *testing.T) {
-	type CustomString string
-	type CustomInt int
-	type Wrapper struct {
-		Value interface{}
-	}
-
-	tests := []struct {
-		name     string
-		input    interface{}
-		expected interface{}
-	}{
-		{
-			name:     "plain string",
-			input:    "hello",
-			expected: "hello",
-		},
-		{
-			name:     "pointer to string",
-			input:    func() interface{} { s := "hello"; return &s }(),
-			expected: "hello",
-		},
-		{
-			name:     "empty interface",
-			input:    interface{}(nil),
-			expected: nil,
-		},
-		{
-			name:     "interface containing string",
-			input:    interface{}("hello"),
-			expected: "hello",
-		},
-		{
-			name: "nested interfaces and pointers",
-			input: func() interface{} {
-				s := interface{}("test")
-				return &s
-			}(),
-			expected: "test",
-		},
-		{
-			name:     "custom string type",
-			input:    CustomString("hello"),
-			expected: CustomString("hello"),
-		},
-		{
-			name:     "interface containing custom string",
-			input:    interface{}(CustomString("hello")),
-			expected: CustomString("hello"),
-		},
-		{
-			name: "pointer to interface containing custom string",
-			input: func() interface{} {
-				i := interface{}(CustomString("hello"))
-				return &i
-			}(),
-			expected: CustomString("hello"),
-		},
-		{
-			name:     "int",
-			input:    42,
-			expected: 42,
-		},
-		{
-			name:     "custom int",
-			input:    CustomInt(42),
-			expected: CustomInt(42),
-		},
-		{
-			name: "deeply nested interfaces",
-			input: func() interface{} {
-				s := "test"
-				i1 := interface{}(s)
-				i2 := interface{}(&i1)
-				i3 := interface{}(&i2)
-				return &i3
-			}(),
-			expected: "test",
-		},
-		{
-			name: "struct containing interface",
-			input: Wrapper{
-				Value: "hello",
-			},
-			expected: Wrapper{Value: "hello"},
-		},
-		{
-			name:     "nil pointer to string",
-			input:    (*string)(nil),
-			expected: nil,
-		},
-		{
-			name: "interface containing nil pointer",
-			input: func() interface{} {
-				var s *string
-				return s
-			}(),
-			expected: nil,
-		},
-		{
-			name:     "slice of strings",
-			input:    []string{"hello", "world"},
-			expected: []string{"hello", "world"},
-		},
-		{
-			name:     "interface containing slice",
-			input:    interface{}([]string{"hello", "world"}),
-			expected: []string{"hello", "world"},
-		},
-		{
-			name:     "map of strings",
-			input:    map[string]string{"hello": "world"},
-			expected: map[string]string{"hello": "world"},
-		},
-		{
-			name: "interface containing map",
-			input: interface{}(map[string]string{
-				"hello": "world",
-			}),
-			expected: map[string]string{"hello": "world"},
-		},
-		{
-			name: "interface containing interface containing string",
-			input: func() interface{} {
-				s := interface{}("hello")
-				return interface{}(s)
-			}(),
-			expected: "hello",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := StripInterfaceFromValue(reflect.ValueOf(tt.input))
-			if tt.expected == nil {
-				assert.False(t, result.IsValid())
-			} else {
-				assert.Equal(t, tt.expected, result.Interface())
-			}
-		})
-	}
+func TestStripInterfaceValue_PointerToString(t *testing.T) {
+	s := "hello"
+	result := StripInterfaceValue(&s)
+	assert.Equal(t, &s, result)
 }
 
-func TestStripInterfaceValue(t *testing.T) {
+func TestStripInterfaceValue_EmptyInterface(t *testing.T) {
+	var i interface{}
+	result := StripInterfaceValue(i)
+	assert.Nil(t, result)
+}
+
+func TestStripInterfaceValue_InterfaceContainingString(t *testing.T) {
+	var i interface{} = "hello"
+	result := StripInterfaceValue(i)
+	assert.Equal(t, "hello", result)
+}
+
+func TestStripInterfaceValue_PointerToInterfaceContainingString(t *testing.T) {
+	var s interface{} = "test"
+	ps := &s
+	result := StripInterfaceValue(ps)
+	assert.IsType(t, (*string)(nil), result)
+	assert.Equal(t, "test", *result.(*string))
+}
+
+func TestStripInterfaceValue_CustomString(t *testing.T) {
 	type CustomString string
+	result := StripInterfaceValue(CustomString("hello"))
+	assert.Equal(t, CustomString("hello"), result)
+}
+
+func TestStripInterfaceValue_InterfaceContainingCustomString(t *testing.T) {
+	type CustomString string
+	var i interface{} = CustomString("hello")
+	result := StripInterfaceValue(i)
+	assert.Equal(t, CustomString("hello"), result)
+}
+
+func TestStripInterfaceValue_PointerToInterfaceContainingCustomString(t *testing.T) {
+	type CustomString string
+	var i interface{} = CustomString("hello")
+	pi := &i
+	result := StripInterfaceValue(pi)
+	assert.IsType(t, (*CustomString)(nil), result)
+	assert.Equal(t, CustomString("hello"), *result.(*CustomString))
+}
+
+func TestStripInterfaceValue_Int(t *testing.T) {
+	result := StripInterfaceValue(42)
+	assert.Equal(t, 42, result)
+}
+
+func TestStripInterfaceValue_CustomInt(t *testing.T) {
 	type CustomInt int
+	result := StripInterfaceValue(CustomInt(42))
+	assert.Equal(t, CustomInt(42), result)
+}
+
+func TestStripInterfaceValue_DeeplyNestedInterfacesWithPointers(t *testing.T) {
+	s := "test"
+	i1 := interface{}(s)
+	i2 := interface{}(&i1)
+	i3 := interface{}(&i2)
+	pi3 := &i3
+
+	result := StripInterfaceValue(pi3)
+	assert.IsType(t, (***string)(nil), result)
+	assert.Equal(t, "test", *(*(*(result.(***string)))))
+}
+
+func TestStripInterfaceValue_StructContainingInterface(t *testing.T) {
 	type Wrapper struct {
 		Value interface{}
 	}
+	w := Wrapper{Value: "hello"}
+	result := StripInterfaceValue(w)
+	assert.Equal(t, w, result)
+}
 
-	tests := []struct {
-		name     string
-		input    interface{}
-		expected interface{}
-	}{
-		{
-			name:     "plain string",
-			input:    "hello",
-			expected: "hello",
-		},
-		{
-			name:     "pointer to string",
-			input:    func() interface{} { s := "hello"; return &s }(),
-			expected: "hello",
-		},
-		{
-			name:     "empty interface",
-			input:    interface{}(nil),
-			expected: nil,
-		},
-		{
-			name:     "interface containing string",
-			input:    interface{}("hello"),
-			expected: "hello",
-		},
-		{
-			name: "nested interfaces and pointers",
-			input: func() interface{} {
-				s := interface{}("test")
-				return &s
-			}(),
-			expected: "test",
-		},
-		{
-			name:     "custom string type",
-			input:    CustomString("hello"),
-			expected: CustomString("hello"),
-		},
-		{
-			name:     "interface containing custom string",
-			input:    interface{}(CustomString("hello")),
-			expected: CustomString("hello"),
-		},
-		{
-			name: "pointer to interface containing custom string",
-			input: func() interface{} {
-				i := interface{}(CustomString("hello"))
-				return &i
-			}(),
-			expected: CustomString("hello"),
-		},
-		{
-			name:     "int",
-			input:    42,
-			expected: 42,
-		},
-		{
-			name:     "custom int",
-			input:    CustomInt(42),
-			expected: CustomInt(42),
-		},
-		{
-			name: "deeply nested interfaces",
-			input: func() interface{} {
-				s := "test"
-				i1 := interface{}(s)
-				i2 := interface{}(&i1)
-				i3 := interface{}(&i2)
-				return &i3
-			}(),
-			expected: "test",
-		},
-		{
-			name: "struct containing interface",
-			input: Wrapper{
-				Value: "hello",
-			},
-			expected: Wrapper{Value: "hello"},
-		},
-		{
-			name:     "nil pointer to string",
-			input:    (*string)(nil),
-			expected: nil,
-		},
-		{
-			name: "interface containing nil pointer",
-			input: func() interface{} {
-				var s *string
-				return s
-			}(),
-			expected: nil,
-		},
-		{
-			name:     "slice of strings",
-			input:    []string{"hello", "world"},
-			expected: []string{"hello", "world"},
-		},
-		{
-			name:     "interface containing slice",
-			input:    interface{}([]string{"hello", "world"}),
-			expected: []string{"hello", "world"},
-		},
-		{
-			name:     "map of strings",
-			input:    map[string]string{"hello": "world"},
-			expected: map[string]string{"hello": "world"},
-		},
-		{
-			name: "interface containing map",
-			input: interface{}(map[string]string{
-				"hello": "world",
-			}),
-			expected: map[string]string{"hello": "world"},
-		},
-		{
-			name: "interface containing interface containing string",
-			input: func() interface{} {
-				s := interface{}("hello")
-				return interface{}(s)
-			}(),
-			expected: "hello",
-		},
-	}
+func TestStripInterfaceValue_NilPointerToString(t *testing.T) {
+	var s *string
+	result := StripInterfaceValue(s)
+	assert.Nil(t, result)
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := StripInterfaceValue(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
+func TestStripInterfaceValue_InterfaceContainingNilPointer(t *testing.T) {
+	var s *string
+	var i interface{} = s
+	result := StripInterfaceValue(i)
+	assert.Nil(t, result)
+}
+
+func TestStripInterfaceValue_SliceOfStrings(t *testing.T) {
+	slice := []string{"hello", "world"}
+	result := StripInterfaceValue(slice)
+	assert.Equal(t, slice, result)
+}
+
+func TestStripInterfaceValue_InterfaceContainingSlice(t *testing.T) {
+	var i interface{} = []string{"hello", "world"}
+	result := StripInterfaceValue(i)
+	assert.Equal(t, []string{"hello", "world"}, result)
+}
+
+func TestStripInterfaceValue_MapOfStrings(t *testing.T) {
+	m := map[string]string{"hello": "world"}
+	result := StripInterfaceValue(m)
+	assert.Equal(t, m, result)
+}
+
+func TestStripInterfaceValue_InterfaceContainingMap(t *testing.T) {
+	var i interface{} = map[string]string{"hello": "world"}
+	result := StripInterfaceValue(i)
+	assert.Equal(t, map[string]string{"hello": "world"}, result)
+}
+
+func TestStripInterface_PointerToString(t *testing.T) {
+	s := "hello"
+	result := StripInterface(reflect.ValueOf(&s))
+	assert.Equal(t, reflect.TypeOf((*string)(nil)), result)
+}
+
+func TestStripInterface_EmptyInterface(t *testing.T) {
+	var i interface{}
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Nil(t, result)
+}
+
+func TestStripInterface_InterfaceContainingString(t *testing.T) {
+	var i interface{} = "hello"
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Equal(t, reflect.TypeOf(""), result)
+}
+
+func TestStripInterface_PointerToInterfaceContainingString(t *testing.T) {
+	var s interface{} = "test"
+	ps := &s
+	result := StripInterface(reflect.ValueOf(ps))
+	assert.Equal(t, reflect.TypeOf((*string)(nil)), result)
+}
+
+func TestStripInterface_CustomString(t *testing.T) {
+	type CustomString string
+	result := StripInterface(reflect.ValueOf(CustomString("hello")))
+	assert.Equal(t, reflect.TypeOf(CustomString("")), result)
+}
+
+func TestStripInterface_InterfaceContainingCustomString(t *testing.T) {
+	type CustomString string
+	var i interface{} = CustomString("hello")
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Equal(t, reflect.TypeOf(CustomString("")), result)
+}
+
+func TestStripInterface_PointerToInterfaceContainingCustomString(t *testing.T) {
+	type CustomString string
+	var i interface{} = CustomString("hello")
+	pi := &i
+	result := StripInterface(reflect.ValueOf(pi))
+	assert.Equal(t, reflect.TypeOf((*CustomString)(nil)), result)
+}
+
+func TestStripInterface_Int(t *testing.T) {
+	result := StripInterface(reflect.ValueOf(42))
+	assert.Equal(t, reflect.TypeOf(0), result)
+}
+
+func TestStripInterface_CustomInt(t *testing.T) {
+	type CustomInt int
+	result := StripInterface(reflect.ValueOf(CustomInt(42)))
+	assert.Equal(t, reflect.TypeOf(CustomInt(0)), result)
+}
+
+func TestStripInterface_DeeplyNestedInterfacesWithPointers(t *testing.T) {
+	s := "test"
+	i1 := interface{}(s)
+	i2 := interface{}(&i1)
+	i3 := interface{}(&i2)
+	pi3 := &i3
+
+	result := StripInterface(reflect.ValueOf(pi3))
+	expectedType := result.String()
+	assert.Equal(t, "***string", expectedType)
+}
+
+func TestStripInterface_StructContainingInterface(t *testing.T) {
+	type Wrapper struct {
+		Value interface{}
 	}
+	w := Wrapper{Value: "hello"}
+	result := StripInterface(reflect.ValueOf(w))
+	assert.Equal(t, reflect.TypeOf(Wrapper{}), result)
+}
+
+func TestStripInterface_NilPointerToString(t *testing.T) {
+	var s *string
+	result := StripInterface(reflect.ValueOf(s))
+	assert.Nil(t, result)
+}
+
+func TestStripInterface_InterfaceContainingNilPointer(t *testing.T) {
+	var s *string
+	var i interface{} = s
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Nil(t, result)
+}
+
+func TestStripInterface_SliceOfStrings(t *testing.T) {
+	slice := []string{"hello", "world"}
+	result := StripInterface(reflect.ValueOf(slice))
+	assert.Equal(t, reflect.TypeOf([]string{}), result)
+}
+
+func TestStripInterface_InterfaceContainingSlice(t *testing.T) {
+	var i interface{} = []string{"hello", "world"}
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Equal(t, reflect.TypeOf([]string{}), result)
+}
+
+func TestStripInterface_MapOfStrings(t *testing.T) {
+	m := map[string]string{"hello": "world"}
+	result := StripInterface(reflect.ValueOf(m))
+	assert.Equal(t, reflect.TypeOf(map[string]string{}), result)
+}
+
+func TestStripInterface_InterfaceContainingMap(t *testing.T) {
+	var i interface{} = map[string]string{"hello": "world"}
+	result := StripInterface(reflect.ValueOf(i))
+	assert.Equal(t, reflect.TypeOf(map[string]string{}), result)
+}
+
+func TestStripInterface_DoublePointerToString(t *testing.T) {
+	s := "test"
+	ps := &s
+	pps := &ps
+	result := StripInterfaceValue(pps)
+	assert.IsType(t, (**string)(nil), result)
+	assert.Equal(t, &s, *result.(**string))
+}
+
+func TestStripInterface_PointerToInterfaceToString(t *testing.T) {
+	var s interface{} = "test"
+	ps := &s
+	result := StripInterfaceValue(ps)
+	assert.IsType(t, (*string)(nil), result)
+	assert.Equal(t, "test", *result.(*string))
+}
+
+func TestStripInterface_PointerToInterfaceToCustomType(t *testing.T) {
+	type CustomString string
+	var s interface{} = CustomString("test")
+	ps := &s
+	result := StripInterfaceValue(ps)
+	assert.IsType(t, (*CustomString)(nil), result)
+	assert.Equal(t, CustomString("test"), *result.(*CustomString))
+}
+
+func TestStripInterface_DoublePointerToInterfaceToString(t *testing.T) {
+	var s interface{} = "test"
+	ps := &s
+	pps := &ps
+	result := StripInterfaceValue(pps)
+	assert.IsType(t, (**string)(nil), result)
+	assert.Equal(t, s, **result.(**string))
+}
+
+func TestStripInterface_PointerToStructWithInterfaceField(t *testing.T) {
+	type Wrapper struct {
+		Value interface{}
+	}
+	w := &Wrapper{Value: "hello"}
+	result := StripInterfaceValue(w)
+	assert.Equal(t, w, result)
+}
+
+func TestStripInterfaceValue_InterfaceContainingInterfaceContainingString(t *testing.T) {
+	s := interface{}("hello")
+	i := interface{}(s)
+	result := StripInterfaceValue(i)
+	assert.Equal(t, "hello", result)
+}
+
+func TestStripInterfaceValue_DoublePointerToString(t *testing.T) {
+	s := "test"
+	ps := &s
+	pps := &ps
+	result := StripInterfaceValue(pps)
+	assert.IsType(t, (**string)(nil), result)
+	assert.Equal(t, &s, *result.(**string))
+}
+
+func TestStripInterfaceValue_PointerToStructWithInterfaceField(t *testing.T) {
+	type Wrapper struct {
+		Value interface{}
+	}
+	w := &Wrapper{Value: "hello"}
+	result := StripInterfaceValue(w)
+	assert.Equal(t, w, result)
+}
+
+func TestStripInterfaceValue_DoublePointerToInterfaceToString(t *testing.T) {
+	var s interface{} = "test"
+	ps := &s
+	pps := &ps
+	result := StripInterfaceValue(pps)
+	assert.IsType(t, (**string)(nil), result)
+	assert.Equal(t, s, **result.(**string))
+}
+
+func TestStripInterface_PlainString(t *testing.T) {
+	result := StripInterface(reflect.ValueOf("hello"))
+	assert.Equal(t, reflect.TypeOf(""), result)
 }

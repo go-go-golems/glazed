@@ -678,7 +678,7 @@ func parseObjectListFromString(parameter *ParameterDefinition, input string, fil
 	if err != nil {
 		return nil, err
 	}
-	v, ok := cast.CastList[map[string]interface{}, interface{}](i.Value.([]interface{}))
+	v, ok := cast.CastList2[map[string]interface{}, interface{}](i.Value)
 	if !ok {
 		return nil, errors.New("failed to cast")
 	}
@@ -759,27 +759,39 @@ func TestParseStringListFromFileRealFile(t *testing.T) {
 
 func TestParseObjectListFromFileRealFile(t *testing.T) {
 	parameter := NewParameterDefinition("test", ParameterTypeObjectListFromFile,
-		WithDefault([]interface{}{}),
+		WithDefault([]map[string]interface{}{}),
 	)
 
 	v, err := parameter.ParseParameter([]string{"test-data/object.json"})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v.Value)
+	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/objectList.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
-		[]interface{}{
-			map[string]interface{}{"name": "objectList1", "type": "object"},
-			map[string]interface{}{"name": "objectList2", "type": "object"},
+		[]map[string]interface{}{
+			{
+				"name": "objectList1",
+				"type": "object",
+			},
+			{
+				"name": "objectList2",
+				"type": "object",
+			},
 		}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/objectList3.csv"})
 	require.NoError(t, err)
 	assert.Equal(t,
-		[]interface{}{
-			map[string]interface{}{"name": "objectList5", "type": "object"},
-			map[string]interface{}{"name": "objectList6", "type": "object"},
+		[]map[string]interface{}{
+			{
+				"name": "objectList5",
+				"type": "object",
+			},
+			{
+				"name": "objectList6",
+				"type": "object",
+			},
 		}, v.Value)
 
 	parameter = NewParameterDefinition("test", ParameterTypeObjectListFromFiles,
@@ -788,14 +800,20 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 
 	v, err = parameter.ParseParameter([]string{"test-data/object.json"})
 	require.NoError(t, err)
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "object1", "type": "object"}}, v.Value)
+	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
 	v, err = parameter.ParseParameter([]string{"test-data/object.json", "test-data/object2.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
-		[]interface{}{
-			map[string]interface{}{"name": "object1", "type": "object"},
-			map[string]interface{}{"name": "object2", "type": "object"},
+		[]map[string]interface{}{
+			{
+				"name": "object1",
+				"type": "object",
+			},
+			{
+				"name": "object2",
+				"type": "object",
+			},
 		},
 		v.Value)
 
@@ -807,15 +825,39 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		"test-data/objectList3.csv"})
 	require.NoError(t, err)
 	assert.Equal(t,
-		[]interface{}{
-			map[string]interface{}{"name": "objectList1", "type": "object"},
-			map[string]interface{}{"name": "objectList2", "type": "object"},
-			map[string]interface{}{"name": "objectList3", "type": "object"},
-			map[string]interface{}{"name": "objectList4", "type": "object"},
-			map[string]interface{}{"name": "object1", "type": "object"},
-			map[string]interface{}{"name": "object2", "type": "object"},
-			map[string]interface{}{"name": "objectList5", "type": "object"},
-			map[string]interface{}{"name": "objectList6", "type": "object"},
+		[]map[string]interface{}{
+			{
+				"name": "objectList1",
+				"type": "object",
+			},
+			{
+				"name": "objectList2",
+				"type": "object",
+			},
+			{
+				"name": "objectList3",
+				"type": "object",
+			},
+			{
+				"name": "objectList4",
+				"type": "object",
+			},
+			{
+				"name": "object1",
+				"type": "object",
+			},
+			{
+				"name": "object2",
+				"type": "object",
+			},
+			{
+				"name": "objectList5",
+				"type": "object",
+			},
+			{
+				"name": "objectList6",
+				"type": "object",
+			},
 		},
 		v.Value)
 }

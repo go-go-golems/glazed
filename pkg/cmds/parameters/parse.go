@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/tj/go-naturaldate"
 	"gopkg.in/yaml.v3"
@@ -213,13 +214,13 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 	case ParameterTypeObjectListFromFiles:
 		fallthrough
 	case ParameterTypeObjectListFromFile:
-		ret_ := []interface{}{}
+		ret_ := []map[string]interface{}{}
 		for _, fileName := range v {
 			l, err := parseFromFileName(fileName, p, options...)
 			if err != nil {
 				return nil, err
 			}
-			lObj, ok := l.Value.([]interface{})
+			lObj, ok := cast.CastList2[map[string]interface{}, interface{}](l.Value)
 			if !ok {
 				return nil, errors.Errorf("Could not parse file %s as list of objects", fileName)
 			}
