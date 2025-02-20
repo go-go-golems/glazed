@@ -266,7 +266,10 @@ func NewTestParsedLayer(pl layers.ParameterLayer, l TestParsedLayer) *layers.Par
 		if !ok {
 			panic("parameter definition not found")
 		}
-		params_.UpdateValue(p.Name, pd, p.Value)
+		err := params_.UpdateValue(p.Name, pd, p.Value)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	ret, err := layers.NewParsedLayer(pl, layers.WithParsedParameters(params_))

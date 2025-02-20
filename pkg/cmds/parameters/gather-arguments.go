@@ -49,7 +49,10 @@ func (pds *ParameterDefinitions) GatherArguments(
 				if argument.Default != nil && !onlyProvided {
 					parseOptions_ := append(parseOptions, WithParseStepSource("default"))
 
-					p.Update(*argument.Default, parseOptions_...)
+					err := p.Update(*argument.Default, parseOptions_...)
+					if err != nil {
+						return err
+					}
 					result.Set(argument.Name, p)
 				}
 				return nil

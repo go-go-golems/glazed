@@ -38,7 +38,10 @@ func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOp
 						return err
 					}
 
-					parsedLayer.Parameters.Merge(cobraLayer.Parameters)
+					_, err = parsedLayer.Parameters.Merge(cobraLayer.Parameters)
+					if err != nil {
+						return err
+					}
 				}
 
 				return nil
@@ -75,7 +78,10 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 				}
 
 				parsedLayer := parsedLayers.GetOrCreate(defaultLayer)
-				parsedLayer.Parameters.Merge(ps_)
+				_, err = parsedLayer.Parameters.Merge(ps_)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -115,7 +121,10 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 					return err
 				}
 
-				parsedLayer.Parameters.Merge(ps)
+				_, err = parsedLayer.Parameters.Merge(ps)
+				if err != nil {
+					return err
+				}
 
 				return nil
 			})
@@ -172,7 +181,10 @@ func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseSte
 					return err
 				}
 
-				parsedLayer.Parameters.Merge(ps)
+				_, err = parsedLayer.Parameters.Merge(ps)
+				if err != nil {
+					return err
+				}
 
 				return nil
 			})

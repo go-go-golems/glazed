@@ -1,9 +1,10 @@
 package parameters
 
 import (
-	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"reflect"
 	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 )
 
 // TestGatherFlagsFromStringList_ValidArgumentsAndParameters tests the function with valid arguments and parameters.
@@ -295,7 +296,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 				{Name: "key-value", ShortFlag: "kv", Type: ParameterTypeKeyValue},
 			})),
 			want: map[string]interface{}{
-				"key-value": map[string]interface{}{
+				"key-value": map[string]string{
 					"key1": "value1",
 					"key2": "value2",
 				},

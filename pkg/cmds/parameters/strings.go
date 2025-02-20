@@ -144,7 +144,10 @@ func (pds *ParameterDefinitions) GatherFlagsFromStringList(
 				parseOptions_ := append(parseOptions, WithParseStepMetadata(map[string]interface{}{
 					"default": true,
 				}), WithParseStepSource("default"))
-				p.Update(*param.Default, parseOptions_...)
+				err := p.Update(*param.Default, parseOptions_...)
+				if err != nil {
+					return err
+				}
 				result.Set(param.Name, p)
 			}
 		}

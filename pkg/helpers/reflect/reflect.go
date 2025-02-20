@@ -1,10 +1,11 @@
 package reflect
 
 import (
-	"github.com/go-go-golems/glazed/pkg/helpers/cast"
-	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
+
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
 )
 
 // NOTE(manuel, 2024-07-03) This is quite a mess of a function and I'm not even entirely sure
@@ -525,4 +526,86 @@ func SetStringMapListReflectValue[To interface{}](mapSlice reflect.Value, v inte
 		return nil
 	}
 	return errors.Errorf("cannot set reflect.Value of type %s from %T", keyKind, v)
+}
+
+// StripInterface takes a reflect.Value and returns the underlying type by recursively
+// stripping off interface{} and pointer types.
+//
+// For example:
+// - string -> string
+// - interface{}(string) -> string
+// - *string -> string
+// - interface{}(*string) -> string
+// - *interface{}(string) -> string
+// - interface{}(*interface{}(string)) -> string
+//
+// If the value is invalid or nil, returns nil.
+func StripInterface(v reflect.Value) reflect.Type {
+	if !v.IsValid() {
+		return nil
+	}
+
+	// Keep stripping until we hit a non-interface, non-pointer type
+	for v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+		// Handle nil interface or pointer
+		if v.IsNil() {
+			return nil
+		}
+		v = v.Elem()
+	}
+
+	return v.Type()
+}
+
+// StripInterfaceFromValue takes a reflect.Value and returns the underlying value by recursively
+// stripping off interface{} and pointer types.
+//
+// For example:
+// - string -> string value
+// - interface{}(string) -> string value
+// - *string -> string value
+// - interface{}(*string) -> string value
+// - *interface{}(string) -> string value
+// - interface{}(*interface{}(string)) -> string value
+//
+// If the value is invalid or nil, returns an invalid reflect.Value.
+func StripInterfaceFromValue(v reflect.Value) reflect.Value {
+	if !v.IsValid() {
+		return v
+	}
+
+	// Keep stripping until we hit a non-interface, non-pointer type
+	for v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+		// Handle nil interface or pointer
+		if v.IsNil() {
+			return reflect.Value{}
+		}
+		v = v.Elem()
+	}
+
+	return v
+}
+
+// StripInterfaceValue takes an interface{} and returns the underlying value by recursively
+// stripping off interface{} and pointer types.
+//
+// For example:
+// - string -> string value
+// - interface{}(string) -> string value
+// - *string -> string value
+// - interface{}(*string) -> string value
+// - *interface{}(string) -> string value
+// - interface{}(*interface{}(string)) -> string value
+//
+// If the value is nil, returns nil.
+func StripInterfaceValue(v interface{}) interface{} {
+	if v == nil {
+		return nil
+	}
+
+	value := StripInterfaceFromValue(reflect.ValueOf(v))
+	if !value.IsValid() {
+		return nil
+	}
+	return value.Interface()
 }

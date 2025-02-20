@@ -1,10 +1,11 @@
 package layers
 
 import (
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewParsedLayers(t *testing.T) {
@@ -260,26 +261,20 @@ func TestParsedLayersGetOrCreateNilLayer(t *testing.T) {
 }
 
 func TestParsedLayersInitializeStructUnsupportedTypes(t *testing.T) {
-	parsedLayers := NewParsedLayers()
 	layer := createParameterLayer(t, "test", "Test Layer",
 		parameters.NewParameterDefinition("supported", parameters.ParameterTypeString),
 		parameters.NewParameterDefinition("unsupported", parameters.ParameterTypeString),
 	)
-	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{
+	parsedValues := map[string]interface{}{
 		"supported":   "value",
 		"unsupported": make(chan int), // channels are not supported
-	})
-	parsedLayers.Set("test", parsedLayer)
-
-	type TestStruct struct {
-		Supported   string   `glazed.parameter:"supported"`
-		Unsupported chan int `glazed.parameter:"unsupported"`
 	}
-
-	// as long as the given values are compatible, we let it slide...
-	var result TestStruct
-	err := parsedLayers.InitializeStruct("test", &result)
-	assert.NoError(t, err)
+	options := make([]ParsedLayerOption, 0, len(parsedValues))
+	for key, value := range parsedValues {
+		options = append(options, WithParsedParameterValue(key, value))
+	}
+	_, err := NewParsedLayer(layer, options...)
+	assert.Error(t, err)
 }
 
 func TestParsedLayersForEachEWithError(t *testing.T) {

@@ -40,7 +40,10 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 			}
 			if !ok {
 				if p.Default != nil {
-					parsed.Update(*p.Default)
+					err := parsed.Update(*p.Default)
+					if err != nil {
+						return err
+					}
 					ret.Set(p.Name, parsed)
 					return nil
 				}
@@ -70,7 +73,10 @@ func (pds *ParameterDefinitions) GatherParametersFromMap(
 		}
 
 		// NOTE(manuel, 2023-12-22) We might want to pass in that name instead of just saying from-map
-		parsed.Update(v2, options_...)
+		err = parsed.Update(v2, options_...)
+		if err != nil {
+			return err
+		}
 		ret.Set(p.Name, parsed)
 		return nil
 	})

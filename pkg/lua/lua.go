@@ -96,7 +96,11 @@ func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName stri
 				return err
 			}
 
-			parsedLayers.GetOrCreate(layer).MergeParameters(parsedLayer)
+			err = parsedLayers.GetOrCreate(layer).MergeParameters(parsedLayer)
+			if err != nil {
+				return err
+			}
+
 			return next(layers_, parsedLayers)
 		}
 	}
@@ -112,7 +116,10 @@ func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewa
 			}
 
 			// Merge the new parsed layers with the existing ones
-			parsedLayers.Merge(newParsedLayers)
+			err = parsedLayers.Merge(newParsedLayers)
+			if err != nil {
+				return err
+			}
 
 			return next(layers_, parsedLayers)
 		}

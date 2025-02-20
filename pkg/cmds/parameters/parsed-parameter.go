@@ -52,8 +52,12 @@ func NewParseStep(options ...ParseStepOption) ParseStep {
 }
 
 // Update sets the value of the parsedParameter, and appends a new parseStep.
-func (p *ParsedParameter) Update(value interface{}, options ...ParseStepOption) {
-	p.Value = value
+func (p *ParsedParameter) Update(value interface{}, options ...ParseStepOption) error {
+	v, err := p.ParameterDefinition.CheckValueValidity(value)
+	if err != nil {
+		return err
+	}
+	p.Value = v
 	step := ParseStep{
 		Value:  value,
 		Source: "none",
@@ -63,6 +67,7 @@ func (p *ParsedParameter) Update(value interface{}, options ...ParseStepOption) 
 	}
 
 	p.Log = append(p.Log, step)
+	return nil
 }
 
 func (p *ParsedParameter) RenderValue() (string, error) {
@@ -70,14 +75,25 @@ func (p *ParsedParameter) RenderValue() (string, error) {
 }
 
 // UpdateWithLog sets the value of the parsedParameter, and appends the given log.
-func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) {
-	p.Value = value
+func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) error {
+	v, err := p.ParameterDefinition.CheckValueValidity(value)
+	if err != nil {
+		return err
+	}
+	p.Value = v
+
 	p.Log = append(p.Log, log...)
+	return nil
 }
 
 // Set sets the value of the parsedParameter, and manually updates the log
 func (p *ParsedParameter) Set(value interface{}, log ...ParseStep) {
-	p.Value = value
+	v, err := p.ParameterDefinition.CheckValueValidity(value)
+	if err != nil {
+		// XXX add proper error return here
+		panic(err)
+	}
+	p.Value = v
 	p.Log = log
 }
 
@@ -182,13 +198,16 @@ func (p *ParsedParameters) Clone() *ParsedParameters {
 func (p *ParsedParameters) UpdateExistingValue(
 	key string, v interface{},
 	options ...ParseStepOption,
-) bool {
+) (bool, error) {
 	v_, ok := p.Get(key)
 	if !ok {
-		return false
+		return false, nil
 	}
-	v_.Update(v, options...)
-	return true
+	err := v_.Update(v, options...)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (p *ParsedParameters) Update(
@@ -202,11 +221,12 @@ func (p *ParsedParameters) Update(
 	}
 }
 
+// XXX Add proper error return handling here
 func (p *ParsedParameters) UpdateValue(
 	key string, pd *ParameterDefinition,
 	v interface{},
 	options ...ParseStepOption,
-) {
+) error {
 	v_, ok := p.Get(key)
 	if !ok {
 		v_ = &ParsedParameter{
@@ -214,7 +234,11 @@ func (p *ParsedParameters) UpdateValue(
 		}
 		p.Set(key, v_)
 	}
-	v_.Update(v, options...)
+	err := v_.Update(v, options...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *ParsedParameters) MustUpdateValue(
@@ -226,7 +250,10 @@ func (p *ParsedParameters) MustUpdateValue(
 	if !ok {
 		return errors.Errorf("parameter %s not found", key)
 	}
-	v_.Update(v, options...)
+	err := v_.Update(v, options...)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -234,7 +261,7 @@ func (p *ParsedParameters) UpdateWithLog(
 	key string, pd *ParameterDefinition,
 	v interface{},
 	log ...ParseStep,
-) {
+) error {
 	v_, ok := p.Get(key)
 	if !ok {
 		v_ = &ParsedParameter{
@@ -242,16 +269,25 @@ func (p *ParsedParameters) UpdateWithLog(
 		}
 		p.Set(key, v_)
 	}
-	v_.UpdateWithLog(v, log...)
+	err := v_.UpdateWithLog(v, log...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetAsDefault sets the current value of the parameter if no value has yet been set.
 func (p *ParsedParameters) SetAsDefault(
 	key string, pd *ParameterDefinition, v interface{},
-	options ...ParseStepOption) {
+	options ...ParseStepOption,
+) error {
 	if _, ok := p.Get(key); !ok {
-		p.UpdateValue(key, pd, v, options...)
+		err := p.UpdateValue(key, pd, v, options...)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // ForEach applies the passed function to each key-value pair from oldest to newest
@@ -278,19 +314,33 @@ func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) e
 // Merge is actually more complex than it seems, other takes precedence. If the key already exists in the map,
 // we actually merge the ParsedParameter themselves, by appending the entire history of the other parameter to the
 // current one.
-func (p *ParsedParameters) Merge(other *ParsedParameters) *ParsedParameters {
-	other.ForEach(func(k string, v *ParsedParameter) {
-		p.UpdateWithLog(k, v.ParameterDefinition, v.Value, v.Log...)
+func (p *ParsedParameters) Merge(other *ParsedParameters) (*ParsedParameters, error) {
+	err := other.ForEachE(func(k string, v *ParsedParameter) error {
+		err := p.UpdateWithLog(k, v.ParameterDefinition, v.Value, v.Log...)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	return p
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 // MergeAsDefault only sets the value if the key does not already exist in the map.
-func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...ParseStepOption) *ParsedParameters {
-	other.ForEach(func(k string, v *ParsedParameter) {
-		p.SetAsDefault(k, v.ParameterDefinition, v.Value, options...)
+func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...ParseStepOption) (*ParsedParameters, error) {
+	err := other.ForEachE(func(k string, v *ParsedParameter) error {
+		err := p.SetAsDefault(k, v.ParameterDefinition, v.Value, options...)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	return p
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 // ToMap converts ParsedParameters to map[string]interface{} by assigning each ParsedParameter's value to its key.

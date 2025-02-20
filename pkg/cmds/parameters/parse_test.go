@@ -331,10 +331,10 @@ func TestParseParameter(t *testing.T) {
 			ParameterType: ParameterTypeKeyValue,
 			DefaultValue:  map[string]interface{}{"default": "default"},
 			Cases: []ParameterTestCase{
-				{Name: "Valid single key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]interface{}{"test": "test"}, WantErr: ErrorNotExpected},
-				{Name: "Valid multiple key-value pairs, no error expected", Input: []string{"test:test", "test2:test2"}, Expected: map[string]interface{}{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
+				{Name: "Valid single key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid multiple key-value pairs, no error expected", Input: []string{"test:test", "test2:test2"}, Expected: map[string]string{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
 				{Name: "Invalid input without colon separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
-				{Name: "No input uses default key-value map, no error expected", Input: []string{}, Expected: map[string]interface{}{"default": "default"}, WantErr: ErrorNotExpected},
+				{Name: "No input uses default key-value map, no error expected", Input: []string{}, Expected: map[string]string{"default": "default"}, WantErr: ErrorNotExpected},
 			},
 		},
 	}
@@ -440,7 +440,7 @@ func TestParseStringListFromReader(t *testing.T) {
 
 func TestParseObjectFromFile(t *testing.T) {
 	parameter := NewParameterDefinition("test", ParameterTypeObjectFromFile,
-		WithDefault(map[string]interface{}{"default": "default"}),
+		WithDefault(map[string]string{"default": "default"}),
 	)
 
 	reader := strings.NewReader(`{"test":"test"}`)
@@ -463,21 +463,18 @@ func TestParseObjectFromFile(t *testing.T) {
 
 	// toplevel list
 	reader = strings.NewReader(`["test"]`)
-	v, err := parameter.ParseFromReader(reader, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"test"}, v.Value)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
 
 	// toplevel string
 	reader = strings.NewReader(`"test"`)
-	v, err = parameter.ParseFromReader(reader, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, "test", v.Value)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
 
 	// toplevel int
 	reader = strings.NewReader(`1`)
-	v, err = parameter.ParseFromReader(reader, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, 1.0, v.Value)
+	_, err = parameter.ParseFromReader(reader, "test.json")
+	assert.Error(t, err)
 
 	// now yaml
 	reader = strings.NewReader(`test: test`)
@@ -498,15 +495,13 @@ func TestParseObjectFromFile(t *testing.T) {
 
 	// toplevel list
 	reader = strings.NewReader("- test\n- test2")
-	v, err = parameter.ParseFromReader(reader, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, []interface{}{"test", "test2"}, v.Value)
+	_, err = parameter.ParseFromReader(reader, "test.yaml")
+	assert.Error(t, err)
 
 	// toplevel string
 	reader = strings.NewReader(`test`)
-	v, err = parameter.ParseFromReader(reader, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, "test", v.Value)
+	_, err = parameter.ParseFromReader(reader, "test.yaml")
+	assert.Error(t, err)
 
 	// now, one-line CSV with headers
 	reader = strings.NewReader(`test,test2
@@ -690,19 +685,6 @@ func parseObjectListFromString(parameter *ParameterDefinition, input string, fil
 	return v, nil
 }
 
-func parseObjectFromString(parameter *ParameterDefinition, input string, fileName string) (map[string]interface{}, error) {
-	reader := strings.NewReader(input)
-	i, err := parameter.ParseFromReader(reader, fileName)
-	if err != nil {
-		return nil, err
-	}
-	v, ok := i.Value.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("failed to cast")
-	}
-	return v, nil
-}
-
 func TestParseStringFromFile(t *testing.T) {
 	parameter := NewParameterDefinition("test", ParameterTypeStringFromFile,
 		WithDefault("default"),
@@ -723,62 +705,6 @@ func TestParseStringFromFile(t *testing.T) {
 	i, err = parameter.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "", i.Value)
-}
-
-func TestParseKeyFromFile(t *testing.T) {
-	parameter := NewParameterDefinition("test", ParameterTypeKeyValue,
-		WithDefault("default"),
-	)
-
-	// from json
-	v, err := parseObjectFromString(parameter, `{"test":"test"}`, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, v)
-
-	v, err = parseObjectFromString(parameter, `{"test":1}`, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": 1.0}, v)
-
-	v, err = parseObjectFromString(parameter, `{"test":["test"]}`, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": []interface{}{"test"}}, v)
-
-	// succeed on empty dict
-	v, err = parseObjectFromString(parameter, `{}`, "test.json")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{}, v)
-
-	// fail on empty file
-	_, err = parseObjectFromString(parameter, ``, "test.json")
-	assert.Error(t, err)
-
-	// yaml now
-	v, err = parseObjectFromString(parameter, `test: test`, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test"}, v)
-
-	v, err = parseObjectFromString(parameter, `test: 1`, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": 1}, v)
-
-	v, err = parseObjectFromString(parameter, `test: ["test"]`, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": []interface{}{"test"}}, v)
-
-	// succeed on empty dict
-	v, err = parseObjectFromString(parameter, `{}`, "test.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{}, v)
-
-	// fail on empty file
-	_, err = parseObjectFromString(parameter, ``, "test.yaml")
-	assert.Error(t, err)
-
-	// try CSV
-	v, err = parseObjectFromString(parameter, `test,test2
-test,test2`, "test.csv")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, v)
 }
 
 func TestParseStringFromFileRealFile(t *testing.T) {
