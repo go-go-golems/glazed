@@ -148,7 +148,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 
 		f := flagSet.Lookup(flagName)
 		if f != nil {
-			return errors.Errorf("Flag '%s' already exists", flagName)
+			return errors.Errorf("Flag '%s' (usage: %s) already exists", flagName, f.Usage)
 		}
 
 		helpText := parameter.Help

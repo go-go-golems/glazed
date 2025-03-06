@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -193,11 +194,13 @@ func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
 		// if not, return an error
 		cobraLayer, ok := layer.(layers.CobraParameterLayer)
 		if !ok {
+			log.Error().Str("layer", layer.GetName()).Msg("Layer is not a CobraParameterLayer")
 			return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
 		}
 
 		err := cobraLayer.AddLayerToCobraCommand(cmd)
 		if err != nil {
+			log.Error().Err(err).Str("layer", layer.GetName()).Msg("Could not add layer to cobra command")
 			return err
 		}
 
