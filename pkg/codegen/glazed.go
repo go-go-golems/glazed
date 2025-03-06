@@ -22,10 +22,11 @@ func ParameterDefinitionToDict(p *parameters.ParameterDefinition) (jen.Code, err
 
 	if p.Default != nil {
 		var err error
-		ret[jen.Id("Default")], err = FlagValueToJen(p)
+		v, err := FlagValueToJen(p)
 		if err != nil {
 			return nil, err
 		}
+		ret[jen.Id("Default")] = jen.Qual("github.com/go-go-golems/glazed/pkg/helpers/cast", "InterfaceAddr").Call(v)
 	}
 	if p.Choices != nil {
 		ret[jen.Id("Choices")] = jen.Index().String().ValuesFunc(func(g *jen.Group) {
