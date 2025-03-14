@@ -47,10 +47,12 @@ func BuildCobraCommandFromCommandAndFunc(
 	cmd := NewCobraCommandFromCommandDescription(description)
 	cobraParser, err := NewCobraParserFromLayers(description.Layers, options...)
 	if err != nil {
+		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
 		return nil, err
 	}
 	err = cobraParser.AddToCobraCommand(cmd)
 	if err != nil {
+		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not add to cobra command")
 		return nil, err
 	}
 
