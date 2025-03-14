@@ -89,7 +89,7 @@ func CheckYamlFileType(f fs.FS, fileName string, expectedType string) bool {
 	if err != nil {
 		return false
 	}
-	return cmd.Type == expectedType
+	return cmd.Type == expectedType || cmd.Type == ""
 }
 
 func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error) {
