@@ -25,7 +25,7 @@ The MultiLoader provides a flexible way to load commands from different file typ
 The MultiLoader works by first checking a file's `type` field (if present) and then dispatching to the appropriate registered loader. Here's how a typical command file with a type field looks:
 
 ```yaml
-type: sql
+type: sqleton
 name: query-users
 short: Query the users table
 flags:
@@ -110,7 +110,7 @@ commands, err := loader.LoadCommands(fs, "commands/unknown.txt", options, aliasO
 
 ### SQL Command
 ```yaml
-type: sql
+type: sqleton
 name: list-users
 short: List all users from database
 flags:

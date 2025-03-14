@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 // CommandLoader is an interface that describes the most generic loader type,
@@ -62,6 +63,33 @@ func LoadCommandOrAliasFromReader(
 
 	return cmds_, nil
 
+}
+
+// CheckYamlFileType checks if a yaml file has a specific type field value
+func CheckYamlFileType(f fs.FS, fileName string, expectedType string) bool {
+	f_, err := f.Open(fileName)
+	if err != nil {
+		return false
+	}
+	defer func(f_ fs.File) {
+		_ = f_.Close()
+	}(f_)
+
+	type commandType struct {
+		Type string `yaml:"type"`
+	}
+	var cmd commandType
+
+	content, err := io.ReadAll(f_)
+	if err != nil {
+		return false
+	}
+
+	err = yaml.Unmarshal(content, &cmd)
+	if err != nil {
+		return false
+	}
+	return cmd.Type == expectedType
 }
 
 func LoadCommandAliasFromYAML(s io.Reader, options ...alias.Option) ([]*alias.CommandAlias, error) {
