@@ -221,6 +221,30 @@ func (cd *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinit
 	return l.GetParameterDefinitions().GetArguments()
 }
 
+// GetDefaultsMap returns a map of parameter names to their default values
+// by combining the default flags and arguments.
+func (cd *CommandDescription) GetDefaultsMap() (map[string]interface{}, error) {
+	flags := cd.GetDefaultFlags()
+	arguments := cd.GetDefaultArguments()
+
+	params, err := flags.ParsedParametersFromDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	argsParams, err := arguments.ParsedParametersFromDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	paramsMap := params.ToMap()
+	for k, v := range argsParams.ToMap() {
+		paramsMap[k] = v
+	}
+
+	return paramsMap, nil
+}
+
 func (cd *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
 	return cd.Layers.Get(name)
 }
