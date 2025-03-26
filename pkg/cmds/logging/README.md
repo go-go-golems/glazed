@@ -21,6 +21,7 @@ The logging layer supports the following configuration options:
 - **Log File**: Specify a file to write logs to (defaults to stderr)
 - **With Caller**: Include caller information in log entries
 - **Verbose**: Enable verbose logging (sets log level to debug)
+- **Logstash Integration**: Send logs to a Logstash server for centralized logging
 
 ## Usage
 
@@ -104,22 +105,45 @@ If you need to configure logging manually:
 
 ```go
 import (
-    "github.com/go-go-golems/clay/pkg/logging"
+    "github.com/go-go-golems/glazed/pkg/cmds/logging"
 )
 
 func configureLogging() error {
     settings := &logging.LoggingSettings{
-        LogLevel:   "debug",
-        LogFormat:  "text",
-        LogFile:    "/var/log/myapp.log",
-        WithCaller: true,
-        Verbose:    true,
+        LogLevel:         "debug",
+        LogFormat:        "text",
+        LogFile:          "/var/log/myapp.log",
+        WithCaller:       true,
+        LogstashEnabled:  true,
+        LogstashHost:     "logstash.example.com",
+        LogstashPort:     5044,
+        LogstashProtocol: "tcp",
+        AppName:          "my-application",
+        Environment:      "production",
     }
     
     return logging.InitLoggerFromSettings(settings)
 }
 ```
 
+### Configuring Logstash Integration via CLI
+
+The logging layer automatically adds Logstash-related flags to your application, which can be used as follows:
+
+```bash
+# Enable Logstash integration
+$ ./myapp --logstash-enabled --logstash-host logstash.example.com --logstash-port 5044 --app-name "my-application" --environment production
+
+# Other Logstash options (with their defaults)
+# --logstash-protocol tcp     # Protocol to use (tcp or udp)
+# --app-name ""               # Application name in Logstash logs
+# --environment development   # Environment name in Logstash logs
+```
+
+When Logstash integration is enabled, logs are sent to both the standard output and the Logstash server. The logs sent to Logstash include additional metadata like application name, environment, and timestamp.
+
 ## Complete Example
 
 See the `examples/logging_layer_example.go` file for a complete example of using the logging layer in a Glazed command. 
+
+For a dedicated example of Logstash integration, see `examples/logstash_example.go`. 

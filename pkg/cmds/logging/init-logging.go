@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -118,16 +117,4 @@ func InitViperInstanceWithAppName(appName string, configFile string) (*viper.Vip
 	v.AutomaticEnv()
 
 	return v, nil
-}
-
-// AddLoggingLayerToCommand adds the logging layer to a Glazed command
-func AddLoggingLayerToCommand(cmd cmds.Command) (cmds.Command, error) {
-	loggingLayer, err := NewLoggingLayer()
-	if err != nil {
-		return nil, err
-	}
-
-	cmd.Description().Layers.Set(LoggingLayerSlug, loggingLayer)
-
-	return cmd, nil
 }

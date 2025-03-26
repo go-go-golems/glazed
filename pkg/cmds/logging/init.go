@@ -52,6 +52,34 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		logWriter = writer
 	}
 
+	// Configure Logstash logging if enabled
+	if settings.LogstashEnabled {
+		// Use default app name if not specified
+		appName := settings.LogstashAppName
+		if appName == "" {
+			appName = "glazed-app"
+		}
+
+		logstashWriter := SetupLogstashLogger(
+			settings.LogstashHost,
+			settings.LogstashPort,
+			settings.LogstashProtocol,
+			appName,
+			settings.LogstashEnvironment,
+		)
+
+		// Create a multi-writer that logs to both the existing writer and Logstash
+		logWriter = zerolog.MultiLevelWriter(logWriter, logstashWriter)
+
+		log.Info().
+			Str("host", settings.LogstashHost).
+			Int("port", settings.LogstashPort).
+			Str("protocol", settings.LogstashProtocol).
+			Str("app", appName).
+			Str("environment", settings.LogstashEnvironment).
+			Msg("Logging to Logstash")
+	}
+
 	log.Logger = log.Output(logWriter)
 
 	switch settings.LogLevel {
@@ -70,6 +98,7 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 	log.Logger.Debug().Str("format", settings.LogFormat).
 		Str("level", settings.LogLevel).
 		Str("file", settings.LogFile).
+		Bool("logstash", settings.LogstashEnabled).
 		Msg("Logger initialized")
 
 	return nil
@@ -78,10 +107,16 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 // InitLoggerFromViper initializes the logger using settings from Viper
 func InitLoggerFromViper() error {
 	settings := &LoggingSettings{
-		LogLevel:   viper.GetString("log-level"),
-		LogFile:    viper.GetString("log-file"),
-		LogFormat:  viper.GetString("log-format"),
-		WithCaller: viper.GetBool("with-caller"),
+		LogLevel:            viper.GetString("log-level"),
+		LogFile:             viper.GetString("log-file"),
+		LogFormat:           viper.GetString("log-format"),
+		WithCaller:          viper.GetBool("with-caller"),
+		LogstashEnabled:     viper.GetBool("logstash-enabled"),
+		LogstashHost:        viper.GetString("logstash-host"),
+		LogstashPort:        viper.GetInt("logstash-port"),
+		LogstashProtocol:    viper.GetString("logstash-protocol"),
+		LogstashAppName:     viper.GetString("logstash-app-name"),
+		LogstashEnvironment: viper.GetString("logstash-environment"),
 	}
 
 	return InitLoggerFromSettings(settings)
