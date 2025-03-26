@@ -197,18 +197,9 @@ func main() {
         log.Fatal().Err(err).Msg("Failed to create root command")
     }
 
-    // 3. Setup logging for all commands
-    rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-        err := clay.InitLogger()
-        cobra.CheckErr(err)
-    }
-
     // 4. Initialize configuration and logger
     err = clay.InitViper("myapp", rootCmd)
     cobra.CheckErr(err)
-	err = clay.InitLogger()
-	cobra.CheckErr(err)
-
 
     // 5. Setup help system
     helpSystem := help.NewHelpSystem()
@@ -238,12 +229,6 @@ func NewRootCmd() (*cobra.Command, error) {
         Use:   "myapp",
         Short: "MyApp CLI tool",
         Long:  "A CLI tool for interacting with MyApp",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// reinitialize the logger because we can now parse --log-level and co
-			// from the command line flag
-			err := clay.InitLogger()
-			cobra.CheckErr(err)
-		}}
     }
 
     // Add command groups

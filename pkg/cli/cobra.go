@@ -66,8 +66,6 @@ func BuildCobraCommandFromCommandAndFunc(
 			os.Exit(1)
 		}
 
-		// Handle both full and minimal command settings
-
 		// Try minimal command settings
 		commandSettings := &CommandSettings{}
 		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {

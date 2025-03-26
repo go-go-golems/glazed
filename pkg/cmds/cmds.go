@@ -289,6 +289,12 @@ func (cd *CommandDescription) Description() *CommandDescription {
 	return cd
 }
 
+func (cd *CommandDescription) SetLayers(layers ...layers.ParameterLayer) {
+	for _, l := range layers {
+		cd.Layers.Set(l.GetSlug(), l)
+	}
+}
+
 type Command interface {
 	Description() *CommandDescription
 	ToYAML(w io.Writer) error
