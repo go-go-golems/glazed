@@ -27,10 +27,6 @@ func InitLoggerWithConfig(config *LogConfig) error {
 	return InitLoggerFromSettings(settings)
 }
 
-func InitLogger() error {
-	return InitLoggerFromViper()
-}
-
 func InitViperWithAppName(appName string, configFile string) error {
 	viper.SetEnvPrefix(appName)
 

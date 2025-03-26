@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/spf13/cobra"
@@ -165,12 +164,6 @@ func NewCobraParserFromLayers(
 		}
 		ret.Layers.Set(commandSettingsLayer.GetSlug(), commandSettingsLayer)
 	}
-
-	loggingLayer, err := logging.NewLoggingLayer()
-	if err != nil {
-		return nil, err
-	}
-	ret.Layers.Set(logging.LoggingLayerSlug, loggingLayer)
 
 	// Only add the profile settings layer if explicitly enabled
 	if ret.enableProfileSettingsLayer {

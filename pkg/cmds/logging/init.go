@@ -1,16 +1,12 @@
 package logging
 
 import (
-	"github.com/pkg/errors"
 	"io"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -58,12 +54,7 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 
 	log.Logger = log.Output(logWriter)
 
-	logLevel := strings.ToLower(settings.LogLevel)
-	if settings.Verbose && logLevel != "trace" {
-		logLevel = "debug"
-	}
-
-	switch logLevel {
+	switch settings.LogLevel {
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	case "info":
@@ -91,38 +82,6 @@ func InitLoggerFromViper() error {
 		LogFile:    viper.GetString("log-file"),
 		LogFormat:  viper.GetString("log-format"),
 		WithCaller: viper.GetBool("with-caller"),
-		Verbose:    viper.GetBool("verbose"),
-	}
-
-	return InitLoggerFromSettings(settings)
-}
-
-// AddLoggingLayerToCobra adds the logging layer to a Cobra command
-func AddLoggingLayerToCobra(rootCmd *cobra.Command) error {
-	// Create a logging layer to get the parameter definitions
-	loggingLayer, err := NewLoggingLayer()
-	if err != nil {
-		return err
-	}
-
-	// Get parameter definitions from the layer
-	if cobraLayer, ok := loggingLayer.(layers.CobraParameterLayer); ok {
-		err := cobraLayer.AddLayerToCobraCommand(rootCmd)
-		if err != nil {
-			return err
-		}
-	} else {
-		return errors.New("logging layer is not a CobraParameterLayer")
-	}
-
-	return nil
-}
-
-// InitLoggerFromParsedLayers initializes the logger from parsed Glazed layers
-func InitLoggerFromParsedLayers(parsedLayers *layers.ParsedLayers) error {
-	settings, err := GetLoggingSettingsFromParsedLayers(parsedLayers)
-	if err != nil {
-		return err
 	}
 
 	return InitLoggerFromSettings(settings)

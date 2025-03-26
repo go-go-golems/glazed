@@ -11,7 +11,6 @@ type LoggingSettings struct {
 	LogLevel   string `glazed.parameter:"log-level"`
 	LogFormat  string `glazed.parameter:"log-format"`
 	LogFile    string `glazed.parameter:"log-file"`
-	Verbose    bool   `glazed.parameter:"verbose"`
 }
 
 const LoggingLayerSlug = "logging"
@@ -48,21 +47,6 @@ func NewLoggingLayer() (layers.ParameterLayer, error) {
 				parameters.WithHelp("Log file (default: stderr)"),
 				parameters.WithDefault(""),
 			),
-			parameters.NewParameterDefinition(
-				"verbose",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Verbose output"),
-				parameters.WithDefault(false),
-			),
 		),
 	)
-}
-
-// GetLoggingSettingsFromParsedLayers extracts logging settings from parsed layers
-func GetLoggingSettingsFromParsedLayers(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error) {
-	s := &LoggingSettings{}
-	if err := parsedLayers.InitializeStruct("logging", s); err != nil {
-		return nil, err
-	}
-	return s, nil
 }
