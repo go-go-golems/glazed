@@ -23,10 +23,6 @@ var docsFS embed.FS
 var rootCmd = &cobra.Command{
     Use:   "your-app",
     Short: "Your application description",
-    PersistentPreRun: func(cmd *cobra.Command, args []string) {
-        err := clay.InitLogger()
-        cobra.CheckErr(err)
-    },
 }
 
 func main() {
@@ -53,11 +49,6 @@ func initRootCmd() (*help.HelpSystem, error) {
     helpSystem.SetupCobraRootCommand(rootCmd)
 
     err = clay.InitViper("your-app", rootCmd)
-    if err != nil {
-        return nil, err
-    }
-
-    err = clay.InitLogger()
     if err != nil {
         return nil, err
     }

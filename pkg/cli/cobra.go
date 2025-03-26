@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
@@ -65,6 +66,9 @@ func BuildCobraCommandFromCommandAndFunc(
 			cobra.CheckErr(err)
 			os.Exit(1)
 		}
+
+		err = logging.InitLoggerFromParsedLayers(parsedLayers)
+		cobra.CheckErr(err)
 
 		// Handle both full and minimal command settings
 
