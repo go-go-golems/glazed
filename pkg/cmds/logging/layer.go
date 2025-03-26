@@ -109,7 +109,7 @@ func AddLoggingLayerToCommand(cmd cmds.Command) (cmds.Command, error) {
 	return cmd, nil
 }
 
-func AddLoggingLayerToRootCommand(rootCmd *cobra.Command) error {
+func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error {
 	loggingLayer, err := NewLoggingLayer()
 	if err != nil {
 		return err
@@ -134,8 +134,8 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command) error {
 	rootCmd.PersistentFlags().String("logstash-host", "logstash", "Logstash host")
 	rootCmd.PersistentFlags().Int("logstash-port", 5044, "Logstash port")
 	rootCmd.PersistentFlags().String("logstash-protocol", "tcp", "Logstash protocol (tcp, udp)")
-	rootCmd.PersistentFlags().String("app-name", "", "Application name for Logstash logs")
-	rootCmd.PersistentFlags().String("environment", "development", "Environment name for Logstash logs (development, staging, production)")
+	rootCmd.PersistentFlags().String("logstash-app-name", appName, "Application name for Logstash logs")
+	rootCmd.PersistentFlags().String("logstash-environment", "development", "Environment name for Logstash logs (development, staging, production)")
 
 	return nil
 }

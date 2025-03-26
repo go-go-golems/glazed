@@ -69,8 +69,12 @@ func (w *LogstashWriter) Write(p []byte) (int, error) {
 		w.conn = nil
 		return n, err
 	}
+	if n != len(jsonData)+1 {
+		return n, fmt.Errorf("failed to write all data to Logstash")
+	}
 
-	return n, nil
+	// we have to return the original length of the data
+	return len(p), nil
 }
 
 // ensureConnection makes sure we have an active connection to Logstash

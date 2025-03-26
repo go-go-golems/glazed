@@ -57,7 +57,10 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		// Use default app name if not specified
 		appName := settings.LogstashAppName
 		if appName == "" {
-			appName = "glazed-app"
+			appName = viper.GetEnvPrefix()
+			if appName == "" {
+				appName = "app"
+			}
 		}
 
 		logstashWriter := SetupLogstashLogger(
