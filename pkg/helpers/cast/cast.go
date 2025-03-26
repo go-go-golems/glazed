@@ -311,6 +311,13 @@ func InterfaceAddr[T any](t T) *interface{} {
 	return &t_
 }
 
+// WrapAddr takes a value of type T and returns a pointer to the same value wrapped as type W.
+// This is useful for converting a value to a pointer of a different wrapper type without
+// having to declare intermediate variables.
+func WrapAddr[T any](t T) *T {
+	return &t
+}
+
 func CastNumberInterfaceToIntWithTruncation[To SignedInt | UnsignedInt](i interface{}) (To, bool) {
 	switch i := i.(type) {
 	case To:
