@@ -3,6 +3,9 @@ package settings
 import (
 	_ "embed"
 	"fmt"
+	"text/template"
+	"unicode/utf8"
+
 	"github.com/Masterminds/sprig"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -15,8 +18,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/formatters/yaml"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/pkg/errors"
-	"text/template"
-	"unicode/utf8"
 )
 
 // TemplateFormatterSettings is probably obsolete...
@@ -82,16 +83,17 @@ func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatt
 }
 
 func (ofs *OutputFormatterSettings) computeCanonicalFormat() error {
-	if ofs.Output == "csv" {
+	switch ofs.Output {
+	case "csv":
 		ofs.Output = "table"
 		ofs.TableFormat = "csv"
-	} else if ofs.Output == "tsv" {
+	case "tsv":
 		ofs.Output = "table"
 		ofs.TableFormat = "tsv"
-	} else if ofs.Output == "markdown" {
+	case "markdown":
 		ofs.Output = "table"
 		ofs.TableFormat = "markdown"
-	} else if ofs.Output == "html" {
+	case "html":
 		ofs.Output = "table"
 		ofs.TableFormat = "html"
 	}
@@ -136,7 +138,8 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 	}
 
 	var of formatters.RowOutputFormatter
-	if ofs.Output == "json" {
+	switch ofs.Output {
+	case "json":
 		// JSON can always be output as individual rows, since we don't need to know the column names up front
 		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),
@@ -144,9 +147,10 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 			json.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			json.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
-	} else if ofs.Output == "table" {
+	case "table":
 		if ofs.Stream {
-			if ofs.TableFormat == "csv" {
+			switch ofs.TableFormat {
+			case "csv":
 				csvOf := csv.NewCSVOutputFormatter(
 					csv.WithOutputFile(ofs.OutputFile),
 					csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
@@ -156,7 +160,7 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 				r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 				csvOf.Separator = r
 				of = csvOf
-			} else if ofs.TableFormat == "tsv" {
+			case "tsv":
 				tsvOf := csv.NewTSVOutputFormatter(
 					csv.WithOutputFile(ofs.OutputFile),
 					csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
@@ -164,24 +168,23 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 				)
 				tsvOf.WithHeaders = ofs.WithHeaders
 				of = tsvOf
-			} else if ofs.TableFormat == "html" || ofs.TableFormat == "markdown" {
+			case "html", "markdown":
 				of = tableformatter.NewOutputFormatter(ofs.TableFormat)
-			} else {
+			default:
 				return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
 			}
 		} else {
 			// table and csv also support table output
 			return nil, &ErrorRowFormatUnsupported{ofs.Output + ":" + ofs.TableFormat}
-
 		}
-	} else if ofs.Output == "yaml" {
+	case "yaml":
 		of = yaml.NewOutputFormatter(
 			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
 			yaml.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			yaml.WithOutputFileTemplate(ofs.OutputFileTemplate),
 			yaml.WithYAMLOutputFile(ofs.OutputFile),
 		)
-	} else if ofs.Output == "excel" {
+	case "excel":
 		if ofs.OutputFile == "" {
 			return nil, errors.New("output-file is required for excel output")
 		}
@@ -192,15 +195,15 @@ func (ofs *OutputFormatterSettings) CreateRowOutputFormatter() (formatters.RowOu
 			excel.WithSheetName(ofs.SheetName),
 			excel.WithOutputFile(ofs.OutputFile),
 		)
-	} else if ofs.Output == "sql" {
+	case "sql":
 		of = sql.NewOutputFormatter(
 			sql.WithTableName(ofs.SqlTableName),
 			sql.WithUseUpsert(ofs.WithUpsert),
 			sql.WithSplitByRows(ofs.SqlSplitByRows),
 		)
-	} else if ofs.Output == "template" {
+	case "template":
 		return nil, &ErrorRowFormatUnsupported{"template"}
-	} else {
+	default:
 		return nil, &ErrorUnknownFormat{ofs.Output}
 	}
 
@@ -214,24 +217,26 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 	}
 
 	var of formatters.TableOutputFormatter
-	if ofs.Output == "json" {
+	switch ofs.Output {
+	case "json":
 		of = json.NewOutputFormatter(
 			json.WithOutputIndividualRows(ofs.OutputAsObjects),
 			json.WithOutputFile(ofs.OutputFile),
 			json.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			json.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
-	} else if ofs.Output == "yaml" {
+	case "yaml":
 		of = yaml.NewOutputFormatter(
 			yaml.WithYAMLOutputFile(ofs.OutputFile),
 			yaml.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			yaml.WithOutputFileTemplate(ofs.OutputFileTemplate),
 			yaml.WithOutputIndividualRows(ofs.OutputAsObjects),
 		)
-	} else if ofs.Output == "excel" {
+	case "excel":
 		return nil, &ErrorTableFormatUnsupported{"excel"}
-	} else if ofs.Output == "table" {
-		if ofs.TableFormat == "csv" {
+	case "table":
+		switch ofs.TableFormat {
+		case "csv":
 			csvOf := csv.NewCSVOutputFormatter(
 				csv.WithOutputFile(ofs.OutputFile),
 				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
@@ -241,7 +246,7 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 			r, _ := utf8.DecodeRuneInString(ofs.CsvSeparator)
 			csvOf.Separator = r
 			of = csvOf
-		} else if ofs.TableFormat == "tsv" {
+		case "tsv":
 			tsvOf := csv.NewTSVOutputFormatter(
 				csv.WithOutputFile(ofs.OutputFile),
 				csv.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
@@ -249,7 +254,7 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 			)
 			tsvOf.WithHeaders = ofs.WithHeaders
 			of = tsvOf
-		} else {
+		default:
 			of = tableformatter.NewOutputFormatter(
 				ofs.TableFormat,
 				tableformatter.WithOutputFile(ofs.OutputFile),
@@ -260,7 +265,7 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 				tableformatter.WithPrintTableStyle(ofs.PrintTableStyle),
 			)
 		}
-	} else if ofs.Output == "template" {
+	case "template":
 		if ofs.TemplateFormatterSettings == nil {
 			ofs.TemplateFormatterSettings = &TemplateFormatterSettings{
 				TemplateFuncMaps: []template.FuncMap{
@@ -277,7 +282,7 @@ func (ofs *OutputFormatterSettings) CreateTableOutputFormatter() (formatters.Tab
 			templateformatter.WithOutputMultipleFiles(ofs.OutputMultipleFiles),
 			templateformatter.WithOutputFileTemplate(ofs.OutputFileTemplate),
 		)
-	} else {
+	default:
 		return nil, &ErrorUnknownFormat{ofs.Output}
 	}
 

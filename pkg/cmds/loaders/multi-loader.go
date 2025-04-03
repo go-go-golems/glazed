@@ -86,13 +86,17 @@ func (m *MultiLoader) LoadCommands(
 	entryName string,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
-) ([]cmds.Command, error) {
+) (commands []cmds.Command, err error) {
 	// First, read the file
 	file, err := f.Open(entryName)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not open file")
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = errors.Wrap(closeErr, "error closing file")
+		}
+	}()
 
 	// Read the content
 	content, err := io.ReadAll(file)
@@ -111,13 +115,17 @@ func (m *MultiLoader) LoadCommands(
 }
 
 // IsFileSupported implements the CommandLoader interface
-func (m *MultiLoader) IsFileSupported(f fs.FS, fileName string) bool {
+func (m *MultiLoader) IsFileSupported(f fs.FS, fileName string) (supported bool) {
 	// Try to open and read the file
 	file, err := f.Open(fileName)
 	if err != nil {
 		return false
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			supported = false
+		}
+	}()
 
 	content, err := io.ReadAll(file)
 	if err != nil {

@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/types"
-	"github.com/pkg/errors"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 )
 
 type OutputFormatter struct {
@@ -163,10 +164,7 @@ func (f *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 		}
 	}
 
-	printInsert := false
-	if f.curIdx == 0 {
-		printInsert = true
-	}
+	printInsert := f.curIdx == 0
 
 	if f.SplitByRows > 0 && f.curIdx == f.SplitByRows {
 		err := f.printInsertEnd(w)

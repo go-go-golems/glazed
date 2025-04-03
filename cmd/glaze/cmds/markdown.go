@@ -155,11 +155,12 @@ var parseCmd = &cobra.Command{
 			s, err := os.ReadFile(arg)
 			cobra.CheckErr(err)
 
-			if parser_ == "simple" {
+			switch parser_ {
+			case "simple":
 				err = simpleLinearize(ctx, md, s, gp)
-			} else if parser_ == "split" {
+			case "split":
 				err = splitByHeading(ctx, md, s, gp)
-			} else {
+			default:
 				cobra.CheckErr(errors.Errorf("unknown parser: %s", parser_))
 			}
 			cobra.CheckErr(err)

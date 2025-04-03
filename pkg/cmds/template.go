@@ -2,13 +2,14 @@ package cmds
 
 import (
 	"context"
+	"io"
+	"text/template"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-	"io"
-	"text/template"
 
 	"github.com/pkg/errors"
 )
@@ -68,7 +69,7 @@ func (t *TemplateCommand) IsValid() bool {
 		return false
 	}
 
-	if t.CommandDescription.Name == "" || t.CommandDescription.Short == "" {
+	if t.Name == "" || t.Short == "" {
 		return false
 	}
 

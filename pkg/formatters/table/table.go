@@ -3,6 +3,10 @@ package table
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -12,9 +16,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
-	"io"
-	"os"
-	"strings"
 )
 
 var (
@@ -303,21 +304,22 @@ func (tof *OutputFormatter) makeTable(table_ *types.Table, rows []types.Row, w i
 		t.AppendRow(row_)
 	}
 
-	if tof.TableFormat == "markdown" {
+	switch tof.TableFormat {
+	case "markdown":
 		s := t.RenderMarkdown()
 		_, err := w.Write([]byte(s))
 		if err != nil {
 			return err
 		}
 		return nil
-	} else if tof.TableFormat == "html" {
+	case "html":
 		html := t.RenderHTML()
 		_, err := w.Write([]byte(html))
 		if err != nil {
 			return err
 		}
 		return nil
-	} else {
+	default:
 		if tof.TableStyleFile != "" {
 			f, err := os.Open(tof.TableStyleFile)
 			if err != nil {

@@ -2,13 +2,14 @@ package parameters
 
 import (
 	_ "embed"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-	"reflect"
-	"testing"
-	"time"
 )
 
 //go:embed "test-data/parameters_test.yaml"
@@ -462,7 +463,7 @@ func TestSetValueFromDefaultChoiceListAlias(t *testing.T) {
 	initialParameterTests()
 	choiceListFlag, _ := testParameterDefinitions.Get("choice-list-flag")
 
-	var cl []StringAlias = []StringAlias{"foo", "bar"}
+	var cl = []StringAlias{"foo", "bar"}
 
 	// get values of testStruct.ChoiceListAlias
 	clValue := reflect.ValueOf(&cl).Elem()
@@ -490,7 +491,7 @@ func TestSetValueFromDefaultChoiceListDeclaration(t *testing.T) {
 	initialParameterTests()
 	choiceListFlag, _ := testParameterDefinitions.Get("choice-list-flag")
 
-	var cl []StringDeclaration = []StringDeclaration{"foo", "bar"}
+	var cl = []StringDeclaration{"foo", "bar"}
 
 	// get values of testStruct.ChoiceListDeclaration
 	clValue := reflect.ValueOf(&cl).Elem()
@@ -719,7 +720,7 @@ func TestSetValueFromDefaultStringListAlias(t *testing.T) {
 	initialParameterTests()
 	stringListFlag, _ := testParameterDefinitions.Get("string-list-flag")
 
-	var sl []StringAlias = []StringAlias{"test"}
+	var sl = []StringAlias{"test"}
 
 	// get values of testStruct.StringListAlias
 	slValue := reflect.ValueOf(&sl).Elem()
@@ -745,7 +746,7 @@ func TestSetValueFromDefaultStringListDeclaration(t *testing.T) {
 	initialParameterTests()
 	stringListFlag, _ := testParameterDefinitions.Get("string-list-flag")
 
-	var sl []StringDeclaration = []StringDeclaration{"test"}
+	var sl = []StringDeclaration{"test"}
 
 	// get values of testStruct.StringListDeclaration
 	slValue := reflect.ValueOf(&sl).Elem()

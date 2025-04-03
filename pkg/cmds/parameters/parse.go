@@ -141,10 +141,10 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single boolean", p.Name)
 		}
-		switch {
-		case v[0] == "on":
+		switch v[0] {
+		case "on":
 			v_ = true
-		case v[0] == "off":
+		case "off":
 			v_ = false
 		default:
 			b, err := strconv.ParseBool(v[0])

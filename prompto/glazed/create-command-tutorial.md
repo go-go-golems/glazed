@@ -131,6 +131,8 @@ When assembling your command, a notable addition you can include is the `glazedP
 import 	"github.com/go-go-golems/glazed/pkg/settings"
 
 func NewExampleCommand() (*ExampleCommand, error) {
+  // Only add the glazedParameterLayer if we are creating a GlazedCommand.
+  // There is no need for a glazedParameterLayer if we are doing a BareCommand or a WriterCommand.
   glazedParameterLayer, err := settings.NewGlazedParameterLayers()
   if err != nil {
       return nil, errors.Wrap(err, "could not create Glazed parameter layer")
@@ -238,7 +240,7 @@ Given the specialized nature of a `GlazeCommand`, here's how you can effectively
 ```go
 import 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 
-func (c *ExampleCommand) Run(
+func (c *ExampleCommand) RunIntoGlazeProcessor(
   ctx context.Context,
   parsedLayers *layers.ParsedLayers,
   gp middlewares.Processor,
@@ -347,12 +349,14 @@ import "github.com/go-go-golems/glazed/pkg/cli"
 
 func main() {
   var rootCmd = &cobra.Command{
-    Use:   "coommandName",
+    Use:   "commandName",
     Short: "Short Command Description",
   }
+
+	err = clay.InitViper("applicationName", rootCmd)
+	cobra.CheckErr(err)
   
   helpSystem := help.NewHelpSystem()
-  
   helpSystem.SetupCobraRootCommand(rootCmd)
 
   glazeCmdInstance, err := NewMyGlazeCommand() // Assuming you've created this function

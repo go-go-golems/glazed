@@ -2,6 +2,7 @@ package settings
 
 import (
 	_ "embed"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -56,7 +57,7 @@ func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*F
 
 func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command) error {
 	defaults := &FieldsFilterFlagsDefaults{}
-	err := f.ParameterLayerImpl.InitializeStructFromParameterDefaults(defaults)
+	err := f.InitializeStructFromParameterDefaults(defaults)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
@@ -66,12 +67,12 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 		defaults.Fields = []string{"all"}
 	}
 	// this would be more elegant with a middleware for handling defaults, I think
-	err = f.ParameterLayerImpl.InitializeParameterDefaultsFromStruct(defaults)
+	err = f.InitializeParameterDefaultsFromStruct(defaults)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
+	return f.AddLayerToCobraCommand(cmd)
 }
 
 func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(

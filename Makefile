@@ -18,6 +18,9 @@ docker-lint:
 lint:
 	golangci-lint run -v --enable=exhaustive
 
+lintmax:
+	golangci-lint run -v --enable=exhaustive --max-same-issues=100
+
 test:
 	go test ./...
 
