@@ -77,22 +77,37 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				return nil
 			}
 			if i, ok := src.(int64); ok {
+				if i < 0 {
+					return errors.Errorf("cannot convert negative int64 %d to uint64", i)
+				}
 				dst.SetUint(uint64(i))
 				return nil
 			}
 			if i, ok := src.(int); ok {
+				if i < 0 {
+					return errors.Errorf("cannot convert negative int %d to uint64", i)
+				}
 				dst.SetUint(uint64(i))
 				return nil
 			}
 			if i, ok := src.(int8); ok {
+				if i < 0 {
+					return errors.Errorf("cannot convert negative int8 %d to uint64", i)
+				}
 				dst.SetUint(uint64(i))
 				return nil
 			}
 			if i, ok := src.(int16); ok {
+				if i < 0 {
+					return errors.Errorf("cannot convert negative int16 %d to uint64", i)
+				}
 				dst.SetUint(uint64(i))
 				return nil
 			}
 			if i, ok := src.(int32); ok {
+				if i < 0 {
+					return errors.Errorf("cannot convert negative int32 %d to uint64", i)
+				}
 				dst.SetUint(uint64(i))
 				return nil
 			}
@@ -129,10 +144,16 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 			}
 
 			if i, ok := src.(uint64); ok {
+				if i > uint64(9223372036854775807) { // MaxInt64
+					return errors.Errorf("uint64 value %d overflows int64", i)
+				}
 				dst.SetInt(int64(i))
 				return nil
 			}
 			if i, ok := src.(uint); ok {
+				if i > uint(9223372036854775807) { // MaxInt64
+					return errors.Errorf("uint value %d overflows int64", i)
+				}
 				dst.SetInt(int64(i))
 				return nil
 			}

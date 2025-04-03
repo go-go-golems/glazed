@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 
@@ -142,11 +143,23 @@ func LiteralToJen(v reflect.Value) (jen.Code, error) {
 	case reflect.Int:
 		return jen.Lit(int(v.Int())), nil
 	case reflect.Int8:
-		return jen.Lit(int8(v.Int())), nil
+		val := v.Int()
+		if val < int64(math.MinInt8) || val > int64(math.MaxInt8) {
+			return nil, fmt.Errorf("value %d overflows int8", val)
+		}
+		return jen.Lit(int8(val)), nil
 	case reflect.Int16:
-		return jen.Lit(int16(v.Int())), nil
+		val := v.Int()
+		if val < int64(math.MinInt16) || val > int64(math.MaxInt16) {
+			return nil, fmt.Errorf("value %d overflows int16", val)
+		}
+		return jen.Lit(int16(val)), nil
 	case reflect.Int32:
-		return jen.Lit(int32(v.Int())), nil
+		val := v.Int()
+		if val < int64(math.MinInt32) || val > int64(math.MaxInt32) {
+			return nil, fmt.Errorf("value %d overflows int32", val)
+		}
+		return jen.Lit(int32(val)), nil
 	case reflect.Int64:
 		return jen.Lit(v.Int()), nil
 	case reflect.Uint:

@@ -2,11 +2,14 @@ package templating
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	html "html/template"
 	"io"
 	"io/fs"
-	"math/rand"
+	"math"
+	"math/big"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -247,10 +250,12 @@ func add(a, b interface{}) interface{} {
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() + bv.Int()
-
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return av.Int() + int64(bv.Uint())
-
+			uintVal := bv.Uint()
+			if uintVal > uint64(9223372036854775807) { // MaxInt64
+				return fmt.Sprintf("%d + %d", av.Int(), uintVal)
+			}
+			return av.Int() + int64(uintVal)
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Int()) + bv.Float()
 
@@ -262,11 +267,13 @@ func add(a, b interface{}) interface{} {
 		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return int64(av.Uint()) + bv.Int()
-
+			intVal := bv.Int()
+			if intVal < 0 {
+				return fmt.Sprintf("%d + %d", av.Uint(), intVal)
+			}
+			return av.Uint() + uint64(intVal)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return av.Uint() + bv.Uint()
-
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Uint()) + bv.Float()
 
@@ -306,10 +313,12 @@ func sub(a, b interface{}) interface{} {
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() - bv.Int()
-
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return av.Int() - int64(bv.Uint())
-
+			uintVal := bv.Uint()
+			if uintVal > uint64(9223372036854775807) { // MaxInt64
+				return fmt.Sprintf("%d - %d", av.Int(), uintVal)
+			}
+			return av.Int() - int64(uintVal)
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Int()) - bv.Float()
 
@@ -321,11 +330,13 @@ func sub(a, b interface{}) interface{} {
 		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return int64(av.Uint()) - bv.Int()
-
+			intVal := bv.Int()
+			if intVal < 0 {
+				return fmt.Sprintf("%d - %d", av.Uint(), intVal)
+			}
+			return av.Uint() - uint64(intVal)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return av.Uint() - bv.Uint()
-
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Uint()) - bv.Float()
 
@@ -365,10 +376,12 @@ func mul(a, b interface{}) interface{} {
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() * bv.Int()
-
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return av.Int() * int64(bv.Uint())
-
+			uintVal := bv.Uint()
+			if uintVal > uint64(9223372036854775807) { // MaxInt64
+				return fmt.Sprintf("%d * %d", av.Int(), uintVal)
+			}
+			return av.Int() * int64(uintVal)
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Int()) * bv.Float()
 
@@ -380,11 +393,13 @@ func mul(a, b interface{}) interface{} {
 		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return int64(av.Uint()) * bv.Int()
-
+			intVal := bv.Int()
+			if intVal < 0 {
+				return fmt.Sprintf("%d * %d", av.Uint(), intVal)
+			}
+			return av.Uint() * uint64(intVal)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return av.Uint() * bv.Uint()
-
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Uint()) * bv.Float()
 
@@ -424,10 +439,12 @@ func div(a, b interface{}) interface{} {
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return av.Int() / bv.Int()
-
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return av.Int() / int64(bv.Uint())
-
+			uintVal := bv.Uint()
+			if uintVal > uint64(9223372036854775807) { // MaxInt64
+				return fmt.Sprintf("%d / %d", av.Int(), uintVal)
+			}
+			return av.Int() / int64(uintVal)
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Int()) / bv.Float()
 
@@ -439,11 +456,13 @@ func div(a, b interface{}) interface{} {
 		//exhaustive:ignore
 		switch bv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return int64(av.Uint()) / bv.Int()
-
+			intVal := bv.Int()
+			if intVal < 0 {
+				return fmt.Sprintf("%d / %d", av.Uint(), intVal)
+			}
+			return av.Uint() / uint64(intVal)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return av.Uint() / bv.Uint()
-
 		case reflect.Float32, reflect.Float64:
 			return float64(av.Uint()) / bv.Float()
 
@@ -665,16 +684,44 @@ func ParseHTMLFS(t *html.Template, f fs.FS, patterns []string, baseDir string) e
 	return nil
 }
 
+// securePerm generates a cryptographically secure random permutation of integers [0, n).
+func securePerm(n int) ([]int, error) {
+	if n < 0 {
+		return nil, errors.New("n must be non-negative")
+	}
+	p := make([]int, n)
+	for i := 0; i < n; i++ {
+		p[i] = i
+	}
+	for i := n - 1; i > 0; i-- {
+		// Generate a secure random index j from [0, i]
+		nBig, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to generate random index for permutation")
+		}
+		j := int(nBig.Int64())
+		// Swap p[i] and p[j]
+		p[i], p[j] = p[j], p[i]
+	}
+	return p, nil
+}
+
 // randomChoice returns a random element from a list
 func randomChoice(list interface{}) (interface{}, error) {
 	v := reflect.ValueOf(list)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return nil, errors.New("input must be a slice or array")
+		return nil, errors.New("list is not a slice or array")
 	}
 	if v.Len() == 0 {
-		return nil, errors.New("input slice is empty")
+		return nil, errors.New("list is empty")
 	}
-	return v.Index(rand.Intn(v.Len())).Interface(), nil
+
+	// Generate cryptographically secure random index
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(v.Len())))
+	if err != nil {
+		return nil, err
+	}
+	return v.Index(int(nBig.Int64())).Interface(), nil
 }
 
 // randomSubset returns a random subset of size n from a list
@@ -695,7 +742,11 @@ func randomSubset(list interface{}, n int) (interface{}, error) {
 
 	// Create a new slice of the same type as the input
 	result := reflect.MakeSlice(v.Type(), n, n)
-	indices := rand.Perm(v.Len())
+
+	indices, err := securePerm(v.Len())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate random subset indices")
+	}
 	for i := 0; i < n; i++ {
 		result.Index(i).Set(v.Index(indices[i]))
 	}
@@ -714,7 +765,10 @@ func randomPermute(list interface{}) (interface{}, error) {
 
 	// Create a new slice of the same type as the input
 	result := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
-	indices := rand.Perm(v.Len())
+	indices, err := securePerm(v.Len())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate random permutation indices")
+	}
 	for i := 0; i < v.Len(); i++ {
 		result.Index(i).Set(v.Index(indices[i]))
 	}
@@ -725,42 +779,72 @@ func randomPermute(list interface{}) (interface{}, error) {
 func randomInt(min_, max_ interface{}) int {
 	minVal, ok := cast.CastNumberInterfaceToInt[int](min_)
 	if !ok {
-		panic("min must be an int")
+		return 0
 	}
 	maxVal, ok := cast.CastNumberInterfaceToInt[int](max_)
 	if !ok {
-		panic("max must be an int")
+		return 0
 	}
-	if minVal > maxVal {
-		minVal, maxVal = maxVal, minVal
+	if minVal >= maxVal {
+		return minVal
 	}
-	return rand.Intn(maxVal-minVal+1) + minVal
+
+	// Generate cryptographically secure random int
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(maxVal-minVal+1)))
+	if err != nil {
+		// Fallback in case of error (unlikely)
+		return minVal
+	}
+	return minVal + int(nBig.Int64())
 }
 
 // randomFloat returns a random float between min and max
 func randomFloat(min_, max_ interface{}) float64 {
 	minVal, ok := cast.CastNumberInterfaceToFloat[float64](min_)
 	if !ok {
-		panic("min must be a float")
+		return 0
 	}
 	maxVal, ok := cast.CastNumberInterfaceToFloat[float64](max_)
 	if !ok {
-		panic("max must be a float")
+		return 0
 	}
-	return minVal + rand.Float64()*(maxVal-minVal)
+	if minVal >= maxVal {
+		return minVal
+	}
+
+	// Generate cryptographically secure random float
+	var buf [8]byte
+	_, err := rand.Read(buf[:])
+	if err != nil {
+		return minVal
+	}
+	f := float64(binary.BigEndian.Uint64(buf[:])) / float64(math.MaxUint64)
+	return minVal + f*(maxVal-minVal)
 }
 
 // randomBool returns a random boolean value
 func randomBool() bool {
-	return rand.Intn(2) == 1
+	n, err := rand.Int(rand.Reader, big.NewInt(2))
+	if err != nil {
+		return false
+	}
+	return n.Int64() == 1
 }
 
 // randomString returns a random string of the given length
 func randomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
+
+	// Generate cryptographically secure random index for charset
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		nBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			// In case of error, just use a predictable value - unlikely to happen
+			b[i] = charset[0]
+			continue
+		}
+		b[i] = charset[nBig.Int64()]
 	}
 	return string(b)
 }

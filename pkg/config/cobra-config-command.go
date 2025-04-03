@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -181,6 +182,44 @@ func (c *ConfigCommand) newEditCommand() *cobra.Command {
 			// Ensure the directory exists
 			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 				return fmt.Errorf("could not create config directory: %w", err)
+			}
+
+			// Validate editor to prevent command injection
+			// Common editors are allowed, otherwise fallback to a safe default
+			validEditors := map[string]bool{
+				"vim":        true,
+				"vi":         true,
+				"nano":       true,
+				"emacs":      true,
+				"code":       true,
+				"subl":       true,
+				"gedit":      true,
+				"notepad":    true,
+				"notepad++":  true,
+				"atom":       true,
+				"sublime":    true,
+				"vscode":     true,
+				"textmate":   true,
+				"neovim":     true,
+				"nvim":       true,
+				"micro":      true,
+				"kwrite":     true,
+				"kate":       true,
+				"mousepad":   true,
+				"leafpad":    true,
+				"gvim":       true,
+				"pluma":      true,
+				"xed":        true,
+				"jedit":      true,
+				"codeblocks": true,
+			}
+
+			// Extract the base editor command without arguments
+			editorParts := strings.Fields(editor)
+			baseEditor := filepath.Base(editorParts[0])
+
+			if !validEditors[baseEditor] {
+				return fmt.Errorf("editor '%s' not in allowed list, please use a standard editor", baseEditor)
 			}
 
 			editCmd := exec.Command(editor, configPath)

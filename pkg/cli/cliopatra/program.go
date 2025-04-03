@@ -2,15 +2,18 @@ package cliopatra
 
 import (
 	"context"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"os/exec"
-	"strings"
 )
 
 // Parameter describes a cliopatra parameter, which can be either a flag or an argument.
@@ -334,7 +337,39 @@ func (p *Program) RunIntoWriter(
 
 	log.Debug().Str("path", path).Strs("args", args).Msg("running program")
 
-	cmd := exec.CommandContext(ctx, path, args...)
+	// Validate the path to prevent command injection
+	// Use filepath.Clean to normalize the path
+	cleanPath := filepath.Clean(path)
+
+	// Check if the path doesn't try to escape with "../" or is not absolute
+	if !filepath.IsAbs(cleanPath) {
+		// If it's not absolute, resolve it through PATH lookup
+		var err error
+		cleanPath, err = exec.LookPath(cleanPath)
+		if err != nil {
+			return errors.Wrapf(err, "invalid program path: %s", path)
+		}
+	}
+
+	// Check if the file exists and is executable
+	info, err := os.Stat(cleanPath)
+	if err != nil {
+		return errors.Wrapf(err, "cannot access program path: %s", cleanPath)
+	}
+
+	// Check if it's a regular file and is executable (on Unix systems)
+	if info.IsDir() {
+		return errors.Errorf("program path is a directory: %s", cleanPath)
+	}
+
+	// On Unix, check file mode for executable bit
+	if runtime.GOOS != "windows" {
+		if info.Mode()&0111 == 0 {
+			return errors.Errorf("program is not executable: %s", cleanPath)
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, cleanPath, args...)
 	cmd.Env = []string{}
 	// copy current environment
 	cmd.Env = append(cmd.Env, os.Environ()...)

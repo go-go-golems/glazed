@@ -2,11 +2,13 @@ package cmds
 
 import (
 	"context"
+	"crypto/rand"
+	"math/big"
+	"strconv"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
-	"math/rand"
-	"strconv"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -81,7 +83,12 @@ func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers
 		)
 
 		if s.Test {
-			row.Set("test", rand.Intn(100)+1)
+			// Generate a secure random number between 1 and 100
+			n, err := rand.Int(rand.Reader, big.NewInt(100))
+			if err != nil {
+				return errors.Wrap(err, "failed to generate random number")
+			}
+			row.Set("test", int(n.Int64())+1)
 		}
 
 		if err := gp.AddRow(ctx, row); err != nil {
