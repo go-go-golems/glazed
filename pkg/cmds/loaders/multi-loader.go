@@ -86,15 +86,16 @@ func (m *MultiLoader) LoadCommands(
 	entryName string,
 	options []cmds.CommandDescriptionOption,
 	aliasOptions []alias.Option,
-) (commands []cmds.Command, err error) {
+) ([]cmds.Command, error) {
 	// First, read the file
 	file, err := f.Open(entryName)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not open file")
 	}
+	var closeErr error
 	defer func() {
-		if closeErr := file.Close(); closeErr != nil && err == nil {
-			err = errors.Wrap(closeErr, "error closing file")
+		if cerr := file.Close(); cerr != nil && err == nil {
+			closeErr = errors.Wrap(cerr, "error closing file")
 		}
 	}()
 
@@ -111,19 +112,24 @@ func (m *MultiLoader) LoadCommands(
 	}
 
 	// Use the loader to load the commands
-	return loader.LoadCommands(f, entryName, options, aliasOptions)
+	commands, err := loader.LoadCommands(f, entryName, options, aliasOptions)
+	if closeErr != nil {
+		return nil, closeErr
+	}
+	return commands, err
 }
 
 // IsFileSupported implements the CommandLoader interface
-func (m *MultiLoader) IsFileSupported(f fs.FS, fileName string) (supported bool) {
+func (m *MultiLoader) IsFileSupported(f fs.FS, fileName string) bool {
 	// Try to open and read the file
 	file, err := f.Open(fileName)
 	if err != nil {
 		return false
 	}
+	var closeErr error
 	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			supported = false
+		if cerr := file.Close(); cerr != nil {
+			closeErr = cerr
 		}
 	}()
 
@@ -134,5 +140,8 @@ func (m *MultiLoader) IsFileSupported(f fs.FS, fileName string) (supported bool)
 
 	// Try to get a loader for this file
 	loader, err := m.getLoaderForFile(f, fileName, content)
+	if closeErr != nil {
+		return false
+	}
 	return err == nil && loader != nil
 }
