@@ -1,35 +1,32 @@
-.PHONY: gifs
+.PHONY: all test build lint lintmax docker-lint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install
 
-VERSION ?= $(shell git describe --tags --always --dirty)
-COMMIT ?= $(shell git rev-parse --short HEAD)
-DIRTY ?= $(shell git diff --quiet || echo "dirty")
+all: test build
 
-LDFLAGS=-ldflags "-X main.version=$(VERSION)-$(COMMIT)-$(DIRTY)"
-
-all: gifs
-
-TAPES=$(shell ls doc/vhs/*tape)
-gifs: $(TAPES)
-	for i in $(TAPES); do vhs < $$i; done
+VERSION=v0.1.14
 
 docker-lint:
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v1.50.1 golangci-lint run -v
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v2.0.2 golangci-lint run -v
 
 lint:
-	golangci-lint run -v --enable=exhaustive
+	golangci-lint run -v
 
 lintmax:
-	golangci-lint run -v --enable=exhaustive --max-same-issues=100
+	golangci-lint run -v --max-same-issues=100
+
+gosec:
+	go install github.com/securego/gosec/v2/cmd/gosec@latest
+	gosec -exclude=G101,G304,G301,G306 -exclude-dir=.history ./...
+
+govulncheck:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...
 
 test:
 	go test ./...
 
 build:
 	go generate ./...
-	go build $(LDFLAGS) ./...
-
-bench:
-	go test -bench=./... -benchmem
+	go build ./...
 
 goreleaser:
 	goreleaser release --skip=sign --snapshot --clean
@@ -47,11 +44,11 @@ release:
 	git push --tags
 	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/glazed@$(shell svu current)
 
-exhaustive:
-	golangci-lint run -v --enable=exhaustive
-
-GLAZE_BINARY=$(shell which glaze)
+bump-glazed:
+	go get github.com/go-go-golems/glazed@latest
+	go get github.com/go-go-golems/clay@latest
+	go mod tidy
 
 install:
-	go build $(LDFLAGS) -o ./dist/glaze ./cmd/glaze && \
-		cp ./dist/glaze $(GLAZE_BINARY)
+	go build -o ./dist/glazed ./cmd/glazed && \
+		cp ./dist/glazed $(shell which glazed)

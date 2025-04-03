@@ -2,7 +2,7 @@ pre-commit:
   commands:
     lint:
       glob: '*.go'
-      run: make lint
+      run: make lintmax gosec govulncheck
     test:
       glob: '*.go'
       run: make test
@@ -16,7 +16,7 @@ pre-push:
     release:
       run: make goreleaser
     lint:
-      run: make lint
+      run: make lintmax gosec govulncheck
     test:
       run: make test
   parallel: true

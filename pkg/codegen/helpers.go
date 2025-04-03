@@ -2,10 +2,11 @@ package codegen
 
 import (
 	"fmt"
-	"github.com/dave/jennifer/jen"
-	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
+
+	"github.com/dave/jennifer/jen"
+	"github.com/pkg/errors"
 )
 
 func StructTypeToJen(typ reflect.Type) (jen.Code, error) {
@@ -151,11 +152,23 @@ func LiteralToJen(v reflect.Value) (jen.Code, error) {
 	case reflect.Uint:
 		return jen.Lit(uint(v.Uint())), nil
 	case reflect.Uint8:
-		return jen.Lit(uint8(v.Uint())), nil
+		val := v.Uint()
+		if val > uint64(^uint8(0)) {
+			return nil, fmt.Errorf("value %d overflows uint8", val)
+		}
+		return jen.Lit(uint8(val)), nil
 	case reflect.Uint16:
-		return jen.Lit(uint16(v.Uint())), nil
+		val := v.Uint()
+		if val > uint64(^uint16(0)) {
+			return nil, fmt.Errorf("value %d overflows uint16", val)
+		}
+		return jen.Lit(uint16(val)), nil
 	case reflect.Uint32:
-		return jen.Lit(uint32(v.Uint())), nil
+		val := v.Uint()
+		if val > uint64(^uint32(0)) {
+			return nil, fmt.Errorf("value %d overflows uint32", val)
+		}
+		return jen.Lit(uint32(val)), nil
 	case reflect.Uint64:
 		return jen.Lit(v.Uint()), nil
 	case reflect.Float32:
