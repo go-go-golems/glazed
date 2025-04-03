@@ -1,6 +1,7 @@
 package reflect
 
 import (
+	"math"
 	"reflect"
 	"strconv"
 
@@ -144,14 +145,14 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 			}
 
 			if i, ok := src.(uint64); ok {
-				if i > uint64(9223372036854775807) { // MaxInt64
+				if i > uint64(math.MaxInt64) { // MaxInt64
 					return errors.Errorf("uint64 value %d overflows int64", i)
 				}
 				dst.SetInt(int64(i))
 				return nil
 			}
 			if i, ok := src.(uint); ok {
-				if i > uint(9223372036854775807) { // MaxInt64
+				if i > uint(math.MaxInt64) { // MaxInt64
 					return errors.Errorf("uint value %d overflows int64", i)
 				}
 				dst.SetInt(int64(i))
