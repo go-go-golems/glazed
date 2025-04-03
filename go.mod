@@ -14,7 +14,7 @@ require (
 	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/reflow v0.3.0
-	github.com/nishanths/exhaustive v0.9.5
+	github.com/nishanths/exhaustive v0.12.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
