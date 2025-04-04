@@ -17,6 +17,9 @@ builds:
 # I am not able to test windows at the time
 #      - windows
       - darwin
+    goarch:
+      - amd64
+      - arm64
 checksum:
   name_template: 'checksums.txt'
 
