@@ -1,6 +1,6 @@
 module github.com/go-go-golems/glazed
 
-go 1.24
+go 1.24.2
 
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible

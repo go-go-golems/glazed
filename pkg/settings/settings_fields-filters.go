@@ -72,7 +72,7 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.AddLayerToCobraCommand(cmd)
+	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
 }
 
 func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
