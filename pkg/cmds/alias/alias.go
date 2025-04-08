@@ -3,13 +3,14 @@ package alias
 import (
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"io"
 )
 
 type Option func(*CommandAlias)
@@ -176,13 +177,17 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 	newLayers := s.Layers.Clone()
 
 	ret := &cmds.CommandDescription{
-		Name:    a.Name,
-		Short:   s.Short,
-		Long:    s.Long,
-		Layout:  layout_,
-		Layers:  newLayers,
-		Parents: a.Parents,
-		Source:  a.Source,
+		Name:           a.Name,
+		Short:          s.Short,
+		Long:           s.Long,
+		Layout:         layout_,
+		Layers:         newLayers,
+		Parents:        a.Parents,
+		Source:         a.Source,
+		Type:           s.Type,
+		Tags:           s.Tags,
+		Metadata:       s.Metadata,
+		AdditionalData: s.AdditionalData,
 	}
 
 	return ret

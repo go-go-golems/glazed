@@ -38,9 +38,9 @@ func NewLoggingLayer() (layers.ParameterLayer, error) {
 			parameters.NewParameterDefinition(
 				"log-level",
 				parameters.ParameterTypeChoice,
-				parameters.WithHelp("Log level (debug, info, warn, error, fatal)"),
+				parameters.WithHelp("Log level (trace, debug, info, warn, error, fatal)"),
 				parameters.WithDefault("info"),
-				parameters.WithChoices("debug", "info", "warn", "error", "fatal"),
+				parameters.WithChoices("trace", "debug", "info", "warn", "error", "fatal"),
 			),
 			parameters.NewParameterDefinition(
 				"log-format",
@@ -124,7 +124,7 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	// 	return nil
 	// })
 
-	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error, fatal)")
+	rootCmd.PersistentFlags().String("log-level", "info", "Log level (trace, debug, info, warn, error, fatal)")
 	rootCmd.PersistentFlags().String("log-file", "", "Log file (default: stderr)")
 	rootCmd.PersistentFlags().String("log-format", "text", "Log format (json, text)")
 	rootCmd.PersistentFlags().Bool("with-caller", false, "Log caller information")
