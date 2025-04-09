@@ -15,6 +15,16 @@ flags:
     help: Fields to remove from output
     default: []
 
+  - name: regex-fields
+    type: stringList
+    help: Regex patterns for fields to include
+    default: []
+
+  - name: regex-filters
+    type: stringList
+    help: Regex patterns for fields to remove
+    default: []
+
   - name: sort-columns
     type: bool
     help: Sort columns alphabetically

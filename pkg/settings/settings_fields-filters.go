@@ -17,6 +17,8 @@ var fieldsFiltersFlagsYaml []byte
 type FieldsFilterFlagsDefaults struct {
 	Fields           []string `glazed.parameter:"fields"`
 	Filter           []string `glazed.parameter:"filter"`
+	RegexFields      []string `glazed.parameter:"regex-fields"`
+	RegexFilters     []string `glazed.parameter:"regex-filters"`
 	SortColumns      bool     `glazed.parameter:"sort-columns"`
 	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
 	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
@@ -38,6 +40,8 @@ func (f *FieldsFiltersParameterLayer) Clone() layers.ParameterLayer {
 type FieldsFilterSettings struct {
 	Filters          []string `glazed.parameter:"filter"`
 	Fields           []string `glazed.parameter:"fields"`
+	RegexFields      []string `glazed.parameter:"regex-fields"`
+	RegexFilters     []string `glazed.parameter:"regex-filters"`
 	SortColumns      bool     `glazed.parameter:"sort-columns"`
 	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
 	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
@@ -131,7 +135,13 @@ func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSett
 }
 
 func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.TableProcessor) {
-	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
+	opts := []row.FieldsFilterOption{
+		row.WithFields(ffs.Fields),
+		row.WithFilters(ffs.Filters),
+		row.WithRegexFields(ffs.RegexFields),
+		row.WithRegexFilters(ffs.RegexFilters),
+	}
+	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(opts...))
 	if ffs.RemoveNulls {
 		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())
 	}

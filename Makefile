@@ -50,5 +50,5 @@ bump-glazed:
 	go mod tidy
 
 install:
-	go build -o ./dist/glazed ./cmd/glazed && \
-		cp ./dist/glazed $(shell which glazed)
+	go build -o ./dist/glaze ./cmd/glaze && \
+		cp ./dist/glaze $(shell which glaze)
