@@ -1,12 +1,11 @@
 package row
 
 import (
-	"context"
+	"testing"
+
 	assert2 "github.com/go-go-golems/glazed/pkg/helpers/assert"
-	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createAddFieldTestRows() []types.Row {
@@ -41,19 +40,6 @@ func TestSingleAddField(t *testing.T) {
 	assert2.EqualRowValue(t, "value1", row, "field1")
 	assert2.EqualRowValue(t, "value3 blabla", row, "field2")
 	assert2.EqualRowValue(t, "value3", row, "field3")
-}
-
-func processRows(rm middlewares.RowMiddleware, rows []types.Row) ([]types.Row, error) {
-	finalRows := make([]types.Row, 0)
-	for _, row := range rows {
-		rows_, err := rm.Process(context.Background(), row)
-		if err != nil {
-			return nil, err
-		}
-		finalRows = append(finalRows, rows_...)
-	}
-
-	return finalRows, nil
 }
 
 func TestMultipleAddField(t *testing.T) {

@@ -131,7 +131,7 @@ func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSett
 }
 
 func (ffs *FieldsFilterSettings) AddMiddlewares(p_ *middlewares.TableProcessor) {
-	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(ffs.Fields, ffs.Filters))
+	p_.AddRowMiddleware(row.NewFieldsFilterMiddleware(row.WithFields(ffs.Fields), row.WithFilters(ffs.Filters)))
 	if ffs.RemoveNulls {
 		p_.AddRowMiddleware(row.NewRemoveNullsMiddleware())
 	}
