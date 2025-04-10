@@ -1,10 +1,12 @@
 package maps
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"reflect"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/helpers/cast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 func StructToMap(i interface{}, lowerCaseKeys bool) map[string]interface{} {
@@ -96,4 +98,61 @@ func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 	}
 
 	return ret, nil
+}
+
+// Get retrieves a nested value from a map using a sequence of keys.
+// It safely handles missing keys or incorrect types at any level.
+// Returns the value cast to type T and true if found and castable, otherwise the zero value of T and false.
+func Get[T any](m map[string]interface{}, keys ...string) (T, bool) {
+	var current interface{} = m
+
+	for i, key := range keys {
+		mapCurrent, ok := current.(map[string]interface{})
+		if !ok {
+			var zero T
+			return zero, false
+		}
+
+		val, exists := mapCurrent[key]
+		if !exists {
+			var zero T
+			return zero, false
+		}
+
+		if i == len(keys)-1 {
+			// Last key, try to cast to T
+			finalVal, ok := val.(T)
+			if !ok {
+				var zero T
+				return zero, false
+			}
+			return finalVal, true
+		} else {
+			// Navigate deeper
+			current = val
+		}
+	}
+
+	// Should not happen if keys is not empty, but handle defensively
+	var zero T
+	return zero, false
+}
+
+// GetString retrieves a nested string value from a map.
+// It's a convenience wrapper around Get[string].
+func GetString(m map[string]interface{}, keys ...string) (string, bool) {
+	return Get[string](m, keys...)
+}
+
+// GetInteger retrieves a nested integer value from a map.
+// It handles potential numeric type mismatches (e.g., float64 from JSON) using cast helpers.
+func GetInteger[T cast.SignedInt | cast.UnsignedInt](m map[string]interface{}, keys ...string) (T, bool) {
+	rawValue, ok := Get[interface{}](m, keys...)
+	if !ok {
+		var zero T
+		return zero, false
+	}
+
+	// Use cast helper to handle potential float64 etc.
+	return cast.CastNumberInterfaceToInt[T](rawValue)
 }

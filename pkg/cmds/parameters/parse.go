@@ -632,7 +632,7 @@ func (p *ParameterDefinition) parseObjectListFromReader(
 		if err != nil {
 			return nil, err
 		}
-	} else if strings.HasSuffix(filename, ".ndjson") {
+	} else if strings.HasSuffix(filename, ".ndjson") || strings.HasSuffix(filename, ".jsonl") {
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
 			line := scanner.Text()
