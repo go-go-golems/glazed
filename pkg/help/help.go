@@ -2,15 +2,16 @@ package help
 
 import (
 	"bytes"
+	"io/fs"
+	"path/filepath"
+	"sort"
+	"strings"
+
 	"github.com/adrg/frontmatter"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"io/fs"
-	"path/filepath"
-	"sort"
-	"strings"
 )
 
 type SectionType int
@@ -346,7 +347,8 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 				continue
 			}
 		} else {
-			if !strings.HasSuffix(entry.Name(), ".md") {
+			// make an explicit exception for readme.md
+			if !strings.HasSuffix(entry.Name(), ".md") || strings.ToLower(entry.Name()) == "readme.md" {
 				continue
 			}
 			b, err := fs.ReadFile(f, filePath)
@@ -356,7 +358,7 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 			}
 			section, err := LoadSectionFromMarkdown(b)
 			if err != nil {
-				log.Warn().Err(err).Str("file", filePath).Msg("Failed to load section from file")
+				log.Debug().Err(err).Str("file", filePath).Msg("Failed to load section from file")
 				continue
 			}
 			hs.AddSection(section)
