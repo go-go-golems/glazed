@@ -89,13 +89,14 @@ func (p *ParameterDefinition) String() string {
 
 func (p *ParameterDefinition) Clone() *ParameterDefinition {
 	return &ParameterDefinition{
-		Name:      p.Name,
-		ShortFlag: p.ShortFlag,
-		Type:      p.Type,
-		Help:      p.Help,
-		Default:   p.Default,
-		Choices:   p.Choices,
-		Required:  p.Required,
+		Name:       p.Name,
+		ShortFlag:  p.ShortFlag,
+		Type:       p.Type,
+		Help:       p.Help,
+		Default:    p.Default,
+		Choices:    p.Choices,
+		Required:   p.Required,
+		IsArgument: p.IsArgument,
 	}
 }
 
