@@ -62,5 +62,6 @@ func ExecuteMiddlewares(layers_ *layers.ParameterLayers, parsedLayers *layers.Pa
 		handler = m_(handler)
 	}
 
-	return handler(layers_.Clone(), parsedLayers)
+	clonedLayers := layers_.Clone()
+	return handler(clonedLayers, parsedLayers)
 }
