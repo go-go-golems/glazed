@@ -13,6 +13,7 @@ type LoggingSettings struct {
 	LogLevel            string `glazed.parameter:"log-level"`
 	LogFormat           string `glazed.parameter:"log-format"`
 	LogFile             string `glazed.parameter:"log-file"`
+	LogToStdout         bool   `glazed.parameter:"log-to-stdout"`
 	LogstashEnabled     bool   `glazed.parameter:"logstash-enabled"`
 	LogstashHost        string `glazed.parameter:"logstash-host"`
 	LogstashPort        int    `glazed.parameter:"logstash-port"`
@@ -54,6 +55,12 @@ func NewLoggingLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeString,
 				parameters.WithHelp("Log file (default: stderr)"),
 				parameters.WithDefault(""),
+			),
+			parameters.NewParameterDefinition(
+				"log-to-stdout",
+				parameters.ParameterTypeBool,
+				parameters.WithHelp("Log to stdout even when log-file is set"),
+				parameters.WithDefault(false),
 			),
 			parameters.NewParameterDefinition(
 				"logstash-enabled",
@@ -128,6 +135,7 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	rootCmd.PersistentFlags().String("log-file", "", "Log file (default: stderr)")
 	rootCmd.PersistentFlags().String("log-format", "text", "Log format (json, text)")
 	rootCmd.PersistentFlags().Bool("with-caller", false, "Log caller information")
+	rootCmd.PersistentFlags().Bool("log-to-stdout", false, "Log to stdout even when log-file is set")
 
 	// Add logstash flags
 	rootCmd.PersistentFlags().Bool("logstash-enabled", false, "Enable logging to Logstash")

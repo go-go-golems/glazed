@@ -46,10 +46,13 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 				TimeFormat: time.RFC3339Nano,
 			}
 		}
-		// TODO(manuel, 2024-07-05) We used to support logging to file *and* stderr, but disabling that for now
-		// because it makes logging in UI apps tricky.
-		// logWriter = io.MultiWriter(logWriter, writer)
-		logWriter = writer
+
+		// If LogToStdout is enabled, log to both file and stdout
+		if settings.LogToStdout {
+			logWriter = io.MultiWriter(logWriter, writer)
+		} else {
+			logWriter = writer
+		}
 	}
 
 	// Configure Logstash logging if enabled
@@ -103,6 +106,7 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 	log.Logger.Debug().Str("format", settings.LogFormat).
 		Str("level", settings.LogLevel).
 		Str("file", settings.LogFile).
+		Bool("logToStdout", settings.LogToStdout).
 		Bool("logstash", settings.LogstashEnabled).
 		Msg("Logger initialized")
 
@@ -116,6 +120,7 @@ func InitLoggerFromViper() error {
 		LogFile:             viper.GetString("log-file"),
 		LogFormat:           viper.GetString("log-format"),
 		WithCaller:          viper.GetBool("with-caller"),
+		LogToStdout:         viper.GetBool("log-to-stdout"),
 		LogstashEnabled:     viper.GetBool("logstash-enabled"),
 		LogstashHost:        viper.GetString("logstash-host"),
 		LogstashPort:        viper.GetInt("logstash-port"),
