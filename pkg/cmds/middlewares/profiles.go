@@ -139,11 +139,11 @@ func GatherFlagsFromCustomProfiles(profileName string, options ...ProfileOption)
 
 // ProfileConfig holds configuration for the custom profile middleware
 type ProfileConfig struct {
-	ProfileName   string
-	ProfileFile   string
-	AppName       string
-	Required      bool
-	ParseOptions  []parameters.ParseStepOption
+	ProfileName  string
+	ProfileFile  string
+	AppName      string
+	Required     bool
+	ParseOptions []parameters.ParseStepOption
 }
 
 // ProfileOption is a function that configures ProfileConfig

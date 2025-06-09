@@ -15,7 +15,7 @@ func TestGatherFlagsFromCustomProfiles(t *testing.T) {
 	// Create a temporary profile file
 	tempDir := t.TempDir()
 	profileFile := filepath.Join(tempDir, "test-profiles.yaml")
-	
+
 	profileContent := `
 development:
   config:
@@ -28,7 +28,7 @@ production:
     port: 8080
     debug: false
 `
-	
+
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
@@ -51,7 +51,7 @@ production:
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("config", layer)
 
@@ -93,7 +93,7 @@ func TestGatherFlagsFromCustomProfilesProduction(t *testing.T) {
 	// Create a temporary profile file
 	tempDir := t.TempDir()
 	profileFile := filepath.Join(tempDir, "test-profiles.yaml")
-	
+
 	profileContent := `
 development:
   config:
@@ -106,7 +106,7 @@ production:
     port: 8080
     debug: false
 `
-	
+
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
@@ -129,7 +129,7 @@ production:
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("config", layer)
 
@@ -179,7 +179,7 @@ func TestGatherFlagsFromCustomProfilesWithAppName(t *testing.T) {
 		testParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("config", layer)
 
@@ -202,13 +202,13 @@ func TestGatherFlagsFromCustomProfilesProfileNotFound(t *testing.T) {
 	// Create a temporary profile file without the requested profile
 	tempDir := t.TempDir()
 	profileFile := filepath.Join(tempDir, "test-profiles.yaml")
-	
+
 	profileContent := `
 development:
   config:
     host: "dev.example.com"
 `
-	
+
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
@@ -223,7 +223,7 @@ development:
 		testParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("config", layer)
 
@@ -246,19 +246,19 @@ development:
 
 func TestProfileOptions(t *testing.T) {
 	config := &ProfileConfig{}
-	
+
 	// Test WithProfileFile
 	WithProfileFile("/test/path")(config)
 	assert.Equal(t, "/test/path", config.ProfileFile)
-	
+
 	// Test WithProfileAppName
 	WithProfileAppName("test-app")(config)
 	assert.Equal(t, "test-app", config.AppName)
-	
+
 	// Test WithProfileRequired
 	WithProfileRequired(true)(config)
 	assert.True(t, config.Required)
-	
+
 	// Test WithProfileParseOptions
 	option := parameters.WithParseStepSource("test")
 	WithProfileParseOptions(option)(config)

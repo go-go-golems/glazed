@@ -49,7 +49,7 @@ func GatherFlagsFromCustomViper(options ...CustomViperOption) Middleware {
 
 			// Store the original viper instance
 			originalViper := viper.GetViper()
-			
+
 			// Temporarily replace global viper
 			viper.Reset()
 			for key, value := range customViper.AllSettings() {

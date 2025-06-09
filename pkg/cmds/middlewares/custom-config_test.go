@@ -15,13 +15,13 @@ func TestGatherFlagsFromCustomViper(t *testing.T) {
 	// Create a temporary config file
 	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "test-config.yaml")
-	
+
 	configContent := `
 test-param: "config-value"
 numeric-param: 42
 bool-param: true
 `
-	
+
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	require.NoError(t, err)
 
@@ -44,7 +44,7 @@ bool-param: true
 		testParam, numericParam, boolParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("test", layer)
 
@@ -93,7 +93,7 @@ func TestGatherFlagsFromCustomViperWithAppName(t *testing.T) {
 		testParam,
 	))
 	require.NoError(t, err)
-	
+
 	parameterLayers := layers.NewParameterLayers()
 	parameterLayers.Set("test", layer)
 
@@ -113,15 +113,15 @@ func TestGatherFlagsFromCustomViperWithAppName(t *testing.T) {
 
 func TestCustomViperOptions(t *testing.T) {
 	config := &CustomViperConfig{}
-	
+
 	// Test WithConfigFile
 	WithConfigFile("/test/path")(config)
 	assert.Equal(t, "/test/path", config.ConfigFile)
-	
+
 	// Test WithAppName
 	WithAppName("test-app")(config)
 	assert.Equal(t, "test-app", config.AppName)
-	
+
 	// Test WithParseOptions
 	option := parameters.WithParseStepSource("test")
 	WithParseOptions(option)(config)
