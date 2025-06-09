@@ -159,7 +159,31 @@ middleware := middlewares.GatherFlagsFromViper(
 )
 ```
 
-### 6. Default Map Updates
+### 6. Custom Configuration Files
+
+Load parameters from custom config files or other app configurations using `GatherFlagsFromCustomViper`:
+
+```go
+// Load from a specific config file
+middleware := middlewares.GatherFlagsFromCustomViper(
+    middlewares.WithConfigFile("/path/to/custom-config.yaml"),
+    middlewares.WithParseOptions(parameters.WithParseStepSource("custom-config")),
+)
+
+// Load from another app's config
+middleware := middlewares.GatherFlagsFromCustomViper(
+    middlewares.WithAppName("other-app"),
+    middlewares.WithParseOptions(parameters.WithParseStepSource("other-app-config")),
+)
+```
+
+This middleware is useful for:
+- Loading configuration from explicit file paths
+- Sharing configuration between different applications
+- Loading different configuration profiles based on runtime conditions
+- Integrating with external configuration management systems
+
+### 7. Default Map Updates
 
 Set values only if they haven't been set already:
 
@@ -169,7 +193,7 @@ middleware := middlewares.UpdateFromMapAsDefault(values,
 )
 ```
 
-### 7. Layer Manipulation
+### 8. Layer Manipulation
 
 Glazed provides several middlewares for manipulating parsed layers directly:
 
@@ -340,6 +364,11 @@ middlewares.ExecuteMiddlewares(layers, parsedLayers,
     // Configuration file
     middlewares.LoadParametersFromFile("config.yaml"),
     
+    // Custom config file
+    middlewares.GatherFlagsFromCustomViper(
+        middlewares.WithConfigFile("/etc/app/override.yaml"),
+    ),
+    
     // Environment overrides
     middlewares.UpdateFromEnv("APP"),
     
@@ -362,6 +391,39 @@ middlewares.ExecuteMiddlewares(layers, parsedLayers,
     ),
 )
 ```
+
+### Custom Profile Sources
+
+Load profiles from custom locations or other applications:
+
+```go
+// Load from a specific profile file
+middleware := middlewares.GatherFlagsFromCustomProfiles(
+    "production",
+    middlewares.WithProfileFile("/etc/app/custom-profiles.yaml"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("custom-profiles")),
+)
+
+// Load from another app's profiles
+middleware := middlewares.GatherFlagsFromCustomProfiles(
+    "shared-config",
+    middlewares.WithProfileAppName("central-config"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("shared-profiles")),
+)
+
+// Load with required validation
+middleware := middlewares.GatherFlagsFromCustomProfiles(
+    "critical-config",
+    middlewares.WithProfileFile("/etc/app/critical.yaml"),
+    middlewares.WithProfileRequired(true),  // Fail if profile not found
+)
+```
+
+This is useful for:
+- Loading profiles from explicit file paths
+- Sharing profile configurations between applications  
+- Loading different profile files based on runtime conditions
+- Enforcing that critical profiles must exist
 
 ## Debugging Tips
 
