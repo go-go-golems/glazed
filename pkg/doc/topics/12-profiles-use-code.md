@@ -82,6 +82,52 @@ path if not specified.
 The middleware would usually be inserted in front of the "viper" and "defaults" middlewares, so that the profile and profile-file 
 flags can be loaded from the config file or the environment.
 
+## Custom Configuration Sources with Profiles
+
+For more advanced use cases, you can combine profile middleware with the `GatherFlagsFromCustomViper` middleware to load
+configuration from additional sources:
+
+```go
+func GetCobraCommandGeppettoMiddlewares(
+    commandSettings *cli.GlazedCommandSettings,
+    cmd *cobra.Command,
+    args []string,
+) ([]middlewares.Middleware, error) {
+    // ... existing profile setup ...
+
+    middlewares_ := []middlewares.Middleware{
+        // Command line arguments (highest priority)
+        middlewares.ParseFromCobraCommand(cmd),
+        middlewares.GatherArguments(args),
+        
+        // Profile-specific override files
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithConfigFile(fmt.Sprintf("/etc/%s/overrides.yaml", commandSettings.Profile)),
+            middlewares.WithParseOptions(parameters.WithParseStepSource("profile-overrides")),
+        ),
+        
+        // Shared configuration across apps
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithAppName("shared-config"),
+            middlewares.WithParseOptions(parameters.WithParseStepSource("shared")),
+        ),
+        
+        // Profile configuration
+        profileMiddleware,
+        
+        // ... rest of middleware chain ...
+    }
+
+    return middlewares_, nil
+}
+```
+
+This pattern allows for:
+- **Profile-specific overrides**: Load additional config files based on the active profile
+- **Shared configuration**: Load common settings from another application's config
+- **Environment-specific settings**: Different config sources for development, staging, production
+- **Dynamic configuration**: Runtime determination of config sources based on profiles
+
 ## Example Usage
 
 When running the `YOUR_PROGRAM` command, a developer can specify a profile as follows:
@@ -98,4 +144,189 @@ YOUR_PROGRAM [command]
 ```
 
 The middleware will then load the configuration parameters from the `development` profile and apply them to the command.
+
+## Advanced Profile Scenarios
+
+### Custom Profile Sources
+
+You can use the custom profile middleware to load profiles from different sources:
+
+```go
+// Load from a specific profile file
+middlewares.GatherFlagsFromCustomProfiles(
+    "production",
+    middlewares.WithProfileFile("/etc/myapp/custom-profiles.yaml"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("custom-profiles")),
+)
+
+// Load from another app's profiles
+middlewares.GatherFlagsFromCustomProfiles(
+    "shared-config",
+    middlewares.WithProfileAppName("central-config"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("shared-profiles")),
+)
+```
+
+### Profile-Specific Configuration Files
+
+You can use the custom config middleware to load different configuration files based on the active profile:
+
+```go
+// Load profile-specific config file
+middlewares.GatherFlagsFromCustomViper(
+    middlewares.WithConfigFile(fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile)),
+    middlewares.WithParseOptions(parameters.WithParseStepSource("profile-config")),
+)
+```
+
+With profile files like:
+- `/etc/myapp/development.yaml`
+- `/etc/myapp/staging.yaml`
+- `/etc/myapp/production.yaml`
+
+### Cross-Application Configuration
+
+Share configuration between related applications:
+
+```go
+// Load shared configuration from a central config app
+middlewares.GatherFlagsFromCustomViper(
+    middlewares.WithAppName("central-config"),
+    middlewares.WithParseOptions(parameters.WithParseStepSource("central")),
+)
+```
+
+### Environment Variable Integration
+
+Combine environment variables with custom config loading:
+
+```bash
+# Set profile and custom config path via environment
+export YOUR_PROGRAM_PROFILE=production
+export YOUR_PROGRAM_CUSTOM_CONFIG=/opt/configs/production-override.yaml
+
+# The middleware can then use these environment variables
+YOUR_PROGRAM [command]
+```
+
+```go
+customConfigPath := os.Getenv("YOUR_PROGRAM_CUSTOM_CONFIG")
+if customConfigPath != "" {
+    middlewares_ = append(middlewares_, 
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithConfigFile(customConfigPath),
+            middlewares.WithParseOptions(parameters.WithParseStepSource("env-custom")),
+        ),
+    )
+}
+```
+
+### Configuration Hierarchy Example
+
+A complete example showing how profiles and custom config work together:
+
+```go
+func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middlewares.Middleware {
+    return []middlewares.Middleware{
+        // 1. Command line (highest priority)
+        middlewares.ParseFromCobraCommand(cmd),
+        
+        // 2. Environment-specific overrides
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithConfigFile("/etc/myapp/local-overrides.yaml"),
+        ),
+        
+        // 3. Profile-specific configuration
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithConfigFile(fmt.Sprintf("/etc/myapp/profiles/%s.yaml", commandSettings.Profile)),
+        ),
+        
+        // 4. Custom profile sources
+        middlewares.GatherFlagsFromCustomProfiles(
+            commandSettings.Profile,
+            middlewares.WithProfileFile("/etc/shared/organization-profiles.yaml"),
+            middlewares.WithProfileParseOptions(parameters.WithParseStepSource("org-profiles")),
+        ),
+        
+        // 5. Profile middleware (from profiles.yaml)
+        middlewares.GatherFlagsFromProfiles(
+            defaultProfileFile,
+            commandSettings.ProfileFile,
+            commandSettings.Profile,
+        ),
+        
+        // 6. Shared organization config
+        middlewares.GatherFlagsFromCustomViper(
+            middlewares.WithAppName("org-shared-config"),
+        ),
+        
+        // 7. Application defaults
+        middlewares.SetFromDefaults(),
+    }
+}
+```
+
+This creates a configuration hierarchy where:
+1. Command line flags override everything
+2. Local environment overrides take precedence
+3. Profile-specific configs override general profile settings
+4. Custom organizational profiles provide company-wide profile settings
+5. Standard profile settings override shared config
+6. Shared organizational config provides common defaults
+7. Application defaults provide the base configuration
+
+### Real-World Profile Scenarios
+
+#### Multi-Environment Organization Setup
+
+```go
+// Organization-wide profiles for all applications
+middlewares.GatherFlagsFromCustomProfiles(
+    commandSettings.Profile,
+    middlewares.WithProfileAppName("org-config"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("org-profiles")),
+)
+
+// Team-specific profile overrides
+middlewares.GatherFlagsFromCustomProfiles(
+    fmt.Sprintf("%s-%s", commandSettings.Team, commandSettings.Profile),
+    middlewares.WithProfileFile("/etc/team-configs/profiles.yaml"),
+    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("team-profiles")),
+)
+```
+
+#### Dynamic Profile Loading
+
+```go
+// Load different profile files based on deployment region
+profileFile := fmt.Sprintf("/etc/regional-configs/%s/profiles.yaml", commandSettings.Region)
+middlewares.GatherFlagsFromCustomProfiles(
+    commandSettings.Profile,
+    middlewares.WithProfileFile(profileFile),
+    middlewares.WithProfileRequired(true),  // Must exist for regional deployments
+)
+```
+
+#### Profile Inheritance Chain
+
+```go
+// Base organizational profiles
+middlewares.GatherFlagsFromCustomProfiles(
+    "base",
+    middlewares.WithProfileAppName("org-base-config"),
+)
+
+// Environment-specific profiles (inherits from base)
+middlewares.GatherFlagsFromCustomProfiles(
+    commandSettings.Profile,
+    middlewares.WithProfileAppName("org-env-config"),
+)
+
+// Application-specific profiles (highest precedence)
+middlewares.GatherFlagsFromProfiles(
+    defaultProfileFile,
+    commandSettings.ProfileFile,
+    commandSettings.Profile,
+)
+```
 
