@@ -1,7 +1,16 @@
+---
+# This file contains the configuration for golangci-lint
+# See https://golangci-lint.run/usage/configuration/ for reference
+
+# Defines the configuration version.
+# The only possible value is "2".
 version: "2"
 
+# Linters configuration
 linters:
+  # Default set of linters.
   default: none
+  # Enable specific linters
   enable:
     # defaults
     - errcheck
@@ -9,18 +18,26 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    # stuff I'm adding
+    # additional linters
     - exhaustive
     #    - gochecknoglobals
     #    - gochecknoinits
     - nonamedreturns
     - predeclared
+  # Exclusions configuration
   exclusions:
     rules:
       - linters:
           - staticcheck
         text: 'SA1019: cli.CreateProcessorLegacy'
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - fmt.Fprintf
+        - fmt.Fprintln
 
+# Formatters configuration
 formatters:
   enable:
     - gofmt
