@@ -129,7 +129,7 @@ func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewa
 // ParseParameterFromLua parses a Lua value into a Go value based on the parameter definition
 func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters.ParameterDefinition) (interface{}, error) {
 	switch paramDef.Type {
-	case parameters.ParameterTypeString:
+	case parameters.ParameterTypeString, parameters.ParameterTypeSecret:
 		if v, ok := value.(lua.LString); ok {
 			return string(v), nil
 		}

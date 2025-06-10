@@ -6,6 +6,7 @@ type ParameterType string
 
 const (
 	ParameterTypeString ParameterType = "string"
+	ParameterTypeSecret ParameterType = "secret"
 
 	// TODO(2023-02-13, manuel) Should the "default" of a stringFromFile be the filename, or the string?
 	//

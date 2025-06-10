@@ -151,7 +151,7 @@ func (p *ParameterDefinition) SetValueFromDefault(value reflect.Value) error {
 // InitializeValueToEmptyValue initializes the given value to the empty value of the type of the parameter.
 func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) error {
 	switch p.Type {
-	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+	case ParameterTypeString, ParameterTypeSecret, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
 		value.SetString("")
 	case ParameterTypeBool:
 		value.SetBool(false)
@@ -194,7 +194,7 @@ func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v inter
 	}
 
 	switch p.Type {
-	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+	case ParameterTypeString, ParameterTypeSecret, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
 		strVal, ok := v.(string)
 		if !ok {
 			return errors.Errorf("expected string value for parameter %s, got %T", p.Name, v)
@@ -437,6 +437,8 @@ func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, er
 	case ParameterTypeStringFromFiles:
 		fallthrough
 	case ParameterTypeString:
+		fallthrough
+	case ParameterTypeSecret:
 		s, err := cast.ToString(v)
 		if err != nil {
 			return nil, errors.Errorf("Value for parameter %s is not a string: %v", p.Name, v)
@@ -774,7 +776,7 @@ func (p *ParameterDefinition) setReflectValue(v reflect.Value, value interface{}
 	}
 
 	switch p.Type {
-	case ParameterTypeString, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
+	case ParameterTypeString, ParameterTypeSecret, ParameterTypeChoice, ParameterTypeStringFromFiles, ParameterTypeStringFromFile:
 		strVal, ok := value.(string)
 		if !ok {
 			return errors.Errorf("expected string value for parameter %s, got %T", p.Name, value)

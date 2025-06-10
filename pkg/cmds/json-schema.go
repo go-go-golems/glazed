@@ -39,7 +39,7 @@ func parameterTypeToJsonSchema(param *parameters.ParameterDefinition) (*JsonSche
 
 	switch param.Type {
 	// Basic types
-	case parameters.ParameterTypeString:
+	case parameters.ParameterTypeString, parameters.ParameterTypeSecret:
 		prop.Type = "string"
 
 	case parameters.ParameterTypeInteger:
