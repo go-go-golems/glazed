@@ -25,7 +25,18 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		return s, nil
 
 	case ParameterTypeSecret:
-		return "***", nil
+		s, ok := value.(string)
+		if !ok {
+			return "", errors.Errorf("expected string, got %T", value)
+		}
+
+		// For very short strings, just return ***
+		if len(s) <= 6 {
+			return "***", nil
+		}
+
+		// For longer strings, show first 2 chars, ***, and last 2 chars
+		return s[:2] + "***" + s[len(s)-2:], nil
 
 	case ParameterTypeObjectListFromFiles,
 		ParameterTypeObjectListFromFile,

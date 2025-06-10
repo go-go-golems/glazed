@@ -1,0 +1,11 @@
+users:
+  - name: Alice
+    role: admin
+    permissions:
+      - read
+      - write
+      - delete
+  - name: Bob
+    role: user
+    permissions:
+      - read
