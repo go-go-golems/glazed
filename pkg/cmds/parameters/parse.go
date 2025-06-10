@@ -106,6 +106,11 @@ func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOpt
 			return nil, errors.Errorf("Argument %s must be a single string", p.Name)
 		}
 		v_ = v[0]
+	case ParameterTypeSecret:
+		if len(v) > 1 {
+			return nil, errors.Errorf("Argument %s must be a single secret", p.Name)
+		}
+		v_ = v[0]
 	case ParameterTypeInteger:
 		if len(v) > 1 {
 			return nil, errors.Errorf("Argument %s must be a single integer", p.Name)

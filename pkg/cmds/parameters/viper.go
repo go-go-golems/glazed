@@ -45,7 +45,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 		}, options...)
 		//exhaustive:ignore
 		switch p.Type {
-		case ParameterTypeString:
+		case ParameterTypeString, ParameterTypeSecret:
 			err := parsed.Update(viper.GetString(flagName), options...)
 			if err != nil {
 				return nil, err

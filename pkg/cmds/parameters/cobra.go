@@ -180,7 +180,7 @@ func (pds *ParameterDefinitions) AddParametersToCobraCommand(
 				flagSet.StringSlice(flagName, defaultValue, helpText)
 			}
 
-		case ParameterTypeString:
+		case ParameterTypeString, ParameterTypeSecret:
 			defaultValue := ""
 
 			if parameter.Default != nil {
@@ -457,6 +457,7 @@ func (pds *ParameterDefinitions) GatherFlagsFromCobraCommand(
 			ParameterTypeStringFromFile,
 			ParameterTypeStringListFromFile,
 			ParameterTypeString,
+			ParameterTypeSecret,
 			ParameterTypeFile,
 			ParameterTypeDate,
 			ParameterTypeChoice:

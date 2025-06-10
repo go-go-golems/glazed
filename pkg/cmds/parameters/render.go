@@ -24,6 +24,9 @@ func RenderValue(type_ ParameterType, value interface{}) (string, error) {
 		}
 		return s, nil
 
+	case ParameterTypeSecret:
+		return "***", nil
+
 	case ParameterTypeObjectListFromFiles,
 		ParameterTypeObjectListFromFile,
 		ParameterTypeObjectFromFile:

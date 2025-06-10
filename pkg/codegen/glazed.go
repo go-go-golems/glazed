@@ -65,7 +65,8 @@ func FlagTypeToGoType(s *jen.Statement, parameterType parameters.ParameterType) 
 	case parameters.ParameterTypeStringFromFile,
 		parameters.ParameterTypeStringFromFiles,
 		parameters.ParameterTypeChoice,
-		parameters.ParameterTypeString:
+		parameters.ParameterTypeString,
+		parameters.ParameterTypeSecret:
 		return s.Id("string")
 	case parameters.ParameterTypeStringList,
 		parameters.ParameterTypeStringListFromFile,
