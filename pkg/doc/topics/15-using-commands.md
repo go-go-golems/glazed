@@ -267,11 +267,13 @@ Parameters are the inputs to your command and are defined using `parameters.Para
 
 Glazed supports various parameter types, each affecting how values are parsed and validated:
 
-- Basic types: `ParameterTypeString`, `ParameterTypeInteger`, `ParameterTypeBool`, `ParameterTypeFloat`, `ParameterTypeDate`
+- Basic types: `ParameterTypeString`, `ParameterTypeSecret`, `ParameterTypeInteger`, `ParameterTypeBool`, `ParameterTypeFloat`, `ParameterTypeDate`
 - Lists: `ParameterTypeStringList`, `ParameterTypeIntegerList`, `ParameterTypeFloatList`
 - Choice-based: `ParameterTypeChoice`, `ParameterTypeChoiceList` (with predefined options)
 - File-based: `ParameterTypeFile`, `ParameterTypeFileList`, `ParameterTypeStringFromFile`, etc.
 - Key-value: `ParameterTypeKeyValue` (for map-like inputs)
+
+**Note**: `ParameterTypeSecret` behaves like a string but masks sensitive values when displayed (e.g., `my***rd` for `"my-secret-password"`), protecting passwords, API keys, and other confidential data.
 
 ### Creating Parameter Definitions
 
@@ -286,6 +288,15 @@ paramDef := parameters.NewParameterDefinition(
     parameters.WithDefault("guest"),  // Default value
     parameters.WithRequired(false),   // Is it required?
     parameters.WithShortFlag("n"),    // Short flag (-n)
+)
+
+// Example of a secret parameter for sensitive data
+apiKeyParam := parameters.NewParameterDefinition(
+    "api-key",
+    parameters.ParameterTypeSecret,  // Masks value when displayed
+    parameters.WithHelp("API key for authentication"),
+    parameters.WithRequired(true),
+    parameters.WithShortFlag("k"),
 )
 ```
 
