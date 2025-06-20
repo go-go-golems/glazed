@@ -316,15 +316,53 @@ func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) 
 	}
 
 	//exhaustive:ignore
+	// If the destination itself expects FileData, assign directly and return.
+	fdType := reflect.TypeOf(FileData{})
+	if dst.Type() == fdType {
+		dst.Set(reflect.ValueOf(*fd))
+		return true, nil
+	}
+	if dst.Kind() == reflect.Ptr && dst.Type().Elem() == fdType {
+		// Ensure pointer is allocated if nil
+		if dst.IsNil() {
+			dst.Set(reflect.New(fdType))
+		}
+		dst.Elem().Set(reflect.ValueOf(*fd))
+		return true, nil
+	}
+
+	//exhaustive:ignore
 	switch dst.Kind() {
 	case reflect.String:
 		dst.SetString(fd.Content)
 	case reflect.Slice:
 		if dst.Type().Elem().Kind() == reflect.Uint8 {
 			dst.SetBytes(fd.RawContent)
-		} else {
-			return true, errors.Errorf("cannot set FileData to slice of type %v", dst.Type().Elem().Kind())
+			return true, nil
 		}
+
+		// Attempt to deserialize ParsedContent into the slice
+		if fd.ParsedContent != nil {
+			// First try direct assignment with sanitized content
+			dstVal := reflect.ValueOf(sanitizeMapForJSON(fd.ParsedContent))
+			if dstVal.Type().AssignableTo(dst.Type()) {
+				dst.Set(dstVal)
+				return true, nil
+			}
+
+			// Fallback to JSON marshaling/unmarshaling
+			sanitizedContent := sanitizeMapForJSON(fd.ParsedContent)
+			jsonData, err := json.Marshal(sanitizedContent)
+			if err != nil {
+				return true, errors.Wrapf(err, "failed to marshal ParsedContent to JSON")
+			}
+			if err := json.Unmarshal(jsonData, dst.Addr().Interface()); err != nil {
+				return true, errors.Wrapf(err, "failed to unmarshal ParsedContent as JSON")
+			}
+			return true, nil
+		}
+
+		return true, errors.Errorf("cannot set FileData to slice of type %v", dst.Type().Elem().Kind())
 	default:
 		if fd.ParsedContent != nil {
 			// First try direct assignment
