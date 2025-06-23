@@ -89,6 +89,9 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 
 	log.Logger = log.Output(logWriter)
 
+	// Set the default context logger
+	zerolog.DefaultContextLogger = &log.Logger
+
 	switch strings.ToLower(settings.LogLevel) {
 	case "trace":
 		zerolog.SetGlobalLevel(zerolog.TraceLevel)
