@@ -3,6 +3,7 @@ package logging
 import (
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -88,7 +89,7 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 
 	log.Logger = log.Output(logWriter)
 
-	switch settings.LogLevel {
+	switch strings.ToLower(settings.LogLevel) {
 	case "trace":
 		zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	case "debug":
