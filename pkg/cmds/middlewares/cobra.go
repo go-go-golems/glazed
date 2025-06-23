@@ -100,6 +100,7 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err

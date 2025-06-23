@@ -41,7 +41,7 @@ func NewLoggingLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeChoice,
 				parameters.WithHelp("Log level (trace, debug, info, warn, error, fatal)"),
 				parameters.WithDefault("info"),
-				parameters.WithChoices("trace", "debug", "info", "warn", "error", "fatal"),
+				parameters.WithChoices("trace", "debug", "info", "warn", "error", "fatal", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"),
 			),
 			parameters.NewParameterDefinition(
 				"log-format",
