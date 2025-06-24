@@ -272,6 +272,18 @@ For easy integration into your own tools, glazed provides:
   - go command-line flag parsing
   - cobra and viper libraries
   - YAML driven configuration
+- **Command middleware system** for flexible parameter processing:
+  - Composable configuration from multiple sources (CLI, files, environment, defaults)
+  - Explicit priority control and parameter source traceability
+  - Layer-based parameter organization for complex applications
+  - See the [Command Middlewares Guide](doc/cmd-middlewares-guide.md) for details
+- **Parameter layer system** for modular CLI application design:
+  - Organize parameters into logical, reusable groups (database, logging, server, etc.)
+  - Mix and match layers across different commands
+  - Avoid parameter pollution and naming conflicts with prefix support
+  - Type-safe parameter extraction with dedicated settings structs
+  - Built-in debugging tools (`--print-parsed-parameters`, `--print-schema`, `--long-help`)
+  - See the [Command Layers Guide](doc/cmd-layers-guide.md) for comprehensive examples
 
 Glazed also comes with the glaze tool which can be use for simple data manipulation
 and rich terminal output, leveraging the glazed library.
