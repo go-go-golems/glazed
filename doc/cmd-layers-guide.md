@@ -620,6 +620,7 @@ import (
     "context"
     "fmt"
     
+    "github.com/go-go-golems/glazed/pkg/cli"
     "github.com/go-go-golems/glazed/pkg/cmds"
     "github.com/go-go-golems/glazed/pkg/cmds/layers"
     "github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -695,11 +696,17 @@ func NewConnectCommand() (*ConnectCommand, error) {
         return nil, err
     }
     
+    // Add command settings layer for debugging capabilities
+    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    if err != nil {
+        return nil, err
+    }
+    
     return &ConnectCommand{
         CommandDescription: cmds.NewCommandDescription(
             "connect",
             cmds.WithShort("Connect to the database"),
-            cmds.WithLayers(databaseLayer),
+            cmds.WithLayers(databaseLayer, commandSettingsLayer),
         ),
     }, nil
 }
@@ -889,12 +896,18 @@ func NewServeCommand() (*ServeCommand, error) {
         return nil, err
     }
     
+    // Add command settings layer for debugging capabilities
+    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    if err != nil {
+        return nil, err
+    }
+    
     return &ServeCommand{
         CommandDescription: cmds.NewCommandDescription(
             "serve",
             cmds.WithShort("Start the web server"),
             cmds.WithLong("Start the web server with database connectivity and logging"),
-            cmds.WithLayers(serverLayer, databaseLayer, loggingLayer),
+            cmds.WithLayers(serverLayer, databaseLayer, loggingLayer, commandSettingsLayer),
         ),
     }, nil
 }
@@ -1178,7 +1191,7 @@ func SaveParsedLayersToFile(parsedLayers *layers.ParsedLayers, filename string) 
 
 ### Built-in CLI Tools for Layer Discovery
 
-Glazed provides several built-in flags to help you understand and debug your layer structure:
+Glazed provides several built-in flags to help you understand and debug your layer structure. These debugging flags are provided by the **Command Settings Layer** that you can add to your commands:
 
 #### `--print-parsed-parameters`
 Shows detailed information about all layers and their parsed parameters:
@@ -1256,6 +1269,68 @@ $ myapp serve --help --long-help
   --log-format string Log format (default "text")
 ```
 
+### Adding Debug Capabilities to Your Commands
+
+To enable these debugging flags in your commands, you need to include the **Command Settings Layer**:
+
+```go
+import (
+    "github.com/go-go-golems/glazed/pkg/cli"
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+)
+
+func NewMyCommand() (*MyCommand, error) {
+    // Create your application layers
+    serverLayer, err := NewServerLayer()
+    if err != nil {
+        return nil, err
+    }
+    
+    databaseLayer, err := NewDatabaseLayer()
+    if err != nil {
+        return nil, err
+    }
+    
+    // Add the command settings layer for debugging flags
+    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    if err != nil {
+        return nil, err
+    }
+    
+    return &MyCommand{
+        CommandDescription: cmds.NewCommandDescription(
+            "serve",
+            cmds.WithShort("Start the server"),
+            cmds.WithLayers(
+                serverLayer,
+                databaseLayer,
+                commandSettingsLayer, // Enables --print-parsed-parameters, --print-schema, etc.
+            ),
+        ),
+    }, nil
+}
+```
+
+The Command Settings Layer provides these flags:
+- `--print-parsed-parameters` - Shows detailed layer and parameter information
+- `--print-schema` - Outputs JSON schema of all parameters
+- `--print-yaml` - Prints the command's YAML representation
+- `--load-parameters-from-file` - Loads parameters from a file
+
+#### Other Useful Built-in Layers
+
+Glazed also provides other built-in layers you can include:
+
+```go
+// Profile management layer
+profileLayer, err := cli.NewProfileSettingsLayer()
+// Provides: --profile, --profile-file
+
+// Command creation layer (for development/testing)
+createCommandLayer, err := cli.NewCreateCommandSettingsLayer() 
+// Provides: --create-command, --create-alias, --create-cliopatra
+```
+
 ### Debugging Common Issues
 
 #### Layer Not Showing Up
@@ -1263,13 +1338,21 @@ If a layer isn't appearing in `--print-parsed-parameters`:
 
 ```go
 // Check that layer is properly added to command
+commandSettingsLayer, _ := cli.NewCommandSettingsLayer() // Don't forget this layer!
+
 cmd := &MyCommand{
     CommandDescription: cmds.NewCommandDescription(
         "serve",
-        cmds.WithLayers(serverLayer, databaseLayer), // Make sure all layers are included
+        cmds.WithLayers(
+            serverLayer, 
+            databaseLayer, 
+            commandSettingsLayer, // Required for debugging flags
+        ),
     ),
 }
 ```
+
+If the `--print-parsed-parameters` flag itself is missing, make sure you've included the Command Settings Layer.
 
 #### Parameter Not Found
 If a parameter isn't being parsed:
