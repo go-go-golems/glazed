@@ -29,7 +29,7 @@ func TestLoadSectionFromMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadSectionFromMarkdown failed: %v", err)
 	}
-	if sec.Slug != "test-md-section" || sec.Title != "Test MD Section" || sec.SectionType != "Tutorial" || !sec.IsTopLevel {
+	if sec.Slug != "test-md-section" || sec.Title != "Test MD Section" || sec.SectionType != model.SectionTutorial || !sec.IsTopLevel {
 		t.Errorf("section fields not loaded correctly: %+v", sec)
 	}
 	if sec.Content != "This is the markdown content." {
@@ -56,7 +56,7 @@ No extras.`
 	if err != nil {
 		t.Fatalf("LoadSectionFromMarkdown failed: %v", err)
 	}
-	if sec.Slug != "empty-section" || sec.Title != "Empty Section" || sec.SectionType != "Example" {
+	if sec.Slug != "empty-section" || sec.Title != "Empty Section" || sec.SectionType != model.SectionExample {
 		t.Errorf("section fields not loaded correctly: %+v", sec)
 	}
 	if len(sec.Topics) != 0 || len(sec.Flags) != 0 || len(sec.Commands) != 0 {
@@ -72,8 +72,8 @@ func TestDuplicateSlugUpsert(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	defer s.Close()
-	sec1 := &model.Section{Slug: "dup", Title: "First", SectionType: "Example"}
-	sec2 := &model.Section{Slug: "dup", Title: "Second", SectionType: "Example"}
+	sec1 := &model.Section{Slug: "dup", Title: "First", SectionType: model.SectionExample}
+	sec2 := &model.Section{Slug: "dup", Title: "Second", SectionType: model.SectionExample}
 	if err := s.UpsertSection(sec1); err != nil {
 		t.Fatalf("upsert 1: %v", err)
 	}

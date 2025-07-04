@@ -22,7 +22,7 @@ func (s *Store) Find(ctx context.Context, pred query.Predicate) ([]*model.Sectio
 		// Only scan the main fields for now
 		if err := rows.Scan(
 			&sec.ID, &sec.Slug, &sec.Title, &sec.Subtitle, &sec.Short, &sec.Content,
-			&sec.SectionType, &sec.IsTopLevel, &sec.IsTemplate, &sec.ShowDefault, &sec.Ord,
+			&sec.SectionType, &sec.IsTopLevel, &sec.IsTemplate, &sec.ShowPerDefault, &sec.Order,
 		); err != nil {
 			return nil, err
 		}

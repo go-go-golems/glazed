@@ -21,7 +21,7 @@ func (s *Store) UpsertSection(sec *model.Section) error {
 			title=excluded.title, subtitle=excluded.subtitle, short=excluded.short, content=excluded.content,
 			sectionType=excluded.sectionType, isTopLevel=excluded.isTopLevel, isTemplate=excluded.isTemplate,
 			showDefault=excluded.showDefault, ord=excluded.ord
-	`, sec.Slug, sec.Title, sec.Subtitle, sec.Short, sec.Content, sec.SectionType.String(), sec.IsTopLevel, sec.IsTemplate, sec.ShowDefault, sec.Ord)
+	`, sec.Slug, sec.Title, sec.Subtitle, sec.Short, sec.Content, sec.SectionType.String(), sec.IsTopLevel, sec.IsTemplate, sec.ShowPerDefault, sec.Order)
 	if err != nil {
 		return fmt.Errorf("upsert section: %w", err)
 	}

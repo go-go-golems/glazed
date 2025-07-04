@@ -66,14 +66,14 @@ type RenderOptions struct {
 }
 
 // Add a helper function to convert []*model.Section to []*Section
-func modelSectionsToSections(modelSections []*model.Section) []*Section {
-	sections := make([]*Section, len(modelSections))
+func modelSectionsToSections(modelSections []*model.Section) []*model.Section {
+	sections := make([]*model.Section, len(modelSections))
 	for i, ms := range modelSections {
-		sections[i] = &Section{
+		sections[i] = &model.Section{
 			Slug:           ms.Slug,
-			SectionType:    model.SectionTypeFromStringUnsafe(string(ms.SectionType)),
+			SectionType:    ms.SectionType,
 			Title:          ms.Title,
-			SubTitle:       ms.Subtitle,
+			Subtitle:       ms.Subtitle,
 			Short:          ms.Short,
 			Content:        ms.Content,
 			Topics:         ms.Topics,
@@ -81,8 +81,8 @@ func modelSectionsToSections(modelSections []*model.Section) []*Section {
 			Commands:       ms.Commands,
 			IsTopLevel:     ms.IsTopLevel,
 			IsTemplate:     ms.IsTemplate,
-			ShowPerDefault: ms.ShowDefault,
-			Order:          ms.Ord,
+			ShowPerDefault: ms.ShowPerDefault,
+			Order:          ms.Order,
 		}
 	}
 	return sections

@@ -15,8 +15,8 @@ type Section struct {
 	SectionType SectionType `yaml:"sectionType,omitempty"`
 	IsTopLevel  bool        `yaml:"isTopLevel,omitempty"`
 	IsTemplate  bool        `yaml:"isTemplate,omitempty"`
-	ShowDefault bool        `yaml:"showDefault,omitempty"`
-	Ord         int         `yaml:"ord,omitempty"`
+	ShowPerDefault bool        `yaml:"showDefault,omitempty"`
+	Order         int         `yaml:"ord,omitempty"`
 	Topics      []string    `yaml:"topics,omitempty"`
 	Flags       []string    `yaml:"flags,omitempty"`
 	Commands    []string    `yaml:"commands,omitempty"`
