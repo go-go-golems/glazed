@@ -14,6 +14,7 @@ import (
 
 type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
+type UIFunc = func(hs *HelpSystem) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
@@ -188,6 +189,10 @@ func GetCobraHelpUsageTemplates(hs *HelpSystem) (string, string) {
 // 2022-12-03 - Manuel Odendahl - Added support for help sections
 // 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
 func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
+	return NewCobraHelpCommandWithUI(hs, nil)
+}
+
+func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
 	var ret *cobra.Command
 	ret = &cobra.Command{
 		Use:   "help [topic/command]",
@@ -222,6 +227,20 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 		Run: func(c *cobra.Command, args []string) {
 			root := c.Root()
+
+			// Check for UI flag first
+			useUI, _ := c.Flags().GetBool("ui")
+			if useUI {
+				if uiFunc != nil {
+					err := uiFunc(hs)
+					if err != nil {
+						c.Printf("Error running UI: %v\n", err)
+					}
+				} else {
+					c.Printf("UI mode not available\n")
+				}
+				return
+			}
 
 			qb := NewSectionQuery()
 
@@ -409,6 +428,9 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 	ret.Flags().Bool("all", false, "Show all sections, not just default")
 	ret.Flags().Bool("short", false, "Show short version")
+
+	// Interactive UI
+	ret.Flags().Bool("ui", false, "Open interactive help UI")
 
 	// Debug flags
 	ret.Flags().Bool("print-query", false, "Print parsed query AST for debugging")

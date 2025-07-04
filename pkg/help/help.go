@@ -391,6 +391,21 @@ func (hs *HelpSystem) SetupCobraRootCommand(cmd *cobra.Command) {
 	cmd.SetHelpCommand(helpCmd)
 }
 
+func (hs *HelpSystem) SetupCobraRootCommandWithUI(cmd *cobra.Command, uiFunc UIFunc) {
+	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+
+	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
+
+	cmd.SetHelpFunc(helpFunc)
+	cmd.SetUsageFunc(usageFunc)
+	cmd.SetHelpTemplate(helpTemplate)
+	cmd.SetUsageTemplate(usageTemplate)
+
+	helpCmd := NewCobraHelpCommandWithUI(hs, uiFunc)
+	cmd.SetHelpCommand(helpCmd)
+}
+
 type HelpError int
 
 const (
