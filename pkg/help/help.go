@@ -107,8 +107,13 @@ type HelpSystem struct {
 }
 
 func NewHelpSystem() *HelpSystem {
+	s, err := store.Open(":memory:")
+	if err != nil {
+		panic("failed to open in-memory help store: " + err.Error())
+	}
 	return &HelpSystem{
 		Sections: []*model.Section{},
+		Store:    s,
 	}
 }
 

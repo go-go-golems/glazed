@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
-	"github.com/go-go-golems/glazed/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,7 +35,7 @@ func main() {
 	cobra.CheckErr(err)
 
 	helpSystem := help.NewHelpSystem()
-	err = doc.AddDocToHelpSystem(helpSystem)
+	err = helpSystem.LoadSectionsFromFS(os.DirFS("../../docs"), ".")
 	cobra.CheckErr(err)
 
 	helpSystem.SetupCobraRootCommand(rootCmd)
