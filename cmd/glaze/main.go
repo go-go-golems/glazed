@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/go-go-golems/glazed/pkg/doc"
-	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,8 +34,12 @@ func main() {
 	err = logging.InitLoggerFromViper()
 	cobra.CheckErr(err)
 
-	helpSystem := help.NewHelpSystem()
-	err = doc.AddDocToHelpSystem(helpSystem)
+	ctx := context.Background()
+	helpSystem, err := store.NewInMemoryHelpSystem()
+	cobra.CheckErr(err)
+	defer helpSystem.Close()
+
+	err = doc.AddDocToHelpSystem(ctx, helpSystem)
 	cobra.CheckErr(err)
 
 	helpSystem.SetupCobraRootCommand(rootCmd)

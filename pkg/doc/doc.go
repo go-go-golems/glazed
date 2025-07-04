@@ -1,6 +1,7 @@
 package doc
 
 import (
+	"context"
 	"embed"
 	"github.com/go-go-golems/glazed/pkg/help"
 )
@@ -8,6 +9,6 @@ import (
 //go:embed *
 var docFS embed.FS
 
-func AddDocToHelpSystem(helpSystem *help.HelpSystem) error {
-	return helpSystem.LoadSectionsFromFS(docFS, ".")
+func AddDocToHelpSystem(ctx context.Context, helpSystem *help.HelpSystem) error {
+	return helpSystem.LoadSectionsFromFS(ctx, docFS, ".")
 }
