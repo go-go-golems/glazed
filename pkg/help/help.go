@@ -2,54 +2,35 @@ package help
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
+	"github.com/go-go-golems/glazed/pkg/help/dsl"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
-type SectionType int
+// Re-export types from model package for backward compatibility
+type SectionType = model.SectionType
 
 const (
-	SectionGeneralTopic SectionType = iota
-	SectionExample
-	SectionApplication
-	SectionTutorial
+	SectionGeneralTopic = model.SectionGeneralTopic
+	SectionExample      = model.SectionExample
+	SectionApplication  = model.SectionApplication
+	SectionTutorial     = model.SectionTutorial
 )
 
-func SectionTypeFromString(s string) (SectionType, error) {
-	switch s {
-	case "GeneralTopic":
-		return SectionGeneralTopic, nil
-	case "Example":
-		return SectionExample, nil
-	case "Application":
-		return SectionApplication, nil
-	case "Tutorial":
-		return SectionTutorial, nil
-	}
-	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
-}
-
-func (s SectionType) String() string {
-	switch s {
-	case SectionGeneralTopic:
-		return "GeneralTopic"
-	case SectionExample:
-		return "Example"
-	case SectionApplication:
-		return "Application"
-	case SectionTutorial:
-		return "Tutorial"
-	}
-	return "Unknown"
-}
+// Re-export functions from model package
+var SectionTypeFromString = model.SectionTypeFromString
 
 // Section is a structure describing an actual documentation section.
 //
@@ -63,31 +44,8 @@ func (s SectionType) String() string {
 //
 // Run `glaze help help-system` for more information.
 type Section struct {
-	Slug        string
-	SectionType SectionType
-
-	Title    string
-	SubTitle string
-	Short    string
-	Content  string
-
-	// metadata used to search and select sections to be shown
-	Topics   []string
-	Flags    []string
-	Commands []string
-
-	// Show this section in the toplevel help
-	IsTopLevel bool
-
-	IsTemplate bool
-
-	// show this template as a default example
-	ShowPerDefault bool
-
-	// Used to give some rough sense of order, not sure how useful this is going to be
-	Order int
-
-	HelpSystem *HelpSystem `yaml:"_"`
+	*model.Section
+	HelpSystem *HelpSystem
 }
 
 func (s *Section) IsForCommand(command string) bool {
@@ -105,66 +63,115 @@ func (s *Section) IsForTopic(topic string) bool {
 // these should potentially be scoped by command
 
 func (s *Section) DefaultGeneralTopic() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnTopics().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) DefaultExamples() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnExamples().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) OtherExamples() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnExamples().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) DefaultTutorials() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnTutorials().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) OtherTutorials() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnTutorials().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) DefaultApplications() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnApplications().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func (s *Section) OtherApplications() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnApplications().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+
+	ctx := context.Background()
+	results, err := query.FindSections(ctx, s.HelpSystem.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query sections from store")
+		return []*Section{}
+	}
+	return results
 }
 
 func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
@@ -181,7 +188,8 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 		return nil, err
 	}
 
-	section := &Section{}
+	modelSection := &model.Section{}
+	section := &Section{Section: modelSection}
 
 	if title, ok := metaData["Title"]; ok {
 		section.Title = title.(string)
@@ -263,12 +271,13 @@ type HelpPage struct {
 }
 
 func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
-	for _, section := range hs.Sections {
-		if section.Slug == slug {
-			return section, nil
-		}
+	ctx := context.Background()
+	modelSection, err := hs.Store.GetBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("no section with slug %s found", slug)
+	section := &Section{Section: modelSection, HelpSystem: hs}
+	return section, nil
 }
 
 func NewHelpPage(sections []*Section) *HelpPage {
@@ -315,20 +324,37 @@ func NewHelpPage(sections []*Section) *HelpPage {
 }
 
 func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
-	sections := NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnOnlyTopLevel().
-		ReturnAllTypes().
-		FindSections(hs.Sections)
+		ReturnAllTypes()
+
+	ctx := context.Background()
+	sections, err := query.FindSections(ctx, hs.Store)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to query top level sections")
+		return NewHelpPage([]*Section{})
+	}
 	return NewHelpPage(sections)
 }
 
 type HelpSystem struct {
-	Sections []*Section
+	Store *store.Store // Store backend
 }
 
 func NewHelpSystem() *HelpSystem {
+	st, err := store.NewInMemory()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create in-memory store")
+	}
 	return &HelpSystem{
-		Sections: []*Section{},
+		Store: st,
+	}
+}
+
+// NewHelpSystemWithStore creates a HelpSystem with store backend support
+func NewHelpSystemWithStore(st *store.Store) *HelpSystem {
+	return &HelpSystem{
+		Store: st,
 	}
 }
 
@@ -369,7 +395,11 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 }
 
 func (hs *HelpSystem) AddSection(section *Section) {
-	hs.Sections = append(hs.Sections, section)
+	ctx := context.Background()
+	err := hs.Store.Upsert(ctx, section.Section)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to store section")
+	}
 	section.HelpSystem = hs
 }
 
@@ -388,6 +418,21 @@ func (hs *HelpSystem) SetupCobraRootCommand(cmd *cobra.Command) {
 	cmd.SetHelpCommand(helpCmd)
 }
 
+func (hs *HelpSystem) SetupCobraRootCommandWithUI(cmd *cobra.Command, uiFunc UIFunc) {
+	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+
+	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
+
+	cmd.SetHelpFunc(helpFunc)
+	cmd.SetUsageFunc(usageFunc)
+	cmd.SetHelpTemplate(helpTemplate)
+	cmd.SetUsageTemplate(usageTemplate)
+
+	helpCmd := NewCobraHelpCommandWithUI(hs, uiFunc)
+	cmd.SetHelpCommand(helpCmd)
+}
+
 type HelpError int
 
 const (
@@ -400,5 +445,90 @@ func (e HelpError) Error() string {
 		return "Section not found"
 	default:
 		return "Unknown error"
+	}
+}
+
+// PrintQueryDebug prints debug information about a query
+func (hs *HelpSystem) PrintQueryDebug(queryDSL string, printQuery, printSQL bool) error {
+	if printQuery {
+		err := hs.printQueryAST(queryDSL)
+		if err != nil {
+			return err
+		}
+	}
+
+	if printSQL {
+		err := hs.printQuerySQL(queryDSL)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// printQueryAST prints the parsed query AST in a readable format
+func (hs *HelpSystem) printQueryAST(queryDSL string) error {
+	fmt.Printf("Query: %s\n", queryDSL)
+
+	// Parse the query into AST
+	expr, err := dsl.Parse(queryDSL)
+	if err != nil {
+		return fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	fmt.Printf("AST:\n")
+	hs.printExpressionTree(expr, 0)
+
+	return nil
+}
+
+// printQuerySQL prints the generated SQL query for debugging
+func (hs *HelpSystem) printQuerySQL(queryDSL string) error {
+	// Parse the query using the DSL parser
+	predicate, err := dsl.ParseQuery(queryDSL)
+	if err != nil {
+		return fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	// Create a query compiler to generate SQL
+	compiler := store.NewQueryCompiler()
+	predicate(compiler)
+
+	// Build the SQL query
+	sqlQuery, args := compiler.BuildQuery()
+
+	fmt.Printf("SQL Query:\n")
+	fmt.Printf("%s\n", sqlQuery)
+
+	if len(args) > 0 {
+		fmt.Printf("Parameters: %v\n", args)
+	}
+
+	return nil
+}
+
+// printExpressionTree prints the AST in a tree format
+func (hs *HelpSystem) printExpressionTree(expr dsl.Expression, depth int) {
+	indent := strings.Repeat("  ", depth)
+
+	switch e := expr.(type) {
+	case *dsl.BinaryExpression:
+		fmt.Printf("%s%s\n", indent, e.Operator)
+		fmt.Printf("%s├── ", indent)
+		hs.printExpressionTree(e.Left, depth+1)
+		fmt.Printf("%s└── ", indent)
+		hs.printExpressionTree(e.Right, depth+1)
+	case *dsl.UnaryExpression:
+		fmt.Printf("%s%s\n", indent, e.Operator)
+		fmt.Printf("%s└── ", indent)
+		hs.printExpressionTree(e.Right, depth+1)
+	case *dsl.FieldExpression:
+		fmt.Printf("Field: %s = \"%s\"\n", e.Field, e.Value)
+	case *dsl.TextExpression:
+		fmt.Printf("Text: \"%s\"\n", e.Text)
+
+	default:
+		fmt.Printf("Unknown: %s\n", expr.String())
 	}
 }

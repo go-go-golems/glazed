@@ -1,6 +1,12 @@
 package help
 
-import "strings"
+import (
+	"context"
+	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/store"
+)
 
 // SectionQuery represents a query to get different types of sections.
 //
@@ -238,125 +244,120 @@ func (s *SectionQuery) Clone() *SectionQuery {
 	return ret
 }
 
-func (s *SectionQuery) FindSections(sections []*Section) []*Section {
-	var result []*Section
+// FindSections queries sections using the store backend
+func (s *SectionQuery) FindSections(ctx context.Context, st *store.Store) ([]*Section, error) {
+	predicate := s.toPredicate()
 
-sectionLoop:
-	for _, section := range sections {
-		if s.OnlyShownByDefault && !section.ShowPerDefault {
-			continue
-		}
+	storeSections, err := st.Find(ctx, predicate)
+	if err != nil {
+		return nil, err
+	}
 
-		if s.OnlyNotShownByDefault && section.ShowPerDefault {
-			continue
-		}
+	// Convert store sections to help sections
+	sections := make([]*Section, len(storeSections))
+	for i, storeSection := range storeSections {
+		sections[i] = &Section{Section: storeSection}
+	}
 
-		if s.OnlyTopLevel && !section.IsTopLevel {
-			continue
-		}
+	return sections, nil
+}
 
-		for _, without := range s.WithoutSections {
-			if without == section {
-				continue sectionLoop
-			}
-		}
+// toPredicate converts the SectionQuery to a store predicate
+func (s *SectionQuery) toPredicate() store.Predicate {
+	var predicates []store.Predicate
 
-		if s.SearchedSlug != "" {
-			if section.Slug != s.SearchedSlug {
-				continue sectionLoop
+	// Handle type filtering
+	if s.HasRestrictedReturnTypes() {
+		var typePredicates []store.Predicate
+		for sectionType, enabled := range s.Types {
+			if enabled {
+				typePredicates = append(typePredicates, store.IsType(model.SectionType(sectionType)))
 			}
 		}
-
-		if s.SearchedCommand != "" {
-			foundMatchingCommand := false
-			for _, command := range section.Commands {
-				if command == s.SearchedCommand {
-					foundMatchingCommand = true
-					break
-				}
-			}
-			if !foundMatchingCommand {
-				continue sectionLoop
-			}
-		}
-
-		foundMatchingType, ok := s.Types[section.SectionType]
-		if !ok || !foundMatchingType {
-			continue
-		}
-
-		// filter out the Only*
-		if len(s.OnlyTopics) > 0 {
-			foundMatchingTopic := true
-			for _, t := range s.OnlyTopics {
-				if !section.IsForTopic(t) {
-					foundMatchingTopic = false
-					break
-				}
-			}
-			if !foundMatchingTopic {
-				continue sectionLoop
-			}
-		}
-
-		if len(s.OnlyFlags) > 0 {
-			foundMatchingFlag := true
-			for _, f := range s.OnlyFlags {
-				if !section.IsForFlag(f) {
-					foundMatchingFlag = false
-					break
-				}
-			}
-			if !foundMatchingFlag {
-				continue sectionLoop
-			}
-		}
-
-		if len(s.OnlyCommands) > 0 {
-			foundMatchingCommand := true
-			for _, c := range s.OnlyCommands {
-				if !section.IsForCommand(c) {
-					foundMatchingCommand = false
-					break
-				}
-			}
-			if !foundMatchingCommand {
-				continue sectionLoop
-			}
-		}
-
-		if s.All {
-			result = append(result, section)
-			continue sectionLoop
-		}
-
-		for _, topic := range s.Topics {
-			if section.IsForTopic(topic) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, flag := range s.Flags {
-			if section.IsForFlag(flag) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, command := range s.Commands {
-			if section.IsForCommand(command) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, slug := range s.Slugs {
-			if section.Slug == slug {
-				result = append(result, section)
-				continue sectionLoop
-			}
+		if len(typePredicates) > 0 {
+			predicates = append(predicates, store.Or(typePredicates...))
 		}
 	}
 
-	return result
+	// Handle visibility filters
+	if s.OnlyShownByDefault {
+		predicates = append(predicates, store.ShownByDefault())
+	}
+	if s.OnlyNotShownByDefault {
+		predicates = append(predicates, store.NotShownByDefault())
+	}
+
+	// Handle top level filter
+	if s.OnlyTopLevel {
+		predicates = append(predicates, store.IsTopLevel())
+	}
+
+	// Handle slug search
+	if s.SearchedSlug != "" {
+		predicates = append(predicates, store.SlugEquals(s.SearchedSlug))
+	}
+
+	// Handle command search
+	if s.SearchedCommand != "" {
+		predicates = append(predicates, store.HasCommand(s.SearchedCommand))
+	}
+
+	// Handle Only* filters (all must match)
+	if len(s.OnlyTopics) > 0 {
+		for _, topic := range s.OnlyTopics {
+			predicates = append(predicates, store.HasTopic(topic))
+		}
+	}
+	if len(s.OnlyFlags) > 0 {
+		for _, flag := range s.OnlyFlags {
+			predicates = append(predicates, store.HasFlag(flag))
+		}
+	}
+	if len(s.OnlyCommands) > 0 {
+		for _, command := range s.OnlyCommands {
+			predicates = append(predicates, store.HasCommand(command))
+		}
+	}
+
+	// Handle Any* filters (any can match)
+	if !s.All {
+		var anyPredicates []store.Predicate
+
+		for _, topic := range s.Topics {
+			anyPredicates = append(anyPredicates, store.HasTopic(topic))
+		}
+		for _, flag := range s.Flags {
+			anyPredicates = append(anyPredicates, store.HasFlag(flag))
+		}
+		for _, command := range s.Commands {
+			anyPredicates = append(anyPredicates, store.HasCommand(command))
+		}
+		for _, slug := range s.Slugs {
+			anyPredicates = append(anyPredicates, store.SlugEquals(slug))
+		}
+
+		if len(anyPredicates) > 0 {
+			predicates = append(predicates, store.Or(anyPredicates...))
+		}
+	}
+
+	// Handle excluded sections - this requires special handling since we need to exclude by ID
+	if len(s.WithoutSections) > 0 {
+		var excludedSlugs []string
+		for _, section := range s.WithoutSections {
+			excludedSlugs = append(excludedSlugs, section.Slug)
+		}
+		predicates = append(predicates, store.Not(store.SlugIn(excludedSlugs)))
+	}
+
+	// Add default ordering
+	predicates = append(predicates, store.OrderByOrder())
+
+	if len(predicates) == 0 {
+		return func(qc *store.QueryCompiler) {} // Empty predicate
+	}
+
+	return store.And(predicates...)
 }
 
 func (s *SectionQuery) GetRequestedTypesAsString() string {

@@ -1,6 +1,7 @@
 package help
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
@@ -61,7 +62,11 @@ type RenderOptions struct {
 }
 
 func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {
-	sections := userQuery.FindSections(hs.Sections)
+	ctx := context.Background()
+	sections, err := userQuery.FindSections(ctx, hs.Store)
+	if err != nil {
+		sections = []*Section{}
+	}
 	data := map[string]interface{}{}
 
 	// check if the user has restricted the help to only specific commands, flags or topics
@@ -77,20 +82,29 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 		if hasUserRestrictedQuery {
 			// in this case, we should widen our userQuery to not have restrictions on commands, flags, topics
 			alternativeQuery := userQuery.Clone().ResetOnlyQueries()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+			if err != nil {
+				alternativeSections = []*Section{}
+			}
 		}
 
 		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
 			// in this case, we should widen our userQuery to not have restrictions on return types
 			alternativeQuery := userQuery.Clone().ReturnAllTypes()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+			if err != nil {
+				alternativeSections = []*Section{}
+			}
 		}
 
 		if len(alternativeSections) == 0 {
 			// in this case, both the userQuery relaxation and the type relaxation don't return anything,
 			// so we should show all possible options for the command / topLevel
 			alternativeQuery := userQuery.Clone().ResetOnlyQueries().ReturnAllTypes()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+			if err != nil {
+				alternativeSections = []*Section{}
+			}
 		}
 
 		alternativeHelpPage := NewHelpPage(alternativeSections)

@@ -1,6 +1,7 @@
 package help
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
@@ -14,6 +15,7 @@ import (
 
 type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
+type UIFunc = func(hs *HelpSystem) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
@@ -188,6 +190,10 @@ func GetCobraHelpUsageTemplates(hs *HelpSystem) (string, string) {
 // 2022-12-03 - Manuel Odendahl - Added support for help sections
 // 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
 func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
+	return NewCobraHelpCommandWithUI(hs, nil)
+}
+
+func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
 	var ret *cobra.Command
 	ret = &cobra.Command{
 		Use:   "help [topic/command]",
@@ -197,8 +203,12 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			for _, section := range hs.Sections {
-				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
+			ctx := context.Background()
+			modelSections, err := hs.Store.List(ctx, "slug ASC")
+			if err == nil {
+				for _, modelSection := range modelSections {
+					completions = append(completions, fmt.Sprintf("%s\t%s", modelSection.Slug, modelSection.Title))
+				}
 			}
 
 			cmd, _, e := c.Root().Find(args)
@@ -223,7 +233,83 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			root := c.Root()
 
+			// Check for UI flag first
+			useUI, _ := c.Flags().GetBool("ui")
+			if useUI {
+				if uiFunc != nil {
+					err := uiFunc(hs)
+					if err != nil {
+						c.Printf("Error running UI: %v\n", err)
+					}
+				} else {
+					c.Printf("UI mode not available\n")
+				}
+				return
+			}
+
 			qb := NewSectionQuery()
+
+			// Check for DSL query first
+			queryDSL := c.Flag("query").Value.String()
+			printQuery, _ := c.Flags().GetBool("print-query")
+			printSQL, _ := c.Flags().GetBool("print-sql")
+
+			// Check if debug flags are used without a query
+			if (printQuery || printSQL) && queryDSL == "" {
+				c.Printf("Error: --print-query and --print-sql can only be used with --query\n")
+				return
+			}
+
+			if queryDSL != "" {
+				// Handle debug printing
+				if printQuery || printSQL {
+					err := hs.PrintQueryDebug(queryDSL, printQuery, printSQL)
+					if err != nil {
+						c.Printf("Debug error: %s\n", err)
+						return
+					}
+					if printQuery || printSQL {
+						c.Printf("\n")
+					}
+				}
+
+				// Handle DSL query
+				sections, err := hs.QuerySections(queryDSL)
+				if err != nil {
+					c.Printf("Query error: %s\n", err)
+					// Show syntax help for DSL queries
+					c.Printf("\nQuery syntax:\n")
+					c.Printf("  examples AND topic:templates  - Boolean AND operation\n")
+					c.Printf("  type:example OR type:tutorial  - Boolean OR operation\n")
+					c.Printf("  NOT type:application          - Boolean NOT operation\n")
+					c.Printf("  (examples OR tutorials) AND topic:database - Parentheses\n")
+					c.Printf("  \"search text\"                - Text search\n")
+					c.Printf("  type:example                  - Field queries\n")
+					c.Printf("\nValid fields: type, topic, flag, command, slug\n")
+					c.Printf("Valid types: example, tutorial, topic, application\n")
+					c.Printf("Valid shortcuts: examples, tutorials, topics, applications, toplevel, defaults\n")
+					return
+				}
+
+				// Display results
+				if len(sections) == 0 {
+					c.Printf("No results found for query: %s\n", queryDSL)
+					c.Printf("Try:\n")
+					c.Printf("  examples           - Show all examples\n")
+					c.Printf("  tutorials          - Show all tutorials\n")
+					c.Printf("  topics             - Show all topics\n")
+					c.Printf("  applications       - Show all applications\n")
+					c.Printf("  type:example       - Show sections of type 'example'\n")
+					c.Printf("  \"search text\"      - Search for text in content\n")
+					return
+				}
+
+				c.Printf("Found %d section(s) for query: %s\n\n", len(sections), queryDSL)
+				for _, section := range sections {
+					c.Printf("• %s - %s\n", section.Slug, section.Title)
+				}
+				return
+			}
 
 			topic := c.Flag("topic").Value.String()
 			if topic != "" {
@@ -337,6 +423,7 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 	ret.Flags().String("topic", "", "Show help related to topic")
 	ret.Flags().String("command", "", "Show help related to command")
 	ret.Flags().String("flag", "", "Show help related to flag")
+	ret.Flags().String("query", "", "Use query DSL to search help sections")
 
 	ret.Flags().Bool("list", false, "List all sections")
 	ret.Flags().Bool("topics", false, "Show all topics")
@@ -346,6 +433,13 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 
 	ret.Flags().Bool("all", false, "Show all sections, not just default")
 	ret.Flags().Bool("short", false, "Show short version")
+
+	// Interactive UI
+	ret.Flags().Bool("ui", false, "Open interactive help UI")
+
+	// Debug flags
+	ret.Flags().Bool("print-query", false, "Print parsed query AST for debugging")
+	ret.Flags().Bool("print-sql", false, "Print generated SQL query for debugging")
 
 	// TODO(manuel, 2022-12-04): Additional verbs to build
 	// - toc -- done with --list

@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/go-go-golems/glazed/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -37,7 +38,11 @@ func main() {
 	err = doc.AddDocToHelpSystem(helpSystem)
 	cobra.CheckErr(err)
 
-	helpSystem.SetupCobraRootCommand(rootCmd)
+	// Set up help system with UI support
+	uiFunc := func(hs *help.HelpSystem) error {
+		return ui.RunUI(hs)
+	}
+	helpSystem.SetupCobraRootCommandWithUI(rootCmd, uiFunc)
 
 	jsonCmd, err := cmds.NewJsonCommand()
 	cobra.CheckErr(err)
