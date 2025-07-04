@@ -336,3 +336,11 @@ func (s *Store) RebuildFTSIndex(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO section_fts(section_fts) VALUES ('rebuild')")
 	return err
 }
+
+// FindByText executes a text-based query and returns matching sections
+func (s *Store) FindByText(ctx context.Context, textQuery string) ([]*model.Section, error) {
+	// Import the search package to convert text query to predicate
+	// This creates a circular import, so we'll need to refactor this
+	// For now, we'll add this method later after resolving the import issue
+	return nil, errors.New("FindByText not yet implemented - requires refactoring to avoid circular imports")
+}

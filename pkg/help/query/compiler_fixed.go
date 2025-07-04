@@ -7,30 +7,23 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
-// Compiler interface for building SQL queries
-type Compiler interface {
-	addWhere(cond string, args ...any)
-	addJoin(join string)
-	getUniqueAlias(base string) string
-}
-
 // Predicate represents a query predicate that can be compiled to SQL
-type Predicate func(Compiler)
+type Predicate func(*Compiler)
 
-// compiler accumulates SQL fragments for building queries
-type compiler struct {
+// Compiler accumulates SQL fragments for building queries
+type Compiler struct {
 	joins       []string
 	wheres      []string
 	args        []any
 	aliasCount  map[string]int // Track alias usage for unique naming
 }
 
-func (c *compiler) addWhere(cond string, args ...any) {
+func (c *Compiler) AddWhere(cond string, args ...any) {
 	c.wheres = append(c.wheres, cond)
 	c.args = append(c.args, args...)
 }
 
-func (c *compiler) addJoin(join string) {
+func (c *Compiler) AddJoin(join string) {
 	// Simple deduplication - avoid adding the same join twice
 	for _, existing := range c.joins {
 		if existing == join {
@@ -40,7 +33,7 @@ func (c *compiler) addJoin(join string) {
 	c.joins = append(c.joins, join)
 }
 
-func (c *compiler) getUniqueAlias(base string) string {
+func (c *Compiler) GetUniqueAlias(base string) string {
 	if c.aliasCount == nil {
 		c.aliasCount = make(map[string]int)
 	}
@@ -51,7 +44,7 @@ func (c *compiler) getUniqueAlias(base string) string {
 	return fmt.Sprintf("%s%d", base, c.aliasCount[base])
 }
 
-func (c *compiler) SQL() (string, []any) {
+func (c *Compiler) SQL() (string, []any) {
 	sql := "SELECT DISTINCT s.* FROM sections s"
 	if len(c.joins) > 0 {
 		sql += " " + strings.Join(c.joins, " ")
@@ -70,70 +63,70 @@ func (c *compiler) SQL() (string, []any) {
 
 // Compile compiles a predicate tree into SQL
 func Compile(pred Predicate) (string, []any) {
-	c := &compiler{}
+	c := &Compiler{}
 	pred(c)
 	return c.SQL()
 }
 
 // Basic predicates
 func IsType(t model.SectionType) Predicate {
-	return func(c Compiler) {
-		c.addWhere("s.sectionType = ?", t.String())
+	return func(c *Compiler) {
+		c.AddWhere("s.sectionType = ?", t.String())
 	}
 }
 
 func HasTopic(topic string) Predicate {
-	return func(c Compiler) {
-		alias := c.getUniqueAlias("st")
-		c.addJoin(fmt.Sprintf("JOIN section_topics %s ON %s.section_id = s.id", alias, alias))
-		c.addWhere(fmt.Sprintf("%s.topic = ?", alias), topic)
+	return func(c *Compiler) {
+		alias := c.GetUniqueAlias("st")
+		c.AddJoin(fmt.Sprintf("JOIN section_topics %s ON %s.section_id = s.id", alias, alias))
+		c.AddWhere(fmt.Sprintf("%s.topic = ?", alias), topic)
 	}
 }
 
 func HasFlag(flag string) Predicate {
-	return func(c Compiler) {
-		alias := c.getUniqueAlias("sf")
-		c.addJoin(fmt.Sprintf("JOIN section_flags %s ON %s.section_id = s.id", alias, alias))
-		c.addWhere(fmt.Sprintf("%s.flag = ?", alias), flag)
+	return func(c *Compiler) {
+		alias := c.GetUniqueAlias("sf")
+		c.AddJoin(fmt.Sprintf("JOIN section_flags %s ON %s.section_id = s.id", alias, alias))
+		c.AddWhere(fmt.Sprintf("%s.flag = ?", alias), flag)
 	}
 }
 
 func HasCommand(cmd string) Predicate {
-	return func(c Compiler) {
-		alias := c.getUniqueAlias("sc")
-		c.addJoin(fmt.Sprintf("JOIN section_commands %s ON %s.section_id = s.id", alias, alias))
-		c.addWhere(fmt.Sprintf("%s.command = ?", alias), cmd)
+	return func(c *Compiler) {
+		alias := c.GetUniqueAlias("sc")
+		c.AddJoin(fmt.Sprintf("JOIN section_commands %s ON %s.section_id = s.id", alias, alias))
+		c.AddWhere(fmt.Sprintf("%s.command = ?", alias), cmd)
 	}
 }
 
 func IsTopLevel() Predicate {
-	return func(c Compiler) {
-		c.addWhere("s.isTopLevel = 1")
+	return func(c *Compiler) {
+		c.AddWhere("s.isTopLevel = 1")
 	}
 }
 
 func ShownByDefault() Predicate {
-	return func(c Compiler) {
-		c.addWhere("s.showDefault = 1")
+	return func(c *Compiler) {
+		c.AddWhere("s.showDefault = 1")
 	}
 }
 
 func SlugEquals(slug string) Predicate {
-	return func(c Compiler) {
-		c.addWhere("s.slug = ?", slug)
+	return func(c *Compiler) {
+		c.AddWhere("s.slug = ?", slug)
 	}
 }
 
 func TextSearch(term string) Predicate {
-	return func(c Compiler) {
-		c.addJoin("JOIN section_fts fts ON fts.rowid = s.id")
-		c.addWhere("section_fts MATCH ?", term)
+	return func(c *Compiler) {
+		c.AddJoin("JOIN section_fts fts ON fts.rowid = s.id")
+		c.AddWhere("section_fts MATCH ?", term)
 	}
 }
 
 // Boolean combinators
 func And(preds ...Predicate) Predicate {
-	return func(c Compiler) {
+	return func(c *Compiler) {
 		if len(preds) == 0 {
 			return
 		}
@@ -151,7 +144,7 @@ func And(preds ...Predicate) Predicate {
 }
 
 func Or(preds ...Predicate) Predicate {
-	return func(c *compiler) {
+	return func(c *Compiler) {
 		if len(preds) == 0 {
 			return
 		}
@@ -189,8 +182,8 @@ func Or(preds ...Predicate) Predicate {
 }
 
 func Not(pred Predicate) Predicate {
-	return func(c *compiler) {
-		sub := &compiler{}
+	return func(c *Compiler) {
+		sub := &Compiler{}
 		pred(sub)
 		c.joins = append(c.joins, sub.joins...)
 		if len(sub.wheres) > 0 {
