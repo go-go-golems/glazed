@@ -123,51 +123,7 @@ func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *mode
 func (hs *HelpSystem) queryLegacy(query string) ([]*Section, error) {
 	var results []*Section
 
-	// Handle simple cases first
-	switch strings.ToLower(query) {
-	case "examples":
-		for _, section := range hs.Sections {
-			if section.SectionType == SectionExample {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	case "tutorials":
-		for _, section := range hs.Sections {
-			if section.SectionType == SectionTutorial {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	case "topics":
-		for _, section := range hs.Sections {
-			if section.SectionType == SectionGeneralTopic {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	case "applications":
-		for _, section := range hs.Sections {
-			if section.SectionType == SectionApplication {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	case "toplevel":
-		for _, section := range hs.Sections {
-			if section.IsTopLevel {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	case "defaults":
-		for _, section := range hs.Sections {
-			if section.ShowPerDefault {
-				results = append(results, section)
-			}
-		}
-		return results, nil
-	}
+
 
 	// Handle field:value queries
 	if strings.Contains(query, ":") {

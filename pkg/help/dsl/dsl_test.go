@@ -67,7 +67,7 @@ func TestParser(t *testing.T) {
 		{
 			input:       "examples",
 			shouldError: false,
-			description: "shortcut identifier",
+			description: "implicit text search",
 		},
 		{
 			input:       "\"full text search\"",
@@ -77,7 +77,7 @@ func TestParser(t *testing.T) {
 		{
 			input:       "examples AND tutorials",
 			shouldError: false,
-			description: "AND expression",
+			description: "implicit text search with AND",
 		},
 		{
 			input:       "type:example OR type:tutorial",
@@ -181,7 +181,7 @@ func TestCompiler(t *testing.T) {
 		{
 			input:       "examples",
 			shouldError: false,
-			description: "valid shortcut",
+			description: "valid text search",
 		},
 		{
 			input:       "\"full text search\"",
@@ -200,8 +200,8 @@ func TestCompiler(t *testing.T) {
 		},
 		{
 			input:       "invalidshortcut",
-			shouldError: true,
-			description: "invalid shortcut",
+			shouldError: false,
+			description: "text search (formerly invalid shortcut)",
 		},
 		{
 			input:       "toplevel:maybe",
@@ -305,10 +305,7 @@ func TestErrorMessages(t *testing.T) {
 			input:               "invalidfield:value",
 			expectedErrorSubstr: "unknown field",
 		},
-		{
-			input:               "invalidshortcut",
-			expectedErrorSubstr: "unknown shortcut",
-		},
+
 		{
 			input:               "type:",
 			expectedErrorSubstr: "expected value after",
@@ -388,20 +385,7 @@ func TestValidationFunctions(t *testing.T) {
 		}
 	}
 
-	// Test shortcut validation
-	validShortcuts := []string{"examples", "tutorials", "topics", "applications", "toplevel", "defaults", "templates"}
-	for _, shortcut := range validShortcuts {
-		if !IsValidShortcut(shortcut) {
-			t.Errorf("shortcut %q should be valid", shortcut)
-		}
-	}
-
-	invalidShortcuts := []string{"invalid", "unknown", "badshortcut"}
-	for _, shortcut := range invalidShortcuts {
-		if IsValidShortcut(shortcut) {
-			t.Errorf("shortcut %q should be invalid", shortcut)
-		}
-	}
+	// Shortcut validation removed - shortcuts are no longer supported
 }
 
 // TestQueryInfo tests the query information function
@@ -416,9 +400,7 @@ func TestQueryInfo(t *testing.T) {
 		t.Error("QueryInfo should have valid types")
 	}
 
-	if len(info.ValidShortcuts) == 0 {
-		t.Error("QueryInfo should have valid shortcuts")
-	}
+	// Shortcuts are no longer supported
 
 	if len(info.Examples) == 0 {
 		t.Error("QueryInfo should have examples")

@@ -40,32 +40,32 @@ func ValidateQuery(query string) error {
 
 // QueryInfo provides information about query syntax
 type QueryInfo struct {
-	ValidFields    []string
-	ValidTypes     []string
-	ValidShortcuts []string
-	Examples       []string
+	ValidFields []string
+	ValidTypes  []string
+	Examples    []string
 }
 
 // GetQueryInfo returns information about the query DSL
 func GetQueryInfo() *QueryInfo {
 	compiler := NewCompiler()
 	return &QueryInfo{
-		ValidFields:    compiler.GetValidFields(),
-		ValidTypes:     compiler.GetValidTypeValues(),
-		ValidShortcuts: compiler.GetValidShortcuts(),
+		ValidFields: compiler.GetValidFields(),
+		ValidTypes:  compiler.GetValidTypeValues(),
 		Examples: []string{
-			"examples",
 			"type:example",
 			"topic:database",
 			"flag:--output",
 			"command:json",
 			"\"full text search\"",
-			"examples AND topic:database",
+			"'single quoted text'",
+			"unquoted text search",
+			"database tutorial AND type:example",
 			"type:tutorial OR type:example",
 			"NOT type:application",
-			"(examples OR tutorials) AND topic:database",
-			"toplevel AND defaults",
+			"(database OR sql) AND type:tutorial",
+			"toplevel:true AND default:true",
 			"\"SQLite\" AND type:tutorial",
+			"performance optimization",
 		},
 	}
 }
@@ -84,7 +84,6 @@ func FormatError(query string, err error) string {
 	info := GetQueryInfo()
 	errorMsg += "\nValid fields: " + strings.Join(info.ValidFields, ", ") + "\n"
 	errorMsg += "Valid types: " + strings.Join(info.ValidTypes, ", ") + "\n"
-	errorMsg += "Valid shortcuts: " + strings.Join(info.ValidShortcuts, ", ") + "\n"
 	errorMsg += "\nExample queries:\n"
 	for _, example := range info.Examples {
 		errorMsg += fmt.Sprintf("  %s\n", example)
@@ -112,9 +111,7 @@ func SuggestCorrection(query string, err error) string {
 		suggestions = append(suggestions, "Valid section types: example, tutorial, topic, application")
 	}
 
-	if strings.Contains(errStr, "unknown shortcut") {
-		suggestions = append(suggestions, "Valid shortcuts: examples, tutorials, topics, applications, toplevel, defaults, templates")
-	}
+
 
 	if strings.Contains(errStr, "expected") {
 		suggestions = append(suggestions, "Check for missing quotes, colons, or parentheses")
@@ -148,16 +145,4 @@ func IsValidType(typeValue string) bool {
 	return validTypes[strings.ToLower(typeValue)]
 }
 
-// IsValidShortcut checks if a shortcut is valid
-func IsValidShortcut(shortcut string) bool {
-	validShortcuts := map[string]bool{
-		"examples":     true,
-		"tutorials":    true,
-		"topics":       true,
-		"applications": true,
-		"toplevel":     true,
-		"defaults":     true,
-		"templates":    true,
-	}
-	return validShortcuts[strings.ToLower(shortcut)]
-}
+

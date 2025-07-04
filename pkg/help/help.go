@@ -500,8 +500,7 @@ func (hs *HelpSystem) printExpressionTree(expr dsl.Expression, depth int) {
 		fmt.Printf("Field: %s = \"%s\"\n", e.Field, e.Value)
 	case *dsl.TextExpression:
 		fmt.Printf("Text: \"%s\"\n", e.Text)
-	case *dsl.IdentifierExpression:
-		fmt.Printf("Identifier: %s\n", e.Value)
+
 	default:
 		fmt.Printf("Unknown: %s\n", expr.String())
 	}

@@ -39,8 +39,6 @@ func (c *Compiler) Compile(expr Expression) (store.Predicate, error) {
 		return c.compileFieldExpression(e)
 	case *TextExpression:
 		return c.compileTextExpression(e)
-	case *IdentifierExpression:
-		return c.compileIdentifierExpression(e)
 	default:
 		return nil, fmt.Errorf("unknown expression type: %T", expr)
 	}
@@ -156,29 +154,7 @@ func (c *Compiler) compileTextExpression(expr *TextExpression) (store.Predicate,
 	return store.TextSearch(expr.Text), nil
 }
 
-// compileIdentifierExpression compiles shortcut identifiers
-func (c *Compiler) compileIdentifierExpression(expr *IdentifierExpression) (store.Predicate, error) {
-	value := strings.ToLower(expr.Value)
 
-	switch value {
-	case "examples":
-		return store.IsExample(), nil
-	case "tutorials":
-		return store.IsTutorial(), nil
-	case "topics":
-		return store.IsGeneralTopic(), nil
-	case "applications":
-		return store.IsApplication(), nil
-	case "toplevel":
-		return store.IsTopLevel(), nil
-	case "defaults":
-		return store.ShownByDefault(), nil
-	case "templates":
-		return store.IsTemplate(), nil
-	default:
-		return nil, fmt.Errorf("unknown shortcut: %s", value)
-	}
-}
 
 // ValidateField validates if a field name is supported
 func (c *Compiler) ValidateField(field string) bool {
@@ -199,7 +175,4 @@ func (c *Compiler) GetValidTypeValues() []string {
 	return []string{"example", "tutorial", "topic", "application"}
 }
 
-// GetValidShortcuts returns valid shortcut identifiers
-func (c *Compiler) GetValidShortcuts() []string {
-	return []string{"examples", "tutorials", "topics", "applications", "toplevel", "defaults", "templates"}
-}
+

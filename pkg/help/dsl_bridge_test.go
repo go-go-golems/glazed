@@ -71,9 +71,19 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 			expected: 1, // Only example-2
 		},
 		{
-			name:     "Legacy fallback",
-			query:    "examples",
+			name:     "Text search fallback",
+			query:    "type:example",
 			expected: 2, // example-1 and example-2
+		},
+		{
+			name:     "Implicit text search",
+			query:    "another example",
+			expected: 1, // Should find example-2 which contains "Another example"
+		},
+		{
+			name:     "Single quote text search",
+			query:    "'This is an example'",
+			expected: 1, // Should find example-1
 		},
 	}
 

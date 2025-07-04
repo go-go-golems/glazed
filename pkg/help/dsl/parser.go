@@ -60,15 +60,7 @@ func (te *TextExpression) String() string {
 	return fmt.Sprintf("\"%s\"", te.Text)
 }
 
-// IdentifierExpression represents a shortcut identifier
-type IdentifierExpression struct {
-	Value string
-}
 
-func (ie *IdentifierExpression) expressionNode() {}
-func (ie *IdentifierExpression) String() string {
-	return ie.Value
-}
 
 // Parser parses tokens into an AST
 type Parser struct {
@@ -168,7 +160,7 @@ func (p *Parser) parsePrimaryExpression() Expression {
 		if p.peekToken.Type == TokenColon {
 			return p.parseFieldExpression()
 		}
-		return p.parseIdentifierExpression()
+		return p.parseImplicitTextExpression()
 	default:
 		p.addError(fmt.Sprintf("unexpected token: %s", p.curToken.Type))
 		return nil
@@ -222,11 +214,27 @@ func (p *Parser) parseFieldExpression() Expression {
 	}
 }
 
-// parseIdentifierExpression parses shortcut identifiers
-func (p *Parser) parseIdentifierExpression() Expression {
-	value := p.curToken.Value
-	p.nextToken()
-	return &IdentifierExpression{Value: strings.ToLower(value)}
+// parseImplicitTextExpression parses unquoted text as implicit text search
+func (p *Parser) parseImplicitTextExpression() Expression {
+	var textParts []string
+	
+	// Collect all consecutive identifiers until we hit a boolean operator or EOF
+	for p.curToken.Type == TokenIdent {
+		textParts = append(textParts, p.curToken.Value)
+		p.nextToken()
+		
+		// Stop if we hit a boolean operator, colon, or parenthesis
+		if p.curToken.Type == TokenAnd || p.curToken.Type == TokenOr || 
+		   p.curToken.Type == TokenNot || p.curToken.Type == TokenColon ||
+		   p.curToken.Type == TokenLeftParen || p.curToken.Type == TokenRightParen ||
+		   p.curToken.Type == TokenEOF {
+			break
+		}
+	}
+	
+	// Join all collected text parts
+	text := strings.Join(textParts, " ")
+	return &TextExpression{Text: text}
 }
 
 // addError adds an error to the parser

@@ -139,7 +139,11 @@ func (l *Lexer) NextToken() Token {
 		tok = Token{Type: TokenRightParen, Value: string(l.ch), Position: l.position, Line: l.line, Column: l.column}
 	case '"':
 		tok.Type = TokenString
-		tok.Value = l.readString()
+		tok.Value = l.readString('"')
+		return tok // readString advances position, so we don't call readChar
+	case '\'':
+		tok.Type = TokenString
+		tok.Value = l.readString('\'')
 		return tok // readString advances position, so we don't call readChar
 	case 0:
 		tok.Type = TokenEOF
@@ -162,17 +166,17 @@ func (l *Lexer) NextToken() Token {
 }
 
 // readString reads a quoted string
-func (l *Lexer) readString() string {
+func (l *Lexer) readString(quote byte) string {
 	position := l.position + 1
 	for {
 		l.readChar()
-		if l.ch == '"' || l.ch == 0 {
+		if l.ch == quote || l.ch == 0 {
 			break
 		}
 	}
 	value := l.input[position:l.position]
 	// Advance past the closing quote
-	if l.ch == '"' {
+	if l.ch == quote {
 		l.readChar()
 	}
 	return value
