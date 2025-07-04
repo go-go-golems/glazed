@@ -2,11 +2,11 @@ package store
 
 import (
 	"context"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/query"
 	"os"
 	"path/filepath"
 	"testing"
-	"github.com/go-go-golems/glazed/pkg/help/query"
-	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
 const adv1 = `---
@@ -133,4 +133,4 @@ func TestAdvancedQueries(t *testing.T) {
 	if len(results) != 1 || results[0].Slug != "adv-2" {
 		t.Errorf("expected only adv-2 for NOT cmdA, got %+v", results)
 	}
-} 
+}

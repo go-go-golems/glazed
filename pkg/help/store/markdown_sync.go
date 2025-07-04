@@ -2,10 +2,10 @@ package store
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
 // SyncMarkdownDir walks a directory, loads all .md files, and upserts them into the store.
@@ -18,7 +18,7 @@ func (s *Store) SyncMarkdownDir(dir string) ([]*model.Section, error) {
 		if info.IsDir() || !strings.HasSuffix(info.Name(), ".md") {
 			return nil
 		}
-		sec, err := LoadSectionFromMarkdown(path)
+		sec, err := model.LoadSectionFromMarkdown(path)
 		if err != nil {
 			return fmt.Errorf("load %s: %w", path, err)
 		}
@@ -36,4 +36,4 @@ func (s *Store) SyncMarkdownDir(dir string) ([]*model.Section, error) {
 		return nil, fmt.Errorf("rebuild fts: %w", err)
 	}
 	return sections, nil
-} 
+}

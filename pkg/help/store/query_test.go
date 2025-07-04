@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
-	"os"
-	"testing"
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/query"
+	"os"
+	"testing"
 )
 
 func TestFindSections(t *testing.T) {
@@ -166,4 +166,4 @@ func TestFTSBooleanAndPunctuation(t *testing.T) {
 	if len(results) == 0 || results[0].Slug != "fts-d" {
 		t.Errorf("expected fts-d for 'hello', got %+v", results)
 	}
-} 
+}

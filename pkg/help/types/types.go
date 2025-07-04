@@ -23,4 +23,4 @@ func SectionTypeFromStringUnsafe(s string) SectionType {
 		return SectionTutorial
 	}
 	return SectionGeneralTopic
-} 
+}

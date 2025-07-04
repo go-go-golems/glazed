@@ -2,8 +2,8 @@ package query
 
 import (
 	"fmt"
-	"strings"
 	"github.com/go-go-golems/glazed/pkg/help/model"
+	"strings"
 )
 
 var joinCounter int32
@@ -11,9 +11,9 @@ var joinCounter int32
 type Predicate func(*Compiler)
 
 type Compiler struct {
-	joins  []string
-	wheres []string
-	args   []any
+	joins        []string
+	wheres       []string
+	args         []any
 	aliasCounter int
 }
 
@@ -177,4 +177,4 @@ func NotHasCommand(cmd string) Predicate {
 	return func(c *Compiler) {
 		c.addWhere("NOT EXISTS (SELECT 1 FROM section_commands nc WHERE nc.section_id = s.id AND nc.command = ?)", cmd)
 	}
-} 
+}

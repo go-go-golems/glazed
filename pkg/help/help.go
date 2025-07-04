@@ -131,7 +131,7 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 			if !strings.HasSuffix(entry.Name(), ".md") || strings.ToLower(entry.Name()) == "readme.md" {
 				continue
 			}
-			section, err := store.LoadSectionFromMarkdown(filePath)
+			section, err := model.LoadSectionFromMarkdown(filePath)
 			if err != nil {
 				log.Debug().Err(err).Str("file", filePath).Msg("Failed to load section from file")
 				continue

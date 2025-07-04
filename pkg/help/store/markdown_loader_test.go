@@ -1,9 +1,9 @@
 package store
 
 import (
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"os"
 	"testing"
-	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
 const sampleMarkdown = `---
@@ -25,7 +25,7 @@ func TestLoadSectionFromMarkdown(t *testing.T) {
 	}
 	defer os.Remove(path)
 
-	sec, err := LoadSectionFromMarkdown(path)
+	sec, err := model.LoadSectionFromMarkdown(path)
 	if err != nil {
 		t.Fatalf("LoadSectionFromMarkdown failed: %v", err)
 	}
@@ -52,7 +52,7 @@ No extras.`
 		t.Fatalf("failed to write test markdown: %v", err)
 	}
 	defer os.Remove(path)
-	sec, err := LoadSectionFromMarkdown(path)
+	sec, err := model.LoadSectionFromMarkdown(path)
 	if err != nil {
 		t.Fatalf("LoadSectionFromMarkdown failed: %v", err)
 	}
@@ -102,8 +102,8 @@ Bad front-matter.`
 		t.Fatalf("failed to write test markdown: %v", err)
 	}
 	defer os.Remove(path)
-	_, err := LoadSectionFromMarkdown(path)
+	_, err := model.LoadSectionFromMarkdown(path)
 	if err == nil {
 		t.Errorf("expected error for malformed front-matter, got nil")
 	}
-} 
+}

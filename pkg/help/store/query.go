@@ -29,4 +29,4 @@ func (s *Store) Find(ctx context.Context, pred query.Predicate) ([]*model.Sectio
 		result = append(result, sec)
 	}
 	return result, nil
-} 
+}

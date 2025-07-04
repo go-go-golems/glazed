@@ -16,4 +16,4 @@ func TestOpenAndSchema(t *testing.T) {
 	if err := s.Close(); err != nil {
 		t.Fatalf("failed to close store: %v", err)
 	}
-} 
+}

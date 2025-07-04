@@ -25,4 +25,4 @@ func TestSectionStruct(t *testing.T) {
 	if s.SectionType != SectionTutorial {
 		t.Errorf("expected SectionType 'Tutorial', got '%s'", s.SectionType)
 	}
-} 
+}

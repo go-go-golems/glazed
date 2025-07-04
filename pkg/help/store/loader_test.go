@@ -1,9 +1,9 @@
 package store
 
 import (
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"os"
 	"testing"
-	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
 func TestUpsertSection(t *testing.T) {
@@ -40,4 +40,4 @@ func TestUpsertSection(t *testing.T) {
 	if slug != sec.Slug || title != sec.Title || sectionType != sec.SectionType.String() || isTopLevel != sec.IsTopLevel {
 		t.Errorf("section data mismatch: got %v, want %v", []any{slug, title, sectionType, isTopLevel}, []any{sec.Slug, sec.Title, sec.SectionType.String(), sec.IsTopLevel})
 	}
-} 
+}

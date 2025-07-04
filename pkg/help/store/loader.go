@@ -77,4 +77,4 @@ func (s *Store) UpsertSection(sec *model.Section) error {
 		return fmt.Errorf("commit: %w", err)
 	}
 	return nil
-} 
+}

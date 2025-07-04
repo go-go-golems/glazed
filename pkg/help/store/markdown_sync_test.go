@@ -51,4 +51,4 @@ func TestSyncMarkdownDir(t *testing.T) {
 			t.Errorf("section %s not found in loaded sections", slug)
 		}
 	}
-} 
+}
