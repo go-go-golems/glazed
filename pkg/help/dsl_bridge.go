@@ -65,33 +65,6 @@ func (hs *HelpSystem) QuerySections(query string) ([]*Section, error) {
 	return results, nil
 }
 
-// convertToModelSection converts a legacy Section to a model.Section
-func (hs *HelpSystem) convertToModelSection(section *Section) *model.Section {
-	return &model.Section{
-		Slug:           section.Slug,
-		SectionType:    model.SectionType(section.SectionType),
-		Title:          section.Title,
-		SubTitle:       section.SubTitle,
-		Short:          section.Short,
-		Content:        section.Content,
-		Topics:         section.Topics,
-		Flags:          section.Flags,
-		Commands:       section.Commands,
-		IsTopLevel:     section.IsTopLevel,
-		IsTemplate:     section.IsTemplate,
-		ShowPerDefault: section.ShowPerDefault,
-		Order:          section.Order,
-	}
-}
-
-// convertFromModelSection converts a model.Section to a legacy Section
-func (hs *HelpSystem) convertFromModelSection(modelSection *model.Section) *Section {
-	return &Section{
-		Section:    modelSection,
-		HelpSystem: hs,
-	}
-}
-
 // evaluatePredicate evaluates a predicate against a model section
 func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *model.Section) bool {
 	// Create a temporary in-memory store for evaluation

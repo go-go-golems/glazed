@@ -14,7 +14,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 	// Create an in-memory store
 	st, err := store.NewInMemory()
 	require.NoError(t, err)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 

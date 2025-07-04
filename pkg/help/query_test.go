@@ -73,7 +73,7 @@ func setupTestStore(t *testing.T) *store.Store {
 
 func TestQueryAllTypes(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
@@ -86,7 +86,7 @@ func TestQueryAllTypes(t *testing.T) {
 
 func TestQueryOnlyDefault(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
@@ -100,7 +100,7 @@ func TestQueryOnlyDefault(t *testing.T) {
 
 func TestQueryExamples(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
@@ -120,7 +120,7 @@ func TestQueryExamples(t *testing.T) {
 
 func TestQueryByCommand(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
@@ -134,7 +134,7 @@ func TestQueryByCommand(t *testing.T) {
 
 func TestQueryByTopic(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
@@ -154,7 +154,7 @@ func TestQueryByTopic(t *testing.T) {
 
 func TestQueryOnlyTopics(t *testing.T) {
 	st := setupTestStore(t)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 

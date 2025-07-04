@@ -360,13 +360,6 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 	return store.And(predicates...)
 }
 
-// convertStoreSection converts a model.Section to a help.Section
-func convertStoreSection(storeSection *model.Section) *Section {
-	return &Section{
-		Section: storeSection,
-	}
-}
-
 func (s *SectionQuery) GetRequestedTypesAsString() string {
 	requestedTypes := []string{}
 	for sectionType, requested := range s.Types {

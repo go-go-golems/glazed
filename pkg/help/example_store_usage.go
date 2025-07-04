@@ -15,7 +15,7 @@ func ExampleStoreUsage() {
 	if err != nil {
 		panic(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 
