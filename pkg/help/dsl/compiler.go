@@ -154,8 +154,6 @@ func (c *Compiler) compileTextExpression(expr *TextExpression) (store.Predicate,
 	return store.TextSearch(expr.Text), nil
 }
 
-
-
 // ValidateField validates if a field name is supported
 func (c *Compiler) ValidateField(field string) bool {
 	return c.validFields[strings.ToLower(field)]
@@ -174,5 +172,3 @@ func (c *Compiler) GetValidFields() []string {
 func (c *Compiler) GetValidTypeValues() []string {
 	return []string{"example", "tutorial", "topic", "application"}
 }
-
-

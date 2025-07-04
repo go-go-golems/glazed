@@ -60,8 +60,6 @@ func (te *TextExpression) String() string {
 	return fmt.Sprintf("\"%s\"", te.Text)
 }
 
-
-
 // Parser parses tokens into an AST
 type Parser struct {
 	lexer *Lexer
@@ -217,21 +215,21 @@ func (p *Parser) parseFieldExpression() Expression {
 // parseImplicitTextExpression parses unquoted text as implicit text search
 func (p *Parser) parseImplicitTextExpression() Expression {
 	var textParts []string
-	
+
 	// Collect all consecutive identifiers until we hit a boolean operator or EOF
 	for p.curToken.Type == TokenIdent {
 		textParts = append(textParts, p.curToken.Value)
 		p.nextToken()
-		
+
 		// Stop if we hit a boolean operator, colon, or parenthesis
-		if p.curToken.Type == TokenAnd || p.curToken.Type == TokenOr || 
-		   p.curToken.Type == TokenNot || p.curToken.Type == TokenColon ||
-		   p.curToken.Type == TokenLeftParen || p.curToken.Type == TokenRightParen ||
-		   p.curToken.Type == TokenEOF {
+		if p.curToken.Type == TokenAnd || p.curToken.Type == TokenOr ||
+			p.curToken.Type == TokenNot || p.curToken.Type == TokenColon ||
+			p.curToken.Type == TokenLeftParen || p.curToken.Type == TokenRightParen ||
+			p.curToken.Type == TokenEOF {
 			break
 		}
 	}
-	
+
 	// Join all collected text parts
 	text := strings.Join(textParts, " ")
 	return &TextExpression{Text: text}

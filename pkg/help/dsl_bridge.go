@@ -123,8 +123,6 @@ func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *mode
 func (hs *HelpSystem) queryLegacy(query string) ([]*Section, error) {
 	var results []*Section
 
-
-
 	// Handle field:value queries
 	if strings.Contains(query, ":") {
 		parts := strings.SplitN(query, ":", 2)

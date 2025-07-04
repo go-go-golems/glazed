@@ -115,7 +115,7 @@ func TestImplicitTextSearchWithBooleans(t *testing.T) {
 func TestFormerShortcutsAsTextSearch(t *testing.T) {
 	formerShortcuts := []string{
 		"examples",
-		"tutorials", 
+		"tutorials",
 		"topics",
 		"applications",
 		"toplevel",
@@ -266,7 +266,7 @@ func TestEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		expr, err := Parse(tt.input)
-		
+
 		if tt.shouldError {
 			if err == nil {
 				t.Errorf("input %q (%s): expected error but got none", tt.input, tt.description)
@@ -276,7 +276,7 @@ func TestEdgeCases(t *testing.T) {
 				t.Errorf("input %q (%s): unexpected error: %v", tt.input, tt.description, err)
 				continue
 			}
-			
+
 			if tt.expected != "" && expr.String() != tt.expected {
 				t.Errorf("input %q (%s): got %q, expected %q", tt.input, tt.description, expr.String(), tt.expected)
 			}
@@ -298,14 +298,14 @@ func TestLexerTokenization(t *testing.T) {
 	for _, tt := range tests {
 		lexer1 := NewLexer(tt.input1)
 		lexer2 := NewLexer(tt.input2)
-		
+
 		tok1 := lexer1.NextToken()
 		tok2 := lexer2.NextToken()
-		
+
 		if tok1.Type != tok2.Type {
 			t.Errorf("Token types differ: %q -> %s, %q -> %s", tt.input1, tok1.Type, tt.input2, tok2.Type)
 		}
-		
+
 		if tok1.Type != TokenString {
 			t.Errorf("Expected TokenString, got %s for %q", tok1.Type, tt.input1)
 		}

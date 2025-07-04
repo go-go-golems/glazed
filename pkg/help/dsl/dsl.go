@@ -111,8 +111,6 @@ func SuggestCorrection(query string, err error) string {
 		suggestions = append(suggestions, "Valid section types: example, tutorial, topic, application")
 	}
 
-
-
 	if strings.Contains(errStr, "expected") {
 		suggestions = append(suggestions, "Check for missing quotes, colons, or parentheses")
 	}
@@ -144,5 +142,3 @@ func IsValidType(typeValue string) bool {
 	}
 	return validTypes[strings.ToLower(typeValue)]
 }
-
-
