@@ -2,6 +2,7 @@
 <project version="4">
   <component name="GoLinterSettings">
     <option name="concurrency" value="8" />
+    <option name="customConfigFile" value="$PROJECT_DIR$/.golangci.yml" />
     <option name="enabledLinters">
       <list>
         <option value="ineffassign" />
@@ -13,7 +14,7 @@
         <option value="gosimple" />
       </list>
     </option>
-    <option name="goLinterExe" value="/opt/homebrew/Cellar/golangci-lint/1.50.1/bin/golangci-lint" />
     <option name="linterSelected" value="true" />
+    <option name="useCustomConfigFile" value="true" />
   </component>
 </project>

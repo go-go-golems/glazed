@@ -1,9 +1,12 @@
 package help
 
 import (
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+// Remove all tests that use SectionQuery and FindSections. Replace with tests that use the new predicate-based query system, constructing predicates and using store.Store.Find. Use examples from store/advanced_query_test.go as a template.
 
 func TestSingleQueryAll(t *testing.T) {
 	query := NewSectionQuery().ReturnAllTypes()
@@ -11,7 +14,7 @@ func TestSingleQueryAll(t *testing.T) {
 	sections := []*Section{
 		{
 			Slug:        "topic-1",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 		},
 	}
 	foundSections := query.FindSections(sections)
@@ -27,11 +30,11 @@ func TestQueryOnlyDefault(t *testing.T) {
 	sections := []*Section{
 		{
 			Slug:        "topic-1",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 		},
 		{
 			Slug:           "topic-2",
-			SectionType:    SectionGeneralTopic,
+			SectionType:    model.SectionGeneralTopic,
 			ShowPerDefault: true,
 		},
 	}
@@ -48,23 +51,23 @@ func TestQueryAllExamples(t *testing.T) {
 	sections := []*Section{
 		{
 			Slug:        "topic-1",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 		},
 		{
 			Slug:        "topic-2",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 		},
 		{
 			Slug:        "example-1",
-			SectionType: SectionExample,
+			SectionType: model.SectionExample,
 		},
 		{
 			Slug:        "example-2",
-			SectionType: SectionExample,
+			SectionType: model.SectionExample,
 		},
 		{
 			Slug:        "application-1",
-			SectionType: SectionApplication,
+			SectionType: model.SectionApplication,
 		},
 	}
 
@@ -80,30 +83,30 @@ func TestQueryOnlyJsonCommandExamples(t *testing.T) {
 	sections := []*Section{
 		{
 			Slug:        "topic-1",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 		},
 		{
 			Slug:        "topic-2",
-			SectionType: SectionGeneralTopic,
+			SectionType: model.SectionGeneralTopic,
 			Commands:    []string{"json"},
 		},
 		{
 			Slug:        "example-1",
-			SectionType: SectionExample,
+			SectionType: model.SectionExample,
 			Commands:    []string{"json"},
 		},
 		{
 			Slug:        "example-2",
-			SectionType: SectionExample,
+			SectionType: model.SectionExample,
 		},
 		{
 			Slug:        "example-3",
-			SectionType: SectionExample,
+			SectionType: model.SectionExample,
 			Commands:    []string{"yaml", "docs", "help"},
 		},
 		{
 			Slug:        "application-1",
-			SectionType: SectionApplication,
+			SectionType: model.SectionApplication,
 			Commands:    []string{"json"},
 		},
 	}
@@ -116,52 +119,52 @@ func TestQueryOnlyJsonCommandExamples(t *testing.T) {
 var sections = []*Section{
 	{
 		Slug:        "topic-1",
-		SectionType: SectionGeneralTopic,
+		SectionType: model.SectionGeneralTopic,
 		Topics:      []string{"templates"},
 	},
 	{
 		Slug:        "topic-2",
-		SectionType: SectionGeneralTopic,
+		SectionType: model.SectionGeneralTopic,
 		Topics:      []string{"template-fields"},
 	},
 	{
 		Slug:        "topic-3",
-		SectionType: SectionGeneralTopic,
+		SectionType: model.SectionGeneralTopic,
 		Topics:      []string{"template-fields", "templates"},
 	},
 	{
 		Slug:        "topic-4",
-		SectionType: SectionGeneralTopic,
+		SectionType: model.SectionGeneralTopic,
 		Topics:      []string{"template-fields", "templates", "other"},
 	},
 	{
 		Slug:        "topic-5",
-		SectionType: SectionGeneralTopic,
+		SectionType: model.SectionGeneralTopic,
 		Topics:      []string{"other"},
 	},
 	{
 		Slug:        "example-1",
-		SectionType: SectionExample,
+		SectionType: model.SectionExample,
 		Topics:      []string{"templates"},
 	},
 	{
 		Slug:        "example-2",
-		SectionType: SectionExample,
+		SectionType: model.SectionExample,
 		Topics:      []string{"template-fields"},
 	},
 	{
 		Slug:        "example-3",
-		SectionType: SectionExample,
+		SectionType: model.SectionExample,
 		Topics:      []string{"template-fields", "templates"},
 	},
 	{
 		Slug:        "example-4",
-		SectionType: SectionExample,
+		SectionType: model.SectionExample,
 		Topics:      []string{"template-fields", "templates", "other"},
 	},
 	{
 		Slug:        "example-5",
-		SectionType: SectionExample,
+		SectionType: model.SectionExample,
 		Topics:      []string{"other"},
 	},
 }

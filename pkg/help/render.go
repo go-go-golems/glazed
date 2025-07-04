@@ -9,7 +9,11 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 
+	"context"
 	"github.com/charmbracelet/glamour"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/query"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/mattn/go-isatty"
 )
@@ -51,7 +55,8 @@ func RenderToMarkdown(t *template.Template, data interface{}, output *os.File) (
 }
 
 type RenderOptions struct {
-	Query           *SectionQuery
+	Predicate       query.Predicate
+	Store           *store.Store
 	ShowAllSections bool
 	ShowShortTopic  bool
 	HelpCommand     string
@@ -60,65 +65,54 @@ type RenderOptions struct {
 	OnlyTopLevel    bool
 }
 
-func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {
-	sections := userQuery.FindSections(hs.Sections)
-	data := map[string]interface{}{}
-
-	// check if the user has restricted the help to only specific commands, flags or topics
-	// (this is before adding our own restriction based on the command or toplevel we are
-	// going to show the help for)
-	hasUserRestrictedQuery := userQuery.HasOnlyQueries()
-	// Check if the user has restricted the userQuery to only certain return types
-	hasUserRestrictedTypes := userQuery.HasRestrictedReturnTypes()
-
-	if len(sections) == 0 {
-		var alternativeSections []*Section
-
-		if hasUserRestrictedQuery {
-			// in this case, we should widen our userQuery to not have restrictions on commands, flags, topics
-			alternativeQuery := userQuery.Clone().ResetOnlyQueries()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
+// Add a helper function to convert []*model.Section to []*Section
+func modelSectionsToSections(modelSections []*model.Section) []*Section {
+	sections := make([]*Section, len(modelSections))
+	for i, ms := range modelSections {
+		sections[i] = &Section{
+			Slug:           ms.Slug,
+			SectionType:    model.SectionTypeFromStringUnsafe(string(ms.SectionType)),
+			Title:          ms.Title,
+			SubTitle:       ms.Subtitle,
+			Short:          ms.Short,
+			Content:        ms.Content,
+			Topics:         ms.Topics,
+			Flags:          ms.Flags,
+			Commands:       ms.Commands,
+			IsTopLevel:     ms.IsTopLevel,
+			IsTemplate:     ms.IsTemplate,
+			ShowPerDefault: ms.ShowDefault,
+			Order:          ms.Ord,
 		}
-
-		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
-			// in this case, we should widen our userQuery to not have restrictions on return types
-			alternativeQuery := userQuery.Clone().ReturnAllTypes()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
-		}
-
-		if len(alternativeSections) == 0 {
-			// in this case, both the userQuery relaxation and the type relaxation don't return anything,
-			// so we should show all possible options for the command / topLevel
-			alternativeQuery := userQuery.Clone().ResetOnlyQueries().ReturnAllTypes()
-			alternativeSections = alternativeQuery.FindSections(hs.Sections)
-		}
-
-		alternativeHelpPage := NewHelpPage(alternativeSections)
-		data["Help"] = alternativeHelpPage
-	} else {
-		hp := NewHelpPage(sections)
-		data["Help"] = hp
 	}
-
-	noResultsFound := len(sections) == 0 && (userQuery.HasOnlyQueries() || userQuery.HasRestrictedReturnTypes())
-
-	data["NoResultsFound"] = noResultsFound
-	data["QueryString"] = userQuery.GetOnlyQueryAsString()
-	data["RequestedTypes"] = userQuery.GetRequestedTypesAsString()
-	data["Query"] = userQuery
-	data["IsTopLevel"] = userQuery.IsOnlyTopLevel()
-	return data, noResultsFound
+	return sections
 }
 
-func (hs *HelpSystem) RenderTopicHelp(
-	topicSection *Section,
-	options *RenderOptions) (string, error) {
-	userQuery := options.Query
+// In ComputeRenderData, use the helper to convert sections before calling NewHelpPage
+func ComputeRenderData(ctx context.Context, s *store.Store, pred query.Predicate) (map[string]interface{}, bool, error) {
+	modelSections, err := s.Find(ctx, pred)
+	if err != nil {
+		return nil, false, err
+	}
+	sections := modelSectionsToSections(modelSections)
+	data := map[string]interface{}{}
 
-	// TODO(manuel, 2024-08-07) This should also include information about the program itself (that it's embedded in, maybe coming from the helpSystem metadata itself)
-	data, noResultsFound := hs.ComputeRenderData(userQuery)
+	noResultsFound := len(sections) == 0
+	// TODO: Add more query string info if needed
+	data["NoResultsFound"] = noResultsFound
+	data["Help"] = NewHelpPage(sections)
+	return data, noResultsFound, nil
+}
 
-	// TODO(manuel, 2024-08-07) Render templated sections (IsTemplate = true)
+func RenderTopicHelp(
+	ctx context.Context,
+	topicSection *model.Section,
+	options *RenderOptions,
+) (string, error) {
+	data, noResultsFound, err := ComputeRenderData(ctx, options.Store, options.Predicate)
+	if err != nil {
+		return "", err
+	}
 
 	t := template.New("topic")
 	t.Funcs(templating.TemplateFuncs)

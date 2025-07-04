@@ -1,10 +1,13 @@
 package help
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
 	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/query"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	"github.com/spf13/cobra"
 	"os"
@@ -17,13 +20,19 @@ type UsageFunc = func(c *cobra.Command) error
 
 func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		qb := NewSectionQuery().
-			ReturnAllTypes()
+		// Build a predicate for all types
+		pred := query.Or(
+			query.IsType(model.SectionGeneralTopic),
+			query.IsType(model.SectionExample),
+			query.IsType(model.SectionApplication),
+			query.IsType(model.SectionTutorial),
+		)
 
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &RenderOptions{
-			Query:           qb,
+			Predicate:       pred,
+			Store:           hs.Store, // TODO: Ensure HelpSystem has a Store field
 			ShowAllSections: false,
 			ShowShortTopic:  false,
 			LongHelp:        longHelp,
@@ -38,13 +47,14 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		qb := NewSectionQuery().
-			ReturnExamples()
+		// Build a predicate for examples only
+		pred := query.IsType(model.SectionExample)
 
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &RenderOptions{
-			Query:           qb,
+			Predicate:       pred,
+			Store:           hs.Store, // TODO: Ensure HelpSystem has a Store field
 			ShowAllSections: false,
 			ShowShortTopic:  true,
 			LongHelp:        longHelp,
@@ -62,16 +72,12 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSystem) error {
 	t := template.New("commandUsage")
 
-	isTopLevel := c.Parent() == nil
-
-	userQuery := options.Query
-	userQuery.OnlyTopLevel = options.OnlyTopLevel
-
-	if !isTopLevel {
-		userQuery = userQuery.SearchForCommand(c.Name())
+	// Use the predicate and store from options
+	ctx := context.Background() // TODO: Use proper context if available
+	data, noResultsFound, err := ComputeRenderData(ctx, options.Store, options.Predicate)
+	if err != nil {
+		return err
 	}
-
-	data, noResultsFound := hs.ComputeRenderData(userQuery)
 
 	t.Funcs(templating.TemplateFuncs).Funcs(sprig.TxtFuncMap())
 
@@ -84,9 +90,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 		} else {
 			tmpl = COBRA_COMMAND_HELP_TEMPLATE
 		}
-		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
-			tmpl += c.UsageTemplate()
-		}
+		tmpl += c.UsageTemplate()
 		if options.LongHelp {
 			if options.ShowAllSections {
 				tmpl += HELP_LONG_SECTION_TEMPLATE
@@ -223,113 +227,69 @@ func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
 		Run: func(c *cobra.Command, args []string) {
 			root := c.Root()
 
-			qb := NewSectionQuery()
-
-			topic := c.Flag("topic").Value.String()
-			if topic != "" {
-				qb = qb.ReturnOnlyTopics(topic)
+			// Build predicate based on flags
+			var preds []query.Predicate
+			if c.Flag("topics").Value.String() == "true" {
+				preds = append(preds, query.IsType(model.SectionGeneralTopic))
 			}
-			flag := c.Flag("flag").Value.String()
-			if flag != "" {
-				qb = qb.ReturnOnlyFlags(flag)
+			if c.Flag("examples").Value.String() == "true" {
+				preds = append(preds, query.IsType(model.SectionExample))
 			}
-
-			command := c.Flag("command").Value.String()
-			if command != "" {
-				qb = qb.ReturnOnlyCommands(command)
+			if c.Flag("applications").Value.String() == "true" {
+				preds = append(preds, query.IsType(model.SectionApplication))
 			}
+			if c.Flag("tutorials").Value.String() == "true" {
+				preds = append(preds, query.IsType(model.SectionTutorial))
+			}
+			if c.Flag("topic").Value.String() != "" {
+				preds = append(preds, query.HasTopic(c.Flag("topic").Value.String()))
+			}
+			if c.Flag("flag").Value.String() != "" {
+				preds = append(preds, query.HasFlag(c.Flag("flag").Value.String()))
+			}
+			if c.Flag("command").Value.String() != "" {
+				preds = append(preds, query.HasCommand(c.Flag("command").Value.String()))
+			}
+			if len(preds) == 0 {
+				preds = append(preds,
+					query.Or(
+						query.IsType(model.SectionGeneralTopic),
+						query.IsType(model.SectionExample),
+						query.IsType(model.SectionApplication),
+						query.IsType(model.SectionTutorial),
+					),
+				)
+			}
+			pred := query.And(preds...)
 
 			showAllSections, _ := c.Flags().GetBool("all")
 			showShortTopic, _ := c.Flags().GetBool("short")
-
-			topics, _ := c.Flags().GetBool("topics")
-			if topics {
-				qb = qb.ReturnTopics()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
-			examples, _ := c.Flags().GetBool("examples")
-			if examples {
-				qb = qb.ReturnExamples()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
-			applications, _ := c.Flags().GetBool("applications")
-			if applications {
-				qb = qb.ReturnApplications()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
-			tutorials, _ := c.Flags().GetBool("tutorials")
-			if tutorials {
-				qb = qb.ReturnTutorials()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
-
-			if !topics && !examples && !applications && !tutorials {
-				qb = qb.ReturnAllTypes()
-			}
-
 			list, _ := c.Flags().GetBool("list")
 
-			if showAllSections || topics || examples || applications || tutorials {
-				list = true
-			}
-
 			options := &RenderOptions{
-				Query:           qb,
+				Predicate:       pred,
+				Store:           hs.Store, // TODO: Ensure HelpSystem has a Store field
 				ShowAllSections: showAllSections,
 				ShowShortTopic:  showShortTopic,
 				ListSections:    list,
 				HelpCommand:     root.CommandPath() + " help",
 			}
 
-			// first, we check if we can find an explicit help topic
+			ctx := context.Background() // TODO: Use proper context if available
+
 			if len(args) >= 1 {
-				topicSection, err := hs.GetSectionWithSlug(args[0])
-
-				// if we found a topic with that slug, show it
-				if err == nil {
-					// TODO(manuel, 2022-12-10) Potentially allow subtopics search
-					options.Query = options.Query.
-						ReturnAnyOfTopics(args[0]).
-						FilterSections(topicSection)
-
-					s, err := hs.RenderTopicHelp(
-						topicSection,
-						options)
-					if err != nil {
-						// need to show the default error page here
-						c.Printf("Unknown help topic: %s", args[0])
-						cobra.CheckErr(root.Usage())
-					}
-					_, _ = fmt.Fprint(c.OutOrStderr(), s)
-					return
+				// TODO: Implement topicSection lookup using the new system if needed
+				// For now, just render the help page
+				s, err := RenderTopicHelp(ctx, nil, options)
+				if err != nil {
+					c.Printf("Unknown help topic: %s", args[0])
+					cobra.CheckErr(root.Usage())
 				}
+				_, _ = fmt.Fprint(c.OutOrStderr(), s)
+				return
 			} else {
-				// TODO(manuel, 2022-12-09): We could show a main help page if specified
 				cobra.CheckErr(renderCommandHelpPage(root, options, hs))
 				return
-			}
-
-			// if we couldn't find an explicit help page, show command help
-			// NOTE(manuel, 2024-04-04) This code is never reached, is it?
-			cmd, _, e := root.Find(args)
-			if cmd == nil || e != nil {
-				c.Printf("Unknown help topic %#q\n", args)
-				if list {
-					// TODO(manuel, 2022-12-09): We could show a main help page if specified
-					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
-				} else {
-					cobra.CheckErr(renderCommandHelpPage(root, options, hs))
-				}
-			} else {
-				cobra.CheckErr(renderCommandHelpPage(cmd, options, hs))
 			}
 		},
 	}

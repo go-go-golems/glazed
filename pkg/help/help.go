@@ -7,49 +7,16 @@ import (
 	"sort"
 	"strings"
 
+	"context"
 	"github.com/adrg/frontmatter"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/query"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
-
-type SectionType int
-
-const (
-	SectionGeneralTopic SectionType = iota
-	SectionExample
-	SectionApplication
-	SectionTutorial
-)
-
-func SectionTypeFromString(s string) (SectionType, error) {
-	switch s {
-	case "GeneralTopic":
-		return SectionGeneralTopic, nil
-	case "Example":
-		return SectionExample, nil
-	case "Application":
-		return SectionApplication, nil
-	case "Tutorial":
-		return SectionTutorial, nil
-	}
-	return SectionGeneralTopic, errors.Errorf("unknown section type %s", s)
-}
-
-func (s SectionType) String() string {
-	switch s {
-	case SectionGeneralTopic:
-		return "GeneralTopic"
-	case SectionExample:
-		return "Example"
-	case SectionApplication:
-		return "Application"
-	case SectionTutorial:
-		return "Tutorial"
-	}
-	return "Unknown"
-}
 
 // Section is a structure describing an actual documentation section.
 //
@@ -64,7 +31,7 @@ func (s SectionType) String() string {
 // Run `glaze help help-system` for more information.
 type Section struct {
 	Slug        string
-	SectionType SectionType
+	SectionType model.SectionType
 
 	Title    string
 	SubTitle string
@@ -104,67 +71,67 @@ func (s *Section) IsForTopic(topic string) bool {
 
 // these should potentially be scoped by command
 
-func (s *Section) DefaultGeneralTopic() []*Section {
-	return NewSectionQuery().
-		ReturnTopics().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) DefaultGeneralTopic() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionGeneralTopic),
+		query.HasTopic(s.Slug),
+		query.ShownByDefault(),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) DefaultExamples() []*Section {
-	return NewSectionQuery().
-		ReturnExamples().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) DefaultExamples() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionExample),
+		query.HasTopic(s.Slug),
+		query.ShownByDefault(),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) OtherExamples() []*Section {
-	return NewSectionQuery().
-		ReturnExamples().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) OtherExamples() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionExample),
+		query.HasTopic(s.Slug),
+		query.Not(query.ShownByDefault()),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) DefaultTutorials() []*Section {
-	return NewSectionQuery().
-		ReturnTutorials().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) DefaultTutorials() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionTutorial),
+		query.HasTopic(s.Slug),
+		query.ShownByDefault(),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) OtherTutorials() []*Section {
-	return NewSectionQuery().
-		ReturnTutorials().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) OtherTutorials() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionTutorial),
+		query.HasTopic(s.Slug),
+		query.Not(query.ShownByDefault()),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) DefaultApplications() []*Section {
-	return NewSectionQuery().
-		ReturnApplications().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) DefaultApplications() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionApplication),
+		query.HasTopic(s.Slug),
+		query.ShownByDefault(),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
-func (s *Section) OtherApplications() []*Section {
-	return NewSectionQuery().
-		ReturnApplications().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+func (s *Section) OtherApplications() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsType(model.SectionApplication),
+		query.HasTopic(s.Slug),
+		query.Not(query.ShownByDefault()),
+	)
+	return s.HelpSystem.Store.Find(context.Background(), pred)
 }
 
 func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
@@ -194,12 +161,12 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 	}
 
 	if sectionType, ok := metaData["SectionType"]; ok {
-		section.SectionType, err = SectionTypeFromString(sectionType.(string))
+		section.SectionType, err = model.SectionTypeFromString(sectionType.(string))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		section.SectionType = SectionGeneralTopic
+		section.SectionType = model.SectionGeneralTopic
 	}
 
 	if slug := metaData["Slug"]; slug != nil {
@@ -280,28 +247,28 @@ func NewHelpPage(sections []*Section) *HelpPage {
 
 	for _, section := range sections {
 		switch section.SectionType {
-		case SectionGeneralTopic:
+		case model.SectionGeneralTopic:
 			if section.ShowPerDefault {
 				ret.DefaultGeneralTopics = append(ret.DefaultGeneralTopics, section)
 			} else {
 				ret.OtherGeneralTopics = append(ret.OtherGeneralTopics, section)
 			}
 			ret.AllGeneralTopics = append(ret.DefaultGeneralTopics, ret.OtherGeneralTopics...)
-		case SectionExample:
+		case model.SectionExample:
 			if section.ShowPerDefault {
 				ret.DefaultExamples = append(ret.DefaultExamples, section)
 			} else {
 				ret.OtherExamples = append(ret.OtherExamples, section)
 			}
 			ret.AllExamples = append(ret.DefaultExamples, ret.OtherExamples...)
-		case SectionApplication:
+		case model.SectionApplication:
 			if section.ShowPerDefault {
 				ret.DefaultApplications = append(ret.DefaultApplications, section)
 			} else {
 				ret.OtherApplications = append(ret.OtherApplications, section)
 			}
 			ret.AllApplications = append(ret.DefaultApplications, ret.OtherApplications...)
-		case SectionTutorial:
+		case model.SectionTutorial:
 			if section.ShowPerDefault {
 				ret.DefaultTutorials = append(ret.DefaultTutorials, section)
 			} else {
@@ -314,16 +281,22 @@ func NewHelpPage(sections []*Section) *HelpPage {
 	return ret
 }
 
-func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
-	sections := NewSectionQuery().
-		ReturnOnlyTopLevel().
-		ReturnAllTypes().
-		FindSections(hs.Sections)
-	return NewHelpPage(sections)
+func (hs *HelpSystem) GetTopLevelHelpPage() ([]*model.Section, error) {
+	pred := query.And(
+		query.IsTopLevel(),
+		query.Or(
+			query.IsType(model.SectionGeneralTopic),
+			query.IsType(model.SectionExample),
+			query.IsType(model.SectionApplication),
+			query.IsType(model.SectionTutorial),
+		),
+	)
+	return hs.Store.Find(context.Background(), pred)
 }
 
 type HelpSystem struct {
 	Sections []*Section
+	Store    *store.Store
 }
 
 func NewHelpSystem() *HelpSystem {
