@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	stateSearch = iota
-	stateViewing
-	stateHelp
-	stateCheatsheet
+	stateNormal     = iota // Default navigation mode
+	stateSearch            // Active search input mode
+	stateViewing           // Viewing selected entry
+	stateHelp              // Help screen
+	stateCheatsheet        // DSL cheatsheet
 )
 
 type Model struct {
@@ -43,6 +44,15 @@ type Model struct {
 
 	// Error state
 	err error
+
+	// Cursor state
+	cursorVisible bool
+	cursorBlink   time.Time
+
+	// Clipboard/output state
+	copyMessage    string
+	copyMessageTs  time.Time
+	quitWithOutput bool
 }
 
 // listItem represents a help section in the list
@@ -124,17 +134,22 @@ func New(helpSystem *help.HelpSystem) *Model {
 
 	return &Model{
 		helpSystem:      helpSystem,
-		state:           stateSearch,
+		state:           stateNormal,
 		searchInput:     "",
 		list:            l,
 		results:         []*help.Section{},
 		glamourRenderer: renderer,
+		cursorVisible:   true,
+		cursorBlink:     time.Now(),
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
 	// Load initial results (all sections)
-	return m.search("")
+	return tea.Batch(
+		m.search(""),
+		m.tickCursor(),
+	)
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -159,10 +174,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Global keys available from any state
 		switch msg.String() {
 		case "ctrl+c":
+			// Check if we're in normal mode with a selected section and want to quit with output
+			if m.state == stateNormal && len(m.results) > 0 {
+				selected := m.list.Index()
+				if selected >= 0 && selected < len(m.results) {
+					m.currentSection = m.results[selected]
+					m.quitWithOutput = true
+				}
+			}
 			return m, tea.Quit
 		}
 
 		switch m.state {
+		case stateNormal:
+			return m.updateNormal(msg)
 		case stateSearch:
 			return m.updateSearch(msg)
 		case stateViewing:
@@ -185,15 +210,34 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmd = m.list.SetItems(items)
 		return m, cmd
+
+	case cursorTickMsg:
+		m.cursorVisible = !m.cursorVisible
+		return m, m.tickCursor()
+
+	case copySuccessMsg:
+		m.copyMessage = "Copied to clipboard!"
+		m.copyMessageTs = time.Now()
+		return m, nil
+
+	case copyErrorMsg:
+		m.copyMessage = fmt.Sprintf("Copy failed: %v", msg.err)
+		m.copyMessageTs = time.Now()
+		return m, nil
 	}
 
 	return m, nil
 }
 
-func (m *Model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *Model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg.String() {
+	case "/":
+		// Enter search mode
+		m.state = stateSearch
+		return m, nil
+
 	case "?":
 		m.state = stateHelp
 		return m, nil
@@ -213,10 +257,25 @@ func (m *Model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "backspace", "ctrl+h":
-		if len(m.searchInput) > 0 {
-			m.searchInput = m.searchInput[:len(m.searchInput)-1]
-			return m, m.search(m.searchInput)
+	case "y":
+		// Copy selected section to clipboard
+		if len(m.results) > 0 {
+			selected := m.list.Index()
+			if selected >= 0 && selected < len(m.results) {
+				return m, m.copySection(m.results[selected])
+			}
+		}
+		return m, nil
+
+	case "o":
+		// Quit and output selected section
+		if len(m.results) > 0 {
+			selected := m.list.Index()
+			if selected >= 0 && selected < len(m.results) {
+				m.currentSection = m.results[selected]
+				m.quitWithOutput = true
+				return m, tea.Quit
+			}
 		}
 		return m, nil
 
@@ -231,6 +290,32 @@ func (m *Model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "pgup", "pgdown":
 		m.list, cmd = m.list.Update(msg)
 		return m, cmd
+
+	default:
+		// Handle other navigation keys with the list
+		m.list, cmd = m.list.Update(msg)
+		return m, cmd
+	}
+}
+
+func (m *Model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "enter":
+		// Execute search and exit search mode
+		m.state = stateNormal
+		return m, m.search(m.searchInput)
+
+	case "esc":
+		// Cancel search and exit search mode
+		m.state = stateNormal
+		return m, nil
+
+	case "backspace", "ctrl+h":
+		if len(m.searchInput) > 0 {
+			m.searchInput = m.searchInput[:len(m.searchInput)-1]
+			return m, m.search(m.searchInput)
+		}
+		return m, nil
 
 	default:
 		// Handle character input for search - check for runes first
@@ -258,9 +343,7 @@ func (m *Model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// Handle other keys with the list
-		m.list, cmd = m.list.Update(msg)
-		return m, cmd
+		return m, nil
 	}
 }
 
@@ -277,7 +360,22 @@ func (m *Model) updateViewing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case "esc", "backspace", "q":
-		m.state = stateSearch
+		m.state = stateNormal
+		return m, nil
+
+	case "ctrl+y":
+		// Copy current section to clipboard
+		if m.currentSection != nil {
+			return m, m.copySection(m.currentSection)
+		}
+		return m, nil
+
+	case "ctrl+o":
+		// Quit and output current section
+		if m.currentSection != nil {
+			m.quitWithOutput = true
+			return m, tea.Quit
+		}
 		return m, nil
 
 	default:
@@ -290,7 +388,7 @@ func (m *Model) updateViewing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) updateHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "?", "q", "enter", "backspace":
-		m.state = stateSearch
+		m.state = stateNormal
 		return m, nil
 	}
 	return m, nil
@@ -299,7 +397,7 @@ func (m *Model) updateHelp(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) updateCheatsheet(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "ctrl+h", "f1", "q", "enter", "backspace":
-		m.state = stateSearch
+		m.state = stateNormal
 		return m, nil
 	}
 	return m, nil
@@ -311,6 +409,8 @@ func (m *Model) View() string {
 	}
 
 	switch m.state {
+	case stateNormal:
+		return m.viewNormal()
 	case stateSearch:
 		return m.viewSearch()
 	case stateViewing:
@@ -333,19 +433,33 @@ func (m *Model) viewSearch() string {
 		Foreground(lipgloss.Color("12")).
 		MarginBottom(1)
 
-	s.WriteString(headerStyle.Render("Glazed Help System"))
+	s.WriteString(headerStyle.Render("Glazed Help System - Search Mode"))
 	s.WriteString("\n")
 
-	// Search box
+	// Search box - active with cursor
 	searchStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("8")).
+		BorderForeground(lipgloss.Color("12")). // Highlight active search
 		Padding(0, 1).
 		Width(m.width - 4)
 
-	searchPrompt := fmt.Sprintf("Search: %s", m.searchInput)
+	cursor := ""
+	if m.cursorVisible {
+		cursor = "█"
+	}
+	searchPrompt := fmt.Sprintf("Search: %s%s", m.searchInput, cursor)
 	s.WriteString(searchStyle.Render(searchPrompt))
-	s.WriteString("\n\n")
+	s.WriteString("\n")
+
+	// Copy message if present
+	if m.copyMessage != "" && time.Since(m.copyMessageTs) < 2*time.Second {
+		copyStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("10")).
+			Italic(true)
+		s.WriteString(copyStyle.Render(m.copyMessage))
+		s.WriteString("\n")
+	}
+	s.WriteString("\n")
 
 	// List
 	s.WriteString(m.list.View())
@@ -356,7 +470,55 @@ func (m *Model) viewSearch() string {
 		Foreground(lipgloss.Color("8")).
 		Italic(true)
 
-	instructions := "enter: select • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
+	instructions := "enter: execute search • esc: cancel • type to search • ctrl+c: quit"
+	s.WriteString(instructionStyle.Render(instructions))
+
+	return s.String()
+}
+
+func (m *Model) viewNormal() string {
+	var s strings.Builder
+
+	// Header
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("12")).
+		MarginBottom(1)
+
+	s.WriteString(headerStyle.Render("Glazed Help System"))
+	s.WriteString("\n")
+
+	// Search box - inactive in normal mode
+	searchStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("8")).
+		Padding(0, 1).
+		Width(m.width - 4)
+
+	searchPrompt := fmt.Sprintf("Search: %s (press / to search)", m.searchInput)
+	s.WriteString(searchStyle.Render(searchPrompt))
+	s.WriteString("\n")
+
+	// Copy message if present
+	if m.copyMessage != "" && time.Since(m.copyMessageTs) < 2*time.Second {
+		copyStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("10")).
+			Italic(true)
+		s.WriteString(copyStyle.Render(m.copyMessage))
+		s.WriteString("\n")
+	}
+	s.WriteString("\n")
+
+	// List
+	s.WriteString(m.list.View())
+	s.WriteString("\n")
+
+	// Instructions
+	instructionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("8")).
+		Italic(true)
+
+	instructions := "/: search • enter: select • y: copy • o: output • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
 	s.WriteString(instructionStyle.Render(instructions))
 
 	return s.String()
@@ -393,12 +555,21 @@ func (m *Model) viewSection() string {
 	s.WriteString(contentStyle.Render(m.viewport.View()))
 	s.WriteString("\n")
 
+	// Copy message if present
+	if m.copyMessage != "" && time.Since(m.copyMessageTs) < 2*time.Second {
+		copyStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("10")).
+			Italic(true)
+		s.WriteString(copyStyle.Render(m.copyMessage))
+		s.WriteString("\n")
+	}
+
 	// Instructions
 	instructionStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("8")).
 		Italic(true)
 
-	instructions := "↑/↓: scroll • esc/q: back • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
+	instructions := "↑/↓: scroll • ctrl+y: copy • ctrl+o: output • esc/q: back • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
 	s.WriteString(instructionStyle.Render(instructions))
 
 	return s.String()
@@ -415,25 +586,35 @@ func (m *Model) viewHelp() string {
 	help := `
 GLAZED HELP SYSTEM - KEYBOARD SHORTCUTS
 
-SEARCH MODE:
-  Type             Search for text
+NORMAL MODE (default):
+  /                Enter search mode
   ↑/↓ or j/k       Navigate results
   Enter            View selected entry
-  Backspace        Delete search character
+  Y                Copy selected entry to clipboard
+  O                Quit and output selected entry
   ?                Show this help
   Ctrl+H or F1     Show query DSL help
+  Ctrl+C           Quit
+
+SEARCH MODE (activated by /):
+  Type             Search for text
+  Enter            Execute search and return to normal mode
+  Esc              Cancel search and return to normal mode
+  Backspace        Delete search character
   Ctrl+C           Quit
 
 VIEWING MODE:
   ↑/↓ or j/k       Scroll content
   Page Up/Down     Scroll page
-  q/Esc/Backspace  Return to search
+  Ctrl+Y           Copy current entry to clipboard
+  Ctrl+O           Quit and output current entry
+  q/Esc/Backspace  Return to normal mode
   ?                Show this help
   Ctrl+H or F1     Show query DSL help
   Ctrl+C           Quit
 
 HELP/CHEATSHEET MODE:
-  Any key          Return to search
+  Any key          Return to normal mode
   Ctrl+C           Quit
 
 QUERY DSL EXAMPLES:
@@ -498,6 +679,14 @@ Press any key to return to search...`
 type searchResultsMsg struct {
 	results []*help.Section
 	err     error
+}
+
+type cursorTickMsg struct{}
+
+type copySuccessMsg struct{}
+
+type copyErrorMsg struct {
+	err error
 }
 
 func (m *Model) search(query string) tea.Cmd {
@@ -576,4 +765,72 @@ func (m *Model) renderContent(section *help.Section) string {
 	s.WriteString(content)
 
 	return s.String()
+}
+
+func (m *Model) tickCursor() tea.Cmd {
+	return tea.Tick(500*time.Millisecond, func(t time.Time) tea.Msg {
+		return cursorTickMsg{}
+	})
+}
+
+func (m *Model) copySection(section *help.Section) tea.Cmd {
+	return func() tea.Msg {
+		content := m.formatSectionForCopy(section)
+		err := clipboard.WriteAll(content)
+		if err != nil {
+			return copyErrorMsg{err: err}
+		}
+		return copySuccessMsg{}
+	}
+}
+
+func (m *Model) formatSectionForCopy(section *help.Section) string {
+	var s strings.Builder
+
+	// Title
+	title := section.Title
+	if title == "" {
+		title = section.Slug
+	}
+	s.WriteString(fmt.Sprintf("# %s\n\n", title))
+
+	// Metadata
+	var metadata []string
+	if section.SectionType != 0 {
+		metadata = append(metadata, fmt.Sprintf("Type: %s", section.SectionType.String()))
+	}
+	if len(section.Topics) > 0 {
+		metadata = append(metadata, fmt.Sprintf("Topics: %s", strings.Join(section.Topics, ", ")))
+	}
+	if len(section.Commands) > 0 {
+		metadata = append(metadata, fmt.Sprintf("Commands: %s", strings.Join(section.Commands, ", ")))
+	}
+	if len(section.Flags) > 0 {
+		metadata = append(metadata, fmt.Sprintf("Flags: %s", strings.Join(section.Flags, ", ")))
+	}
+
+	if len(metadata) > 0 {
+		s.WriteString(fmt.Sprintf("*%s*\n\n", strings.Join(metadata, " • ")))
+	}
+
+	// Content
+	s.WriteString(section.Content)
+
+	return s.String()
+}
+
+// SetSize sets the UI dimensions for testing
+func (m *Model) SetSize(width, height int) {
+	m.width = width
+	m.height = height
+}
+
+// FormatSectionForCopy exposes the internal method for testing
+func (m *Model) FormatSectionForCopy(section *help.Section) string {
+	return m.formatSectionForCopy(section)
+}
+
+// State returns the current state for testing
+func (m *Model) State() int {
+	return m.state
 }

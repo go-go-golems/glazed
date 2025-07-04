@@ -16,8 +16,33 @@ func RunUI(helpSystem *help.HelpSystem) error {
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		return fmt.Errorf("error running help UI: %w", err)
+	}
+
+	// Check if we should output the selected section
+	if m, ok := finalModel.(*Model); ok && m.quitWithOutput && m.currentSection != nil {
+		// Check if output is piped or we're in an interactive terminal
+		if isatty.IsTerminal(os.Stdout.Fd()) {
+			// Interactive terminal - render with glamour
+			content := m.currentSection.Content
+			if content != "" {
+				renderer, err := glamour.NewTermRenderer(
+					glamour.WithAutoStyle(),
+					glamour.WithWordWrap(120),
+				)
+				if err == nil {
+					rendered, err := renderer.Render(content)
+					if err == nil {
+						fmt.Print(rendered)
+						return nil
+					}
+				}
+			}
+		}
+		// Fallback to plain text for piped output or if glamour fails
+		fmt.Print(m.currentSection.Content)
 	}
 
 	return nil
