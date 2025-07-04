@@ -102,7 +102,9 @@ func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *mode
 	if err != nil {
 		return false
 	}
-	defer memStore.Close()
+	defer func() {
+		_ = memStore.Close()
+	}()
 
 	// Insert the section into the temporary store
 	err = memStore.Insert(context.Background(), section)

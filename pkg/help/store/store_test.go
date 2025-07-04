@@ -12,7 +12,9 @@ import (
 func TestStore_BasicOperations(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	ctx := context.Background()
 
@@ -81,7 +83,9 @@ func TestStore_BasicOperations(t *testing.T) {
 func TestStore_Upsert(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	ctx := context.Background()
 
@@ -118,7 +122,9 @@ func TestStore_Upsert(t *testing.T) {
 func TestStore_List(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	ctx := context.Background()
 
@@ -166,7 +172,9 @@ func TestStore_List(t *testing.T) {
 func TestStore_Clear(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	ctx := context.Background()
 
@@ -198,7 +206,9 @@ func TestStore_Clear(t *testing.T) {
 func TestStore_StringFields(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	ctx := context.Background()
 

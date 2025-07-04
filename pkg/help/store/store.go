@@ -304,7 +304,9 @@ func (s *Store) List(ctx context.Context, orderBy string) ([]*model.Section, err
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list sections")
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var sections []*model.Section
 	for rows.Next() {

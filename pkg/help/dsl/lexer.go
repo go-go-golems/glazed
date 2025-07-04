@@ -112,14 +112,6 @@ func (l *Lexer) readChar() {
 	}
 }
 
-// peekChar returns the next character without advancing position
-func (l *Lexer) peekChar() byte {
-	if l.readPosition >= len(l.input) {
-		return 0
-	}
-	return l.input[l.readPosition]
-}
-
 // NextToken returns the next token
 func (l *Lexer) NextToken() Token {
 	var tok Token

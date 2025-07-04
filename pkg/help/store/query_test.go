@@ -12,7 +12,7 @@ import (
 func setupTestStore(t *testing.T) *Store {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	t.Cleanup(func() { store.Close() })
+	t.Cleanup(func() { _ = store.Close() })
 
 	ctx := context.Background()
 

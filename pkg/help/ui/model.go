@@ -363,14 +363,14 @@ func (m *Model) updateViewing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.state = stateNormal
 		return m, nil
 
-	case "ctrl+y":
+	case "y":
 		// Copy current section to clipboard
 		if m.currentSection != nil {
 			return m, m.copySection(m.currentSection)
 		}
 		return m, nil
 
-	case "ctrl+o":
+	case "o":
 		// Quit and output current section
 		if m.currentSection != nil {
 			m.quitWithOutput = true
@@ -569,7 +569,7 @@ func (m *Model) viewSection() string {
 		Foreground(lipgloss.Color("8")).
 		Italic(true)
 
-	instructions := "↑/↓: scroll • ctrl+y: copy • ctrl+o: output • esc/q: back • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
+	instructions := "↑/↓: scroll • y: copy • o: output • esc/q: back • ?: help • ctrl+h/F1: query help • ctrl+c: quit"
 	s.WriteString(instructionStyle.Render(instructions))
 
 	return s.String()
@@ -606,8 +606,8 @@ SEARCH MODE (activated by /):
 VIEWING MODE:
   ↑/↓ or j/k       Scroll content
   Page Up/Down     Scroll page
-  Ctrl+Y           Copy current entry to clipboard
-  Ctrl+O           Quit and output current entry
+  Y                Copy current entry to clipboard
+  O                Quit and output current entry
   q/Esc/Backspace  Return to normal mode
   ?                Show this help
   Ctrl+H or F1     Show query DSL help

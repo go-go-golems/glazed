@@ -15,7 +15,9 @@ func Example() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer hs.Close()
+	defer func() {
+		_ = hs.Close()
+	}()
 
 	// Add some example sections
 	sections := []*model.Section{
@@ -125,7 +127,9 @@ func Example_advancedQuery() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer hs.Close()
+	defer func() {
+		_ = hs.Close()
+	}()
 
 	// Add test data
 	sections := []*model.Section{
@@ -209,7 +213,9 @@ func Example_legacyCompatibility() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer hs.Close()
+	defer func() {
+		_ = hs.Close()
+	}()
 
 	// Add a section using the legacy-compatible method
 	section := &model.Section{

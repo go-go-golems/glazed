@@ -13,7 +13,9 @@ import (
 func TestLoader_LoadFromMarkdown(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 
@@ -63,7 +65,9 @@ Some example content here.
 func TestLoader_LoadFromMarkdownMinimal(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 
@@ -96,7 +100,9 @@ Just some content.
 func TestLoader_LoadFromMarkdownValidation(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 
@@ -142,7 +148,9 @@ Content here.
 func TestLoader_LoadFromFS(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 	ctx := context.Background()
@@ -218,7 +226,9 @@ Example 2 content.
 func TestLoader_SyncFromFS(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 	ctx := context.Background()
@@ -274,7 +284,9 @@ New section content.
 func TestLoader_LoadSections(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 	ctx := context.Background()
@@ -326,7 +338,9 @@ Invalid content.
 func TestLoader_BatchUpsert(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 	ctx := context.Background()
@@ -367,7 +381,9 @@ func TestLoader_BatchUpsert(t *testing.T) {
 func TestLoader_GetSectionStats(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 	ctx := context.Background()
@@ -426,7 +442,9 @@ func TestLoader_GetSectionStats(t *testing.T) {
 func TestLoader_OrderConversion(t *testing.T) {
 	store, err := NewInMemory()
 	require.NoError(t, err)
-	defer store.Close()
+	defer func() {
+		_ = store.Close()
+	}()
 
 	loader := NewLoader(store)
 

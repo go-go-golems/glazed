@@ -105,7 +105,9 @@ func (s *Store) Find(ctx context.Context, predicate Predicate) ([]*model.Section
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute query")
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var sections []*model.Section
 	for rows.Next() {

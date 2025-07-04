@@ -159,6 +159,9 @@ func (p *Parser) parsePrimaryExpression() Expression {
 			return p.parseFieldExpression()
 		}
 		return p.parseImplicitTextExpression()
+	case TokenIllegal, TokenEOF, TokenError, TokenFieldName, TokenColon, TokenAnd, TokenOr, TokenNot, TokenRightParen:
+		p.addError(fmt.Sprintf("unexpected token: %s", p.curToken.Type))
+		return nil
 	default:
 		p.addError(fmt.Sprintf("unexpected token: %s", p.curToken.Type))
 		return nil
