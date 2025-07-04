@@ -2,6 +2,7 @@ package help
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -108,12 +109,23 @@ func (s *Section) IsForTopic(topic string) bool {
 // these should potentially be scoped by command
 
 func (s *Section) DefaultGeneralTopic() []*Section {
-	return NewSectionQuery().
+	query := NewSectionQuery().
 		ReturnTopics().
 		ReturnOnlyTopics(s.Slug).
 		ReturnOnlyShownByDefault().
-		FilterSections(s).
-		FindSections(s.HelpSystem.Sections)
+		FilterSections(s)
+	
+	if s.HelpSystem.Store != nil {
+		ctx := context.Background()
+		results, err := query.FindSectionsWithStore(ctx, s.HelpSystem.Store)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to query sections from store, falling back to in-memory")
+		} else {
+			return results
+		}
+	}
+	
+	return query.FindSections(s.HelpSystem.Sections)
 }
 
 func (s *Section) DefaultExamples() []*Section {
@@ -327,11 +339,20 @@ func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
 
 type HelpSystem struct {
 	Sections []*Section
+	Store    *store.Store // Optional store backend
 }
 
 func NewHelpSystem() *HelpSystem {
 	return &HelpSystem{
 		Sections: []*Section{},
+	}
+}
+
+// NewHelpSystemWithStore creates a HelpSystem with store backend support
+func NewHelpSystemWithStore(st *store.Store) *HelpSystem {
+	return &HelpSystem{
+		Sections: []*Section{},
+		Store:    st,
 	}
 }
 

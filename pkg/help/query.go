@@ -1,6 +1,12 @@
 package help
 
-import "strings"
+import (
+	"context"
+	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/store"
+)
 
 // SectionQuery represents a query to get different types of sections.
 //
@@ -357,6 +363,141 @@ sectionLoop:
 	}
 
 	return result
+}
+
+// FindSectionsWithStore finds sections using the store backend
+func (s *SectionQuery) FindSectionsWithStore(ctx context.Context, st *store.Store) ([]*Section, error) {
+	predicate := s.toPredicate()
+	
+	storeSections, err := st.Find(ctx, predicate)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Convert store sections to help sections
+	sections := make([]*Section, len(storeSections))
+	for i, storeSection := range storeSections {
+		sections[i] = convertStoreSection(storeSection)
+	}
+	
+	return sections, nil
+}
+
+// toPredicate converts the SectionQuery to a store predicate
+func (s *SectionQuery) toPredicate() store.Predicate {
+	var predicates []store.Predicate
+	
+	// Handle type filtering
+	if s.HasRestrictedReturnTypes() {
+		var typePredicates []store.Predicate
+		for sectionType, enabled := range s.Types {
+			if enabled {
+				typePredicates = append(typePredicates, store.IsType(model.SectionType(sectionType)))
+			}
+		}
+		if len(typePredicates) > 0 {
+			predicates = append(predicates, store.Or(typePredicates...))
+		}
+	}
+	
+	// Handle visibility filters
+	if s.OnlyShownByDefault {
+		predicates = append(predicates, store.ShownByDefault())
+	}
+	if s.OnlyNotShownByDefault {
+		predicates = append(predicates, store.NotShownByDefault())
+	}
+	
+	// Handle top level filter
+	if s.OnlyTopLevel {
+		predicates = append(predicates, store.IsTopLevel())
+	}
+	
+	// Handle slug search
+	if s.SearchedSlug != "" {
+		predicates = append(predicates, store.SlugEquals(s.SearchedSlug))
+	}
+	
+	// Handle command search
+	if s.SearchedCommand != "" {
+		predicates = append(predicates, store.HasCommand(s.SearchedCommand))
+	}
+	
+	// Handle Only* filters (all must match)
+	if len(s.OnlyTopics) > 0 {
+		for _, topic := range s.OnlyTopics {
+			predicates = append(predicates, store.HasTopic(topic))
+		}
+	}
+	if len(s.OnlyFlags) > 0 {
+		for _, flag := range s.OnlyFlags {
+			predicates = append(predicates, store.HasFlag(flag))
+		}
+	}
+	if len(s.OnlyCommands) > 0 {
+		for _, command := range s.OnlyCommands {
+			predicates = append(predicates, store.HasCommand(command))
+		}
+	}
+	
+	// Handle Any* filters (any can match)
+	if !s.All {
+		var anyPredicates []store.Predicate
+		
+		for _, topic := range s.Topics {
+			anyPredicates = append(anyPredicates, store.HasTopic(topic))
+		}
+		for _, flag := range s.Flags {
+			anyPredicates = append(anyPredicates, store.HasFlag(flag))
+		}
+		for _, command := range s.Commands {
+			anyPredicates = append(anyPredicates, store.HasCommand(command))
+		}
+		for _, slug := range s.Slugs {
+			anyPredicates = append(anyPredicates, store.SlugEquals(slug))
+		}
+		
+		if len(anyPredicates) > 0 {
+			predicates = append(predicates, store.Or(anyPredicates...))
+		}
+	}
+	
+	// Handle excluded sections - this requires special handling since we need to exclude by ID
+	if len(s.WithoutSections) > 0 {
+		var excludedSlugs []string
+		for _, section := range s.WithoutSections {
+			excludedSlugs = append(excludedSlugs, section.Slug)
+		}
+		predicates = append(predicates, store.Not(store.SlugIn(excludedSlugs)))
+	}
+	
+	// Add default ordering
+	predicates = append(predicates, store.OrderByOrder())
+	
+	if len(predicates) == 0 {
+		return func(qc *store.QueryCompiler) {} // Empty predicate
+	}
+	
+	return store.And(predicates...)
+}
+
+// convertStoreSection converts a model.Section to a help.Section
+func convertStoreSection(storeSection *model.Section) *Section {
+	return &Section{
+		Slug:           storeSection.Slug,
+		SectionType:    SectionType(storeSection.SectionType),
+		Title:          storeSection.Title,
+		SubTitle:       storeSection.SubTitle,
+		Short:          storeSection.Short,
+		Content:        storeSection.Content,
+		Topics:         storeSection.Topics,
+		Flags:          storeSection.Flags,
+		Commands:       storeSection.Commands,
+		IsTopLevel:     storeSection.IsTopLevel,
+		IsTemplate:     storeSection.IsTemplate,
+		ShowPerDefault: storeSection.ShowPerDefault,
+		Order:          storeSection.Order,
+	}
 }
 
 func (s *SectionQuery) GetRequestedTypesAsString() string {
