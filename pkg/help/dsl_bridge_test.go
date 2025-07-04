@@ -2,6 +2,8 @@ package help
 
 import (
 	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/help/model"
 )
 
 func TestQuerySectionsWithBooleanLogic(t *testing.T) {
@@ -9,35 +11,48 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 	hs := NewHelpSystem()
 
 	// Add test sections
-	hs.Sections = []*Section{
+	sections := []*Section{
 		{
-			Slug:        "example-1",
-			SectionType: SectionExample,
-			Title:       "Example 1",
-			Content:     "This is an example",
-			Topics:      []string{"templates", "basic"},
+			Section: &model.Section{
+				Slug:        "example-1",
+				SectionType: SectionExample,
+				Title:       "Example 1",
+				Content:     "This is an example",
+				Topics:      []string{"templates", "basic"},
+			},
 		},
 		{
-			Slug:        "example-2",
-			SectionType: SectionExample,
-			Title:       "Example 2",
-			Content:     "Another example",
-			Topics:      []string{"advanced"},
+			Section: &model.Section{
+				Slug:        "example-2",
+				SectionType: SectionExample,
+				Title:       "Example 2",
+				Content:     "Another example",
+				Topics:      []string{"advanced"},
+			},
 		},
 		{
-			Slug:        "tutorial-1",
-			SectionType: SectionTutorial,
-			Title:       "Tutorial 1",
-			Content:     "This is a tutorial",
-			Topics:      []string{"templates", "basic"},
+			Section: &model.Section{
+				Slug:        "tutorial-1",
+				SectionType: SectionTutorial,
+				Title:       "Tutorial 1",
+				Content:     "This is a tutorial",
+				Topics:      []string{"templates", "basic"},
+			},
 		},
 		{
-			Slug:        "topic-1",
-			SectionType: SectionGeneralTopic,
-			Title:       "Topic 1",
-			Content:     "This is a topic",
-			Topics:      []string{"advanced"},
+			Section: &model.Section{
+				Slug:        "topic-1",
+				SectionType: SectionGeneralTopic,
+				Title:       "Topic 1",
+				Content:     "This is a topic",
+				Topics:      []string{"advanced"},
+			},
 		},
+	}
+
+	// Add sections to the help system
+	for _, section := range sections {
+		hs.AddSection(section)
 	}
 
 	tests := []struct {

@@ -1,6 +1,7 @@
 package help
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig"
@@ -202,8 +203,12 @@ func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
 			// copied from cobra itself
 			var completions []string
 
-			for _, section := range hs.Sections {
-				completions = append(completions, fmt.Sprintf("%s\t%s", section.Slug, section.Title))
+			ctx := context.Background()
+			modelSections, err := hs.Store.List(ctx, "slug ASC")
+			if err == nil {
+				for _, modelSection := range modelSections {
+					completions = append(completions, fmt.Sprintf("%s\t%s", modelSection.Slug, modelSection.Title))
+				}
 			}
 
 			cmd, _, e := c.Root().Find(args)

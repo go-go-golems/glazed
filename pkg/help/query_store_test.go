@@ -53,7 +53,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query examples", func(t *testing.T) {
 		query := NewSectionQuery().ReturnExamples()
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -63,7 +63,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query tutorials", func(t *testing.T) {
 		query := NewSectionQuery().ReturnTutorials()
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 1)
@@ -72,7 +72,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query by topic", func(t *testing.T) {
 		query := NewSectionQuery().ReturnAllTypes().ReturnAnyOfTopics("testing")
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -87,7 +87,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query shown by default", func(t *testing.T) {
 		query := NewSectionQuery().ReturnAllTypes().ReturnOnlyShownByDefault()
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 2)
@@ -102,7 +102,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query not shown by default", func(t *testing.T) {
 		query := NewSectionQuery().ReturnAllTypes().ReturnOnlyNotShownByDefault()
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 1)
@@ -111,7 +111,7 @@ func TestSectionQueryWithStore(t *testing.T) {
 
 	t.Run("Query by slug", func(t *testing.T) {
 		query := NewSectionQuery().ReturnAllTypes().SearchForSlug("test-example")
-		results, err := query.FindSectionsWithStore(ctx, st)
+		results, err := query.FindSections(ctx, st)
 		require.NoError(t, err)
 
 		assert.Len(t, results, 1)

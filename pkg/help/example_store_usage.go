@@ -58,7 +58,7 @@ func ExampleStoreUsage() {
 	// Example 1: Query all tutorials
 	fmt.Println("=== All Tutorials ===")
 	query := NewSectionQuery().ReturnTutorials()
-	results, err := query.FindSectionsWithStore(ctx, st)
+	results, err := query.FindSections(ctx, st)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func ExampleStoreUsage() {
 	// Example 2: Query sections by topic
 	fmt.Println("\n=== Sections about 'advanced' ===")
 	query = NewSectionQuery().ReturnAllTypes().ReturnAnyOfTopics("advanced")
-	results, err = query.FindSectionsWithStore(ctx, st)
+	results, err = query.FindSections(ctx, st)
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +80,7 @@ func ExampleStoreUsage() {
 	// Example 3: Query sections shown by default
 	fmt.Println("\n=== Sections shown by default ===")
 	query = NewSectionQuery().ReturnAllTypes().ReturnOnlyShownByDefault()
-	results, err = query.FindSectionsWithStore(ctx, st)
+	results, err = query.FindSections(ctx, st)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +91,7 @@ func ExampleStoreUsage() {
 	// Example 4: Query sections related to specific commands
 	fmt.Println("\n=== Sections related to 'create' command ===")
 	query = NewSectionQuery().ReturnAllTypes().ReturnAnyOfCommands("create")
-	results, err = query.FindSectionsWithStore(ctx, st)
+	results, err = query.FindSections(ctx, st)
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +102,7 @@ func ExampleStoreUsage() {
 	// Example 5: Using the store-compatible HelpSystem
 	fmt.Println("\n=== Using HelpSystem with store ===")
 	helpSystem := NewHelpSystemWithStore(st)
-	
+
 	// This would work with any existing code that uses the HelpSystem
 	// but now benefits from the store backend performance
 	if helpSystem.Store != nil {

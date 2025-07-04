@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,9 +13,11 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
 	section := &help.Section{
-		Slug:    "test-section",
-		Title:   "Test Section",
-		Content: "This is a test section content",
+		Section: &model.Section{
+			Slug:    "test-section",
+			Title:   "Test Section",
+			Content: "This is a test section content",
+		},
 	}
 	hs.AddSection(section)
 
@@ -60,9 +63,11 @@ func TestViewingModeStillHandlesOtherKeys(t *testing.T) {
 	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
 	section := &help.Section{
-		Slug:    "test-section",
-		Title:   "Test Section",
-		Content: "This is a test section content",
+		Section: &model.Section{
+			Slug:    "test-section",
+			Title:   "Test Section",
+			Content: "This is a test section content",
+		},
 	}
 	hs.AddSection(section)
 
@@ -93,9 +98,11 @@ func TestNormalModeYAndOShortcuts(t *testing.T) {
 	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
 	section := &help.Section{
-		Slug:    "test-section",
-		Title:   "Test Section",
-		Content: "This is a test section content",
+		Section: &model.Section{
+			Slug:    "test-section",
+			Title:   "Test Section",
+			Content: "This is a test section content",
+		},
 	}
 	hs.AddSection(section)
 

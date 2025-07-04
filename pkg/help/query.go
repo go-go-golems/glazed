@@ -244,149 +244,28 @@ func (s *SectionQuery) Clone() *SectionQuery {
 	return ret
 }
 
-func (s *SectionQuery) FindSections(sections []*Section) []*Section {
-	var result []*Section
-
-sectionLoop:
-	for _, section := range sections {
-		if s.OnlyShownByDefault && !section.ShowPerDefault {
-			continue
-		}
-
-		if s.OnlyNotShownByDefault && section.ShowPerDefault {
-			continue
-		}
-
-		if s.OnlyTopLevel && !section.IsTopLevel {
-			continue
-		}
-
-		for _, without := range s.WithoutSections {
-			if without == section {
-				continue sectionLoop
-			}
-		}
-
-		if s.SearchedSlug != "" {
-			if section.Slug != s.SearchedSlug {
-				continue sectionLoop
-			}
-		}
-
-		if s.SearchedCommand != "" {
-			foundMatchingCommand := false
-			for _, command := range section.Commands {
-				if command == s.SearchedCommand {
-					foundMatchingCommand = true
-					break
-				}
-			}
-			if !foundMatchingCommand {
-				continue sectionLoop
-			}
-		}
-
-		foundMatchingType, ok := s.Types[section.SectionType]
-		if !ok || !foundMatchingType {
-			continue
-		}
-
-		// filter out the Only*
-		if len(s.OnlyTopics) > 0 {
-			foundMatchingTopic := true
-			for _, t := range s.OnlyTopics {
-				if !section.IsForTopic(t) {
-					foundMatchingTopic = false
-					break
-				}
-			}
-			if !foundMatchingTopic {
-				continue sectionLoop
-			}
-		}
-
-		if len(s.OnlyFlags) > 0 {
-			foundMatchingFlag := true
-			for _, f := range s.OnlyFlags {
-				if !section.IsForFlag(f) {
-					foundMatchingFlag = false
-					break
-				}
-			}
-			if !foundMatchingFlag {
-				continue sectionLoop
-			}
-		}
-
-		if len(s.OnlyCommands) > 0 {
-			foundMatchingCommand := true
-			for _, c := range s.OnlyCommands {
-				if !section.IsForCommand(c) {
-					foundMatchingCommand = false
-					break
-				}
-			}
-			if !foundMatchingCommand {
-				continue sectionLoop
-			}
-		}
-
-		if s.All {
-			result = append(result, section)
-			continue sectionLoop
-		}
-
-		for _, topic := range s.Topics {
-			if section.IsForTopic(topic) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, flag := range s.Flags {
-			if section.IsForFlag(flag) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, command := range s.Commands {
-			if section.IsForCommand(command) {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-		for _, slug := range s.Slugs {
-			if section.Slug == slug {
-				result = append(result, section)
-				continue sectionLoop
-			}
-		}
-	}
-
-	return result
-}
-
-// FindSectionsWithStore finds sections using the store backend
-func (s *SectionQuery) FindSectionsWithStore(ctx context.Context, st *store.Store) ([]*Section, error) {
+// FindSections queries sections using the store backend
+func (s *SectionQuery) FindSections(ctx context.Context, st *store.Store) ([]*Section, error) {
 	predicate := s.toPredicate()
-	
+
 	storeSections, err := st.Find(ctx, predicate)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert store sections to help sections
 	sections := make([]*Section, len(storeSections))
 	for i, storeSection := range storeSections {
-		sections[i] = convertStoreSection(storeSection)
+		sections[i] = &Section{Section: storeSection}
 	}
-	
+
 	return sections, nil
 }
 
 // toPredicate converts the SectionQuery to a store predicate
 func (s *SectionQuery) toPredicate() store.Predicate {
 	var predicates []store.Predicate
-	
+
 	// Handle type filtering
 	if s.HasRestrictedReturnTypes() {
 		var typePredicates []store.Predicate
@@ -399,7 +278,7 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 			predicates = append(predicates, store.Or(typePredicates...))
 		}
 	}
-	
+
 	// Handle visibility filters
 	if s.OnlyShownByDefault {
 		predicates = append(predicates, store.ShownByDefault())
@@ -407,22 +286,22 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 	if s.OnlyNotShownByDefault {
 		predicates = append(predicates, store.NotShownByDefault())
 	}
-	
+
 	// Handle top level filter
 	if s.OnlyTopLevel {
 		predicates = append(predicates, store.IsTopLevel())
 	}
-	
+
 	// Handle slug search
 	if s.SearchedSlug != "" {
 		predicates = append(predicates, store.SlugEquals(s.SearchedSlug))
 	}
-	
+
 	// Handle command search
 	if s.SearchedCommand != "" {
 		predicates = append(predicates, store.HasCommand(s.SearchedCommand))
 	}
-	
+
 	// Handle Only* filters (all must match)
 	if len(s.OnlyTopics) > 0 {
 		for _, topic := range s.OnlyTopics {
@@ -439,11 +318,11 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 			predicates = append(predicates, store.HasCommand(command))
 		}
 	}
-	
+
 	// Handle Any* filters (any can match)
 	if !s.All {
 		var anyPredicates []store.Predicate
-		
+
 		for _, topic := range s.Topics {
 			anyPredicates = append(anyPredicates, store.HasTopic(topic))
 		}
@@ -456,12 +335,12 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 		for _, slug := range s.Slugs {
 			anyPredicates = append(anyPredicates, store.SlugEquals(slug))
 		}
-		
+
 		if len(anyPredicates) > 0 {
 			predicates = append(predicates, store.Or(anyPredicates...))
 		}
 	}
-	
+
 	// Handle excluded sections - this requires special handling since we need to exclude by ID
 	if len(s.WithoutSections) > 0 {
 		var excludedSlugs []string
@@ -470,33 +349,21 @@ func (s *SectionQuery) toPredicate() store.Predicate {
 		}
 		predicates = append(predicates, store.Not(store.SlugIn(excludedSlugs)))
 	}
-	
+
 	// Add default ordering
 	predicates = append(predicates, store.OrderByOrder())
-	
+
 	if len(predicates) == 0 {
 		return func(qc *store.QueryCompiler) {} // Empty predicate
 	}
-	
+
 	return store.And(predicates...)
 }
 
 // convertStoreSection converts a model.Section to a help.Section
 func convertStoreSection(storeSection *model.Section) *Section {
 	return &Section{
-		Slug:           storeSection.Slug,
-		SectionType:    SectionType(storeSection.SectionType),
-		Title:          storeSection.Title,
-		SubTitle:       storeSection.SubTitle,
-		Short:          storeSection.Short,
-		Content:        storeSection.Content,
-		Topics:         storeSection.Topics,
-		Flags:          storeSection.Flags,
-		Commands:       storeSection.Commands,
-		IsTopLevel:     storeSection.IsTopLevel,
-		IsTemplate:     storeSection.IsTemplate,
-		ShowPerDefault: storeSection.ShowPerDefault,
-		Order:          storeSection.Order,
+		Section: storeSection,
 	}
 }
 
