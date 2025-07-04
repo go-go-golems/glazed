@@ -2,12 +2,15 @@ package help
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
+	"github.com/go-go-golems/glazed/pkg/help/dsl"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -400,5 +403,91 @@ func (e HelpError) Error() string {
 		return "Section not found"
 	default:
 		return "Unknown error"
+	}
+}
+
+// PrintQueryDebug prints debug information about a query
+func (hs *HelpSystem) PrintQueryDebug(queryDSL string, printQuery, printSQL bool) error {
+	if printQuery {
+		err := hs.printQueryAST(queryDSL)
+		if err != nil {
+			return err
+		}
+	}
+
+	if printSQL {
+		err := hs.printQuerySQL(queryDSL)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// printQueryAST prints the parsed query AST in a readable format
+func (hs *HelpSystem) printQueryAST(queryDSL string) error {
+	fmt.Printf("Query: %s\n", queryDSL)
+
+	// Parse the query into AST
+	expr, err := dsl.Parse(queryDSL)
+	if err != nil {
+		return fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	fmt.Printf("AST:\n")
+	hs.printExpressionTree(expr, 0)
+
+	return nil
+}
+
+// printQuerySQL prints the generated SQL query for debugging
+func (hs *HelpSystem) printQuerySQL(queryDSL string) error {
+	// Parse the query using the DSL parser
+	predicate, err := dsl.ParseQuery(queryDSL)
+	if err != nil {
+		return fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	// Create a query compiler to generate SQL
+	compiler := store.NewQueryCompiler()
+	predicate(compiler)
+
+	// Build the SQL query
+	sqlQuery, args := compiler.BuildQuery()
+
+	fmt.Printf("SQL Query:\n")
+	fmt.Printf("%s\n", sqlQuery)
+
+	if len(args) > 0 {
+		fmt.Printf("Parameters: %v\n", args)
+	}
+
+	return nil
+}
+
+// printExpressionTree prints the AST in a tree format
+func (hs *HelpSystem) printExpressionTree(expr dsl.Expression, depth int) {
+	indent := strings.Repeat("  ", depth)
+
+	switch e := expr.(type) {
+	case *dsl.BinaryExpression:
+		fmt.Printf("%s%s\n", indent, e.Operator)
+		fmt.Printf("%s├── ", indent)
+		hs.printExpressionTree(e.Left, depth+1)
+		fmt.Printf("%s└── ", indent)
+		hs.printExpressionTree(e.Right, depth+1)
+	case *dsl.UnaryExpression:
+		fmt.Printf("%s%s\n", indent, e.Operator)
+		fmt.Printf("%s└── ", indent)
+		hs.printExpressionTree(e.Right, depth+1)
+	case *dsl.FieldExpression:
+		fmt.Printf("Field: %s = \"%s\"\n", e.Field, e.Value)
+	case *dsl.TextExpression:
+		fmt.Printf("Text: \"%s\"\n", e.Text)
+	case *dsl.IdentifierExpression:
+		fmt.Printf("Identifier: %s\n", e.Value)
+	default:
+		fmt.Printf("Unknown: %s\n", expr.String())
 	}
 }
