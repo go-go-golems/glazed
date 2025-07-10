@@ -16,7 +16,6 @@ import (
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 )
 
 // Re-export types from model package for backward compatibility
@@ -401,36 +400,6 @@ func (hs *HelpSystem) AddSection(section *Section) {
 		log.Warn().Err(err).Msg("Failed to store section")
 	}
 	section.HelpSystem = hs
-}
-
-func (hs *HelpSystem) SetupCobraRootCommand(cmd *cobra.Command) {
-	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
-	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
-
-	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
-
-	cmd.SetHelpFunc(helpFunc)
-	cmd.SetUsageFunc(usageFunc)
-	cmd.SetHelpTemplate(helpTemplate)
-	cmd.SetUsageTemplate(usageTemplate)
-
-	helpCmd := NewCobraHelpCommand(hs)
-	cmd.SetHelpCommand(helpCmd)
-}
-
-func (hs *HelpSystem) SetupCobraRootCommandWithUI(cmd *cobra.Command, uiFunc UIFunc) {
-	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
-	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
-
-	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
-
-	cmd.SetHelpFunc(helpFunc)
-	cmd.SetUsageFunc(usageFunc)
-	cmd.SetHelpTemplate(helpTemplate)
-	cmd.SetUsageTemplate(usageTemplate)
-
-	helpCmd := NewCobraHelpCommandWithUI(hs, uiFunc)
-	cmd.SetHelpCommand(helpCmd)
 }
 
 type HelpError int
