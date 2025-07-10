@@ -46,7 +46,7 @@ func initRootCmd() (*help.HelpSystem, error) {
         return nil, err
     }
 
-    helpSystem.SetupCobraRootCommand(rootCmd)
+    help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
     err = clay.InitViper("your-app", rootCmd)
     if err != nil {

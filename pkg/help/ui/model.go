@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/help"
 	"strings"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/go-go-golems/glazed/pkg/help"
 )
 
 const (
@@ -32,7 +32,7 @@ type Model struct {
 	results     []*help.Section
 
 	// View state
-	currentSection *help.Section
+	CurrentSection *help.Section
 	viewport       viewport.Model
 
 	// UI dimensions
@@ -52,7 +52,7 @@ type Model struct {
 	// Clipboard/output state
 	copyMessage    string
 	copyMessageTs  time.Time
-	quitWithOutput bool
+	QuitWithOutput bool
 }
 
 // listItem represents a help section in the list
@@ -178,8 +178,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == stateNormal && len(m.results) > 0 {
 				selected := m.list.Index()
 				if selected >= 0 && selected < len(m.results) {
-					m.currentSection = m.results[selected]
-					m.quitWithOutput = true
+					m.CurrentSection = m.results[selected]
+					m.QuitWithOutput = true
 				}
 			}
 			return m, tea.Quit
@@ -250,7 +250,7 @@ func (m *Model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(m.results) > 0 {
 			selected := m.list.Index()
 			if selected >= 0 && selected < len(m.results) {
-				m.currentSection = m.results[selected]
+				m.CurrentSection = m.results[selected]
 				m.state = stateViewing
 				return m, m.setupViewport()
 			}
@@ -272,8 +272,8 @@ func (m *Model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(m.results) > 0 {
 			selected := m.list.Index()
 			if selected >= 0 && selected < len(m.results) {
-				m.currentSection = m.results[selected]
-				m.quitWithOutput = true
+				m.CurrentSection = m.results[selected]
+				m.QuitWithOutput = true
 				return m, tea.Quit
 			}
 		}
@@ -365,15 +365,15 @@ func (m *Model) updateViewing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "y":
 		// Copy current section to clipboard
-		if m.currentSection != nil {
-			return m, m.copySection(m.currentSection)
+		if m.CurrentSection != nil {
+			return m, m.copySection(m.CurrentSection)
 		}
 		return m, nil
 
 	case "o":
 		// Quit and output current section
-		if m.currentSection != nil {
-			m.quitWithOutput = true
+		if m.CurrentSection != nil {
+			m.QuitWithOutput = true
 			return m, tea.Quit
 		}
 		return m, nil
@@ -525,7 +525,7 @@ func (m *Model) viewNormal() string {
 }
 
 func (m *Model) viewSection() string {
-	if m.currentSection == nil {
+	if m.CurrentSection == nil {
 		return "No section selected"
 	}
 
@@ -536,9 +536,9 @@ func (m *Model) viewSection() string {
 		Bold(true).
 		Foreground(lipgloss.Color("12"))
 
-	title := m.currentSection.Title
+	title := m.CurrentSection.Title
 	if title == "" {
-		title = m.currentSection.Slug
+		title = m.CurrentSection.Slug
 	}
 
 	s.WriteString(headerStyle.Render(title))
@@ -710,11 +710,11 @@ func (m *Model) search(query string) tea.Cmd {
 }
 
 func (m *Model) setupViewport() tea.Cmd {
-	if m.currentSection == nil {
+	if m.CurrentSection == nil {
 		return nil
 	}
 
-	content := m.renderContent(m.currentSection)
+	content := m.renderContent(m.CurrentSection)
 	m.viewport.SetContent(content)
 	m.viewport.GotoTop()
 

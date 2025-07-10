@@ -184,6 +184,7 @@ import (
 
     clay "github.com/go-go-golems/clay/pkg"
     "github.com/go-go-golems/glazed/pkg/help"
+    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
     "github.com/rs/zerolog"
     "github.com/rs/zerolog/log"
     "github.com/spf13/cobra"
@@ -203,7 +204,7 @@ func main() {
 
     // 5. Setup help system
     helpSystem := help.NewHelpSystem()
-    helpSystem.SetupCobraRootCommand(rootCmd)
+    help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
     // 6. Execute
     if err := rootCmd.Execute(); err != nil {

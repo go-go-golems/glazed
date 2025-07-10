@@ -161,17 +161,17 @@ func (hs *HelpSystem) RenderTopicHelp(
 	return s, err
 }
 
-//go:embed templates/help-topic.tmpl
+//go:embed cmd/templates/help-topic.tmpl
 var HELP_TOPIC_TEMPLATE string
 
-//go:embed templates/help-short-topic.tmpl
+//go:embed cmd/templates/help-short-topic.tmpl
 var HELP_SHORT_TOPIC_TEMPLATE string
 
-//go:embed templates/help-short-section-list.tmpl
+//go:embed cmd/templates/help-short-section-list.tmpl
 var HELP_SHORT_SECTION_TEMPLATE string
 
-//go:embed templates/help-long-section-list.tmpl
+//go:embed cmd/templates/help-long-section-list.tmpl
 var HELP_LONG_SECTION_TEMPLATE string
 
-//go:embed templates/help-list.tmpl
+//go:embed cmd/templates/help-list.tmpl
 var HELP_LIST_TEMPLATE string

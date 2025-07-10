@@ -27,7 +27,7 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 
 	// Set up viewing mode with the test section
 	model.state = stateViewing
-	model.currentSection = section
+	model.CurrentSection = section
 
 	// Test 'y' key (copy)
 	yMsg := tea.KeyMsg{
@@ -42,7 +42,7 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 	// The model should remain in viewing state
 	m := updatedModel.(*Model)
 	assert.Equal(t, stateViewing, m.state)
-	assert.Equal(t, section, m.currentSection)
+	assert.Equal(t, section, m.CurrentSection)
 
 	// Test 'o' key (quit with output)
 	oMsg := tea.KeyMsg{
@@ -55,8 +55,8 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 
 	// The model should quit with output
 	m = updatedModel.(*Model)
-	assert.True(t, m.quitWithOutput)
-	assert.Equal(t, section, m.currentSection)
+	assert.True(t, m.QuitWithOutput)
+	assert.Equal(t, section, m.CurrentSection)
 }
 
 func TestViewingModeStillHandlesOtherKeys(t *testing.T) {
@@ -77,7 +77,7 @@ func TestViewingModeStillHandlesOtherKeys(t *testing.T) {
 
 	// Set up viewing mode with the test section
 	model.state = stateViewing
-	model.currentSection = section
+	model.CurrentSection = section
 
 	// Test 'q' key (quit to normal mode)
 	qMsg := tea.KeyMsg{
@@ -91,7 +91,7 @@ func TestViewingModeStillHandlesOtherKeys(t *testing.T) {
 	// The model should return to normal state
 	m := updatedModel.(*Model)
 	assert.Equal(t, stateNormal, m.state)
-	assert.False(t, m.quitWithOutput)
+	assert.False(t, m.QuitWithOutput)
 }
 
 func TestNormalModeYAndOShortcuts(t *testing.T) {
@@ -139,6 +139,6 @@ func TestNormalModeYAndOShortcuts(t *testing.T) {
 
 	// The model should quit with output
 	m = updatedModel.(*Model)
-	assert.True(t, m.quitWithOutput)
-	assert.Equal(t, section, m.currentSection)
+	assert.True(t, m.QuitWithOutput)
+	assert.Equal(t, section, m.CurrentSection)
 }

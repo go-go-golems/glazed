@@ -1,30 +1,47 @@
-package help
+package cmd
 
 import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/helpers/templating"
+	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 )
 
 type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
-type UIFunc = func(hs *HelpSystem) error
+type UIFunc = func(hs *help.HelpSystem) error
 
-func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
+func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
+	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+
+	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
+
+	cmd.SetHelpFunc(helpFunc)
+	cmd.SetUsageFunc(usageFunc)
+	cmd.SetHelpTemplate(helpTemplate)
+	cmd.SetUsageTemplate(usageTemplate)
+
+	helpCmd := NewCobraHelpCommand(hs)
+	cmd.SetHelpCommand(helpCmd)
+}
+
+func GetCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		qb := NewSectionQuery().
+		qb := help.NewSectionQuery().
 			ReturnAllTypes()
 
 		longHelp, _ := c.Flags().GetBool("long-help")
 
-		options := &RenderOptions{
+		options := &help.RenderOptions{
 			Query:           qb,
 			ShowAllSections: false,
 			ShowShortTopic:  false,
@@ -40,12 +57,12 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		qb := NewSectionQuery().
+		qb := help.NewSectionQuery().
 			ReturnExamples()
 
 		longHelp, _ := c.Flags().GetBool("long-help")
 
-		options := &RenderOptions{
+		options := &help.RenderOptions{
 			Query:           qb,
 			ShowAllSections: false,
 			ShowShortTopic:  true,
@@ -61,7 +78,7 @@ func GetCobraHelpUsageFuncs(hs *HelpSystem) (HelpFunc, UsageFunc) {
 	return helpFunc, usageFunc
 }
 
-func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSystem) error {
+func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *help.HelpSystem) error {
 	t := template.New("commandUsage")
 
 	isTopLevel := c.Parent() == nil
@@ -79,7 +96,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 
 	var tmpl string
 	if options.ListSections || noResultsFound {
-		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + HELP_LIST_TEMPLATE
+		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + help.HELP_LIST_TEMPLATE
 	} else {
 		if options.ShowShortTopic {
 			tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE
@@ -91,9 +108,9 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 		}
 		if options.LongHelp {
 			if options.ShowAllSections {
-				tmpl += HELP_LONG_SECTION_TEMPLATE
+				tmpl += help.HELP_LONG_SECTION_TEMPLATE
 			} else {
-				tmpl += HELP_SHORT_SECTION_TEMPLATE
+				tmpl += help.HELP_SHORT_SECTION_TEMPLATE
 			}
 		}
 	}
@@ -156,7 +173,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 
 	data["MaxCommandNameLen"] = maxCommandNameLen
 
-	s, err := RenderToMarkdown(t, data, os.Stderr)
+	s, err := help.RenderToMarkdown(t, data, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -165,7 +182,7 @@ func renderCommandHelpPage(c *cobra.Command, options *RenderOptions, hs *HelpSys
 	return err
 }
 
-func GetCobraHelpUsageTemplates(hs *HelpSystem) (string, string) {
+func GetCobraHelpUsageTemplates(hs *help.HelpSystem) (string, string) {
 	_ = hs
 	return COBRA_COMMAND_HELP_TEMPLATE, COBRA_COMMAND_USAGE_TEMPLATE
 }
@@ -189,11 +206,8 @@ func GetCobraHelpUsageTemplates(hs *HelpSystem) (string, string) {
 //
 // 2022-12-03 - Manuel Odendahl - Added support for help sections
 // 2022-12-04 - Manuel Odendahl - Significantly reworked to support markdown sections
-func NewCobraHelpCommand(hs *HelpSystem) *cobra.Command {
-	return NewCobraHelpCommandWithUI(hs, nil)
-}
-
-func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
+// 2025-07-10 - Manuel Odendahl - Added support for UI mode
+func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 	var ret *cobra.Command
 	ret = &cobra.Command{
 		Use:   "help [topic/command]",
@@ -236,18 +250,14 @@ func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
 			// Check for UI flag first
 			useUI, _ := c.Flags().GetBool("ui")
 			if useUI {
-				if uiFunc != nil {
-					err := uiFunc(hs)
-					if err != nil {
-						c.Printf("Error running UI: %v\n", err)
-					}
-				} else {
-					c.Printf("UI mode not available\n")
+				err := RunUI(hs)
+				if err != nil {
+					c.Printf("Error running UI: %v\n", err)
 				}
 				return
 			}
 
-			qb := NewSectionQuery()
+			qb := help.NewSectionQuery()
 
 			// Check for DSL query first
 			queryDSL := c.Flag("query").Value.String()
@@ -367,7 +377,7 @@ func NewCobraHelpCommandWithUI(hs *HelpSystem, uiFunc UIFunc) *cobra.Command {
 				list = true
 			}
 
-			options := &RenderOptions{
+			options := &help.RenderOptions{
 				Query:           qb,
 				ShowAllSections: showAllSections,
 				ShowShortTopic:  showShortTopic,

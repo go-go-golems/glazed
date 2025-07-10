@@ -370,6 +370,7 @@ import (
     "github.com/go-go-golems/glazed/pkg/cli"
     "github.com/go-go-golems/glazed/pkg/cmds"
     "github.com/go-go-golems/glazed/pkg/help"
+    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
     "github.com/spf13/cobra"
 )
 
@@ -380,7 +381,7 @@ func main() {
     }
 
     helpSystem := help.NewHelpSystem()
-    helpSystem.SetupCobraRootCommand(rootCmd)
+    help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
     yamlLoader := NewYAMLCommandLoader()
 
