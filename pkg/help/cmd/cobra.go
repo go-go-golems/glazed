@@ -20,8 +20,8 @@ type UsageFunc = func(c *cobra.Command) error
 type UIFunc = func(hs *help.HelpSystem) error
 
 func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
-	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
-	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+	helpFunc, usageFunc := getCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := getCobraHelpUsageTemplates(hs)
 
 	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
 
@@ -34,7 +34,7 @@ func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 	cmd.SetHelpCommand(helpCmd)
 }
 
-func GetCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
+func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
 		qb := help.NewSectionQuery().
 			ReturnAllTypes()
@@ -164,6 +164,28 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["Slug"] = c.Name()
 	data["LongHelp"] = options.LongHelp
 
+	// Make command fields directly accessible for cobra template compatibility
+	data["Runnable"] = c.Runnable()
+	data["UseLine"] = c.UseLine()
+	data["HasAvailableSubCommands"] = c.HasAvailableSubCommands()
+	data["CommandPath"] = c.CommandPath()
+	data["Aliases"] = c.Aliases
+	data["NameAndAliases"] = c.NameAndAliases()
+	data["HasExample"] = c.HasExample()
+	data["Example"] = c.Example
+	data["Commands"] = c.Commands()
+	data["Groups"] = c.Groups()
+	data["HasAvailableLocalFlags"] = c.HasAvailableLocalFlags()
+	data["LocalFlags"] = c.LocalFlags()
+	data["HasAvailableInheritedFlags"] = c.HasAvailableInheritedFlags()
+	data["InheritedFlags"] = c.InheritedFlags()
+	data["HasHelpSubCommands"] = c.HasHelpSubCommands()
+	data["AllChildCommandsHaveGroup"] = c.AllChildCommandsHaveGroup()
+	data["HasSections"] = false          // This would need to be set based on help system data
+	data["Sections"] = []*help.Section{} // This would need to be populated
+	data["NamePadding"] = c.NamePadding()
+	data["CommandPathPadding"] = c.CommandPathPadding()
+
 	maxCommandNameLen := 0
 	for _, c := range c.Commands() {
 		if len(c.Name()) > maxCommandNameLen {
@@ -182,7 +204,7 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	return err
 }
 
-func GetCobraHelpUsageTemplates(hs *help.HelpSystem) (string, string) {
+func getCobraHelpUsageTemplates(hs *help.HelpSystem) (string, string) {
 	_ = hs
 	return COBRA_COMMAND_HELP_TEMPLATE, COBRA_COMMAND_USAGE_TEMPLATE
 }
