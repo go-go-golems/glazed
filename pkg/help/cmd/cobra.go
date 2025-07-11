@@ -164,6 +164,28 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["Slug"] = c.Name()
 	data["LongHelp"] = options.LongHelp
 
+	// Make command fields directly accessible for cobra template compatibility
+	data["Runnable"] = c.Runnable()
+	data["UseLine"] = c.UseLine()
+	data["HasAvailableSubCommands"] = c.HasAvailableSubCommands()
+	data["CommandPath"] = c.CommandPath()
+	data["Aliases"] = c.Aliases
+	data["NameAndAliases"] = c.NameAndAliases()
+	data["HasExample"] = c.HasExample()
+	data["Example"] = c.Example
+	data["Commands"] = c.Commands()
+	data["Groups"] = c.Groups()
+	data["HasAvailableLocalFlags"] = c.HasAvailableLocalFlags()
+	data["LocalFlags"] = c.LocalFlags()
+	data["HasAvailableInheritedFlags"] = c.HasAvailableInheritedFlags()
+	data["InheritedFlags"] = c.InheritedFlags()
+	data["HasHelpSubCommands"] = c.HasHelpSubCommands()
+	data["AllChildCommandsHaveGroup"] = c.AllChildCommandsHaveGroup()
+	data["HasSections"] = false          // This would need to be set based on help system data
+	data["Sections"] = []*help.Section{} // This would need to be populated
+	data["NamePadding"] = c.NamePadding()
+	data["CommandPathPadding"] = c.CommandPathPadding()
+
 	maxCommandNameLen := 0
 	for _, c := range c.Commands() {
 		if len(c.Name()) > maxCommandNameLen {
