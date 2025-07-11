@@ -20,8 +20,8 @@ type UsageFunc = func(c *cobra.Command) error
 type UIFunc = func(hs *help.HelpSystem) error
 
 func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
-	helpFunc, usageFunc := GetCobraHelpUsageFuncs(hs)
-	helpTemplate, usageTemplate := GetCobraHelpUsageTemplates(hs)
+	helpFunc, usageFunc := getCobraHelpUsageFuncs(hs)
+	helpTemplate, usageTemplate := getCobraHelpUsageTemplates(hs)
 
 	cmd.PersistentFlags().Bool("long-help", false, "Show long help")
 
@@ -34,7 +34,7 @@ func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 	cmd.SetHelpCommand(helpCmd)
 }
 
-func GetCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
+func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
 		qb := help.NewSectionQuery().
 			ReturnAllTypes()
@@ -204,7 +204,7 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	return err
 }
 
-func GetCobraHelpUsageTemplates(hs *help.HelpSystem) (string, string) {
+func getCobraHelpUsageTemplates(hs *help.HelpSystem) (string, string) {
 	_ = hs
 	return COBRA_COMMAND_HELP_TEMPLATE, COBRA_COMMAND_USAGE_TEMPLATE
 }
