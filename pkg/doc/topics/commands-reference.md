@@ -19,7 +19,11 @@ SectionType: GeneralTopic
 
 ## Overview
 
-The `glazed` framework provides a powerful system for creating command-line interfaces with rich features like structured data output, parameter validation, and multiple output formats. This reference guide covers all aspects of the command system, from basic concepts to advanced usage patterns.
+The Glazed command system provides a structured approach to building CLI applications that handle multiple output formats, complex parameter validation, and reusable components. This reference covers the complete command system architecture, interfaces, and implementation patterns.
+
+Building CLI tools typically involves handling parameter parsing, validation, output formatting, and configuration management. Glazed addresses these concerns through a layered architecture that separates command logic from presentation and parameter management.
+
+The core principle is separation of concerns: commands focus on business logic while Glazed handles parameter parsing, validation, and output formatting. This approach enables automatic support for multiple output formats, consistent parameter handling across commands, and reusable parameter groups.
 
 ## Architecture of Glazed Commands
 
@@ -76,12 +80,12 @@ The `glazed` framework provides a powerful system for creating command-line inte
 
 Key components:
 
-1. **Command Interfaces**: The core abstractions that define how commands behave and produce output
+1. **Command Interfaces**: Define how commands produce output - direct output (BareCommand), text streams (WriterCommand), or structured data (GlazeCommand)
 2. **CommandDescription**: Contains metadata about a command (name, description, parameters, etc.)
-3. **Parameter Layers**: Organize parameters into logical groups
-4. **Parameters**: Define the inputs a command accepts (flags, arguments)
-5. **ParsedLayers**: Runtime values of parameters after parsing from various sources
-6. **Execution Methods**: Different ways to run commands and handle their output
+3. **Parameter Layers**: Organize parameters into logical groups (database, logging, output, etc.)
+4. **Parameters**: Define command inputs with type information, validation, and help text
+5. **ParsedLayers**: Runtime values after collecting from CLI flags, environment, config files, and defaults
+6. **Execution Methods**: Different approaches for running commands - CLI integration, programmatic execution, etc.
 
 ## Core Packages
 
@@ -98,17 +102,17 @@ Glazed's command functionality is distributed across several packages:
 
 ## Command Interfaces
 
-At the heart of Glazed are three main command interfaces, each designed for different output scenarios:
+Glazed provides three main command interfaces, each designed for different output scenarios:
 
 1. **BareCommand**: For commands that handle their own output directly
-2. **WriterCommand**: For commands that write to a provided writer (like a file or console)
+2. **WriterCommand**: For commands that write to a provided writer (like a file or console)  
 3. **GlazeCommand**: For commands that produce structured data using Glazed's processing pipeline
 
-Additionally, Glazed supports **Dual Commands** that can implement multiple interfaces and switch between output modes at runtime.
+Additionally, **Dual Commands** can implement multiple interfaces and switch between output modes at runtime based on flags.
 
 ### BareCommand
 
-This is the simplest interface, suitable when you just need to perform an action without structured output:
+BareCommand provides direct control over output. Commands implementing this interface handle their own output formatting and presentation.
 
 ```go
 // BareCommand interface definition
@@ -119,9 +123,10 @@ type BareCommand interface {
 ```
 
 **Use cases:**
-- Simple utilities that print basic text output
-- Commands that perform actions without returning data
-- Quick prototyping and testing
+- Commands that print progress updates or status messages
+- Utilities that perform actions (file operations, service management) rather than data processing
+- Commands requiring custom output formatting
+- Quick prototypes and simple utilities
 
 **Example implementation:**
 ```go
@@ -135,16 +140,43 @@ func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
         return err
     }
     
-    fmt.Printf("Cleaning up %s...\n", s.Directory)
-    // Perform cleanup operations
-    fmt.Println("Cleanup completed successfully")
+    fmt.Printf("Starting cleanup in %s...\n", s.Directory)
+    
+    files, err := findOldFiles(s.Directory, s.OlderThan)
+    if err != nil {
+        return fmt.Errorf("failed to scan directory: %w", err)
+    }
+    
+    if len(files) == 0 {
+        fmt.Printf("Directory is clean - no files older than %s found.\n", s.OlderThan)
+        return nil
+    }
+    
+    fmt.Printf("Found %d files to clean up:\n", len(files))
+    for i, file := range files {
+        fmt.Printf("  %d. %s\n", i+1, file)
+        if !s.DryRun {
+            if err := os.Remove(file); err != nil {
+                fmt.Printf("     Failed to remove: %s\n", err)
+            } else {
+                fmt.Printf("     Removed\n")
+            }
+        }
+    }
+    
+    if s.DryRun {
+        fmt.Printf("Dry run completed. Use --execute to actually remove files.\n")
+    } else {
+        fmt.Printf("Cleanup completed successfully.\n")
+    }
+    
     return nil
 }
 ```
 
 ### WriterCommand
 
-When you need to write text output to a specific destination:
+WriterCommand allows commands to write text output to any destination (files, stdout, network connections) without knowing the specific target.
 
 ```go
 // WriterCommand interface definition
@@ -154,38 +186,58 @@ type WriterCommand interface {
 }
 ```
 
+This interface separates content generation from output destination, improving testability and reusability.
+
 **Use cases:**
-- Commands that generate reports or logs
-- File processing utilities
-- Commands that stream output
+- Report generators that output to files or stdout
+- Log processors that transform and forward data
+- Commands generating substantial text output (documentation, configuration files)
+- Commands where output destination should be configurable
 
 **Example implementation:**
 ```go
-type ReportCommand struct {
+type HealthReportCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *ReportCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
-    s := &ReportSettings{}
+func (c *HealthReportCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+    s := &HealthReportSettings{}
     if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
         return err
     }
     
-    fmt.Fprintf(w, "Report for %s\n", s.Date)
-    fmt.Fprintf(w, "Generated at: %s\n", time.Now().Format(time.RFC3339))
+    // Generate a comprehensive system health report
+    fmt.Fprintf(w, "System Health Report\n")
+    fmt.Fprintf(w, "Generated: %s\n", time.Now().Format(time.RFC3339))
+    fmt.Fprintf(w, "Host: %s\n\n", s.Hostname)
     
-    // Write report content to writer
-    for i, item := range s.Items {
-        fmt.Fprintf(w, "%d. %s\n", i+1, item)
+    // Check various system components
+    components := []string{"CPU", "Memory", "Disk", "Network"}
+    for _, component := range components {
+        status, details := checkComponentHealth(component)
+        fmt.Fprintf(w, "%s Status: %s\n", component, status)
+        if s.Verbose {
+            fmt.Fprintf(w, "  Details: %s\n", details)
+        }
+    }
+    
+    // Add recommendations if any issues found
+    if recommendations := generateRecommendations(); len(recommendations) > 0 {
+        fmt.Fprintf(w, "\nRecommendations:\n")
+        for i, rec := range recommendations {
+            fmt.Fprintf(w, "%d. %s\n", i+1, rec)
+        }
     }
     
     return nil
 }
 ```
 
+This command can write its report to a file for archival, to stdout for immediate viewing, or even to a network connection for monitoring systems. The command logic doesn't change - only the destination.
+
 ### GlazeCommand
 
-For producing structured data that can be formatted in multiple ways (JSON, YAML, CSV, etc.):
+GlazeCommand produces structured data that Glazed processes into various output formats. Commands generate data rows instead of formatted text, enabling automatic format conversion and data processing.
 
 ```go
 // GlazeCommand interface definition
@@ -195,36 +247,55 @@ type GlazeCommand interface {
 }
 ```
 
-**Use cases:**
-- Commands that return structured data
-- APIs and data processing tools
-- Commands that need multiple output formats
+GlazeCommand generates structured data events that can be transformed, filtered, sorted, and formatted automatically.
 
-**Example implementation:**
+**Key capabilities:**
+- **Automatic formatting**: JSON, YAML, CSV, HTML tables, custom templates without additional code
+- **Data processing**: Built-in filtering, sorting, column selection, and transformation
+- **Composability**: Output can be piped to other tools or processed programmatically
+- **Format independence**: New output formats can be added without changing command implementation
+
+**Real-world example - A server monitoring command:**
 ```go
-type ListUsersCommand struct {
+type MonitorServersCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *ListUsersCommand) RunIntoGlazeProcessor(
+func (c *MonitorServersCommand) RunIntoGlazeProcessor(
     ctx context.Context,
     parsedLayers *layers.ParsedLayers,
     gp middlewares.Processor,
 ) error {
-    s := &ListUsersSettings{}
+    s := &MonitorSettings{}
     if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
         return err
     }
     
-    users := getUsersFromDatabase(s.Filter)
+    // Get server data from various sources
+    servers := getServersFromInventory(s.Environment)
     
-    for _, user := range users {
+    for _, server := range servers {
+        // Check server health
+        health := checkServerHealth(server.Hostname)
+        
+        // Produce a rich data row with nested information
         row := types.NewRow(
-            types.MRP("id", user.ID),
-            types.MRP("name", user.Name),
-            types.MRP("email", user.Email),
-            types.MRP("created_at", user.CreatedAt),
+            types.MRP("hostname", server.Hostname),
+            types.MRP("environment", server.Environment),
+            types.MRP("cpu_percent", health.CPUPercent),
+            types.MRP("memory_used_gb", health.MemoryUsedGB),
+            types.MRP("memory_total_gb", health.MemoryTotalGB),
+            types.MRP("disk_used_percent", health.DiskUsedPercent),
+            types.MRP("status", health.Status),
+            types.MRP("last_seen", health.LastSeen),
+            types.MRP("alerts", health.ActiveAlerts), // Can be an array
+            types.MRP("metadata", map[string]interface{}{ // Nested objects work too
+                "os_version": server.OSVersion,
+                "kernel": server.KernelVersion,
+                "uptime_days": health.UptimeDays,
+            }),
         )
+        
         if err := gp.AddRow(ctx, row); err != nil {
             return err
         }
@@ -234,9 +305,20 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 }
 ```
 
+Now your users can run:
+- `monitor --output table` for a human-readable overview
+- `monitor --output json | jq '.[] | select(.status != "healthy")'` to find problem servers  
+- `monitor --output csv > servers.csv` to import into spreadsheets
+- `monitor --filter 'cpu_percent > 80' --sort cpu_percent` to find CPU hotspots
+- `monitor --template custom.tmpl` to generate custom reports
+
+All from the same command implementation.
+
 ### Dual Commands
 
-Dual commands implement multiple interfaces, allowing them to run in different output modes based on runtime flags. This is particularly useful when you want to offer both simple text output for human consumption and structured data for programmatic use.
+Dual commands implement multiple interfaces and switch between output modes based on runtime flags. This approach provides both human-readable text output and structured data from a single command.
+
+Dual commands address the need for different output formats: interactive use typically requires readable text output, while scripts need structured data. Rather than maintaining separate commands, dual commands adapt their behavior based on context.
 
 ```go
 // Dual command example
@@ -283,16 +365,21 @@ var _ cmds.BareCommand = &StatusCommand{}
 var _ cmds.GlazeCommand = &StatusCommand{}
 ```
 
-## Command Creation Patterns
+## Command Implementation
 
-### Basic Command Structure
+Glazed commands follow a consistent structure with four key components:
 
-All Glazed commands follow this basic pattern:
+### Command Structure
 
-1. **Define the command struct** that embeds `*cmds.CommandDescription`
-2. **Create a settings struct** (optional but recommended)
-3. **Implement the appropriate run method(s)**
-4. **Create a constructor function**
+**Command Struct**: Contains the command's identity and embeds `CommandDescription` which holds metadata (name, flags, help text) separately from business logic.
+
+**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields.
+
+**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings, execute logic, return results.
+
+**Constructor Function**: Creates the command description with its parameters and layers.
+
+Implementation pattern:
 
 ```go
 // Step 1: Define command struct
@@ -372,38 +459,40 @@ func NewMyCommand() (*MyCommand, error) {
 var _ cmds.GlazeCommand = &MyCommand{}
 ```
 
-## Parameter System Reference
+## Parameters
 
-### Parameter Types
+Glazed parameters are typed objects with validation rules and behavior, unlike traditional CLI libraries that treat parameters as simple strings requiring manual parsing and validation. This enables automatic validation, help generation, and multi-source value loading.
 
-Glazed supports various parameter types, each affecting how values are parsed and validated:
+### Parameter Type System
+
+Parameter types define data structure, parsing behavior, and validation rules. Each type handles string parsing, validation, and help text generation.
 
 #### Basic Types
-- `ParameterTypeString`: Plain text values
-- `ParameterTypeSecret`: String values that are masked when displayed (e.g., passwords)
-- `ParameterTypeInteger`: Whole numbers
-- `ParameterTypeFloat`: Decimal numbers
-- `ParameterTypeBool`: Boolean flags (true/false)
-- `ParameterTypeDate`: Date and time values
+**`ParameterTypeString`**: The workhorse for text inputs - names, descriptions, URLs
+**`ParameterTypeSecret`**: Like strings, but values are masked in help and logs (perfect for passwords, API keys)
+**`ParameterTypeInteger`**: Whole numbers with automatic range validation
+**`ParameterTypeFloat`**: Decimal numbers for measurements, percentages, ratios
+**`ParameterTypeBool`**: True/false flags that work with `--flag` and `--no-flag` patterns
+**`ParameterTypeDate`**: Intelligent date parsing that handles multiple formats
 
 #### Collection Types
-- `ParameterTypeStringList`: Lists of strings
-- `ParameterTypeIntegerList`: Lists of integers
-- `ParameterTypeFloatList`: Lists of floating point numbers
+**`ParameterTypeStringList`**: Multiple values like `--tag web --tag api --tag production`
+**`ParameterTypeIntegerList`**: Lists of numbers for ports, IDs, quantities
+**`ParameterTypeFloatList`**: Multiple decimal values for coordinates, measurements
 
-#### Choice Types
-- `ParameterTypeChoice`: Single selection from predefined options
-- `ParameterTypeChoiceList`: Multiple selections from predefined options
+#### Choice Types  
+**`ParameterTypeChoice`**: Single selection from predefined options (with tab completion!)
+**`ParameterTypeChoiceList`**: Multiple selections from predefined options
 
 #### File Types
-- `ParameterTypeFile`: File path (validates existence)
-- `ParameterTypeFileList`: List of file paths
-- `ParameterTypeStringFromFile`: Read string content from file
-- `ParameterTypeStringListFromFile`: Read string list from file
+**`ParameterTypeFile`**: File paths with existence validation and tab completion
+**`ParameterTypeFileList`**: Multiple file paths
+**`ParameterTypeStringFromFile`**: Read text content from a file (useful for large inputs)
+**`ParameterTypeStringListFromFile`**: Read line-separated lists from files
 
 #### Special Types
-- `ParameterTypeKeyValue`: Key-value pairs (map-like inputs)
-- `ParameterTypeDuration`: Time duration values (e.g., "30s", "1h30m")
+**`ParameterTypeKeyValue`**: Map-like inputs: `--env DATABASE_URL=postgres://... --env DEBUG=true`
+**`ParameterTypeDuration`**: Human-friendly time values: `30s`, `5m30s`, `1h`, `2d`
 
 ### Parameter Definition Options
 
@@ -888,29 +977,119 @@ func (c *LargeDataCommand) RunIntoGlazeProcessor(
 
 ## Best Practices
 
-### Command Design
-1. **Choose the Right Interface**: Use BareCommand for simple output, WriterCommand for text streams, GlazeCommand for structured data, and Dual Commands for maximum flexibility
-2. **Use Settings Structs**: Always create settings structs with `glazed.parameter` tags for type safety
-3. **Provide Good Defaults**: Set reasonable default values for all optional parameters
-4. **Add Comprehensive Help**: Include detailed help text for the command and all parameters
-5. **Handle Context Cancellation**: Always check `ctx.Done()` in long-running operations
+### Interface Selection
+
+Choose interfaces based on user requirements:
+
+- **BareCommand** when users need rich feedback, progress updates, or interactive elements
+- **WriterCommand** when output might go to files, logs, or other destinations  
+- **GlazeCommand** when data will be processed, filtered, or integrated with other tools
+- **Dual Commands** when usage patterns vary
+
+Example: A backup command might start as BareCommand for user feedback (`Backing up 1,247 files...`), but users eventually want structured output for monitoring scripts. A dual command serves both needs.
+
+### Type Safety
+
+Use settings structs with `glazed.parameter` tags to prevent type conversion errors:
+
+```go
+// Good: Type-safe and clear
+type BackupSettings struct {
+    Source      string        `glazed.parameter:"source"`
+    Destination string        `glazed.parameter:"destination"`
+    MaxAge      time.Duration `glazed.parameter:"max-age"`
+    DryRun      bool          `glazed.parameter:"dry-run"`
+}
+
+// Avoid: Manual parameter extraction
+source, _ := parsedLayers.GetString("source")
+maxAge, _ := parsedLayers.GetString("max-age") // Bug waiting to happen!
+```
+
+### Defaults and Help
+
+Provide sensible defaults so commands work with minimal flags. If your command requires multiple flags to be useful, reconsider the design.
+
+Write clear help text with examples for complex parameters:
+
+```go
+parameters.NewParameterDefinition(
+    "filter",
+    parameters.ParameterTypeString,
+    parameters.WithHelp("Filter results using SQL-like syntax. Examples: 'status = \"active\"', 'created_at > \"2023-01-01\"'"),
+)
+```
 
 ### Error Handling
-1. **Wrap Errors**: Use `fmt.Errorf` with `%w` verb to wrap errors with context
-2. **Validate Early**: Validate settings immediately after parsing
-3. **Fail Fast**: Return errors as soon as they're encountered
-4. **Provide Clear Messages**: Include specific details about what went wrong
+
+Provide specific, actionable error messages:
+
+```go
+// Good: Specific and actionable
+if s.Port < 1 || s.Port > 65535 {
+    return fmt.Errorf("port %d is invalid; must be between 1 and 65535", s.Port)
+}
+
+// Poor: Vague and frustrating
+if !isValidPort(s.Port) {
+    return errors.New("invalid port")
+}
+```
+
+Validate parameters before expensive operations. Always check context cancellation in loops and long operations.
 
 ### Performance
-1. **Stream Large Data**: Don't load large datasets entirely into memory
-2. **Use Batching**: Process data in batches for better memory usage
-3. **Check Cancellation**: Regularly check for context cancellation in loops
-4. **Optimize Row Creation**: Reuse objects when possible for high-throughput scenarios
+
+Design for streaming to handle large datasets:
+
+```go
+// Good: Processes data as it arrives
+scanner := bufio.NewScanner(reader)
+for scanner.Scan() {
+    row := processLine(scanner.Text())
+    if err := gp.AddRow(ctx, row); err != nil {
+        return err
+    }
+}
+
+// Problematic: Loads everything into memory first
+allData := loadAllDataIntoMemory() // What if this is 10GB?
+for _, item := range allData {
+    // Process items...
+}
+```
 
 ### Documentation
-1. **Document Interfaces**: Clearly specify which interfaces your command implements
-2. **Provide Examples**: Include usage examples in command descriptions
-3. **Explain Complex Parameters**: Add detailed help for complex or non-obvious parameters
-4. **Document Side Effects**: Mention any side effects or requirements in command documentation
 
-This reference provides comprehensive coverage of Glazed's command system. For practical, hands-on learning, see the [Commands Tutorial](../tutorials/build-first-command.md) which walks through building your first command step by step.
+Command help text is often the primary documentation users read:
+
+- Include realistic examples in the command description
+- Explain the purpose, not just the syntax
+- Document any side effects or special requirements
+- Cross-reference related commands
+
+For GlazeCommands, document the output schema. Users building scripts need to know what fields are available and what they contain.
+
+## Command Evolution
+
+Commands typically evolve through these stages:
+
+1. **MVP**: BareCommand that solves immediate problem
+2. **Growth**: Users want to pipe output to other tools → add GlazeCommand interface
+3. **Scale**: Command becomes popular, performance matters → add streaming and batching
+4. **Maturity**: Users have diverse needs → convert to dual command with rich options
+
+Design for this evolution by keeping business logic separate from output formatting.
+
+### Design Principles
+
+Sometimes simple is better than powerful. If your command has a single, specific purpose and will never need structured output, BareCommand is perfectly fine. Don't add complexity for theoretical future needs.
+
+Use command composition over command complication. Instead of one command that does everything, consider multiple focused commands that work well together.
+
+## Next Steps
+
+1. Start with the [Commands Tutorial](../tutorials/build-first-command.md) for hands-on experience
+2. Study the [Layer Guide](layers-guide.md) to understand parameter organization  
+3. Explore the [Applications section](../applications/) for real-world examples
+4. Build iteratively - start with something that works, then improve based on actual usage

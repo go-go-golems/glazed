@@ -15,10 +15,12 @@ SectionType: GeneralTopic
 
 # Glazed Command Layers: Complete Guide
 
+*Building maintainable CLI applications through modular parameter organization*
+
 ## Table of Contents
-1. [The Big Picture](#the-big-picture)
-2. [Mental Model & Why Use Layers](#mental-model--why-use-layers)
-3. [Understanding Layers](#understanding-layers)
+1. [Overview](#overview)
+2. [Parameter Organization Challenges](#parameter-organization-challenges)
+3. [Layer System Architecture](#layer-system-architecture)
 4. [Core Layer Concepts](#core-layer-concepts)
 5. [Layer Types & Components](#layer-types--components)
 6. [Creating and Working with Layers](#creating-and-working-with-layers)
@@ -27,9 +29,21 @@ SectionType: GeneralTopic
 9. [Best Practices](#best-practices)
 10. [Testing Layers](#testing-layers)
 
-## The Big Picture
+## Overview
 
-Imagine you're building a CLI application with multiple subcommands, each requiring different sets of parameters:
+Parameter layers organize related command parameters into reusable groups. This modular approach addresses common CLI development challenges including parameter proliferation, code duplication, naming conflicts, and maintenance complexity in growing applications.
+
+The layer system enables developers to:
+
+- **Organize parameters** logically by functionality (database, logging, output)
+- **Reuse parameter definitions** across multiple commands without duplication
+- **Compose command interfaces** by combining only required functionality
+- **Maintain consistency** through centralized parameter definitions
+- **Scale applications** without accumulating technical debt
+
+### Traditional Parameter Management Problems
+
+CLI applications often start simple but accumulate complexity as they grow:
 
 ```bash
 myapp server --host localhost --port 8080 --db-host postgres --db-port 5432 --log-level info
@@ -37,75 +51,45 @@ myapp client --endpoint http://localhost:8080 --timeout 30s --log-level debug
 myapp backup --db-host postgres --db-port 5432 --output backup.sql --log-level warn
 ```
 
-Traditional approaches often lead to parameter chaos:
-- **Parameter pollution**: Every command gets every possible flag, even if irrelevant
-- **Naming conflicts**: `--host` could mean web server host OR database host
-- **Code duplication**: Same parameter definitions repeated across commands
-- **Poor organization**: No logical grouping of related parameters
-- **Maintenance nightmare**: Adding a new database parameter means updating every command
+This traditional approach creates several maintenance issues:
+
+- **Parameter pollution**: Commands inherit irrelevant flags, cluttering help screens
+- **Naming conflicts**: Ambiguous flag names require awkward prefixes (`--web-host` vs `--db-host`)
+- **Code duplication**: Parameter definitions copy across commands, violating DRY principles
+- **Poor organization**: Parameters scatter without logical grouping
+- **Maintenance burden**: Changes require updates across multiple command definitions
+- **Interface inconsistency**: Similar functionality uses different flag names across commands
 
 ```go
-// The traditional approach - scattered and repetitive
+// Traditional approach - scattered and repetitive
 type ServerCommand struct {
     Host     string // Web server host
     Port     int    // Web server port
     DbHost   string // Database host
     DbPort   int    // Database port
     LogLevel string // Logging level
-    // ... dozens more fields
+    Timeout  string // Request timeout
 }
 
 type ClientCommand struct {
     Endpoint string // API endpoint
-    Timeout  string // Request timeout
-    LogLevel string // Logging level (duplicated!)
-    // ... more fields
+    Timeout  string // Request timeout (duplicated with different meaning)
+    LogLevel string // Logging level (duplicated)
+    APIKey   string // API authentication
 }
 
 type BackupCommand struct {
-    DbHost   string // Database host (duplicated again!)
-    DbPort   int    // Database port (duplicated again!)
+    DbHost   string // Database host (duplicated again)
+    DbPort   int    // Database port (duplicated again)
     Output   string // Output file
-    LogLevel string // Logging level (duplicated yet again!)
-    // ... more fields
+    LogLevel string // Logging level (duplicated yet again)
+    Format   string // Backup format
 }
 ```
 
-**Glazed's layer system solves these problems** by organizing parameters into logical groups that can be:
-- **Shared** across commands that need similar functionality
-- **Composed** together to build complex command interfaces
-- **Reused** without code duplication
-- **Maintained** in one place
+### Glazed Layer Solution
 
-## Mental Model & Why Use Layers
-
-Think of layers like **ingredient lists** for different types of dishes:
-
-```
-🥗 Salad Recipe:
-├── Base Ingredients (lettuce, tomatoes, cucumbers)
-├── Dressing Layer (oil, vinegar, seasoning)
-└── Protein Layer (chicken, tofu, or cheese)
-
-🍝 Pasta Recipe:
-├── Base Ingredients (pasta, sauce, herbs)
-├── Protein Layer (chicken, tofu, or cheese) ← REUSED!
-└── Garnish Layer (parmesan, basil)
-
-🥪 Sandwich Recipe:
-├── Base Ingredients (bread, condiments)
-├── Protein Layer (chicken, tofu, or cheese) ← REUSED AGAIN!
-└── Vegetable Layer (lettuce, tomatoes) ← PARTIALLY REUSED!
-```
-
-In the same way, Glazed layers let you:
-
-1. **Define reusable parameter groups** (like "protein layer" or "dressing layer")
-2. **Compose commands** by mixing and matching the layers they need
-3. **Avoid repetition** by reusing common layers across commands
-4. **Maintain consistency** by keeping related parameters together
-
-### The Glazed Way
+The layer system eliminates these problems by treating parameters as modular components that can be shared, composed, reused, maintained centrally, and extended without breaking existing commands.
 
 ```go
 // Define reusable layers once
@@ -127,32 +111,43 @@ BackupCommand := cmds.NewCommandDescription("backup",
     cmds.WithLayers(DatabaseLayer, LoggingLayer, GlazedLayer))  // No server needed
 ```
 
-**Result**: Clean, composable, maintainable parameter management.
+## Parameter Organization Challenges
 
-## Understanding Layers
+Complex CLI applications face predictable parameter management challenges that layers directly address.
 
-### What is a Layer?
+### Parameter Explosion
 
-A **layer** is a named collection of related parameter definitions. Each layer has:
+As applications add features, commands accumulate parameters that may not be relevant to their specific functionality. This creates cognitive overhead for users and increases implementation complexity.
 
-- **A unique slug/identifier** (e.g., "database", "logging", "glazed")
-- **A human-readable name** for documentation and help text
-- **A collection of parameter definitions** (flags, arguments, options)
-- **Optional metadata** (descriptions, validation rules, grouping information)
+### Naming Conflicts and Namespace Issues
 
-### Layer Architecture
+Multiple subsystems often require similar parameters (host, port, timeout). Without organization, developers resort to verbose prefixes that reduce usability and create inconsistent interfaces.
+
+### Code Duplication and Maintenance
+
+Parameter definitions scattered across command implementations require manual synchronization. Adding SSL configuration to database connections means updating every command that uses databases.
+
+### Inconsistent User Interfaces
+
+Without centralized parameter definitions, similar functionality develops different flag names across commands, creating inconsistent user experiences and requiring additional documentation.
+
+## Layer System Architecture
+
+The layer system separates parameter definition from runtime value resolution, enabling flexible composition while maintaining type safety.
+
+### System Components
 
 ```
 ┌─────────────────────────────────────────────┐
-│                Command                       │
+│                Command                       │ ← CLI command implementation
 │  ┌─────────────────────────────────────────┤
-│  │            Command Description           │
+│  │            Command Description           │ ← Metadata + layer references
 │  │                                         │
 │  │  ┌─────────────────────────────────────┤
-│  │  │          Parameter Layers           │
+│  │  │          Parameter Layers           │ ← Layer definitions (design time)
 │  │  │                                     │
 │  │  │  ┌─────────────┬─────────────────┤   │
-│  │  │  │Default Layer│  Custom Layers  │   │
+│  │  │  │Default Layer│  Custom Layers  │   │ ← Different types of layers
 │  │  │  │(flags/args) │  (database,    │   │
 │  │  │  │             │   logging, etc.)│   │
 │  │  │  └─────────────┴─────────────────┘   │
@@ -160,81 +155,116 @@ A **layer** is a named collection of related parameter definitions. Each layer h
 │  └─────────────────────────────────────────┘ │
 └─────────────────────────────────────────────┘
                        │
-                       ▼
+                       ▼ (at runtime)
 ┌─────────────────────────────────────────────┐
-│              Runtime Execution               │
+│              Runtime Parsing                 │ ← Parameter resolution
 │                                             │
-│  Parameter Sources (in priority order):     │
+│  Parameter Sources (in priority order):     │ ← Multi-source configuration
 │  1. Command line arguments                  │
 │  2. Environment variables                   │
 │  3. Configuration files                     │
 │  4. Default values from layer definitions   │
 └─────────────────────────────────────────────┘
                        │
-                       ▼
+                       ▼ (final result)
 ┌─────────────────────────────────────────────┐
-│               Parsed Layers                  │
-│        (runtime parameter values)           │
+│               Parsed Layers                  │ ← Runtime values
+│        (type-safe parameter values)         │
 └─────────────────────────────────────────────┘
 ```
 
+This architecture provides clear separation between:
+
+1. **Layer Definitions** (design time): Parameter specifications and constraints
+2. **Runtime Parsing** (execution time): Value resolution from multiple sources
+3. **Parsed Layers** (application time): Type-safe access to resolved values
+
+### Layer Lifecycle
+
+Layers progress through distinct phases from definition to runtime use:
+
+1. **Definition Phase**: Parameters defined with types, defaults, and validation rules
+2. **Composition Phase**: Layers combined into command descriptions
+3. **Parsing Phase**: User input resolved against definitions using source priority
+4. **Execution Phase**: Commands access type-safe parameter values
+
 ## Core Layer Concepts
 
-### 1. Layer Hierarchy and Organization
+### Layer Identity and Organization
 
-Layers are organized in a hierarchical fashion:
+Every layer requires unique identification and logical organization within the application parameter namespace.
+
+#### Layer Hierarchy
 
 ```
 CommandDescription
 ├── Default Layer (always present)
-│   ├── Command-specific flags
-│   └── Command-specific arguments
+│   ├── Command-specific flags      ← Unique to this command
+│   └── Command-specific arguments  ← Command's core functionality
 ├── Standard Layers (optional, commonly used)
-│   ├── Glazed Layer (for structured output)
-│   ├── Logging Layer (for logging configuration)
-│   └── Database Layer (for database connections)
+│   ├── Glazed Layer (for structured output)  ← Output formatting
+│   ├── Logging Layer (for logging configuration)  ← Debug & monitoring
+│   └── Database Layer (for database connections)  ← Data persistence
 └── Custom Layers (application-specific)
-    ├── Authentication Layer
-    ├── API Configuration Layer
-    └── Feature Toggle Layer
+    ├── Authentication Layer        ← Security & access control
+    ├── API Configuration Layer     ← External service integration
+    └── Feature Toggle Layer        ← Experimental or optional features
 ```
 
-### 2. Parameter Definition vs. Parsed Values
+This hierarchy enables logical grouping, reusability across commands, extensibility without breaking changes, and automatic propagation of layer updates.
 
-Understanding the distinction between definitions and values is crucial:
+### Parameter Definitions vs. Parsed Values
 
-**Parameter Definitions** (stored in layers):
+The system distinguishes between parameter specifications (what's possible) and runtime values (what's actual).
+
+**Parameter Definitions** (specifications stored in layers):
 ```go
+// This defines what's POSSIBLE
 parameters.NewParameterDefinition(
-    "log-level",                    // Name
-    parameters.ParameterTypeChoice, // Type
+    "log-level",                    // Parameter name
+    parameters.ParameterTypeChoice, // Data type constraint
     parameters.WithDefault("info"), // Default value
-    parameters.WithChoices("debug", "info", "warn", "error"),
-    parameters.WithHelp("Set the logging level"),
+    parameters.WithChoices("debug", "info", "warn", "error"), // Valid options
+    parameters.WithHelp("Set the logging level"), // User guidance
 )
 ```
 
-**Parsed Values** (runtime values from various sources):
+**Parsed Values** (actual runtime values):
 ```go
-// After parsing command line: --log-level debug
-parsedValue := "debug"
+// After user runs: myapp --log-level debug
+parsedValue := "debug"  // Actual value used by application
 
-// Accessed through ParsedLayers:
+// Application accesses the final value:
 logLevel, _ := parsedLayers.GetParameterValue("logging", "log-level")
+// logLevel is now "debug" (not "info" default)
 ```
 
-### 3. Layer Composition Patterns
+This separation provides:
+- **Reusable definitions** across commands
+- **Context-specific values** reflecting user choices
+- **Automatic validation** based on definition constraints
+- **Type safety** from definition through parsed values
+
+### Layer Composition Patterns
+
+Layer composition determines command interfaces by selecting appropriate parameter groups.
 
 #### Basic Composition
+
+Simple addition of required functionality:
+
 ```go
-// Simple addition of layers
+// Combine only needed layers
 commandDesc := cmds.NewCommandDescription("mycommand",
     cmds.WithLayers(databaseLayer, loggingLayer))
 ```
 
 #### Conditional Composition
+
+Dynamic layer assembly based on runtime conditions:
+
 ```go
-// Add layers based on conditions
+// Build layer list based on features
 layers := []layers.ParameterLayer{baseLayer}
 
 if needsDatabase {
@@ -249,27 +279,36 @@ commandDesc := cmds.NewCommandDescription("mycommand",
     cmds.WithLayersList(layers...))
 ```
 
-#### Layer Inheritance and Extension
+#### Layer Extension
+
+Building specialized variants from existing layers:
+
 ```go
-// Extend an existing layer with additional parameters
+// Extend existing layer without modification
 extendedDbLayer := databaseLayer.Clone()
 extendedDbLayer.AddFlags(
     parameters.NewParameterDefinition("pool-size", parameters.ParameterTypeInteger),
+    parameters.NewParameterDefinition("connection-timeout", parameters.ParameterTypeDuration),
 )
 ```
 
 ## Layer Types & Components
 
-### 1. Built-in Layer Types
+### Built-in Layer Types
+
+Glazed provides standard layer types for common CLI application requirements.
 
 #### Default Layer
-- **Purpose**: Contains command-specific flags and arguments
-- **Slug**: `"default"` (constant: `layers.DefaultSlug`)
-- **Creation**: Automatically created when using `cmds.WithFlags()` or `cmds.WithArguments()`
-- **Use Case**: Parameters unique to a specific command
+
+The Default Layer contains command-specific parameters unique to individual commands.
+
+- **Purpose**: Command-specific flags and arguments defining core functionality
+- **Slug**: `"default"` (constant: `layers.DefaultSlug`) 
+- **Creation**: Automatically created with `cmds.WithFlags()` or `cmds.WithArguments()`
+- **Use Case**: Parameters fundamental to command operation, unlikely to be shared
 
 ```go
-// Default layer is created automatically
+// Default layer created automatically
 commandDesc := cmds.NewCommandDescription("serve",
     cmds.WithFlags(
         parameters.NewParameterDefinition("port", parameters.ParameterTypeInteger),
@@ -279,82 +318,102 @@ commandDesc := cmds.NewCommandDescription("serve",
         parameters.NewParameterDefinition("config-file", parameters.ParameterTypeString),
     ),
 )
+// Parameters live in default layer, unique to "serve" command
 ```
 
 #### Glazed Layer
-- **Purpose**: Provides structured output formatting options
+
+The Glazed Layer provides comprehensive output formatting capabilities for commands producing structured data.
+
+- **Purpose**: Output formatting, filtering, and transformation options
 - **Slug**: `"glazed"` (constant: `settings.GlazedSlug`)
 - **Creation**: `settings.NewGlazedParameterLayers()`
-- **Use Case**: Commands that output structured data (tables, JSON, YAML, etc.)
+- **Use Case**: Commands outputting structured data requiring flexible formatting
 
 ```go
 glazedLayer, _ := settings.NewGlazedParameterLayers()
 // Provides: --output, --fields, --sort-columns, --filter, etc.
+// Users can run: myapp data --output json --fields name,age --filter "age > 25"
 ```
 
-### 2. Custom Layer Components
+### Custom Layer Components
+
+Application-specific layers address domain requirements through custom parameter definitions.
 
 #### Parameter Definitions
-Each layer contains parameter definitions that specify:
+
+Individual parameter specifications define acceptable input and behavior:
 
 ```go
 paramDef := parameters.NewParameterDefinition(
     "connection-timeout",              // Parameter name
-    parameters.ParameterTypeDuration,  // Type (string, int, bool, duration, etc.)
+    parameters.ParameterTypeDuration,  // Type constraint
     parameters.WithDefault("30s"),     // Default value
-    parameters.WithHelp("Connection timeout for database operations"),
-    parameters.WithRequired(false),    // Whether parameter is required
-    parameters.WithShortFlag("t"),     // Short flag (-t)
+    parameters.WithHelp("Connection timeout for database operations"), // User guidance
+    parameters.WithRequired(false),    // Whether required
+    parameters.WithShortFlag("t"),     // Short flag convenience
 )
 ```
 
+Each definition specifies:
+- **Name**: Parameter identifier for CLI flags
+- **Type**: Data type with automatic validation
+- **Default**: Value used when not specified
+- **Help**: User guidance for help text
+- **Constraints**: Validation rules and requirements
+
 #### Validation and Constraints
+
+Parameter definitions include built-in validation for common patterns:
+
 ```go
-// Choice parameters with validation
+// Choice parameters with automatic validation
 parameters.NewParameterDefinition(
     "log-level",
     parameters.ParameterTypeChoice,
     parameters.WithChoices("debug", "info", "warn", "error", "fatal"),
     parameters.WithDefault("info"),
 )
+// Automatically rejects invalid choices and shows valid options
 
-// Numeric parameters with ranges
+// Numeric parameters with defaults
 parameters.NewParameterDefinition(
     "retry-count",
     parameters.ParameterTypeInteger,
     parameters.WithDefault(3),
-    // Note: Range validation would be added through custom validation
 )
 ```
+
+This validation approach catches user errors early and provides helpful feedback, improving CLI usability and reducing support requirements.
 
 ## Creating and Working with Layers
 
 ### Method 1: Simple Layer Creation
 
-For basic use cases, create layers directly:
+Direct layer creation for straightforward parameter grouping:
 
 ```go
 func NewDatabaseLayer() (layers.ParameterLayer, error) {
     return layers.NewParameterLayer(
-        "database",                    // Layer slug
+        "database",                    // Layer identifier
         "Database Configuration",      // Human-readable name
         layers.WithParameterDefinitions(
             parameters.NewParameterDefinition(
                 "db-host",
                 parameters.ParameterTypeString,
                 parameters.WithDefault("localhost"),
-                parameters.WithHelp("Database host"),
+                parameters.WithHelp("Database host to connect to"),
             ),
             parameters.NewParameterDefinition(
                 "db-port",
                 parameters.ParameterTypeInteger,
                 parameters.WithDefault(5432),
-                parameters.WithHelp("Database port"),
+                parameters.WithHelp("Database port (PostgreSQL default: 5432)"),
             ),
             parameters.NewParameterDefinition(
                 "db-name",
                 parameters.ParameterTypeString,
-                parameters.WithHelp("Database name"),
+                parameters.WithHelp("Database name (required for connection)"),
                 parameters.WithRequired(true),
             ),
         ),
@@ -362,12 +421,12 @@ func NewDatabaseLayer() (layers.ParameterLayer, error) {
 }
 ```
 
-### Method 2: Advanced Layer with Settings Struct
+### Method 2: Type-Safe Layer with Settings Struct
 
-For complex layers, use a settings struct for type safety:
+For complex layers requiring type safety and structured access:
 
 ```go
-// 1. Define the settings struct
+// 1. Define settings struct
 type DatabaseSettings struct {
     Host     string `glazed.parameter:"db-host"`
     Port     int    `glazed.parameter:"db-port"`
@@ -377,7 +436,7 @@ type DatabaseSettings struct {
     SSLMode  string `glazed.parameter:"db-ssl-mode"`
 }
 
-// 2. Create the layer with all parameter definitions
+// 2. Create layer with parameter definitions
 func NewDatabaseLayer() (layers.ParameterLayer, error) {
     return layers.NewParameterLayer(
         "database",
@@ -422,7 +481,7 @@ func NewDatabaseLayer() (layers.ParameterLayer, error) {
     )
 }
 
-// 3. Helper function to extract settings from parsed layers
+// 3. Helper function for settings extraction
 func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
     settings := &DatabaseSettings{}
     err := parsedLayers.InitializeStruct("database", settings)
@@ -432,7 +491,7 @@ func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, 
 
 ### Method 3: Layer Builder Pattern
 
-For complex scenarios with conditional parameters:
+For complex scenarios requiring conditional parameters:
 
 ```go
 type DatabaseLayerBuilder struct {
@@ -457,7 +516,7 @@ func (b *DatabaseLayerBuilder) WithConnectionPool() *DatabaseLayerBuilder {
 }
 
 func (b *DatabaseLayerBuilder) Build() (layers.ParameterLayer, error) {
-    // Add basic database parameters
+    // Add basic parameters
     b.layer.AddFlags(
         parameters.NewParameterDefinition("db-host", parameters.ParameterTypeString, 
             parameters.WithDefault("localhost")),
@@ -498,7 +557,7 @@ dbLayer, _ := NewDatabaseLayerBuilder().
 
 ### Example 1: Web Server Application
 
-Let's build layers for a web server application with database, logging, and server configuration:
+Complete layer implementation for a web server with database, logging, and server configuration:
 
 ```go
 package main
@@ -709,10 +768,10 @@ func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, 
 
 ### Example 2: CLI Tool with Optional Features
 
-Here's how to create layers for a CLI tool where features are optional:
+Layer composition for applications with conditional functionality:
 
 ```go
-// Feature layers that can be optionally included
+// Feature layers for optional inclusion
 func NewCacheLayer() (layers.ParameterLayer, error) {
     return layers.NewParameterLayer(
         "cache",
@@ -776,7 +835,6 @@ type AppCommandBuilder struct {
 }
 
 func NewAppCommandBuilder() *AppCommandBuilder {
-    // Create base layers that are always included
     loggingLayer, _ := NewLoggingLayer()
     
     return &AppCommandBuilder{
@@ -847,7 +905,7 @@ func (b *AppCommandBuilder) BuildProcessCommand() (*cmds.CommandDescription, err
     ), nil
 }
 
-// Usage example:
+// Usage:
 func CreateCommands() {
     // Basic command (only logging)
     basicCmd, _ := NewAppCommandBuilder().
@@ -866,7 +924,7 @@ func CreateCommands() {
 
 ### 1. Layer Inheritance and Composition
 
-Sometimes you need to extend existing layers or create hierarchical layer relationships:
+Extending existing layers without modification:
 
 ```go
 // Base database layer
@@ -894,13 +952,12 @@ func NewAdvancedDatabaseLayer() (layers.ParameterLayer, error) {
     // Clone to avoid modifying the original
     advancedLayer := baseLayer.Clone()
     
-    // Add advanced parameters
+    // Add additional parameters
     advancedLayer.AddFlags(
+        parameters.NewParameterDefinition("db-pool-size", parameters.ParameterTypeInteger,
+            parameters.WithDefault(10)),
         parameters.NewParameterDefinition("db-ssl-mode", parameters.ParameterTypeChoice,
-            parameters.WithChoices("disable", "require", "verify-ca", "verify-full"),
-            parameters.WithDefault("require")),
-        parameters.NewParameterDefinition("db-max-connections", parameters.ParameterTypeInteger,
-            parameters.WithDefault(25)),
+            parameters.WithChoices("disable", "require", "verify-full")),
         parameters.NewParameterDefinition("db-connection-timeout", parameters.ParameterTypeDuration,
             parameters.WithDefault("30s")),
     )
@@ -909,458 +966,439 @@ func NewAdvancedDatabaseLayer() (layers.ParameterLayer, error) {
 }
 ```
 
-### 2. Dynamic Layer Configuration
+### 2. Environment-Specific Layer Configuration
 
-Create layers that adapt based on runtime configuration or environment:
+Adapting layers for different deployment environments:
 
 ```go
-type LayerConfig struct {
-    Environment    string
-    EnableDebug    bool
-    EnableSecurity bool
+type EnvironmentConfig struct {
+    Environment string // "development", "staging", "production"
+    Features    []string
 }
 
-func NewConfigurableLayer(config LayerConfig) (layers.ParameterLayer, error) {
-    layer, err := layers.NewParameterLayer("configurable", "Configurable Settings")
+func NewEnvironmentAwareDatabaseLayer(config EnvironmentConfig) (layers.ParameterLayer, error) {
+    layer, err := NewBaseDatabaseLayer()
     if err != nil {
         return nil, err
     }
     
-    // Always include basic parameters
-    layer.AddFlags(
-        parameters.NewParameterDefinition("app-name", parameters.ParameterTypeString,
-            parameters.WithDefault("myapp")),
-    )
-    
-    // Environment-specific parameters
+    // Add environment-specific parameters
     switch config.Environment {
     case "development":
         layer.AddFlags(
-            parameters.NewParameterDefinition("dev-mode", parameters.ParameterTypeBool,
+            parameters.NewParameterDefinition("db-debug-queries", parameters.ParameterTypeBool,
                 parameters.WithDefault(true)),
-            parameters.NewParameterDefinition("hot-reload", parameters.ParameterTypeBool,
+            parameters.NewParameterDefinition("db-auto-migrate", parameters.ParameterTypeBool,
                 parameters.WithDefault(true)),
         )
     case "production":
         layer.AddFlags(
-            parameters.NewParameterDefinition("performance-mode", parameters.ParameterTypeBool,
-                parameters.WithDefault(true)),
-            parameters.NewParameterDefinition("compression", parameters.ParameterTypeBool,
-                parameters.WithDefault(true)),
+            parameters.NewParameterDefinition("db-ssl-mode", parameters.ParameterTypeChoice,
+                parameters.WithChoices("require", "verify-full"),
+                parameters.WithDefault("verify-full")),
+            parameters.NewParameterDefinition("db-connection-pool-size", parameters.ParameterTypeInteger,
+                parameters.WithDefault(50)),
         )
     }
     
-    // Debug parameters (only if debug is enabled)
-    if config.EnableDebug {
-        layer.AddFlags(
-            parameters.NewParameterDefinition("debug-level", parameters.ParameterTypeInteger,
-                parameters.WithDefault(1)),
-            parameters.NewParameterDefinition("profile", parameters.ParameterTypeBool,
-                parameters.WithDefault(false)),
-        )
-    }
-    
-    // Security parameters (only if security is enabled)
-    if config.EnableSecurity {
-        layer.AddFlags(
-            parameters.NewParameterDefinition("api-key", parameters.ParameterTypeSecret,
-                parameters.WithHelp("API key for authentication")),
-            parameters.NewParameterDefinition("token-expiry", parameters.ParameterTypeDuration,
-                parameters.WithDefault("24h")),
-        )
+    // Add feature-specific parameters
+    for _, feature := range config.Features {
+        switch feature {
+        case "monitoring":
+            layer.AddFlags(
+                parameters.NewParameterDefinition("db-monitor-slow-queries", parameters.ParameterTypeBool),
+                parameters.NewParameterDefinition("db-slow-query-threshold", parameters.ParameterTypeDuration,
+                    parameters.WithDefault("1s")),
+            )
+        case "backup":
+            layer.AddFlags(
+                parameters.NewParameterDefinition("db-backup-enabled", parameters.ParameterTypeBool),
+                parameters.NewParameterDefinition("db-backup-schedule", parameters.ParameterTypeString),
+            )
+        }
     }
     
     return layer, nil
 }
 ```
 
-### 3. Layer Validation and Dependencies
+### 3. Dynamic Layer Registration
 
-Implement validation logic and layer dependencies:
+Runtime layer registration for plugin systems:
 
 ```go
-// Layer with validation
-func NewValidatedDatabaseLayer() (layers.ParameterLayer, error) {
-    layer, err := layers.NewParameterLayer("database", "Database Configuration")
+type LayerRegistry struct {
+    layers map[string]layers.ParameterLayer
+    mutex  sync.RWMutex
+}
+
+func NewLayerRegistry() *LayerRegistry {
+    return &LayerRegistry{
+        layers: make(map[string]layers.ParameterLayer),
+    }
+}
+
+func (r *LayerRegistry) RegisterLayer(slug string, layer layers.ParameterLayer) error {
+    r.mutex.Lock()
+    defer r.mutex.Unlock()
+    
+    if _, exists := r.layers[slug]; exists {
+        return fmt.Errorf("layer %s already registered", slug)
+    }
+    
+    r.layers[slug] = layer
+    return nil
+}
+
+func (r *LayerRegistry) GetLayer(slug string) (layers.ParameterLayer, error) {
+    r.mutex.RLock()
+    defer r.mutex.RUnlock()
+    
+    layer, exists := r.layers[slug]
+    if !exists {
+        return nil, fmt.Errorf("layer %s not found", slug)
+    }
+    
+    return layer, nil
+}
+
+func (r *LayerRegistry) BuildCommand(name string, layerSlugs []string) (*cmds.CommandDescription, error) {
+    var commandLayers []layers.ParameterLayer
+    
+    for _, slug := range layerSlugs {
+        layer, err := r.GetLayer(slug)
+        if err != nil {
+            return nil, err
+        }
+        commandLayers = append(commandLayers, layer)
+    }
+    
+    return cmds.NewCommandDescription(name,
+        cmds.WithLayersList(commandLayers...)), nil
+}
+
+// Plugin system usage
+func InitializePluginSystem() *LayerRegistry {
+    registry := NewLayerRegistry()
+    
+    // Register core layers
+    databaseLayer, _ := NewDatabaseLayer()
+    registry.RegisterLayer("database", databaseLayer)
+    
+    loggingLayer, _ := NewLoggingLayer()
+    registry.RegisterLayer("logging", loggingLayer)
+    
+    // Plugins can register additional layers
+    // registry.RegisterLayer("custom-feature", customLayer)
+    
+    return registry
+}
+```
+
+### 4. Layer Validation and Constraints
+
+Complex validation rules across layer parameters:
+
+```go
+type LayerValidator struct {
+    rules []ValidationRule
+}
+
+type ValidationRule func(*layers.ParsedLayers) error
+
+func NewLayerValidator() *LayerValidator {
+    return &LayerValidator{}
+}
+
+func (v *LayerValidator) AddRule(rule ValidationRule) {
+    v.rules = append(v.rules, rule)
+}
+
+func (v *LayerValidator) Validate(parsedLayers *layers.ParsedLayers) error {
+    for _, rule := range v.rules {
+        if err := rule(parsedLayers); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+// Cross-layer validation rules
+func DatabaseConnectionRule(parsedLayers *layers.ParsedLayers) error {
+    host, err := parsedLayers.GetParameterValue("database", "db-host")
     if err != nil {
-        return nil, err
+        return nil // Skip if database layer not present
     }
     
-    layer.AddFlags(
-        parameters.NewParameterDefinition("db-host", parameters.ParameterTypeString,
-            parameters.WithDefault("localhost")),
-        parameters.NewParameterDefinition("db-port", parameters.ParameterTypeInteger,
-            parameters.WithDefault(5432)),
-        parameters.NewParameterDefinition("db-name", parameters.ParameterTypeString,
-            parameters.WithRequired(true)),
-    )
+    port, err := parsedLayers.GetParameterValue("database", "db-port")
+    if err != nil {
+        return nil
+    }
     
-    return layer, nil
-}
-
-// Validation function for layer consistency
-func ValidateDatabaseSettings(parsedLayers *layers.ParsedLayers) error {
-    dbHost, _ := parsedLayers.GetParameterValue("database", "db-host")
-    dbName, _ := parsedLayers.GetParameterValue("database", "db-name")
-    
-    // Custom validation logic
-    if dbHost == "localhost" && dbName == "" {
-        return fmt.Errorf("database name is required when using localhost")
+    // Validate connection parameters make sense together
+    if host == "localhost" && port.(int) < 1024 {
+        return fmt.Errorf("localhost connections should use ports >= 1024")
     }
     
     return nil
 }
 
-// Layer dependency checking
-func CheckLayerDependencies(commandLayers *layers.ParameterLayers) error {
-    // Check if security layer is present when auth layer is used
-    _, hasAuth := commandLayers.Get("auth")
-    _, hasSecurity := commandLayers.Get("security")
+func SSLConfigurationRule(parsedLayers *layers.ParsedLayers) error {
+    sslMode, err := parsedLayers.GetParameterValue("database", "db-ssl-mode")
+    if err != nil {
+        return nil // Skip if SSL not configured
+    }
     
-    if hasAuth && !hasSecurity {
-        return fmt.Errorf("auth layer requires security layer to be present")
+    if sslMode == "verify-full" {
+        // Ensure SSL certificate is provided when required
+        cert, err := parsedLayers.GetParameterValue("database", "db-ssl-cert")
+        if err != nil || cert == "" {
+            return fmt.Errorf("SSL certificate required when ssl-mode is verify-full")
+        }
     }
     
     return nil
 }
-```
 
-### 4. Layer Middleware Integration
-
-Create layers that work seamlessly with middleware for loading values:
-
-```go
-// Layer designed to work with environment variable middleware
-func NewEnvAwareLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
-        "env-config",
-        "Environment Configuration",
-        layers.WithParameterDefinitions(
-            // These parameters will be automatically loaded from env vars
-            // when using env middleware with prefix "MYAPP_"
-            parameters.NewParameterDefinition("api-url", parameters.ParameterTypeString,
-                parameters.WithDefault("http://localhost:8080"),
-                parameters.WithHelp("API URL (env: MYAPP_API_URL)")),
-            parameters.NewParameterDefinition("timeout", parameters.ParameterTypeDuration,
-                parameters.WithDefault("30s"),
-                parameters.WithHelp("Request timeout (env: MYAPP_TIMEOUT)")),
-            parameters.NewParameterDefinition("debug", parameters.ParameterTypeBool,
-                parameters.WithDefault(false),
-                parameters.WithHelp("Enable debug mode (env: MYAPP_DEBUG)")),
-        ),
-    )
-}
-
-// Layer for configuration file integration
-func NewConfigFileLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
-        "config",
-        "Configuration File Settings",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("config-file", parameters.ParameterTypeFile,
-                parameters.WithHelp("Configuration file path")),
-            parameters.NewParameterDefinition("config-format", parameters.ParameterTypeChoice,
-                parameters.WithChoices("json", "yaml", "toml"),
-                parameters.WithDefault("yaml"),
-                parameters.WithHelp("Configuration file format")),
-        ),
-    )
+// Usage in command implementation
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    // Validate layer configuration
+    validator := NewLayerValidator()
+    validator.AddRule(DatabaseConnectionRule)
+    validator.AddRule(SSLConfigurationRule)
+    
+    if err := validator.Validate(parsedLayers); err != nil {
+        return fmt.Errorf("configuration validation failed: %w", err)
+    }
+    
+    // Continue with command execution
+    return nil
 }
 ```
 
 ## Best Practices
 
-### 1. Layer Organization Principles
+### Layer Design Principles
 
-**Keep layers focused and cohesive**:
-```go
-// Good: Focused layer
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    // Only database-related parameters
-}
+**Single Responsibility**: Each layer should handle one logical area of configuration. Database layers handle database parameters, logging layers handle logging configuration.
 
-// Bad: Mixed concerns
-func NewDatabaseAndLoggingLayer() (layers.ParameterLayer, error) {
-    // Mixes database and logging - should be separate layers
-}
-```
+**Clear Naming**: Use descriptive layer slugs and parameter names. Prefer `database-connection-timeout` over `timeout`.
 
-**Use descriptive names and help text**:
-```go
-parameters.NewParameterDefinition(
-    "db-connection-timeout",              // Clear, descriptive name
-    parameters.ParameterTypeDuration,
-    parameters.WithHelp("Maximum time to wait for database connection establishment"),
-    parameters.WithDefault("30s"),
-)
-```
+**Sensible Defaults**: Provide reasonable default values that work in common scenarios. Users should be able to run commands without extensive configuration.
 
-**Provide sensible defaults**:
-```go
-// Good: Sensible defaults that work out of the box
-parameters.NewParameterDefinition("log-level", parameters.ParameterTypeChoice,
-    parameters.WithDefault("info"),    // Good default for most use cases
-    parameters.WithChoices("debug", "info", "warn", "error", "fatal"))
+**Consistent Interfaces**: Use similar parameter names across layers. If one layer uses `host`, avoid `hostname` in another layer for the same concept.
 
-// Consider environment-specific defaults
-defaultLogLevel := "info"
-if os.Getenv("NODE_ENV") == "development" {
-    defaultLogLevel = "debug"
-}
-```
+### Parameter Organization
 
-### 2. Layer Composition Guidelines
+Group related parameters logically within layers. Database layers should include host, port, credentials, and connection options together.
 
-**Compose layers logically**:
-```go
-// Server command needs server, database, and logging configuration
-serverCmd := cmds.NewCommandDescription("serve",
-    cmds.WithLayersList(serverLayer, databaseLayer, loggingLayer))
+Use consistent naming patterns across your application. Establish conventions for common concepts like timeouts, ports, and file paths.
 
-// Client command only needs connection and logging
-clientCmd := cmds.NewCommandDescription("client", 
-    cmds.WithLayersList(connectionLayer, loggingLayer))
+Consider parameter relationships when designing layers. Parameters that are frequently used together belong in the same layer.
 
-// Backup command needs database, output formatting, but no server
-backupCmd := cmds.NewCommandDescription("backup",
-    cmds.WithLayersList(databaseLayer, glazedLayer, loggingLayer))
-```
+### Command Composition
 
-**Order layers by precedence**:
-```go
-// Place more specific layers before general ones
-// This helps with parameter resolution order
-cmds.NewCommandDescription("command",
-    cmds.WithLayersList(
-        commandSpecificLayer,  // Most specific
-        featureLayer,          // Feature-specific  
-        loggingLayer,          // General infrastructure
-    ))
-```
+Only include layers that provide parameters relevant to the command's functionality. Avoid layer pollution by being selective.
 
-### 3. Parameter Design Best Practices
+Use builder patterns for commands with many optional features. This provides flexibility while maintaining clean interfaces.
 
-**Use appropriate parameter types**:
-```go
-// Use specific types for better validation and help
-parameters.NewParameterDefinition("timeout", parameters.ParameterTypeDuration,
-    parameters.WithDefault("30s"))  // Better than string
+Consider creating specialized layer variants for different command types. A read-only database layer might exclude authentication parameters.
 
-parameters.NewParameterDefinition("log-level", parameters.ParameterTypeChoice,
-    parameters.WithChoices("debug", "info", "warn"))  // Better than free-form string
-    
-parameters.NewParameterDefinition("api-key", parameters.ParameterTypeSecret)  // Masks value
-```
+### Error Handling and Validation
 
-**Group related parameters with prefixes**:
-```go
-// Database parameters
-"db-host", "db-port", "db-name", "db-username", "db-password"
+Validate layer configuration early in command execution. Fail fast with clear error messages about parameter issues.
 
-// Server parameters  
-"server-host", "server-port", "server-timeout"
+Provide helpful validation messages that guide users toward correct configuration. Include examples of valid values when rejecting input.
 
-// Cache parameters
-"cache-enabled", "cache-ttl", "cache-size"
-```
+Use type-safe parameter extraction where possible. Struct-based settings reduce runtime errors and improve code clarity.
 
-**Use consistent naming conventions**:
-```go
-// Consistent patterns make CLI more intuitive
-"db-*"      // Database parameters
-"log-*"     // Logging parameters
-"cache-*"   // Cache parameters
-"*-timeout" // Timeout parameters
-"*-enabled" // Boolean enable/disable flags
-```
+### Testing and Maintenance
 
-### 4. Error Handling and Validation
+Write unit tests for layer definitions to ensure parameter validation works correctly. Test edge cases and error conditions.
 
-**Validate layer configuration early**:
-```go
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    layer, err := layers.NewParameterLayer("database", "Database Configuration")
-    if err != nil {
-        return nil, fmt.Errorf("failed to create database layer: %w", err)
-    }
-    
-    // Validate parameter definitions
-    if err := validateParameterDefinitions(layer); err != nil {
-        return nil, fmt.Errorf("invalid parameter definitions: %w", err)
-    }
-    
-    return layer, nil
-}
-```
+Test layer composition to verify that combined layers work correctly together. Check for parameter conflicts and validation interactions.
 
-**Provide clear error messages**:
-```go
-func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
-    settings := &DatabaseSettings{}
-    if err := parsedLayers.InitializeStruct("database", settings); err != nil {
-        return nil, fmt.Errorf("failed to initialize database settings: %w", err)
-    }
-    
-    // Additional validation
-    if settings.Host == "" {
-        return nil, fmt.Errorf("database host cannot be empty")
-    }
-    
-    if settings.Port <= 0 || settings.Port > 65535 {
-        return nil, fmt.Errorf("database port must be between 1 and 65535, got %d", settings.Port)
-    }
-    
-    return settings, nil
-}
-```
+Use integration tests to verify that commands work correctly with different layer combinations and parameter sources.
 
-### 5. Documentation and Help Text
+Document layer dependencies and relationships. Explain when layers should be used together and any constraints.
 
-**Write helpful parameter descriptions**:
-```go
-parameters.NewParameterDefinition(
-    "db-connection-timeout",
-    parameters.ParameterTypeDuration,
-    parameters.WithHelp("Maximum time to wait for database connection establishment. " +
-                        "Use format like '30s', '1m', '5m30s'. Set to 0 to disable timeout."),
-    parameters.WithDefault("30s"),
-)
-```
+Keep layer definitions close to their usage when possible. This improves maintainability and reduces the chance of configuration drift.
 
-**Include examples in layer documentation**:
-```go
-// NewDatabaseLayer creates a database configuration layer.
-// 
-// Example usage:
-//   --db-host localhost --db-port 5432 --db-name myapp
-//   --db-host prod.example.com --db-port 5432 --db-ssl-mode require
-//
-// Environment variables (when using env middleware):
-//   MYAPP_DB_HOST, MYAPP_DB_PORT, MYAPP_DB_NAME
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    // ...
-}
-```
+Version layer definitions carefully in evolving applications. Consider backward compatibility when modifying existing layers.
 
 ## Testing Layers
 
-### Unit Testing Layer Creation
+### Unit Testing Layer Definitions
+
+Test individual layer creation and parameter validation:
 
 ```go
-func TestNewDatabaseLayer(t *testing.T) {
+func TestDatabaseLayer(t *testing.T) {
     layer, err := NewDatabaseLayer()
     assert.NoError(t, err)
-    assert.NotNil(t, layer)
-    
-    // Test layer metadata
     assert.Equal(t, "database", layer.GetSlug())
-    assert.Equal(t, "Database Configuration", layer.GetName())
     
     // Test parameter definitions
     params := layer.GetParameterDefinitions()
+    assert.Contains(t, params, "db-host")
+    assert.Contains(t, params, "db-port")
+    assert.Contains(t, params, "db-name")
     
-    // Check that required parameters exist
-    hostParam := params.Get("db-host")
-    assert.NotNil(t, hostParam)
-    assert.Equal(t, parameters.ParameterTypeString, hostParam.Type)
+    // Test default values
+    hostParam := params["db-host"]
     assert.Equal(t, "localhost", hostParam.Default)
     
-    portParam := params.Get("db-port")
-    assert.NotNil(t, portParam)
-    assert.Equal(t, parameters.ParameterTypeInteger, portParam.Type)
+    portParam := params["db-port"]
     assert.Equal(t, 5432, portParam.Default)
 }
-```
 
-### Integration Testing with Commands
-
-```go
-func TestDatabaseLayerIntegration(t *testing.T) {
-    // Create command with database layer
-    dbLayer, err := NewDatabaseLayer()
-    assert.NoError(t, err)
+func TestParameterValidation(t *testing.T) {
+    layer, _ := NewDatabaseLayer()
     
-    cmd := cmds.NewCommandDescription("test-cmd",
-        cmds.WithLayersList(dbLayer))
+    // Test valid choices
+    logLevelParam := layer.GetParameterDefinitions()["log-level"]
+    validChoices := []string{"debug", "info", "warn", "error", "fatal"}
+    assert.Equal(t, validChoices, logLevelParam.Choices)
     
-    // Test parameter parsing
-    testCases := []struct {
-        name     string
-        args     []string
-        expected DatabaseSettings
-    }{
-        {
-            name: "default values",
-            args: []string{},
-            expected: DatabaseSettings{
-                Host: "localhost",
-                Port: 5432,
-            },
-        },
-        {
-            name: "custom values",
-            args: []string{"--db-host", "prod.example.com", "--db-port", "3306"},
-            expected: DatabaseSettings{
-                Host: "prod.example.com", 
-                Port: 3306,
-            },
-        },
-    }
-    
-    for _, tc := range testCases {
-        t.Run(tc.name, func(t *testing.T) {
-            // Parse arguments using runner
-            ctx := context.Background()
-            parsedLayers, err := runner.ParseCommand(ctx, cmd, tc.args)
-            assert.NoError(t, err)
-            
-            // Extract settings
-            settings, err := GetDatabaseSettings(parsedLayers)
-            assert.NoError(t, err)
-            assert.Equal(t, tc.expected, *settings)
-        })
-    }
+    // Test required parameters
+    dbNameParam := layer.GetParameterDefinitions()["db-name"]
+    assert.True(t, dbNameParam.Required)
 }
 ```
 
-### Testing Layer Composition
+### Integration Testing Layer Composition
+
+Test command creation with multiple layers:
 
 ```go
-func TestLayerComposition(t *testing.T) {
-    // Create multiple layers
-    dbLayer, _ := NewDatabaseLayer()
-    loggingLayer, _ := NewLoggingLayer()
+func TestCommandComposition(t *testing.T) {
     serverLayer, _ := NewServerLayer()
+    databaseLayer, _ := NewDatabaseLayer()
+    loggingLayer, _ := NewLoggingLayer()
     
-    // Test command with multiple layers
-    cmd := cmds.NewCommandDescription("serve",
-        cmds.WithLayersList(serverLayer, dbLayer, loggingLayer))
+    command, err := cmds.NewCommandDescription("test-command",
+        cmds.WithLayersList(serverLayer, databaseLayer, loggingLayer))
+    
+    assert.NoError(t, err)
+    assert.NotNil(t, command)
     
     // Verify all layers are present
-    layers := cmd.Layers
-    assert.True(t, layers.Has("server"))
-    assert.True(t, layers.Has("database"))
-    assert.True(t, layers.Has("logging"))
+    layers := command.GetLayers()
+    assert.Len(t, layers, 3)
     
-    // Test that parameters from all layers are available
-    allParams := cmd.GetAllParameters()
-    
-    // Check server parameters
-    assert.Contains(t, allParams, "host")
-    assert.Contains(t, allParams, "port")
-    
-    // Check database parameters
-    assert.Contains(t, allParams, "db-host")
-    assert.Contains(t, allParams, "db-port")
-    
-    // Check logging parameters
-    assert.Contains(t, allParams, "log-level")
-    assert.Contains(t, allParams, "log-format")
+    // Verify no parameter conflicts
+    allParams := make(map[string]bool)
+    for _, layer := range layers {
+        for paramName := range layer.GetParameterDefinitions() {
+            assert.False(t, allParams[paramName], 
+                "Parameter %s defined in multiple layers", paramName)
+            allParams[paramName] = true
+        }
+    }
 }
 ```
 
----
+### Testing Parameter Resolution
 
-This guide provides a comprehensive foundation for understanding and working with Glazed's layer system. The key takeaway is that layers enable you to build modular, reusable, and maintainable command-line interfaces by organizing related parameters into logical groups that can be composed as needed.
+Test parameter value resolution from different sources:
 
-For hands-on practice, see the [Custom Layer Tutorial](../tutorials/custom-layer.md) which walks through creating a custom logging layer step by step.
+```go
+func TestParameterResolution(t *testing.T) {
+    // Create test command with layers
+    command, _ := createTestCommand()
+    
+    // Test CLI argument parsing
+    args := []string{"--db-host", "testhost", "--db-port", "3306", "--log-level", "debug"}
+    parsedLayers, err := command.ParseLayers(args)
+    assert.NoError(t, err)
+    
+    // Verify parsed values
+    dbHost, err := parsedLayers.GetParameterValue("database", "db-host")
+    assert.NoError(t, err)
+    assert.Equal(t, "testhost", dbHost)
+    
+    dbPort, err := parsedLayers.GetParameterValue("database", "db-port")
+    assert.NoError(t, err)
+    assert.Equal(t, 3306, dbPort)
+    
+    // Test struct initialization
+    dbSettings := &DatabaseSettings{}
+    err = parsedLayers.InitializeStruct("database", dbSettings)
+    assert.NoError(t, err)
+    assert.Equal(t, "testhost", dbSettings.Host)
+    assert.Equal(t, 3306, dbSettings.Port)
+}
+
+func TestDefaultValues(t *testing.T) {
+    command, _ := createTestCommand()
+    
+    // Parse with no arguments - should use defaults
+    parsedLayers, err := command.ParseLayers([]string{})
+    assert.NoError(t, err)
+    
+    // Verify default values are used
+    dbHost, _ := parsedLayers.GetParameterValue("database", "db-host")
+    assert.Equal(t, "localhost", dbHost)
+    
+    dbPort, _ := parsedLayers.GetParameterValue("database", "db-port")
+    assert.Equal(t, 5432, dbPort)
+    
+    logLevel, _ := parsedLayers.GetParameterValue("logging", "log-level")
+    assert.Equal(t, "info", logLevel)
+}
+```
+
+### Testing Layer Builders and Dynamic Composition
+
+Test builder patterns and conditional layer inclusion:
+
+```go
+func TestDatabaseLayerBuilder(t *testing.T) {
+    // Test basic layer
+    basicLayer, err := NewDatabaseLayerBuilder().Build()
+    assert.NoError(t, err)
+    
+    basicParams := basicLayer.GetParameterDefinitions()
+    assert.Contains(t, basicParams, "db-host")
+    assert.Contains(t, basicParams, "db-port")
+    assert.NotContains(t, basicParams, "db-ssl-mode")
+    
+    // Test layer with SSL
+    sslLayer, err := NewDatabaseLayerBuilder().WithSSL().Build()
+    assert.NoError(t, err)
+    
+    sslParams := sslLayer.GetParameterDefinitions()
+    assert.Contains(t, sslParams, "db-host")
+    assert.Contains(t, sslParams, "db-ssl-mode")
+    assert.Contains(t, sslParams, "db-ssl-cert")
+    
+    // Test layer with connection pool
+    poolLayer, err := NewDatabaseLayerBuilder().WithConnectionPool().Build()
+    assert.NoError(t, err)
+    
+    poolParams := poolLayer.GetParameterDefinitions()
+    assert.Contains(t, poolParams, "db-max-connections")
+    assert.Contains(t, poolParams, "db-idle-timeout")
+}
+
+func TestConditionalLayerComposition(t *testing.T) {
+    builder := NewAppCommandBuilder()
+    
+    // Test basic command
+    basicCmd, err := builder.BuildProcessCommand()
+    assert.NoError(t, err)
+    assert.Len(t, basicCmd.GetLayers(), 1) // Only logging layer
+    
+    // Test command with cache
+    cacheCmd, err := builder.WithCache().BuildProcessCommand()
+    assert.NoError(t, err)
+    assert.Len(t, cacheCmd.GetLayers(), 2) // Logging + cache layers
+    
+    // Test command with all features
+    fullCmd, err := builder.WithCache().WithMetrics().WithAuth().BuildProcessCommand()
+    assert.NoError(t, err)
+    assert.Len(t, fullCmd.GetLayers(), 4) // All layers
+}
+```
+
+This comprehensive testing approach ensures layers work correctly individually and in composition, parameter resolution functions properly across different sources, and dynamic layer construction produces expected results.

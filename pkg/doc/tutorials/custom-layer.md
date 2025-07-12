@@ -16,41 +16,63 @@ SectionType: Tutorial
 
 # Creating Custom Parameter Layers: Tutorial
 
-This tutorial demonstrates how to create and use custom parameter layers in Glazed. We'll build a comprehensive logging layer that can be reused across multiple commands, providing consistent logging configuration throughout your application.
+## Overview
 
-## What You'll Build
+Custom parameter layers address the common challenge of duplicating parameter definitions across multiple CLI commands. Instead of copying the same flags for logging, database connections, or API configurations across commands, parameter layers provide reusable components that encapsulate related parameters and their validation logic.
 
-By the end of this tutorial, you'll have:
-- A reusable logging layer with comprehensive configuration options
-- A settings struct for type-safe parameter access
-- Helper functions for easy integration
-- A command that uses the logging layer
-- Understanding of layer composition and reuse patterns
+This tutorial demonstrates building a production-ready logging layer that can be reused across any Glazed command, providing consistent configuration interfaces and behavior throughout an application.
+
+## Learning Objectives
+
+This tutorial covers:
+
+- **Reusable logging layer implementation** with comprehensive parameter definitions
+- **Type-safe configuration structures** using struct tags for parameter binding
+- **Production features** including file output, JSON formatting, and Logstash integration
+- **Command composition patterns** demonstrating layer reuse across multiple commands
+- **Validation and error handling** for robust configuration management
 
 ## Prerequisites
 
 - Completed the [Build Your First Command](./build-first-command.md) tutorial
-- Basic understanding of Go structs and interfaces
-- Familiarity with Glazed's command system
+- Comfort with Go structs and interfaces
+- Some experience with CLI application structure
 
-## Step 1: Design Your Layer
+## Requirements Analysis
 
-Before writing code, let's plan what our logging layer should provide:
+Comprehensive logging configuration for production applications requires multiple parameter categories:
 
-**Core Features:**
-- Log level control (debug, info, warn, error, fatal)
-- Output format selection (text, JSON)
-- Log file specification
-- Caller information toggle
-- Verbose mode
+**Basic Features:**
+- Log level control (debug through fatal)
+- Output format selection (human-readable vs machine-parseable)
+- Output destination (console vs file)
 
-**Integration Features:**
-- Environment variable support
-- Configuration file compatibility
-- Validation and defaults
-- Helper functions for easy setup
+**Production Features:**
+- Caller information for debugging
+- Centralized logging (Logstash, fluentd, etc.)
+- Environment variable integration
+- Configuration file support
 
-## Step 2: Create the Project Structure
+Parameter layers eliminate the need to duplicate these 7+ flags across every command by defining the configuration once and reusing it throughout the application.
+
+## Step 1: Parameter Design
+
+Production logging layers require parameters that address both developer and operational requirements:
+
+**Core Parameters:**
+- **Log levels**: Debug for development, info for normal operation, warn/error for problems
+- **Format options**: Text for human consumption, JSON for log aggregation systems
+- **File output**: Standard file-based logging with proper file handling
+- **Caller information**: Source code location tracking (with performance considerations)
+- **Verbose mode**: Shortcut flag for debug-level logging
+
+**Production Parameters:**
+- **Centralized logging**: Logstash integration for log aggregation
+- **Environment integration**: Support for environment variable configuration
+- **Sensible defaults**: Configuration that works without customization
+- **Input validation**: Clear error messages for invalid parameter combinations
+
+## Step 2: Build the Foundation
 
 ```bash
 mkdir glazed-logging-layer
@@ -61,20 +83,25 @@ go get github.com/spf13/cobra
 go get github.com/rs/zerolog
 ```
 
-Create the following structure:
+The project structure separates parameter definitions from business logic for maintainability:
+
 ```
 glazed-logging-layer/
-├── main.go
+├── main.go           # Demo commands showing layer usage
 ├── logging/
-│   ├── layer.go      # Layer definition
-│   ├── settings.go   # Settings struct and helpers  
-│   └── init.go       # Logger initialization
+│   ├── layer.go      # Parameter definitions and layer creation
+│   ├── settings.go   # Type-safe configuration struct
+│   └── init.go       # Logger setup and initialization
 └── go.mod
 ```
 
-## Step 3: Define the Settings Struct
+This separation enables independent testing of parameter validation and provides clear initialization patterns for applications using the layer.
+
+## Step 3: Create the Configuration Contract
 
 Create `logging/settings.go`:
+
+The settings struct defines the layer's configuration interface, using struct tags to map CLI parameters to Go fields. This struct serves as both the parameter binding target and the configuration container for logger initialization.
 
 ```go
 package logging
@@ -90,39 +117,42 @@ import (
     "github.com/rs/zerolog/log"
 )
 
-// LoggingSettings represents all logging configuration options
+// LoggingSettings represents all logging configuration options.
+// This struct serves as both the parameter binding target and the
+// configuration container for logger initialization.
 type LoggingSettings struct {
-    // Core logging settings
+    // Core logging settings - the 80% use case
     Level      string `glazed.parameter:"log-level"`
     Format     string `glazed.parameter:"log-format"`
     File       string `glazed.parameter:"log-file"`
     
-    // Advanced settings  
+    // Developer convenience settings
     WithCaller bool   `glazed.parameter:"with-caller"`
     Verbose    bool   `glazed.parameter:"verbose"`
     
-    // Logstash integration (optional advanced feature)
+    // Production/enterprise features
     LogstashHost string `glazed.parameter:"logstash-host"`
     LogstashPort int    `glazed.parameter:"logstash-port"`
 }
 
-// Validate checks if the logging settings are valid
+// Validate checks if the logging settings are valid.
+// Input validation prevents runtime failures from invalid configuration.
 func (s *LoggingSettings) Validate() error {
-    // Validate log level
+    // Validate log level - catch typos early
     validLevels := []string{"debug", "info", "warn", "error", "fatal", "panic"}
     if !contains(validLevels, s.Level) {
         return fmt.Errorf("invalid log level '%s', must be one of: %s", 
             s.Level, strings.Join(validLevels, ", "))
     }
     
-    // Validate log format
+    // Validate log format - prevent silent failures in log parsing
     validFormats := []string{"text", "json"}
     if !contains(validFormats, s.Format) {
         return fmt.Errorf("invalid log format '%s', must be one of: %s",
             s.Format, strings.Join(validFormats, ", "))
     }
     
-    // Validate logstash port if host is specified
+    // Validate logstash configuration - partial config leads to confusion
     if s.LogstashHost != "" && (s.LogstashPort < 1 || s.LogstashPort > 65535) {
         return fmt.Errorf("logstash port must be between 1 and 65535, got %d", s.LogstashPort)
     }
@@ -130,8 +160,10 @@ func (s *LoggingSettings) Validate() error {
     return nil
 }
 
-// GetLogLevel converts string level to zerolog.Level
+// GetLogLevel converts string level to zerolog.Level.
+// The verbose flag overrides the configured level for debugging convenience.
 func (s *LoggingSettings) GetLogLevel() zerolog.Level {
+    // Verbose flag takes precedence over configured level
     if s.Verbose {
         return zerolog.DebugLevel
     }
@@ -150,16 +182,20 @@ func (s *LoggingSettings) GetLogLevel() zerolog.Level {
     case "panic":
         return zerolog.PanicLevel
     default:
+        // Default to info level for balanced logging
         return zerolog.InfoLevel
     }
 }
 
-// GetWriter returns the appropriate writer for log output
+// GetWriter returns the appropriate writer for log output.
+// Defaults to stderr to separate log output from program output.
 func (s *LoggingSettings) GetWriter() (io.Writer, error) {
     if s.File == "" {
+        // Use stderr for log output to avoid mixing with program output
         return os.Stderr, nil
     }
     
+    // Append to log files to preserve history across restarts
     file, err := os.OpenFile(s.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
     if err != nil {
         return nil, fmt.Errorf("failed to open log file '%s': %w", s.File, err)
@@ -222,9 +258,11 @@ func contains(slice []string, item string) bool {
 }
 ```
 
-## Step 4: Create the Parameter Layer
+## Step 4: Define the Parameter Interface
 
 Create `logging/layer.go`:
+
+The layer definition specifies the CLI parameters and their configuration options. Each parameter includes type, default values, validation rules, and help text.
 
 ```go
 package logging
@@ -235,66 +273,66 @@ import (
 )
 
 const (
-    // LoggingSlug is the identifier for the logging layer
+    // LoggingSlug is the unique identifier for this layer.
     LoggingSlug = "logging"
 )
 
-// NewLoggingLayer creates a new parameter layer for logging configuration
+// NewLoggingLayer creates a new parameter layer for logging configuration.
 func NewLoggingLayer() (layers.ParameterLayer, error) {
     return layers.NewParameterLayer(
         LoggingSlug,
         "Logging Configuration",
         layers.WithParameterDefinitions(
-            // Core logging parameters
+            // Core logging parameters - the ones everyone needs
             parameters.NewParameterDefinition(
                 "log-level",
                 parameters.ParameterTypeChoice,
                 parameters.WithHelp("Set the logging level"),
-                parameters.WithDefault("info"),
+                parameters.WithDefault("info"), // Safe default - not too noisy, not too quiet
                 parameters.WithChoices("debug", "info", "warn", "error", "fatal", "panic"),
-                parameters.WithShortFlag("L"),
+                parameters.WithShortFlag("L"), // Capital L to avoid conflicts with -l (list)
             ),
             parameters.NewParameterDefinition(
                 "log-format",
                 parameters.ParameterTypeChoice,
                 parameters.WithHelp("Set the log output format"),
-                parameters.WithDefault("text"),
-                parameters.WithChoices("text", "json"),
+                parameters.WithDefault("text"), // Human-readable by default
+                parameters.WithChoices("text", "json"), // JSON for log aggregation systems
             ),
             parameters.NewParameterDefinition(
                 "log-file",
                 parameters.ParameterTypeString,
                 parameters.WithHelp("Log file path (default: stderr)"),
-                parameters.WithDefault(""),
+                parameters.WithDefault(""), // Empty means stderr - explicit in help text
             ),
             
-            // Advanced parameters
+            // Developer convenience parameters
             parameters.NewParameterDefinition(
                 "with-caller",
                 parameters.ParameterTypeBool,
                 parameters.WithHelp("Include caller information in log entries"),
-                parameters.WithDefault(false),
+                parameters.WithDefault(false), // Off by default - performance impact
             ),
             parameters.NewParameterDefinition(
                 "verbose",
                 parameters.ParameterTypeBool,
                 parameters.WithHelp("Enable verbose logging (sets level to debug)"),
                 parameters.WithDefault(false),
-                parameters.WithShortFlag("v"),
+                parameters.WithShortFlag("v"), // Classic Unix convention
             ),
             
-            // Optional advanced features
+            // Enterprise/production features
             parameters.NewParameterDefinition(
                 "logstash-host",
                 parameters.ParameterTypeString,
                 parameters.WithHelp("Logstash server host for centralized logging"),
-                parameters.WithDefault(""),
+                parameters.WithDefault(""), // Optional feature - empty disables
             ),
             parameters.NewParameterDefinition(
                 "logstash-port",
                 parameters.ParameterTypeInteger,
                 parameters.WithHelp("Logstash server port"),
-                parameters.WithDefault(5044),
+                parameters.WithDefault(5044), // Standard Logstash Beats port
             ),
         ),
     )
@@ -835,83 +873,145 @@ func NewDatabaseLayerWithLogging() ([]layers.ParameterLayer, error) {
 }
 ```
 
-## What You've Learned
+## Implementation Results
 
-Congratulations! You've successfully created a comprehensive custom parameter layer. Here's what you've accomplished:
+This tutorial demonstrates creating reusable configuration components that address common CLI development challenges.
 
-### Layer Creation
-- **Parameter Definition**: Created parameters with appropriate types, defaults, and validation
-- **Settings Struct**: Used struct tags for type-safe parameter access
-- **Validation**: Implemented parameter validation with clear error messages
-- **Configuration Options**: Added options for customizing layer behavior
+### Benefits
 
-### Integration Patterns
-- **Helper Functions**: Created functions for easy settings extraction and logger initialization
-- **Error Handling**: Implemented robust error handling with context
-- **Layer Reuse**: Demonstrated how the same layer can be used across multiple commands
-- **Composition**: Showed how layers can be combined for complex applications
+**Before layers**: Adding logging to commands required copying flag definitions, validation logic, and initialization code across multiple files, leading to inconsistent behavior and maintenance overhead.
 
-### Advanced Features
-- **Conditional Parameters**: Used options to include/exclude parameters
-- **Default Customization**: Allowed customization of default values
-- **Middleware Support**: Prepared the layer for environment and config file integration
-- **Logging Integration**: Connected the layer to actual logging functionality
+**With layers**: Adding logging to any command requires a single line: `cmds.WithLayersList(loggingLayer)`. All commands share the same interface, validation, and behavior patterns.
 
-## Best Practices You've Applied
+### Design Principles
 
-1. **Single Responsibility**: The logging layer only handles logging configuration
-2. **Type Safety**: Used struct tags and validation for safe parameter access
-3. **Clear Naming**: Used descriptive parameter names with consistent patterns
-4. **Good Defaults**: Provided sensible defaults that work out of the box
-5. **Documentation**: Added comprehensive help text for all parameters
-6. **Error Handling**: Implemented proper error wrapping and context
-7. **Reusability**: Created a layer that can be used across different commands
+**Separation of Concerns**: The logging layer handles configuration independently from business logic, enabling isolated testing and reuse across different commands.
 
-## Next Steps
+**Early Validation**: Validation methods catch configuration errors at startup rather than during runtime.
 
-Now that you understand custom layers, you can:
+**Sensible Defaults**: The layer provides working defaults for common use cases while supporting advanced configurations for enterprise requirements.
 
-1. **Create More Layers**: Build layers for database connections, API configurations, etc.
-2. **Layer Libraries**: Create packages of reusable layers for your organization
-3. **Advanced Validation**: Add more sophisticated validation logic
-4. **Dynamic Configuration**: Create layers that adapt based on runtime conditions
-5. **Integration Testing**: Write tests for your layers and their interactions
+**Convention Over Configuration**: Consistent patterns for parameter naming, struct tags, and validation provide familiar interfaces for Go developers.
 
-## Common Patterns for Other Layers
+### Production Features
+
+The implemented layer includes production-ready capabilities:
+
+- **Environment integration** through Glazed's middleware system
+- **Configuration file support** for complex deployments  
+- **Type safety** that catches errors at compile time
+- **Extensibility** through the options pattern
+- **Performance considerations** (caller info optional, efficient file handling)
+
+### Scaling Architecture
+
+Layer composition enables modular architecture patterns for complex applications:
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   API Layer     │  │ Database Layer  │  │ Logging Layer   │
+│ - base-url      │  │ - db-host       │  │ - log-level     │
+│ - timeout       │  │ - db-port       │  │ - log-format    │
+│ - retry-count   │  │ - db-name       │  │ - log-file      │
+│ - api-key       │  │ - ssl-mode      │  │ - verbose       │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   Your Command    │
+                    │ - command-specific│
+                    │   parameters      │
+                    └───────────────────┘
+```
+
+Each layer handles a specific concern. Commands compose required layers to build applications that scale from simple scripts to complex enterprise systems.
+
+## Advanced Implementation Patterns
+
+### Layer Library Development
+
+Common layer implementations for production applications:
+
+**Database Layer**: Connection pooling, transaction management, migration flags
+**HTTP Client Layer**: Authentication, retries, circuit breakers, rate limiting  
+**File Processing Layer**: Input/output directories, file patterns, validation
+**Cache Layer**: Redis configuration, TTL settings, eviction policies
+
+### Team Configuration Patterns
+
+Production systems benefit from shared base configurations:
+
+```go
+// Base configuration shared across services
+baseLayer := NewBaseLayer(
+    WithDefaultTimeout(30*time.Second),
+    WithDefaultRetries(3),
+)
+
+// Service-specific extensions
+apiLayer := NewAPILayer(
+    WithAuthentication(),
+    WithRateLimiting(),
+)
+```
+
+### Production Considerations
+
+Enterprise layer implementations must address:
+
+- **Secret management**: Secure handling of API keys and passwords
+- **Environment promotion**: Configuration differences across dev/staging/production
+- **Validation relationships**: Cross-parameter validation and dependency checking
+- **Backward compatibility**: Evolution strategies for layer APIs
+
+## Layer Patterns That Work in Production
 
 ### Database Layer
 ```go
 type DatabaseSettings struct {
-    Host     string `glazed.parameter:"db-host"`
-    Port     int    `glazed.parameter:"db-port"`
-    Name     string `glazed.parameter:"db-name"`
-    Username string `glazed.parameter:"db-username"`
-    Password string `glazed.parameter:"db-password"`
-    SSLMode  string `glazed.parameter:"db-ssl-mode"`
+    Host        string `glazed.parameter:"db-host"`
+    Port        int    `glazed.parameter:"db-port"`
+    Name        string `glazed.parameter:"db-name"`
+    Username    string `glazed.parameter:"db-username"`
+    Password    string `glazed.parameter:"db-password"`
+    SSLMode     string `glazed.parameter:"db-ssl-mode"`
+    MaxConns    int    `glazed.parameter:"db-max-connections"`
+    MaxIdleTime string `glazed.parameter:"db-max-idle-time"`
 }
 ```
 
 ### HTTP Client Layer
 ```go
 type HTTPSettings struct {
-    BaseURL    string        `glazed.parameter:"base-url"`
-    Timeout    time.Duration `glazed.parameter:"timeout"`
-    RetryCount int           `glazed.parameter:"retry-count"`
-    UserAgent  string        `glazed.parameter:"user-agent"`
-    APIKey     string        `glazed.parameter:"api-key"`
+    BaseURL       string        `glazed.parameter:"base-url"`
+    Timeout       time.Duration `glazed.parameter:"timeout"`
+    RetryCount    int           `glazed.parameter:"retry-count"`
+    RetryBackoff  time.Duration `glazed.parameter:"retry-backoff"`
+    UserAgent     string        `glazed.parameter:"user-agent"`
+    APIKey        string        `glazed.parameter:"api-key"`
+    RateLimitRPS  int           `glazed.parameter:"rate-limit-rps"`
 }
 ```
 
 ### File Processing Layer
 ```go
 type FileSettings struct {
-    InputDir     string   `glazed.parameter:"input-dir"`
-    OutputDir    string   `glazed.parameter:"output-dir"`
-    FilePattern  string   `glazed.parameter:"file-pattern"`
-    Extensions   []string `glazed.parameter:"extensions"`
-    Recursive    bool     `glazed.parameter:"recursive"`
-    OverwriteOK  bool     `glazed.parameter:"overwrite"`
+    InputDir      string   `glazed.parameter:"input-dir"`
+    OutputDir     string   `glazed.parameter:"output-dir"`
+    FilePattern   string   `glazed.parameter:"file-pattern"`
+    Extensions    []string `glazed.parameter:"extensions"`
+    Recursive     bool     `glazed.parameter:"recursive"`
+    OverwriteOK   bool     `glazed.parameter:"overwrite"`
+    BackupOld     bool     `glazed.parameter:"backup-existing"`
+    DryRun        bool     `glazed.parameter:"dry-run"`
 }
 ```
 
-You now have the knowledge to create powerful, reusable parameter layers that make your Glazed applications more maintainable and consistent!
+## Summary
+
+This tutorial demonstrates implementing reusable parameter layers for CLI applications. The key principle is **configuration through composition**.
+
+Rather than defining flags individually per command, standardized layers encapsulate interface and behavior patterns. This approach creates application consistency, reduces maintenance overhead, and provides predictable user interfaces.
+
+The layer pattern enables scalable CLI architecture that grows from simple commands to comprehensive enterprise applications.

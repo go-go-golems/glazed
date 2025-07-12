@@ -13,9 +13,15 @@ ShowPerDefault: true
 SectionType: Tutorial
 ---
 
-# Build Your First Glazed Command: Quick Start
+# Build Your First Glazed Command
 
-This tutorial will get you building and running your first Glazed command in under 10 minutes. We'll create a simple user management command that demonstrates the core concepts.
+This tutorial demonstrates building a command-line tool that outputs data in multiple formats automatically. You'll implement a user management command that supports JSON, YAML, CSV, and table output formats without writing format-specific code.
+
+**Learning objectives:**
+- Create a functional CLI command with filtering and limiting options
+- Implement automatic support for multiple output formats
+- Learn fundamental patterns for structured data processing in Glazed
+- Understand command configuration and parameter handling
 
 ## Prerequisites
 
@@ -23,6 +29,8 @@ This tutorial will get you building and running your first Glazed command in und
 - Basic familiarity with Go and command-line tools
 
 ## Step 1: Set Up Your Project
+
+Create a workspace for the command:
 
 ```bash
 mkdir glazed-quickstart
@@ -32,9 +40,16 @@ go get github.com/go-go-golems/glazed
 go get github.com/spf13/cobra
 ```
 
+**Project structure:**
+- `glazed-quickstart` serves as the project directory
+- `go mod init` creates a Go module for dependency tracking
+- Two key dependencies:
+  - `glazed` provides structured data processing capabilities
+  - `cobra` handles command-line parsing (Glazed builds on this framework)
+
 ## Step 2: Create Your First Command
 
-Create `main.go`:
+Create `main.go` with the complete command implementation:
 
 ```go
 package main
@@ -54,7 +69,13 @@ import (
     "github.com/go-go-golems/glazed/pkg/types"
     "github.com/spf13/cobra"
 )
+```
 
+### Command Structure
+
+Define the command structure using Glazed patterns:
+
+```go
 // Step 2.1: Define your command struct
 type ListUsersCommand struct {
     *cmds.CommandDescription
@@ -66,6 +87,19 @@ type ListUsersSettings struct {
     Filter string `glazed.parameter:"filter"`
     Active bool   `glazed.parameter:"active-only"`
 }
+```
+
+**Key components:**
+
+1. **Command Struct**: `ListUsersCommand` embeds `*cmds.CommandDescription`, which contains command metadata (name, help text, parameters)
+
+2. **Settings Struct**: `ListUsersSettings` maps command-line flags to Go fields using struct tags. The `glazed.parameter` tags provide automatic type conversion and validation.
+
+### Core Command Logic
+
+Implement the data processing functionality:
+
+```go
 
 // Step 2.3: Implement the GlazeCommand interface
 func (c *ListUsersCommand) RunIntoGlazeProcessor(
@@ -100,7 +134,22 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 
     return nil
 }
+```
 
+**Implementation details:**
+
+1. **Settings Extraction**: `parsedLayers.InitializeStruct()` populates the settings struct from command-line flags with automatic parsing and validation
+2. **Business Logic**: `generateMockUsers()` simulates data retrieval with the parsed settings
+3. **Structured Output**: Creates `types.Row` objects instead of using direct output functions
+4. **Row Structure**: `types.MRP("key", value)` creates key-value pairs for each data field
+
+The `GlazeProcessor` collects these rows and can output them in multiple formats without additional format-specific code.
+
+### Command Configuration and Parameters
+
+Configure command metadata and parameter definitions:
+
+```go
 // Step 2.4: Create constructor function
 func NewListUsersCommand() (*ListUsersCommand, error) {
     // Create glazed layer for output formatting options
@@ -159,7 +208,22 @@ Examples:
         CommandDescription: cmdDesc,
     }, nil
 }
+```
 
+**Configuration components:**
+
+1. **Glazed Layer**: `settings.NewGlazedParameterLayers()` adds built-in parameters like `--output`, `--fields`, `--sort-columns`
+2. **Command Metadata**: Defines command name, short description, and comprehensive help text with usage examples
+3. **Parameter Definitions**: Each flag specifies:
+   - **Type**: Integer, String, Bool with automatic validation
+   - **Default Value**: Behavior when the flag is not specified
+   - **Help Text**: Displayed in `--help` output
+   - **Short Flag**: Single-letter abbreviations for convenience
+4. **Layer Composition**: Combines custom parameters with Glazed's built-in output parameters
+
+### Interface Compliance and Mock Data
+
+```go
 // Ensure interface compliance
 var _ cmds.GlazeCommand = &ListUsersCommand{}
 
@@ -227,7 +291,19 @@ func indexOf(s, substr string) int {
     }
     return -1
 }
+```
 
+**Implementation notes:**
+
+1. **Interface Compliance Check**: The `var _ cmds.GlazeCommand = &ListUsersCommand{}` line ensures the struct implements the required interface at compile time
+2. **Mock Data**: Provides realistic sample data for development and testing. Replace `generateMockUsers()` with actual data sources in production
+3. **Filtering Logic**: Demonstrates how command parameters control data processing
+
+### CLI Application Integration
+
+Wire the command into a CLI application:
+
+```go
 // Step 3: Set up CLI application
 func main() {
     // Create root command
@@ -261,7 +337,17 @@ func main() {
 }
 ```
 
-## Step 3: Build and Test
+**Integration steps:**
+
+1. **Root Command**: Creates a standard Cobra root command as the application entry point
+2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
+3. **Glazed-to-Cobra Bridge**: `cli.BuildCobraCommandFromGlazeCommand()` converts the Glazed command to a Cobra command, handling parameter setup and processing
+4. **Registration**: Adds the converted command as a subcommand
+5. **Execution**: Starts the CLI application and processes command-line arguments
+
+## Step 3: Build and Test Your Command
+
+Build and test the command functionality:
 
 ```bash
 # Build the application
@@ -270,16 +356,23 @@ go build -o glazed-quickstart
 # Test basic functionality
 ./glazed-quickstart list-users --help
 
-# Try different output modes
+# Try different parameter combinations
 ./glazed-quickstart list-users
 ./glazed-quickstart list-users --limit 3
 ./glazed-quickstart list-users --filter Engineering
 ./glazed-quickstart list-users --active-only
 ```
 
-## Step 4: Explore Output Formats
+**Expected behavior:**
 
-The beauty of Glazed is automatic support for multiple output formats:
+1. **Help Text**: `--help` displays auto-generated parameter descriptions and examples
+2. **Parameter Validation**: Invalid values trigger automatic validation errors
+3. **Default Behavior**: Without flags, shows the first 10 users in table format
+4. **Filtering**: `--filter Engineering` displays only users matching the filter criteria
+
+## Step 4: Multiple Output Formats
+
+Test the automatic output format support:
 
 ```bash
 # Table output (default)
@@ -304,11 +397,16 @@ The beauty of Glazed is automatic support for multiple output formats:
 ./glazed-quickstart list-users --filter Engineering --output json --fields name,department
 ```
 
-## Step 5: Add a Dual Command (Optional)
+**Key capabilities demonstrated:**
 
-Now let's enhance our example with a dual command that can run in both simple text mode and structured data mode:
+1. **Zero Additional Code**: All output formats work automatically through the `types.Row` and `GlazeProcessor` pattern
+2. **Field Selection**: `--fields id,name,email` displays only specified columns
+3. **Sorting**: `--sort-columns name` sorts alphabetically (use `--sort-columns -name` for reverse order)
+4. **Composability**: All flags combine seamlessly for flexible data presentation
 
-Add this to your `main.go`:
+## Step 5: Dual Commands (Advanced)
+
+Implement a command that supports both simple text output and structured data modes:
 
 ```go
 // Dual command that implements both BareCommand and GlazeCommand
@@ -395,7 +493,21 @@ var _ cmds.BareCommand = &StatusCommand{}
 var _ cmds.GlazeCommand = &StatusCommand{}
 ```
 
-Then in your `main()` function, add:
+**Dual command pattern:**
+
+The `StatusCommand` implements two interfaces:
+
+1. **`BareCommand`** (via `Run` method): Produces human-readable text output
+2. **`GlazeCommand`** (via `RunIntoGlazeProcessor` method): Produces structured data
+
+**Interface differences:**
+- **Human Mode**: Uses `fmt.Println()` for formatted text display
+- **Structured Mode**: Uses `types.Row` for machine-parseable data
+- **Shared Logic**: Both methods access the same parsed settings
+
+### Integrating the Dual Command
+
+Add the dual command to your application:
 
 ```go
 // Create status command with dual mode
@@ -418,7 +530,15 @@ if err != nil {
 rootCmd.AddCommand(cobraStatusCmd)
 ```
 
-Test the dual command:
+**Key differences from single-mode commands:**
+
+1. **`BuildCobraCommandDualMode`**: Uses the dual-mode builder instead of the standard builder
+2. **Toggle Flag**: `WithGlazeToggleFlag("with-glaze-output")` creates a flag that switches between interfaces
+3. **Automatic Detection**: Glazed detects both interface implementations and configures the toggle mechanism
+
+### Testing Dual Command
+
+Test both output modes:
 
 ```bash
 # Rebuild
@@ -434,39 +554,33 @@ go build -o glazed-quickstart
 ./glazed-quickstart status --with-glaze-output --verbose --output yaml
 ```
 
-## What You've Learned
+**Output comparison:**
 
-Congratulations! You've just built your first Glazed application. Here's what you've accomplished:
+- **Classic Mode**: Human-readable text with clear labels and formatting
+- **Glaze Mode**: Structured data compatible with automation tools and scripts
 
-### Core Concepts
-- **Command Structure**: How to structure Glazed commands with embedded `CommandDescription`
-- **Settings Structs**: Using struct tags for type-safe parameter access
-- **Interface Implementation**: Implementing `GlazeCommand` for structured output
-- **Parameter Definition**: Creating flags with types, defaults, and help text
+## Implementation Summary
 
-### Output Capabilities
-- **Multiple Formats**: Automatic support for JSON, YAML, CSV, and table output
-- **Field Selection**: Using `--fields` to select specific columns
-- **Sorting**: Using `--sort-columns` to order results
-- **Filtering**: Implementing custom filtering logic
+### Core Concepts Implemented
 
-### Advanced Features
-- **Dual Commands**: Commands that support both simple and structured output modes
-- **Mode Switching**: Using `--with-glaze-output` to toggle between modes
-- **Layer System**: Understanding how Glazed layers organize parameters
+**Command Structure**
+- Command structs embed `CommandDescription` for metadata
+- Settings structs provide type-safe parameter access through struct tags
+- Interface implementation defines command behavior
 
-## Next Steps
+**Parameter Management**
+- Declarative parameter definitions with types, defaults, and help text
+- Automatic parsing, validation, and type conversion
+- Layer composition for reusable parameter groups
 
-Now that you've built your first command, explore these advanced topics:
+**Output Processing**
+- Structured data through `types.Row` objects enables multiple output formats
+- `GlazeProcessor` handles format conversion automatically
+- Dual command interfaces support both human and machine-readable output
 
-1. **[Layers Guide](../topics/layers-guide.md)**: Learn about parameter organization and reusable layers
-2. **[Commands Reference](../topics/commands-reference.md)**: Comprehensive command system documentation
-3. **[Custom Layer Tutorial](./custom-layer.md)**: Build your own parameter layers
-4. **[Middlewares Guide](../topics/middlewares-guide.md)**: Load parameters from multiple sources
+### Key Patterns
 
-## Common Patterns
-
-### Adding Validation
+**Input Validation**
 ```go
 func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
     settings := &ListUsersSettings{}
@@ -474,29 +588,29 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLaye
         return err
     }
     
-    // Validate settings
+    // Validate business rules
     if settings.Limit < 1 {
-        return fmt.Errorf("limit must be at least 1")
+        return fmt.Errorf("limit must be at least 1, got %d", settings.Limit)
     }
     if settings.Limit > 1000 {
-        return fmt.Errorf("limit cannot exceed 1000")
+        return fmt.Errorf("limit cannot exceed 1000 (got %d) - use filtering to narrow results", settings.Limit)
     }
     
     // Continue with command logic...
 }
 ```
 
-### Adding More Parameter Types
+**Extended Parameter Types**
 ```go
 cmds.WithFlags(
-    // File parameter
+    // File parameter - validates file exists
     parameters.NewParameterDefinition(
         "config-file",
         parameters.ParameterTypeFile,
         parameters.WithHelp("Configuration file path"),
     ),
     
-    // Choice parameter
+    // Choice parameter - limits valid options
     parameters.NewParameterDefinition(
         "format",
         parameters.ParameterTypeChoice,
@@ -505,7 +619,7 @@ cmds.WithFlags(
         parameters.WithHelp("Output format"),
     ),
     
-    // Duration parameter
+    // Duration parameter - parses time strings like "30s", "5m"
     parameters.NewParameterDefinition(
         "timeout",
         parameters.ParameterTypeDuration,
@@ -515,7 +629,7 @@ cmds.WithFlags(
 )
 ```
 
-### Error Handling
+**Error Handling**
 ```go
 func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
     settings := &ListUsersSettings{}
@@ -539,4 +653,19 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLaye
 }
 ```
 
-You're now ready to build powerful command-line applications with Glazed!
+## Next Steps
+
+### For Data Processing Tools
+- **[Middlewares Guide](../topics/middlewares-guide.md)**: Transform and filter data in processing pipelines
+- **[Layers Guide](../topics/layers-guide.md)**: Create reusable parameter sets for common configurations
+
+### For Application Suites
+- **[Commands Reference](../topics/commands-reference.md)**: Organize commands and manage complex applications
+- **[Custom Layer Tutorial](./custom-layer.md)**: Build domain-specific parameter layers
+
+### For Advanced Patterns
+- Study the implementation patterns in this tutorial for production-ready command structures
+- Experiment with parameter types and output format combinations
+- Implement validation and error handling appropriate for your use cases
+
+This foundation provides the core patterns for building professional CLI applications with Glazed's structured data processing capabilities.
