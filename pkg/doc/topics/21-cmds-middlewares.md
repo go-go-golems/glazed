@@ -1,6 +1,6 @@
 ---
 Title: Glazed Middlewares Guide
-Slug: glazed-middlewares
+Slug: middlewares-guide
 Short: Learn how to use Glazed's middleware system to load parameter values from various sources
 Topics:
 - middlewares
