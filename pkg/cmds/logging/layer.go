@@ -1,6 +1,8 @@
 package logging
 
 import (
+	"fmt"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
@@ -146,4 +148,23 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	rootCmd.PersistentFlags().String("logstash-environment", "development", "Environment name for Logstash logs (development, staging, production)")
 
 	return nil
+}
+
+// SetupLoggingFromParsedLayers configures global logger from command-line parameters
+func SetupLoggingFromParsedLayers(parsedLayers *layers.ParsedLayers) error {
+	settings, err := GetLoggingSettings(parsedLayers)
+	if err != nil {
+		return fmt.Errorf("failed to get logging settings: %w", err)
+	}
+	return InitLoggerFromSettings(settings)
+}
+
+// GetLoggingSettings extracts logging configuration for custom validation or setup
+func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error) {
+	var settings LoggingSettings
+	err := parsedLayers.InitializeStruct(LoggingLayerSlug, &settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
+	}
+	return &settings, nil
 }
