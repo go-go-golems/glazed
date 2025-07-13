@@ -74,8 +74,14 @@ func (c *MyCommand) RunIntoGlazeProcessor(
     parsedLayers *layers.ParsedLayers,
     gp middlewares.Processor,
 ) error {
-    if err := logging.SetupLoggingFromParsedLayers(parsedLayers); err != nil {
-        return err
+    // Initialize logging settings from parsed layers
+    var settings logging.LoggingSettings
+    if err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings); err != nil {
+        return fmt.Errorf("failed to get logging settings: %w", err)
+    }
+    
+    if err := logging.InitLoggerFromSettings(&settings); err != nil {
+        return fmt.Errorf("failed to initialize logger: %w", err)
     }
     
     log.Info().Msg("Processing started")
@@ -251,34 +257,46 @@ type LoggingSettings struct {
 
 ### Functions
 
-#### SetupLoggingFromParsedLayers
+#### Working with Logging Settings
+
+To initialize logging from parsed layers, use the standard pattern:
 
 ```go
-func SetupLoggingFromParsedLayers(parsedLayers *layers.ParsedLayers) error
-```
+// Extract logging settings from parsed layers
+var settings logging.LoggingSettings
+if err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings); err != nil {
+    return fmt.Errorf("failed to get logging settings: %w", err)
+}
 
-Configures global logger from command-line parameters. Call early in command execution.
-
-**Usage**:
-```go
-if err := logging.SetupLoggingFromParsedLayers(parsedLayers); err != nil {
-    return fmt.Errorf("failed to setup logging: %w", err)
+// Initialize logger from settings
+if err := logging.InitLoggerFromSettings(&settings); err != nil {
+    return fmt.Errorf("failed to initialize logger: %w", err)
 }
 ```
 
-#### GetLoggingSettings
+#### InitLoggerFromSettings
 
 ```go
-func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error)
+func InitLoggerFromSettings(settings *LoggingSettings) error
 ```
 
-Extracts logging configuration for custom validation or setup.
+Configures global logger from logging settings struct.
 
 **Usage**:
 ```go
-settings, err := logging.GetLoggingSettings(parsedLayers)
-if err != nil {
-    return err
+if err := logging.InitLoggerFromSettings(&settings); err != nil {
+    return fmt.Errorf("failed to initialize logger: %w", err)
+}
+```
+
+#### Custom Validation Pattern
+
+For custom validation of logging settings:
+
+```go
+var settings logging.LoggingSettings
+if err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings); err != nil {
+    return fmt.Errorf("failed to extract logging settings: %w", err)
 }
 
 // Custom validation
@@ -365,7 +383,12 @@ logging:
 **Symptoms**: Application runs but produces no log output
 
 **Solutions**:
-1. Verify `SetupLoggingFromParsedLayers` is called before logging
+1. Verify logging initialization is called before logging:
+   ```go
+   var settings logging.LoggingSettings
+   parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings)
+   logging.InitLoggerFromSettings(&settings)
+   ```
 2. Check log level filtering: use `--log-level debug`
 3. Verify file permissions for `--log-file` destinations
 

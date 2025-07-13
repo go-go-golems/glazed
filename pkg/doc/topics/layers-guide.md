@@ -235,8 +235,11 @@ parameters.NewParameterDefinition(
 parsedValue := "debug"  // Actual value used by application
 
 // Application accesses the final value:
-logLevel, _ := parsedLayers.GetParameterValue("logging", "log-level")
-// logLevel is now "debug" (not "info" default)
+loggingLayer, ok := parsedLayers.Get("logging")
+if ok {
+    logLevel, ok := loggingLayer.GetParameter("log-level")
+    // logLevel is now "debug" (not "info" default)
+}
 ```
 
 This separation provides:
@@ -288,7 +291,7 @@ Building specialized variants from existing layers:
 extendedDbLayer := databaseLayer.Clone()
 extendedDbLayer.AddFlags(
     parameters.NewParameterDefinition("pool-size", parameters.ParameterTypeInteger),
-    parameters.NewParameterDefinition("connection-timeout", parameters.ParameterTypeDuration),
+    parameters.NewParameterDefinition("connection-timeout", parameters.ParameterTypeString),
 )
 ```
 
@@ -331,7 +334,10 @@ The Glazed Layer provides comprehensive output formatting capabilities for comma
 - **Use Case**: Commands outputting structured data requiring flexible formatting
 
 ```go
-glazedLayer, _ := settings.NewGlazedParameterLayers()
+glazedLayer, err := settings.NewGlazedParameterLayers()
+if err != nil {
+    return nil, fmt.Errorf("failed to create glazed layer: %w", err)
+}
 // Provides: --output, --fields, --sort-columns, --filter, etc.
 // Users can run: myapp data --output json --fields name,age --filter "age > 25"
 ```
@@ -347,7 +353,7 @@ Individual parameter specifications define acceptable input and behavior:
 ```go
 paramDef := parameters.NewParameterDefinition(
     "connection-timeout",              // Parameter name
-    parameters.ParameterTypeDuration,  // Type constraint
+    parameters.ParameterTypeString,    // Type constraint (use string for duration parsing)
     parameters.WithDefault("30s"),     // Default value
     parameters.WithHelp("Connection timeout for database operations"), // User guidance
     parameters.WithRequired(false),    // Whether required
@@ -538,7 +544,7 @@ func (b *DatabaseLayerBuilder) Build() (layers.ParameterLayer, error) {
         b.layer.AddFlags(
             parameters.NewParameterDefinition("db-max-connections", parameters.ParameterTypeInteger,
                 parameters.WithDefault(10)),
-            parameters.NewParameterDefinition("db-idle-timeout", parameters.ParameterTypeDuration,
+            parameters.NewParameterDefinition("db-idle-timeout", parameters.ParameterTypeString,
                 parameters.WithDefault("5m")),
         )
     }
@@ -613,13 +619,13 @@ func NewServerLayer() (layers.ParameterLayer, error) {
             ),
             parameters.NewParameterDefinition(
                 "read-timeout",
-                parameters.ParameterTypeDuration,
+                parameters.ParameterTypeString,
                 parameters.WithDefault("30s"),
                 parameters.WithHelp("HTTP read timeout"),
             ),
             parameters.NewParameterDefinition(
                 "write-timeout",
-                parameters.ParameterTypeDuration,
+                parameters.ParameterTypeString,
                 parameters.WithDefault("30s"),
                 parameters.WithHelp("HTTP write timeout"),
             ),
@@ -785,7 +791,7 @@ func NewCacheLayer() (layers.ParameterLayer, error) {
             ),
             parameters.NewParameterDefinition(
                 "cache-ttl",
-                parameters.ParameterTypeDuration,
+                parameters.ParameterTypeString,
                 parameters.WithDefault("1h"),
                 parameters.WithHelp("Cache time-to-live"),
             ),
@@ -1125,13 +1131,18 @@ func (v *LayerValidator) Validate(parsedLayers *layers.ParsedLayers) error {
 
 // Cross-layer validation rules
 func DatabaseConnectionRule(parsedLayers *layers.ParsedLayers) error {
-    host, err := parsedLayers.GetParameterValue("database", "db-host")
-    if err != nil {
+    dbLayer, ok := parsedLayers.Get("database")
+    if !ok {
         return nil // Skip if database layer not present
     }
     
-    port, err := parsedLayers.GetParameterValue("database", "db-port")
-    if err != nil {
+    host, ok := dbLayer.GetParameter("db-host")
+    if !ok {
+        return nil
+    }
+    
+    port, ok := dbLayer.GetParameter("db-port")
+    if !ok {
         return nil
     }
     
@@ -1144,15 +1155,20 @@ func DatabaseConnectionRule(parsedLayers *layers.ParsedLayers) error {
 }
 
 func SSLConfigurationRule(parsedLayers *layers.ParsedLayers) error {
-    sslMode, err := parsedLayers.GetParameterValue("database", "db-ssl-mode")
-    if err != nil {
+    dbLayer, ok := parsedLayers.Get("database")
+    if !ok {
+        return nil // Skip if database layer not present
+    }
+    
+    sslMode, ok := dbLayer.GetParameter("db-ssl-mode")
+    if !ok {
         return nil // Skip if SSL not configured
     }
     
     if sslMode == "verify-full" {
         // Ensure SSL certificate is provided when required
-        cert, err := parsedLayers.GetParameterValue("database", "db-ssl-cert")
-        if err != nil || cert == "" {
+        cert, ok := dbLayer.GetParameter("db-ssl-cert")
+        if !ok || cert == "" {
             return fmt.Errorf("SSL certificate required when ssl-mode is verify-full")
         }
     }
@@ -1313,12 +1329,15 @@ func TestParameterResolution(t *testing.T) {
     assert.NoError(t, err)
     
     // Verify parsed values
-    dbHost, err := parsedLayers.GetParameterValue("database", "db-host")
-    assert.NoError(t, err)
+    dbLayer, ok := parsedLayers.Get("database")
+    assert.True(t, ok)
+    
+    dbHost, ok := dbLayer.GetParameter("db-host")
+    assert.True(t, ok)
     assert.Equal(t, "testhost", dbHost)
     
-    dbPort, err := parsedLayers.GetParameterValue("database", "db-port")
-    assert.NoError(t, err)
+    dbPort, ok := dbLayer.GetParameter("db-port")
+    assert.True(t, ok)
     assert.Equal(t, 3306, dbPort)
     
     // Test struct initialization
@@ -1337,13 +1356,15 @@ func TestDefaultValues(t *testing.T) {
     assert.NoError(t, err)
     
     // Verify default values are used
-    dbHost, _ := parsedLayers.GetParameterValue("database", "db-host")
+    dbLayer, _ := parsedLayers.Get("database")
+    dbHost, _ := dbLayer.GetParameter("db-host")
     assert.Equal(t, "localhost", dbHost)
     
-    dbPort, _ := parsedLayers.GetParameterValue("database", "db-port")
+    dbPort, _ := dbLayer.GetParameter("db-port")
     assert.Equal(t, 5432, dbPort)
     
-    logLevel, _ := parsedLayers.GetParameterValue("logging", "log-level")
+    loggingLayer, _ := parsedLayers.Get("logging")
+    logLevel, _ := loggingLayer.GetParameter("log-level")
     assert.Equal(t, "info", logLevel)
 }
 ```

@@ -360,18 +360,19 @@ func NewLoggingLayerWithOptions(opts ...LoggingLayerOption) (layers.ParameterLay
     params := layer.GetParameterDefinitions()
     
     if levelParam := params.Get("log-level"); levelParam != nil {
-        levelParam.Default = config.defaultLevel
+        defaultLevel := interface{}(config.defaultLevel)
+        levelParam.Default = &defaultLevel
     }
     
     if formatParam := params.Get("log-format"); formatParam != nil {
-        formatParam.Default = config.defaultFormat
+        defaultFormat := interface{}(config.defaultFormat)
+        formatParam.Default = &defaultFormat
     }
     
-    // Remove logstash parameters if not included
-    if !config.includeLogstash {
-        layer.RemoveFlag("logstash-host")
-        layer.RemoveFlag("logstash-port")
-    }
+    // NOTE: RemoveFlag method doesn't exist in the current API.
+    // To implement conditional parameters, you would need to create separate layers
+    // or build the layer conditionally rather than removing parameters after creation.
+    // For production code, use the basic NewLoggingLayer() without RemoveFlag calls.
     
     return layer, nil
 }
@@ -505,7 +506,7 @@ type ProcessDataCommand struct {
 
 type ProcessDataSettings struct {
     InputFile  string `glazed.parameter:"input-file"`
-    OutputFile string `glazed.parameter:"output-file"`
+    OutputPath string `glazed.parameter:"output-path"`
     Workers    int    `glazed.parameter:"workers"`
     DryRun     bool   `glazed.parameter:"dry-run"`
 }
@@ -610,7 +611,7 @@ Examples:
                 parameters.WithShortFlag("i"),
             ),
             parameters.NewParameterDefinition(
-                "output-file",
+                "output-path",
                 parameters.ParameterTypeString,
                 parameters.WithHelp("Output file path"),
                 parameters.WithDefault("output.processed"),

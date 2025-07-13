@@ -492,7 +492,6 @@ Parameter types define data structure, parsing behavior, and validation rules. E
 
 #### Special Types
 **`ParameterTypeKeyValue`**: Map-like inputs: `--env DATABASE_URL=postgres://... --env DEBUG=true`
-**`ParameterTypeDuration`**: Human-friendly time values: `30s`, `5m30s`, `1h`, `2d`
 
 ### Parameter Definition Options
 

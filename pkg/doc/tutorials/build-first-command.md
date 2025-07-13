@@ -58,6 +58,7 @@ import (
     "context"
     "fmt"
     "os"
+    "strings"
     "time"
 
     "github.com/go-go-golems/glazed/pkg/cli"
@@ -83,9 +84,9 @@ type ListUsersCommand struct {
 
 // Step 2.2: Define settings for type-safe parameter access
 type ListUsersSettings struct {
-    Limit  int    `glazed.parameter:"limit"`
-    Filter string `glazed.parameter:"filter"`
-    Active bool   `glazed.parameter:"active-only"`
+    Limit      int    `glazed.parameter:"limit"`
+    NameFilter string `glazed.parameter:"name-filter"`
+    Active     bool   `glazed.parameter:"active-only"`
 }
 ```
 
@@ -114,7 +115,7 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
     }
 
     // Simulate getting users (in real app, this would be a database call)
-    users := generateMockUsers(settings.Limit, settings.Filter, settings.Active)
+    users := generateMockUsers(settings.Limit, settings.NameFilter, settings.Active)
 
     // Output structured data as rows
     for _, user := range users {
@@ -169,7 +170,7 @@ Supports multiple output formats including JSON, YAML, CSV, and tables.
 Examples:
   list-users                           # List all users as table
   list-users --limit 5                 # Show only first 5 users
-  list-users --filter admin            # Filter users containing "admin"
+  list-users --name-filter admin       # Filter users containing "admin"
   list-users --active-only             # Show only active users
   list-users --output json             # Output as JSON
   list-users --output csv              # Output as CSV
@@ -185,7 +186,7 @@ Examples:
                 parameters.WithShortFlag("l"),
             ),
             parameters.NewParameterDefinition(
-                "filter",
+                "name-filter",
                 parameters.ParameterTypeString,
                 parameters.WithDefault(""),
                 parameters.WithHelp("Filter users by name or email"),
@@ -258,7 +259,9 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
         
         // Apply text filter
         if filter != "" {
-            if !contains(user.Name, filter) && !contains(user.Email, filter) && !contains(user.Department, filter) {
+            if !strings.Contains(strings.ToLower(user.Name), strings.ToLower(filter)) && 
+               !strings.Contains(strings.ToLower(user.Email), strings.ToLower(filter)) && 
+               !strings.Contains(strings.ToLower(user.Department), strings.ToLower(filter)) {
                 continue
             }
         }
@@ -274,23 +277,7 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
     return filtered
 }
 
-func contains(s, substr string) bool {
-    return len(s) >= len(substr) && 
-           (s == substr || 
-            len(s) > len(substr) && 
-            (s[:len(substr)] == substr || 
-             s[len(s)-len(substr):] == substr || 
-             indexOf(s, substr) >= 0))
-}
 
-func indexOf(s, substr string) int {
-    for i := 0; i <= len(s)-len(substr); i++ {
-        if s[i:i+len(substr)] == substr {
-            return i
-        }
-    }
-    return -1
-}
 ```
 
 **Implementation notes:**
@@ -619,12 +606,12 @@ cmds.WithFlags(
         parameters.WithHelp("Output format"),
     ),
     
-    // Duration parameter - parses time strings like "30s", "5m"
+    // String parameter for timeout - in a real implementation you would parse this as a duration
     parameters.NewParameterDefinition(
         "timeout",
-        parameters.ParameterTypeDuration,
+        parameters.ParameterTypeString,
         parameters.WithDefault("30s"),
-        parameters.WithHelp("Request timeout"),
+        parameters.WithHelp("Request timeout (e.g., '30s', '5m')"),
     ),
 )
 ```
