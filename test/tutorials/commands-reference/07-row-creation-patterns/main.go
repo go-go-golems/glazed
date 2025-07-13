@@ -29,10 +29,10 @@ type RowCreationSettings struct {
 
 // User struct for demonstrating struct-to-row conversion
 type User struct {
-	ID     int    `json:"id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Active bool   `json:"active"`
+	ID      int       `json:"id"`
+	Name    string    `json:"name"`
+	Email   string    `json:"email"`
+	Active  bool      `json:"active"`
 	Created time.Time `json:"created"`
 }
 
@@ -101,7 +101,7 @@ func (c *RowCreationCommand) demonstrateMapMethod(ctx context.Context, gp middle
 		"method":      "Map",
 		"description": "Created from map[string]interface{}",
 		"permissions": []string{"read", "write", "admin"},
-		"metadata":    map[string]string{
+		"metadata": map[string]string{
 			"source":      "user_import",
 			"import_date": time.Now().Format(time.RFC3339),
 		},
@@ -126,7 +126,7 @@ func (c *RowCreationCommand) demonstrateStructMethod(ctx context.Context, gp mid
 
 	// The second parameter (true) means lowercase field names
 	row := types.NewRowFromStruct(&user, true)
-	
+
 	// Add extra fields to show this is from struct method
 	row.Set("method", "Struct")
 	row.Set("description", "Created from struct with lowercase field names")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -136,7 +137,7 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
 		}
 
 		if filter != "" {
-			if !contains(user.Name, filter) && !contains(user.Email, filter) && !contains(user.Department, filter) {
+			if !strings.Contains(user.Name, filter) && !strings.Contains(user.Email, filter) && !strings.Contains(user.Department, filter) {
 				continue
 			}
 		}
@@ -151,23 +152,7 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
 	return filtered
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) &&
-		(s == substr ||
-			len(s) > len(substr) &&
-				(s[:len(substr)] == substr ||
-					s[len(s)-len(substr):] == substr ||
-					indexOf(s, substr) >= 0))
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
+// Custom string functions removed - now using strings.Contains() from standard library
 
 func main() {
 	rootCmd := &cobra.Command{

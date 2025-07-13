@@ -32,9 +32,9 @@ type ParameterTypesSettings struct {
 	CreatedDate time.Time `glazed.parameter:"created-date"`
 
 	// Collection types
-	Tags      []string  `glazed.parameter:"tags"`
-	Ports     []int     `glazed.parameter:"ports"`
-	Weights   []float64 `glazed.parameter:"weights"`
+	Tags    []string  `glazed.parameter:"tags"`
+	Ports   []int     `glazed.parameter:"ports"`
+	Weights []float64 `glazed.parameter:"weights"`
 
 	// Choice types
 	Environment string   `glazed.parameter:"environment"`

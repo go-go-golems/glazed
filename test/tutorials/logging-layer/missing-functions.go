@@ -7,31 +7,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 )
 
-// These functions are referenced in the documentation but don't exist in the actual codebase.
-// They should be added to the logging package.
-
-// SetupLoggingFromParsedLayers configures global logger from command-line parameters.
-// This function is referenced in the documentation but missing from the implementation.
-func SetupLoggingFromParsedLayers(parsedLayers *layers.ParsedLayers) error {
-	settings, err := GetLoggingSettings(parsedLayers)
-	if err != nil {
-		return fmt.Errorf("failed to get logging settings: %w", err)
-	}
-
-	return logging.InitLoggerFromSettings(settings)
-}
-
-// GetLoggingSettings extracts logging configuration for custom validation or setup.
-// This function is referenced in the documentation but missing from the implementation.
-func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*logging.LoggingSettings, error) {
-	var settings logging.LoggingSettings
-	err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
-	}
-
-	return &settings, nil
-}
+// These functions are now implemented in the logging package!
+// This test verifies they work correctly.
 
 // Test the missing functions
 func main() {
@@ -55,21 +32,21 @@ func main() {
 
 	// Test GetLoggingSettings
 	fmt.Println("\n1. Testing GetLoggingSettings...")
-	settings, err := GetLoggingSettings(parsedLayers)
+	settings, err := logging.GetLoggingSettings(parsedLayers)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Success! Settings: %+v\n", *settings)
+		fmt.Printf("✅ Success! Settings: %+v\n", *settings)
 	}
 
 	// Test SetupLoggingFromParsedLayers
 	fmt.Println("\n2. Testing SetupLoggingFromParsedLayers...")
-	err = SetupLoggingFromParsedLayers(parsedLayers)
+	err = logging.SetupLoggingFromParsedLayers(parsedLayers)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Println("Success! Logging setup completed.")
+		fmt.Println("✅ Success! Logging setup completed.")
 	}
 
-	fmt.Println("\nThese functions should be added to the logging package.")
+	fmt.Println("\n✅ These functions are now implemented in the logging package!")
 }

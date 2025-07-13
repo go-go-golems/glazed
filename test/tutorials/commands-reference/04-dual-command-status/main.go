@@ -91,11 +91,11 @@ func (c *StatusCommand) RunIntoGlazeProcessor(
 	if s.ShowDetails {
 		// Add detailed information when requested
 		details := map[string]interface{}{
-			"processes":   status.Processes,
-			"cpu_cores":   runtime.NumCPU(),
-			"go_version":  runtime.Version(),
-			"os":          runtime.GOOS,
-			"arch":        runtime.GOARCH,
+			"processes":  status.Processes,
+			"cpu_cores":  runtime.NumCPU(),
+			"go_version": runtime.Version(),
+			"os":         runtime.GOOS,
+			"arch":       runtime.GOARCH,
 		}
 		row.Set("details", details)
 	}
@@ -111,9 +111,9 @@ func getSystemStatus() SystemStatus {
 	return SystemStatus{
 		CPUUsage:    15.5 + rand.Float64()*30, // 15-45%
 		MemoryUsage: fmt.Sprintf("%.1f GB / 16.0 GB", float64(m.Alloc)/1024/1024/1024),
-		DiskUsage:   45.0 + rand.Float64()*20, // 45-65%
+		DiskUsage:   45.0 + rand.Float64()*20,                      // 45-65%
 		Uptime:      time.Hour*24*7 + time.Hour*3 + time.Minute*22, // 7 days, 3 hours, 22 minutes
-		Processes:   150 + rand.Intn(50), // 150-200 processes
+		Processes:   150 + rand.Intn(50),                           // 150-200 processes
 	}
 }
 

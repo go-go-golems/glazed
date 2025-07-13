@@ -146,7 +146,7 @@ func main() {
 
 	// Demo 3: Multiple parameter sources (priority order demonstration)
 	fmt.Println("\n--- Demo 3: Multiple parameter sources (priority order) ---")
-	
+
 	// Set environment variables (lower priority)
 	os.Setenv("EXAMPLE_COUNT", "10")
 	os.Setenv("EXAMPLE_FORMAT", "table")
@@ -154,7 +154,7 @@ func main() {
 	parseOptions3 := []runner.ParseOption{
 		// Load from environment with prefix (lower priority)
 		runner.WithEnvMiddleware("EXAMPLE_"),
-		
+
 		// Set explicit values (higher priority - will override env vars)
 		runner.WithValuesForLayers(map[string]map[string]interface{}{
 			"default": {
@@ -183,7 +183,7 @@ func main() {
 	for _, format := range formats {
 		fmt.Printf("\nOutput format: %s\n", format)
 		fmt.Println("---")
-		
+
 		parseOptions := []runner.ParseOption{
 			runner.WithValuesForLayers(map[string]map[string]interface{}{
 				"default": {

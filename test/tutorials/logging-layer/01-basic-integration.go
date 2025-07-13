@@ -35,17 +35,20 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 	parsedLayers *layers.ParsedLayers,
 	gp middlewares.Processor,
 ) error {
-	// Extract logging settings from parsed layers
-	var settings logging.LoggingSettings
-	err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings)
-	if err != nil {
-		return fmt.Errorf("failed to get logging settings: %w", err)
-	}
-
-	// Setup logging
-	if err := logging.InitLoggerFromSettings(&settings); err != nil {
+	// Option 1: Use the new convenience function (recommended)
+	if err := logging.SetupLoggingFromParsedLayers(parsedLayers); err != nil {
 		return fmt.Errorf("failed to setup logging: %w", err)
 	}
+
+	// Option 2: Original approach (still works)
+	// var settings logging.LoggingSettings
+	// err := parsedLayers.InitializeStruct(logging.LoggingLayerSlug, &settings)
+	// if err != nil {
+	//     return fmt.Errorf("failed to get logging settings: %w", err)
+	// }
+	// if err := logging.InitLoggerFromSettings(&settings); err != nil {
+	//     return fmt.Errorf("failed to setup logging: %w", err)
+	// }
 
 	log.Info().Msg("Processing started")
 	log.Debug().Str("command", "my-command").Msg("Debug information")

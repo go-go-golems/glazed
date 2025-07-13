@@ -96,16 +96,16 @@ func parseDuration(s string) (time.Duration, error) {
 	if len(s) < 2 {
 		return 0, fmt.Errorf("invalid duration format: %s", s)
 	}
-	
+
 	unit := s[len(s)-1:]
 	valueStr := s[:len(s)-1]
-	
+
 	// Try standard time.ParseDuration first
 	value, err := time.ParseDuration(s)
 	if err == nil {
 		return value, nil
 	}
-	
+
 	// Handle day units that time.ParseDuration doesn't support
 	if unit == "d" {
 		days, err := strconv.Atoi(valueStr)
@@ -114,7 +114,7 @@ func parseDuration(s string) (time.Duration, error) {
 		}
 		return time.Duration(days) * 24 * time.Hour, nil
 	}
-	
+
 	return 0, fmt.Errorf("unsupported duration format: %s", s)
 }
 

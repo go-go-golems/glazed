@@ -39,14 +39,14 @@ type Server struct {
 
 // ServerHealth represents the health status of a server
 type ServerHealth struct {
-	CPUPercent       float64
-	MemoryUsedGB     float64
-	MemoryTotalGB    float64
-	DiskUsedPercent  float64
-	Status           string
-	LastSeen         time.Time
-	ActiveAlerts     []string
-	UptimeDays       int
+	CPUPercent      float64
+	MemoryUsedGB    float64
+	MemoryTotalGB   float64
+	DiskUsedPercent float64
+	Status          string
+	LastSeen        time.Time
+	ActiveAlerts    []string
+	UptimeDays      int
 }
 
 func (c *MonitorServersCommand) RunIntoGlazeProcessor(
@@ -78,9 +78,9 @@ func (c *MonitorServersCommand) RunIntoGlazeProcessor(
 			types.MRP("last_seen", health.LastSeen),
 			types.MRP("alerts", health.ActiveAlerts), // Can be an array
 			types.MRP("metadata", map[string]interface{}{ // Nested objects work too
-				"os_version":     server.OSVersion,
-				"kernel":         server.KernelVersion,
-				"uptime_days":    health.UptimeDays,
+				"os_version":  server.OSVersion,
+				"kernel":      server.KernelVersion,
+				"uptime_days": health.UptimeDays,
 			}),
 		)
 
@@ -132,14 +132,14 @@ func checkServerHealth(hostname string) ServerHealth {
 	}
 
 	return ServerHealth{
-		CPUPercent:       cpuPercent,
-		MemoryUsedGB:     memoryUsed,
-		MemoryTotalGB:    memoryTotal,
-		DiskUsedPercent:  diskPercent,
-		Status:           status,
-		LastSeen:         time.Now().Add(-time.Duration(rand.Intn(60)) * time.Minute),
-		ActiveAlerts:     alerts,
-		UptimeDays:       rand.Intn(365),
+		CPUPercent:      cpuPercent,
+		MemoryUsedGB:    memoryUsed,
+		MemoryTotalGB:   memoryTotal,
+		DiskUsedPercent: diskPercent,
+		Status:          status,
+		LastSeen:        time.Now().Add(-time.Duration(rand.Intn(60)) * time.Minute),
+		ActiveAlerts:    alerts,
+		UptimeDays:      rand.Intn(365),
 	}
 }
 

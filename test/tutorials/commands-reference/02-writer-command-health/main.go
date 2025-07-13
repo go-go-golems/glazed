@@ -67,7 +67,7 @@ func checkComponentHealth(component string) (status string, details string) {
 	case "Memory":
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		return "OK", fmt.Sprintf("Allocated: %.2f MB, System: %.2f MB", 
+		return "OK", fmt.Sprintf("Allocated: %.2f MB, System: %.2f MB",
 			float64(m.Alloc)/1024/1024, float64(m.Sys)/1024/1024)
 	case "Disk":
 		return "WARNING", "Root partition 85% full"
