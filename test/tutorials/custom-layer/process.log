@@ -1,0 +1,5 @@
+{"level":"info","time":"2025-07-12T17:02:37-04:00","message":"Starting data processing command"}
+{"level":"info","time":"2025-07-12T17:02:37-04:00","message":"Starting actual data processing"}
+{"level":"info","worker_id":0,"time":"2025-07-12T17:02:37-04:00","message":"Starting worker"}
+{"level":"info","worker_id":1,"time":"2025-07-12T17:02:37-04:00","message":"Starting worker"}
+{"level":"info","time":"2025-07-12T17:02:37-04:00","message":"Data processing completed successfully"}
