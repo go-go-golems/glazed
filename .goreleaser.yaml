@@ -81,14 +81,10 @@ nfpms:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
 
-publishers:
-  - name: fury.io
-    # by specifying `packages` id here goreleaser will only use this publisher
-    # with artifacts identified by this id
-    ids:
-      - packages
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/go-go-golems/
+furies:
+  - account: go-go-golems
+    ids: [packages]   # only deb/rpm built by that nfpms config
+    # secret_name defaults to FURY_TOKEN, so no extra config
 
 # modelines, feel free to remove those if you don't want/use them:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
