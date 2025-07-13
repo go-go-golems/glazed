@@ -83,6 +83,8 @@ nfpms:
 
 publishers:
   - name: fury.io
+    env:
+      - FURY_TOKEN={{ .Env.FURY_TOKEN }}
     # by specifying `packages` id here goreleaser will only use this publisher
     # with artifacts identified by this id
     ids:
