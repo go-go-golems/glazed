@@ -50,5 +50,5 @@ bump-glazed:
 	go mod tidy
 
 install:
-	go build -o ./dist/glaze ./cmd/glaze && \
+	go build -tags "fts5" -o ./dist/glaze ./cmd/glaze && \
 		cp ./dist/glaze $(shell which glaze)
