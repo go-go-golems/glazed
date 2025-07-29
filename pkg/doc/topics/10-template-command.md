@@ -63,69 +63,49 @@ package main
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/runner"
 )
 
 func main() {
 	yamlContent := `name: greeting
-short: Generate personalized greetings
+short: A simple greeting command
 flags:
   - name: name
     type: string
     default: "World"
-template: "Hello {{.name}}!"`
+template: "Hello, {{.name}}!"`
 
-	// Load command from YAML
-	reader := strings.NewReader(yamlContent)
+	// 1. Load the command from a YAML string
 	loader := &cmds.TemplateCommandLoader{}
-	commands, err := loader.LoadCommandFromYAML(reader)
-	if err != nil {
+	commands, err := loader.LoadCommandFromYAML(strings.NewReader(yamlContent))
+	if err != nil || len(commands) == 0 {
 		panic(err)
 	}
-	
-	cmd := commands[0].(*cmds.TemplateCommand)
-	
-	// Execute with parameters
-	runTemplateCommand(cmd, map[string]interface{}{
-		"name": "Alice",
-	})
-}
 
-func runTemplateCommand(cmd *cmds.TemplateCommand, values map[string]interface{}) {
-	// Get default parameter layer
-	defaultLayer, ok := cmd.Description().Layers.Get(layers.DefaultSlug)
-	if !ok {
-		panic("default layer not found")
-	}
-	
-	// Create parsed layer with parameter values
-	var options []layers.ParsedLayerOption
-	for k, v := range values {
-		if _, exists := defaultLayer.GetParameterDefinitions().Get(k); exists {
-			options = append(options, layers.WithParsedParameterValue(k, v))
-		}
-	}
-	
-	parsedLayer, err := layers.NewParsedLayer(defaultLayer, options...)
+	cmd := commands[0]
+
+	// 2. Run the command programmatically
+	// The runner handles parsing and execution.
+	// For more complex execution, see `glaze help programmatic-execution`.
+	err = runner.RunCommand(
+		context.Background(),
+		cmd,
+		// Provide parameter values for the "default" layer
+		runner.WithValues(map[string]interface{}{
+			"name": "Alice",
+		}),
+		// Direct output to stdout
+		runner.WithWriter(os.Stdout),
+	)
 	if err != nil {
 		panic(err)
 	}
-	
-	// Execute template
-	parsedLayers := layers.NewParsedLayers()
-	parsedLayers.Set(layers.DefaultSlug, parsedLayer)
-	
-	var output strings.Builder
-	err = cmd.RunIntoWriter(context.Background(), parsedLayers, &output)
-	if err != nil {
-		panic(err)
-	}
-	
-	// Output: Hello Alice!
-	fmt.Print(output.String())
+
+	// Expected output: Hello, Alice!
 }
 ```
 
@@ -158,6 +138,8 @@ template: |
 
 ## Parameter Types
 
+Template commands can leverage the full range of Glazed parameter types, allowing for rich and validated inputs. This means you can create templates that accept everything from simple strings and booleans to lists, choices, and even content from files.
+
 Template commands support all standard Glazed parameter types:
 
 - `string`, `stringList` - Text values
@@ -172,6 +154,8 @@ glaze help parameter-types
 ```
 
 ## Integration with Command Loaders
+
+While `TemplateCommand` can be loaded manually, its real power is unlocked when used with the command loader system. This allows you to build applications that discover and load commands from a directory of YAML files, enabling you to add new functionality without recompiling your application.
 
 Template commands can be loaded dynamically using the command loader system. This enables building applications that discover and load template commands from directories.
 
