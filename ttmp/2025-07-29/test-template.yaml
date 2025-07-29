@@ -1,0 +1,16 @@
+name: greeting
+short: Renders a greeting template
+flags:
+  - name: name
+    type: string
+    help: Name to greet
+    default: "World"
+  - name: hobbies
+    type: stringList
+    help: List of hobbies
+template: |
+  Hello {{.name}}!
+  {{if .hobbies}}
+  Your hobbies are:
+  {{range .hobbies}}  - {{.}}
+  {{end}}{{end}}

@@ -2,9 +2,7 @@
 Title: TemplateCommand
 Slug: template-command
 Short: |
-  TemplateCommand is a feature that allows you to define a command that renders template text. 
-  The template text is defined in the `template` field of the YAML file, and flags/params are 
-  used to render the final template output.
+  Create commands that render Go template text using command-line flags and arguments as template variables.
 Topics:
   - command
   - template
@@ -16,109 +14,168 @@ SectionType: GeneralTopic
 
 # TemplateCommand
 
-TemplateCommand is a feature that allows you to define a command that renders template text.
-The template text is defined in the `template` field of the YAML file,
-and flags/params are used to render the final template output.
+A TemplateCommand allows you to define commands that render Go template text using command-line parameters as template variables. This enables rapid prototyping of text generation tools without writing Go code—simply define parameters in YAML and write a template that uses those parameters.
 
-## Example
+## Creating Template Commands
 
-Here is an example of a TemplateCommand in YAML format:
+Template commands are defined in YAML files with a `template` field containing Go template syntax. The template receives all parsed parameters as variables accessible through the standard `{{.variable}}` syntax.
 
-  ```yaml
+**Example YAML definition:**
+
+```yaml
 name: greeting
-short: Renders a greeting template
+short: Generate personalized greetings
 flags:
   - name: name
     type: string
     help: Name to greet
+    default: "World"
+  - name: language
+    type: choice
+    help: Greeting language
+    choices: [english, spanish, french]
+    default: "english"
   - name: hobbies
     type: stringList
-    help: Hobbies
+    help: List of hobbies to mention
 template: |
-  Hello {{.name}}!
-
+  {{if eq .language "spanish"}}¡Hola{{else if eq .language "french"}}Bonjour{{else}}Hello{{end}} {{.name}}!
+  {{if .hobbies}}
   Your hobbies are:
-  {{ range .hobbies }}
-    - {{ . }}
-  {{ end }}
-  ```
-  
-This command will render a greeting based on the name and hobbies provided as flags.
+  {{range .hobbies}}  - {{.}}
+  {{end}}{{end}}
+```
 
-## Usage
+**Use cases:**
+- Quick text generation utilities
+- Configuration file templates
+- Report generators
+- Code scaffolding tools
 
-Here is an example of how to use a TemplateCommand.
+## Loading and Running Template Commands
+
+Template commands implement the `WriterCommand` interface and can be loaded from YAML using the `TemplateCommandLoader`.
+
+**Loading from YAML:**
 
 ```go
 package main
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
 func main() {
-	// Load the TemplateCommand from the YAML file
-	f, err := os.Open("/tmp/test.yaml")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}
-	defer f.Close()
+	yamlContent := `name: greeting
+short: Generate personalized greetings
+flags:
+  - name: name
+    type: string
+    default: "World"
+template: "Hello {{.name}}!"`
 
-	tcl := &cmds.TemplateCommandLoader{}
-	commands, err := tcl.LoadCommandFromYAML(f)
+	// Load command from YAML
+	reader := strings.NewReader(yamlContent)
+	loader := &cmds.TemplateCommandLoader{}
+	commands, err := loader.LoadCommandFromYAML(reader)
 	if err != nil {
-		fmt.Println("Error loading command from YAML:", err)
-		return
+		panic(err)
 	}
-	if len(commands) != 1 {
-		fmt.Println("Expected exactly one command in the YAML file")
-		return
-	}
-	cmd, ok := commands[0].(*cmds.TemplateCommand)
+	
+	cmd := commands[0].(*cmds.TemplateCommand)
+	
+	// Execute with parameters
+	runTemplateCommand(cmd, map[string]interface{}{
+		"name": "Alice",
+	})
+}
+
+func runTemplateCommand(cmd *cmds.TemplateCommand, values map[string]interface{}) {
+	// Get default parameter layer
+	defaultLayer, ok := cmd.Description().Layers.Get(layers.DefaultSlug)
 	if !ok {
-		fmt.Println("Command is not a TemplateCommand")
-		return
+		panic("default layer not found")
 	}
-
-	// Define the flags
-	flags := []string{"--flag1=value1", "--flag2=value2"}
-
-	// Run the command
-	buf := &strings.Builder{}
-	parsedLayers := map[string]*layers.ParsedParameterLayer{}
-	ps, args, err := parameters.GatherFlagsFromStringList(
-		flags, cmd.Flags,
-		false, false,
-		"")
+	
+	// Create parsed layer with parameter values
+	var options []layers.ParsedLayerOption
+	for k, v := range values {
+		if _, exists := defaultLayer.GetParameterDefinitions().Get(k); exists {
+			options = append(options, layers.WithParsedParameterValue(k, v))
+		}
+	}
+	
+	parsedLayer, err := layers.NewParsedLayer(defaultLayer, options...)
 	if err != nil {
-		fmt.Println("Error gathering flags:", err)
-		return
+		panic(err)
 	}
-	arguments, err := parameters.GatherArguments(args, cmd.Arguments, false, false)
+	
+	// Execute template
+	parsedLayers := layers.NewParsedLayers()
+	parsedLayers.Set(layers.DefaultSlug, parsedLayer)
+	
+	var output strings.Builder
+	err = cmd.RunIntoWriter(context.Background(), parsedLayers, &output)
 	if err != nil {
-		fmt.Println("Error gathering arguments:", err)
-		return
+		panic(err)
 	}
-	for p := arguments.Oldest(); p != nil; p = p.Next() {
-		k, v := p.Key, p.Value
-		ps[k] = v
-	}
-	err = cmd.RunIntoWriter(context.Background(), parsedLayers, ps, buf)
-	if err != nil {
-		fmt.Println("Error running command:", err)
-		return
-	}
-
-	// Print the output
-	fmt.Println(buf.String())
+	
+	// Output: Hello Alice!
+	fmt.Print(output.String())
 }
 ```
+
+## Template Syntax and Variables
+
+Template commands use Go's `text/template` package syntax. All parsed parameters are available as variables in the template context.
+
+**Common template patterns:**
+
+```yaml
+template: |
+  # Conditional content
+  {{if .debug}}Debug mode enabled{{end}}
   
+  # Range over lists
+  {{range .items}}
+  - {{.}}
+  {{end}}
+  
+  # String comparison
+  {{if eq .environment "production"}}
+  Production configuration
+  {{else}}
+  Development configuration
+  {{end}}
+  
+  # Using defaults for optional parameters
+  Name: {{.name | default "unnamed"}}
+```
+
+## Parameter Types
+
+Template commands support all standard Glazed parameter types:
+
+- `string`, `stringList` - Text values
+- `int`, `intList`, `float`, `floatList` - Numeric values  
+- `bool` - Boolean flags
+- `choice`, `choiceList` - Constrained selections
+- `stringFromFile`, `objectFromFile` - File-based inputs
+
+For more details on parameter types, see:
+```
+glaze help parameter-types
+```
+
+## Integration with Command Loaders
+
+Template commands can be loaded dynamically using the command loader system. This enables building applications that discover and load template commands from directories.
+
+For information about setting up command loaders:
+```
+glaze help command-loaders
+```
