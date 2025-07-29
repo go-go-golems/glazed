@@ -373,13 +373,115 @@ Glazed commands follow a consistent structure with four key components:
 
 **Command Struct**: Contains the command's identity and embeds `CommandDescription` which holds metadata (name, flags, help text) separately from business logic.
 
-**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields.
+**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields through `glazed.parameter` tags.
 
-**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings, execute logic, return results.
+**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings using `InitializeStruct`, execute logic, return results.
 
 **Constructor Function**: Creates the command description with its parameters and layers.
 
-Implementation pattern:
+### Settings Structs and InitializeStruct Pattern
+
+Settings structs provide type-safe access to parsed command parameters. Each field uses a `glazed.parameter` tag that must match the parameter name defined in the command description:
+
+```go
+// Settings struct with glazed.parameter tags
+type MyCommandSettings struct {
+    Count   int    `glazed.parameter:"count"`     // Maps to "count" parameter
+    Format  string `glazed.parameter:"format"`   // Maps to "format" parameter  
+    Verbose bool   `glazed.parameter:"verbose"`  // Maps to "verbose" parameter
+    DryRun  bool   `glazed.parameter:"dry-run"`  // Maps to "dry-run" parameter
+}
+```
+
+The `InitializeStruct` method populates the settings struct from parsed layers. Always specify the correct layer slug (use `layers.DefaultSlug` for command-specific parameters):
+
+```go
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // Create settings struct instance
+    s := &MyCommandSettings{}
+    
+    // Extract values from the "default" layer into the struct
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+        return fmt.Errorf("failed to initialize settings: %w", err)
+    }
+    
+    // Now use the populated struct fields
+    for i := 0; i < s.Count; i++ {
+        if s.Verbose {
+            log.Printf("Processing item %d with format %s", i, s.Format)
+        }
+        
+        if s.DryRun {
+            fmt.Printf("Would process item %d\n", i)
+            continue
+        }
+        
+        row := types.NewRow(
+            types.MRP("id", i),
+            types.MRP("format", s.Format),
+        )
+        if err := gp.AddRow(ctx, row); err != nil {
+            return err
+        }
+    }
+    
+    return nil
+}
+```
+
+### Working with Multiple Layers
+
+Commands often use multiple parameter layers. Extract settings from each layer separately:
+
+```go
+type DatabaseSettings struct {
+    Host     string `glazed.parameter:"db-host"`
+    Port     int    `glazed.parameter:"db-port"`
+    Database string `glazed.parameter:"db-name"`
+}
+
+type LoggingSettings struct {
+    Level string `glazed.parameter:"log-level"`
+    File  string `glazed.parameter:"log-file"`
+}
+
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // Extract command-specific settings
+    cmdSettings := &MyCommandSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, cmdSettings); err != nil {
+        return err
+    }
+    
+    // Extract database layer settings
+    dbSettings := &DatabaseSettings{}
+    if err := parsedLayers.InitializeStruct("database", dbSettings); err != nil {
+        return err
+    }
+    
+    // Extract logging layer settings
+    logSettings := &LoggingSettings{}
+    if err := parsedLayers.InitializeStruct("logging", logSettings); err != nil {
+        return err
+    }
+    
+    // Use all settings together
+    fmt.Printf("Connecting to %s:%d/%s with log level %s\n", 
+        dbSettings.Host, dbSettings.Port, dbSettings.Database, logSettings.Level)
+    
+    // ... rest of command logic
+    return nil
+}
+```
+
+### Complete Implementation Example
 
 ```go
 // Step 1: Define command struct
@@ -387,27 +489,42 @@ type MyCommand struct {
     *cmds.CommandDescription
 }
 
-// Step 2: Define settings struct
+// Step 2: Define settings struct with glazed.parameter tags
 type MyCommandSettings struct {
-    Count  int    `glazed.parameter:"count"`
-    Format string `glazed.parameter:"format"`
-    Verbose bool  `glazed.parameter:"verbose"`
+    Count   int    `glazed.parameter:"count"`
+    Format  string `glazed.parameter:"format"`
+    Verbose bool   `glazed.parameter:"verbose"`
+    DryRun  bool   `glazed.parameter:"dry-run"`
 }
 
-// Step 3: Implement run method
+// Step 3: Implement run method with InitializeStruct
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
     parsedLayers *layers.ParsedLayers,
     gp middlewares.Processor,
 ) error {
+    // Extract settings from parsed layers
     s := &MyCommandSettings{}
     if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
-        return err
+        return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
-    // Command logic here
+    // Use the populated settings
+    if s.Verbose {
+        fmt.Printf("Processing %d items in %s format\n", s.Count, s.Format)
+    }
+    
     for i := 0; i < s.Count; i++ {
-        row := types.NewRow(types.MRP("id", i))
+        if s.DryRun {
+            fmt.Printf("Would create item %d\n", i)
+            continue
+        }
+        
+        row := types.NewRow(
+            types.MRP("id", i),
+            types.MRP("format", s.Format),
+            types.MRP("timestamp", time.Now()),
+        )
         if err := gp.AddRow(ctx, row); err != nil {
             return err
         }
@@ -446,6 +563,12 @@ func NewMyCommand() (*MyCommand, error) {
                 parameters.WithDefault(false),
                 parameters.WithHelp("Enable verbose output"),
             ),
+            parameters.NewParameterDefinition(
+                "dry-run",
+                parameters.ParameterTypeBool,
+                parameters.WithDefault(false),
+                parameters.WithHelp("Show what would be done without executing"),
+            ),
         ),
         cmds.WithLayersList(glazedLayer),
     )
@@ -457,6 +580,61 @@ func NewMyCommand() (*MyCommand, error) {
 
 // Ensure interface compliance
 var _ cmds.GlazeCommand = &MyCommand{}
+```
+
+### Common InitializeStruct Patterns
+
+**Pattern 1: Inline struct definition (for simple cases)**
+```go
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    s := struct {
+        Message string `glazed.parameter:"message"`
+        Count   int    `glazed.parameter:"count"`
+    }{}
+
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s); err != nil {
+        return err
+    }
+
+    // Use s.Message and s.Count
+    return nil
+}
+```
+
+**Pattern 2: Named settings struct (recommended for complex commands)**
+```go
+type ExampleSettings struct {
+    Message string `glazed.parameter:"message"`
+    Count   int    `glazed.parameter:"count"`
+}
+
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    s := &ExampleSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+        return err
+    }
+
+    // Use s.Message and s.Count  
+    return nil
+}
+```
+
+**Pattern 3: Helper function for reusable settings**
+```go
+func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+    settings := &DatabaseSettings{}
+    err := parsedLayers.InitializeStruct("database", settings)
+    return settings, err
+}
+
+func (c *MyCommand) RunIntoGlazeProcessor(...) error {
+    dbSettings, err := GetDatabaseSettings(parsedLayers)
+    if err != nil {
+        return err
+    }
+    // Use dbSettings
+    return nil
+}
 ```
 
 ## Parameters
