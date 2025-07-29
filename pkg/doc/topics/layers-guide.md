@@ -493,6 +493,31 @@ func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, 
     err := parsedLayers.InitializeStruct("database", settings)
     return settings, err
 }
+
+// 4. Usage in command implementation
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // Extract database settings from the "database" layer
+    dbSettings, err := GetDatabaseSettings(parsedLayers)
+    if err != nil {
+        return fmt.Errorf("failed to get database settings: %w", err)
+    }
+    
+    // Connect to database using the settings
+    dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s sslmode=%s",
+        dbSettings.Host, dbSettings.Port, dbSettings.Name, 
+        dbSettings.Username, dbSettings.SSLMode)
+    
+    if dbSettings.Password != "" {
+        dsn += fmt.Sprintf(" password=%s", dbSettings.Password)
+    }
+    
+    // ... rest of command logic using database connection
+    return nil
+}
 ```
 
 ### Method 3: Layer Builder Pattern
@@ -752,7 +777,7 @@ func NewHealthCheckCommand() (*cmds.CommandDescription, error) {
     ), nil
 }
 
-// Settings extraction helpers
+// Settings extraction helpers demonstrate how to use InitializeStruct with layer-specific settings
 func GetServerSettings(parsedLayers *layers.ParsedLayers) (*ServerSettings, error) {
     settings := &ServerSettings{}
     err := parsedLayers.InitializeStruct("server", settings)
@@ -770,11 +795,56 @@ func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, 
     err := parsedLayers.InitializeStruct("database", settings)
     return settings, err
 }
+
+// Example command implementation using multiple layer settings
+type ServerCommand struct {
+    *cmds.CommandDescription
+}
+
+func (c *ServerCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    // Extract settings from each layer
+    serverSettings, err := GetServerSettings(parsedLayers)
+    if err != nil {
+        return fmt.Errorf("failed to get server settings: %w", err)
+    }
+    
+    dbSettings, err := GetDatabaseSettings(parsedLayers)
+    if err != nil {
+        return fmt.Errorf("failed to get database settings: %w", err)
+    }
+    
+    logSettings, err := GetLoggingSettings(parsedLayers)
+    if err != nil {
+        return fmt.Errorf("failed to get logging settings: %w", err)
+    }
+    
+    // Use settings from multiple layers
+    fmt.Printf("Starting server on %s:%d\n", serverSettings.Host, serverSettings.Port)
+    fmt.Printf("Database: %s:%d/%s\n", dbSettings.Host, dbSettings.Port, dbSettings.Name)
+    fmt.Printf("Log level: %s\n", logSettings.Level)
+    
+    // Parse timeout values
+    readTimeout, err := time.ParseDuration(serverSettings.ReadTimeout)
+    if err != nil {
+        return fmt.Errorf("invalid read timeout: %w", err)
+    }
+    
+    writeTimeout, err := time.ParseDuration(serverSettings.WriteTimeout)
+    if err != nil {
+        return fmt.Errorf("invalid write timeout: %w", err)
+    }
+    
+    // ... start server with these settings
+    _ = readTimeout
+    _ = writeTimeout
+    
+    return nil
+}
 ```
 
 ### Example 2: CLI Tool with Optional Features
 
-Layer composition for applications with conditional functionality:
+Layer composition for applications with conditional functionality. This example shows how to extract settings from optional layers and use them together:
 
 ```go
 // Feature layers for optional inclusion
@@ -909,6 +979,78 @@ func (b *AppCommandBuilder) BuildProcessCommand() (*cmds.CommandDescription, err
         ),
         cmds.WithLayersList(commandLayers...),
     ), nil
+}
+
+// Settings structs for optional features
+type CacheSettings struct {
+    Enabled bool   `glazed.parameter:"cache-enabled"`
+    TTL     string `glazed.parameter:"cache-ttl"`
+    Size    int    `glazed.parameter:"cache-size"`
+}
+
+type MetricsSettings struct {
+    Enabled bool   `glazed.parameter:"metrics-enabled"`
+    Port    int    `glazed.parameter:"metrics-port"`
+    Path    string `glazed.parameter:"metrics-path"`
+}
+
+// Helper functions for optional layer settings
+func GetCacheSettings(parsedLayers *layers.ParsedLayers) (*CacheSettings, error) {
+    settings := &CacheSettings{}
+    err := parsedLayers.InitializeStruct("cache", settings)
+    return settings, err
+}
+
+func GetMetricsSettings(parsedLayers *layers.ParsedLayers) (*MetricsSettings, error) {
+    settings := &MetricsSettings{}
+    err := parsedLayers.InitializeStruct("metrics", settings)
+    return settings, err
+}
+
+// Command implementation that handles optional layers
+type ProcessCommand struct {
+    *cmds.CommandDescription
+}
+
+func (c *ProcessCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    // Always extract logging settings
+    logSettings, err := GetLoggingSettings(parsedLayers)
+    if err != nil {
+        return fmt.Errorf("failed to get logging settings: %w", err)
+    }
+    
+    fmt.Printf("Starting processing with log level: %s\n", logSettings.Level)
+    
+    // Try to extract cache settings (may not exist)
+    if parsedLayers.Has("cache") {
+        cacheSettings, err := GetCacheSettings(parsedLayers)
+        if err != nil {
+            return fmt.Errorf("failed to get cache settings: %w", err)
+        }
+        
+        if cacheSettings.Enabled {
+            fmt.Printf("Cache enabled: TTL=%s, Size=%d\n", 
+                cacheSettings.TTL, cacheSettings.Size)
+            // Initialize cache with these settings
+        }
+    }
+    
+    // Try to extract metrics settings (may not exist)
+    if parsedLayers.Has("metrics") {
+        metricsSettings, err := GetMetricsSettings(parsedLayers)
+        if err != nil {
+            return fmt.Errorf("failed to get metrics settings: %w", err)
+        }
+        
+        if metricsSettings.Enabled {
+            fmt.Printf("Metrics enabled on port %d at %s\n", 
+                metricsSettings.Port, metricsSettings.Path)
+            // Start metrics server
+        }
+    }
+    
+    // ... rest of processing logic
+    return nil
 }
 
 // Usage:

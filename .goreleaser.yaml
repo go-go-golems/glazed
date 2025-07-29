@@ -20,6 +20,8 @@ builds:
     goarch:
       - amd64
       - arm64
+    tags:
+      - fts5
 checksum:
   name_template: 'checksums.txt'
 

@@ -89,7 +89,7 @@ Key components:
 
 ## Core Packages
 
-Glazed's command functionality is distributed across several packages:
+The Glazed framework is organized into distinct packages to separate concerns like command definition, parameter handling, and output processing. This modular design makes the system extensible and easier to maintain. Key packages handle command interfaces (`cmds`), parameter definitions (`parameters`), and integration with CLI libraries like Cobra (`cli`).
 
 - `github.com/go-go-golems/glazed/pkg/cmds`: Core command interfaces and descriptions
 - `github.com/go-go-golems/glazed/pkg/cmds/parameters`: Parameter types and definitions
@@ -101,6 +101,8 @@ Glazed's command functionality is distributed across several packages:
 - `github.com/go-go-golems/glazed/pkg/settings`: Standard Glazed parameter layers
 
 ## Command Interfaces
+
+A command's output contract is defined by the interface it implements. Glazed offers three primary interfaces to support different use cases: `BareCommand` for direct `stdout` control, `WriterCommand` for sending text to any `io.Writer`, and `GlazeCommand` for producing structured data that can be automatically formatted. This design allows a command's business logic to be decoupled from its final output format.
 
 Glazed provides three main command interfaces, each designed for different output scenarios:
 
@@ -367,47 +369,65 @@ var _ cmds.GlazeCommand = &StatusCommand{}
 
 ## Command Implementation
 
+A well-structured Glazed command separates its identity and logic. The recommended pattern involves a `Command` struct embedding a `CommandDescription` for metadata, a separate `Settings` struct for type-safe parameter access via `glazed.parameter` tags, and a `Run` method containing the business logic. This separation is bridged at runtime by `InitializeStruct`, which populates the `Settings` struct from parsed command-line values.
+
 Glazed commands follow a consistent structure with four key components:
 
 ### Command Structure
 
 **Command Struct**: Contains the command's identity and embeds `CommandDescription` which holds metadata (name, flags, help text) separately from business logic.
 
-**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields.
+**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields through `glazed.parameter` tags.
 
-**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings, execute logic, return results.
+**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings using `InitializeStruct`, execute logic, return results.
 
 **Constructor Function**: Creates the command description with its parameters and layers.
 
-Implementation pattern:
+### Settings Structs and InitializeStruct Pattern
+
+Settings structs provide type-safe access to parsed command parameters. Each field uses a `glazed.parameter` tag that must match the parameter name defined in the command description:
 
 ```go
-// Step 1: Define command struct
-type MyCommand struct {
-    *cmds.CommandDescription
-}
-
-// Step 2: Define settings struct
+// Settings struct with glazed.parameter tags
 type MyCommandSettings struct {
-    Count  int    `glazed.parameter:"count"`
-    Format string `glazed.parameter:"format"`
-    Verbose bool  `glazed.parameter:"verbose"`
+    Count   int    `glazed.parameter:"count"`     // Maps to "count" parameter
+    Format  string `glazed.parameter:"format"`   // Maps to "format" parameter  
+    Verbose bool   `glazed.parameter:"verbose"`  // Maps to "verbose" parameter
+    DryRun  bool   `glazed.parameter:"dry-run"`  // Maps to "dry-run" parameter
 }
+```
 
-// Step 3: Implement run method
+The `InitializeStruct` method populates the settings struct from parsed layers. Always specify the correct layer slug (use `layers.DefaultSlug` for command-specific parameters):
+
+```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
     parsedLayers *layers.ParsedLayers,
     gp middlewares.Processor,
 ) error {
+    // Create settings struct instance
     s := &MyCommandSettings{}
+    
+    // Extract values from the "default" layer into the struct
     if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
-        return err
+        return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
-    // Command logic here
+    // Now use the populated struct fields
     for i := 0; i < s.Count; i++ {
-        row := types.NewRow(types.MRP("id", i))
+        if s.Verbose {
+            log.Printf("Processing item %d with format %s", i, s.Format)
+        }
+        
+        if s.DryRun {
+            fmt.Printf("Would process item %d\n", i)
+            continue
+        }
+        
+        row := types.NewRow(
+            types.MRP("id", i),
+            types.MRP("format", s.Format),
+        )
         if err := gp.AddRow(ctx, row); err != nil {
             return err
         }
@@ -415,51 +435,353 @@ func (c *MyCommand) RunIntoGlazeProcessor(
     
     return nil
 }
+```
 
-// Step 4: Constructor function
-func NewMyCommand() (*MyCommand, error) {
-    glazedLayer, err := settings.NewGlazedParameterLayers()
-    if err != nil {
-        return nil, err
-    }
-    
-    cmdDesc := cmds.NewCommandDescription(
-        "mycommand",
-        cmds.WithShort("My example command"),
-        cmds.WithFlags(
-            parameters.NewParameterDefinition(
-                "count",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(10),
-                parameters.WithHelp("Number of items to generate"),
-            ),
-            parameters.NewParameterDefinition(
-                "format",
-                parameters.ParameterTypeChoice,
-                parameters.WithChoices("json", "yaml", "table"),
-                parameters.WithDefault("table"),
-                parameters.WithHelp("Output format"),
-            ),
-            parameters.NewParameterDefinition(
-                "verbose",
-                parameters.ParameterTypeBool,
-                parameters.WithDefault(false),
-                parameters.WithHelp("Enable verbose output"),
-            ),
-        ),
-        cmds.WithLayersList(glazedLayer),
-    )
-    
-    return &MyCommand{
-        CommandDescription: cmdDesc,
-    }, nil
+### Working with Multiple Layers
+
+Commands often use multiple parameter layers. Extract settings from each layer separately:
+
+```go
+type DatabaseSettings struct {
+    Host     string `glazed.parameter:"db-host"`
+    Port     int    `glazed.parameter:"db-port"`
+    Database string `glazed.parameter:"db-name"`
 }
 
-// Ensure interface compliance
-var _ cmds.GlazeCommand = &MyCommand{}
+type LoggingSettings struct {
+    Level string `glazed.parameter:"log-level"`
+    File  string `glazed.parameter:"log-file"`
+}
+
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // Extract command-specific settings
+    cmdSettings := &MyCommandSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, cmdSettings); err != nil {
+        return err
+    }
+    
+    // Extract database layer settings
+    dbSettings := &DatabaseSettings{}
+    if err := parsedLayers.InitializeStruct("database", dbSettings); err != nil {
+        return err
+    }
+    
+    // Extract logging layer settings
+    logSettings := &LoggingSettings{}
+    if err := parsedLayers.InitializeStruct("logging", logSettings); err != nil {
+        return err
+    }
+    
+    // Use all settings together
+    fmt.Printf("Connecting to %s:%d/%s with log level %s\n", 
+        dbSettings.Host, dbSettings.Port, dbSettings.Database, logSettings.Level)
+    
+    // ... rest of command logic
+    return nil
+}
+```
+
+### Common InitializeStruct Patterns
+
+**Pattern 1: Inline struct definition (for simple cases)**
+```go
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    s := struct {
+        Message string `glazed.parameter:"message"`
+        Count   int    `glazed.parameter:"count"`
+    }{}
+
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s); err != nil {
+        return err
+    }
+
+    // Use s.Message and s.Count
+    return nil
+}
+```
+
+**Pattern 2: Named settings struct (recommended for complex commands)**
+```go
+type ExampleSettings struct {
+    Message string `glazed.parameter:"message"`
+    Count   int    `glazed.parameter:"count"`
+}
+
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    s := &ExampleSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+        return err
+    }
+
+    // Use s.Message and s.Count  
+    return nil
+}
+```
+
+**Pattern 3: Helper function for reusable settings**
+```go
+func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+    settings := &DatabaseSettings{}
+    err := parsedLayers.InitializeStruct("database", settings)
+    return settings, err
+}
+
+func (c *MyCommand) RunIntoGlazeProcessor(...) error {
+    dbSettings, err := GetDatabaseSettings(parsedLayers)
+    if err != nil {
+        return err
+    }
+    // Use dbSettings
+    return nil
+}
+```
+
+## Advanced Patterns
+
+While Glazed excels at building standard CLI tools, its architecture also supports more advanced use cases. Commands can be executed programmatically for testing or integration into other Go applications, and the parameter system can load values from multiple sources like environment variables and config files, not just CLI flags. These patterns allow you to build commands that are not just standalone tools, but reusable components in a larger software ecosystem.
+
+### Programmatic Execution
+
+To run a command programmatically without Cobra:
+
+```go
+// Create command instance
+cmd, err := NewMyCommand()
+if err != nil {
+    log.Fatalf("Error creating command: %v", err)
+}
+
+// Set up execution context
+ctx := context.Background()
+
+// Define parameter values
+parseOptions := []runner.ParseOption{
+    runner.WithValuesForLayers(map[string]map[string]interface{}{
+        "default": {
+            "count": 20,
+            "format": "json",
+        },
+    }),
+    runner.WithEnvMiddleware("MYAPP_"),
+}
+
+// Configure output
+runOptions := []runner.RunOption{
+    runner.WithWriter(os.Stdout),
+}
+
+// Run the command
+err = runner.ParseAndRun(ctx, cmd, parseOptions, runOptions)
+if err != nil {
+    log.Fatalf("Error running command: %v", err)
+}
+```
+
+### Parameter Loading Sources
+
+Parameters can be loaded from multiple sources (in priority order):
+
+1. **Command line arguments** (highest priority)
+2. **Environment variables** 
+3. **Configuration files**
+4. **Default values** (lowest priority)
+
+```go
+parseOptions := []runner.ParseOption{
+    // Load from environment with prefix
+    runner.WithEnvMiddleware("MYAPP_"),
+    
+    // Load from configuration file
+    runner.WithViper(),
+    
+    // Set explicit values
+    runner.WithValuesForLayers(map[string]map[string]interface{}{
+        "default": {"count": 10},
+    }),
+    
+    // Add custom middleware
+    runner.WithAdditionalMiddlewares(customMiddleware),
+}
+```
+
+### Structured Data Output (GlazeCommand)
+
+#### Creating Rows
+
+For GlazeCommands, rows form the structured output:
+
+##### Using NewRow with MRP (MapRowPair)
+```go
+row := types.NewRow(
+    types.MRP("id", 1),
+    types.MRP("name", "John Doe"),
+    types.MRP("email", "john@example.com"),
+    types.MRP("active", true),
+)
+```
+
+##### From a map
+```go
+data := map[string]interface{}{
+    "id":     1,
+    "name":   "John Doe",
+    "email":  "john@example.com",
+    "active": true,
+}
+row := types.NewRowFromMap(data)
+```
+
+##### From a struct
+```go
+type User struct {
+    ID     int    `json:"id"`
+    Name   string `json:"name"`
+    Email  string `json:"email"`
+    Active bool   `json:"active"`
+}
+
+user := User{ID: 1, Name: "John Doe", Email: "john@example.com", Active: true}
+row := types.NewRowFromStruct(&user, true) // true = lowercase field names
+```
+
+#### Adding Rows to Processor
+
+```go
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    // Process data and create rows
+    for _, item := range data {
+        row := types.NewRow(
+            types.MRP("field1", item.Value1),
+            types.MRP("field2", item.Value2),
+        )
+        
+        if err := gp.AddRow(ctx, row); err != nil {
+            return err
+        }
+    }
+    
+    return nil
+}
+```
+
+### Error Handling Patterns
+
+#### Graceful Error Handling
+
+```go
+func (c *MyCommand) RunIntoGlazeProcessor(
+    ctx context.Context,
+    parsedLayers *layers.ParsedLayers,
+    gp middlewares.Processor,
+) error {
+    s := &MyCommandSettings{}
+    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+        return fmt.Errorf("failed to initialize settings: %w", err)
+    }
+    
+    // Validate settings
+    if err := c.validateSettings(s); err != nil {
+        return fmt.Errorf("invalid settings: %w", err)
+    }
+    
+    // Process with context cancellation support
+    for i := 0; i < s.Count; i++ {
+        select {
+        case <-ctx.Done():
+            return ctx.Err()
+        default:
+            row := types.NewRow(types.MRP("id", i))
+            if err := gp.AddRow(ctx, row); err != nil {
+                return fmt.Errorf("failed to add row %d: %w", i, err)
+            }
+        }
+    }
+    
+    return nil
+}
+
+func (c *MyCommand) validateSettings(s *MyCommandSettings) error {
+    if s.Count < 0 {
+        return errors.New("count must be non-negative")
+    }
+    if s.Count > 1000 {
+        return errors.New("count cannot exceed 1000")
+    }
+    return nil
+}
+```
+
+#### Exit Control
+
+Commands can control application exit behavior:
+
+```go
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+    // For early exit without error
+    if shouldExit {
+        return &cmds.ExitWithoutGlazeError{}
+    }
+    
+    // Normal processing
+    return nil
+}
+```
+
+### Performance Considerations
+
+#### Efficient Row Creation
+
+For large datasets, optimize row creation:
+
+```go
+// Good: Processes data as it arrives
+scanner := bufio.NewScanner(reader)
+for scanner.Scan() {
+    row := processLine(scanner.Text())
+    if err := gp.AddRow(ctx, row); err != nil {
+        return err
+    }
+}
+
+// Problematic: Loads everything into memory first
+allData := loadAllDataIntoMemory() // What if this is 10GB?
+for _, item := range allData {
+    // Process items...
+}
+```
+
+#### Memory Management
+
+For commands processing large amounts of data:
+
+```go
+// Good: Processes data as it arrives
+scanner := bufio.NewScanner(reader)
+for scanner.Scan() {
+    row := processLine(scanner.Text())
+    if err := gp.AddRow(ctx, row); err != nil {
+        return err
+    }
+}
+
+// Problematic: Loads everything into memory first
+allData := loadAllDataIntoMemory() // What if this is 10GB?
+for _, item := range allData {
+    // Process items...
+}
 ```
 
 ## Parameters
+
+Glazed treats command-line parameters as more than just strings. They are typed objects with built-in validation, default values, and help text. This approach shifts the burden of parsing and validation from the command's business logic to the framework itself. By defining a parameter's type (e.g., `ParameterTypeInteger`, `ParameterTypeDate`, `ParameterTypeFile`), you get automatic error handling and a more robust and user-friendly CLI.
 
 Glazed parameters are typed objects with validation rules and behavior, unlike traditional CLI libraries that treat parameters as simple strings requiring manual parsing and validation. This enables automatic validation, help generation, and multi-source value loading.
 
@@ -537,6 +859,8 @@ cmds.WithArguments(
 
 ## Command Building and Registration
 
+Glazed commands are defined independently of any specific CLI library, but they are most commonly used with Cobra. The `pkg/cli` package provides a bridge to convert a `cmds.Command` interface into a `cobra.Command`. This bridge automatically sets up flags, argument handling, and the execution flow, allowing you to benefit from Glazed's features within a standard Cobra application structure.
+
 ### Integration with Cobra
 
 Glazed provides several ways to convert commands to Cobra commands:
@@ -592,396 +916,16 @@ cobraCmd, err := cli.BuildCobraCommandDualMode(
 )
 ```
 
-## Running Commands
-
-### Programmatic Execution
-
-To run a command programmatically without Cobra:
-
-```go
-// Create command instance
-cmd, err := NewMyCommand()
-if err != nil {
-    log.Fatalf("Error creating command: %v", err)
-}
-
-// Set up execution context
-ctx := context.Background()
-
-// Define parameter values
-parseOptions := []runner.ParseOption{
-    runner.WithValuesForLayers(map[string]map[string]interface{}{
-        "default": {
-            "count": 20,
-            "format": "json",
-        },
-    }),
-    runner.WithEnvMiddleware("MYAPP_"),
-}
-
-// Configure output
-runOptions := []runner.RunOption{
-    runner.WithWriter(os.Stdout),
-}
-
-// Run the command
-err = runner.ParseAndRun(ctx, cmd, parseOptions, runOptions)
-if err != nil {
-    log.Fatalf("Error running command: %v", err)
-}
-```
-
-### Parameter Loading Sources
-
-Parameters can be loaded from multiple sources (in priority order):
-
-1. **Command line arguments** (highest priority)
-2. **Environment variables** 
-3. **Configuration files**
-4. **Default values** (lowest priority)
-
-```go
-parseOptions := []runner.ParseOption{
-    // Load from environment with prefix
-    runner.WithEnvMiddleware("MYAPP_"),
-    
-    // Load from configuration file
-    runner.WithViper(),
-    
-    // Set explicit values
-    runner.WithValuesForLayers(map[string]map[string]interface{}{
-        "default": {"count": 10},
-    }),
-    
-    // Add custom middleware
-    runner.WithAdditionalMiddlewares(customMiddleware),
-}
-```
-
-## Structured Data Output (GlazeCommand)
-
-### Creating Rows
-
-For GlazeCommands, rows form the structured output:
-
-#### Using NewRow with MRP (MapRowPair)
-```go
-row := types.NewRow(
-    types.MRP("id", 1),
-    types.MRP("name", "John Doe"),
-    types.MRP("email", "john@example.com"),
-    types.MRP("active", true),
-)
-```
-
-#### From a map
-```go
-data := map[string]interface{}{
-    "id":     1,
-    "name":   "John Doe",
-    "email":  "john@example.com",
-    "active": true,
-}
-row := types.NewRowFromMap(data)
-```
-
-#### From a struct
-```go
-type User struct {
-    ID     int    `json:"id"`
-    Name   string `json:"name"`
-    Email  string `json:"email"`
-    Active bool   `json:"active"`
-}
-
-user := User{ID: 1, Name: "John Doe", Email: "john@example.com", Active: true}
-row := types.NewRowFromStruct(&user, true) // true = lowercase field names
-```
-
-### Adding Rows to Processor
-
-```go
-func (c *MyCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    // Process data and create rows
-    for _, item := range data {
-        row := types.NewRow(
-            types.MRP("field1", item.Value1),
-            types.MRP("field2", item.Value2),
-        )
-        
-        if err := gp.AddRow(ctx, row); err != nil {
-            return err
-        }
-    }
-    
-    return nil
-}
-```
-
-## Advanced Patterns
-
-### Conditional Interface Implementation
-
-Commands can implement multiple interfaces and choose behavior at runtime:
-
-```go
-type FlexibleCommand struct {
-    *cmds.CommandDescription
-    mode string // "simple" or "structured"
-}
-
-func (c *FlexibleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
-    // Simple text output
-    fmt.Println("Simple output mode")
-    return nil
-}
-
-func (c *FlexibleCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    // Structured output
-    row := types.NewRow(types.MRP("mode", "structured"))
-    return gp.AddRow(ctx, row)
-}
-
-// Interface assertions
-var _ cmds.BareCommand = &FlexibleCommand{}
-var _ cmds.GlazeCommand = &FlexibleCommand{}
-```
-
-### Command Composition
-
-Create commands that delegate to other commands:
-
-```go
-type CompositeCommand struct {
-    *cmds.CommandDescription
-    subCommands []cmds.Command
-}
-
-func (c *CompositeCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    for _, subCmd := range c.subCommands {
-        if glazeCmd, ok := subCmd.(cmds.GlazeCommand); ok {
-            if err := glazeCmd.RunIntoGlazeProcessor(ctx, parsedLayers, gp); err != nil {
-                return err
-            }
-        }
-    }
-    return nil
-}
-```
-
-### Dynamic Command Generation
-
-Generate commands at runtime based on configuration:
-
-```go
-func CreateCommandsFromConfig(config *Config) ([]cmds.Command, error) {
-    var commands []cmds.Command
-    
-    for _, cmdConfig := range config.Commands {
-        cmd, err := createCommandFromConfig(cmdConfig)
-        if err != nil {
-            return nil, err
-        }
-        commands = append(commands, cmd)
-    }
-    
-    return commands, nil
-}
-
-func createCommandFromConfig(config CommandConfig) (cmds.Command, error) {
-    // Create layers based on config
-    var layers []layers.ParameterLayer
-    
-    for _, layerConfig := range config.Layers {
-        layer, err := createLayerFromConfig(layerConfig)
-        if err != nil {
-            return nil, err
-        }
-        layers = append(layers, layer)
-    }
-    
-    // Create command description
-    cmdDesc := cmds.NewCommandDescription(
-        config.Name,
-        cmds.WithShort(config.Short),
-        cmds.WithLong(config.Long),
-        cmds.WithLayersList(layers...),
-    )
-    
-    // Return appropriate command type based on config
-    switch config.Type {
-    case "bare":
-        return &DynamicBareCommand{CommandDescription: cmdDesc}, nil
-    case "glaze":
-        return &DynamicGlazeCommand{CommandDescription: cmdDesc}, nil
-    default:
-        return nil, fmt.Errorf("unknown command type: %s", config.Type)
-    }
-}
-```
-
-## Error Handling Patterns
-
-### Graceful Error Handling
-
-```go
-func (c *MyCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    s := &MyCommandSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
-        return fmt.Errorf("failed to initialize settings: %w", err)
-    }
-    
-    // Validate settings
-    if err := c.validateSettings(s); err != nil {
-        return fmt.Errorf("invalid settings: %w", err)
-    }
-    
-    // Process with context cancellation support
-    for i := 0; i < s.Count; i++ {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        default:
-            row := types.NewRow(types.MRP("id", i))
-            if err := gp.AddRow(ctx, row); err != nil {
-                return fmt.Errorf("failed to add row %d: %w", i, err)
-            }
-        }
-    }
-    
-    return nil
-}
-
-func (c *MyCommand) validateSettings(s *MyCommandSettings) error {
-    if s.Count < 0 {
-        return errors.New("count must be non-negative")
-    }
-    if s.Count > 1000 {
-        return errors.New("count cannot exceed 1000")
-    }
-    return nil
-}
-```
-
-### Exit Control
-
-Commands can control application exit behavior:
-
-```go
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
-    // For early exit without error
-    if shouldExit {
-        return &cmds.ExitWithoutGlazeError{}
-    }
-    
-    // Normal processing
-    return nil
-}
-```
-
-## Performance Considerations
-
-### Efficient Row Creation
-
-For large datasets, optimize row creation:
-
-```go
-func (c *MyCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    // Pre-allocate row slice for better performance
-    const batchSize = 1000
-    
-    for batch := 0; batch < totalBatches; batch++ {
-        // Process in batches to avoid memory issues
-        batchData := getDataBatch(batch, batchSize)
-        
-        for _, item := range batchData {
-            // Reuse row objects when possible
-            row := types.NewRow(
-                types.MRP("id", item.ID),
-                types.MRP("value", item.Value),
-            )
-            
-            if err := gp.AddRow(ctx, row); err != nil {
-                return err
-            }
-        }
-        
-        // Check for cancellation between batches
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        default:
-        }
-    }
-    
-    return nil
-}
-```
-
-### Memory Management
-
-For commands processing large amounts of data:
-
-```go
-func (c *LargeDataCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    // Use streaming approach instead of loading all data at once
-    reader, err := openDataReader()
-    if err != nil {
-        return err
-    }
-    defer reader.Close()
-    
-    scanner := bufio.NewScanner(reader)
-    for scanner.Scan() {
-        // Process one line at a time
-        line := scanner.Text()
-        data, err := parseLineToData(line)
-        if err != nil {
-            continue // Skip invalid lines
-        }
-        
-        row := types.NewRowFromStruct(data, true)
-        if err := gp.AddRow(ctx, row); err != nil {
-            return err
-        }
-    }
-    
-    return scanner.Err()
-}
-```
-
 ## Best Practices
+
+Building effective command-line tools involves more than just making them work. A great CLI is maintainable, performant, and user-friendly. The following guidelines represent key design principles and patterns for building high-quality Glazed applications, from choosing the right command interface to writing clear documentation and handling errors gracefully.
 
 ### Interface Selection
 
 Choose interfaces based on user requirements:
 
 - **BareCommand** when users need rich feedback, progress updates, or interactive elements
-- **WriterCommand** when output might go to files, logs, or other destinations  
+- **WriterCommand** when output might go to files, logs, or other destinations
 - **GlazeCommand** when data will be processed, filtered, or integrated with other tools
 - **Dual Commands** when usage patterns vary
 
@@ -1069,26 +1013,15 @@ Command help text is often the primary documentation users read:
 
 For GlazeCommands, document the output schema. Users building scripts need to know what fields are available and what they contain.
 
-## Command Evolution
-
-Commands typically evolve through these stages:
-
-1. **MVP**: BareCommand that solves immediate problem
-2. **Growth**: Users want to pipe output to other tools → add GlazeCommand interface
-3. **Scale**: Command becomes popular, performance matters → add streaming and batching
-4. **Maturity**: Users have diverse needs → convert to dual command with rich options
-
-Design for this evolution by keeping business logic separate from output formatting.
-
-### Design Principles
-
-Sometimes simple is better than powerful. If your command has a single, specific purpose and will never need structured output, BareCommand is perfectly fine. Don't add complexity for theoretical future needs.
-
-Use command composition over command complication. Instead of one command that does everything, consider multiple focused commands that work well together.
-
 ## Next Steps
 
-1. Start with the [Commands Tutorial](../tutorials/build-first-command.md) for hands-on experience
-2. Study the [Layer Guide](layers-guide.md) to understand parameter organization  
-3. Explore the [Applications section](../applications/) for real-world examples
-4. Build iteratively - start with something that works, then improve based on actual usage
+1. Start with a hands-on tutorial for a practical introduction:
+   ```
+   glaze help build-first-command
+   ```
+2. Study the layer guide to understand parameter organization:
+   ```
+   glaze help layers-guide
+   ```
+3. Explore real-world examples in the applications section.
+4. Build iteratively—start with something that works, then improve based on actual usage.
