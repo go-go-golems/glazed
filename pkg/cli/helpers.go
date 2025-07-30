@@ -27,8 +27,10 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 	}
 
 	layers_ := layers.NewParameterLayers(layers.WithLayers(gpl))
-	parser, err := NewCobraParserFromLayers(layers_,
-		WithCobraMiddlewaresFunc(CobraCommandDefaultMiddlewares))
+	parserCfg := &CobraParserConfig{
+		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
+	}
+	parser, err := NewCobraParserFromLayers(layers_, parserCfg)
 	if err != nil {
 		return nil, nil, err
 	}

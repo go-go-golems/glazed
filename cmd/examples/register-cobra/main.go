@@ -266,8 +266,9 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create dual command")
 	}
-	cobraDualCmd, err := cli.BuildCobraCommandDualMode(
+	cobraDualCmd, err := cli.BuildCobraCommandFromCommand(
 		dualCmd,
+		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 	)
 	if err != nil {
