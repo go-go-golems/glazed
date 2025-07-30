@@ -22,15 +22,6 @@ type CobraMiddlewaresFunc func(
 	args []string,
 ) ([]cmd_middlewares.Middleware, error)
 
-// CobraParserConfig holds configuration for creating a CobraParser
-type CobraParserConfig struct {
-	MiddlewaresFunc                  CobraMiddlewaresFunc
-	ShortHelpLayers                  []string
-	SkipCommandSettingsLayer         bool
-	EnableProfileSettingsLayer       bool
-	EnableCreateCommandSettingsLayer bool
-}
-
 // CobraCommandDefaultMiddlewares is the default implementation for creating
 // the middlewares used in a Cobra command. It handles parsing parameters
 // from Cobra flags, command line arguments, environment variables, and
@@ -100,16 +91,48 @@ type CobraParser struct {
 
 type CobraParserOption func(*CobraParser) error
 
+func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserOption {
+	return func(c *CobraParser) error {
+		c.middlewaresFunc = middlewaresFunc
+		return nil
+	}
+}
 
+func WithCobraShortHelpLayers(layers ...string) CobraParserOption {
+	return func(c *CobraParser) error {
+		c.shortHelpLayers = append(c.shortHelpLayers, layers...)
+		return nil
+	}
+}
+
+func WithSkipCommandSettingsLayer() CobraParserOption {
+	return func(c *CobraParser) error {
+		c.skipCommandSettingsLayer = true
+		return nil
+	}
+}
+
+func WithProfileSettingsLayer() CobraParserOption {
+	return func(c *CobraParser) error {
+		c.enableProfileSettingsLayer = true
+		return nil
+	}
+}
+
+func WithCreateCommandSettingsLayer() CobraParserOption {
+	return func(c *CobraParser) error {
+		c.enableCreateCommandSettingsLayer = true
+		return nil
+	}
+}
 
 func NewCobraCommandFromCommandDescription(
 	description *cmds.CommandDescription,
 ) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:         description.Name,
-		Short:       description.Short,
-		Long:        description.Long,
-		Annotations: make(map[string]string),
+		Use:   description.Name,
+		Short: description.Short,
+		Long:  description.Long,
 	}
 	return cmd
 }
@@ -119,27 +142,18 @@ func NewCobraCommandFromCommandDescription(
 // parameters specified in the Layers CommandDescription to the cobra command.
 func NewCobraParserFromLayers(
 	layers *layers.ParameterLayers,
-	cfg *CobraParserConfig,
+	options ...CobraParserOption,
 ) (*CobraParser, error) {
-	// Use defaults if config is nil
-	if cfg == nil {
-		cfg = &CobraParserConfig{
-			MiddlewaresFunc: CobraCommandDefaultMiddlewares,
-		}
-	}
-
 	ret := &CobraParser{
-		Layers:                           layers,
-		middlewaresFunc:                  cfg.MiddlewaresFunc,
-		shortHelpLayers:                  cfg.ShortHelpLayers,
-		skipCommandSettingsLayer:         cfg.SkipCommandSettingsLayer,
-		enableProfileSettingsLayer:       cfg.EnableProfileSettingsLayer,
-		enableCreateCommandSettingsLayer: cfg.EnableCreateCommandSettingsLayer,
+		Layers:          layers,
+		middlewaresFunc: CobraCommandDefaultMiddlewares,
 	}
 
-	// Set default middlewares function if not provided
-	if ret.middlewaresFunc == nil {
-		ret.middlewaresFunc = CobraCommandDefaultMiddlewares
+	for _, option := range options {
+		err := option(ret)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Only add the glazed command layer if not explicitly skipped
@@ -170,37 +184,6 @@ func NewCobraParserFromLayers(
 	}
 
 	return ret, nil
-}
-
-// NewCobraParserFromLayersWithOptions is a compatibility wrapper that translates CobraOption to the new config
-func NewCobraParserFromLayersWithOptions(
-	layers *layers.ParameterLayers,
-	options ...CobraParserOption,
-) (*CobraParser, error) {
-	cfg := &CobraParserConfig{
-		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
-	}
-
-	// Apply legacy options to a temporary parser to extract config values
-	tempParser := &CobraParser{
-		middlewaresFunc: CobraCommandDefaultMiddlewares,
-	}
-	
-	for _, option := range options {
-		err := option(tempParser)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Transfer values to new config
-	cfg.MiddlewaresFunc = tempParser.middlewaresFunc
-	cfg.ShortHelpLayers = tempParser.shortHelpLayers
-	cfg.SkipCommandSettingsLayer = tempParser.skipCommandSettingsLayer
-	cfg.EnableProfileSettingsLayer = tempParser.enableProfileSettingsLayer
-	cfg.EnableCreateCommandSettingsLayer = tempParser.enableCreateCommandSettingsLayer
-
-	return NewCobraParserFromLayers(layers, cfg)
 }
 
 func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
