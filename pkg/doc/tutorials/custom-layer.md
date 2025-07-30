@@ -763,7 +763,7 @@ func main() {
         os.Exit(1)
     }
     
-    cobraProcessCmd, err := cli.BuildCobraCommandFromGlazeCommand(processCmd)
+    cobraProcessCmd, err := cli.BuildCobraCommand(processCmd)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error building process command: %v\n", err)
         os.Exit(1)
@@ -776,7 +776,7 @@ func main() {
         os.Exit(1)
     }
     
-    cobraAnalyzeCmd, err := cli.BuildCobraCommandFromGlazeCommand(analyzeCmd)
+    cobraAnalyzeCmd, err := cli.BuildCobraCommand(analyzeCmd)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error building analyze command: %v\n", err)
         os.Exit(1)

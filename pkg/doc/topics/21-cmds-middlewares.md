@@ -458,8 +458,10 @@ To add middlewares to a Glazed command:
 
 ```go
 func BuildCobraCommand(cmd cmds.Command) (*cobra.Command, error) {
-    return cli.BuildCobraCommandFromCommand(cmd,
-        cli.WithCobraMiddlewaresFunc(GetMiddlewares),
+    return cli.BuildCobraCommand(cmd,
+        cli.WithParserConfig(cli.CobraParserConfig{
+            MiddlewaresFunc: GetMiddlewares,
+        }),
     )
 }
 
@@ -482,13 +484,15 @@ Here's a typical pattern that handles profiles, config files, and command-line a
 ```go
 func BuildCobraCommandWithMiddlewares(
     cmd cmds.Command,
-    options ...cli.CobraParserOption,
+    opts ...cli.CobraOption,
 ) (*cobra.Command, error) {
-    options_ := append([]cli.CobraParserOption{
-        cli.WithCobraMiddlewaresFunc(GetCommandMiddlewares),
-        cli.WithCobraShortHelpLayers("default", "helpers"),
-    }, options...)
-    return cli.BuildCobraCommandFromCommand(cmd, options_...)
+    opts_ := append([]cli.CobraOption{
+        cli.WithParserConfig(cli.CobraParserConfig{
+            MiddlewaresFunc: GetCommandMiddlewares,
+            ShortHelpLayers: []string{"default", "helpers"},
+        }),
+    }, opts...)
+    return cli.BuildCobraCommand(cmd, opts_...)
 }
 
 func GetCommandMiddlewares(

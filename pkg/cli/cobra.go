@@ -38,36 +38,25 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	return verbs
 }
 
-func BuildCobraCommandFromCommandAndFunc(
+// runCobraCommand executes the common run flow for all Cobra commands.
+func runCobraCommand(
+	cmd *cobra.Command,
 	s cmds.Command,
-	run CobraRunFunc,
-	options ...CobraParserOption,
-) (*cobra.Command, error) {
-	description := s.Description()
-
-	cmd := NewCobraCommandFromCommandDescription(description)
-	cobraParser, err := NewCobraParserFromLayers(description.Layers, options...)
-	if err != nil {
-		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
-		return nil, err
-	}
-	err = cobraParser.AddToCobraCommand(cmd)
-	if err != nil {
-		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not add to cobra command")
-		return nil, err
-	}
-
+	runFunc CobraRunFunc,
+	parser *CobraParser,
+	cfg *commandBuildConfig,
+) {
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		parsedLayers, err := cobraParser.Parse(cmd, args)
-		// show help if there is an error
+		// Parse layers
+		parsedLayers, err := parser.Parse(cmd, args)
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
-			err := cmd.Help()
+			_ = cmd.Help()
 			cobra.CheckErr(err)
 			os.Exit(1)
 		}
 
-		// Try minimal command settings
+		// Minimal command settings: debug flags
 		commandSettings := &CommandSettings{}
 		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
 			var printYAML, printParsedParameters_, printSchema bool
@@ -81,13 +70,11 @@ func BuildCobraCommandFromCommandAndFunc(
 				printParsedParameters(parsedLayers)
 				return
 			}
-
 			if printYAML {
 				err = s.ToYAML(os.Stdout)
 				cobra.CheckErr(err)
 				return
 			}
-
 			if printSchema {
 				schema, err := s.Description().ToJsonSchema()
 				cobra.CheckErr(err)
@@ -99,13 +86,13 @@ func BuildCobraCommandFromCommandAndFunc(
 			}
 		}
 
-		// Handle the rest of the full command settings if available
-		if createCommandLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
-			createCommandSettings := &CreateCommandSettings{}
-			err = createCommandLayer.InitializeStruct(createCommandSettings)
+		// Create command settings: cliopatra, alias, create
+		if createLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
+			createSettings := &CreateCommandSettings{}
+			err = createLayer.InitializeStruct(createSettings)
 			cobra.CheckErr(err)
 
-			if createCommandSettings.CreateCliopatra != "" {
+			if createSettings.CreateCliopatra != "" {
 				verbs := GetVerbsFromCobraCommand(cmd)
 				if len(verbs) == 0 {
 					cobra.CheckErr(errors.New("could not get verbs from cobra command"))
@@ -114,28 +101,24 @@ func BuildCobraCommandFromCommandAndFunc(
 					s.Description(),
 					parsedLayers,
 					cliopatra.WithVerbs(verbs[1:]...),
-					cliopatra.WithName(createCommandSettings.CreateCliopatra),
+					cliopatra.WithName(createSettings.CreateCliopatra),
 					cliopatra.WithPath(verbs[0]),
 				)
-
-				// print as yaml
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
 				err = encoder.Encode(p)
 				cobra.CheckErr(err)
-
 				fmt.Println(sb.String())
 				os.Exit(0)
 			}
 
-			if createCommandSettings.CreateAlias != "" {
+			if createSettings.CreateAlias != "" {
 				alias := &alias.CommandAlias{
-					Name:      createCommandSettings.CreateAlias,
-					AliasFor:  description.Name,
+					Name:      createSettings.CreateAlias,
+					AliasFor:  s.Description().Name,
 					Arguments: args,
 					Flags:     map[string]string{},
 				}
-
 				cmd.Flags().Visit(func(flag *pflag.Flag) {
 					if flag.Name != "create-alias" {
 						switch flag.Value.Type() {
@@ -145,114 +128,170 @@ func BuildCobraCommandFromCommandAndFunc(
 						case "intSlice":
 							slice, _ := cmd.Flags().GetIntSlice(flag.Name)
 							alias.Flags[flag.Name] = strings.Join(strings2.IntSliceToStringSlice(slice), ",")
-
 						case "floatSlice":
 							slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
 							alias.Flags[flag.Name] = strings.Join(strings2.Float64SliceToStringSlice(slice), ",")
-
 						default:
 							alias.Flags[flag.Name] = flag.Value.String()
 						}
 					}
 				})
-
-				// marshal alias to yaml
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
 				err = encoder.Encode(alias)
 				cobra.CheckErr(err)
-
 				fmt.Println(sb.String())
 				os.Exit(0)
 			}
 
-			if createCommandSettings.CreateCommand != "" {
-				// XXX this is broken now I think anyway
-				layers_ := description.Layers.Clone()
-
-				cmd := &cmds.CommandDescription{
-					Name:   createCommandSettings.CreateCommand,
-					Short:  description.Short,
-					Long:   description.Long,
+			if createSettings.CreateCommand != "" {
+				layers_ := s.Description().Layers.Clone()
+				cmdDesc := &cmds.CommandDescription{
+					Name:   createSettings.CreateCommand,
+					Short:  s.Description().Short,
+					Long:   s.Description().Long,
 					Layers: layers_,
 				}
-
-				// encode as yaml
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(cmd)
+				err = encoder.Encode(cmdDesc)
 				cobra.CheckErr(err)
-
 				fmt.Println(sb.String())
 				os.Exit(0)
 			}
 		}
 
+		// Determine whether to run in Glaze mode or classic mode
+		useGlazeMode := false
+		if cfg.DualMode {
+			if cfg.DefaultToGlaze {
+				noGlaze, _ := cmd.Flags().GetBool("no-glaze-output")
+				useGlazeMode = !noGlaze
+			} else {
+				useGlazeMode, _ = cmd.Flags().GetBool(cfg.GlazeToggleFlag)
+			}
+		} else {
+			// default: if implements GlazeCommand, use glaze mode
+			if _, ok := s.(cmds.GlazeCommand); ok {
+				useGlazeMode = true
+			}
+		}
+		if useGlazeMode {
+			// Run in glaze mode
+			glazeCmd, ok := s.(cmds.GlazeCommand)
+			if !ok {
+				cobra.CheckErr(errors.New("Glaze mode requested but command does not implement GlazeCommand"))
+				return
+			}
+			glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+			if !ok {
+				cobra.CheckErr(errors.New("glazed layer not found"))
+				return
+			}
+			gp, err := settings.SetupTableProcessor(glazedLayer)
+			cobra.CheckErr(err)
+			_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
+			cobra.CheckErr(err)
+			err = glazeCmd.RunIntoGlazeProcessor(cmd.Context(), parsedLayers, gp)
+			var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
+			if errors.As(err, &exitWithoutGlazeError) {
+				return
+			}
+			if !errors.Is(err, context.Canceled) {
+				cobra.CheckErr(err)
+			}
+			// Close will run the TableMiddlewares
+			err = gp.Close(cmd.Context())
+			cobra.CheckErr(err)
+			return
+		}
+
+		// Classic mode: run the provided runFunc
 		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 		defer stop()
-
-		err = run(ctx, parsedLayers)
+		err = runFunc(ctx, parsedLayers)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
-
 		cobra.CheckErr(err)
 	}
-
-	return cmd, nil
 }
 
-func BuildCobraCommandFromBareCommand(c cmds.BareCommand, options ...CobraParserOption) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommandAndFunc(c, func(
-		ctx context.Context,
-		parsedLayers *layers.ParsedLayers,
-	) error {
-		err := c.Run(ctx, parsedLayers)
-		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			return nil
-		}
-		if err != context.Canceled {
-			cobra.CheckErr(err)
-		}
-		return nil
-	}, options...)
-
-	if err != nil {
-		return nil, err
+func BuildCobraCommandFromCommandAndFunc(
+	s cmds.Command,
+	run CobraRunFunc,
+	opts ...CobraOption,
+) (*cobra.Command, error) {
+	// Initialize builder config with defaults
+	cfg := &commandBuildConfig{
+		DualMode:         false,
+		GlazeToggleFlag:  "with-glaze-output",
+		DefaultToGlaze:   false,
+		HiddenGlazeFlags: nil,
+		ParserCfg:        CobraParserConfig{},
+	}
+	for _, opt := range opts {
+		opt(cfg)
 	}
 
-	return cmd, nil
-}
-
-func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, options ...CobraParserOption) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommandAndFunc(s, func(
-		ctx context.Context,
-		parsedLayers *layers.ParsedLayers,
-	) error {
-		err := s.RunIntoWriter(ctx, parsedLayers, os.Stdout)
-		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			return nil
+	// Start with the original description
+	description := s.Description()
+	// If the command implements GlazeCommand, ensure a glazed parameter layer is present
+	if _, isGlazeCmd := s.(cmds.GlazeCommand); isGlazeCmd {
+		originalLayers := description.Layers
+		glazedLayers := originalLayers.Clone()
+		if _, ok := glazedLayers.Get(settings.GlazedSlug); !ok {
+			glLayer, err := settings.NewGlazedParameterLayers()
+			if err != nil {
+				return nil, err
+			}
+			glazedLayers.Set(settings.GlazedSlug, glLayer)
 		}
-		if err != context.Canceled {
-			cobra.CheckErr(err)
+		// clone the description so we don't mutate the original
+		newDesc := description.Clone(false)
+		newDesc.Layers = glazedLayers
+		description = newDesc
+	}
+	cmd := NewCobraCommandFromCommandDescription(description)
+	// Add glaze toggle flag if dual mode is enabled
+	if cfg.DualMode {
+		if cfg.DefaultToGlaze {
+			cmd.Flags().Bool("no-glaze-output", false, "Disable glaze output mode")
+		} else {
+			cmd.Flags().Bool(cfg.GlazeToggleFlag, false, "Switch this run to Glaze structured output")
 		}
-		return nil
-	}, options...)
-
+	}
+	// Create parser with configured parser settings
+	cobraParser, err := NewCobraParserFromLayers(description.Layers, &cfg.ParserCfg)
 	if err != nil {
+		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
 		return nil, err
 	}
-
+	err = cobraParser.AddToCobraCommand(cmd)
+	if err != nil {
+		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not add to cobra command")
+		return nil, err
+	}
+	// Hide specified glaze flags if requested
+	if cfg.DualMode {
+		for _, name := range cfg.HiddenGlazeFlags {
+			if flag := cmd.Flags().Lookup(name); flag != nil {
+				flag.Hidden = true
+			}
+		}
+	}
+	// Use the refactored run helper
+	runCobraCommand(cmd, s, run, cobraParser, cfg)
 	return cmd, nil
 }
 
 func BuildCobraCommandAlias(
 	alias *alias.CommandAlias,
-	options ...CobraParserOption,
+	opts ...CobraOption,
 ) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommand(alias.AliasedCommand, options...)
+	cmd, err := BuildCobraCommand(alias.AliasedCommand, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -317,76 +356,52 @@ func findOrCreateParentCommand(rootCmd *cobra.Command, parents []string) *cobra.
 	return parentCmd
 }
 
-func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraParserOption) (*cobra.Command, error) {
-	cmd, err := BuildCobraCommandFromCommandAndFunc(cmd_, func(
-		ctx context.Context,
-		parsedLayers *layers.ParsedLayers,
-	) error {
-		glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
-		if !ok {
-			return errors.New("glazed layer not found")
-		}
-		gp, err := settings.SetupTableProcessor(glazedLayer)
-		cobra.CheckErr(err)
-
-		_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
-		cobra.CheckErr(err)
-
-		err = cmd_.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
-		var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
-		if errors.As(err, &exitWithoutGlazeError) {
-			return nil
-		}
-		if !errors.Is(err, context.Canceled) {
-			cobra.CheckErr(err)
-		}
-
-		// Close will run the TableMiddlewares
-		err = gp.Close(ctx)
-		cobra.CheckErr(err)
-
-		return nil
-	},
-		options...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
+// BuildCobraCommand is an alias to help with LLM hallucinations
+func BuildCobraCommand(
+	command cmds.Command,
+	opts ...CobraOption,
+) (*cobra.Command, error) {
+	return BuildCobraCommandFromCommand(command, opts...)
 }
 
+// Unified builder: determines runFunc based on implemented interfaces and
+// delegates to BuildCobraCommandFromCommandAndFunc
 func BuildCobraCommandFromCommand(
-	command cmds.Command,
-	options ...CobraParserOption,
+	s cmds.Command,
+	opts ...CobraOption,
 ) (*cobra.Command, error) {
-	var cobraCommand *cobra.Command
-	var err error
-	switch c := command.(type) {
-	case cmds.BareCommand:
-		cobraCommand, err = BuildCobraCommandFromBareCommand(c, options...)
-
-	case cmds.WriterCommand:
-		cobraCommand, err = BuildCobraCommandFromWriterCommand(c, options...)
-
-	case cmds.GlazeCommand:
-		cobraCommand, err = BuildCobraCommandFromGlazeCommand(c, options...)
-
-	default:
-		return nil, errors.Errorf("Unknown command type %T", c)
+	// Generic run function for classic mode (WriterCommand or BareCommand)
+	runFunc := func(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+		if writerCmd, ok := s.(cmds.WriterCommand); ok {
+			err := writerCmd.RunIntoWriter(ctx, parsedLayers, os.Stdout)
+			if _, exitWithoutGlaze := err.(*cmds.ExitWithoutGlazeError); exitWithoutGlaze {
+				return err
+			}
+			if err != context.Canceled {
+				return err
+			}
+			return nil
+		}
+		if bareCmd, ok := s.(cmds.BareCommand); ok {
+			err := bareCmd.Run(ctx, parsedLayers)
+			if _, exitWithoutGlaze := err.(*cmds.ExitWithoutGlazeError); exitWithoutGlaze {
+				return err
+			}
+			if err != context.Canceled {
+				return err
+			}
+			return nil
+		}
+		return errors.Errorf("no non-Glaze run method implemented for %T", s)
 	}
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error building command %s", command.Description().Name)
-	}
-
-	return cobraCommand, nil
+	return BuildCobraCommandFromCommandAndFunc(s, runFunc, opts...)
 }
 
 func AddCommandsToRootCommand(
 	rootCmd *cobra.Command,
 	commands []cmds.Command,
 	aliases []*alias.CommandAlias,
-	options ...CobraParserOption,
+	opts ...CobraOption,
 ) error {
 	commandsByName := map[string]cmds.Command{}
 
@@ -395,7 +410,7 @@ func AddCommandsToRootCommand(
 		description := command.Description()
 		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
 
-		cobraCommand, err := BuildCobraCommandFromCommand(command, options...)
+		cobraCommand, err := BuildCobraCommandFromCommand(command, opts...)
 		if err != nil {
 			log.Warn().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not build cobra command")
 			return nil
@@ -416,7 +431,7 @@ func AddCommandsToRootCommand(
 		alias.AliasedCommand = aliasedCommand
 
 		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
-		cobraCommand, err := BuildCobraCommandAlias(alias, options...)
+		cobraCommand, err := BuildCobraCommandAlias(alias, opts...)
 		if err != nil {
 			return err
 		}
@@ -426,336 +441,113 @@ func AddCommandsToRootCommand(
 	return nil
 }
 
-// DualModeOption provides customization options for BuildCobraCommandDualMode
-type DualModeOption interface {
-	apply(*dualModeConfig)
+// Insert foundation types for unified builder options
+// CobraOption configures command and parser builder settings
+type CobraOption func(cfg *commandBuildConfig)
+
+// commandBuildConfig aggregates all builder options internally
+type commandBuildConfig struct {
+	DualMode         bool
+	GlazeToggleFlag  string
+	DefaultToGlaze   bool
+	HiddenGlazeFlags []string
+	ParserCfg        CobraParserConfig
 }
 
-type dualModeConfig struct {
-	glazeToggleFlag  string
-	hiddenGlazeFlags []string
-	defaultToGlaze   bool
+// WithParserConfig sets parser customization on the builder
+func WithParserConfig(cfg CobraParserConfig) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg = cfg
+	}
 }
 
-type glazeToggleFlagOption struct {
-	name string
+// WithDualMode enables or disables dual-mode behavior
+func WithDualMode(enabled bool) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.DualMode = enabled
+	}
 }
 
-func (g glazeToggleFlagOption) apply(cfg *dualModeConfig) {
-	cfg.glazeToggleFlag = g.name
+// WithGlazeToggleFlag customizes the glaze toggle flag name
+func WithGlazeToggleFlag(name string) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.GlazeToggleFlag = name
+	}
 }
 
-// WithGlazeToggleFlag lets you rename or shorten the toggle flag
-func WithGlazeToggleFlag(name string) DualModeOption {
-	return glazeToggleFlagOption{name: name}
+// WithHiddenGlazeFlags marks glaze flags to remain hidden
+func WithHiddenGlazeFlags(names ...string) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.HiddenGlazeFlags = names
+	}
 }
 
-type hiddenGlazeFlagsOption struct {
-	flagNames []string
+// WithDefaultToGlaze makes glaze mode the default unless negated
+func WithDefaultToGlaze() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.DefaultToGlaze = true
+	}
 }
 
-func (h hiddenGlazeFlagsOption) apply(cfg *dualModeConfig) {
-	cfg.hiddenGlazeFlags = h.flagNames
+// Backwards compatibility helpers for old parser options
+// WithCobraShortHelpLayers sets the layers shown in short help (deprecated)
+func WithCobraShortHelpLayers(layers ...string) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.ShortHelpLayers = layers
+	}
 }
 
-// WithHiddenGlazeFlags marks specific Glaze‑layer flags to stay hidden even
-// after the toggle; use when you expose only JSON rendering, for instance.
-func WithHiddenGlazeFlags(flagNames ...string) DualModeOption {
-	return hiddenGlazeFlagsOption{flagNames: flagNames}
+// WithCobraMiddlewaresFunc sets a custom middleware function for parsing (deprecated)
+func WithCobraMiddlewaresFunc(fn CobraMiddlewaresFunc) CobraOption {
+	return func(c *commandBuildConfig) {
+		if fn != nil {
+			c.ParserCfg.MiddlewaresFunc = fn
+		}
+	}
 }
 
-type defaultToGlazeOption struct{}
-
-func (d defaultToGlazeOption) apply(cfg *dualModeConfig) {
-	cfg.defaultToGlaze = true
-}
-
-// WithDefaultToGlaze makes Glaze mode the default unless the user disables it
-// with --no-glaze-output (builder auto‑creates the negated flag).
-func WithDefaultToGlaze() DualModeOption {
-	return defaultToGlazeOption{}
-}
-
-// BuildCobraCommandDualMode creates a cobra command that can run in both classic and glaze modes
+// Deprecated: use BuildCobraCommandFromCommand(c, WithDualMode(true)).
 func BuildCobraCommandDualMode(
 	c cmds.Command,
-	opts ...DualModeOption,
+	_ ...interface{},
 ) (*cobra.Command, error) {
-	config := &dualModeConfig{
-		glazeToggleFlag: "with-glaze-output",
+	return BuildCobraCommandFromCommand(c, WithDualMode(true))
+}
+
+// Deprecated wrappers for backwards compatibility with earlier APIs
+// Use BuildCobraCommand or BuildCobraCommand from the unified API instead.
+// Deprecated: use BuildCobraCommand(c, opts...)
+func BuildCobraCommandFromBareCommand(c cmds.BareCommand, opts ...CobraOption) (*cobra.Command, error) {
+	return BuildCobraCommand(c, opts...)
+}
+
+// Deprecated: use BuildCobraCommand(c, opts...)
+func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, opts ...CobraOption) (*cobra.Command, error) {
+	return BuildCobraCommand(s, opts...)
+}
+
+// Deprecated: use BuildCobraCommand(c, opts...)
+func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, opts ...CobraOption) (*cobra.Command, error) {
+	return BuildCobraCommand(cmd_, opts...)
+}
+
+// WithSkipCommandSettingsLayer hides the command settings layer flags (deprecated)
+func WithSkipCommandSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.SkipCommandSettingsLayer = true
 	}
+}
 
-	for _, opt := range opts {
-		opt.apply(config)
+// WithProfileSettingsLayer enables the profile settings layer (deprecated)
+func WithProfileSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.EnableProfileSettingsLayer = true
 	}
+}
 
-	description := c.Description()
-
-	// Check if we need to inject a glazed layer for glaze mode
-	glazedLayers := description.Layers.Clone()
-	hasGlazedLayer := false
-	if _, ok := glazedLayers.Get(settings.GlazedSlug); ok {
-		hasGlazedLayer = true
+// WithCreateCommandSettingsLayer enables the create-command settings layer (deprecated)
+func WithCreateCommandSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.EnableCreateCommandSettingsLayer = true
 	}
-
-	// If command implements GlazeCommand but doesn't have glazed layer, inject one
-	if _, isGlazeCommand := c.(cmds.GlazeCommand); isGlazeCommand && !hasGlazedLayer {
-		glazedLayer, err := settings.NewGlazedParameterLayers()
-		if err != nil {
-			return nil, err
-		}
-		glazedLayers.Set(settings.GlazedSlug, glazedLayer)
-	}
-
-	// Create a modified command description with the potential glazed layer
-	modifiedDescription := description.Clone(false)
-	modifiedDescription.Layers = glazedLayers
-
-	cmd := NewCobraCommandFromCommandDescription(modifiedDescription)
-
-	// Add the glaze toggle flag
-	if config.defaultToGlaze {
-		cmd.Flags().Bool("no-glaze-output", false, "Disable glaze output mode")
-	} else {
-		cmd.Flags().Bool(config.glazeToggleFlag, false, "Switch this run to Glaze structured output")
-	}
-
-	cobraParser, err := NewCobraParserFromLayers(modifiedDescription.Layers)
-	if err != nil {
-		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
-		return nil, err
-	}
-
-	err = cobraParser.AddToCobraCommand(cmd)
-	if err != nil {
-		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not add to cobra command")
-		return nil, err
-	}
-
-	// Hide glaze flags by default if glaze layer was injected
-	if !hasGlazedLayer {
-		glazedLayer, ok := glazedLayers.Get(settings.GlazedSlug)
-		if ok {
-			glazedLayer.GetParameterDefinitions().ForEach(func(pd *parameters.ParameterDefinition) {
-				if flag := cmd.Flags().Lookup(pd.Name); flag != nil {
-					flag.Hidden = true
-				}
-			})
-		}
-	}
-
-	// Hide specific flags if requested
-	for _, flagName := range config.hiddenGlazeFlags {
-		if flag := cmd.Flags().Lookup(flagName); flag != nil {
-			flag.Hidden = true
-		}
-	}
-
-	cmd.Run = func(cmd *cobra.Command, args []string) {
-		parsedLayers, err := cobraParser.Parse(cmd, args)
-		// show help if there is an error
-		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, err)
-			err := cmd.Help()
-			cobra.CheckErr(err)
-			os.Exit(1)
-		}
-
-		// Handle command settings debugging first (same as existing builders)
-		commandSettings := &CommandSettings{}
-		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
-			var printYAML, printParsedParameters_, printSchema bool
-			err = minimalLayer.InitializeStruct(commandSettings)
-			cobra.CheckErr(err)
-			printYAML = commandSettings.PrintYAML
-			printParsedParameters_ = commandSettings.PrintParsedParameters
-			printSchema = commandSettings.PrintSchema
-
-			if printParsedParameters_ {
-				printParsedParameters(parsedLayers)
-				return
-			}
-
-			if printYAML {
-				err = c.ToYAML(os.Stdout)
-				cobra.CheckErr(err)
-				return
-			}
-
-			if printSchema {
-				schema, err := c.Description().ToJsonSchema()
-				cobra.CheckErr(err)
-				encoder := json.NewEncoder(os.Stdout)
-				encoder.SetIndent("", "  ")
-				err = encoder.Encode(schema)
-				cobra.CheckErr(err)
-				return
-			}
-		}
-
-		// Handle create command settings (same as existing builders)
-		if createCommandLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
-			createCommandSettings := &CreateCommandSettings{}
-			err = createCommandLayer.InitializeStruct(createCommandSettings)
-			cobra.CheckErr(err)
-
-			if createCommandSettings.CreateCliopatra != "" {
-				verbs := GetVerbsFromCobraCommand(cmd)
-				if len(verbs) == 0 {
-					cobra.CheckErr(errors.New("could not get verbs from cobra command"))
-				}
-				p := cliopatra.NewProgramFromCapture(
-					c.Description(),
-					parsedLayers,
-					cliopatra.WithVerbs(verbs[1:]...),
-					cliopatra.WithName(createCommandSettings.CreateCliopatra),
-					cliopatra.WithPath(verbs[0]),
-				)
-
-				// print as yaml
-				sb := strings.Builder{}
-				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(p)
-				cobra.CheckErr(err)
-
-				fmt.Println(sb.String())
-				os.Exit(0)
-			}
-
-			if createCommandSettings.CreateAlias != "" {
-				alias := &alias.CommandAlias{
-					Name:      createCommandSettings.CreateAlias,
-					AliasFor:  description.Name,
-					Arguments: args,
-					Flags:     map[string]string{},
-				}
-
-				cmd.Flags().Visit(func(flag *pflag.Flag) {
-					if flag.Name != "create-alias" {
-						switch flag.Value.Type() {
-						case "stringSlice":
-							slice, _ := cmd.Flags().GetStringSlice(flag.Name)
-							alias.Flags[flag.Name] = strings.Join(slice, ",")
-						case "intSlice":
-							slice, _ := cmd.Flags().GetIntSlice(flag.Name)
-							alias.Flags[flag.Name] = strings.Join(strings2.IntSliceToStringSlice(slice), ",")
-						case "floatSlice":
-							slice, _ := cmd.Flags().GetFloat64Slice(flag.Name)
-							alias.Flags[flag.Name] = strings.Join(strings2.Float64SliceToStringSlice(slice), ",")
-						default:
-							alias.Flags[flag.Name] = flag.Value.String()
-						}
-					}
-				})
-
-				// marshal alias to yaml
-				sb := strings.Builder{}
-				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(alias)
-				cobra.CheckErr(err)
-
-				fmt.Println(sb.String())
-				os.Exit(0)
-			}
-
-			if createCommandSettings.CreateCommand != "" {
-				layers_ := description.Layers.Clone()
-
-				cmd := &cmds.CommandDescription{
-					Name:   createCommandSettings.CreateCommand,
-					Short:  description.Short,
-					Long:   description.Long,
-					Layers: layers_,
-				}
-
-				// encode as yaml
-				sb := strings.Builder{}
-				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(cmd)
-				cobra.CheckErr(err)
-
-				fmt.Println(sb.String())
-				os.Exit(0)
-			}
-		}
-
-		// Determine which mode to use
-		useGlazeMode := false
-		if config.defaultToGlaze {
-			noGlazeOutput, _ := cmd.Flags().GetBool("no-glaze-output")
-			useGlazeMode = !noGlazeOutput
-		} else {
-			useGlazeMode, _ = cmd.Flags().GetBool(config.glazeToggleFlag)
-		}
-
-		// Unhide glaze flags if glaze mode is requested and they were hidden
-		if useGlazeMode && !hasGlazedLayer {
-			glazedLayer, ok := glazedLayers.Get(settings.GlazedSlug)
-			if ok {
-				glazedLayer.GetParameterDefinitions().ForEach(func(pd *parameters.ParameterDefinition) {
-					if flag := cmd.Flags().Lookup(pd.Name); flag != nil {
-						flag.Hidden = false
-					}
-				})
-			}
-		}
-
-		ctx, cancel := context.WithCancel(cmd.Context())
-		defer cancel()
-		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
-		defer stop()
-
-		var runErr error
-		if useGlazeMode {
-			// Run in glaze mode
-			glazeCmd, ok := c.(cmds.GlazeCommand)
-			if !ok {
-				cobra.CheckErr(errors.New("Glaze mode requested but command does not implement GlazeCommand"))
-				return
-			}
-
-			glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
-			if !ok {
-				cobra.CheckErr(errors.New("glazed layer not found"))
-				return
-			}
-			gp, err := settings.SetupTableProcessor(glazedLayer)
-			cobra.CheckErr(err)
-
-			_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
-			cobra.CheckErr(err)
-
-			err = glazeCmd.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
-			var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
-			if errors.As(err, &exitWithoutGlazeError) {
-				return
-			}
-			if !errors.Is(err, context.Canceled) {
-				cobra.CheckErr(err)
-			}
-
-			// Close will run the TableMiddlewares
-			err = gp.Close(ctx)
-			cobra.CheckErr(err)
-		} else {
-			// Run in classic mode
-			if writerCmd, ok := c.(cmds.WriterCommand); ok {
-				runErr = writerCmd.RunIntoWriter(ctx, parsedLayers, os.Stdout)
-			} else if bareCmd, ok := c.(cmds.BareCommand); ok {
-				runErr = bareCmd.Run(ctx, parsedLayers)
-			} else {
-				cobra.CheckErr(errors.New("no non‑Glaze run method implemented"))
-				return
-			}
-
-			if _, ok := runErr.(*cmds.ExitWithoutGlazeError); ok {
-				return
-			}
-			if runErr != context.Canceled {
-				cobra.CheckErr(runErr)
-			}
-		}
-	}
-
-	return cmd, nil
 }
