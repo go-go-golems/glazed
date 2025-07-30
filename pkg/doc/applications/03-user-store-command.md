@@ -425,7 +425,7 @@ func main() {
 
     // Add loaded commands to root
     for _, cmd := range commands {
-        cobraCmd, err := cli.BuildCobraCommandFromCommand(cmd)
+        cobraCmd, err := cli.BuildCobraCommand(cmd)
         if err != nil {
             fmt.Println("Error building Cobra command:", err)
             os.Exit(1)

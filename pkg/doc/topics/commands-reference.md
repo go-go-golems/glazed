@@ -868,7 +868,7 @@ Glazed provides several ways to convert commands to Cobra commands:
 #### Option A: Automatic Builder (Recommended)
 ```go
 // Automatically selects the appropriate builder based on command type
-cobraCmd, err := cli.BuildCobraCommandFromCommand(myCmd)
+cobraCmd, err := cli.BuildCobraCommand(myCmd)
 if err != nil {
     log.Fatalf("Error building Cobra command: %v", err)
 }
@@ -876,21 +876,21 @@ if err != nil {
 
 #### Option B: Specific Builders
 ```go
-// Use specific builders for more control
+// Use specific builder invocation (unified detection available)
 if glazeCmd, ok := myCmd.(cmds.GlazeCommand); ok {
-    cobraCmd, err = cli.BuildCobraCommandFromGlazeCommand(glazeCmd)
+    cobraCmd, err = cli.BuildCobraCommand(glazeCmd)
 } else if writerCmd, ok := myCmd.(cmds.WriterCommand); ok {
-    cobraCmd, err = cli.BuildCobraCommandFromWriterCommand(writerCmd)
+    cobraCmd, err = cli.BuildCobraCommand(writerCmd)
 } else if bareCmd, ok := myCmd.(cmds.BareCommand); ok {
-    cobraCmd, err = cli.BuildCobraCommandFromBareCommand(bareCmd)
+    cobraCmd, err = cli.BuildCobraCommand(bareCmd)
 }
 ```
 
 #### Option C: Dual Command Builder (For Dual Commands)
 ```go
 // For commands that implement multiple interfaces
-cobraCmd, err := cli.BuildCobraCommandDualMode(
-    myCmd,
+cobraCmd, err := cli.BuildCobraCommand(myCmd,
+    cli.WithDualMode(true),            // enable dual-mode
     cli.WithGlazeToggleFlag("with-glaze-output"),
 )
 if err != nil {
@@ -903,16 +903,11 @@ if err != nil {
 The dual command builder supports several customization options:
 
 ```go
-cobraCmd, err := cli.BuildCobraCommandDualMode(
-    dualCmd,
-    // Customize the toggle flag name
+cobraCmd, err := cli.BuildCobraCommand(dualCmd,
+    cli.WithDualMode(true),                  // enable dual-mode
     cli.WithGlazeToggleFlag("structured-output"),
-    
-    // Hide specific glaze flags even when in glaze mode
     cli.WithHiddenGlazeFlags("template", "select"),
-    
-    // Make glaze mode the default (adds --no-glaze-output flag instead)
-    cli.WithDefaultToGlaze(),
+    cli.WithDefaultToGlaze(),                // default to glaze
 )
 ```
 

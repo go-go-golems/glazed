@@ -41,15 +41,17 @@ func main() {
 	// Set up help system with UI support
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
+	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()
 	cobra.CheckErr(err)
-	command, err := cli.BuildCobraCommandFromGlazeCommand(jsonCmd)
+	command, err := cli.BuildCobraCommand(jsonCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
+	// YAML command
 	yamlCmd, err := cmds.NewYamlCommand()
 	cobra.CheckErr(err)
-	command, err = cli.BuildCobraCommandFromGlazeCommand(yamlCmd)
+	command, err = cli.BuildCobraCommand(yamlCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
@@ -57,13 +59,13 @@ func main() {
 
 	exampleCmd, err := cmds.NewExampleCommand()
 	cobra.CheckErr(err)
-	command, err = cli.BuildCobraCommandFromGlazeCommand(exampleCmd)
+	command, err = cli.BuildCobraCommand(exampleCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
 	csvCmd, err := cmds.NewCsvCommand()
 	cobra.CheckErr(err)
-	command, err = cli.BuildCobraCommandFromGlazeCommand(csvCmd)
+	command, err = cli.BuildCobraCommand(csvCmd)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 

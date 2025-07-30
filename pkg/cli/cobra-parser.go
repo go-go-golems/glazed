@@ -89,41 +89,13 @@ type CobraParser struct {
 	enableCreateCommandSettingsLayer bool
 }
 
-type CobraParserOption func(*CobraParser) error
-
-func WithCobraMiddlewaresFunc(middlewaresFunc CobraMiddlewaresFunc) CobraParserOption {
-	return func(c *CobraParser) error {
-		c.middlewaresFunc = middlewaresFunc
-		return nil
-	}
-}
-
-func WithCobraShortHelpLayers(layers ...string) CobraParserOption {
-	return func(c *CobraParser) error {
-		c.shortHelpLayers = append(c.shortHelpLayers, layers...)
-		return nil
-	}
-}
-
-func WithSkipCommandSettingsLayer() CobraParserOption {
-	return func(c *CobraParser) error {
-		c.skipCommandSettingsLayer = true
-		return nil
-	}
-}
-
-func WithProfileSettingsLayer() CobraParserOption {
-	return func(c *CobraParser) error {
-		c.enableProfileSettingsLayer = true
-		return nil
-	}
-}
-
-func WithCreateCommandSettingsLayer() CobraParserOption {
-	return func(c *CobraParser) error {
-		c.enableCreateCommandSettingsLayer = true
-		return nil
-	}
+// Inserted: new config struct for parser customization
+type CobraParserConfig struct {
+	MiddlewaresFunc                  CobraMiddlewaresFunc
+	ShortHelpLayers                  []string
+	SkipCommandSettingsLayer         bool
+	EnableProfileSettingsLayer       bool
+	EnableCreateCommandSettingsLayer bool
 }
 
 func NewCobraCommandFromCommandDescription(
@@ -142,18 +114,26 @@ func NewCobraCommandFromCommandDescription(
 // parameters specified in the Layers CommandDescription to the cobra command.
 func NewCobraParserFromLayers(
 	layers *layers.ParameterLayers,
-	options ...CobraParserOption,
+	cfg *CobraParserConfig,
 ) (*CobraParser, error) {
+	// Initialize parser with defaults
 	ret := &CobraParser{
-		Layers:          layers,
-		middlewaresFunc: CobraCommandDefaultMiddlewares,
+		Layers:                           layers,
+		middlewaresFunc:                  CobraCommandDefaultMiddlewares,
+		shortHelpLayers:                  []string{},
+		skipCommandSettingsLayer:         false,
+		enableProfileSettingsLayer:       false,
+		enableCreateCommandSettingsLayer: false,
 	}
-
-	for _, option := range options {
-		err := option(ret)
-		if err != nil {
-			return nil, err
+	// Apply provided config if any
+	if cfg != nil {
+		if cfg.MiddlewaresFunc != nil {
+			ret.middlewaresFunc = cfg.MiddlewaresFunc
 		}
+		ret.shortHelpLayers = cfg.ShortHelpLayers
+		ret.skipCommandSettingsLayer = cfg.SkipCommandSettingsLayer
+		ret.enableProfileSettingsLayer = cfg.EnableProfileSettingsLayer
+		ret.enableCreateCommandSettingsLayer = cfg.EnableCreateCommandSettingsLayer
 	}
 
 	// Only add the glazed command layer if not explicitly skipped

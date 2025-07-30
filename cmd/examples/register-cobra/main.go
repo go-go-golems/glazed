@@ -233,7 +233,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create bare command")
 	}
-	cobraBareCmd, err := cli.BuildCobraCommandFromBareCommand(bareCmd)
+	cobraBareCmd, err := cli.BuildCobraCommand(bareCmd)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to build cobra bare command")
 	}
@@ -244,7 +244,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create writer command")
 	}
-	cobraWriterCmd, err := cli.BuildCobraCommandFromWriterCommand(writerCmd)
+	cobraWriterCmd, err := cli.BuildCobraCommand(writerCmd)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to build cobra writer command")
 	}
@@ -255,7 +255,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create glaze command")
 	}
-	cobraGlazeCmd, err := cli.BuildCobraCommandFromGlazeCommand(glazeCmd)
+	cobraGlazeCmd, err := cli.BuildCobraCommand(glazeCmd)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to build cobra glaze command")
 	}
@@ -266,8 +266,8 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create dual command")
 	}
-	cobraDualCmd, err := cli.BuildCobraCommandDualMode(
-		dualCmd,
+	cobraDualCmd, err := cli.BuildCobraCommand(dualCmd,
+		cli.WithDualMode(true),
 		cli.WithGlazeToggleFlag("with-glaze-output"),
 	)
 	if err != nil {

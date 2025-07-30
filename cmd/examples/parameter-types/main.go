@@ -331,7 +331,7 @@ func main() {
 		Short: "Showcase all glazed parameter types",
 	}
 
-	cobraCommand, err := cli.BuildCobraCommandFromGlazeCommand(cmd)
+	cobraCommand, err := cli.BuildCobraCommand(cmd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to build cobra command: %v\n", err)
 		os.Exit(1)

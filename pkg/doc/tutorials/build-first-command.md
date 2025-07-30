@@ -300,7 +300,7 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
 
 ### CLI Application Integration
 
-Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommandFromGlazeCommand()` bridge function. This function handles the conversion between Glazed's parameter layer system and Cobra's flag parsing, automatically configuring output processing and help text generation.
+Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommand()` builder function. This function handles the conversion between Glazed's parameter layer system and Cobra's flag parsing, automatically configuring output processing and help text generation.
 
 ```go
 // Step 3: Set up CLI application
@@ -320,9 +320,11 @@ func main() {
     }
 
     // Convert to Cobra command with enhanced options
-    cobraListUsersCmd, err := cli.BuildCobraCommandFromCommand(listUsersCmd,
-        cli.WithCobraShortHelpLayers(layers.DefaultSlug),
-        cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
+    cobraListUsersCmd, err := cli.BuildCobraCommand(listUsersCmd,
+        cli.WithParserConfig(cli.CobraParserConfig{
+            ShortHelpLayers: []string{layers.DefaultSlug},
+            MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+        }),
     )
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error building command: %v\n", err)
@@ -347,9 +349,8 @@ func main() {
 
 1. **Root Command**: Creates a standard Cobra root command as the application entry point
 2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
-3. **Enhanced Cobra Bridge**: `cli.BuildCobraCommandFromCommand()` converts the Glazed command with additional options:
-   - `WithCobraShortHelpLayers`: Shows only specified layers in short help output
-   - `WithCobraMiddlewaresFunc`: Configures middleware chain for parameter processing
+3. **Enhanced Cobra Bridge**: `cli.BuildCobraCommand()` converts the Glazed command with additional options:
+   - `WithParserConfig`: Configures parser via `CobraParserConfig` (e.g., specify `ShortHelpLayers` or custom `MiddlewaresFunc`)
 4. **Registration**: Adds the converted command as a subcommand
 5. **Help System Setup**: `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()` provide enhanced help functionality
 6. **Execution**: Starts the CLI application and processes command-line arguments
@@ -551,7 +552,7 @@ The `StatusCommand` implements two interfaces:
 
 ### Integrating the Dual Command
 
-Dual commands require the `BuildCobraCommandDualMode` builder instead of the standard builder. This function detects both interface implementations and creates a toggle flag to switch between output modes.
+Dual commands require using the `cli.BuildCobraCommand` builder with the `WithDualMode(true)` option to enable dual-mode output, toggling between human and structured modes.
 
 ```go
 // Create status command with dual mode
@@ -561,12 +562,13 @@ if err != nil {
     os.Exit(1)
 }
 
-// Use dual mode builder with enhanced options
-cobraStatusCmd, err := cli.BuildCobraCommandDualMode(
-    statusCmd,
+cobraStatusCmd, err := cli.BuildCobraCommand(statusCmd,
+    cli.WithDualMode(true),
     cli.WithGlazeToggleFlag("with-glaze-output"),
-    cli.WithCobraShortHelpLayers(layers.DefaultSlug),
-    cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
+    cli.WithParserConfig(cli.CobraParserConfig{
+        ShortHelpLayers: []string{layers.DefaultSlug},
+        MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+    }),
 )
 if err != nil {
     fmt.Fprintf(os.Stderr, "Error building status command: %v\n", err)
@@ -582,7 +584,7 @@ help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 **Key differences from single-mode commands:**
 
-1. **`BuildCobraCommandDualMode`**: Uses the dual-mode builder instead of the standard builder
+1. **`BuildCobraCommand`** with `WithDualMode(true)`: Enables dual-mode behavior in a single builder
 2. **Toggle Flag**: `WithGlazeToggleFlag("with-glaze-output")` creates a flag that switches between interfaces
 3. **Automatic Detection**: Glazed detects both interface implementations and configures the toggle mechanism
 
