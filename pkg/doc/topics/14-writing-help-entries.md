@@ -141,6 +141,55 @@ func main() {
 
 The embed directive will include all files in the doc package directory in your binary, making them available at runtime.
 
+## Registering the Help System with Your Application
+
+After loading sections into the help system, you need to register it with your Cobra root command to make the help functionality available to users. This integration provides enhanced help commands and enables users to search and browse your documentation.
+
+```go
+package main
+
+import (
+    "yourapp/pkg/doc"  // Import your doc package
+    "github.com/go-go-golems/glazed/pkg/help"
+    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+    "github.com/spf13/cobra"
+)
+
+func main() {
+    // Create your root command
+    rootCmd := &cobra.Command{
+        Use:   "myapp",
+        Short: "My Glazed application",
+    }
+
+    // Initialize help system and load documentation
+    helpSystem := help.NewHelpSystem()
+    err := doc.AddDocToHelpSystem(helpSystem)
+    if err != nil {
+        // Handle error
+    }
+
+    // Register help system with root command
+    help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
+    // Add your other commands to rootCmd
+    // rootCmd.AddCommand(yourCommand)
+
+    // Execute the application
+    if err := rootCmd.Execute(); err != nil {
+        // Handle error
+    }
+}
+```
+
+The `SetupCobraRootCommand` function automatically adds enhanced help commands to your application, including:
+
+- **`help`**: Browse and search documentation sections
+- **`help topics`**: List all available help topics
+- **`help <topic>`**: Display specific help sections
+
+This integration allows users to access your documentation directly from the command line, making your application more discoverable and user-friendly.
+
 ## Accessing Help Sections
 
 Once the help sections are loaded, you can access them using the `HelpSystem` API. For example, you can retrieve a specific section by its slug:
