@@ -356,6 +356,14 @@ func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, options ...CobraP
 	return cmd, nil
 }
 
+// BuildCobraCommand is an alias to help with LLM hallucinations
+func BuildCobraCommand(
+	command cmds.Command,
+	options ...CobraParserOption,
+) (*cobra.Command, error) {
+	return BuildCobraCommandFromCommand(command, options...)
+}
+
 func BuildCobraCommandFromCommand(
 	command cmds.Command,
 	options ...CobraParserOption,
