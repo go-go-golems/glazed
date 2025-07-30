@@ -159,6 +159,12 @@ func NewListUsersCommand() (*ListUsersCommand, error) {
         return nil, err
     }
 
+    // Create command settings layer for debugging features
+    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    if err != nil {
+        return nil, err
+    }
+
     // Define command with parameters
     cmdDesc := cmds.NewCommandDescription(
         "list-users",
@@ -201,8 +207,8 @@ Examples:
             ),
         ),
         
-        // Add glazed layer for output formatting
-        cmds.WithLayersList(glazedLayer),
+        // Add glazed and command settings layers
+        cmds.WithLayersList(glazedLayer, commandSettingsLayer),
     )
 
     return &ListUsersCommand{
@@ -214,13 +220,17 @@ Examples:
 **Configuration components:**
 
 1. **Glazed Layer**: `settings.NewGlazedParameterLayers()` adds built-in parameters like `--output`, `--fields`, `--sort-columns`
-2. **Command Metadata**: Defines command name, short description, and comprehensive help text with usage examples
-3. **Parameter Definitions**: Each flag specifies:
+2. **Command Settings Layer**: `cli.NewCommandSettingsLayer()` adds debugging and configuration parameters:
+   - `--print-parsed-parameters`: Debug parameter parsing
+   - `--print-schema`: Show command schema
+   - `--load-parameters-from-file`: Load settings from JSON file
+3. **Command Metadata**: Defines command name, short description, and comprehensive help text with usage examples
+4. **Parameter Definitions**: Each flag specifies:
    - **Type**: Integer, String, Bool with automatic validation
    - **Default Value**: Behavior when the flag is not specified
    - **Help Text**: Displayed in `--help` output
    - **Short Flag**: Single-letter abbreviations for convenience
-4. **Layer Composition**: Combines custom parameters with Glazed's built-in output parameters
+5. **Layer Composition**: Combines custom parameters with Glazed's built-in layers
 
 ### Interface Compliance and Mock Data
 
@@ -307,8 +317,11 @@ func main() {
         os.Exit(1)
     }
 
-    // Convert to Cobra command
-    cobraListUsersCmd, err := cli.BuildCobraCommandFromGlazeCommand(listUsersCmd)
+    // Convert to Cobra command with enhanced options
+    cobraListUsersCmd, err := cli.BuildCobraCommandFromCommand(listUsersCmd,
+        cli.WithCobraShortHelpLayers(layers.DefaultSlug),
+        cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
+    )
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error building command: %v\n", err)
         os.Exit(1)
@@ -328,9 +341,20 @@ func main() {
 
 1. **Root Command**: Creates a standard Cobra root command as the application entry point
 2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
-3. **Glazed-to-Cobra Bridge**: `cli.BuildCobraCommandFromGlazeCommand()` converts the Glazed command to a Cobra command, handling parameter setup and processing
+3. **Enhanced Cobra Bridge**: `cli.BuildCobraCommandFromCommand()` converts the Glazed command with additional options:
+   - `WithCobraShortHelpLayers`: Shows only specified layers in short help output
+   - `WithCobraMiddlewaresFunc`: Configures middleware chain for parameter processing
 4. **Registration**: Adds the converted command as a subcommand
 5. **Execution**: Starts the CLI application and processes command-line arguments
+
+**Built-in Command Features**
+
+The `CobraCommandDefaultMiddlewares` provides several useful debugging and configuration features automatically:
+
+- `--print-parsed-parameters`: Shows how parameters were parsed from different sources
+- `--print-yaml`: Outputs the command's configuration as YAML
+- `--print-schema`: Displays the command's parameter schema
+- `--load-parameters-from-file`: Loads parameters from a JSON configuration file
 
 ## Step 3: Build and Test Your Command
 
@@ -348,6 +372,11 @@ go build -o glazed-quickstart
 ./glazed-quickstart list-users --limit 3
 ./glazed-quickstart list-users --filter Engineering
 ./glazed-quickstart list-users --active-only
+
+# Test built-in debugging features
+./glazed-quickstart list-users --print-parsed-parameters
+./glazed-quickstart list-users --print-schema
+./glazed-quickstart list-users --print-yaml
 ```
 
 **Expected behavior:**
@@ -455,6 +484,12 @@ func (c *StatusCommand) RunIntoGlazeProcessor(
 
 // Constructor for status command
 func NewStatusCommand() (*StatusCommand, error) {
+    // Add command settings layer for debugging features
+    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    if err != nil {
+        return nil, err
+    }
+
     cmdDesc := cmds.NewCommandDescription(
         "status",
         cmds.WithShort("Show system status"),
@@ -468,6 +503,7 @@ func NewStatusCommand() (*StatusCommand, error) {
                 parameters.WithShortFlag("v"),
             ),
         ),
+        cmds.WithLayersList(commandSettingsLayer),
     )
     
     return &StatusCommand{
@@ -504,10 +540,12 @@ if err != nil {
     os.Exit(1)
 }
 
-// Use dual mode builder
+// Use dual mode builder with enhanced options
 cobraStatusCmd, err := cli.BuildCobraCommandDualMode(
     statusCmd,
     cli.WithGlazeToggleFlag("with-glaze-output"),
+    cli.WithCobraShortHelpLayers(layers.DefaultSlug),
+    cli.WithCobraMiddlewaresFunc(cli.CobraCommandDefaultMiddlewares),
 )
 if err != nil {
     fmt.Fprintf(os.Stderr, "Error building status command: %v\n", err)
@@ -535,10 +573,16 @@ go build -o glazed-quickstart
 ./glazed-quickstart status
 ./glazed-quickstart status --verbose
 
+# Test debugging features in classic mode
+./glazed-quickstart status --print-parsed-parameters
+
 # Glaze mode
 ./glazed-quickstart status --with-glaze-output
 ./glazed-quickstart status --with-glaze-output --output json
 ./glazed-quickstart status --with-glaze-output --verbose --output yaml
+
+# Test debugging features in glaze mode
+./glazed-quickstart status --with-glaze-output --print-schema
 ```
 
 **Output comparison:**
