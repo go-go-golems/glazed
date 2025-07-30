@@ -489,6 +489,23 @@ func WithDefaultToGlaze() CobraOption {
 	}
 }
 
+// Backwards compatibility helpers for old parser options
+// WithCobraShortHelpLayers sets the layers shown in short help (deprecated)
+func WithCobraShortHelpLayers(layers ...string) CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.ShortHelpLayers = layers
+	}
+}
+
+// WithCobraMiddlewaresFunc sets a custom middleware function for parsing (deprecated)
+func WithCobraMiddlewaresFunc(fn CobraMiddlewaresFunc) CobraOption {
+	return func(c *commandBuildConfig) {
+		if fn != nil {
+			c.ParserCfg.MiddlewaresFunc = fn
+		}
+	}
+}
+
 // Deprecated: use BuildCobraCommandFromCommand(c, WithDualMode(true)).
 func BuildCobraCommandDualMode(
 	c cmds.Command,
@@ -512,4 +529,25 @@ func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, opts ...CobraOptio
 // Deprecated: use BuildCobraCommand(c, opts...)
 func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, opts ...CobraOption) (*cobra.Command, error) {
 	return BuildCobraCommand(cmd_, opts...)
+}
+
+// WithSkipCommandSettingsLayer hides the command settings layer flags (deprecated)
+func WithSkipCommandSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.SkipCommandSettingsLayer = true
+	}
+}
+
+// WithProfileSettingsLayer enables the profile settings layer (deprecated)
+func WithProfileSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.EnableProfileSettingsLayer = true
+	}
+}
+
+// WithCreateCommandSettingsLayer enables the create-command settings layer (deprecated)
+func WithCreateCommandSettingsLayer() CobraOption {
+	return func(c *commandBuildConfig) {
+		c.ParserCfg.EnableCreateCommandSettingsLayer = true
+	}
 }

@@ -300,7 +300,7 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
 
 ### CLI Application Integration
 
-Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommand()` builder function. This function handles the conversion between Glazed's parameter layer system and Cobra's flag parsing, automatically configuring output processing and help text generation.
+Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommand()` builder function. This function handles the conversion between Glazed's parameter layer system and Cobra's flag parsing, automatically configuring output processing and help text generation. You can pass parser and mode options via `CobraParserConfig` and `CobraOption` helpers.
 
 ```go
 // Step 3: Set up CLI application
@@ -349,8 +349,7 @@ func main() {
 
 1. **Root Command**: Creates a standard Cobra root command as the application entry point
 2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
-3. **Enhanced Cobra Bridge**: `cli.BuildCobraCommand()` converts the Glazed command with additional options:
-   - `WithParserConfig`: Configures parser via `CobraParserConfig` (e.g., specify `ShortHelpLayers` or custom `MiddlewaresFunc`)
+3. **Enhanced Cobra Bridge**: Use `cli.WithParserConfig` to pass a `CobraParserConfig` that customizes parser behavior (e.g., `ShortHelpLayers`, `MiddlewaresFunc`).
 4. **Registration**: Adds the converted command as a subcommand
 5. **Help System Setup**: `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()` provide enhanced help functionality
 6. **Execution**: Starts the CLI application and processes command-line arguments
@@ -552,7 +551,7 @@ The `StatusCommand` implements two interfaces:
 
 ### Integrating the Dual Command
 
-Dual commands require using the `cli.BuildCobraCommand` builder with the `WithDualMode(true)` option to enable dual-mode output, toggling between human and structured modes.
+Dual commands require the `BuildCobraCommandDualMode` builder instead of the standard builder. This function detects both interface implementations and creates a toggle flag to switch between output modes.
 
 ```go
 // Create status command with dual mode
@@ -562,6 +561,7 @@ if err != nil {
     os.Exit(1)
 }
 
+// Build with dual-mode enabled and custom parser settings
 cobraStatusCmd, err := cli.BuildCobraCommand(statusCmd,
     cli.WithDualMode(true),
     cli.WithGlazeToggleFlag("with-glaze-output"),
@@ -584,7 +584,7 @@ help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 **Key differences from single-mode commands:**
 
-1. **`BuildCobraCommand`** with `WithDualMode(true)`: Enables dual-mode behavior in a single builder
+1. **`BuildCobraCommandDualMode`**: Uses the dual-mode builder instead of the standard builder
 2. **Toggle Flag**: `WithGlazeToggleFlag("with-glaze-output")` creates a flag that switches between interfaces
 3. **Automatic Detection**: Glazed detects both interface implementations and configures the toggle mechanism
 
