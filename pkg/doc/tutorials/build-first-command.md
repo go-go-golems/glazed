@@ -86,9 +86,9 @@ type ListUsersCommand struct {
 
 // Step 2.2: Define settings for type-safe parameter access
 type ListUsersSettings struct {
-    Limit      int    `glazed.parameter:"limit"`
-    NameFilter string `glazed.parameter:"name-filter"`
-    Active     bool   `glazed.parameter:"active-only"`
+    Limit      int    `glazed.parameter:"limit"`      // Maps to --limit flag
+    NameFilter string `glazed.parameter:"name-filter"` // Maps to --name-filter flag
+    Active     bool   `glazed.parameter:"active-only"` // Maps to --active-only flag
 }
 ```
 
@@ -386,7 +386,7 @@ go build -o glazed-quickstart
 # Try different parameter combinations
 ./glazed-quickstart list-users
 ./glazed-quickstart list-users --limit 3
-./glazed-quickstart list-users --filter Engineering
+./glazed-quickstart list-users --name-filter Engineering
 ./glazed-quickstart list-users --active-only
 
 # Test built-in debugging features
@@ -404,7 +404,7 @@ go build -o glazed-quickstart
 1. **Help Text**: `--help` displays auto-generated parameter descriptions and examples with enhanced formatting
 2. **Parameter Validation**: Invalid values trigger automatic validation errors
 3. **Default Behavior**: Without flags, shows the first 10 users in table format
-4. **Filtering**: `--filter Engineering` displays only users matching the filter criteria
+4. **Filtering**: `--name-filter Engineering` displays only users matching the filter criteria
 5. **Help Command**: `help` command provides contextual documentation and parameter guidance
 
 ## Step 4: Multiple Output Formats
@@ -431,7 +431,7 @@ The primary benefit of using `types.Row` objects is automatic support for multip
 ./glazed-quickstart list-users --sort-columns name
 
 # Combine options
-./glazed-quickstart list-users --filter Engineering --output json --fields name,department
+./glazed-quickstart list-users --name-filter Engineering --output json --fields name,department
 ```
 
 **Key capabilities demonstrated:**
