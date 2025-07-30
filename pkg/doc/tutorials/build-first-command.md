@@ -65,6 +65,8 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds"
     "github.com/go-go-golems/glazed/pkg/cmds/layers"
     "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/help"
+    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/settings"
     "github.com/go-go-golems/glazed/pkg/types"
@@ -330,6 +332,10 @@ func main() {
     // Add to root command
     rootCmd.AddCommand(cobraListUsersCmd)
 
+    // Setup enhanced help system
+    helpSystem := help.NewHelpSystem()
+    help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
     // Execute
     if err := rootCmd.Execute(); err != nil {
         os.Exit(1)
@@ -345,7 +351,8 @@ func main() {
    - `WithCobraShortHelpLayers`: Shows only specified layers in short help output
    - `WithCobraMiddlewaresFunc`: Configures middleware chain for parameter processing
 4. **Registration**: Adds the converted command as a subcommand
-5. **Execution**: Starts the CLI application and processes command-line arguments
+5. **Help System Setup**: `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()` provide enhanced help functionality
+6. **Execution**: Starts the CLI application and processes command-line arguments
 
 **Built-in Command Features**
 
@@ -355,6 +362,15 @@ The `CobraCommandDefaultMiddlewares` provides several useful debugging and confi
 - `--print-yaml`: Outputs the command's configuration as YAML
 - `--print-schema`: Displays the command's parameter schema
 - `--load-parameters-from-file`: Loads parameters from a JSON configuration file
+
+**Enhanced Help System**
+
+The Glazed help system (`help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()`) adds advanced help capabilities:
+
+- **Contextual Help**: Provides detailed help based on command context and available layers
+- **Parameter Documentation**: Automatically generates help text from parameter definitions
+- **Layer-Aware Help**: Shows relevant parameters based on active layers
+- **Rich Formatting**: Enhanced formatting for better readability in terminal output
 
 ## Step 3: Build and Test Your Command
 
@@ -377,14 +393,19 @@ go build -o glazed-quickstart
 ./glazed-quickstart list-users --print-parsed-parameters
 ./glazed-quickstart list-users --print-schema
 ./glazed-quickstart list-users --print-yaml
+
+# Test enhanced help system
+./glazed-quickstart help
+./glazed-quickstart list-users --help
 ```
 
 **Expected behavior:**
 
-1. **Help Text**: `--help` displays auto-generated parameter descriptions and examples
+1. **Help Text**: `--help` displays auto-generated parameter descriptions and examples with enhanced formatting
 2. **Parameter Validation**: Invalid values trigger automatic validation errors
 3. **Default Behavior**: Without flags, shows the first 10 users in table format
 4. **Filtering**: `--filter Engineering` displays only users matching the filter criteria
+5. **Help Command**: `help` command provides contextual documentation and parameter guidance
 
 ## Step 4: Multiple Output Formats
 
@@ -553,6 +574,10 @@ if err != nil {
 }
 
 rootCmd.AddCommand(cobraStatusCmd)
+
+// Setup enhanced help system for the complete application
+helpSystem := help.NewHelpSystem()
+help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 ```
 
 **Key differences from single-mode commands:**
@@ -583,6 +608,9 @@ go build -o glazed-quickstart
 
 # Test debugging features in glaze mode
 ./glazed-quickstart status --with-glaze-output --print-schema
+
+# Test help system with dual command
+./glazed-quickstart status --help
 ```
 
 **Output comparison:**
