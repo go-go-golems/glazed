@@ -32,6 +32,7 @@ func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 
 	helpCmd := NewCobraHelpCommand(hs)
 	cmd.SetHelpCommand(helpCmd)
+	cmd.AddCommand(helpCmd)
 }
 
 func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
