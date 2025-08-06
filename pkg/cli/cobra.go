@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -192,7 +193,14 @@ func runCobraCommand(
 			cobra.CheckErr(err)
 			_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
 			cobra.CheckErr(err)
-			err = glazeCmd.RunIntoGlazeProcessor(cmd.Context(), parsedLayers, gp)
+
+			// Add signal handling for all command types
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+			ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+			defer stop()
+
+			err = glazeCmd.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
 			var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
 			if errors.As(err, &exitWithoutGlazeError) {
 				return
@@ -201,16 +209,18 @@ func runCobraCommand(
 				cobra.CheckErr(err)
 			}
 			// Close will run the TableMiddlewares
-			err = gp.Close(cmd.Context())
+			err = gp.Close(ctx)
 			cobra.CheckErr(err)
 			return
 		}
 
 		// Classic mode: run the provided runFunc
+		// Add signal handling for all command types
 		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
-		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 		defer stop()
+
 		err = runFunc(ctx, parsedLayers)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
