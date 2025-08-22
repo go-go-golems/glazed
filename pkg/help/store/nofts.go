@@ -2,12 +2,8 @@
 
 package store
 
-import (
-	"github.com/rs/zerolog/log"
-)
-
 // createFTSTables is a no-op when FTS5 is not enabled
 func (s *Store) createFTSTables() error {
-	log.Trace().Msg("FTS5 support disabled, skipping FTS table creation")
+	// log.Trace().Msg("FTS5 support disabled, skipping FTS table creation")
 	return nil
 }
