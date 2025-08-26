@@ -27,7 +27,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/tj/go-naturaldate v1.3.0
 	github.com/ugorji/go/codec v1.3.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
