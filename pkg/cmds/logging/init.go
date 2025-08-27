@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -24,7 +25,11 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 	// default is json
 	var logWriter io.Writer
 	if settings.LogFormat == "text" {
-		logWriter = zerolog.ConsoleWriter{Out: os.Stderr}
+		logWriter = zerolog.ConsoleWriter{
+			Out:        os.Stderr,
+			NoColor:    !isatty.IsTerminal(os.Stderr.Fd()) && !isatty.IsCygwinTerminal(os.Stderr.Fd()),
+			TimeFormat: time.RFC3339Nano,
+		}
 	} else {
 		logWriter = os.Stderr
 	}
