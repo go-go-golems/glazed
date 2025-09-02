@@ -1,15 +1,17 @@
 package cli
 
 import (
-	"fmt"
+	"os"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"os"
 )
 
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
@@ -64,16 +66,34 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 }
 
 func printParsedParameters(parsedLayers *layers.ParsedLayers) {
+	layersMap := map[string]map[string]interface{}{}
 	parsedLayers.ForEach(func(layerName string, layer *layers.ParsedLayer) {
-		fmt.Printf("# %s:\n", layerName)
+		params := map[string]interface{}{}
 		layer.Parameters.ForEach(func(name string, parameter *parameters.ParsedParameter) {
-			fmt.Printf("%s: (%s)\n  value: '%v'\n", name, parameter.ParameterDefinition.Type, parameter.Value)
-			for _, l := range parameter.Log {
-				fmt.Printf("\tsource: %s: %v\n", l.Source, l.Value)
-				for k, v := range l.Metadata {
-					fmt.Printf("\t\t%s: %v\n", k, v)
-				}
+			paramMap := map[string]interface{}{
+				"value": parameter.Value,
 			}
+			logs := make([]map[string]interface{}, 0, len(parameter.Log))
+			for _, l := range parameter.Log {
+				logEntry := map[string]interface{}{
+					"source": l.Source,
+					"value":  l.Value,
+				}
+				if len(l.Metadata) > 0 {
+					logEntry["metadata"] = l.Metadata
+				}
+				logs = append(logs, logEntry)
+			}
+			if len(logs) > 0 {
+				paramMap["log"] = logs
+			}
+			params[name] = paramMap
 		})
+		layersMap[layerName] = params
 	})
+
+	encoder := yaml.NewEncoder(os.Stdout)
+	encoder.SetIndent(2)
+	err := encoder.Encode(layersMap)
+	cobra.CheckErr(err)
 }

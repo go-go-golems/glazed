@@ -1,0 +1,11 @@
+title: ":bug: Restore source metadata in parsed parameters output"
+description: |
+  - include source and metadata for each parsed parameter log
+  - keep parameters grouped by layer in YAML
+tests:
+  - "gofmt -w pkg/cli/helpers.go"
+  - "go fmt ./pkg/cli/helpers.go"
+  - "go generate ./..."
+  - "go build ./..."
+  - "go test ./..."
+  - "golangci-lint run -v"
