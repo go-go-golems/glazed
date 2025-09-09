@@ -161,6 +161,30 @@ layers := NewParameterLayers(
 )
 ```
 
+### Registering Layers Under Explicit Slugs on Commands
+
+When creating a `cmds.CommandDescription`, you can register layers under explicit slugs using `cmds.WithLayersMap`.
+
+```go
+// Create layers with internal slugs
+cfgLayer, _ := layers.NewParameterLayer("config", "Configuration")
+outLayer, _ := layers.NewParameterLayer("output", "Output")
+
+// Register them under different command slugs
+cmd := cmds.NewCommandDescription(
+    "run",
+    cmds.WithLayersMap(map[string]layers.ParameterLayer{
+        "cfg": cfgLayer,   // registered as "cfg"
+        "out": outLayer,   // registered as "out"
+    }),
+)
+
+// Later, parsed layers will be accessed by these slugs
+// parsedLayers.InitializeStruct("cfg", &myCfg)
+```
+
+Note: If the layer is a `*layers.ParameterLayerImpl` and the key differs from the layer's internal slug, the layer is cloned and aligned to the registration key to maintain consistency at runtime.
+
 ### Accessing Layer Information
 
 ```go

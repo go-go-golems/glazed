@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,6 +84,43 @@ func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers.Merge(ls)
+	}
+}
+
+// WithLayersMap registers layers using explicit slugs from the provided map.
+// The map key is used as the registration slug. If a layer's internal slug
+// (returned by l.GetSlug()) differs from the map key, this function will try
+// to align them when possible so that runtime parsing and lookups are
+// consistent:
+//   - Prefer cloning the layer and overriding the slug on the clone when the
+//     clone is a *layers.ParameterLayerImpl (common for wrapper types that
+//     embed ParameterLayerImpl and whose Clone returns a ParameterLayerImpl).
+//   - Otherwise, the layer is registered under the provided key as-is.
+//
+// Note: If a non-ParameterLayerImpl is registered under a key that differs
+// from its internal slug, middlewares that derive parsed layer slugs from the
+// layer's GetSlug() may use the internal slug instead of the registration key.
+// Prefer using matching slugs or ParameterLayerImpl when you need explicit
+// remapping.
+func WithLayersMap(m map[string]layers.ParameterLayer) CommandDescriptionOption {
+	return func(c *CommandDescription) {
+		for slug, l := range m {
+			if l.GetSlug() != slug {
+				// Try a generic clone: many wrapper types embed ParameterLayerImpl,
+				// whose Clone returns *ParameterLayerImpl. If so, set the slug.
+				cloned := l.Clone()
+				if impl, ok := cloned.(*layers.ParameterLayerImpl); ok {
+					impl.Slug = slug
+					c.Layers.Set(slug, impl)
+					log.Debug().Str("slug", slug).Str("internalSlug", l.GetSlug()).Msg("WithLayersMap: cloned layer and set overridden slug")
+					continue
+				}
+				// Fallback: keep original layer but register under provided key.
+				// Parsed layers may still use the internal slug when indexing.
+				log.Warn().Str("slug", slug).Str("internalSlug", l.GetSlug()).Msg("WithLayersMap: registering layer with mismatched internal slug; parsed layers may use internal slug")
+			}
+			c.Layers.Set(slug, l)
+		}
 	}
 }
 

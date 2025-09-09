@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
@@ -170,6 +171,7 @@ func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
 		panic("layer must not be nil")
 	}
 	slug := layer.GetSlug()
+	log.Debug().Str("slug", slug).Str("name", layer.GetName()).Str("prefix", layer.GetPrefix()).Msg("ParsedLayers.GetOrCreate: using slug for layer")
 	v, ok := p.Get(slug)
 	if !ok {
 		v = &ParsedLayer{
@@ -177,6 +179,7 @@ func (p *ParsedLayers) GetOrCreate(layer ParameterLayer) *ParsedLayer {
 			Parameters: parameters.NewParsedParameters(),
 		}
 		p.Set(slug, v)
+		log.Debug().Str("slug", slug).Str("name", layer.GetName()).Msg("ParsedLayers.GetOrCreate: created new parsed layer entry")
 	}
 	return v
 }
