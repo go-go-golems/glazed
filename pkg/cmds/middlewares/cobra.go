@@ -3,7 +3,6 @@ package middlewares
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,6 @@ func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOp
 			}
 
 			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
-				log.Debug().Str("registeredKey", key).Str("layerSlug", l.GetSlug()).Str("layerName", l.GetName()).Msg("ParseFromCobraCommand: iterating layer")
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepMetadata(map[string]interface{}{
 						"layer":          l.GetName(),
@@ -38,7 +36,6 @@ func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOp
 				parsedLayer := parsedLayers.GetOrCreate(l)
 
 				if cobraLayer, ok := l.(layers.CobraParameterLayer); ok {
-					log.Debug().Str("layerSlug", l.GetSlug()).Msg("ParseFromCobraCommand: parsing layer from cobra")
 					cobraLayer, err := cobraLayer.ParseLayerFromCobraCommand(cmd, options_...)
 					if err != nil {
 						return err
