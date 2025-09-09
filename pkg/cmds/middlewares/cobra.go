@@ -26,7 +26,10 @@ func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOp
 			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepMetadata(map[string]interface{}{
-						"layer": l.GetName(),
+						"layer":          l.GetName(),
+						"layer_slug":     l.GetSlug(),
+						"layer_prefix":   l.GetPrefix(),
+						"registered_key": key,
 					}),
 				}, options...)
 
@@ -72,7 +75,7 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 
 			if defaultLayer, ok := layers_.Get(layers.DefaultSlug); ok {
 				pds := defaultLayer.GetParameterDefinitions()
-				ps_, err := pds.GatherArguments(args, false, false, options...)
+				ps_, err := pds.GatherArguments(args, false, false, append(options, parameters.WithParseStepSource("arguments"))...)
 				if err != nil {
 					return err
 				}
@@ -109,7 +112,10 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepSource("viper"),
 					parameters.WithParseStepMetadata(map[string]interface{}{
-						"layer": l.GetName(),
+						"layer":          l.GetName(),
+						"layer_slug":     l.GetSlug(),
+						"layer_prefix":   l.GetPrefix(),
+						"registered_key": key,
 					}),
 				}, options...)
 

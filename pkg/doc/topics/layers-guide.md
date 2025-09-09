@@ -584,6 +584,29 @@ dbLayer, _ := NewDatabaseLayerBuilder().
     Build()
 ```
 
+### Method 4: Registering Layers with Explicit Slugs on Commands
+
+In some cases you may want to register layers on a command under explicit slugs that differ from the layer's internal slug. Use `cmds.WithLayersMap` to provide a map of slug-to-layer entries when creating a command description.
+
+```go
+dbLayer, _ := NewDatabaseLayer()        // internal slug: "database"
+loggingLayer, _ := NewLoggingLayer()    // internal slug: "logging"
+
+cmd := cmds.NewCommandDescription(
+    "process",
+    cmds.WithLayersMap(map[string]layers.ParameterLayer{
+        "db":  dbLayer,    // registered under explicit slug "db"
+        "log": loggingLayer,
+    }),
+)
+
+// Later at runtime, access by the registration slugs (e.g., "db", "log")
+```
+
+Note:
+- If a layer's internal slug differs from the map key and the layer is a `*layers.ParameterLayerImpl`, Glazed will clone the layer and align its slug to the provided key for consistent runtime behavior.
+- For custom layer implementations, prefer using matching internal and registration slugs when possible.
+
 ## Practical Examples
 
 ### Example 1: Web Server Application

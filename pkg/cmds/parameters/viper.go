@@ -3,6 +3,7 @@ package parameters
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 func (pds *ParameterDefinitions) GatherFlagsFromViper(
@@ -36,11 +37,14 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 			continue
 		}
 
-		// TODO(manuel, 2023-12-22) Would be cool if viper were to tell us where the flag came from...
+		// Add metadata about the viper key and derived env key shape
+		upperKey := strings.ToUpper(strings.ReplaceAll(flagName, "-", "_"))
+		meta := map[string]interface{}{
+			"flag":    flagName,
+			"env_key": upperKey,
+		}
 		options := append([]ParseStepOption{
-			WithParseStepMetadata(map[string]interface{}{
-				"flag": flagName,
-			}),
+			WithParseStepMetadata(meta),
 			WithParseStepSource("viper"),
 		}, options...)
 		//exhaustive:ignore
