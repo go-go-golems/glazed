@@ -117,7 +117,12 @@ func LoadParametersFromResolvedFilesForCobra(
 				return err
 			}
 			// Apply as a single multi-file step using helper
-			return LoadParametersFromFiles(files, options...)(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })(layers_, parsedLayers)
+			// Wrap ParseStepOptions into ConfigFileOptions
+			configOpts := []ConfigFileOption{}
+			if len(options) > 0 {
+				configOpts = append(configOpts, WithParseOptions(options...))
+			}
+			return LoadParametersFromFiles(files, configOpts...)(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })(layers_, parsedLayers)
 		}
 	}
 }

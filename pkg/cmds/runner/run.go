@@ -177,7 +177,9 @@ func ParseCommandParameters(
 	if len(opts.ConfigFiles) > 0 {
 		middlewares_ = append(middlewares_,
 			cmd_middlewares.LoadParametersFromFiles(opts.ConfigFiles,
-				parameters.WithParseStepSource("config"),
+				cmd_middlewares.WithParseOptions(
+					parameters.WithParseStepSource("config"),
+				),
 			),
 		)
 	}

@@ -121,16 +121,78 @@ Load parameters from JSON or YAML files using `LoadParametersFromFile`:
 
 ```go
 middleware := middlewares.LoadParametersFromFile("config.yaml",
-    parameters.WithParseStepSource("config"),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
 )
 ```
 
-Configuration file format:
+By default, `LoadParametersFromFile` expects the config file to have this structure:
 ```yaml
 layerName:
   parameterName: value
   anotherParameter: value
 ```
+
+#### Custom Config File Structures
+
+To use config files with different structures (flat, nested, or any custom format), provide a `ConfigFileMapper`:
+
+```go
+// Define a mapper function that transforms your config structure
+mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error) {
+    configMap := rawConfig.(map[string]interface{})
+    result := map[string]map[string]interface{}{
+        "demo": make(map[string]interface{}),
+    }
+    
+    // Map flat keys to layer parameters
+    if apiKey, ok := configMap["api_key"]; ok {
+        result["demo"]["api-key"] = apiKey
+    }
+    
+    // Handle nested structures
+    if app, ok := configMap["app"].(map[string]interface{}); ok {
+        if settings, ok := app["settings"].(map[string]interface{}); ok {
+            if api, ok := settings["api"].(map[string]interface{}); ok {
+                if key, ok := api["key"]; ok {
+                    result["demo"]["api-key"] = key
+                }
+            }
+        }
+    }
+    
+    return result, nil
+}
+
+// Use the mapper when loading the config file
+middleware := middlewares.LoadParametersFromFile(
+    "config.yaml",
+    middlewares.WithConfigFileMapper(mapper),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
+)
+```
+
+Example config file with custom structure:
+```yaml
+# Flat structure
+api_key: "secret-from-flat-config"
+threshold: 42
+
+# Triple-nested structure
+app:
+  settings:
+    api:
+      key: "secret-from-triple-nested"
+```
+
+The mapper handles both structures and maps them to the standard layer format. This allows you to:
+- Support legacy config file formats
+- Adapt to existing configuration structures
+- Transform nested JSON/YAML hierarchies into layer parameters
+- Implement custom key mapping logic
 
 ### 4. Command Line Arguments
 
@@ -156,13 +218,17 @@ Load one or more config files using built-in middlewares:
 ```go
 // Single file
 middlewares.LoadParametersFromFile("config.yaml",
-    parameters.WithParseStepSource("config"),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
 )
 
 // Multiple files (low -> high precedence)
 middlewares.LoadParametersFromFiles([]string{
     "base.yaml", "env.yaml", "local.yaml",
-}, parameters.WithParseStepSource("config"))
+}, middlewares.WithParseOptions(
+    parameters.WithParseStepSource("config"),
+))
 ```
 
 ### 6. Custom Configuration Files
@@ -170,16 +236,33 @@ middlewares.LoadParametersFromFiles([]string{
 Load parameters from specific config files using built-in file middlewares:
 
 ```go
-// Load from a specific config file
+// Load from a specific config file (standard format)
 middleware := middlewares.LoadParametersFromFile(
     "/path/to/custom-config.yaml",
-    parameters.WithParseStepSource("config"),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
 )
 
 // Load multiple config files with overlay precedence (low -> high)
 middleware := middlewares.LoadParametersFromFiles(
     []string{"base.yaml", "env.yaml", "local.yaml"},
-    parameters.WithParseStepSource("config"),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
+)
+
+// Load with custom config structure mapper
+mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error) {
+    // Transform your custom config structure to layer map format
+    // ...
+}
+middleware := middlewares.LoadParametersFromFile(
+    "custom-structure.yaml",
+    middlewares.WithConfigFileMapper(mapper),
+    middlewares.WithParseOptions(
+        parameters.WithParseStepSource("config"),
+    ),
 )
 ```
 
@@ -187,6 +270,7 @@ These middlewares are useful for:
 - Loading configuration from explicit file paths
 - Applying overlays and environment-specific configurations
 - Tracking parse steps with source and metadata
+- Supporting custom config file formats via mappers
 
 ### 7. Default Map Updates
 
