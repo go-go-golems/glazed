@@ -10,7 +10,7 @@ Topics:
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
-SectionType: Reference
+SectionType: GeneralTopic
 ---
 
 # Logging Layer API Reference

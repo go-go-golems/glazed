@@ -1,5 +1,7 @@
 # Glazed Command Middlewares: Complete Guide
 
+> Note: Viper-based examples are deprecated. Prefer config file middlewares (LoadParametersFromFile / LoadParametersFromFiles) and UpdateFromEnv. See `glaze help config-files` and the Config Files Quickstart tutorial for current patterns.
+
 ## Table of Contents
 1. [The Big Picture](#the-big-picture)
 2. [Mental Model & Why Use This Approach](#mental-model--why-use-this-approach)
