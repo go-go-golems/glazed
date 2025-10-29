@@ -148,16 +148,24 @@ func updateFromEnv(
 	err := layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
 		parsedLayer := parsedLayers.GetOrCreate(l)
 		pds := l.GetParameterDefinitions()
+		layerPrefix := l.GetPrefix()
 		err := pds.ForEachE(func(p *parameters.ParameterDefinition) error {
-			name := p.Name
+			// Compute env key based on layer prefix + param name, hyphen->underscore, uppercase,
+			// and optional global prefix (app name) separated by underscore.
+			base := layerPrefix + p.Name
+			envKey := strings.ToUpper(strings.ReplaceAll(base, "-", "_"))
 			if prefix != "" {
-				name = prefix + "_" + name
+				envKey = strings.ToUpper(prefix) + "_" + envKey
 			}
-			name = strings.ToUpper(name)
 
-			if v, ok := os.LookupEnv(name); ok {
-				err := parsedLayer.Parameters.UpdateValue(name, p, v, options...)
-				if err != nil {
+			if v, ok := os.LookupEnv(envKey); ok {
+				opts := append([]parameters.ParseStepOption{
+					parameters.WithParseStepMetadata(map[string]interface{}{
+						"env_key": envKey,
+					}),
+				}, options...)
+				// Store under the logical parameter name within the layer
+				if err := parsedLayer.Parameters.UpdateValue(p.Name, p, v, opts...); err != nil {
 					return err
 				}
 			}
