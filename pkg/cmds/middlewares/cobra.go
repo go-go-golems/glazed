@@ -1,8 +1,11 @@
 package middlewares
 
 import (
+	"sync"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -127,7 +130,12 @@ func LoadParametersFromResolvedFilesForCobra(
 // Usage:
 //
 //	middleware := middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper"))
+//
+// Deprecated: Use LoadParametersFromFiles and UpdateFromEnv instead.
 func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
+	warnGatherViperOnce.Do(func() {
+		log.Warn().Msg("middlewares.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+	})
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 
@@ -183,7 +191,12 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 //	    []string{"flag1", "flag2"},
 //	    parameters.WithParseStepSource("viper"),
 //	)
+//
+// Deprecated: Use LoadParametersFromFiles and UpdateFromEnv instead.
 func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseStepOption) Middleware {
+	warnGatherViperOnce.Do(func() {
+		log.Warn().Msg("middlewares.GatherSpecificFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+	})
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 			err := next(layers_, parsedLayers)
@@ -231,3 +244,5 @@ func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseSte
 		}
 	}
 }
+
+var warnGatherViperOnce sync.Once

@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/mattn/go-isatty"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -123,7 +125,9 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 }
 
 // InitLoggerFromViper initializes the logger using settings from Viper
+// Deprecated: Initialize logging from parsed layers using SetupLoggingFromParsedLayers instead.
 func InitLoggerFromViper() error {
+	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromParsedLayers")
 	settings := &LoggingSettings{
 		LogLevel:            viper.GetString("log-level"),
 		LogFile:             viper.GetString("log-file"),
@@ -136,6 +140,80 @@ func InitLoggerFromViper() error {
 		LogstashProtocol:    viper.GetString("logstash-protocol"),
 		LogstashAppName:     viper.GetString("logstash-app-name"),
 		LogstashEnvironment: viper.GetString("logstash-environment"),
+	}
+
+	return InitLoggerFromSettings(settings)
+}
+
+// InitLoggerFromCobra initializes the logger using flags parsed by Cobra on the given command.
+// Call this in PersistentPreRun(E) to initialize logging after Cobra parsed flags but before command execution.
+// Flags are added by AddLoggingLayerToRootCommand.
+func InitLoggerFromCobra(cmd *cobra.Command) error {
+	if cmd == nil {
+		return errors.Errorf("nil cobra command passed to InitLoggerFromCobra")
+	}
+
+	getString := func(name string) (string, error) { return cmd.Flags().GetString(name) }
+	getBool := func(name string) (bool, error) { return cmd.Flags().GetBool(name) }
+	getInt := func(name string) (int, error) { return cmd.Flags().GetInt(name) }
+
+	logLevel, err := getString("log-level")
+	if err != nil {
+		return errors.Wrap(err, "reading --log-level")
+	}
+	logFile, err := getString("log-file")
+	if err != nil {
+		return errors.Wrap(err, "reading --log-file")
+	}
+	logFormat, err := getString("log-format")
+	if err != nil {
+		return errors.Wrap(err, "reading --log-format")
+	}
+	withCaller, err := getBool("with-caller")
+	if err != nil {
+		return errors.Wrap(err, "reading --with-caller")
+	}
+	logToStdout, err := getBool("log-to-stdout")
+	if err != nil {
+		return errors.Wrap(err, "reading --log-to-stdout")
+	}
+	lsEnabled, err := getBool("logstash-enabled")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-enabled")
+	}
+	lsHost, err := getString("logstash-host")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-host")
+	}
+	lsPort, err := getInt("logstash-port")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-port")
+	}
+	lsProto, err := getString("logstash-protocol")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-protocol")
+	}
+	lsAppName, err := getString("logstash-app-name")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-app-name")
+	}
+	lsEnv, err := getString("logstash-environment")
+	if err != nil {
+		return errors.Wrap(err, "reading --logstash-environment")
+	}
+
+	settings := &LoggingSettings{
+		LogLevel:            logLevel,
+		LogFile:             logFile,
+		LogFormat:           logFormat,
+		WithCaller:          withCaller,
+		LogToStdout:         logToStdout,
+		LogstashEnabled:     lsEnabled,
+		LogstashHost:        lsHost,
+		LogstashPort:        lsPort,
+		LogstashProtocol:    lsProto,
+		LogstashAppName:     lsAppName,
+		LogstashEnvironment: lsEnv,
 	}
 
 	return InitLoggerFromSettings(settings)

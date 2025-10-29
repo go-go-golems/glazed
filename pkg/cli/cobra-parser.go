@@ -74,7 +74,7 @@ type CobraParser struct {
 	// by the glazed framework.
 	//
 	// This hooks allows the implementor to specify additional ways of loading parameters
-	// (for example, sqleton loads the dbt and sql connection parameters from env and viper as well).
+	// (for example, sqleton loads the dbt and sql connection parameters from env as well).
 	middlewaresFunc CobraMiddlewaresFunc
 	// List of layers to be shown in short help, empty: always show all
 	shortHelpLayers []string
@@ -301,7 +301,7 @@ func (c *CobraParser) Parse(
 }
 
 // ParseGlazedCommandLayer parses the global glazed settings from the given cobra.Command, if not nil,
-// and from the configured viper config file.
+// and from the command itself if present.
 func ParseCommandSettingsLayer(cmd *cobra.Command) (*layers.ParsedLayers, error) {
 	parsedLayers := layers.NewParsedLayers()
 	commandSettingsLayer, err := NewCommandSettingsLayer()

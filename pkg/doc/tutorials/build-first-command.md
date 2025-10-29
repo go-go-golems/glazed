@@ -349,40 +349,27 @@ func main() {
 
 ### Initialize Logging (Recommended)
 
-Glazed provides a logging layer you can attach to your root command. This exposes logging-related flags and initializes logging based on configuration. Initialize the logger both in `main()` (to pick up defaults and config) and in a `PersistentPreRun` (to reinitialize after flags/config are loaded by Cobra).
+Glazed provides a logging layer you can attach to your root command. This exposes logging-related flags and initializes logging based on configuration. Initialize the logger in `PersistentPreRunE` using Cobra-parsed flags so logging is active before your command logic runs.
 
 ```go
 package main
 
 import (
-    "os"
-
     "github.com/go-go-golems/glazed/pkg/cmds/logging"
     "github.com/spf13/cobra"
-    "github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
     Use: "glazed-quickstart",
-    PersistentPreRun: func(cmd *cobra.Command, args []string) {
-        // Initialize logger after Cobra has parsed flags and Viper has loaded config
-        err := logging.InitLoggerFromViper()
-        cobra.CheckErr(err)
+    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+        // Initialize logger after Cobra has parsed flags
+        return logging.InitLoggerFromCobra(cmd)
     },
 }
 
 func main() {
-    // Add logging layer using the command's Use name so flag names are properly namespaced
-    err := logging.AddLoggingLayerToRootCommand(rootCmd, "glazed-quickstart")
-    cobra.CheckErr(err)
-
-    // Bind root flags to Viper before initializing logger
-    err = viper.BindPFlags(rootCmd.PersistentFlags())
-    cobra.CheckErr(err)
-
-    // Initialize logger early so logs are structured even during startup
-    err = logging.InitLoggerFromViper()
-    cobra.CheckErr(err)
+    // Add logging flags (log-level, log-format, logstash-*) to the root command
+    _ = logging.AddLoggingLayerToRootCommand(rootCmd, "glazed-quickstart")
 
     // ... register commands, help system, etc.
     _ = rootCmd.Execute()
@@ -391,9 +378,9 @@ func main() {
 
 Key points:
 
-- Add the logging layer with `logging.AddLoggingLayerToRootCommand(rootCmd, "<use-name>")` using your root command's `Use` name.
-- Call `logging.InitLoggerFromViper()` in both `main()` and `PersistentPreRun`.
-- Bind flags to Viper with `viper.BindPFlags(rootCmd.PersistentFlags())` before the first initialization, so CLI flags influence logging configuration.
+- Add logging flags with `logging.AddLoggingLayerToRootCommand(rootCmd, "<use-name>")`.
+- Initialize logging early with `logging.InitLoggerFromCobra(cmd)` in `PersistentPreRunE`.
+- Alternatively, you can call `logging.SetupLoggingFromParsedLayers(parsedLayers)` after parsing for per-command logging settings.
 
 **Integration steps:**
 
@@ -411,7 +398,7 @@ The `CobraCommandDefaultMiddlewares` provides several useful debugging and confi
 - `--print-parsed-parameters`: Shows how parameters were parsed from different sources
 - `--print-yaml`: Outputs the command's configuration as YAML
 - `--print-schema`: Displays the command's parameter schema
-- `--load-parameters-from-file`: Loads parameters from a JSON configuration file
+- `--config-file`: Explicit config file path (overlays supported via resolver)
 
 **Enhanced Help System**
 

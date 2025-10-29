@@ -1,16 +1,23 @@
 package parameters
 
 import (
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"strings"
+	"sync"
+
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
+// Deprecated: Use config files + env middlewares instead.
 func (pds *ParameterDefinitions) GatherFlagsFromViper(
 	onlyProvided bool,
 	prefix string,
 	options ...ParseStepOption,
 ) (*ParsedParameters, error) {
+	warnGatherViperParamsOnce.Do(func() {
+		log.Warn().Msg("parameters.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+	})
 	ret := NewParsedParameters()
 
 	for v := pds.Oldest(); v != nil; v = v.Next() {
@@ -116,3 +123,5 @@ func (pds *ParameterDefinitions) GatherFlagsFromViper(
 
 	return ret, nil
 }
+
+var warnGatherViperParamsOnce sync.Once

@@ -149,14 +149,20 @@ middleware := middlewares.GatherArguments(args,
 )
 ```
 
-### 5. Viper Configuration
+### 5. Config Files (recommended)
 
-To integrate with Viper:
+Load one or more config files using built-in middlewares:
 
 ```go
-middleware := middlewares.GatherFlagsFromViper(
-    parameters.WithParseStepSource("viper"),
+// Single file
+middlewares.LoadParametersFromFile("config.yaml",
+    parameters.WithParseStepSource("config"),
 )
+
+// Multiple files (low -> high precedence)
+middlewares.LoadParametersFromFiles([]string{
+    "base.yaml", "env.yaml", "local.yaml",
+}, parameters.WithParseStepSource("config"))
 ```
 
 ### 6. Custom Configuration Files
@@ -361,13 +367,10 @@ middlewares.ExecuteMiddlewares(layers, parsedLayers,
     // Base defaults
     middlewares.SetFromDefaults(),
     
-    // Configuration file
-    middlewares.LoadParametersFromFile("config.yaml"),
-    
-    // Custom config file
-    middlewares.GatherFlagsFromCustomViper(
-        middlewares.WithConfigFile("/etc/app/override.yaml"),
-    ),
+    // Configuration files (base overlays)
+    middlewares.LoadParametersFromFiles([]string{
+        "config.yaml", "config.local.yaml",
+    }),
     
     // Environment overrides
     middlewares.UpdateFromEnv("APP"),
@@ -527,11 +530,11 @@ func GetCommandMiddlewares(
             profileFile,
             commandSettings.Profile,
         ),
-        // Viper config for specific layers
-        middlewares.WrapWithWhitelistedLayers(
-            []string{"api", "client"},
-            middlewares.GatherFlagsFromViper(),
-        ),
+    // Env config for specific layers (if needed)
+    middlewares.WrapWithWhitelistedLayers(
+        []string{"api", "client"},
+        middlewares.UpdateFromEnv("APP"),
+    ),
         // Defaults (lowest priority)
         middlewares.SetFromDefaults(),
     )
@@ -543,13 +546,13 @@ func GetCommandMiddlewares(
 ## Key Points
 
 1. Middleware order determines priority (last middleware runs first)
-2. Use `WithCobraMiddlewaresFunc` to add middleware to commands
+2. Use `WithCobraMiddlewaresFunc` or `CobraParserConfig` to add middleware to commands
 3. Common middleware order:
-   - Command-line arguments
-   - Config files
-   - Profiles
-   - Viper settings
-   - Defaults
+   - Config files (base overlays)
+   - Environment
+   - Positional arguments
+   - Command-line flags (highest)
+   - Defaults (lowest)
 
 ## Layer-Specific Configuration
 
@@ -558,7 +561,7 @@ Restrict middleware to specific layers:
 ```go
 middlewares.WrapWithWhitelistedLayers(
     []string{"api", "client"},
-    middlewares.UpdateFromEnv("APP_"),
+        middlewares.UpdateFromEnv("APP_"),
 )
 ```
 
