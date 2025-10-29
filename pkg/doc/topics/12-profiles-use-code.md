@@ -82,10 +82,9 @@ path if not specified.
 The middleware would usually be inserted in front of the "viper" and "defaults" middlewares, so that the profile and profile-file 
 flags can be loaded from the config file or the environment.
 
-## Custom Configuration Sources with Profiles
+## Profile-Specific Overrides
 
-For more advanced use cases, you can combine profile middleware with the `GatherFlagsFromCustomViper` middleware to load
-configuration from additional sources:
+For advanced use cases, combine profile middleware with additional config files using `LoadParametersFromFile` or `LoadParametersFromFiles`:
 
 ```go
 func GetCobraCommandGeppettoMiddlewares(
@@ -101,15 +100,9 @@ func GetCobraCommandGeppettoMiddlewares(
         middlewares.GatherArguments(args),
         
         // Profile-specific override files
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithConfigFile(fmt.Sprintf("/etc/%s/overrides.yaml", commandSettings.Profile)),
-            middlewares.WithParseOptions(parameters.WithParseStepSource("profile-overrides")),
-        ),
-        
-        // Shared configuration across apps
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithAppName("shared-config"),
-            middlewares.WithParseOptions(parameters.WithParseStepSource("shared")),
+        middlewares.LoadParametersFromFile(
+            fmt.Sprintf("/etc/%s/overrides.yaml", commandSettings.Profile),
+            parameters.WithParseStepSource("profile-overrides"),
         ),
         
         // Profile configuration
@@ -124,7 +117,6 @@ func GetCobraCommandGeppettoMiddlewares(
 
 This pattern allows for:
 - **Profile-specific overrides**: Load additional config files based on the active profile
-- **Shared configuration**: Load common settings from another application's config
 - **Environment-specific settings**: Different config sources for development, staging, production
 - **Dynamic configuration**: Runtime determination of config sources based on profiles
 
@@ -169,13 +161,13 @@ middlewares.GatherFlagsFromCustomProfiles(
 
 ### Profile-Specific Configuration Files
 
-You can use the custom config middleware to load different configuration files based on the active profile:
+Load different configuration files based on the active profile:
 
 ```go
 // Load profile-specific config file
-middlewares.GatherFlagsFromCustomViper(
-    middlewares.WithConfigFile(fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile)),
-    middlewares.WithParseOptions(parameters.WithParseStepSource("profile-config")),
+middlewares.LoadParametersFromFile(
+    fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile),
+    parameters.WithParseStepSource("profile-config"),
 )
 ```
 
@@ -184,17 +176,7 @@ With profile files like:
 - `/etc/myapp/staging.yaml`
 - `/etc/myapp/production.yaml`
 
-### Cross-Application Configuration
-
-Share configuration between related applications:
-
-```go
-// Load shared configuration from a central config app
-middlewares.GatherFlagsFromCustomViper(
-    middlewares.WithAppName("central-config"),
-    middlewares.WithParseOptions(parameters.WithParseStepSource("central")),
-)
-```
+<!-- Removed: Cross-application loading via CustomViper. Prefer explicit file lists or a ConfigFiles resolver in CobraParserConfig. -->
 
 ### Environment Variable Integration
 
@@ -212,10 +194,10 @@ YOUR_PROGRAM [command]
 ```go
 customConfigPath := os.Getenv("YOUR_PROGRAM_CUSTOM_CONFIG")
 if customConfigPath != "" {
-    middlewares_ = append(middlewares_, 
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithConfigFile(customConfigPath),
-            middlewares.WithParseOptions(parameters.WithParseStepSource("env-custom")),
+    middlewares_ = append(middlewares_,
+        middlewares.LoadParametersFromFile(
+            customConfigPath,
+            parameters.WithParseStepSource("env-custom"),
         ),
     )
 }
@@ -232,13 +214,15 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
         middlewares.ParseFromCobraCommand(cmd),
         
         // 2. Environment-specific overrides
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithConfigFile("/etc/myapp/local-overrides.yaml"),
+        middlewares.LoadParametersFromFile(
+            "/etc/myapp/local-overrides.yaml",
+            parameters.WithParseStepSource("config"),
         ),
         
         // 3. Profile-specific configuration
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithConfigFile(fmt.Sprintf("/etc/myapp/profiles/%s.yaml", commandSettings.Profile)),
+        middlewares.LoadParametersFromFile(
+            fmt.Sprintf("/etc/myapp/profiles/%s.yaml", commandSettings.Profile),
+            parameters.WithParseStepSource("config"),
         ),
         
         // 4. Custom profile sources
@@ -256,9 +240,7 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
         ),
         
         // 6. Shared organization config
-        middlewares.GatherFlagsFromCustomViper(
-            middlewares.WithAppName("org-shared-config"),
-        ),
+        // Provide explicit file paths or use a ConfigFiles resolver
         
         // 7. Application defaults
         middlewares.SetFromDefaults(),

@@ -270,55 +270,6 @@ func (ps *ParameterDefinitions) SetupCobraCompletions(cmd *cobra.Command) error 
 }
 ```
 
-## Step 5: Add Viper Configuration Support
-
-In [`viper.go`](file:///home/manuel/workspaces/2025-06-09/add-geppetto-js/glazed/pkg/cmds/parameters/viper.go), add configuration parsing:
-
-```go
-func (ps *ParameterDefinitions) LoadFromViper(v *viper.Viper, overrides map[string]interface{}) (*ParsedParameters, error) {
-    // ... existing code ...
-    
-    switch parameter.Type {
-    // ... existing cases ...
-    
-    case ParameterTypeCredentials:
-        if v.IsSet(key) {
-            credsConfig := v.Get(key)
-            var creds map[string]string
-            
-            // Handle different config formats
-            switch c := credsConfig.(type) {
-            case map[string]interface{}:
-                creds = make(map[string]string)
-                for k, v := range c {
-                    if str, ok := v.(string); ok {
-                        creds[k] = str
-                    }
-                }
-            case map[string]string:
-                creds = c
-            case string:
-                // Parse as file path
-                if strings.HasPrefix(c, "@") {
-                    // Load from file
-                    // ... file loading logic ...
-                } else {
-                    // Parse as single credential
-                    parts := strings.SplitN(c, ":", 2)
-                    if len(parts) == 2 {
-                        creds = map[string]string{parts[0]: parts[1]}
-                    }
-                }
-            }
-            
-            if creds != nil {
-                err = parsedParameters.UpdateValue(parameter.Name, parameter, creds, options...)
-            }
-        }
-    }
-}
-```
-
 ## Step 6: Add Rendering Support
 
 In [`render.go`](file:///home/manuel/workspaces/2025-06-09/add-geppetto-js/glazed/pkg/cmds/parameters/render.go), add display formatting:

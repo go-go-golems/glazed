@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,7 +27,9 @@ func InitLoggerWithConfig(config *LogConfig) error {
 	return InitLoggerFromSettings(settings)
 }
 
+// Deprecated: Use Glazed config middlewares (LoadParametersFromFiles + UpdateFromEnv) and InitGlazed/InitLoggerFromCobra.
 func InitViperWithAppName(appName string, configFile string) error {
+	log.Warn().Msg("logging.InitViperWithAppName is deprecated; use Glazed config middlewares and InitLoggerFromCobra")
 	viper.SetEnvPrefix(appName)
 
 	if configFile != "" {
@@ -58,7 +61,9 @@ func InitViperWithAppName(appName string, configFile string) error {
 	return nil
 }
 
+// Deprecated: Use InitGlazed(appName, rootCmd) and InitLoggerFromCobra in PersistentPreRunE.
 func InitViper(appName string, rootCmd *cobra.Command) error {
+	log.Warn().Msg("logging.InitViper is deprecated; use InitGlazed and InitLoggerFromCobra")
 	rootCmd.PersistentFlags().String("config", "",
 		fmt.Sprintf("Path to config file (default ~/.%s/config.yml)", appName))
 
@@ -86,6 +91,7 @@ func InitViper(appName string, rootCmd *cobra.Command) error {
 	return nil
 }
 
+// Deprecated: Avoid Viper instances for config parsing; use config middlewares.
 func InitViperInstanceWithAppName(appName string, configFile string) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetEnvPrefix(appName)

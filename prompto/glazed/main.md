@@ -13,8 +13,6 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds"
     "github.com/go-go-golems/glazed/pkg/help"
     "github.com/spf13/cobra"
-    "github.com/spf13/viper"
-    "os"
 )
 
 //go:embed docs/*
@@ -48,7 +46,7 @@ func initRootCmd() (*help.HelpSystem, error) {
 
     help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
-    err = clay.InitViper("your-app", rootCmd)
+    err = clay.InitGlazed("your-app", rootCmd)
     if err != nil {
         return nil, err
     }

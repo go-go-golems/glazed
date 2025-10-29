@@ -78,12 +78,12 @@ Middlewares are executed in reverse order of how they're provided to `ExecuteMid
 ExecuteMiddlewares(layers, parsedLayers,
     SetFromDefaults(),
     UpdateFromEnv("APP"),
-    GatherFlagsFromViper(),
+    LoadParametersFromFile("config.yaml"),
 )
 ```
 
 Will execute in this order:
-1. GatherFlagsFromViper
+1. LoadParametersFromFile
 2. UpdateFromEnv
 3. SetFromDefaults
 
@@ -167,27 +167,26 @@ middlewares.LoadParametersFromFiles([]string{
 
 ### 6. Custom Configuration Files
 
-Load parameters from custom config files or other app configurations using `GatherFlagsFromCustomViper`:
+Load parameters from specific config files using built-in file middlewares:
 
 ```go
 // Load from a specific config file
-middleware := middlewares.GatherFlagsFromCustomViper(
-    middlewares.WithConfigFile("/path/to/custom-config.yaml"),
-    middlewares.WithParseOptions(parameters.WithParseStepSource("custom-config")),
+middleware := middlewares.LoadParametersFromFile(
+    "/path/to/custom-config.yaml",
+    parameters.WithParseStepSource("config"),
 )
 
-// Load from another app's config
-middleware := middlewares.GatherFlagsFromCustomViper(
-    middlewares.WithAppName("other-app"),
-    middlewares.WithParseOptions(parameters.WithParseStepSource("other-app-config")),
+// Load multiple config files with overlay precedence (low -> high)
+middleware := middlewares.LoadParametersFromFiles(
+    []string{"base.yaml", "env.yaml", "local.yaml"},
+    parameters.WithParseStepSource("config"),
 )
 ```
 
-This middleware is useful for:
+These middlewares are useful for:
 - Loading configuration from explicit file paths
-- Sharing configuration between different applications
-- Loading different configuration profiles based on runtime conditions
-- Integrating with external configuration management systems
+- Applying overlays and environment-specific configurations
+- Tracking parse steps with source and metadata
 
 ### 7. Default Map Updates
 
@@ -291,8 +290,29 @@ Use `Chain` to combine multiple middlewares:
 combined := middlewares.Chain(
     middlewares.SetFromDefaults(),
     middlewares.UpdateFromEnv("APP"),
-    middlewares.GatherFlagsFromViper(),
+    middlewares.LoadParametersFromFile("config.yaml"),
 )
+```
+
+### 2. Conditional Middleware Application
+
+```go
+func ConditionalMiddleware(condition bool, middleware middlewares.Middleware) middlewares.Middleware {
+    if condition {
+        return middleware
+    }
+    return func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
+        return next // Pass through without modification
+    }
+}
+
+// Usage
+middlewares := []middlewares.Middleware{
+    middlewares.ParseFromCobraCommand(cmd),
+    ConditionalMiddleware(enableConfigFile,
+        middlewares.LoadParametersFromFile("config.yaml")),
+    middlewares.SetFromDefaults(),
+}
 ```
 
 ### 2. Layer Filtering
@@ -337,10 +357,10 @@ middleware := middlewares.UpdateFromMap(values,
 2. **Order Matters**: Arrange middlewares so that more specific sources override more general ones:
    ```go
    ExecuteMiddlewares(layers, parsedLayers,
-       SetFromDefaults(),        // Most general
-       UpdateFromEnv("APP"),     // More specific
-       GatherFlagsFromViper(),   // More specific
-       ParseFromCobraCommand(),  // Most specific
+       SetFromDefaults(),           // Most general
+       UpdateFromEnv("APP"),        // More specific
+       LoadParametersFromFile(),    // More specific
+       ParseFromCobraCommand(),     // Most specific
    )
    ```
 
@@ -427,6 +447,70 @@ This is useful for:
 - Sharing profile configurations between applications  
 - Loading different profile files based on runtime conditions
 - Enforcing that critical profiles must exist
+
+## Testing Middlewares
+
+### Unit Testing Individual Middlewares
+
+```go
+func TestSetFromDefaults(t *testing.T) {
+    layers := createTestLayers()
+    parsedLayers := layers.NewParsedLayers()
+
+    middleware := middlewares.SetFromDefaults()
+
+    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, middleware)
+    require.NoError(t, err)
+
+    // Verify default values were set
+    value, exists := parsedLayers.GetParameter("default", "param1")
+    assert.True(t, exists)
+    assert.Equal(t, "default-value", value)
+}
+```
+
+### Integration Testing Middleware Chains
+
+```go
+func TestMiddlewareChain(t *testing.T) {
+    layers := createTestLayers()
+    parsedLayers := layers.NewParsedLayers()
+
+    // Set up test environment
+    os.Setenv("APP_PARAM1", "env-value")
+    defer os.Unsetenv("APP_PARAM1")
+
+    mws := []middlewares.Middleware{
+        middlewares.UpdateFromEnv("APP"),
+        middlewares.SetFromDefaults(),
+    }
+
+    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, mws...)
+    require.NoError(t, err)
+
+    // Environment should override defaults
+    value, _ := parsedLayers.GetParameter("default", "param1")
+    assert.Equal(t, "env-value", value)
+}
+```
+
+### Testing Custom Middlewares
+
+```go
+func TestCustomValidationMiddleware(t *testing.T) {
+    layers := createTestLayers()
+    parsedLayers := layers.NewParsedLayers()
+
+    // Add a value that should fail validation
+    parsedLayers.SetParameter("default", "email", "invalid-email")
+
+    middleware := ValidateEmailMiddleware()
+
+    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, middleware)
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "invalid email format")
+}
+```
 
 ## Debugging Tips
 

@@ -1,14 +1,14 @@
 package main
 
 import (
-    "github.com/go-go-golems/glazed/cmd/glaze/cmds"
-    "github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
-    "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds/logging"
-    "github.com/go-go-golems/glazed/pkg/doc"
-    "github.com/go-go-golems/glazed/pkg/help"
-    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
-    "github.com/spf13/cobra"
+	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
+	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds/logging"
+	"github.com/go-go-golems/glazed/pkg/doc"
+	"github.com/go-go-golems/glazed/pkg/help"
+	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+	"github.com/spf13/cobra"
 )
 
 var version = "dev"
@@ -17,9 +17,9 @@ var rootCmd = &cobra.Command{
 	Use:     "glaze",
 	Short:   "glaze is a tool to format structured data",
 	Version: version,
-    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-        return logging.InitLoggerFromCobra(cmd)
-    },
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return logging.InitLoggerFromCobra(cmd)
+	},
 }
 
 func main() {
@@ -36,18 +36,18 @@ func main() {
 	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()
 	cobra.CheckErr(err)
-    command, err := cli.BuildCobraCommand(jsonCmd,
-        cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
-    )
+	command, err := cli.BuildCobraCommand(jsonCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
 	// YAML command
 	yamlCmd, err := cmds.NewYamlCommand()
 	cobra.CheckErr(err)
-    command, err = cli.BuildCobraCommand(yamlCmd,
-        cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
-    )
+	command, err = cli.BuildCobraCommand(yamlCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 	rootCmd.AddCommand(cmds.DocsCmd)
@@ -55,17 +55,17 @@ func main() {
 
 	exampleCmd, err := cmds.NewExampleCommand()
 	cobra.CheckErr(err)
-    command, err = cli.BuildCobraCommand(exampleCmd,
-        cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
-    )
+	command, err = cli.BuildCobraCommand(exampleCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
 	csvCmd, err := cmds.NewCsvCommand()
 	cobra.CheckErr(err)
-    command, err = cli.BuildCobraCommand(csvCmd,
-        cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
-    )
+	command, err = cli.BuildCobraCommand(csvCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(command)
 
