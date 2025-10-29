@@ -96,6 +96,8 @@ type CobraParserConfig struct {
 	// New: application name and optional explicit config path
 	AppName    string
 	ConfigPath string
+	// New: optional callback returning an ordered list of config files (low -> high precedence)
+	ConfigFilesFunc func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
 }
 
 func NewCobraCommandFromCommandDescription(
@@ -165,25 +167,39 @@ func NewCobraParserFromLayers(
 					)
 				}
 
-				// Config file, if any
-				if cfgCopy.ConfigPath != "" || cfgCopy.AppName != "" {
-					explicit := cfgCopy.ConfigPath
-					// Allow override from command settings flag --config-file
-					cs := &CommandSettings{}
-					if err := parsedCommandLayers.InitializeStruct(CommandSettingsSlug, cs); err == nil {
-						if cs.ConfigFile != "" {
-							explicit = cs.ConfigFile
+				// Config files (low -> high precedence) via a single middleware
+				resolver := cfgCopy.ConfigFilesFunc
+				if resolver == nil {
+					resolver = func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+						var files []string
+						if cfgCopy.ConfigPath != "" || cfgCopy.AppName != "" {
+							explicit := cfgCopy.ConfigPath
+							cs := &CommandSettings{}
+							if err := parsed.InitializeStruct(CommandSettingsSlug, cs); err == nil {
+								if cs.ConfigFile != "" {
+									explicit = cs.ConfigFile
+								}
+							}
+							p, _ := glazedConfig.ResolveAppConfigPath(cfgCopy.AppName, explicit)
+							if p != "" {
+								files = []string{p}
+							}
 						}
-					}
-					p, _ := glazedConfig.ResolveAppConfigPath(cfgCopy.AppName, explicit)
-					if p != "" {
-						middlewares_ = append(middlewares_,
-							cmd_middlewares.LoadParametersFromFile(p,
-								parameters.WithParseStepSource("config"),
-							),
-						)
+						return files, nil
 					}
 				}
+				// Wrap resolver to bind parsedCommandLayers captured earlier
+				wrapped := func(_ *layers.ParsedLayers, cmd_ *cobra.Command, args_ []string) ([]string, error) {
+					return resolver(parsedCommandLayers, cmd_, args_)
+				}
+				middlewares_ = append(middlewares_,
+					cmd_middlewares.LoadParametersFromResolvedFilesForCobra(
+						cmd,
+						args,
+						wrapped,
+						parameters.WithParseStepSource("config"),
+					),
+				)
 
 				// Defaults (lowest precedence)
 				middlewares_ = append(middlewares_,

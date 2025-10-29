@@ -92,6 +92,33 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 	}
 }
 
+// ConfigFilesResolver is a callback used by Cobra-specific middleware to resolve the list
+// of config files to load in low -> high precedence order.
+type ConfigFilesResolver func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
+
+// LoadParametersFromResolvedFilesForCobra loads parameters from a resolver-provided list of files
+// (low -> high precedence). Each file is tracked as a separate parse step with metadata.
+func LoadParametersFromResolvedFilesForCobra(
+	cmd *cobra.Command,
+	args []string,
+	resolver ConfigFilesResolver,
+	options ...parameters.ParseStepOption,
+) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			if err := next(layers_, parsedLayers); err != nil {
+				return err
+			}
+			files, err := resolver(parsedLayers, cmd, args)
+			if err != nil {
+				return err
+			}
+			// Apply as a single multi-file step using helper
+			return LoadParametersFromFiles(files, options...)(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })(layers_, parsedLayers)
+		}
+	}
+}
+
 // GatherFlagsFromViper creates a middleware that loads parameter values from Viper configuration.
 // This middleware is useful for integrating Viper-based configuration management with Glazed commands.
 //
