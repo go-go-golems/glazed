@@ -2,6 +2,7 @@ package middlewares
 
 import (
     "fmt"
+    "os"
     "regexp"
     "sort"
     "strings"
@@ -135,9 +136,26 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 		fullPath = parentPath + "." + rule.Source
 	}
 
-	// Extract captures from this rule
-	ruleCaptures := extractCaptureNames(rule.Source)
-	allCaptures := append(parentCaptures, ruleCaptures...)
+    // Extract captures from this rule
+    ruleCaptures := extractCaptureNames(rule.Source)
+    allCaptures := append(parentCaptures, ruleCaptures...)
+
+    // Proposal 6: Warn on capture shadowing in nested rules
+    if len(parentCaptures) > 0 && len(ruleCaptures) > 0 {
+        duplicates := make(map[string]bool)
+        for _, pc := range parentCaptures {
+            for _, rc := range ruleCaptures {
+                if pc == rc {
+                    duplicates[pc] = true
+                }
+            }
+        }
+        if len(duplicates) > 0 {
+            names := make([]string, 0, len(duplicates))
+            for n := range duplicates { names = append(names, n) }
+            fmt.Fprintf(os.Stderr, "WARNING: capture shadowing detected for %v in nested rule %q under %q\n", names, rule.Source, parentPath)
+        }
+    }
 
 	// Validate target parameter if this is a leaf rule (no nested rules)
 	if len(rule.Rules) == 0 {
@@ -151,11 +169,25 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 			return nil, errors.Errorf("target layer %q does not exist", rule.TargetLayer)
 		}
 
-		// Validate capture references in target parameter
-		// Check against all captures (parent + current)
-		if err := validateCaptureReferences(allCaptures, rule.TargetParameter); err != nil {
-			return nil, errors.Wrapf(err, "invalid capture reference in target parameter")
-		}
+        // Validate capture references in target parameter
+        // Check against all captures (parent + current)
+        if err := validateCaptureReferences(allCaptures, rule.TargetParameter); err != nil {
+            return nil, errors.Wrapf(err, "invalid capture reference in target parameter")
+        }
+
+        // Proposal 5: Early validation for static target parameters (no capture refs)
+        if len(extractCaptureReferences(rule.TargetParameter)) == 0 {
+            layer, _ := m.layers.Get(rule.TargetLayer)
+            if layer != nil {
+                canonical := resolveCanonicalParameterName(layer, rule.TargetParameter)
+                if pd, ok := layer.GetParameterDefinitions().Get(canonical); !ok || pd == nil {
+                    if canonical != rule.TargetParameter {
+                        return nil, errors.Errorf("target parameter %q (checked as %q) does not exist in layer %q", rule.TargetParameter, canonical, rule.TargetLayer)
+                    }
+                    return nil, errors.Errorf("target parameter %q does not exist in layer %q", rule.TargetParameter, rule.TargetLayer)
+                }
+            }
+        }
 
 		// Compile regex pattern (for future optimization)
 		pattern, captureNames, err := compilePatternToRegex(fullPath)
@@ -341,13 +373,22 @@ func (m *patternMapper) matchPattern(
 		return nil, err
 	}
 
-	// If no matches and required, return error
-	if len(matches) == 0 && compiled.rule.Required {
-		return nil, errors.Errorf(
-			"required pattern %q did not match any paths in config",
-			compiled.rule.Source,
-		)
-	}
+    // If no matches and required, return error with context (Proposal 8)
+    if len(matches) == 0 && compiled.rule.Required {
+        nearest, missing, keys := nearestExistingPathInfo(compiled.rule.Source, config)
+        extra := ""
+        if nearest != "" || missing != "" {
+            extra = fmt.Sprintf("; nearest existing path: %q; missing segment: %q", nearest, missing)
+            if len(keys) > 0 {
+                extra += fmt.Sprintf("; available keys: %v", keys)
+            }
+        }
+        return nil, errors.Errorf(
+            "required pattern %q did not match any paths in config%s",
+            compiled.rule.Source,
+            extra,
+        )
+    }
 
 	return matches, nil
 }
@@ -613,6 +654,43 @@ func resolveTargetParameter(targetParameter string, captures map[string]string) 
 	return result, nil
 }
 
+
+// nearestExistingPathInfo returns a hint about where a required pattern stopped matching.
+// It returns the nearest existing path prefix, the missing segment, and available keys at that point.
+func nearestExistingPathInfo(pattern string, config interface{}) (string, string, []string) {
+    segments := strings.Split(pattern, ".")
+    var parts []string
+    current := config
+
+    for _, seg := range segments {
+        // If current is not a map-like, we can't go deeper
+        keys, getter, ok := iterMap(current)
+        if !ok {
+            return strings.Join(parts, "."), seg, nil
+        }
+
+        // Capture/wildcard: if there are no keys, we fail here; otherwise, we can't disambiguate further
+        if seg == "*" || (strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}")) {
+            if len(keys) == 0 {
+                return strings.Join(parts, "."), seg, keys
+            }
+            // choose not to go deeper to avoid misleading path; report at this level
+            return strings.Join(parts, "."), seg, keys
+        }
+
+        // Literal segment
+        if v, exists := getter(seg); exists {
+            parts = append(parts, seg)
+            current = v
+            continue
+        }
+        // Missing literal key
+        return strings.Join(parts, "."), seg, keys
+    }
+
+    // All segments consumed but no match recorded; fall back
+    return strings.Join(parts, "."), "", nil
+}
 
 // toOrderedMap converts a map[string]interface{} into an ordered map with
 // lexicographically sorted keys. Nested maps are converted recursively.

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+    "os"
     "testing"
 
     "github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -201,25 +202,23 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 			},
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key": "secret",
-				},
-			},
-		}
-
-		mapper, err := NewConfigMapper(testLayers, rules...)
-		require.NoError(t, err)
-
-		// This should succeed because prefix is added automatically
-		result, err := mapper.Map(config)
+        // Build config and map; prefix is added automatically
+        config := map[string]interface{}{
+            "app": map[string]interface{}{
+                "settings": map[string]interface{}{
+                    "api_key": "secret",
+                },
+            },
+        }
+        mapper, err := NewConfigMapper(testLayers, rules...)
+        require.NoError(t, err)
+        result, err := mapper.Map(config)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, "secret", result["demo"]["demo-api-key"])
 	})
 
-	t.Run("error message shows both unprefixed and prefixed names", func(t *testing.T) {
+    t.Run("error message shows both unprefixed and prefixed names (compile-time)", func(t *testing.T) {
 		// Create a layer with a prefix
 		layer, err := layers.NewParameterLayer(
 			"demo",
@@ -241,28 +240,18 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 			},
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key": "secret",
-				},
-			},
-		}
+        // No need to build a config; compile-time validation triggers
 
-		mapper, err := NewConfigMapper(testLayers, rules...)
-		require.NoError(t, err)
-
-		result, err := mapper.Map(config)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
+        mapper, err := NewConfigMapper(testLayers, rules...)
+        assert.Error(t, err)
+        assert.Nil(t, mapper)
 		// Error should mention both the user-provided name and the checked name
-		assert.Contains(t, err.Error(), "api-key")
-		assert.Contains(t, err.Error(), "demo-api-key")
-		assert.Contains(t, err.Error(), "checked as")
+        assert.Contains(t, err.Error(), "api-key")
+        assert.Contains(t, err.Error(), "demo-api-key")
+        assert.Contains(t, err.Error(), "checked as")
 	})
 
-	t.Run("error message for parameter with prefix already included", func(t *testing.T) {
+    t.Run("error message for parameter with prefix already included (compile-time)", func(t *testing.T) {
 		// Create a layer with a prefix
 		layer, err := layers.NewParameterLayer(
 			"demo",
@@ -283,21 +272,9 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 			},
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key": "secret",
-				},
-			},
-		}
-
-		mapper, err := NewConfigMapper(testLayers, rules...)
-		require.NoError(t, err)
-
-		result, err := mapper.Map(config)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
+        mapper, err := NewConfigMapper(testLayers, rules...)
+        assert.Error(t, err)
+        assert.Nil(t, mapper)
 		// Error should only mention demo-api-key once (not duplicated)
 		assert.Contains(t, err.Error(), "demo-api-key")
 		// Should not have "checked as" since prefix already included
@@ -307,6 +284,43 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 
 // TestCombinedScenarios tests combinations of the proposals
 func TestCombinedScenarios(t *testing.T) {
+    t.Run("capture shadowing warning on nested rules", func(t *testing.T) {
+        layer, err := layers.NewParameterLayer(
+            "demo",
+            "Demo Layer",
+            layers.WithParameterDefinitions(
+                parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
+            ),
+        )
+        require.NoError(t, err)
+        testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+
+        // Parent captures {env}, child also captures {env} -> shadowing warning
+        rules := []MappingRule{
+            {
+                Source:      "app.{env}",
+                TargetLayer: "demo",
+                Rules: []MappingRule{
+                    {Source: "{env}.api_key", TargetParameter: "{env}-api-key"},
+                },
+            },
+        }
+
+        // Capture stderr
+        old := os.Stderr
+        r, w, _ := os.Pipe()
+        os.Stderr = w
+
+        _, _ = NewConfigMapper(testLayers, rules...)
+
+        w.Close()
+        os.Stderr = old
+        buf := make([]byte, 2048)
+        n, _ := r.Read(buf)
+        out := string(buf[:n])
+        assert.Contains(t, out, "capture shadowing", "expected shadowing warning")
+        assert.Contains(t, out, "{env}")
+    })
 	t.Run("multi-match with collision detection", func(t *testing.T) {
 		layer, err := layers.NewParameterLayer(
 			"demo",

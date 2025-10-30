@@ -293,6 +293,8 @@ func TestErrorMessages(t *testing.T) {
 				"required pattern",
 				"app.settings.api_key",
 				"did not match",
+                "nearest existing path",
+                "missing segment",
 			},
 		},
 		{

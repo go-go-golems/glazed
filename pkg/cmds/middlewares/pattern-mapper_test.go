@@ -172,6 +172,18 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			},
 			expectError: false,
 		},
+        {
+            name: "invalid static target parameter at compile time",
+            rules: []MappingRule{
+                {
+                    Source:          "app.settings.api_key",
+                    TargetLayer:     "demo",
+                    TargetParameter: "nonexistent-param",
+                },
+            },
+            expectError: true,
+            errorMsg:    "does not exist in layer",
+        },
 	}
 
 	for _, tt := range tests {
@@ -413,25 +425,6 @@ func TestPatternMapper_Map(t *testing.T) {
 			},
 			expected:    map[string]map[string]interface{}{},
 			expectError: false,
-		},
-		{
-			name: "parameter does not exist in layer",
-			rules: []MappingRule{
-				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "nonexistent-param",
-				},
-			},
-			config: map[string]interface{}{
-				"app": map[string]interface{}{
-					"settings": map[string]interface{}{
-						"api_key": "secret123",
-					},
-				},
-			},
-			expectError: true,
-			errorMsg:    "target parameter \"nonexistent-param\" does not exist",
 		},
 	}
 
