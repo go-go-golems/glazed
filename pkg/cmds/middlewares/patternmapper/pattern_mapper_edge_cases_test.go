@@ -1,9 +1,10 @@
-package middlewares
+package patternmapper_test
 
 import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,7 @@ func TestEdgeCases(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupLayers func(t *testing.T) *layers.ParameterLayers
-		rules       []MappingRule
+		rules       []pm.MappingRule
 		config      map[string]interface{}
 		expected    map[string]map[string]interface{}
 		expectError bool
@@ -23,7 +24,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:        "empty config",
 			setupLayers: createTestLayers,
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -37,7 +38,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:        "config with nil values",
 			setupLayers: createTestLayers,
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -61,7 +62,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:        "deeply nested config",
 			setupLayers: createTestLayers,
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "a.b.c.d.e.f.api_key",
 					TargetLayer:     "demo",
@@ -93,7 +94,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:        "special characters in config keys",
 			setupLayers: createTestLayers,
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -103,8 +104,8 @@ func TestEdgeCases(t *testing.T) {
 			config: map[string]interface{}{
 				"app": map[string]interface{}{
 					"settings": map[string]interface{}{
-						"api_key": "secret",
-						"key-with-dash": "value",
+						"api_key":             "secret",
+						"key-with-dash":       "value",
 						"key_with_underscore": "value",
 					},
 				},
@@ -119,7 +120,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:        "numeric values",
 			setupLayers: createTestLayers,
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.threshold",
 					TargetLayer:     "demo",
@@ -141,7 +142,7 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "boolean values",
+			name: "boolean values",
 			setupLayers: func(t *testing.T) *layers.ParameterLayers {
 				layer, err := layers.NewParameterLayer(
 					"demo",
@@ -153,7 +154,7 @@ func TestEdgeCases(t *testing.T) {
 				require.NoError(t, err)
 				return layers.NewParameterLayers(layers.WithLayers(layer))
 			},
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.enabled",
 					TargetLayer:     "demo",
@@ -187,7 +188,7 @@ func TestEdgeCases(t *testing.T) {
 				require.NoError(t, err)
 				return layers.NewParameterLayers(layers.WithLayers(layer))
 			},
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.{env}.api_key",
 					TargetLayer:     "demo",
@@ -208,54 +209,61 @@ func TestEdgeCases(t *testing.T) {
 			},
 			expectError: false,
 		},
-        {
-            name:        "multiple wildcards in path (same values avoids ambiguity)",
-            setupLayers: createTestLayers,
-            rules: []MappingRule{
-                {
-                    Source:          "app.*.settings.*.api_key",
-                    TargetLayer:     "demo",
-                    TargetParameter: "api-key",
-                },
-            },
-            config: map[string]interface{}{
-                "app": map[string]interface{}{
-                    "env1": map[string]interface{}{
-                        "settings": map[string]interface{}{
-                            "region1": map[string]interface{}{
-                                "api_key": "secret",
-                            },
-                            "region2": map[string]interface{}{
-                                "api_key": "secret",
-                            },
-                        },
-                    },
-                },
-            },
-            expected: map[string]map[string]interface{}{
-                "demo": {
-                    "api-key": "secret",
-                },
-            },
-            expectError: false,
-        },
+		{
+			name:        "multiple wildcards in path (same values avoids ambiguity)",
+			setupLayers: createTestLayers,
+			rules: []pm.MappingRule{
+				{
+					Source:          "app.*.settings.*.api_key",
+					TargetLayer:     "demo",
+					TargetParameter: "api-key",
+				},
+			},
+			config: map[string]interface{}{
+				"app": map[string]interface{}{
+					"env1": map[string]interface{}{
+						"settings": map[string]interface{}{
+							"region1": map[string]interface{}{
+								"api_key": "secret",
+							},
+							"region2": map[string]interface{}{
+								"api_key": "secret",
+							},
+						},
+					},
+				},
+			},
+			expected: map[string]map[string]interface{}{
+				"demo": {
+					"api-key": "secret",
+				},
+			},
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testLayers := tt.setupLayers(t)
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
-			require.NoError(t, err)
-
-			result, err := mapper.Map(tt.config)
-
+			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
 			if tt.expectError {
 				assert.Error(t, err)
+				assert.Nil(t, mapper)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+				return
+			}
+			require.NoError(t, err)
+			result, err := mapper.Map(tt.config)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
 				if tt.errorMsg != "" {
 					assert.Contains(t, err.Error(), tt.errorMsg)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)
 			}
 		})
@@ -267,15 +275,15 @@ func TestErrorMessages(t *testing.T) {
 	testLayers := createTestLayers(t)
 
 	tests := []struct {
-		name         string
-		rules        []MappingRule
-		config       map[string]interface{}
-		expectError  bool
+		name          string
+		rules         []pm.MappingRule
+		config        map[string]interface{}
+		expectError   bool
 		errorContains []string // Multiple strings that should be in the error
 	}{
 		{
 			name: "required pattern not found - clear message",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -293,13 +301,13 @@ func TestErrorMessages(t *testing.T) {
 				"required pattern",
 				"app.settings.api_key",
 				"did not match",
-                "nearest existing path",
-                "missing segment",
+				"nearest existing path",
+				"missing segment",
 			},
 		},
 		{
 			name: "parameter does not exist - shows pattern and layer",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -326,7 +334,7 @@ func TestErrorMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
 			if err != nil {
 				// Validation error
 				for _, substr := range tt.errorContains {
@@ -367,14 +375,14 @@ func TestLayerPrefix(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		rules       []MappingRule
+		rules       []pm.MappingRule
 		config      map[string]interface{}
 		expected    map[string]map[string]interface{}
 		expectError bool
 	}{
 		{
 			name: "parameter name without prefix - should add prefix",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -397,7 +405,7 @@ func TestLayerPrefix(t *testing.T) {
 		},
 		{
 			name: "parameter name with prefix - should not double prefix",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -422,7 +430,7 @@ func TestLayerPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -455,14 +463,14 @@ func TestComplexCaptureScenarios(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		rules       []MappingRule
+		rules       []pm.MappingRule
 		config      map[string]interface{}
 		expected    map[string]map[string]interface{}
 		expectError bool
 	}{
 		{
 			name: "multiple captures in single pattern",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "regions.{region}.{env}.api_key",
 					TargetLayer:     "demo",
@@ -493,11 +501,11 @@ func TestComplexCaptureScenarios(t *testing.T) {
 		},
 		{
 			name: "nested rules with multiple captures from parent",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:      "regions.{region}.environments.{env}.settings",
 					TargetLayer: "demo",
-					Rules: []MappingRule{
+					Rules: []pm.MappingRule{
 						{Source: "api_key", TargetParameter: "{region}-{env}-api-key"},
 					},
 				},
@@ -526,7 +534,7 @@ func TestComplexCaptureScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -558,28 +566,28 @@ func TestConfigTypes(t *testing.T) {
 
 	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
 
-	mapper, err := NewConfigMapper(testLayers,
-		MappingRule{
+	mapper, err := pm.NewConfigMapper(testLayers,
+		pm.MappingRule{
 			Source:          "config.string_val",
 			TargetLayer:     "demo",
 			TargetParameter: "string-param",
 		},
-		MappingRule{
+		pm.MappingRule{
 			Source:          "config.int_val",
 			TargetLayer:     "demo",
 			TargetParameter: "int-param",
 		},
-		MappingRule{
+		pm.MappingRule{
 			Source:          "config.float_val",
 			TargetLayer:     "demo",
 			TargetParameter: "float-param",
 		},
-		MappingRule{
+		pm.MappingRule{
 			Source:          "config.bool_val",
 			TargetLayer:     "demo",
 			TargetParameter: "bool-param",
 		},
-		MappingRule{
+		pm.MappingRule{
 			Source:          "config.list_val",
 			TargetLayer:     "demo",
 			TargetParameter: "list-param",
@@ -606,4 +614,3 @@ func TestConfigTypes(t *testing.T) {
 	assert.Equal(t, true, result["demo"]["bool-param"])
 	assert.Equal(t, []interface{}{"a", "b", "c"}, result["demo"]["list-param"])
 }
-

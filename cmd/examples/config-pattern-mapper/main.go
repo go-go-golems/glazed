@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
@@ -42,13 +43,13 @@ func main() {
 	// Example 1: Simple exact match mapping
 	fmt.Println("=== Example 1: Simple Exact Match ===")
 	{
-		mapper, err := middlewares.NewConfigMapper(paramLayers,
-			middlewares.MappingRule{
+		mapper, err := pm.NewConfigMapper(paramLayers,
+			pm.MappingRule{
 				Source:          "app.settings.api_key",
 				TargetLayer:     "demo",
 				TargetParameter: "api-key",
 			},
-			middlewares.MappingRule{
+			pm.MappingRule{
 				Source:          "app.settings.threshold",
 				TargetLayer:     "demo",
 				TargetParameter: "threshold",
@@ -79,8 +80,8 @@ func main() {
 	// Example 2: Named capture - environment-specific mappings
 	fmt.Println("=== Example 2: Named Captures ===")
 	{
-		mapper, err := middlewares.NewConfigMapper(paramLayers,
-			middlewares.MappingRule{
+		mapper, err := pm.NewConfigMapper(paramLayers,
+			pm.MappingRule{
 				Source:          "app.{env}.api_key",
 				TargetLayer:     "demo",
 				TargetParameter: "{env}-api-key",
@@ -113,11 +114,11 @@ func main() {
 	// Example 3: Nested rules - cleaner syntax for grouped mappings
 	fmt.Println("=== Example 3: Nested Rules ===")
 	{
-		mapper, err := middlewares.NewConfigMapper(paramLayers,
-			middlewares.MappingRule{
+		mapper, err := pm.NewConfigMapper(paramLayers,
+			pm.MappingRule{
 				Source:      "app.settings",
 				TargetLayer: "demo",
-				Rules: []middlewares.MappingRule{
+				Rules: []pm.MappingRule{
 					{Source: "api_key", TargetParameter: "api-key"},
 					{Source: "threshold", TargetParameter: "threshold"},
 					{Source: "timeout", TargetParameter: "timeout"},
@@ -150,11 +151,11 @@ func main() {
 	// Example 4: Nested rules with capture inheritance
 	fmt.Println("=== Example 4: Nested Rules with Capture Inheritance ===")
 	{
-		mapper, err := middlewares.NewConfigMapper(paramLayers,
-			middlewares.MappingRule{
+		mapper, err := pm.NewConfigMapper(paramLayers,
+			pm.MappingRule{
 				Source:      "environments.{env}.settings",
 				TargetLayer: "demo",
-				Rules: []middlewares.MappingRule{
+				Rules: []pm.MappingRule{
 					// Child rules can use {env} from parent pattern
 					{Source: "api_key", TargetParameter: "{env}-api-key"},
 				},
@@ -191,8 +192,8 @@ func main() {
 	// Example 5: Using with LoadParametersFromFile middleware
 	fmt.Println("=== Example 5: Integration with LoadParametersFromFile ===")
 	{
-		mapper, err := middlewares.NewConfigMapper(paramLayers,
-			middlewares.MappingRule{
+		mapper, err := pm.NewConfigMapper(paramLayers,
+			pm.MappingRule{
 				Source:          "app.settings.api_key",
 				TargetLayer:     "demo",
 				TargetParameter: "api-key",
@@ -215,6 +216,98 @@ func main() {
 		fmt.Println("This allows pattern-based mapping without writing custom Go functions")
 	}
 
+	// Example 6: Builder API - Simple Exact Match
+	fmt.Println("=== Example 6: Builder API - Simple Exact Match ===")
+	{
+		b := pm.NewConfigMapperBuilder(paramLayers).
+			Map("app.settings.api_key", "demo", "api-key")
+
+		mapper, err := b.Build()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		config := map[string]interface{}{
+			"app": map[string]interface{}{
+				"settings": map[string]interface{}{
+					"api_key": "builder-secret",
+				},
+			},
+		}
+
+		result, err := mapper.Map(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Config: %v\n", config)
+		fmt.Printf("Mapped: %v\n\n", result)
+	}
+
+	// Example 7: Builder API - Nested Rules with Capture Inheritance
+	fmt.Println("=== Example 7: Builder API - Nested Rules with Capture Inheritance ===")
+	{
+		b := pm.NewConfigMapperBuilder(paramLayers).
+			MapObject("environments.{env}.settings", "demo", []pm.MappingRule{
+				pm.Child("api_key", "{env}-api-key"),
+			})
+
+		mapper, err := b.Build()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		config := map[string]interface{}{
+			"environments": map[string]interface{}{
+				"dev": map[string]interface{}{
+					"settings": map[string]interface{}{
+						"api_key": "dev-builder",
+					},
+				},
+				"prod": map[string]interface{}{
+					"settings": map[string]interface{}{
+						"api_key": "prod-builder",
+					},
+				},
+			},
+		}
+
+		result, err := mapper.Map(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Config: %v\n", config)
+		fmt.Printf("Mapped: %v\n\n", result)
+	}
+
+	// Example 8: Builder API - Required Flag
+	fmt.Println("=== Example 8: Builder API - Required Flag ===")
+	{
+		b := pm.NewConfigMapperBuilder(paramLayers).
+			Map("app.settings.api_key", "demo", "api-key", true)
+
+		mapper, err := b.Build()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		config := map[string]interface{}{
+			"app": map[string]interface{}{
+				"settings": map[string]interface{}{
+					"api_key": "required-ok",
+				},
+			},
+		}
+
+		result, err := mapper.Map(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Config: %v\n", config)
+		fmt.Printf("Mapped: %v\n\n", result)
+	}
+
 	fmt.Println("\n=== All examples completed successfully! ===")
 }
-

@@ -98,7 +98,7 @@ type ConfigFileOption func(*configFileOptions)
 func WithConfigFileMapper(mapper ConfigFileMapper) ConfigFileOption {
 	return func(o *configFileOptions) {
 		if mapper != nil {
-			o.Mapper = &configFileMapperAdapter{fn: mapper}
+			o.Mapper = mapper
 		}
 	}
 }

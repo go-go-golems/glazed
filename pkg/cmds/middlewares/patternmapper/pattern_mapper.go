@@ -1,15 +1,16 @@
-package middlewares
+package patternmapper
 
 import (
-    "fmt"
-    "os"
-    "regexp"
-    "sort"
-    "strings"
+	"fmt"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
 
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/iancoleman/orderedmap"
-    "github.com/pkg/errors"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/iancoleman/orderedmap"
+	"github.com/pkg/errors"
 )
 
 // MappingRule defines a pattern-based mapping from config file structure to layer parameters.
@@ -44,40 +45,17 @@ type MappingRule struct {
 	Required bool
 }
 
-// ConfigMapper is an interface that can map raw config data to layer maps.
-// This allows both ConfigFileMapper (function) and pattern-based mappers to be used interchangeably.
-type ConfigMapper interface {
-	Map(rawConfig interface{}) (map[string]map[string]interface{}, error)
-}
-
-// configFileMapperAdapter adapts ConfigFileMapper function to ConfigMapper interface
-type configFileMapperAdapter struct {
-	fn ConfigFileMapper
-}
-
-func (a *configFileMapperAdapter) Map(rawConfig interface{}) (map[string]map[string]interface{}, error) {
-	return a.fn(rawConfig)
-}
-
-// adaptConfigFileMapper converts a ConfigFileMapper function to ConfigMapper interface
-func adaptConfigFileMapper(fn ConfigFileMapper) ConfigMapper {
-	if fn == nil {
-		return nil
-	}
-	return &configFileMapperAdapter{fn: fn}
-}
-
 // patternMapper implements ConfigMapper using pattern matching rules
 type patternMapper struct {
-	rules           []MappingRule
-	layers          *layers.ParameterLayers
+	rules            []MappingRule
+	layers           *layers.ParameterLayers
 	compiledPatterns []compiledPattern
 }
 
 // compiledPattern represents a compiled pattern with its capture groups
 type compiledPattern struct {
-	rule        MappingRule
-	pattern     *regexp.Regexp
+	rule         MappingRule
+	pattern      *regexp.Regexp
 	captureNames []string // ordered list of capture group names
 }
 
@@ -88,14 +66,14 @@ type compiledPattern struct {
 //   - All patterns are valid syntax
 //   - All target parameters exist in their respective layers
 //   - Capture references in target parameters match captures in source patterns
-func NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (ConfigMapper, error) {
+func NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (middlewares.ConfigMapper, error) {
 	if layers == nil {
 		return nil, errors.New("layers cannot be nil")
 	}
 
 	mapper := &patternMapper{
-        rules:   rules,
-        layers:  layers,
+		rules:  rules,
+		layers: layers,
 	}
 
 	// Compile and validate all patterns
@@ -136,26 +114,28 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 		fullPath = parentPath + "." + rule.Source
 	}
 
-    // Extract captures from this rule
-    ruleCaptures := extractCaptureNames(rule.Source)
-    allCaptures := append(parentCaptures, ruleCaptures...)
+	// Extract captures from this rule
+	ruleCaptures := extractCaptureNames(rule.Source)
+	allCaptures := append(parentCaptures, ruleCaptures...)
 
-    // Proposal 6: Warn on capture shadowing in nested rules
-    if len(parentCaptures) > 0 && len(ruleCaptures) > 0 {
-        duplicates := make(map[string]bool)
-        for _, pc := range parentCaptures {
-            for _, rc := range ruleCaptures {
-                if pc == rc {
-                    duplicates[pc] = true
-                }
-            }
-        }
-        if len(duplicates) > 0 {
-            names := make([]string, 0, len(duplicates))
-            for n := range duplicates { names = append(names, n) }
-            fmt.Fprintf(os.Stderr, "WARNING: capture shadowing detected for %v in nested rule %q under %q\n", names, rule.Source, parentPath)
-        }
-    }
+	// Proposal 6: Warn on capture shadowing in nested rules
+	if len(parentCaptures) > 0 && len(ruleCaptures) > 0 {
+		duplicates := make(map[string]bool)
+		for _, pc := range parentCaptures {
+			for _, rc := range ruleCaptures {
+				if pc == rc {
+					duplicates[pc] = true
+				}
+			}
+		}
+		if len(duplicates) > 0 {
+			names := make([]string, 0, len(duplicates))
+			for n := range duplicates {
+				names = append(names, n)
+			}
+			fmt.Fprintf(os.Stderr, "WARNING: capture shadowing detected for %v in nested rule %q under %q\n", names, rule.Source, parentPath)
+		}
+	}
 
 	// Validate target parameter if this is a leaf rule (no nested rules)
 	if len(rule.Rules) == 0 {
@@ -169,25 +149,25 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 			return nil, errors.Errorf("target layer %q does not exist", rule.TargetLayer)
 		}
 
-        // Validate capture references in target parameter
-        // Check against all captures (parent + current)
-        if err := validateCaptureReferences(allCaptures, rule.TargetParameter); err != nil {
-            return nil, errors.Wrapf(err, "invalid capture reference in target parameter")
-        }
+		// Validate capture references in target parameter
+		// Check against all captures (parent + current)
+		if err := validateCaptureReferences(allCaptures, rule.TargetParameter); err != nil {
+			return nil, errors.Wrapf(err, "invalid capture reference in target parameter")
+		}
 
-        // Proposal 5: Early validation for static target parameters (no capture refs)
-        if len(extractCaptureReferences(rule.TargetParameter)) == 0 {
-            layer, _ := m.layers.Get(rule.TargetLayer)
-            if layer != nil {
-                canonical := resolveCanonicalParameterName(layer, rule.TargetParameter)
-                if pd, ok := layer.GetParameterDefinitions().Get(canonical); !ok || pd == nil {
-                    if canonical != rule.TargetParameter {
-                        return nil, errors.Errorf("target parameter %q (checked as %q) does not exist in layer %q", rule.TargetParameter, canonical, rule.TargetLayer)
-                    }
-                    return nil, errors.Errorf("target parameter %q does not exist in layer %q", rule.TargetParameter, rule.TargetLayer)
-                }
-            }
-        }
+		// Proposal 5: Early validation for static target parameters (no capture refs)
+		if len(extractCaptureReferences(rule.TargetParameter)) == 0 {
+			layer, _ := m.layers.Get(rule.TargetLayer)
+			if layer != nil {
+				canonical := resolveCanonicalParameterName(layer, rule.TargetParameter)
+				if pd, ok := layer.GetParameterDefinitions().Get(canonical); !ok || pd == nil {
+					if canonical != rule.TargetParameter {
+						return nil, errors.Errorf("target parameter %q (checked as %q) does not exist in layer %q", rule.TargetParameter, canonical, rule.TargetLayer)
+					}
+					return nil, errors.Errorf("target parameter %q does not exist in layer %q", rule.TargetParameter, rule.TargetLayer)
+				}
+			}
+		}
 
 		// Compile regex pattern (for future optimization)
 		pattern, captureNames, err := compilePatternToRegex(fullPath)
@@ -284,7 +264,7 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 			multiMatchTracker[paramName] = append(multiMatchTracker[paramName], match.value)
 		}
 
-        // Check for multi-matches (proposal 2)
+		// Check for multi-matches (proposal 2)
 		for paramName, values := range multiMatchTracker {
 			if len(values) > 1 {
 				// Check if values are distinct
@@ -294,13 +274,13 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 				}
 
 				if len(distinctValues) > 1 {
-                    // Multiple distinct values found: error
-                    return nil, errors.Errorf(
-                        "pattern %q matched multiple distinct values for parameter %q: found %d distinct values",
-                        compiled.rule.Source,
-                        paramName,
-                        len(distinctValues),
-                    )
+					// Multiple distinct values found: error
+					return nil, errors.Errorf(
+						"pattern %q matched multiple distinct values for parameter %q: found %d distinct values",
+						compiled.rule.Source,
+						paramName,
+						len(distinctValues),
+					)
 				}
 			}
 		}
@@ -321,17 +301,17 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 			// Proposal 3: Collision detection across rules
 			// Only check for collisions if this parameter wasn't already written by this rule
 			collisionKey := match.layer + "." + paramName
-            if !writtenByThisRule[collisionKey] {
-                if previousPattern, exists := collisionTracker[collisionKey]; exists {
-                    // Collision detected (different rule writing to same parameter): error
-                    return nil, errors.Errorf(
-                        "collision: parameter %q in layer %q is written by multiple patterns: %q and %q",
-                        paramName,
-                        match.layer,
-                        previousPattern,
-                        compiled.rule.Source,
-                    )
-                }
+			if !writtenByThisRule[collisionKey] {
+				if previousPattern, exists := collisionTracker[collisionKey]; exists {
+					// Collision detected (different rule writing to same parameter): error
+					return nil, errors.Errorf(
+						"collision: parameter %q in layer %q is written by multiple patterns: %q and %q",
+						paramName,
+						match.layer,
+						previousPattern,
+						compiled.rule.Source,
+					)
+				}
 				collisionTracker[collisionKey] = compiled.rule.Source
 				writtenByThisRule[collisionKey] = true
 			}
@@ -358,9 +338,9 @@ type patternMatch struct {
 
 // matchPattern matches a compiled pattern against the config and returns all matches
 func (m *patternMapper) matchPattern(
-    compiled compiledPattern,
-    config interface{},
-    pathPrefix string,
+	compiled compiledPattern,
+	config interface{},
+	pathPrefix string,
 ) ([]patternMatch, error) {
 	var matches []patternMatch
 
@@ -368,38 +348,38 @@ func (m *patternMapper) matchPattern(
 	// For now, we only handle one level of nesting, so we can simplify
 
 	// Convert pattern to a path traversal
-    err := m.traverseAndMatch(compiled, config, pathPrefix, make(map[string]string), &matches)
+	err := m.traverseAndMatch(compiled, config, pathPrefix, make(map[string]string), &matches)
 	if err != nil {
 		return nil, err
 	}
 
-    // If no matches and required, return error with context (Proposal 8)
-    if len(matches) == 0 && compiled.rule.Required {
-        nearest, missing, keys := nearestExistingPathInfo(compiled.rule.Source, config)
-        extra := ""
-        if nearest != "" || missing != "" {
-            extra = fmt.Sprintf("; nearest existing path: %q; missing segment: %q", nearest, missing)
-            if len(keys) > 0 {
-                extra += fmt.Sprintf("; available keys: %v", keys)
-            }
-        }
-        return nil, errors.Errorf(
-            "required pattern %q did not match any paths in config%s",
-            compiled.rule.Source,
-            extra,
-        )
-    }
+	// If no matches and required, return error with context (Proposal 8)
+	if len(matches) == 0 && compiled.rule.Required {
+		nearest, missing, keys := nearestExistingPathInfo(compiled.rule.Source, config)
+		extra := ""
+		if nearest != "" || missing != "" {
+			extra = fmt.Sprintf("; nearest existing path: %q; missing segment: %q", nearest, missing)
+			if len(keys) > 0 {
+				extra += fmt.Sprintf("; available keys: %v", keys)
+			}
+		}
+		return nil, errors.Errorf(
+			"required pattern %q did not match any paths in config%s",
+			compiled.rule.Source,
+			extra,
+		)
+	}
 
 	return matches, nil
 }
 
 // traverseAndMatch recursively traverses the config and matches patterns
 func (m *patternMapper) traverseAndMatch(
-    compiled compiledPattern,
-    config interface{},
-    currentPath string,
-    parentCaptures map[string]string,
-    matches *[]patternMatch,
+	compiled compiledPattern,
+	config interface{},
+	currentPath string,
+	parentCaptures map[string]string,
+	matches *[]patternMatch,
 ) error {
 	// Split pattern into segments
 	segments := strings.Split(compiled.rule.Source, ".")
@@ -408,12 +388,12 @@ func (m *patternMapper) traverseAndMatch(
 
 // matchSegments matches pattern segments against the config
 func (m *patternMapper) matchSegments(
-    segments []string,
-    config interface{},
-    currentPath string,
-    captures map[string]string,
-    compiled compiledPattern,
-    matches *[]patternMatch,
+	segments []string,
+	config interface{},
+	currentPath string,
+	captures map[string]string,
+	compiled compiledPattern,
+	matches *[]patternMatch,
 ) error {
 	if len(segments) == 0 {
 		// All segments matched, this is a value
@@ -430,13 +410,13 @@ func (m *patternMapper) matchSegments(
 	// Check if segment is a capture group {name}
 	if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
 		name := segment[1 : len(segment)-1]
-        // Match all keys at this level in deterministic order
-        keys, getter, ok := iterMap(config)
-        if !ok {
-            return nil
-        }
-        for _, key := range keys {
-            value, _ := getter(key)
+		// Match all keys at this level in deterministic order
+		keys, getter, ok := iterMap(config)
+		if !ok {
+			return nil
+		}
+		for _, key := range keys {
+			value, _ := getter(key)
 			newCaptures := make(map[string]string)
 			for k, v := range captures {
 				newCaptures[k] = v
@@ -453,13 +433,13 @@ func (m *patternMapper) matchSegments(
 
 	// Check if segment is a wildcard *
 	if segment == "*" {
-        // Match all keys at this level in deterministic order
-        keys, getter, ok := iterMap(config)
-        if !ok {
-            return nil
-        }
-        for _, key := range keys {
-            value, _ := getter(key)
+		// Match all keys at this level in deterministic order
+		keys, getter, ok := iterMap(config)
+		if !ok {
+			return nil
+		}
+		for _, key := range keys {
+			value, _ := getter(key)
 			if err := m.matchSegmentsRecursive(remaining, value, currentPath+"."+key, captures, compiled, matches); err != nil {
 				return err
 			}
@@ -468,21 +448,21 @@ func (m *patternMapper) matchSegments(
 	}
 
 	// Exact match
-    if _, getter, ok := iterMap(config); ok {
-        // Fast path direct get
-        value, exists := getter(segment)
-        if !exists {
-            return nil // No match, but not an error (might be optional)
-        }
+	if _, getter, ok := iterMap(config); ok {
+		// Fast path direct get
+		value, exists := getter(segment)
+		if !exists {
+			return nil // No match, but not an error (might be optional)
+		}
 
-        newPath := segment
-        if currentPath != "" {
-            newPath = currentPath + "." + segment
-        }
+		newPath := segment
+		if currentPath != "" {
+			newPath = currentPath + "." + segment
+		}
 
-        return m.matchSegmentsRecursive(remaining, value, newPath, captures, compiled, matches)
-    }
-    return nil
+		return m.matchSegmentsRecursive(remaining, value, newPath, captures, compiled, matches)
+	}
+	return nil
 }
 
 // matchSegmentsRecursive handles the recursive matching logic
@@ -504,8 +484,8 @@ func (m *patternMapper) matchSegmentsRecursive(
 		return nil
 	}
 
-    // Continue matching remaining segments
-    return m.matchSegments(remaining, value, currentPath, captures, compiled, matches)
+	// Continue matching remaining segments
+	return m.matchSegments(remaining, value, currentPath, captures, compiled, matches)
 }
 
 // validatePatternSyntax validates that a pattern string is syntactically valid
@@ -654,99 +634,97 @@ func resolveTargetParameter(targetParameter string, captures map[string]string) 
 	return result, nil
 }
 
-
 // nearestExistingPathInfo returns a hint about where a required pattern stopped matching.
 // It returns the nearest existing path prefix, the missing segment, and available keys at that point.
 func nearestExistingPathInfo(pattern string, config interface{}) (string, string, []string) {
-    segments := strings.Split(pattern, ".")
-    var parts []string
-    current := config
+	segments := strings.Split(pattern, ".")
+	var parts []string
+	current := config
 
-    for _, seg := range segments {
-        // If current is not a map-like, we can't go deeper
-        keys, getter, ok := iterMap(current)
-        if !ok {
-            return strings.Join(parts, "."), seg, nil
-        }
+	for _, seg := range segments {
+		// If current is not a map-like, we can't go deeper
+		keys, getter, ok := iterMap(current)
+		if !ok {
+			return strings.Join(parts, "."), seg, nil
+		}
 
-        // Capture/wildcard: if there are no keys, we fail here; otherwise, we can't disambiguate further
-        if seg == "*" || (strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}")) {
-            if len(keys) == 0 {
-                return strings.Join(parts, "."), seg, keys
-            }
-            // choose not to go deeper to avoid misleading path; report at this level
-            return strings.Join(parts, "."), seg, keys
-        }
+		// Capture/wildcard: if there are no keys, we fail here; otherwise, we can't disambiguate further
+		if seg == "*" || (strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}")) {
+			if len(keys) == 0 {
+				return strings.Join(parts, "."), seg, keys
+			}
+			// choose not to go deeper to avoid misleading path; report at this level
+			return strings.Join(parts, "."), seg, keys
+		}
 
-        // Literal segment
-        if v, exists := getter(seg); exists {
-            parts = append(parts, seg)
-            current = v
-            continue
-        }
-        // Missing literal key
-        return strings.Join(parts, "."), seg, keys
-    }
+		// Literal segment
+		if v, exists := getter(seg); exists {
+			parts = append(parts, seg)
+			current = v
+			continue
+		}
+		// Missing literal key
+		return strings.Join(parts, "."), seg, keys
+	}
 
-    // All segments consumed but no match recorded; fall back
-    return strings.Join(parts, "."), "", nil
+	// All segments consumed but no match recorded; fall back
+	return strings.Join(parts, "."), "", nil
 }
 
 // toOrderedMap converts a map[string]interface{} into an ordered map with
 // lexicographically sorted keys. Nested maps are converted recursively.
 func toOrderedMap(m map[string]interface{}) *orderedmap.OrderedMap {
-    keys := make([]string, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    sort.Strings(keys)
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 
-    om := orderedmap.New()
-    for _, k := range keys {
-        om.Set(k, toOrderedValue(m[k]))
-    }
-    return om
+	om := orderedmap.New()
+	for _, k := range keys {
+		om.Set(k, toOrderedValue(m[k]))
+	}
+	return om
 }
 
 func toOrderedValue(v interface{}) interface{} {
-    switch t := v.(type) {
-    case map[string]interface{}:
-        return toOrderedMap(t)
-    case []interface{}:
-        // Convert nested maps inside arrays as well for consistency
-        out := make([]interface{}, len(t))
-        for i, e := range t {
-            out[i] = toOrderedValue(e)
-        }
-        return out
-    default:
-        return v
-    }
+	switch t := v.(type) {
+	case map[string]interface{}:
+		return toOrderedMap(t)
+	case []interface{}:
+		// Convert nested maps inside arrays as well for consistency
+		out := make([]interface{}, len(t))
+		for i, e := range t {
+			out[i] = toOrderedValue(e)
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 // iterMap returns a deterministic key order and a getter for the provided map-like value.
 // Supports *orderedmap.OrderedMap and map[string]interface{}.
 func iterMap(value interface{}) ([]string, func(string) (interface{}, bool), bool) {
-    if om, ok := value.(*orderedmap.OrderedMap); ok {
-        keys := om.Keys()
-        getter := func(k string) (interface{}, bool) {
-            v, ok := om.Get(k)
-            return v, ok
-        }
-        return keys, getter, true
-    }
-    if m, ok := value.(map[string]interface{}); ok {
-        keys := make([]string, 0, len(m))
-        for k := range m {
-            keys = append(keys, k)
-        }
-        sort.Strings(keys)
-        getter := func(k string) (interface{}, bool) {
-            v, ok := m[k]
-            return v, ok
-        }
-        return keys, getter, true
-    }
-    return nil, nil, false
+	if om, ok := value.(*orderedmap.OrderedMap); ok {
+		keys := om.Keys()
+		getter := func(k string) (interface{}, bool) {
+			v, ok := om.Get(k)
+			return v, ok
+		}
+		return keys, getter, true
+	}
+	if m, ok := value.(map[string]interface{}); ok {
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		getter := func(k string) (interface{}, bool) {
+			v, ok := m[k]
+			return v, ok
+		}
+		return keys, getter, true
+	}
+	return nil, nil, false
 }
-

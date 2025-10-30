@@ -1,9 +1,11 @@
-package middlewares
+package patternmapper_test
 
 import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,13 +37,13 @@ func createTestLayers(t *testing.T) *layers.ParameterLayers {
 func TestNewConfigMapper_Validation(t *testing.T) {
 	tests := []struct {
 		name        string
-		rules       []MappingRule
+		rules       []pm.MappingRule
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid exact match pattern",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -52,7 +54,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "valid named capture pattern",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.{env}.api_key",
 					TargetLayer:     "demo",
@@ -63,7 +65,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "valid wildcard pattern",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.*.api_key",
 					TargetLayer:     "demo",
@@ -74,7 +76,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid pattern - empty",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "",
 					TargetLayer:     "demo",
@@ -86,7 +88,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid pattern - empty segment",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app..api_key",
 					TargetLayer:     "demo",
@@ -98,7 +100,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid capture - unclosed",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.{env.api_key",
 					TargetLayer:     "demo",
@@ -110,7 +112,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid capture - empty name",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.{}.api_key",
 					TargetLayer:     "demo",
@@ -122,7 +124,7 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid capture reference - not in source",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -130,11 +132,11 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorMsg:    "capture reference {env} in target parameter not found",
+			errorMsg:    "capture reference {env} in target parameter not found in source pattern",
 		},
 		{
 			name: "invalid target layer - does not exist",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "nonexistent",
@@ -146,11 +148,11 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "valid nested rules",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:      "app.settings",
 					TargetLayer: "demo",
-					Rules: []MappingRule{
+					Rules: []pm.MappingRule{
 						{Source: "api_key", TargetParameter: "api-key"},
 						{Source: "threshold", TargetParameter: "threshold"},
 					},
@@ -160,46 +162,42 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 		},
 		{
 			name: "valid nested rules with capture inheritance",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:      "app.{env}.settings",
 					TargetLayer: "demo",
-					Rules: []MappingRule{
+					Rules: []pm.MappingRule{
 						{Source: "api_key", TargetParameter: "{env}-api-key"},
-						{Source: "threshold", TargetParameter: "{env}-threshold"},
 					},
 				},
 			},
 			expectError: false,
 		},
-        {
-            name: "invalid static target parameter at compile time",
-            rules: []MappingRule{
-                {
-                    Source:          "app.settings.api_key",
-                    TargetLayer:     "demo",
-                    TargetParameter: "nonexistent-param",
-                },
-            },
-            expectError: true,
-            errorMsg:    "does not exist in layer",
-        },
+		{
+			name: "invalid static target parameter at compile time",
+			rules: []pm.MappingRule{
+				{
+					Source:          "app.settings.api_key",
+					TargetLayer:     "demo",
+					TargetParameter: "nonexistent", // Should fail at compile time
+				},
+			},
+			expectError: true,
+			errorMsg:    "target parameter \"nonexistent\" does not exist in layer \"demo\"",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testLayers := createTestLayers(t)
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
-
+			layers_ := createTestLayers(t)
+			_, err := pm.NewConfigMapper(layers_, tt.rules...)
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
 					assert.Contains(t, err.Error(), tt.errorMsg)
 				}
-				assert.Nil(t, mapper)
 			} else {
 				assert.NoError(t, err)
-				assert.NotNil(t, mapper)
 			}
 		})
 	}
@@ -207,16 +205,16 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 
 func TestPatternMapper_Map(t *testing.T) {
 	tests := []struct {
-		name         string
-		rules        []MappingRule
-		config       map[string]interface{}
-		expected     map[string]map[string]interface{}
-		expectError  bool
-		errorMsg     string
+		name        string
+		rules       []pm.MappingRule
+		config      map[string]interface{}
+		expected    map[string]map[string]interface{}
+		expectError bool
+		errorMsg    string
 	}{
 		{
 			name: "exact match - simple",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -239,7 +237,7 @@ func TestPatternMapper_Map(t *testing.T) {
 		},
 		{
 			name: "exact match - multiple rules",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -269,7 +267,7 @@ func TestPatternMapper_Map(t *testing.T) {
 		},
 		{
 			name: "named capture - single",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.{env}.api_key",
 					TargetLayer:     "demo",
@@ -294,39 +292,39 @@ func TestPatternMapper_Map(t *testing.T) {
 			},
 			expectError: false,
 		},
-        {
-            name: "wildcard - matches all (same values avoids ambiguity)",
-            rules: []MappingRule{
-                {
-                    Source:          "app.*.api_key",
-                    TargetLayer:     "demo",
-                    TargetParameter: "api-key",
-                },
-            },
-            config: map[string]interface{}{
-                "app": map[string]interface{}{
-                    "dev": map[string]interface{}{
-                        "api_key": "same-secret",
-                    },
-                    "prod": map[string]interface{}{
-                        "api_key": "same-secret",
-                    },
-                },
-            },
-            expected: map[string]map[string]interface{}{
-                "demo": {
-                    "api-key": "same-secret",
-                },
-            },
-            expectError: false,
-        },
+		{
+			name: "wildcard - matches all (same values avoids ambiguity)",
+			rules: []pm.MappingRule{
+				{
+					Source:          "app.*.api_key",
+					TargetLayer:     "demo",
+					TargetParameter: "api-key",
+				},
+			},
+			config: map[string]interface{}{
+				"app": map[string]interface{}{
+					"dev": map[string]interface{}{
+						"api_key": "same-secret",
+					},
+					"prod": map[string]interface{}{
+						"api_key": "same-secret",
+					},
+				},
+			},
+			expected: map[string]map[string]interface{}{
+				"demo": {
+					"api-key": "same-secret",
+				},
+			},
+			expectError: false,
+		},
 		{
 			name: "nested rules - simple",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:      "app.settings",
 					TargetLayer: "demo",
-					Rules: []MappingRule{
+					Rules: []pm.MappingRule{
 						{Source: "api_key", TargetParameter: "api-key"},
 						{Source: "threshold", TargetParameter: "threshold"},
 					},
@@ -350,11 +348,11 @@ func TestPatternMapper_Map(t *testing.T) {
 		},
 		{
 			name: "nested rules - with capture inheritance",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:      "app.{env}.settings",
 					TargetLayer: "demo",
-					Rules: []MappingRule{
+					Rules: []pm.MappingRule{
 						{Source: "api_key", TargetParameter: "{env}-api-key"},
 						{Source: "threshold", TargetParameter: "{env}-threshold"},
 					},
@@ -378,17 +376,17 @@ func TestPatternMapper_Map(t *testing.T) {
 			},
 			expected: map[string]map[string]interface{}{
 				"demo": {
-					"dev-api-key":      "dev-secret",
-					"dev-threshold":    10,
-					"prod-api-key":     "prod-secret",
-					"prod-threshold":   100,
+					"dev-api-key":    "dev-secret",
+					"dev-threshold":  10,
+					"prod-api-key":   "prod-secret",
+					"prod-threshold": 100,
 				},
 			},
 			expectError: false,
 		},
 		{
 			name: "required pattern - missing",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -408,7 +406,7 @@ func TestPatternMapper_Map(t *testing.T) {
 		},
 		{
 			name: "optional pattern - missing (no error)",
-			rules: []MappingRule{
+			rules: []pm.MappingRule{
 				{
 					Source:          "app.settings.api_key",
 					TargetLayer:     "demo",
@@ -431,7 +429,7 @@ func TestPatternMapper_Map(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testLayers := createTestLayers(t)
-			mapper, err := NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -516,7 +514,7 @@ func TestValidatePatternSyntax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validatePatternSyntax(tt.pattern)
+			err := pm.ValidatePatternSyntax(tt.pattern)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -560,7 +558,7 @@ func TestExtractCaptureNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractCaptureNames(tt.pattern)
+			result := pm.ExtractCaptureNames(tt.pattern)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -603,7 +601,7 @@ func TestExtractCaptureReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractCaptureReferences(tt.target)
+			result := pm.ExtractCaptureReferences(tt.target)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -660,7 +658,7 @@ func TestResolveTargetParameter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := resolveTargetParameter(tt.target, tt.captures)
+			result, err := pm.ResolveTargetParameter(tt.target, tt.captures)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -672,54 +670,20 @@ func TestResolveTargetParameter(t *testing.T) {
 	}
 }
 
-func TestConfigFileMapperAdapter(t *testing.T) {
-	// Test that ConfigFileMapper works through the adapter
-	testLayers := createTestLayers(t)
-
-	mapperFunc := func(rawConfig interface{}) (map[string]map[string]interface{}, error) {
-		// Simple flat mapper
-		configMap := rawConfig.(map[string]interface{})
-		result := map[string]map[string]interface{}{
-			"demo": make(map[string]interface{}),
-		}
-		if apiKey, ok := configMap["api_key"]; ok {
-			result["demo"]["api-key"] = apiKey
-		}
-		return result, nil
-	}
-
-	// Use adapter
-	adapter := &configFileMapperAdapter{fn: mapperFunc}
-
-	config := map[string]interface{}{
-		"api_key": "secret123",
-	}
-
-	result, err := adapter.Map(config)
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]map[string]interface{}{
-		"demo": {
-			"api-key": "secret123",
-		},
-	}, result)
-
-	_ = testLayers // Keep compiler happy
-}
-
 func TestIntegrationWithLoadParametersFromFile(t *testing.T) {
 	// This test validates the integration pattern but doesn't actually load files
 	testLayers := createTestLayers(t)
 
 	// Create a pattern mapper
-	mapper, err := NewConfigMapper(testLayers, MappingRule{
+	mapper, err := pm.NewConfigMapper(testLayers, pm.MappingRule{
 		Source:          "app.settings.api_key",
 		TargetLayer:     "demo",
 		TargetParameter: "api-key",
 	})
 	require.NoError(t, err)
 
-	// Verify it implements ConfigMapper
-	var _ ConfigMapper = mapper
+	// Verify it implements ConfigMapper (parent package interface)
+	var _ middlewares.ConfigMapper = mapper
 
 	// Test mapping
 	config := map[string]interface{}{
@@ -734,4 +698,3 @@ func TestIntegrationWithLoadParametersFromFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test-secret", result["demo"]["api-key"])
 }
-

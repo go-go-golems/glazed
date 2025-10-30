@@ -1,7 +1,7 @@
 # Sober Assessment and Design Proposals: Pattern-Based Config Mapper (Phase 1)
 
 Date: 2025-10-29  
-Audience: Maintainers and contributors working on `pkg/cmds/middlewares/pattern-mapper.go`
+Audience: Maintainers and contributors working on `pkg/cmds/middlewares/patternmapper/pattern_mapper.go`
 
 ---
 
@@ -14,7 +14,7 @@ Provide a concise, implementation-focused assessment of the current pattern-base
 ## 2) Confirmed Strengths (Keep as-is)
 
 - Clear, debuggable manual traversal (`matchSegments`, `matchSegmentsRecursive`).
-- Backward-compatible via `ConfigMapper` interface and `configFileMapperAdapter`.
+- Backward-compatible via `ConfigMapper` interface; `ConfigFileMapper` now satisfies `ConfigMapper` directly (no adapter needed).
 - Early validation for pattern syntax, capture references, target layer existence.
 - Nested rules with capture inheritance work and reduce duplication.
 - Helpful runtime errors (esp. for missing required patterns, unknown parameters).

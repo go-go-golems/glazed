@@ -13,6 +13,7 @@ The pattern mapper allows you to declaratively map config file structures to lay
 3. **Wildcards**: Match multiple paths with a single pattern
 4. **Nested Rules**: Group related mappings together with clean syntax
 5. **Capture Inheritance**: Child rules inherit captures from parent rules
+6. **Builder API**: Fluent way to assemble rules with the same strict validation
 
 ## Running the Example
 
@@ -84,15 +85,26 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
 }
 ```
 
-### New Way (Pattern Mapper):
+### New Way (Pattern Mapper - Rules Array):
 ```go
-mapper, err := NewConfigMapper(layers,
-    MappingRule{
+mapper, err := patternmapper.NewConfigMapper(layers,
+    patternmapper.MappingRule{
         Source:          "app.settings.api_key",
         TargetLayer:     "demo",
         TargetParameter: "api-key",
     },
 )
+```
+
+### New Way (Pattern Mapper - Builder API):
+```go
+b := patternmapper.NewConfigMapperBuilder(layers).
+    Map("app.settings.api_key", "demo", "api-key").
+    MapObject("environments.{env}.settings", "demo", []patternmapper.MappingRule{
+        patternmapper.Child("api_key", "{env}-api-key"),
+    })
+
+mapper, err := b.Build() // Validates via NewConfigMapper
 ```
 
 ## When to Use

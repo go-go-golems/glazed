@@ -23,8 +23,8 @@ A minimal example shows how to map a simple config structure:
 
 ```go
 // Create a pattern mapper
-mapper, err := middlewares.NewConfigMapper(layers,
-    middlewares.MappingRule{
+mapper, err := patternmapper.NewConfigMapper(layers,
+    patternmapper.MappingRule{
         Source:          "app.settings.api_key",
         TargetLayer:     "demo",
         TargetParameter: "api-key",
@@ -43,7 +43,7 @@ middleware := middlewares.LoadParametersFromFile(
 Prefer a fluent API? Use the builder to assemble rules, then build a mapper with the same strict validation and semantics:
 
 ```go
-b := middlewares.NewConfigMapperBuilder(layers).
+b := patternmapper.NewConfigMapperBuilder(layers).
     Map("app.settings.api_key", "demo", "api-key")
 
 mapper, err := b.Build()
@@ -67,7 +67,7 @@ Pattern matching enables flexible config file mapping through several mechanisms
 Exact match patterns map specific config paths to parameters with no variation:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:          "app.settings.api_key",
     TargetLayer:     "demo",
     TargetParameter: "api-key",
@@ -88,7 +88,7 @@ app:
 Named captures extract segments from config paths and use them in parameter names, enabling environment-specific or multi-tenant configurations:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:          "app.{env}.api_key",
     TargetLayer:     "demo",
     TargetParameter: "{env}-api-key",
@@ -115,7 +115,7 @@ The `{env}` capture extracts whatever value appears at that position in the conf
 Wildcards match any value at a specific level without capturing it, useful when you need to match patterns but don't need the matched value:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:          "app.*.api_key",
     TargetLayer:     "demo",
     TargetParameter: "api-key",
@@ -140,10 +140,10 @@ Important: When a wildcard pattern matches multiple keys with different values, 
 Nested rules group related mappings together for cleaner syntax and avoid repeating common prefixes:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:      "app.settings",
     TargetLayer: "demo",
-    Rules: []middlewares.MappingRule{
+    Rules: []patternmapper.MappingRule{
         {Source: "api_key", TargetParameter: "api-key"},
         {Source: "threshold", TargetParameter: "threshold"},
         {Source: "timeout", TargetParameter: "timeout"},
@@ -154,11 +154,11 @@ middlewares.MappingRule{
 Builder equivalent:
 
 ```go
-b := middlewares.NewConfigMapperBuilder(layers).
-    MapObject("app.settings", "demo", []middlewares.MappingRule{
-        middlewares.Child("api_key", "api-key"),
-        middlewares.Child("threshold", "threshold"),
-        middlewares.Child("timeout", "timeout"),
+b := patternmapper.NewConfigMapperBuilder(layers).
+    MapObject("app.settings", "demo", []patternmapper.MappingRule{
+        patternmapper.Child("api_key", "api-key"),
+        patternmapper.Child("threshold", "threshold"),
+        patternmapper.Child("timeout", "timeout"),
     })
 mapper, err := b.Build()
 ```
@@ -184,10 +184,10 @@ Child rules' source paths are relative to the parent's resolved object, eliminat
 Nested rules inherit captures from parent patterns, enabling complex multi-level mappings:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:      "app.{env}.settings",
     TargetLayer: "demo",
-    Rules: []middlewares.MappingRule{
+    Rules: []patternmapper.MappingRule{
         {Source: "api_key", TargetParameter: "{env}-api-key"},
         {Source: "threshold", TargetParameter: "threshold"},
     },
@@ -246,11 +246,11 @@ type MappingRule struct {
 Use the builder for a fluent way to assemble rules while keeping the same strict behavior and validation:
 
 ```go
-b := middlewares.NewConfigMapperBuilder(layers).
+b := patternmapper.NewConfigMapperBuilder(layers).
     Map("app.settings.api_key", "demo", "api-key", true).
-    MapObject("app.{env}.settings", "demo", []middlewares.MappingRule{
-        middlewares.Child("api_key", "{env}-api-key"),
-        middlewares.Child("threshold", "threshold"),
+    MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
+        patternmapper.Child("api_key", "{env}-api-key"),
+        patternmapper.Child("threshold", "threshold"),
     })
 
 mapper, err := b.Build() // Validates via NewConfigMapper
@@ -296,7 +296,7 @@ Pattern mappers validate at creation time to catch errors early and provide clea
 Mark patterns as required to enforce that specific config values must be present:
 
 ```go
-middlewares.MappingRule{
+patternmapper.MappingRule{
     Source:          "app.settings.api_key",
     TargetLayer:     "demo",
     TargetParameter: "api-key",
@@ -377,6 +377,7 @@ package main
 import (
     "github.com/go-go-golems/glazed/pkg/cmds/layers"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+    "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
     "github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
@@ -392,11 +393,11 @@ func main() {
     paramLayers := layers.NewParameterLayers(layers.WithLayers(layer))
 
     // Create pattern mapper with capture inheritance
-    mapper, err := middlewares.NewConfigMapper(paramLayers,
-        middlewares.MappingRule{
+    mapper, err := patternmapper.NewConfigMapper(paramLayers,
+        patternmapper.MappingRule{
             Source:      "app.{env}.settings",
             TargetLayer: "demo",
-            Rules: []middlewares.MappingRule{
+            Rules: []patternmapper.MappingRule{
                 {Source: "api_key", TargetParameter: "{env}-api-key"},
             },
         },
@@ -434,7 +435,7 @@ middleware1 := middlewares.LoadParametersFromFile("config.yaml",
     middlewares.WithConfigFileMapper(funcMapper))
 
 // New way (pattern-based)
-patternMapper, _ := middlewares.NewConfigMapper(layers, rules...)
+patternMapper, _ := patternmapper.NewConfigMapper(layers, rules...)
 middleware2 := middlewares.LoadParametersFromFile("config.yaml",
     middlewares.WithConfigMapper(patternMapper))
 ```

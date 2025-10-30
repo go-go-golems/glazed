@@ -118,7 +118,7 @@ type MappingRule struct {
 ### Option 1: Builder Pattern
 
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     // Simple mappings
     Map("app.settings.api_key", "demo", "api-key").
     Map("app.settings.threshold", "demo", "threshold").
@@ -152,7 +152,7 @@ mapper := middlewares.NewConfigMapper().
 ### Option 2: Rules Array
 
 ```go
-rules := []middlewares.MappingRule{
+rules := []patternmapper.MappingRule{
     {
         Source: "app.settings.api_key",
         TargetLayer: "demo",
@@ -181,14 +181,14 @@ rules := []middlewares.MappingRule{
         // Nested rules: map entire object
         Source: "app.settings",
         TargetLayer: "demo",
-        Rules: []middlewares.MappingRule{
+        Rules: []patternmapper.MappingRule{
             {Source: "api_key", TargetParameter: "api-key"},
             {Source: "threshold", TargetParameter: "threshold"},
         },
     },
 }
 
-mapper := middlewares.NewConfigMapper(rules...)
+mapper := patternmapper.NewConfigMapper(rules...)
 ```
 
 ### Option 3: YAML/JSON Config (Most Declarative)
@@ -307,7 +307,7 @@ When a rule has `Rules` defined:
 
 **TransformFunc in Nested Rules**: When using `TransformFunc` in nested rules, it receives captures from both the parent rule and any captures in its own source pattern:
 ```go
-MapObject("app.{env}.settings", "demo", []middlewares.MappingRule{
+MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
     {
         Source: "api_key",
         TransformFunc: func(captures map[string]string, positional []string, value interface{}) (string, string) {
@@ -388,7 +388,7 @@ threshold: 42
 
 Mapping:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     Map("api_key", "demo", "api-key").
     Map("threshold", "demo", "threshold").
     Build()
@@ -407,7 +407,7 @@ app:
 
 Mapping:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     Map("app.settings.api.key", "demo", "api-key").
     Map("app.settings.api.threshold", "demo", "threshold").
     Build()
@@ -426,7 +426,7 @@ environments:
 
 Mapping:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     Map("environments.{env}.api_key", "demo", "api-key").
     // Or with capture in target:
     Map("environments.{env}.api_key", "demo", "{env}-api-key").
@@ -446,7 +446,7 @@ services:
 
 Mapping:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     Map("services.{service}.api_key", "demo", "{service}-api-key").
     Build()
 ```
@@ -468,12 +468,12 @@ app:
 Mapping with nested rules and layer override:
 ```go
 mapper := middlewares.NewConfigMapper().
-    MapObject("app.settings", "demo", []middlewares.MappingRule{
+    MapObject("app.settings", "demo", []patternmapper.MappingRule{
         {Source: "api_key", TargetParameter: "api-key"},
         {Source: "threshold", TargetParameter: "threshold"},
         {Source: "timeout", TargetParameter: "timeout", Default: 30},
     }).
-    MapObject("app.database", "demo", []middlewares.MappingRule{
+    MapObject("app.database", "demo", []patternmapper.MappingRule{
         // Child rules inherit "demo" layer from parent
         {Source: "host", TargetParameter: "db-host"},
         // Override target layer for this specific rule
@@ -529,8 +529,8 @@ environments:
 
 Mapping with MapObject:
 ```go
-mapper := middlewares.NewConfigMapper().
-    MapObject("environments.{env}.settings", "demo", []middlewares.MappingRule{
+mapper := patternmapper.NewConfigMapper().
+    MapObject("environments.{env}.settings", "demo", []patternmapper.MappingRule{
         // Child rules inherit {env} from parent in their capture environment
         {Source: "api_key", TargetParameter: "{env}-api-key"}, // Uses parent capture
         {Source: "threshold", TargetParameter: "threshold"},
@@ -588,7 +588,7 @@ app:
 
 Mapping:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     Map("app.**.api.key", "demo", "api-key").
     Build()
 ```
@@ -616,8 +616,8 @@ regions:
 
 Mapping with MapObject and multiple captures:
 ```go
-mapper := middlewares.NewConfigMapper().
-    MapObject("regions.{region}.{env}.settings", "demo", []middlewares.MappingRule{
+mapper := patternmapper.NewConfigMapper().
+    MapObject("regions.{region}.{env}.settings", "demo", []patternmapper.MappingRule{
         // Child rules inherit BOTH {region} and {env} from parent capture environment
         {Source: "api_key", TargetParameter: "{region}-{env}-api-key"},
         {Source: "threshold", TargetParameter: "threshold"},
@@ -656,7 +656,7 @@ services:
 
 Mapping with lambda transformation:
 ```go
-mapper := middlewares.NewConfigMapper().
+mapper := patternmapper.NewConfigMapper().
     MapWithTransform("services.{service}.api_key", func(captures map[string]string, positional []string, value interface{}) (string, string) {
         service := captures["service"]
         // Dynamic layer based on service name
@@ -707,7 +707,7 @@ type TransformFunc func(
 middleware := middlewares.LoadParametersFromFile(
     "config.yaml",
     middlewares.WithConfigFileMapper(
-        middlewares.NewConfigMapper().
+        patternmapper.NewConfigMapper().
             Map("app.settings.api_key", "demo", "api-key").
             Build(),
     ),
@@ -733,10 +733,10 @@ middleware := middlewares.LoadParametersFromFile(
 mapper, err := middlewares.LoadMapperFromFile("mappings.yaml")
 
 // Create mapper from rules
-mapper := middlewares.NewConfigMapper(rules...)
+mapper := patternmapper.NewConfigMapper(rules...)
 
 // Add rules programmatically
-mapper.AddRule(middlewares.MappingRule{
+mapper.AddRule(patternmapper.MappingRule{
     Source: "app.settings.api_key",
     TargetLayer: "demo",
     TargetParameter: "api-key",
@@ -748,7 +748,7 @@ mapper.AddRule(middlewares.MappingRule{
 ### Default Values
 
 ```go
-rules := []middlewares.MappingRule{
+rules := []patternmapper.MappingRule{
     {
         Source: "app.settings.threshold",
         TargetLayer: "demo",
@@ -761,7 +761,7 @@ rules := []middlewares.MappingRule{
 ### Required Fields
 
 ```go
-rules := []middlewares.MappingRule{
+rules := []patternmapper.MappingRule{
     {
         Source: "app.settings.api_key",
         TargetLayer: "demo",
@@ -774,7 +774,7 @@ rules := []middlewares.MappingRule{
 ### Conditional Mapping
 
 ```go
-rules := []middlewares.MappingRule{
+rules := []patternmapper.MappingRule{
     {
         Source: "app.settings.api_key",
         TargetLayer: "demo",
@@ -790,7 +790,7 @@ rules := []middlewares.MappingRule{
 ### Transform Functions
 
 ```go
-rules := []middlewares.MappingRule{
+rules := []patternmapper.MappingRule{
     {
         Source: "app.settings.api_key",
         TargetLayer: "demo",
@@ -898,7 +898,7 @@ Proposed API:
 ```go
 type ConfigMapperBuilder struct {
     layers *layers.ParameterLayers
-    rules  []middlewares.MappingRule
+    rules  []patternmapper.MappingRule
 }
 
 func NewConfigMapperBuilder(layers *layers.ParameterLayers) *ConfigMapperBuilder
@@ -907,7 +907,7 @@ func NewConfigMapperBuilder(layers *layers.ParameterLayers) *ConfigMapperBuilder
 func (b *ConfigMapperBuilder) Map(source string, targetLayer string, targetParameter string, required ...bool) *ConfigMapperBuilder
 
 // MapObject adds a parent rule with children (one-level nesting)
-func (b *ConfigMapperBuilder) MapObject(parentSource string, targetLayer string, childRules []middlewares.MappingRule) *ConfigMapperBuilder
+func (b *ConfigMapperBuilder) MapObject(parentSource string, targetLayer string, childRules []patternmapper.MappingRule) *ConfigMapperBuilder
 
 // Build validates via NewConfigMapper and returns a ConfigMapper
 func (b *ConfigMapperBuilder) Build() (middlewares.ConfigMapper, error)
@@ -921,14 +921,14 @@ Behavioral Notes:
 
 Helper for child rules (optional):
 ```go
-func Child(source, target string) middlewares.MappingRule { return middlewares.MappingRule{Source: source, TargetParameter: target} }
+func Child(source, target string) patternmapper.MappingRule { return patternmapper.MappingRule{Source: source, TargetParameter: target} }
 ```
 
 Example usage:
 ```go
 b := NewConfigMapperBuilder(paramLayers).
     Map("app.settings.api_key", "demo", "api-key").
-    MapObject("app.{env}.settings", "demo", []middlewares.MappingRule{
+    MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
         {Source: "api_key", TargetParameter: "{env}-api-key"},
         {Source: "threshold", TargetParameter: "threshold"},
     })
