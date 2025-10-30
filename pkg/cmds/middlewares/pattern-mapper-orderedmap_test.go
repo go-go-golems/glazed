@@ -9,8 +9,9 @@ import (
     "github.com/stretchr/testify/require"
 )
 
-// TestDeterministicWildcardOrder_SortedKeys verifies that wildcard matching
-// over map keys is deterministic due to ordered map traversal.
+// TestDeterministicWildcardOrder_SortedKeys verifies that wildcard traversal
+// over map keys is deterministic due to ordered map traversal, and when values
+// are identical across matches, the resulting value is stable.
 func TestDeterministicWildcardOrder_SortedKeys(t *testing.T) {
     // Create a simple layer
     layer, err := layers.NewParameterLayer(
@@ -38,14 +39,14 @@ func TestDeterministicWildcardOrder_SortedKeys(t *testing.T) {
 
     // Config contains two environments; key order in Go map is nondeterministic
     // but mapper converts to ordered map sorted by key, so lexicographic order applies.
-    // With keys "dev" and "prod", iteration is ["dev", "prod"], so last wins -> prod.
+    // With identical values across matches, mapping is unambiguous and stable.
     config := map[string]interface{}{
         "app": map[string]interface{}{
             "prod": map[string]interface{}{
-                "api_key": "prod-secret",
+                "api_key": "same-secret",
             },
             "dev": map[string]interface{}{
-                "api_key": "dev-secret",
+                "api_key": "same-secret",
             },
         },
     }
@@ -53,7 +54,7 @@ func TestDeterministicWildcardOrder_SortedKeys(t *testing.T) {
     got, err := mapper.Map(config)
     require.NoError(t, err)
 
-    assert.Equal(t, "prod-secret", got["demo"]["api-key"]) // deterministic last-wins with sorted keys
+    assert.Equal(t, "same-secret", got["demo"]["api-key"]) // stable value with identical matches
 }
 
 

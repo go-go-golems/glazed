@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+    "fmt"
     "regexp"
     "sort"
     "strings"
@@ -79,6 +80,8 @@ type compiledPattern struct {
 	captureNames []string // ordered list of capture group names
 }
 
+// (Compatibility options removed) Simplified: ambiguous cases error by default.
+
 // NewConfigMapper creates a new pattern-based config mapper from the given rules.
 // The mapper validates that:
 //   - All patterns are valid syntax
@@ -90,8 +93,8 @@ func NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (Conf
 	}
 
 	mapper := &patternMapper{
-		rules:  rules,
-		layers: layers,
+        rules:   rules,
+        layers:  layers,
 	}
 
 	// Compile and validate all patterns
@@ -198,15 +201,23 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 		return nil, errors.Errorf("expected map[string]interface{}, got %T", rawConfig)
 	}
 
-    // Convert to ordered map tree for deterministic traversal
-    orderedRoot := toOrderedMap(configMap)
+	// Convert to ordered map tree for deterministic traversal
+	orderedRoot := toOrderedMap(configMap)
 
-    // Match each pattern against the config
+	// Track collisions across rules (proposal 3)
+	// Key: layer+"."+paramName, Value: pattern source that last wrote to it
+	collisionTracker := make(map[string]string)
+
+	// Match each pattern against the config
 	for _, compiled := range m.compiledPatterns {
-        matches, err := m.matchPattern(compiled, orderedRoot, "")
+		matches, err := m.matchPattern(compiled, orderedRoot, "")
 		if err != nil {
 			return nil, err
 		}
+
+		// Proposal 2: Track multi-matches per rule
+		// Key: resolved target parameter name, Value: list of distinct values
+		multiMatchTracker := make(map[string][]interface{})
 
 		// Process each match
 		for _, match := range matches {
@@ -222,24 +233,75 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 				return nil, errors.Errorf("target layer %q does not exist", match.layer)
 			}
 
-			// Check if parameter exists (accounting for prefix)
-			paramName := targetParam
-			if layer.GetPrefix() != "" {
-				// If layer has prefix, check if targetParam already includes it
-				if !strings.HasPrefix(targetParam, layer.GetPrefix()) {
-					paramName = layer.GetPrefix() + targetParam
-				}
-			}
+			// Resolve canonical parameter name (using helper from proposal 9)
+			paramName := resolveCanonicalParameterName(layer, targetParam)
 
 			paramDef, ok := layer.GetParameterDefinitions().Get(paramName)
 			if !ok || paramDef == nil {
-				// Parameter doesn't exist - this is a validation error
-				return nil, errors.Errorf(
-					"target parameter %q does not exist in layer %q (pattern: %q)",
-					paramName,
-					match.layer,
-					compiled.rule.Source,
-				)
+				// Proposal 4: Prefix-aware error messages
+				// Include both the user-provided targetParam and the resolved paramName
+				errorMsg := fmt.Sprintf("target parameter %q", targetParam)
+				if paramName != targetParam {
+					errorMsg += fmt.Sprintf(" (checked as %q)", paramName)
+				}
+				errorMsg += fmt.Sprintf(" does not exist in layer %q (pattern: %q)", match.layer, compiled.rule.Source)
+				return nil, errors.New(errorMsg)
+			}
+
+			// Track multi-matches for this rule
+			multiMatchTracker[paramName] = append(multiMatchTracker[paramName], match.value)
+		}
+
+        // Check for multi-matches (proposal 2)
+		for paramName, values := range multiMatchTracker {
+			if len(values) > 1 {
+				// Check if values are distinct
+				distinctValues := make(map[interface{}]bool)
+				for _, v := range values {
+					distinctValues[v] = true
+				}
+
+				if len(distinctValues) > 1 {
+                    // Multiple distinct values found: error
+                    return nil, errors.Errorf(
+                        "pattern %q matched multiple distinct values for parameter %q: found %d distinct values",
+                        compiled.rule.Source,
+                        paramName,
+                        len(distinctValues),
+                    )
+				}
+			}
+		}
+
+		// Process matches and set values
+		// Track which parameters were written by this rule to avoid false collision detection
+		writtenByThisRule := make(map[string]bool)
+		for _, match := range matches {
+			// Resolve target parameter name (replace captures)
+			targetParam, err := resolveTargetParameter(compiled.rule.TargetParameter, match.captures)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to resolve target parameter")
+			}
+
+			layer, _ := m.layers.Get(match.layer)
+			paramName := resolveCanonicalParameterName(layer, targetParam)
+
+			// Proposal 3: Collision detection across rules
+			// Only check for collisions if this parameter wasn't already written by this rule
+			collisionKey := match.layer + "." + paramName
+            if !writtenByThisRule[collisionKey] {
+                if previousPattern, exists := collisionTracker[collisionKey]; exists {
+                    // Collision detected (different rule writing to same parameter): error
+                    return nil, errors.Errorf(
+                        "collision: parameter %q in layer %q is written by multiple patterns: %q and %q",
+                        paramName,
+                        match.layer,
+                        previousPattern,
+                        compiled.rule.Source,
+                    )
+                }
+				collisionTracker[collisionKey] = compiled.rule.Source
+				writtenByThisRule[collisionKey] = true
 			}
 
 			// Initialize layer map if needed
@@ -516,6 +578,18 @@ func compilePatternToRegex(pattern string) (*regexp.Regexp, []string, error) {
 	}
 
 	return re, captureNames, nil
+}
+
+// resolveCanonicalParameterName resolves the canonical parameter name including prefix
+// This is proposal 9: explicit helper for canonical parameter name resolution
+func resolveCanonicalParameterName(layer layers.ParameterLayer, targetParam string) string {
+	if layer.GetPrefix() != "" {
+		// If layer has prefix, check if targetParam already includes it
+		if !strings.HasPrefix(targetParam, layer.GetPrefix()) {
+			return layer.GetPrefix() + targetParam
+		}
+	}
+	return targetParam
 }
 
 // resolveTargetParameter resolves capture references in target parameter name

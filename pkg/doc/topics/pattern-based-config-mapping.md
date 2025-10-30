@@ -111,11 +111,9 @@ app:
     api_key: "prod-secret"
 ```
 
-**Result**: `demo.api-key = "prod-secret"`
+Note: Wildcards (`*`) match but don't capture. To use the matched value, use named captures `{name}` instead.
 
-Note on order: Wildcard iteration is deterministic. Keys are traversed in lexicographic order, so when multiple keys match (e.g., `dev`, `prod`), the last one in sorted order wins (here: `prod`).
-
-**Note**: Wildcards (`*`) match but don't capture. To use the matched value, use named captures `{name}` instead.
+Important: When a wildcard pattern matches multiple keys with different values, the mapper treats this as an ambiguity and returns an error by default. Use named captures (e.g., `app.{env}.api_key`) if you need to collect multiple values, or ensure matched values are identical if a single target parameter is intended.
 
 ### Nested Rules
 
@@ -255,6 +253,13 @@ middlewares.MappingRule{
 
 Without `Required: true`, patterns that don't match are silently skipped, allowing optional config values.
 
+## Ambiguity Handling
+
+The mapper fails fast on ambiguous situations:
+
+- Multi-match: If a single pattern matches multiple paths that would resolve to the same target parameter with different values (e.g., `app.*.api_key` for `dev` and `prod`), an error is returned.
+- Collisions: If different patterns resolve to the same target parameter (e.g., `app.settings.api_key` and `config.api_key` both mapping to `demo.api-key`), an error is returned.
+
 ## Error Handling
 
 Runtime errors occur when config files don't match expectations or reference nonexistent parameters. The system provides detailed error messages to aid debugging.
@@ -275,11 +280,18 @@ required pattern "app.settings.api_key" did not match any paths in config
 target parameter "api-key" does not exist in layer "demo" (pattern: "app.settings.api_key")
 ```
 
+**Example error for missing parameter with prefix**:
+```
+target parameter "api-key" (checked as "demo-api-key") does not exist in layer "demo" (pattern: "app.settings.api_key")
+```
+
+When a layer has a prefix and the target parameter name doesn't include it, the error message shows both the provided name and the resolved canonical name (with prefix). This helps debug parameter name mismatches.
+
 ## Matching Order and Overwrites
 
 - Deterministic traversal: The mapper traverses config objects in lexicographic key order to ensure stable behavior across runs.
-- Wildcards: If a wildcard pattern (e.g., `app.*.api_key`) matches multiple keys at the same level, the last match in sorted order wins. Prefer named captures (e.g., `app.{env}.api_key`) if you need all values.
-- Overwrites: When multiple matches resolve to the same target parameter, later matches overwrite earlier ones. Structure rules to avoid unintentional collisions or use captures to disambiguate.
+- Wildcards: Prefer named captures (e.g., `app.{env}.api_key`) when multiple values are expected. Wildcards that match multiple keys with different values are considered ambiguous and will error.
+- Overwrites: Overwrites across different rules to the same parameter are considered collisions and will error.
 
 ## When to Use
 

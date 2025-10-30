@@ -208,37 +208,37 @@ func TestEdgeCases(t *testing.T) {
 			},
 			expectError: false,
 		},
-		{
-			name:        "multiple wildcards in path",
-			setupLayers: createTestLayers,
-			rules: []MappingRule{
-				{
-					Source:          "app.*.settings.*.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
-				},
-			},
-			config: map[string]interface{}{
-				"app": map[string]interface{}{
-					"env1": map[string]interface{}{
-						"settings": map[string]interface{}{
-							"region1": map[string]interface{}{
-								"api_key": "secret1",
-							},
-							"region2": map[string]interface{}{
-								"api_key": "secret2",
-							},
-						},
-					},
-				},
-			},
-			expected: map[string]map[string]interface{}{
-				"demo": {
-					"api-key": "secret2", // Last match wins
-				},
-			},
-			expectError: false,
-		},
+        {
+            name:        "multiple wildcards in path (same values avoids ambiguity)",
+            setupLayers: createTestLayers,
+            rules: []MappingRule{
+                {
+                    Source:          "app.*.settings.*.api_key",
+                    TargetLayer:     "demo",
+                    TargetParameter: "api-key",
+                },
+            },
+            config: map[string]interface{}{
+                "app": map[string]interface{}{
+                    "env1": map[string]interface{}{
+                        "settings": map[string]interface{}{
+                            "region1": map[string]interface{}{
+                                "api_key": "secret",
+                            },
+                            "region2": map[string]interface{}{
+                                "api_key": "secret",
+                            },
+                        },
+                    },
+                },
+            },
+            expected: map[string]map[string]interface{}{
+                "demo": {
+                    "api-key": "secret",
+                },
+            },
+            expectError: false,
+        },
 	}
 
 	for _, tt := range tests {

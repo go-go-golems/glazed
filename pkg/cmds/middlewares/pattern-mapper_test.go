@@ -282,32 +282,32 @@ func TestPatternMapper_Map(t *testing.T) {
 			},
 			expectError: false,
 		},
-		{
-			name: "wildcard - matches all",
-			rules: []MappingRule{
-				{
-					Source:          "app.*.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
-				},
-			},
-			config: map[string]interface{}{
-				"app": map[string]interface{}{
-					"dev": map[string]interface{}{
-						"api_key": "dev-secret",
-					},
-					"prod": map[string]interface{}{
-						"api_key": "prod-secret",
-					},
-				},
-			},
-			expected: map[string]map[string]interface{}{
-				"demo": {
-					"api-key": "prod-secret", // Last match wins
-				},
-			},
-			expectError: false,
-		},
+        {
+            name: "wildcard - matches all (same values avoids ambiguity)",
+            rules: []MappingRule{
+                {
+                    Source:          "app.*.api_key",
+                    TargetLayer:     "demo",
+                    TargetParameter: "api-key",
+                },
+            },
+            config: map[string]interface{}{
+                "app": map[string]interface{}{
+                    "dev": map[string]interface{}{
+                        "api_key": "same-secret",
+                    },
+                    "prod": map[string]interface{}{
+                        "api_key": "same-secret",
+                    },
+                },
+            },
+            expected: map[string]map[string]interface{}{
+                "demo": {
+                    "api-key": "same-secret",
+                },
+            },
+            expectError: false,
+        },
 		{
 			name: "nested rules - simple",
 			rules: []MappingRule{

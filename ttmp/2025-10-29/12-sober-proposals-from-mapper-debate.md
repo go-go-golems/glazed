@@ -43,16 +43,16 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
    - Rationale: Determinism improves predictability and testability.
    - Priority/Effort: P1 / Low (local sorting in `matchSegments`).
 
-2. Multi-match policy for wildcards
+2. Multi-match handling (strict by default)
    - Problem: Multiple matches silently overwrite (last one wins by iteration order).
-   - Change: Add optional policy (error | warn | last-wins) when a single rule yields multiple distinct values for the same target parameter; default warn.
-   - Rationale: Surfaces ambiguity and prevents accidental nondeterminism.
+   - Change: Treat multiple distinct values from a single rule mapping to the same target parameter as an error by default (no policy toggles). If values are identical, mapping succeeds. Prefer captures (e.g., `{env}`) to collect separate values.
+   - Rationale: Eliminate nondeterminism and silent data loss; simpler model without configuration.
    - Priority/Effort: P1 / Medium.
 
-3. Collision detection across rules
+3. Collision detection across rules (strict by default)
    - Problem: Different patterns can resolve to the same target parameter and overwrite silently.
-   - Change: Track set operations per target param; on second write, log a collision with both pattern sources. Provide option to treat as error.
-   - Rationale: Prevents accidental overrides; aids debugging.
+   - Change: Detect and error when different rules write to the same target parameter (no policy toggles). If this is intended, refactor rules or target parameter names to avoid collisions.
+   - Rationale: Prevents accidental overrides; errors are clearer than warnings.
    - Priority/Effort: P1 / Medium.
 
 4. Prefix-aware error messages
@@ -88,20 +88,20 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
 9. Explicit helper for canonical parameter name resolution
    - Problem: Prefix handling scattered and implicit.
    - Change: Introduce `resolveCanonicalParameterName(layer, target)` helper (or method) centralizing prefix logic.
-   - Rationale: Single source of truth; easier to test and reuse.
-   - Priority/Effort: P2 / Low.
+    - Rationale: Single source of truth; easier to test and reuse.
+    - Priority/Effort: P2 / Low (implemented early).
 
 10. Document wildcard semantics and guidance
     - Problem: Docs understate nondeterminism of wildcards and collisions.
-    - Change: Update `pattern-based-config-mapping.md` with: (a) sorting/determinism policy, (b) recommendation to prefer captures over wildcards when multiple values are expected, (c) collision behavior and mitigation.
+    - Change: Update `pattern-based-config-mapping.md` with: (a) sorting/determinism policy, (b) recommendation to prefer captures over wildcards when multiple values are expected, (c) ambiguity and collision behavior (both error by default) and mitigation.
     - Rationale: Set correct expectations; reduce misuse.
-    - Priority/Effort: P1 / Low.
+    - Priority/Effort: P1 / Low (implemented).
 
 11. Add tests for collisions, deterministic wildcard order, and prefix+captures interplay
     - Problem: Gaps for collisions and ordering behaviors.
-    - Change: Add table-driven tests covering: (a) multiple wildcard matches (deterministic), (b) rule collisions with logging policy, (c) `{env}` capture combined with layer prefix.
+    - Change: Add table-driven tests covering: (a) multiple wildcard matches (deterministic; identical values allowed, distinct values error), (b) rule collisions (error), (c) `{env}` capture combined with layer prefix.
     - Rationale: Guard rails for new behaviors.
-    - Priority/Effort: P1 / Low-Medium.
+    - Priority/Effort: P1 / Low-Medium (implemented).
 
 12. Keep regex compilation out of hot path; remove or gate if unused
     - Problem: Regex compiled but unused; minor memory/complexity overhead.
@@ -113,10 +113,10 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
 
 ## 5) Proposed Acceptance Criteria (per proposal)
 
-- P1 items: deterministic iteration (1), multi-match policy (2), collision detection (3), prefix-aware errors (4), static param early validation (5), docs update (10), tests (11).  
+- P1 items: deterministic iteration (1), multi-match handling (2), collision detection (3), prefix-aware errors (4), static param early validation (5), docs update (10), tests (11).  
   - All implemented with linters/tests passing.  
   - New behaviors covered by table-driven tests.  
-  - Backward-compat preserved (defaults: warn over error; last-wins retained unless configured).
+  - Simplified behavior: ambiguous cases (multi-match with distinct values, collisions) error by default; no runtime policy toggles.
 - P2 items: shadowing warning (6), optional diagnostics (7), improved required error context (8), canonical param helper (9).  
   - Feature-flagged or debug-only paths where applicable.  
   - Zero behavior change unless enabled.
@@ -132,11 +132,11 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
   - Prefix-aware error messaging.
   - Early validation for static targets.
   - Docs update + tests.
-- MR 2 (P1):
-  - Multi-match policy option (default warn), collision detection/logging (default warn).
-  - Tests.
+- MR 2 (P1) — simplified strict behavior:
+  - Multi-match (distinct values) → error; collisions across rules → error.
+  - Remove runtime policy toggles; adjust docs and tests accordingly.
 - MR 3 (P2):
-  - Capture shadowing warnings; optional diagnostics collector; improved required error context; canonical param-name helper.
+  - Capture shadowing warnings; optional diagnostics collector; improved required error context; canonical param-name helper (done early).
 - MR 4 (P3):
   - Regex compilation removal or gating.
 
@@ -148,12 +148,12 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
 - No breaking changes to `ConfigMapper` interface or `LoadParametersFromFile` behavior by default.
 - Error messages include resolved (prefixed) parameter names where applicable.
 - Static target parameters validated at compile time; dynamic ones at runtime.
-- Collision and multi-match policies are configurable; defaults are backward-compatible and logged at appropriate levels.
+- Ambiguities error by default: multi-match with distinct values, cross-rule collisions; no runtime policy toggles.
 - New tests cover ordering, collisions, prefix+captures, and error messaging.
-- Documentation updated and examples aligned with new semantics.
+- Documentation updated and examples aligned with new strict semantics.
 
 ---
 
 ## 8) Summary
 
-The current implementation is solid for Phase 1 and thoughtfully balances clarity, safety, and compatibility. The 12 proposals above focus on determinism, diagnostics, and user experience while preserving existing APIs and defaults. Implementing P1 items first will deliver immediate value with minimal risk.
+We adopted strict, deterministic semantics for Phase 1: ambiguous wildcard multi-matches (with distinct values) and cross-rule collisions now error by default, removing policy toggles and last-wins behavior. Prefix-aware errors and a canonical parameter resolver improve clarity. Documentation and tests reflect these changes. This simplifies user expectations while preserving the `ConfigMapper` API.
