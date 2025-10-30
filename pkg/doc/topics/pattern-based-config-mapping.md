@@ -111,7 +111,9 @@ app:
     api_key: "prod-secret"
 ```
 
-**Result**: `demo.api-key = "prod-secret"` *(last match wins)*
+**Result**: `demo.api-key = "prod-secret"`
+
+Note on order: Wildcard iteration is deterministic. Keys are traversed in lexicographic order, so when multiple keys match (e.g., `dev`, `prod`), the last one in sorted order wins (here: `prod`).
 
 **Note**: Wildcards (`*`) match but don't capture. To use the matched value, use named captures `{name}` instead.
 
@@ -272,6 +274,12 @@ required pattern "app.settings.api_key" did not match any paths in config
 ```
 target parameter "api-key" does not exist in layer "demo" (pattern: "app.settings.api_key")
 ```
+
+## Matching Order and Overwrites
+
+- Deterministic traversal: The mapper traverses config objects in lexicographic key order to ensure stable behavior across runs.
+- Wildcards: If a wildcard pattern (e.g., `app.*.api_key`) matches multiple keys at the same level, the last match in sorted order wins. Prefer named captures (e.g., `app.{env}.api_key`) if you need all values.
+- Overwrites: When multiple matches resolve to the same target parameter, later matches overwrite earlier ones. Structure rules to avoid unintentional collisions or use captures to disambiguate.
 
 ## When to Use
 

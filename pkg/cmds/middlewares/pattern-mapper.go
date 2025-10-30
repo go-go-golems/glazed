@@ -1,11 +1,13 @@
 package middlewares
 
 import (
-	"regexp"
-	"strings"
+    "regexp"
+    "sort"
+    "strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/pkg/errors"
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/iancoleman/orderedmap"
+    "github.com/pkg/errors"
 )
 
 // MappingRule defines a pattern-based mapping from config file structure to layer parameters.
@@ -196,9 +198,12 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 		return nil, errors.Errorf("expected map[string]interface{}, got %T", rawConfig)
 	}
 
-	// Match each pattern against the config
+    // Convert to ordered map tree for deterministic traversal
+    orderedRoot := toOrderedMap(configMap)
+
+    // Match each pattern against the config
 	for _, compiled := range m.compiledPatterns {
-		matches, err := m.matchPattern(compiled, configMap, "")
+        matches, err := m.matchPattern(compiled, orderedRoot, "")
 		if err != nil {
 			return nil, err
 		}
@@ -259,9 +264,9 @@ type patternMatch struct {
 
 // matchPattern matches a compiled pattern against the config and returns all matches
 func (m *patternMapper) matchPattern(
-	compiled compiledPattern,
-	config map[string]interface{},
-	pathPrefix string,
+    compiled compiledPattern,
+    config interface{},
+    pathPrefix string,
 ) ([]patternMatch, error) {
 	var matches []patternMatch
 
@@ -269,7 +274,7 @@ func (m *patternMapper) matchPattern(
 	// For now, we only handle one level of nesting, so we can simplify
 
 	// Convert pattern to a path traversal
-	err := m.traverseAndMatch(compiled, config, pathPrefix, make(map[string]string), &matches)
+    err := m.traverseAndMatch(compiled, config, pathPrefix, make(map[string]string), &matches)
 	if err != nil {
 		return nil, err
 	}
@@ -287,11 +292,11 @@ func (m *patternMapper) matchPattern(
 
 // traverseAndMatch recursively traverses the config and matches patterns
 func (m *patternMapper) traverseAndMatch(
-	compiled compiledPattern,
-	config map[string]interface{},
-	currentPath string,
-	parentCaptures map[string]string,
-	matches *[]patternMatch,
+    compiled compiledPattern,
+    config interface{},
+    currentPath string,
+    parentCaptures map[string]string,
+    matches *[]patternMatch,
 ) error {
 	// Split pattern into segments
 	segments := strings.Split(compiled.rule.Source, ".")
@@ -300,12 +305,12 @@ func (m *patternMapper) traverseAndMatch(
 
 // matchSegments matches pattern segments against the config
 func (m *patternMapper) matchSegments(
-	segments []string,
-	config map[string]interface{},
-	currentPath string,
-	captures map[string]string,
-	compiled compiledPattern,
-	matches *[]patternMatch,
+    segments []string,
+    config interface{},
+    currentPath string,
+    captures map[string]string,
+    compiled compiledPattern,
+    matches *[]patternMatch,
 ) error {
 	if len(segments) == 0 {
 		// All segments matched, this is a value
@@ -322,8 +327,13 @@ func (m *patternMapper) matchSegments(
 	// Check if segment is a capture group {name}
 	if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
 		name := segment[1 : len(segment)-1]
-		// Match all keys at this level
-		for key, value := range config {
+        // Match all keys at this level in deterministic order
+        keys, getter, ok := iterMap(config)
+        if !ok {
+            return nil
+        }
+        for _, key := range keys {
+            value, _ := getter(key)
 			newCaptures := make(map[string]string)
 			for k, v := range captures {
 				newCaptures[k] = v
@@ -340,8 +350,13 @@ func (m *patternMapper) matchSegments(
 
 	// Check if segment is a wildcard *
 	if segment == "*" {
-		// Match all keys at this level
-		for key, value := range config {
+        // Match all keys at this level in deterministic order
+        keys, getter, ok := iterMap(config)
+        if !ok {
+            return nil
+        }
+        for _, key := range keys {
+            value, _ := getter(key)
 			if err := m.matchSegmentsRecursive(remaining, value, currentPath+"."+key, captures, compiled, matches); err != nil {
 				return err
 			}
@@ -350,17 +365,21 @@ func (m *patternMapper) matchSegments(
 	}
 
 	// Exact match
-	value, ok := config[segment]
-	if !ok {
-		return nil // No match, but not an error (might be optional)
-	}
+    if _, getter, ok := iterMap(config); ok {
+        // Fast path direct get
+        value, exists := getter(segment)
+        if !exists {
+            return nil // No match, but not an error (might be optional)
+        }
 
-	newPath := segment
-	if currentPath != "" {
-		newPath = currentPath + "." + segment
-	}
+        newPath := segment
+        if currentPath != "" {
+            newPath = currentPath + "." + segment
+        }
 
-	return m.matchSegmentsRecursive(remaining, value, newPath, captures, compiled, matches)
+        return m.matchSegmentsRecursive(remaining, value, newPath, captures, compiled, matches)
+    }
+    return nil
 }
 
 // matchSegmentsRecursive handles the recursive matching logic
@@ -382,14 +401,8 @@ func (m *patternMapper) matchSegmentsRecursive(
 		return nil
 	}
 
-	// Continue matching remaining segments
-	valueMap, ok := value.(map[string]interface{})
-	if !ok {
-		// Value is not a map, can't continue
-		return nil
-	}
-
-	return m.matchSegments(remaining, valueMap, currentPath, captures, compiled, matches)
+    // Continue matching remaining segments
+    return m.matchSegments(remaining, value, currentPath, captures, compiled, matches)
 }
 
 // validatePatternSyntax validates that a pattern string is syntactically valid
@@ -524,5 +537,64 @@ func resolveTargetParameter(targetParameter string, captures map[string]string) 
 	}
 
 	return result, nil
+}
+
+
+// toOrderedMap converts a map[string]interface{} into an ordered map with
+// lexicographically sorted keys. Nested maps are converted recursively.
+func toOrderedMap(m map[string]interface{}) *orderedmap.OrderedMap {
+    keys := make([]string, 0, len(m))
+    for k := range m {
+        keys = append(keys, k)
+    }
+    sort.Strings(keys)
+
+    om := orderedmap.New()
+    for _, k := range keys {
+        om.Set(k, toOrderedValue(m[k]))
+    }
+    return om
+}
+
+func toOrderedValue(v interface{}) interface{} {
+    switch t := v.(type) {
+    case map[string]interface{}:
+        return toOrderedMap(t)
+    case []interface{}:
+        // Convert nested maps inside arrays as well for consistency
+        out := make([]interface{}, len(t))
+        for i, e := range t {
+            out[i] = toOrderedValue(e)
+        }
+        return out
+    default:
+        return v
+    }
+}
+
+// iterMap returns a deterministic key order and a getter for the provided map-like value.
+// Supports *orderedmap.OrderedMap and map[string]interface{}.
+func iterMap(value interface{}) ([]string, func(string) (interface{}, bool), bool) {
+    if om, ok := value.(*orderedmap.OrderedMap); ok {
+        keys := om.Keys()
+        getter := func(k string) (interface{}, bool) {
+            v, ok := om.Get(k)
+            return v, ok
+        }
+        return keys, getter, true
+    }
+    if m, ok := value.(map[string]interface{}); ok {
+        keys := make([]string, 0, len(m))
+        for k := range m {
+            keys = append(keys, k)
+        }
+        sort.Strings(keys)
+        getter := func(k string) (interface{}, bool) {
+            v, ok := m[k]
+            return v, ok
+        }
+        return keys, getter, true
+    }
+    return nil, nil, false
 }
 
