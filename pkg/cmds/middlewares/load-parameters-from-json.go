@@ -83,7 +83,7 @@ func LoadParametersFromFiles(files []string, options ...ConfigFileOption) Middle
 }
 
 type configFileOptions struct {
-	Mapper       ConfigFileMapper
+	Mapper       ConfigMapper // Accept both ConfigFileMapper and pattern mapper
 	ParseOptions []parameters.ParseStepOption
 }
 
@@ -97,6 +97,17 @@ type ConfigFileOption func(*configFileOptions)
 //	  parameter-name: value
 func WithConfigFileMapper(mapper ConfigFileMapper) ConfigFileOption {
 	return func(o *configFileOptions) {
+		if mapper != nil {
+			o.Mapper = &configFileMapperAdapter{fn: mapper}
+		}
+	}
+}
+
+// WithConfigMapper provides a ConfigMapper (pattern-based or function-based) to transform
+// config file structures into the standard layer map format.
+// This is the same as WithConfigFileMapper but accepts the ConfigMapper interface directly.
+func WithConfigMapper(mapper ConfigMapper) ConfigFileOption {
+	return func(o *configFileOptions) {
 		o.Mapper = mapper
 	}
 }
@@ -108,7 +119,7 @@ func WithParseOptions(options ...parameters.ParseStepOption) ConfigFileOption {
 	}
 }
 
-func readConfigFileToLayerMap(filename string, mapper ConfigFileMapper) (map[string]map[string]interface{}, error) {
+func readConfigFileToLayerMap(filename string, mapper ConfigMapper) (map[string]map[string]interface{}, error) {
 	var rawData interface{}
 	switch {
 	case strings.HasSuffix(filename, ".json"):
@@ -133,7 +144,7 @@ func readConfigFileToLayerMap(filename string, mapper ConfigFileMapper) (map[str
 
 	// If a custom mapper is provided, use it to transform the config structure
 	if mapper != nil {
-		return mapper(rawData)
+		return mapper.Map(rawData)
 	}
 
 	// Default behavior: expect the standard layer map structure
