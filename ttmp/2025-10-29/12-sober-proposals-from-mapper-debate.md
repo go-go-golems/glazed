@@ -65,13 +65,14 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
    - Problem: Static `TargetParameter` (no captures) validated only at runtime.
    - Change: In `compileRule`, if no `{...}` in `TargetParameter`, derive prefix-adjusted name and validate existence immediately.
    - Rationale: Fail fast for common static mappings.
-   - Priority/Effort: P1 / Low-Medium.
+   - Priority/Effort: P1 / Low-Medium (implemented).
 
 6. Warn on capture shadowing in nested rules
    - Problem: Child `{env}` can silently override parent `{env}`.
-   - Change: During compile, detect duplicate capture names in parent+child; log warning or require explicit override flag.
+   - Change: During compile, detect duplicate capture names in parent+child; log a warning or require explicit override flag.
    - Rationale: Prevents subtle mapping bugs.
-   - Priority/Effort: P2 / Medium.
+   - Priority/Effort: P2 / Medium (implemented).
+   - Notes: Implemented as a compile-time warning to stderr; no runtime policy toggle.
 
 7. Optional pattern diagnostics
    - Problem: Optional patterns that don’t match are silent; hard to tell typo vs missing.
@@ -83,7 +84,7 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
    - Problem: Error doesn’t point to nearest existing path or reason.
    - Change: When failing a required pattern, include nearest matched prefix and indicate the missing segment.
    - Rationale: Faster troubleshooting.
-   - Priority/Effort: P2 / Medium.
+   - Priority/Effort: P2 / Medium (implemented).
 
 9. Explicit helper for canonical parameter name resolution
    - Problem: Prefix handling scattered and implicit.
@@ -117,9 +118,8 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
   - All implemented with linters/tests passing.  
   - New behaviors covered by table-driven tests.  
   - Simplified behavior: ambiguous cases (multi-match with distinct values, collisions) error by default; no runtime policy toggles.
-- P2 items: shadowing warning (6), optional diagnostics (7), improved required error context (8), canonical param helper (9).  
-  - Feature-flagged or debug-only paths where applicable.  
-  - Zero behavior change unless enabled.
+- P2 items: shadowing warning (6), improved required error context (8), canonical param helper (9) implemented; optional diagnostics (7) pending.  
+  - (6) warning-only (stderr) with no behavior change; (8) improves error message context only.
 - P3 item: regex compilation gating/removal (12).  
   - No functional change; code clarity improvement.
 
@@ -136,7 +136,7 @@ Each proposal includes: Problem → Change → Rationale → Priority/Effort.
   - Multi-match (distinct values) → error; collisions across rules → error.
   - Remove runtime policy toggles; adjust docs and tests accordingly.
 - MR 3 (P2):
-  - Capture shadowing warnings; optional diagnostics collector; improved required error context; canonical param-name helper (done early).
+  - Capture shadowing warnings (done); improved required error context (done); canonical param-name helper (done early); optional diagnostics collector (pending).
 - MR 4 (P3):
   - Regex compilation removal or gating.
 

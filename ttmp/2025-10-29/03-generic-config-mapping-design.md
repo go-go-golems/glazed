@@ -8,15 +8,17 @@ The current `ConfigFileMapper` requires users to write custom Go functions to tr
 
 ### Capture Semantics
 
-**Important**: Wildcards (`*`) match but don't capture by name. To capture values:
+**Important**: Wildcards (`*`) match but don't capture by name. To capture values use **named captures** only:
 
 1. **Named captures**: Use `{name}` in source pattern → `app.{env}.api_key` captures `env` as `"dev"` or `"prod"`
-2. **Positional captures**: Use `{0}`, `{1}`, etc. in target → `app.*.api_key` with target `{0}-api-key` captures first wildcard
+
+Strict semantics (Phase 1+2):
+- Wildcards that match multiple keys with different values are considered ambiguous and will error by default. Prefer named captures (e.g., `app.{env}.api_key`) to collect separate values.
+- If a wildcard matches multiple keys with identical values and maps to a single parameter, mapping succeeds.
 
 **Example**:
 - ❌ `Map("app.*.api_key", "demo", "{env}-api-key")` - `{env}` won't work (wildcard doesn't capture)
 - ✅ `Map("app.{env}.api_key", "demo", "{env}-api-key")` - Named capture works
-- ✅ `Map("app.*.api_key", "demo", "{0}-api-key")` - Positional capture works (`{0}` = first wildcard)
 
 ### Nested Rules
 
@@ -162,12 +164,7 @@ rules := []middlewares.MappingRule{
         TargetLayer: "demo",
         TargetParameter: "{env}-api-key",
     },
-    {
-        // Anonymous wildcard with positional capture
-        Source: "app.*.api_key",
-        TargetLayer: "demo",
-        TargetParameter: "{0}-api-key", // {0} = first wildcard match
-    },
+    // (Removed positional capture example. Prefer named captures instead.)
     {
         // Lambda transformation: dynamically compute layer and parameter
         Source: "app.{env}.{service}.api_key",
@@ -436,7 +433,7 @@ mapper := middlewares.NewConfigMapper().
     Build()
 ```
 
-### Example 4: Wildcard Matching with Positional Capture
+### Example 4: Wildcard Matching with Named Capture
 
 Config:
 ```yaml
@@ -448,14 +445,6 @@ services:
 ```
 
 Mapping:
-```go
-// Using positional capture {0} for anonymous wildcard
-mapper := middlewares.NewConfigMapper().
-    Map("services.*.api_key", "demo", "{0}-api-key"). // {0} = "auth" or "payment"
-    Build()
-```
-
-Or with named capture:
 ```go
 mapper := middlewares.NewConfigMapper().
     Map("services.{service}.api_key", "demo", "{service}-api-key").
@@ -893,4 +882,73 @@ Start with **Option 2 (Rules Array)** for programmatic API, then add **Option 3 
 5. Should we support validation rules? (e.g., regex validation, min/max for numbers)
 
 **Note**: Type conversion is handled by parameter definitions, not by mapping rules. The mapper extracts values as-is from the config file, and parameter definitions handle type conversion and validation.
+
+## Builder API (Phase 2) — Intern Handoff
+
+Goals:
+- Provide a fluent, ergonomic way to assemble `[]MappingRule` without changing core semantics.
+- Reuse existing strict behavior (ambiguous wildcards/collisions error by default), prefix-aware errors, and compile-time validation for static targets.
+
+Scope (Phase 2 builder only):
+- Support for `Source`, `TargetLayer`, `TargetParameter`, `Rules`, `Required`.
+- One-level nested rules (parent → children).
+- No positional captures, no TransformFunc, no YAML loader, no deep or array wildcards.
+
+Proposed API:
+```go
+type ConfigMapperBuilder struct {
+    layers *layers.ParameterLayers
+    rules  []middlewares.MappingRule
+}
+
+func NewConfigMapperBuilder(layers *layers.ParameterLayers) *ConfigMapperBuilder
+
+// Map adds a simple leaf rule. If required is provided and true, sets Required.
+func (b *ConfigMapperBuilder) Map(source string, targetLayer string, targetParameter string, required ...bool) *ConfigMapperBuilder
+
+// MapObject adds a parent rule with children (one-level nesting)
+func (b *ConfigMapperBuilder) MapObject(parentSource string, targetLayer string, childRules []middlewares.MappingRule) *ConfigMapperBuilder
+
+// Build validates via NewConfigMapper and returns a ConfigMapper
+func (b *ConfigMapperBuilder) Build() (middlewares.ConfigMapper, error)
+```
+
+Behavioral Notes:
+- `Build()` MUST call `NewConfigMapper(b.layers, b.rules...)` to reuse validation and semantics.
+- Static targets (no captures) are validated at Build-time (compile), prefix-aware.
+- Ambiguous wildcards (distinct values → same param) and cross-rule collisions MUST error.
+- Capture shadowing warning is emitted during Build when applicable.
+
+Helper for child rules (optional):
+```go
+func Child(source, target string) middlewares.MappingRule { return middlewares.MappingRule{Source: source, TargetParameter: target} }
+```
+
+Example usage:
+```go
+b := NewConfigMapperBuilder(paramLayers).
+    Map("app.settings.api_key", "demo", "api-key").
+    MapObject("app.{env}.settings", "demo", []middlewares.MappingRule{
+        {Source: "api_key", TargetParameter: "{env}-api-key"},
+        {Source: "threshold", TargetParameter: "threshold"},
+    })
+
+mapper, err := b.Build()
+if err != nil { /* handle */ }
+```
+
+Test Plan:
+- Map(): adds expected rule; Required flag behavior.
+- MapObject(): children inherit parent layer; one-level enforced.
+- Build():
+  - Invalid pattern syntax → error.
+  - Invalid static target parameter (prefix-aware) → error.
+  - Ambiguous wildcard (distinct values) → error; identical values OK.
+  - Cross-rule collision → error.
+  - Prefix-aware errors include "checked as" only when prefixed name differs.
+
+Acceptance Criteria:
+- API compiles; examples runnable.
+- Unit tests cover all behaviors above.
+- No changes to `ConfigMapper` interface or `NewConfigMapper` semantics.
 

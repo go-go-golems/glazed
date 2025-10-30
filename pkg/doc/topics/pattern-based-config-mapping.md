@@ -38,6 +38,26 @@ middleware := middlewares.LoadParametersFromFile(
 )
 ```
 
+### Quick Start (Builder API)
+
+Prefer a fluent API? Use the builder to assemble rules, then build a mapper with the same strict validation and semantics:
+
+```go
+b := middlewares.NewConfigMapperBuilder(layers).
+    Map("app.settings.api_key", "demo", "api-key")
+
+mapper, err := b.Build()
+if err != nil {
+    panic(err)
+}
+
+// Use with LoadParametersFromFile
+middleware := middlewares.LoadParametersFromFile(
+    "config.yaml",
+    middlewares.WithConfigMapper(mapper),
+)
+```
+
 ## Pattern Syntax
 
 Pattern matching enables flexible config file mapping through several mechanisms, each designed for specific config structures.
@@ -131,6 +151,18 @@ middlewares.MappingRule{
 }
 ```
 
+Builder equivalent:
+
+```go
+b := middlewares.NewConfigMapperBuilder(layers).
+    MapObject("app.settings", "demo", []middlewares.MappingRule{
+        middlewares.Child("api_key", "api-key"),
+        middlewares.Child("threshold", "threshold"),
+        middlewares.Child("timeout", "timeout"),
+    })
+mapper, err := b.Build()
+```
+
 **Config**:
 ```yaml
 app:
@@ -208,6 +240,27 @@ type MappingRule struct {
     Required bool
 }
 ```
+
+## Builder API
+
+Use the builder for a fluent way to assemble rules while keeping the same strict behavior and validation:
+
+```go
+b := middlewares.NewConfigMapperBuilder(layers).
+    Map("app.settings.api_key", "demo", "api-key", true).
+    MapObject("app.{env}.settings", "demo", []middlewares.MappingRule{
+        middlewares.Child("api_key", "{env}-api-key"),
+        middlewares.Child("threshold", "threshold"),
+    })
+
+mapper, err := b.Build() // Validates via NewConfigMapper
+```
+
+Notes:
+- Same strict semantics: multi-match ambiguity and cross-rule collisions error by default.
+- Prefix-aware parameter resolution and compile-time validation of static targets apply at Build().
+- One level of nested rules is supported.
+- Positional captures are not supported (use named captures).
 
 ## Validation
 
