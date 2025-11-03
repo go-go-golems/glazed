@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 type DemoSettings struct {
@@ -147,6 +149,66 @@ func main() {
 		panic(err)
 	}
 	root.AddCommand(cobraCmd)
+
+	// validate command: validate config.yaml using the custom mapper and layer definitions
+	validateCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validate the custom-mapped config file",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Silence usage and cobra error prefix on failure for clean output
+			cmd.SilenceUsage = true
+			cmd.SilenceErrors = true
+			demo, err := NewDemoBareCommand()
+			if err != nil {
+				return err
+			}
+			path := "cmd/examples/config-custom-mapper/config.yaml"
+			b, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			var raw interface{}
+			if err := yaml.Unmarshal(b, &raw); err != nil {
+				return err
+			}
+			mapped, err := flatConfigMapper(raw)
+			if err != nil {
+				return err
+			}
+			issues := []string{}
+			// Validate mapped structure against known layers and params
+			for layerSlug, kv := range mapped {
+				layer, ok := demo.Description().Layers.Get(layerSlug)
+				if !ok {
+					issues = append(issues, fmt.Sprintf("unknown layer: %s", layerSlug))
+					continue
+				}
+				pmap := kv
+				pds := layer.GetParameterDefinitions()
+				known := map[string]bool{}
+				pds.ForEach(func(pd *parameters.ParameterDefinition) { known[pd.Name] = true })
+				for key, val := range pmap {
+					if !known[key] {
+						issues = append(issues, fmt.Sprintf("unknown parameter in layer %s: %s", layerSlug, key))
+						continue
+					}
+					pd, _ := pds.Get(key)
+					if _, err := pd.CheckValueValidity(val); err != nil {
+						issues = append(issues, fmt.Sprintf("invalid value for %s.%s: %v", layerSlug, key, err))
+					}
+				}
+			}
+			if len(issues) > 0 {
+				for _, i := range issues {
+					fmt.Println(i)
+				}
+				return fmt.Errorf("validation failed")
+			}
+			fmt.Println("OK")
+			return nil
+		},
+	}
+	root.AddCommand(validateCmd)
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)

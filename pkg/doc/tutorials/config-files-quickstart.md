@@ -187,12 +187,102 @@ Run:
 go run ./cmd/examples/overlay-override overlay-override --config-file ./base.yaml
 ```
 
+## 6. Pattern-Based Mapping (Optional)
+
+Map arbitrary config structures to parameters without custom Go by using the pattern-based config mapper. Works with YAML or JSON files.
+
+```go
+// Define a layer
+demoLayer, _ := layers.NewParameterLayer("demo", "Demo",
+    layers.WithParameterDefinitions(
+        parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+        parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
+        parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
+    ),
+)
+paramLayers := layers.NewParameterLayers(layers.WithLayers(demoLayer))
+
+// Create a mapper using a named capture {env}
+mapper, _ := patternmapper.NewConfigMapper(paramLayers,
+    patternmapper.MappingRule{
+        Source:      "app.{env}.settings",
+        TargetLayer: "demo",
+        Rules: []patternmapper.MappingRule{
+            {Source: "api_key", TargetParameter: "{env}-api-key"},
+        },
+    },
+)
+
+// Use the mapper when loading the file
+mw := middlewares.LoadParametersFromFile("config.yaml",
+    middlewares.WithConfigMapper(mapper),
+)
+_ = middlewares.ExecuteMiddlewares(paramLayers, layers.NewParsedLayers(), mw)
+```
+
+Builder API (fluent):
+
+```go
+b := patternmapper.NewConfigMapperBuilder(paramLayers).
+    MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
+        patternmapper.Child("api_key", "{env}-api-key"),
+    })
+mapper, _ := b.Build()
+```
+
+## 7. Direct Middleware API (Alternative to Cobra)
+
+You can execute middlewares directly without relying on the Cobra parser config:
+
+```go
+err := middlewares.ExecuteMiddlewares(layers_, parsed,
+    middlewares.SetFromDefaults(),
+    middlewares.LoadParametersFromFiles([]string{"base.yaml", "local.yaml"}),
+    middlewares.UpdateFromEnv("APP"),
+    middlewares.ParseFromCobraCommand(cmd), // flags & args
+)
+```
+
+## 8. Validation and Ambiguity (Gotchas)
+
+- Required patterns: mark mappings as required so missing keys error out.
+
+  ```go
+  patternmapper.MappingRule{
+      Source:          "app.settings.api_key",
+      TargetLayer:     "demo",
+      TargetParameter: "api-key",
+      Required:        true,
+  }
+  ```
+
+- Ambiguity: wildcard patterns that match multiple different values or rules that resolve to the same target parameter cause errors. Prefer named captures (e.g., `app.{env}.api_key`) when collecting multiple values.
+
+- Missing parameters: mapping to a non-existent parameter errors (prefix-aware), helping catch typos early.
+
+## 9. Deprecated: Viper Integration
+
+Legacy Viper-based config parsing (e.g., `GatherFlagsFromViper`) is deprecated. Prefer config file middlewares plus env and flags:
+
+```go
+err := middlewares.ExecuteMiddlewares(layers_, parsed,
+    middlewares.SetFromDefaults(),
+    middlewares.LoadParametersFromFiles([]string{"base.yaml", "env.yaml", "local.yaml"}),
+    middlewares.UpdateFromEnv("APP"),
+    middlewares.ParseFromCobraCommand(cmd),
+)
+```
+
 ## Next Steps
 
-- See the topic page for deeper coverage:
+- See topic pages and examples for deeper coverage:
 
 ```
 glaze help config-files
+glaze help pattern-based-config-mapping
+glaze help cmds-middlewares
 ```
+
+- Examples: `cmd/examples/config-overlay`, `cmd/examples/config-pattern-mapper`
 
 

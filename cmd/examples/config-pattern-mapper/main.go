@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
@@ -69,6 +70,37 @@ func main() {
 	paramLayers := layers.NewParameterLayers(
 		layers.WithLayers(demoLayer),
 	)
+
+	// Simple CLI switch: `validate [config.yaml]` validates the config against mappings.yaml
+	if len(os.Args) > 1 && os.Args[1] == "validate" {
+		mappingPath := "cmd/examples/config-pattern-mapper/mappings.yaml"
+		configPath := "cmd/examples/config-pattern-mapper/config-example.yaml"
+		if len(os.Args) > 2 {
+			configPath = os.Args[2]
+		}
+
+		rules, err := pm.LoadRulesFromFile(mappingPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		mapper, err := pm.NewConfigMapper(paramLayers, rules...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var cfg map[string]interface{}
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			log.Fatal(err)
+		}
+		if _, err := mapper.Map(cfg); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("OK")
+		return
+	}
 
 	// Example 1: Simple exact match mapping
 	fmt.Println("=== Example 1: Simple Exact Match ===")
