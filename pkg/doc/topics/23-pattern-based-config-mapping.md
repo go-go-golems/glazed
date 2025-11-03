@@ -15,16 +15,52 @@ SectionType: GeneralTopic
 
 # Pattern-Based Config Mapping
 
-The pattern-based config mapping system provides a declarative way to map arbitrary config file structures to Glazed's layer-based parameter system without writing custom Go functions. Instead of implementing `ConfigFileMapper` functions with manual config traversal, you define mapping rules that specify patterns to match in config files and how to map matched values to parameters.
+The pattern-based config mapping system provides a declarative way to map arbitrary config file structures to Glazed's layer-based parameter system without writing custom Go functions. Instead of implementing `ConfigFileMapper` functions with manual config traversal, you define mapping rules that specify patterns to match in config files and how to map matched values to parameters. This keeps configuration logic concise, testable, and consistent across commands.
+
+## How it works (mental model)
+-## Sections at a glance
+
+- Quick Start: Minimal code to get started
+- Mapping rules from YAML/JSON files: Define and load rules from files
+- Pattern Syntax: Exact, captures, wildcards, nested rules, inheritance
+- Using the Mapper: Wire into `LoadParametersFromFile`
+- Validation: Build-time vs runtime checks, validate-only pass
+- Matching, ambiguity, and errors: Deterministic traversal and fail-fast rules
+- When to Use: Choose pattern mappers vs custom mappers
+- Complete Example: End-to-end demo
+- Reference: `MappingRule` and the Builder API
+- Current Limitations and See Also
+
+
+Pattern mapping runs in two stages:
+
+1) Build-time (rule compilation)
+- Parse and validate rule syntax (segments, wildcards, named captures)
+- Verify target layers exist and static target parameters are valid (prefix-aware)
+- Check that any `{name}` referenced in `TargetParameter` is captured in `Source`
+
+2) Runtime (matching and writes)
+- Traverse the config in deterministic (lexicographic) order
+- For each pattern, collect matches; resolve `{captures}` into parameter names
+- Write values to the target layer/parameter; error on ambiguity or collisions
+- Respect `Required: true` by failing if no match is found (with path hints)
 
 ## Quick Start
 
 A minimal example shows how to map a simple config structure:
 
 ```go
+package main
+
+import (
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+    pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
+)
+
 // Create a pattern mapper
-mapper, err := patternmapper.NewConfigMapper(layers,
-    patternmapper.MappingRule{
+mapper, err := pm.NewConfigMapper(layers_,
+    pm.MappingRule{
         Source:          "app.settings.api_key",
         TargetLayer:     "demo",
         TargetParameter: "api-key",
@@ -32,7 +68,7 @@ mapper, err := patternmapper.NewConfigMapper(layers,
 )
 
 // Use with LoadParametersFromFile
-middleware := middlewares.LoadParametersFromFile(
+mw := middlewares.LoadParametersFromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -43,7 +79,15 @@ middleware := middlewares.LoadParametersFromFile(
 Prefer a fluent API? Use the builder to assemble rules, then build a mapper with the same strict validation and semantics:
 
 ```go
-b := patternmapper.NewConfigMapperBuilder(layers).
+package main
+
+import (
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+    pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
+)
+
+b := pm.NewConfigMapperBuilder(layers_).
     Map("app.settings.api_key", "demo", "api-key")
 
 mapper, err := b.Build()
@@ -52,7 +96,61 @@ if err != nil {
 }
 
 // Use with LoadParametersFromFile
-middleware := middlewares.LoadParametersFromFile(
+mw := middlewares.LoadParametersFromFile(
+    "config.yaml",
+    middlewares.WithConfigMapper(mapper),
+)
+```
+
+## Mapping rules from YAML/JSON files
+
+For larger rule sets or configuration-driven apps, define rules in YAML/JSON and load them at startup. The loader accepts either a top-level `mappings` array or a bare array of rules.
+
+### File format
+
+Top-level `mappings`:
+
+```yaml
+mappings:
+  - source: "app.settings.api_key"
+    target_layer: "demo"
+    target_parameter: "api-key"
+  - source: "app.{env}.api_key"
+    target_layer: "demo"
+    target_parameter: "{env}-api-key"
+```
+
+Bare array:
+
+```yaml
+- source: "app.settings.threshold"
+  target_layer: "demo"
+  target_parameter: "threshold"
+```
+
+### Loading rules (and mapper)
+
+```go
+package main
+
+import (
+    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+    pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
+)
+
+rules, err := pm.LoadRulesFromFile("mappings.yaml")
+if err != nil { panic(err) }
+
+// Option 1: build explicitly
+mapper, err := pm.NewConfigMapper(layers_, rules...)
+if err != nil { panic(err) }
+
+// Option 2: convenience
+mapper2, err := pm.LoadMapperFromFile(layers_, "mappings.yaml")
+if err != nil { panic(err) }
+
+mw := middlewares.LoadParametersFromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -60,7 +158,7 @@ middleware := middlewares.LoadParametersFromFile(
 
 ## Pattern Syntax
 
-Pattern matching enables flexible config file mapping through several mechanisms, each designed for specific config structures.
+Pattern matching enables flexible config file mapping through several mechanisms, each designed for specific config structures. The goal is to make rules readable and intentional while keeping runtime behavior deterministic and debuggable.
 
 ### Exact Match
 
@@ -133,7 +231,7 @@ app:
 
 Note: Wildcards (`*`) match but don't capture. To use the matched value, use named captures `{name}` instead.
 
-Important: When a wildcard pattern matches multiple keys with different values, the mapper treats this as an ambiguity and returns an error by default. Use named captures (e.g., `app.{env}.api_key`) if you need to collect multiple values, or ensure matched values are identical if a single target parameter is intended.
+Important: When a wildcard pattern matches multiple keys with different values, the mapper treats this as an ambiguity and returns an error by default. Use named captures (e.g., `app.{env}.api_key`) if you need to collect multiple values, or ensure matched values are identical if a single target parameter is intended. This prevents accidental aggregation of unrelated values.
 
 ### Nested Rules
 
@@ -243,7 +341,7 @@ type MappingRule struct {
 
 ## Builder API
 
-Use the builder for a fluent way to assemble rules while keeping the same strict behavior and validation:
+Use the builder for a fluent way to assemble rules while keeping the same strict behavior and validation. Builders are useful when you want to co-locate mapping intent with code or construct rules conditionally based on application state.
 
 ```go
 b := patternmapper.NewConfigMapperBuilder(layers).
@@ -264,7 +362,7 @@ Notes:
 
 ## Validation
 
-Pattern mappers validate at creation time to catch errors early and provide clear feedback. This happens when you call `NewConfigMapper`, not at runtime when processing config files.
+Pattern mappers validate at creation time to catch errors early and provide clear feedback. This happens when you call `NewConfigMapper`, not at runtime when processing config files. At runtime, `Map` enforces dynamic constraints and reports precise errors with path hints.
 
 **Validation checks**:
 1. **Pattern syntax**: Valid segments, capture groups, wildcards
@@ -308,14 +406,14 @@ Without `Required: true`, patterns that don't match are silently skipped, allowi
 
 ## Ambiguity Handling
 
-The mapper fails fast on ambiguous situations:
+The mapper fails fast on ambiguous situations to prevent unpredictable writes and hard-to-debug behavior:
 
 - Multi-match: If a single pattern matches multiple paths that would resolve to the same target parameter with different values (e.g., `app.*.api_key` for `dev` and `prod`), an error is returned.
 - Collisions: If different patterns resolve to the same target parameter (e.g., `app.settings.api_key` and `config.api_key` both mapping to `demo.api-key`), an error is returned.
 
 ## Error Handling
 
-Runtime errors occur when config files don't match expectations or reference nonexistent parameters. The system provides detailed error messages to aid debugging.
+Runtime errors occur when config files don't match expectations or reference nonexistent parameters. The system provides detailed error messages to aid debugging. Error messages include both the user-provided target name and the canonical (prefix-aware) parameter name where relevant.
 
 **Error conditions**:
 - Required pattern doesn't match
@@ -343,7 +441,7 @@ When a layer has a prefix and the target parameter name doesn't include it, the 
 ## Matching Order and Overwrites
 
 - Deterministic traversal: The mapper traverses config objects in lexicographic key order to ensure stable behavior across runs.
-- Wildcards: Prefer named captures (e.g., `app.{env}.api_key`) when multiple values are expected. Wildcards that match multiple keys with different values are considered ambiguous and will error.
+- Prefer captures over wildcards: When collecting multiple values (e.g., per-environment), named captures make intent explicit and avoid ambiguity.
 - Overwrites: Overwrites across different rules to the same parameter are considered collisions and will error.
 
 ## When to Use
@@ -369,7 +467,7 @@ Both approaches are fully supported and can be used interchangeably in the same 
 
 ## Complete Example
 
-A real-world example showing pattern mapper integration:
+A real-world example showing pattern mapper integration. This example highlights capture inheritance, prefix-aware parameters, and minimal application wiring.
 
 ```go
 package main
@@ -465,38 +563,13 @@ glaze help parameter-layers-and-parsed-layers
 
 **Example code**: See `cmd/examples/config-pattern-mapper/` for working examples.
 
-### Validation
+<!-- Validation content consolidated in the main Validation section above -->
 
-Validate configs by constructing a mapper (rules + layers) and invoking `Map` on the raw config. Validation happens in two phases:
+## Best practices
 
-- Build-time (when calling `NewConfigMapper`):
-  - Pattern syntax checks (segments, wildcards, named captures)
-  - Target layer existence
-  - Capture references used in `TargetParameter` must appear in `Source`
-  - Static target parameters are verified against the layer (prefix-aware)
-
-- Runtime (when calling `Map(raw)`):
-  - Required patterns must match (errors include nearest path hints and available keys)
-  - Missing target parameters are reported with prefix-aware messages
-  - Multi-match ambiguity is rejected (same rule producing multiple distinct values)
-  - Cross-rule collisions are rejected (different rules writing the same parameter)
-  - Deterministic traversal ensures stable behavior
-
-```go
-rules, err := patternmapper.LoadRulesFromFile("mappings.yaml")
-if err != nil { panic(err) }
-mapper, err := patternmapper.NewConfigMapper(paramLayers, rules...)
-if err != nil { panic(err) }
-
-data, _ := os.ReadFile("config.yaml")
-var raw map[string]interface{}
-_ = yaml.Unmarshal(data, &raw)
-
-// Validate-only: any error indicates invalid config for these rules/layers
-if _, err := mapper.Map(raw); err != nil {
-    // handle / return error
-}
-```
-
-Overlays: validate each file individually, or aggregate per-parameter matches across files to satisfy `Required` rules overlay-wide.
+- Keep rule sets small and focused (3–10 rules). Split by feature if needed.
+- Prefer named captures with descriptive names (`{env}`, `{tenant}`) over wildcards.
+- Mark critical paths `Required: true` to fail fast when config drifts.
+- Start with a validate-only pass in CI to surface actionable errors early.
+- Use mapping files when rules are shared across commands or must be updated without recompiling.
 
