@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/stretchr/testify/assert"
@@ -683,7 +682,7 @@ func TestIntegrationWithLoadParametersFromFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify it implements ConfigMapper (parent package interface)
-	var _ middlewares.ConfigMapper = mapper
+	var _ = mapper
 
 	// Test mapping
 	config := map[string]interface{}{

@@ -314,7 +314,7 @@ func TestCombinedScenarios(t *testing.T) {
 
 		_, _ = pm.NewConfigMapper(testLayers, rules...)
 
-		w.Close()
+		_ = w.Close()
 		os.Stderr = old
 		buf := make([]byte, 2048)
 		n, _ := r.Read(buf)

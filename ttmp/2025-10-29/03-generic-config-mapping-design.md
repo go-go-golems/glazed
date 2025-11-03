@@ -717,9 +717,11 @@ middleware := middlewares.LoadParametersFromFile(
 )
 
 // Option 2: Load from config file
+mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
+if err != nil { /* handle */ }
 middleware := middlewares.LoadParametersFromFile(
     "config.yaml",
-    middlewares.WithConfigFileMapperFromFile("mappings.yaml"),
+    middlewares.WithConfigMapper(mapper),
     middlewares.WithParseOptions(
         parameters.WithParseStepSource("config"),
     ),
@@ -730,7 +732,7 @@ middleware := middlewares.LoadParametersFromFile(
 
 ```go
 // Load mapper from YAML/JSON file
-mapper, err := middlewares.LoadMapperFromFile("mappings.yaml")
+mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
 
 // Create mapper from rules
 mapper := patternmapper.NewConfigMapper(rules...)

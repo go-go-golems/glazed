@@ -14,6 +14,7 @@ The pattern mapper allows you to declaratively map config file structures to lay
 4. **Nested Rules**: Group related mappings together with clean syntax
 5. **Capture Inheritance**: Child rules inherit captures from parent rules
 6. **Builder API**: Fluent way to assemble rules with the same strict validation
+7. **YAML/JSON Loader**: Load mapping rules from a file (`mappings.yaml`)
 
 ## Running the Example
 
@@ -105,6 +106,25 @@ b := patternmapper.NewConfigMapperBuilder(layers).
     })
 
 mapper, err := b.Build() // Validates via NewConfigMapper
+```
+
+### New Way (Pattern Mapper - YAML/JSON Loader):
+```go
+// mappings.yaml
+mappings:
+  - source: "environments.{env}.settings"
+    target_layer: "demo"
+    rules:
+      - source: "api_key"
+        target_parameter: "{env}-api-key"
+
+// Go
+mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
+if err != nil { /* handle */ }
+middleware := middlewares.LoadParametersFromFile(
+    "config.yaml",
+    middlewares.WithConfigMapper(mapper),
+)
 ```
 
 ## When to Use

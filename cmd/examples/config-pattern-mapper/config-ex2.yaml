@@ -1,0 +1,7 @@
+app:
+  dev:
+    api_key: "dev-secret"
+  prod:
+    api_key: "prod-secret"
+
+

@@ -1,0 +1,5 @@
+app:
+  settings:
+    api_key: "required-ok"
+
+

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"log"
 
@@ -8,7 +10,35 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"gopkg.in/yaml.v3"
 )
+
+//go:embed mappings.yaml
+var mappingsYAML []byte
+
+//go:embed config-example.yaml
+var configExampleYAML []byte
+
+//go:embed config-ex1.yaml
+var configEx1 []byte
+
+//go:embed config-ex2.yaml
+var configEx2 []byte
+
+//go:embed config-ex3.yaml
+var configEx3 []byte
+
+//go:embed config-ex4.yaml
+var configEx4 []byte
+
+//go:embed config-ex6.yaml
+var configEx6 []byte
+
+//go:embed config-ex7.yaml
+var configEx7 []byte
+
+//go:embed config-ex8.yaml
+var configEx8 []byte
 
 // This example demonstrates the new pattern-based config mapping system.
 // It shows how to use declarative mapping rules instead of writing custom Go functions.
@@ -59,13 +89,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key":   "secret123",
-					"threshold": 42,
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx1, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -91,15 +117,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"dev": map[string]interface{}{
-					"api_key": "dev-secret",
-				},
-				"prod": map[string]interface{}{
-					"api_key": "prod-secret",
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx2, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -129,14 +149,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key":   "secret123",
-					"threshold": 42,
-					"timeout":   60,
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx3, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -165,19 +180,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"environments": map[string]interface{}{
-				"dev": map[string]interface{}{
-					"settings": map[string]interface{}{
-						"api_key": "dev-secret",
-					},
-				},
-				"prod": map[string]interface{}{
-					"settings": map[string]interface{}{
-						"api_key": "prod-secret",
-					},
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx4, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -227,12 +232,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key": "builder-secret",
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx6, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -257,19 +259,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"environments": map[string]interface{}{
-				"dev": map[string]interface{}{
-					"settings": map[string]interface{}{
-						"api_key": "dev-builder",
-					},
-				},
-				"prod": map[string]interface{}{
-					"settings": map[string]interface{}{
-						"api_key": "prod-builder",
-					},
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx7, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -292,12 +284,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		config := map[string]interface{}{
-			"app": map[string]interface{}{
-				"settings": map[string]interface{}{
-					"api_key": "required-ok",
-				},
-			},
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configEx8, &config); err != nil {
+			log.Fatal(err)
 		}
 
 		result, err := mapper.Map(config)
@@ -305,6 +294,34 @@ func main() {
 			log.Fatal(err)
 		}
 
+		fmt.Printf("Config: %v\n", config)
+		fmt.Printf("Mapped: %v\n\n", result)
+	}
+
+	// Example 9: YAML/JSON Loader (go:embed) - Load rules and config from embedded files
+	fmt.Println("=== Example 9: YAML/JSON Loader (go:embed) ===")
+	{
+		rules, err := pm.LoadRulesFromReader(bytes.NewReader(mappingsYAML))
+		if err != nil {
+			log.Fatal(err)
+		}
+		mapper, err := pm.NewConfigMapper(paramLayers, rules...)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(configExampleYAML, &config); err != nil {
+			log.Fatal(err)
+		}
+
+		result, err := mapper.Map(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("mappings.yaml (embedded) length: %d bytes\n", len(mappingsYAML))
+		fmt.Printf("config-example.yaml (embedded) length: %d bytes\n", len(configExampleYAML))
 		fmt.Printf("Config: %v\n", config)
 		fmt.Printf("Mapped: %v\n\n", result)
 	}
