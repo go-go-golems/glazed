@@ -273,6 +273,15 @@ err := middlewares.ExecuteMiddlewares(layers_, parsed,
 )
 ```
 
+## 10. Validate Config Files
+
+See the validation guides for full explanations and code snippets:
+
+```
+glaze help config-files
+glaze help pattern-based-config-mapping
+```
+
 ## Next Steps
 
 - See topic pages and examples for deeper coverage:

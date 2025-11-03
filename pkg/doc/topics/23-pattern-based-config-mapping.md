@@ -465,3 +465,38 @@ glaze help parameter-layers-and-parsed-layers
 
 **Example code**: See `cmd/examples/config-pattern-mapper/` for working examples.
 
+### Validation
+
+Validate configs by constructing a mapper (rules + layers) and invoking `Map` on the raw config. Validation happens in two phases:
+
+- Build-time (when calling `NewConfigMapper`):
+  - Pattern syntax checks (segments, wildcards, named captures)
+  - Target layer existence
+  - Capture references used in `TargetParameter` must appear in `Source`
+  - Static target parameters are verified against the layer (prefix-aware)
+
+- Runtime (when calling `Map(raw)`):
+  - Required patterns must match (errors include nearest path hints and available keys)
+  - Missing target parameters are reported with prefix-aware messages
+  - Multi-match ambiguity is rejected (same rule producing multiple distinct values)
+  - Cross-rule collisions are rejected (different rules writing the same parameter)
+  - Deterministic traversal ensures stable behavior
+
+```go
+rules, err := patternmapper.LoadRulesFromFile("mappings.yaml")
+if err != nil { panic(err) }
+mapper, err := patternmapper.NewConfigMapper(paramLayers, rules...)
+if err != nil { panic(err) }
+
+data, _ := os.ReadFile("config.yaml")
+var raw map[string]interface{}
+_ = yaml.Unmarshal(data, &raw)
+
+// Validate-only: any error indicates invalid config for these rules/layers
+if _, err := mapper.Map(raw); err != nil {
+    // handle / return error
+}
+```
+
+Overlays: validate each file individually, or aggregate per-parameter matches across files to satisfy `Required` rules overlay-wide.
+
