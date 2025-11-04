@@ -98,6 +98,7 @@ type ParseOptions struct {
 	AdditionalMiddlewares []cmd_middlewares.Middleware
 	UseViper              bool
 	UseEnv                bool
+	ConfigFiles           []string
 }
 
 type ParseOption func(*ParseOptions)
@@ -130,6 +131,13 @@ func WithViper() ParseOption {
 	}
 }
 
+// WithConfigFiles applies a list of config files (low -> high precedence)
+func WithConfigFiles(files ...string) ParseOption {
+	return func(o *ParseOptions) {
+		o.ConfigFiles = append(o.ConfigFiles, files...)
+	}
+}
+
 // WithEnvMiddleware enables environment variable parsing with the given prefix
 func WithEnvMiddleware(prefix string) ParseOption {
 	return func(o *ParseOptions) {
@@ -154,20 +162,24 @@ func ParseCommandParameters(
 	middlewares_ := []cmd_middlewares.Middleware{}
 	middlewares_ = append(middlewares_, opts.AdditionalMiddlewares...)
 
-	// Add Viper middleware if enabled
-	if opts.UseViper {
-		middlewares_ = append(middlewares_,
-			cmd_middlewares.GatherFlagsFromViper(
-				parameters.WithParseStepSource("viper"),
-			),
-		)
-	}
+	// Deprecated: Viper support is removed; Use WithConfigFiles/WithEnvMiddleware instead
 
 	// Add environment variables middleware if enabled
 	if opts.UseEnv {
 		middlewares_ = append(middlewares_,
 			cmd_middlewares.UpdateFromEnv(opts.EnvPrefix,
 				parameters.WithParseStepSource("env"),
+			),
+		)
+	}
+
+	// Add config files middleware if provided
+	if len(opts.ConfigFiles) > 0 {
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.LoadParametersFromFiles(opts.ConfigFiles,
+				cmd_middlewares.WithParseOptions(
+					parameters.WithParseStepSource("config"),
+				),
 			),
 		)
 	}

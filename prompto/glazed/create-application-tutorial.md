@@ -153,8 +153,9 @@ cmd/
    middlewares := []middlewares.Middleware{
        // 1. Parse input
        middlewares.ParseFromCobraCommand(cmd),
-       // 2. Load configuration
-       middlewares.GatherFlagsFromViper(),
+       // 2. Load configuration from files and env
+       middlewares.LoadParametersFromFile("config.yaml"),
+       middlewares.UpdateFromEnv("MYAPP"),
        // 3. Validate
        customMiddlewares.ValidateSettings(),
        // 4. Transform
@@ -198,8 +199,8 @@ func main() {
         log.Fatal().Err(err).Msg("Failed to create root command")
     }
 
-    // 4. Initialize configuration and logger
-    err = clay.InitViper("myapp", rootCmd)
+    // 4. Initialize logging flags and Glazed settings
+    err = clay.InitGlazed("myapp", rootCmd)
     cobra.CheckErr(err)
 
     // 5. Setup help system

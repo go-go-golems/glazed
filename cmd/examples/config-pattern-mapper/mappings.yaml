@@ -1,0 +1,8 @@
+mappings:
+  - source: "environments.{env}.settings"
+    target_layer: "demo"
+    rules:
+      - source: "api_key"
+        target_parameter: "{env}-api-key"
+
+

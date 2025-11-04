@@ -397,11 +397,15 @@ Middlewares in the Glazed framework provide a powerful mechanism to manage param
    )
    ```
 
-3. **LoadParametersFromFile**: Loads parameters from JSON or YAML files.
+3. **LoadParametersFromFile / LoadParametersFromFiles**: Load parameters from JSON or YAML files.
    ```go
+   // Single file
    middleware := middlewares.LoadParametersFromFile("config.yaml",
-       parameters.WithParseStepSource("config"),
-   )
+       middlewares.WithParseOptions(parameters.WithParseStepSource("config")))
+
+   // Multiple files (low -> high precedence)
+   middleware2 := middlewares.LoadParametersFromFiles([]string{"base.yaml", "local.yaml"},
+       middlewares.WithParseOptions(parameters.WithParseStepSource("config")))
    ```
 
 4. **ParseFromCobraCommand**: Parses parameter values from a Cobra command, typically used for CLI applications.
@@ -419,8 +423,8 @@ To use middlewares, chain them together and execute them with your parameter lay
 ```go
 middlewares.ExecuteMiddlewares(layers, parsedLayers,
     middlewares.SetFromDefaults(),
+    middlewares.LoadParametersFromFiles([]string{"config.yaml", "config.local.yaml"}),
     middlewares.UpdateFromEnv("APP"),
-    middlewares.LoadParametersFromFile("config.yaml"),
     middlewares.ParseFromCobraCommand(cmd),
 )
 ```

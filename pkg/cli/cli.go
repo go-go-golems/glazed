@@ -79,6 +79,7 @@ type CommandSettings struct {
 	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
 	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
 	PrintSchema            bool   `glazed.parameter:"print-schema"`
+	ConfigFile             string `glazed.parameter:"config-file"`
 }
 
 const CommandSettingsSlug = "command-settings"
@@ -98,15 +99,16 @@ func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
 				parameters.ParameterTypeBool,
 				parameters.WithHelp("Print the parsed parameters"),
 			),
-			parameters.NewParameterDefinition(
-				"load-parameters-from-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the command's flags from file"),
-			),
+			// Deprecated: legacy per-command parameter file injection (removed from default flow)
 			parameters.NewParameterDefinition(
 				"print-schema",
 				parameters.ParameterTypeBool,
 				parameters.WithHelp("Print the command's schema"),
+			),
+			parameters.NewParameterDefinition(
+				"config-file",
+				parameters.ParameterTypeString,
+				parameters.WithHelp("Explicit config file path to load via middlewares"),
 			),
 		),
 	)

@@ -1,0 +1,9 @@
+environments:
+  dev:
+    settings:
+      api_key: "dev-from-yaml"
+  prod:
+    settings:
+      api_key: "prod-from-yaml"
+
+

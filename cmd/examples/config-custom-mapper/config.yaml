@@ -1,0 +1,10 @@
+# Flat config structure - different from the default layer-based structure
+api_key: "secret-from-flat-config"
+threshold: 42
+
+# Triple-nested structure example
+app:
+  settings:
+    api:
+      key: "secret-from-triple-nested"
+

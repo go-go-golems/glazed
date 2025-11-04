@@ -1,8 +1,11 @@
 package middlewares
 
 import (
+	"sync"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -92,6 +95,38 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 	}
 }
 
+// ConfigFilesResolver is a callback used by Cobra-specific middleware to resolve the list
+// of config files to load in low -> high precedence order.
+type ConfigFilesResolver func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
+
+// LoadParametersFromResolvedFilesForCobra loads parameters from a resolver-provided list of files
+// (low -> high precedence). Each file is tracked as a separate parse step with metadata.
+func LoadParametersFromResolvedFilesForCobra(
+	cmd *cobra.Command,
+	args []string,
+	resolver ConfigFilesResolver,
+	options ...parameters.ParseStepOption,
+) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			if err := next(layers_, parsedLayers); err != nil {
+				return err
+			}
+			files, err := resolver(parsedLayers, cmd, args)
+			if err != nil {
+				return err
+			}
+			// Apply as a single multi-file step using helper
+			// Wrap ParseStepOptions into ConfigFileOptions
+			configOpts := []ConfigFileOption{}
+			if len(options) > 0 {
+				configOpts = append(configOpts, WithParseOptions(options...))
+			}
+			return LoadParametersFromFiles(files, configOpts...)(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })(layers_, parsedLayers)
+		}
+	}
+}
+
 // GatherFlagsFromViper creates a middleware that loads parameter values from Viper configuration.
 // This middleware is useful for integrating Viper-based configuration management with Glazed commands.
 //
@@ -100,7 +135,12 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 // Usage:
 //
 //	middleware := middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper"))
+//
+// Deprecated: Use LoadParametersFromFiles and UpdateFromEnv instead.
 func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
+	warnGatherViperOnce.Do(func() {
+		log.Warn().Msg("middlewares.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+	})
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 
@@ -156,7 +196,12 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 //	    []string{"flag1", "flag2"},
 //	    parameters.WithParseStepSource("viper"),
 //	)
+//
+// Deprecated: Use LoadParametersFromFiles and UpdateFromEnv instead.
 func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseStepOption) Middleware {
+	warnGatherViperOnce.Do(func() {
+		log.Warn().Msg("middlewares.GatherSpecificFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+	})
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 			err := next(layers_, parsedLayers)
@@ -204,3 +249,5 @@ func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseSte
 		}
 	}
 }
+
+var warnGatherViperOnce sync.Once

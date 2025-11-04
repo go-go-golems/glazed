@@ -1,0 +1,4 @@
+environments:
+  staging:
+    settings:
+      api_key: "staging-secret"

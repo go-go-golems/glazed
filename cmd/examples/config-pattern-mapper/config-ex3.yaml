@@ -1,0 +1,7 @@
+app:
+  settings:
+    api_key: "secret123"
+    threshold: 42
+    timeout: 60
+
+
