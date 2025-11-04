@@ -45,7 +45,16 @@ func (c *OverlayCommand) Run(ctx context.Context, pl *layers.ParsedLayers) error
 	if err := pl.InitializeStruct("demo", s); err != nil {
 		return err
 	}
-	fmt.Printf("api_key=%s threshold=%d\n", s.ApiKey, s.Threshold)
+	// Censor API key for security
+	apiKeyMasked := "***"
+	if len(s.ApiKey) > 0 {
+		if len(s.ApiKey) > 4 {
+			apiKeyMasked = s.ApiKey[:4] + "***"
+		} else {
+			apiKeyMasked = "***"
+		}
+	}
+	fmt.Printf("api_key=%s threshold=%d\n", apiKeyMasked, s.Threshold)
 	return nil
 }
 
