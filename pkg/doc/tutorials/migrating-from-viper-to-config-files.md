@@ -28,6 +28,87 @@ The migration involves three main areas:
 2. **Logging Initialization**: Move from `InitLoggerFromViper()` to `InitLoggerFromCobra()` or `SetupLoggingFromParsedLayers()`
 3. **Cobra Integration**: Use `CobraParserConfig` to wire config discovery, environment variables, and file loading into your commands
 
+## ⚠️ Critical: Config File Changes Required
+
+**Two breaking changes require immediate attention:**
+
+### 1. Config File Discovery No Longer Automatic
+
+**Before (Viper):** Automatic discovery in standard paths:
+```go
+viper.AddConfigPath("$HOME/.myapp")
+viper.AddConfigPath("/etc/myapp")
+viper.ReadInConfig()  // Searches automatically
+```
+
+**After:** Explicit discovery required:
+```go
+// Option A: Use ResolveAppConfigPath helper
+configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
+// Searches: $XDG_CONFIG_HOME/myapp, $HOME/.myapp, /etc/myapp
+
+// Option B: Use ConfigFilesFunc in CobraParserConfig (recommended)
+cli.WithParserConfig(cli.CobraParserConfig{
+    AppName: "myapp",  // Enables automatic discovery
+    ConfigFilesFunc: resolver,
+})
+```
+
+**Action required:** Every application using Viper config discovery must add explicit config file resolution (see Step 4).
+
+### 2. Config File Format Must Match Layer Structure
+
+**Before (Viper):** Config structure was flexible - Viper read any keys:
+```yaml
+# Flat structure that Viper handled
+api-key: "secret"
+threshold: 42
+log-level: "debug"
+```
+
+**After:** Config must match layer names and parameters:
+```yaml
+# Layer names as top-level keys
+demo:
+  api-key: "secret"
+  threshold: 42
+logging:
+  log-level: "debug"
+```
+
+**If your config doesn't match this structure:**
+
+**Option A: Restructure your config files** (simplest)
+- Group parameters under layer names
+- Update parameter names to match definitions
+
+**Option B: Use pattern-based mapping** (for legacy configs)
+```go
+mapper, _ := patternmapper.NewConfigMapper(layers,
+    patternmapper.MappingRule{
+        Source:          "api-key",  // Flat config
+        TargetLayer:     "demo",
+        TargetParameter: "api-key",
+    },
+)
+middlewares.LoadParametersFromFile("config.yaml",
+    middlewares.WithConfigMapper(mapper))
+```
+
+**Option C: Use custom mapper function** (for complex transformations)
+```go
+mapper := func(raw interface{}) (map[string]map[string]interface{}, error) {
+    // Transform your config to layer format
+    return map[string]map[string]interface{}{
+        "demo": {"api-key": raw["api-key"]},
+    }, nil
+}
+middlewares.LoadParametersFromFile("config.yaml",
+    middlewares.WithConfigFileMapper(mapper))
+```
+
+**Action required:** Audit your config files and either restructure them or add a mapper (see Step 5).
+
 ## Step 1: Replace Viper Config Middleware
 
 The primary change is replacing Viper-based middleware with explicit config file middlewares. The old approach relied on Viper's automatic config discovery and merging, while the new approach gives you explicit control over which files are loaded and in what order.
