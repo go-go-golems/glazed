@@ -18,6 +18,17 @@ SectionType: GeneralTopic
 
 The Glazed help system allows you to create rich and interactive help pages for your command-line applications. These help pages are defined using Markdown files, which are then loaded into the help system at runtime.
 
+## Before You Start
+
+Follow the conventions in [`how-to-write-good-documentation-pages`](glaze help how-to-write-good-documentation-pages) when drafting new sections. In particular:
+
+- Keep frontmatter concise and single-purpose—avoid duplicating information in both the `Short` field and the first paragraph.
+- Use the same “friendly but factual” tone across documents so the CLI help feels unified.
+- Prefer present tense and active voice (“Glazed loads the section…” instead of “The section is loaded…”).
+- Verify each `Slug` is unique before committing to avoid collisions at load-time; the slug becomes the canonical `glaze help <slug>` target.
+
+Once those basics are in place, use the structure below to define the actual section content.
+
 ## Markdown File Structure
 
 Each Markdown file represents a single "section" in the help system. A section can be one of the following types:

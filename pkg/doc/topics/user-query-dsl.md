@@ -24,9 +24,10 @@ The glazed help system features a powerful Domain Specific Language (DSL) for qu
 3. [Boolean Operations](#boolean-operations)
 4. [Advanced Features](#advanced-features)
 5. [Query Examples](#query-examples)
-6. [Performance Guide](#performance-guide)
-7. [Error Reference](#error-reference)
-8. [Complete API Reference](#complete-api-reference)
+6. [Debugging Tools](#debugging-tools)
+7. [Performance Guide](#performance-guide)
+8. [Error Reference](#error-reference)
+9. [Complete API Reference](#complete-api-reference)
 
 ## Introduction
 
@@ -46,6 +47,8 @@ The Query DSL is a user-friendly query language that allows you to search throug
 - **Precision**: Narrow down results with specific criteria
 - **Flexibility**: Combine multiple conditions to find exactly what you need
 - **Discoverability**: Learn about features through targeted searches
+
+> Looking for a lightweight cheat sheet? Run `glaze help simple-query-dsl`. That page highlights the most common patterns, while this document dives into every operator, metadata field, and failure mode.
 
 ## Basic Syntax
 
@@ -296,6 +299,33 @@ glaze help --query "\"debug\" OR \"troubleshoot\" OR \"problem\""
 # Configuration help
 glaze help --query "\"config\" OR \"configuration\" OR \"setup\""
 ```
+
+## Debugging Tools
+
+When a query behaves unexpectedly, surface the parser's view of the expression before guessing.
+
+```bash
+glaze help --query "(examples OR tutorials) AND topic:database" \
+  --print-query \
+  --print-sql
+```
+
+- `--print-query` dumps the normalized AST so you can check operator precedence, shortcut expansion, and field normalization.
+- `--print-sql` (when the SQLite store is active) prints the generated SQL, which is useful when profiling or when you implement a custom store backend.
+
+For programmatic debugging, the DSL package exposes the same building blocks:
+
+```go
+ast, err := dsl.ParseToAST(query)
+if err != nil {
+    log.Fatal(err)
+}
+
+info, err := dsl.GetDebugInfo(query) // includes SQL, used fields, detected shortcuts
+fmt.Println(info.SQL)
+```
+
+> Tip: Help output now targets stdout. If you prefer to keep debug output on stderr, call `help_cmd.SetHelpWriter(os.Stderr)` once during startup and both Glamour styling and debug streams will follow that writer.
 
 ## Performance Guide
 
