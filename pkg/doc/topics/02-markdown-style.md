@@ -15,14 +15,12 @@ SectionType: GeneralTopic
 
 ## Overview
 
-By default, glazed will try to detect the style of the terminal it's being run
-in and render in a compatible style (dark or light). There are some instances
-where this will break; notably, tmux sometimes causes styles to be detected
-incorrectly.
+Glazed renders help pages through [Glamour](https://github.com/charmbracelet/glamour), which auto-detects whether the output target prefers a light or dark palette. Because the help system now writes to **stdout by default**, style detection looks at the stdout file descriptor unless you override the writer (see `help_cmd.SetHelpWriter`). If you route help somewhere else—`os.Stderr`, a file, or an in-memory buffer—the detection logic follows that writer.
 
-If you want to override the styles, you can do a few things.
-- Setting the environment variable `COLORFGBG` will allow detection of light vs. dark mode
-- Setting `GLAMOUR_STYLE` to "light", "dark", or "notty" will override the styles to their respective setting, with "notty" useful in pipelines.
-- If `GLAMOUR_STYLE` is not set, then glazed will look at whether the file descriptor for stderr is a TTY or not. If it is a TTY, colors etc. will be omitted.
+When automatic detection misbehaves (tmux panes, nested SSH, etc.) you can pin the style explicitly:
 
-There are some [docs on styles](https://github.com/charmbracelet/glamour#styles) provided in the [Glamour repo](https://github.com/charmbracelet/glamour).
+- Set the `COLORFGBG` environment variable so Glamour can infer light vs. dark themes in terminals that hide this metadata.
+- Set `GLAMOUR_STYLE` to `"light"`, `"dark"`, or `"notty"` to force a specific palette. `"notty"` is ideal for pipelines, CI logs, or anywhere ANSI colors should be suppressed.
+- If you prefer the legacy “help on stderr” behavior—for example to keep stdout clean for machine-readable output—call `help_cmd.SetHelpWriter(os.Stderr)` during startup. Glamour will then use stderr for its TTY checks.
+
+Refer to the [Glamour style documentation](https://github.com/charmbracelet/glamour#styles) for the complete list of built-in themes and customization options.

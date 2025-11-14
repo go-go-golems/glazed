@@ -191,6 +191,25 @@ fmt.Printf("Topics: %v\n", section.Topics)
 
 The help system extends Cobra's built-in help functionality by automatically displaying relevant documentation sections when users request help for specific commands. This integration creates contextual help that shows both command syntax and related educational content.
 
+### Controlling Help Output Destinations
+
+Glazed now renders command help to **stdout by default** so that users can pipe or capture the full help text just like any other command output. If your application relied on the old behavior (printing to stderr) or you need to redirect help into a custom sink, configure the writer once during startup:
+
+```go
+import (
+    "os"
+
+    help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+)
+
+func init() {
+    // Route all Glazed-generated help output back to stderr
+    help_cmd.SetHelpWriter(os.Stderr)
+}
+```
+
+You can pass any `io.Writer`, which makes it easy to capture help text for tests or to mirror it into logs.
+
 ### Basic Cobra Integration
 
 ```go
