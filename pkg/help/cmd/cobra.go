@@ -4,11 +4,14 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/help"
-	"github.com/spf13/cobra"
+	"io"
 	"os"
 	"strings"
+	"sync"
 	"text/template"
+
+	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/spf13/cobra"
 
 	"github.com/Masterminds/sprig"
 	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -18,6 +21,32 @@ import (
 type HelpFunc = func(c *cobra.Command, args []string)
 type UsageFunc = func(c *cobra.Command) error
 type UIFunc = func(hs *help.HelpSystem) error
+
+var (
+	helpOutputWriter io.Writer
+	helpOutputMu     sync.RWMutex
+)
+
+// SetHelpWriter configures the writer used for Glazed-generated Cobra help output.
+// When unset, help content is written to the command's Stdout.
+func SetHelpWriter(w io.Writer) {
+	helpOutputMu.Lock()
+	defer helpOutputMu.Unlock()
+	helpOutputWriter = w
+}
+
+func getHelpWriter(cmd *cobra.Command) io.Writer {
+	helpOutputMu.RLock()
+	writer := helpOutputWriter
+	helpOutputMu.RUnlock()
+	if writer != nil {
+		return writer
+	}
+	if cmd != nil {
+		return cmd.OutOrStdout()
+	}
+	return os.Stdout
+}
 
 func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 	helpFunc, usageFunc := getCobraHelpUsageFuncs(hs)
@@ -196,11 +225,12 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 
 	data["MaxCommandNameLen"] = maxCommandNameLen
 
-	s, err := help.RenderToMarkdown(t, data, os.Stderr)
+	writer := getHelpWriter(c)
+	s, err := help.RenderToMarkdown(t, data, writer)
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprint(c.OutOrStderr(), s)
+	_, _ = fmt.Fprint(writer, s)
 
 	return err
 }
@@ -419,15 +449,17 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 						ReturnAnyOfTopics(args[0]).
 						FilterSections(topicSection)
 
-					s, err := hs.RenderTopicHelp(
+					writer := getHelpWriter(c)
+					s, err := hs.RenderTopicHelpWithWriter(
 						topicSection,
-						options)
+						options,
+						writer)
 					if err != nil {
 						// need to show the default error page here
 						c.Printf("Unknown help topic: %s", args[0])
 						cobra.CheckErr(root.Usage())
 					}
-					_, _ = fmt.Fprint(c.OutOrStderr(), s)
+					_, _ = fmt.Fprint(writer, s)
 					return
 				}
 			} else {

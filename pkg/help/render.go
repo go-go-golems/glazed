@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -15,7 +16,11 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func RenderToMarkdown(t *template.Template, data interface{}, output *os.File) (string, error) {
+type fdWriter interface {
+	Fd() uintptr
+}
+
+func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) (string, error) {
 	sz, err := tsize.GetSize()
 	if err != nil {
 		sz.Width = 80
@@ -30,8 +35,14 @@ func RenderToMarkdown(t *template.Template, data interface{}, output *os.File) (
 
 	if os.Getenv("GLAMOUR_STYLE") != "" {
 		options = append(options, glamour.WithEnvironmentConfig())
-	} else if !isatty.IsTerminal(output.Fd()) {
-		options = append(options, glamour.WithStandardStyle("notty"))
+	} else {
+		if f, ok := output.(fdWriter); ok {
+			if !isatty.IsTerminal(f.Fd()) {
+				options = append(options, glamour.WithStandardStyle("notty"))
+			}
+		} else {
+			options = append(options, glamour.WithStandardStyle("notty"))
+		}
 	}
 
 	// get markdown output
@@ -127,6 +138,16 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 func (hs *HelpSystem) RenderTopicHelp(
 	topicSection *Section,
 	options *RenderOptions) (string, error) {
+	return hs.RenderTopicHelpWithWriter(topicSection, options, os.Stdout)
+}
+
+// RenderTopicHelpWithWriter renders a topic's help content using the provided writer
+// to detect terminal characteristics when applying Glamour styles.
+func (hs *HelpSystem) RenderTopicHelpWithWriter(
+	topicSection *Section,
+	options *RenderOptions,
+	output io.Writer,
+) (string, error) {
 	userQuery := options.Query
 
 	// TODO(manuel, 2024-08-07) This should also include information about the program itself (that it's embedded in, maybe coming from the helpSystem metadata itself)
@@ -157,7 +178,7 @@ func (hs *HelpSystem) RenderTopicHelp(
 	data["Slug"] = topicSection.Slug
 	data["HelpCommand"] = options.HelpCommand
 
-	s, err := RenderToMarkdown(t, data, os.Stderr)
+	s, err := RenderToMarkdown(t, data, output)
 	return s, err
 }
 
