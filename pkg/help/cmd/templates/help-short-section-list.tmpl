@@ -10,8 +10,13 @@ To learn more, run:
 {{end -}}
 {{end -}}
 {{if gt (len .OtherGeneralTopics) 0}}
-To see more examples for this topic, run:
+{{if $.CommandIsRoot}}
+To see more topics, run:
+`{{$.HelpCommand}} --topics`
+{{else}}
+To see more topics for this command, run:
 `{{$.HelpCommand}} {{$.Slug}} --topics`
+{{end -}}
 {{end -}}
 {{if gt (len .DefaultExamples) 0}}
 
@@ -27,8 +32,13 @@ To learn more, run:
 {{end -}}
 {{end -}}
 {{- if gt (len .OtherExamples) 0 -}}
+{{if $.CommandIsRoot}}
 To see more examples, run:
+`{{$.HelpCommand}} --examples`
+{{else}}
+To see more command-specific examples, run:
 `{{$.HelpCommand}} {{$.Slug}} --examples`
+{{end -}}
 {{end -}}
 {{if gt (len .DefaultApplications) 0}}
 
@@ -41,8 +51,13 @@ To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 {{end}}
 {{end -}}
 {{- if gt (len .OtherApplications) 0 -}}
+{{if $.CommandIsRoot}}
 To see more applications, run:
+`{{$.HelpCommand}} --applications`
+{{else}}
+To see more command-specific applications, run:
 `{{$.HelpCommand}} {{$.Slug}} --applications`
+{{end -}}
 {{end -}}
 {{if gt (len .DefaultTutorials) 0}}
 ## Tutorials:
@@ -54,7 +69,12 @@ To learn more, run: `{{$.HelpCommand}} {{.Slug}}`
 {{end}}
 {{end -}}
 {{if gt (len .OtherTutorials) 0 -}}
+{{if $.CommandIsRoot}}
 To see more tutorials, run:
+`{{$.HelpCommand}} --tutorials`
+{{else}}
+To see more command-specific tutorials, run:
 `{{$.HelpCommand}} {{$.Slug}} --tutorials`
+{{end -}}
 {{end -}}
 {{end -}}

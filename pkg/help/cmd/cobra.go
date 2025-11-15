@@ -124,6 +124,9 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 
 	t.Funcs(templating.TemplateFuncs).Funcs(sprig.TxtFuncMap())
 
+	showDocs := options.ShowDocumentationList || !isTopLevel
+	showRootHint := isTopLevel && !options.ListSections && !showDocs
+
 	var tmpl string
 	if options.ListSections || noResultsFound {
 		tmpl = COBRA_COMMAND_SHORT_HELP_TEMPLATE + help.HELP_LIST_TEMPLATE
@@ -136,12 +139,8 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
 			tmpl += c.UsageTemplate()
 		}
-		if options.LongHelp {
-			if options.ShowAllSections {
-				tmpl += help.HELP_LONG_SECTION_TEMPLATE
-			} else {
-				tmpl += help.HELP_SHORT_SECTION_TEMPLATE
-			}
+		if showDocs {
+			tmpl += help.HELP_LIST_TEMPLATE
 		}
 	}
 	template.Must(t.Parse(tmpl))
@@ -215,6 +214,8 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["Sections"] = []*help.Section{} // This would need to be populated
 	data["NamePadding"] = c.NamePadding()
 	data["CommandPathPadding"] = c.CommandPathPadding()
+	data["CommandIsRoot"] = isTopLevel
+	data["ShowRootDocumentationHint"] = showRootHint
 
 	maxCommandNameLen := 0
 	for _, c := range c.Commands() {
@@ -374,18 +375,24 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 				return
 			}
 
+			hasTopicFilter := false
 			topic := c.Flag("topic").Value.String()
 			if topic != "" {
 				qb = qb.ReturnOnlyTopics(topic)
+				hasTopicFilter = true
 			}
+			hasFlagFilter := false
 			flag := c.Flag("flag").Value.String()
 			if flag != "" {
 				qb = qb.ReturnOnlyFlags(flag)
+				hasFlagFilter = true
 			}
 
+			hasCommandFilter := false
 			command := c.Flag("command").Value.String()
 			if command != "" {
 				qb = qb.ReturnOnlyCommands(command)
+				hasCommandFilter = true
 			}
 
 			showAllSections, _ := c.Flags().GetBool("all")
@@ -431,11 +438,22 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 			}
 
 			options := &help.RenderOptions{
-				Query:           qb,
-				ShowAllSections: showAllSections,
-				ShowShortTopic:  showShortTopic,
-				ListSections:    list,
-				HelpCommand:     root.CommandPath() + " help",
+				Query:                 qb,
+				ShowAllSections:       showAllSections,
+				ShowShortTopic:        showShortTopic,
+				ListSections:          list,
+				HelpCommand:           root.CommandPath() + " help",
+				ShowDocumentationList: true,
+			}
+
+			limitToTopLevel := len(args) == 0 &&
+				!showAllSections &&
+				!list &&
+				!hasTopicFilter &&
+				!hasFlagFilter &&
+				!hasCommandFilter
+			if limitToTopLevel {
+				options.OnlyTopLevel = true
 			}
 
 			// first, we check if we can find an explicit help topic
