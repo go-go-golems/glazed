@@ -63,13 +63,14 @@ func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) 
 }
 
 type RenderOptions struct {
-	Query           *SectionQuery
-	ShowAllSections bool
-	ShowShortTopic  bool
-	HelpCommand     string
-	LongHelp        bool
-	ListSections    bool
-	OnlyTopLevel    bool
+	Query                 *SectionQuery
+	ShowAllSections       bool
+	ShowShortTopic        bool
+	HelpCommand           string
+	LongHelp              bool
+	ListSections          bool
+	OnlyTopLevel          bool
+	ShowDocumentationList bool
 }
 
 func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {

@@ -26,10 +26,6 @@ a concise list.
 
    glaze - glaze is a tool to format structured data                                                   
                                                                                                        
-  --------                                                                                             
-                                                                                                       
-  For more help, run:  glaze help glaze                                                                
-                                                                                                       
   ## General topics                                                                                    
                                                                                                        
   Run  glaze help <topic>  to view a topic's page.                                                     

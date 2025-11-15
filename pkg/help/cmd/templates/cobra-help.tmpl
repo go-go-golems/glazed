@@ -3,6 +3,14 @@
 
 {{.Long}}
 
+{{if $.CommandIsRoot}}
+{{if $.ShowRootDocumentationHint}}
+Run `{{$.HelpCommand}}` to explore documentation topics.
+{{end}}
+{{else}}
 For more help, run:
 `{{$.HelpCommand}} {{.Name}}`
+{{end}}
+
+Run `{{$.HelpCommand}} --ui` to open the interactive help TUI.
 {{end}}
