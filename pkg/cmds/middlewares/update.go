@@ -163,9 +163,38 @@ func updateFromEnv(
 					parameters.WithParseStepMetadata(map[string]interface{}{
 						"env_key": envKey,
 					}),
+					parameters.WithParseStepSource("env"),
 				}, options...)
-				// Store under the logical parameter name within the layer
-				if err := parsedLayer.Parameters.UpdateValue(p.Name, p, v, opts...); err != nil {
+
+				// Parse env string into the appropriate typed value using the parameter's parser.
+				// For list-like types, split on commas (trim brackets and whitespace).
+				var inputs []string
+				if p.Type.IsList() {
+					s := strings.TrimSpace(v)
+					// Trim optional surrounding brackets: [a,b,c]
+					if strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]") {
+						s = strings.TrimPrefix(s, "[")
+						s = strings.TrimSuffix(s, "]")
+						s = strings.TrimSpace(s)
+					}
+					if s == "" {
+						inputs = []string{}
+					} else {
+						parts := strings.Split(s, ",")
+						for _, part := range parts {
+							inputs = append(inputs, strings.TrimSpace(part))
+						}
+					}
+				} else {
+					inputs = []string{v}
+				}
+
+				pp, err := p.ParseParameter(inputs, opts...)
+				if err != nil {
+					return err
+				}
+				// Preserve parse log/metadata when updating parsed parameters.
+				if err := parsedLayer.Parameters.UpdateWithLog(p.Name, p, pp.Value, pp.Log...); err != nil {
 					return err
 				}
 			}
