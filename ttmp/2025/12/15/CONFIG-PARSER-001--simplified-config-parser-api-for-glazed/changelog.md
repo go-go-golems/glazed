@@ -25,3 +25,12 @@ Step 1: Implement pkg/appconfig.Parser v1 skeleton (commit bf627f0)
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/options.go — ParserOption helpers for env/config files/middlewares
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — New Parser[T] type with Register + Parse using runner.ParseCommandParameters
 
+
+## 2025-12-16
+
+Step 2: Add unit tests for appconfig.Parser v1 contracts (commit d452edc)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser_test.go — Tests for Register/Parse invariants
+
