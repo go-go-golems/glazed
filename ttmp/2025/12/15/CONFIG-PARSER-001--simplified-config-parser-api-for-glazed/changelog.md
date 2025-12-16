@@ -52,3 +52,14 @@ Step 4: Add minimal glazed example for appconfig.Parser (commit 22c9659)
 
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/appconfig-parser/main.go — Demonstrates const LayerSlug
 
+
+## 2025-12-16
+
+Step 5: Add Cobra parsing support to appconfig.Parser (commit fbc05d4)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/options.go — WithCobra(cmd
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — Cobra-mode Parse() runs flags/args/env/config/defaults middlewares
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser_test.go — Test flags override env in cobra mode
+

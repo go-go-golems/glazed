@@ -28,3 +28,5 @@
 - [x] P3: Add a minimal example (glazed/cmd/examples or pinocchio/cmd/examples) showing two registered layers hydrating into AppSettings
 - [ ] P3: Add docs: quickstart snippet for appconfig.Parser usage and where it fits vs CobraParserConfig
 - [ ] P4: Optional: spike a tiny pinocchio integration replacing manual runner+InitializeStruct wiring with appconfig.Parser
+- [x] P1: Add optional Cobra integration: WithCobra(cmd,args) option so Parse() can include ParseFromCobraCommand + GatherArguments middlewares
+- [x] P2: Add tests for Cobra integration precedence (flags override env and config)
