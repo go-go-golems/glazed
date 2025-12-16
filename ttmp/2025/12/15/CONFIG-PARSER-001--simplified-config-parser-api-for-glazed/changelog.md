@@ -63,3 +63,13 @@ Step 5: Add Cobra parsing support to appconfig.Parser (commit fbc05d4)
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — Cobra-mode Parse() runs flags/args/env/config/defaults middlewares
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser_test.go — Test flags override env in cobra mode
 
+
+## 2025-12-16
+
+Step 6: Make option order define appconfig.Parser middleware order (commit 79e7d31)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/options.go — Options now append middlewares in user-specified order
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — Parse executes composed middleware chain (no cobra special-casing)
+
