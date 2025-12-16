@@ -155,6 +155,7 @@ func TestParser_Parse_Precedence_Defaults_Config_Env(t *testing.T) {
 	t.Setenv("MYAPP_HOST", "from-env")
 
 	p, err := NewParser[testAppSettings](
+		WithDefaults(),
 		WithConfigFiles(cfgFile),
 		WithEnv("MYAPP"),
 	)
