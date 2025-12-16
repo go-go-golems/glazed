@@ -43,3 +43,12 @@ Step 3: Introduce appconfig.LayerSlug to encourage const slugs (commit 91b10b2)
 
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — Added LayerSlug type + Register now takes LayerSlug
 
+
+## 2025-12-16
+
+Step 4: Add minimal glazed example for appconfig.Parser (commit 22c9659)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/appconfig-parser/main.go — Demonstrates const LayerSlug
+
