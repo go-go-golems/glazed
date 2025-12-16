@@ -218,3 +218,32 @@ Typed slugs make it slightly harder to accidentally pass the wrong string and ma
 ### What warrants a second pair of eyes
 
 - Whether we should later migrate this type into a shared location (e.g. `pkg/cmds/layers`) if multiple packages want typed slugs.
+
+## Step 4: Add a minimal glazed example using two registered layers
+
+This step adds a tiny runnable example under `glazed/cmd/examples/` that demonstrates the “happy path” for v1: declare `const` slugs, build two layers, register each with a binder into a grouped `AppSettings` struct, call `Parse()`, and print the typed result. The purpose is to give future adopters a copy/paste starting point that doesn’t require reading the internals first.
+
+**Commit (code):** 22c96597ad80833820fbe022dc797d9a49def7eb — "chore: add appconfig.Parser example"
+
+### What I did
+
+- Added: `glazed/cmd/examples/appconfig-parser/main.go`
+  - Two layers: `redis` and `db`
+  - `const` slugs using `appconfig.LayerSlug`
+  - Uses `WithValuesForLayers` to keep it self-contained
+
+### Why
+
+Examples are the fastest path to adoption, and they also serve as an integration-style smoke test for API ergonomics (even without explicit assertions).
+
+### What worked
+
+- `go test ./... -count=1` includes compiling this example, so it stays build-verified.
+
+### What didn't work
+
+- N/A (no additional issues beyond the known `govulncheck` hook behavior for go-file commits).
+
+### What should be done in the future
+
+- Optionally add a second example that demonstrates `WithEnv` + `WithConfigFiles` once we decide the preferred user-facing config file shape for “app settings”.
