@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/runner"
 	"github.com/pkg/errors"
 )
@@ -92,26 +94,90 @@ func (p *Parser[T]) Parse() (*T, error) {
 		desc.Layers.Set(string(r.slug), r.layer)
 	}
 
-	cmd := &stubCommand{desc: desc}
+	var parsedLayers *layers.ParsedLayers
+	if p.opts.useCobra {
+		// Cobra mode: build explicit middleware chain with flags/args at highest precedence.
+		middlewares_ := []cmd_middlewares.Middleware{}
 
-	parseOpts := []runner.ParseOption{}
-	parseOpts = append(parseOpts, p.opts.runnerParseOptions...)
-	if len(p.opts.additionalMiddlewares) > 0 {
-		parseOpts = append(parseOpts, runner.WithAdditionalMiddlewares(p.opts.additionalMiddlewares...))
-	}
-	if p.opts.useEnv {
-		parseOpts = append(parseOpts, runner.WithEnvMiddleware(p.opts.envPrefix))
-	}
-	if len(p.opts.configFiles) > 0 {
-		parseOpts = append(parseOpts, runner.WithConfigFiles(p.opts.configFiles...))
-	}
-	if p.opts.valuesForLayers != nil {
-		parseOpts = append(parseOpts, runner.WithValuesForLayers(p.opts.valuesForLayers))
-	}
+		// Additional middlewares (advanced escape hatch) — kept consistent with runner behavior:
+		// additional middlewares are highest precedence (added first; executed last due to reverse execution).
+		if len(p.opts.additionalMiddlewares) > 0 {
+			middlewares_ = append(middlewares_, p.opts.additionalMiddlewares...)
+		}
 
-	parsedLayers, err := runner.ParseCommandParameters(cmd, parseOpts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse parameters")
+		// Highest precedence first (because middlewares execute in reverse).
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.ParseFromCobraCommand(
+				p.opts.cobraCmd,
+				parameters.WithParseStepSource("cobra"),
+			),
+		)
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.GatherArguments(
+				p.opts.cobraArgs,
+				parameters.WithParseStepSource("arguments"),
+			),
+		)
+
+		// Env
+		if p.opts.useEnv {
+			middlewares_ = append(middlewares_,
+				cmd_middlewares.UpdateFromEnv(
+					p.opts.envPrefix,
+					parameters.WithParseStepSource("env"),
+				),
+			)
+		}
+		// Config files (low -> high precedence)
+		if len(p.opts.configFiles) > 0 {
+			middlewares_ = append(middlewares_,
+				cmd_middlewares.LoadParametersFromFiles(
+					p.opts.configFiles,
+					cmd_middlewares.WithParseOptions(parameters.WithParseStepSource("config")),
+				),
+			)
+		}
+		// Provided values
+		if p.opts.valuesForLayers != nil {
+			middlewares_ = append(middlewares_,
+				cmd_middlewares.UpdateFromMap(
+					p.opts.valuesForLayers,
+					parameters.WithParseStepSource("provided-values"),
+				),
+			)
+		}
+		// Defaults (lowest)
+		middlewares_ = append(middlewares_,
+			cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
+		)
+
+		parsedLayers = layers.NewParsedLayers()
+		if err := cmd_middlewares.ExecuteMiddlewares(desc.Layers, parsedLayers, middlewares_...); err != nil {
+			return nil, errors.Wrap(err, "failed to parse parameters (cobra mode)")
+		}
+	} else {
+		// Runner mode: reuse runner.ParseCommandParameters (defaults/config/env/provided-values).
+		cmd := &stubCommand{desc: desc}
+		parseOpts := []runner.ParseOption{}
+		parseOpts = append(parseOpts, p.opts.runnerParseOptions...)
+		if len(p.opts.additionalMiddlewares) > 0 {
+			parseOpts = append(parseOpts, runner.WithAdditionalMiddlewares(p.opts.additionalMiddlewares...))
+		}
+		if p.opts.useEnv {
+			parseOpts = append(parseOpts, runner.WithEnvMiddleware(p.opts.envPrefix))
+		}
+		if len(p.opts.configFiles) > 0 {
+			parseOpts = append(parseOpts, runner.WithConfigFiles(p.opts.configFiles...))
+		}
+		if p.opts.valuesForLayers != nil {
+			parseOpts = append(parseOpts, runner.WithValuesForLayers(p.opts.valuesForLayers))
+		}
+
+		var err error
+		parsedLayers, err = runner.ParseCommandParameters(cmd, parseOpts...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse parameters")
+		}
 	}
 
 	var t T

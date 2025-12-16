@@ -4,6 +4,7 @@ import (
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/runner"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 type parserOptions struct {
@@ -12,6 +13,10 @@ type parserOptions struct {
 	configFiles           []string
 	valuesForLayers       map[string]map[string]interface{}
 	additionalMiddlewares []cmd_middlewares.Middleware
+
+	useCobra  bool
+	cobraCmd  *cobra.Command
+	cobraArgs []string
 
 	// Escape hatch for advanced callers (merged into Parse() options).
 	runnerParseOptions []runner.ParseOption
@@ -62,6 +67,22 @@ func WithMiddlewares(middlewares ...cmd_middlewares.Middleware) ParserOption {
 func WithRunnerParseOptions(options ...runner.ParseOption) ParserOption {
 	return func(o *parserOptions) error {
 		o.runnerParseOptions = append(o.runnerParseOptions, options...)
+		return nil
+	}
+}
+
+// WithCobra configures the Parser to read flags and positional arguments from a Cobra command.
+//
+// The caller is responsible for ensuring Cobra has parsed the args (i.e. this is
+// used from within a cobra Run/RunE/PreRun hook, or after Execute has parsed).
+func WithCobra(cmd *cobra.Command, args []string) ParserOption {
+	return func(o *parserOptions) error {
+		if cmd == nil {
+			return errors.New("cobra command must not be nil")
+		}
+		o.useCobra = true
+		o.cobraCmd = cmd
+		o.cobraArgs = append([]string(nil), args...)
 		return nil
 	}
 }
