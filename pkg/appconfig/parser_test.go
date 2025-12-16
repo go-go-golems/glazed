@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -163,4 +164,38 @@ func TestParser_Parse_Precedence_Defaults_Config_Env(t *testing.T) {
 	cfg, err := p.Parse()
 	require.NoError(t, err)
 	require.Equal(t, "from-env", cfg.Redis.Host)
+}
+
+func TestParser_Parse_Precedence_CobraFlagsOverrideEnv(t *testing.T) {
+	const redisSlug LayerSlug = "redis"
+	layer := newTestRedisLayer("from-default")
+
+	// Env sets host to from-env.
+	t.Setenv("MYAPP_HOST", "from-env")
+
+	// Cobra flag should override env.
+	rootCmd := &cobra.Command{
+		Use: "test",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			parser, err := NewParser[testAppSettings](
+				WithEnv("MYAPP"),
+				WithCobra(cmd, args),
+			)
+			require.NoError(t, err)
+			require.NoError(t, parser.Register(redisSlug, layer, func(t *testAppSettings) any { return &t.Redis }))
+
+			cfg, err := parser.Parse()
+			require.NoError(t, err)
+			require.Equal(t, "from-flag", cfg.Redis.Host)
+			return nil
+		},
+	}
+
+	// IMPORTANT: appconfig.Parser expects the layer flags to already be on the cobra command.
+	cobraLayer, ok := layer.(layers.CobraParameterLayer)
+	require.True(t, ok, "test layer must implement layers.CobraParameterLayer")
+	require.NoError(t, cobraLayer.AddLayerToCobraCommand(rootCmd))
+
+	rootCmd.SetArgs([]string{"--host", "from-flag"})
+	require.NoError(t, rootCmd.Execute())
 }
