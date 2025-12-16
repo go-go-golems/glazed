@@ -60,7 +60,9 @@ We introduce a type:
 
 - `appconfig.Parser[T]`
 
-Assuming we want `import appconfig "github.com/go-go-golems/glazed/pkg/config"` (as used in docs), we can place it in `glazed/pkg/config` and expose it as `Parser[T]`.
+Because `glazed/pkg/config` is primarily about config files, we will implement this in a new package:
+
+- `github.com/go-go-golems/glazed/pkg/appconfig`
 
 ### Constructor
 
