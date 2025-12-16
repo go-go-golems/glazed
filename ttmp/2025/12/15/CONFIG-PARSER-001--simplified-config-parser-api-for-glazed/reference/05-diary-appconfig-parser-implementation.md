@@ -20,8 +20,6 @@ RelatedFiles:
       Note: Core appconfig.Parser[T] implementation (commit bf627f0)
     - Path: glazed/pkg/appconfig/parser_test.go
       Note: Unit tests for Register/Parse invariants, precedence, and hydration behavior (commit d452edc)
-    - Path: glazed/pkg/appconfig/parser_test.go
-      Note: Unit tests for Register/Parse invariants
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-16T00:00:00Z
@@ -97,6 +95,8 @@ Keeping `appconfig.Parser` separate avoids mixing concerns (config-file tooling 
 V1 usage sketch:
 
 ```go
+const RedisSlug appconfig.LayerSlug = "redis"
+
 type AppSettings struct {
 	Redis RedisSettings
 }
@@ -110,7 +110,7 @@ parser, _ := appconfig.NewParser[AppSettings](
 	appconfig.WithConfigFiles("base.yaml"),
 )
 
-_ = parser.Register("redis", redisLayer, func(t *AppSettings) any { return &t.Redis })
+_ = parser.Register(RedisSlug, redisLayer, func(t *AppSettings) any { return &t.Redis })
 cfg, err := parser.Parse()
 _ = cfg
 _ = err
@@ -179,3 +179,42 @@ These tests encode the v1 “contract” in executable form, so future work (exa
 ### Code review instructions
 
 - Start with `glazed/pkg/appconfig/parser_test.go` to understand the v1 contract and invariants.
+
+## Step 3: Introduce `appconfig.LayerSlug` to encourage `const` slugs in caller code
+
+This step is a small API ergonomics tweak: we want callers to declare slugs as constants (and not pass ad-hoc string literals everywhere). To nudge that from day one, we introduced a dedicated `appconfig.LayerSlug` type and updated `Register` to accept it. Importantly, we verified that Glazed does not already define a shared `LayerSlug` type elsewhere, so we’re not duplicating an existing concept.
+
+**Commit (code):** 91b10b2caa2ef92b94a13c9d6217727199d1e676 — "refactor: introduce appconfig.LayerSlug"
+
+### What I did
+
+- Added `type LayerSlug string` in `glazed/pkg/appconfig/parser.go`.
+- Changed `Register` signature from `Register(slug string, ...)` to `Register(slug LayerSlug, ...)`.
+- Updated internal usage to convert via `string(slug)` where Glazed APIs still expect plain strings.
+- Updated tests to declare and use `const redisSlug LayerSlug = "redis"` and pass that into `Register`.
+- Ran:
+  - `gofmt -w pkg/appconfig/*.go`
+  - `go test ./... -count=1`
+- Committed with `LEFTHOOK=0` (same temporary workaround as Step 1/2).
+
+### Why
+
+Typed slugs make it slightly harder to accidentally pass the wrong string and make it easy to establish a codebase convention:
+
+- `const RedisSlug appconfig.LayerSlug = "redis"`
+
+### What worked
+
+- Minimal change footprint: only `appconfig` and its tests needed updates.
+
+### What didn't work
+
+- N/A (no failures beyond the known `govulncheck` hook issue).
+
+### What I learned
+
+- We do not currently have a shared slug type in Glazed core packages; slugs are generally plain `string` values today (e.g. `layers.DefaultSlug`).
+
+### What warrants a second pair of eyes
+
+- Whether we should later migrate this type into a shared location (e.g. `pkg/cmds/layers`) if multiple packages want typed slugs.

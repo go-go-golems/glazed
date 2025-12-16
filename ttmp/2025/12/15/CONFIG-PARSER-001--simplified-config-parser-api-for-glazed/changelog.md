@@ -34,3 +34,12 @@ Step 2: Add unit tests for appconfig.Parser v1 contracts (commit d452edc)
 
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser_test.go — Tests for Register/Parse invariants
 
+
+## 2025-12-16
+
+Step 3: Introduce appconfig.LayerSlug to encourage const slugs (commit 91b10b2)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — Added LayerSlug type + Register now takes LayerSlug
+
