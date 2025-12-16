@@ -247,3 +247,43 @@ Examples are the fastest path to adoption, and they also serve as an integration
 ### What should be done in the future
 
 - Optionally add a second example that demonstrates `WithEnv` + `WithConfigFiles` once we decide the preferred user-facing config file shape for “app settings”.
+
+## Step 5: Parse from Cobra flags/args (and env) via `WithCobra`
+
+This step adds the missing piece for real CLI usage: the ability to have `appconfig.Parser` consume values from a Cobra command (flags + positional args) while still preserving the same precedence model we expect elsewhere (defaults < config < env < args < flags). The implementation is option-driven: `WithCobra(cmd, args)` flips `Parse()` into “cobra mode”, where we build an explicit middleware chain rather than going through `runner.ParseCommandParameters` (which is library-only and doesn’t know about cobra).
+
+**Commit (code):** fbc05d407f07fe5bed57f345de8c900593859430 — "feat: add cobra parsing option to appconfig.Parser"
+
+### What I did
+
+- Added `WithCobra(cmd *cobra.Command, args []string)` option.
+- Updated `Parse()`:
+  - If cobra mode is enabled, it runs middlewares:
+    - cobra flags (highest)
+    - positional args
+    - env
+    - config files
+    - provided-values
+    - defaults (lowest)
+  - Otherwise, it continues to use `runner.ParseCommandParameters`.
+- Added a test proving precedence in cobra mode:
+  - flags override env (`MYAPP_HOST` vs `--host`)
+- Ran:
+  - `gofmt -w pkg/appconfig/*.go`
+  - `go test ./... -count=1`
+
+### What worked
+
+- The new cobra-mode middleware chain matches expected precedence (flags win).
+
+### What didn't work
+
+- N/A (aside from the known `govulncheck` hook behavior for go-file commits; still using `LEFTHOOK=0` as needed).
+
+### What was tricky to build
+
+- Cobra integration requires that the layer flags have already been added to the cobra command. The parser does not (yet) add flags automatically; it only parses.
+
+### What warrants a second pair of eyes
+
+- The exact placement/precedence of `WithMiddlewares(...)` in cobra mode (we aligned it with runner: “additional” is highest precedence).
