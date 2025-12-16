@@ -11,17 +11,17 @@
 - [x] Superseded (appconfig.Parser redesign): Add a purpose-built mapper for struct path → layer/param (avoid forcing patternmapper prefix semantics)
 - [x] Superseded (appconfig.Parser redesign): Add examples + docs (one small app; plus a pinocchio migration spike)
 
-- [ ] P0: Confirm appconfig.Parser[T] public API + package placement (likely glazed/pkg/config imported as appconfig)
-- [ ] P0: Decide Parse signature and ergonomics (Parse() vs Parse(ctx), what options belong on NewParser vs Parse)
-- [ ] P1: Add core type skeleton type Parser[T any] and internal registration model (slug, layer, bind func(*T) any)
-- [ ] P1: Implement NewParser[T](opts...) and ParserOption types
-- [ ] P1: Implement option helpers mapping to runner ParseOptions (WithEnv, WithConfigFiles, WithValuesForLayers, WithAdditionalMiddlewares / WithRunnerParseOptions)
-- [ ] P1: Implement Register(slug, layer, bind) with validation (duplicate slug, nil layer, nil bind)
-- [ ] P1: Build ParameterLayers collection from registered layers (stable iteration order)
-- [ ] P1: Implement minimal cmds.Command stub (Description().Layers = registered layers) to reuse runner.ParseCommandParameters
-- [ ] P1: Implement Parse() to run configured middleware chain (runner.ParseCommandParameters or explicit ExecuteMiddlewares)
-- [ ] P1: Implement hydration into grouped T via ParsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t)) with per-layer error context
-- [ ] P1: Decide and document v1 contract: requires glazed.parameter tags; missing params are skipped (zero values)
+- [x] P0: Confirm appconfig.Parser[T] public API + package placement (glazed/pkg/appconfig)
+- [x] P0: Decide Parse signature and ergonomics (Parse() vs Parse(ctx), what options belong on NewParser vs Parse)
+- [x] P1: Add core type skeleton type Parser[T any] and internal registration model (slug, layer, bind func(*T) any)
+- [x] P1: Implement NewParser[T](opts...) and ParserOption types
+- [x] P1: Implement option helpers mapping to runner ParseOptions (WithEnv, WithConfigFiles, WithValuesForLayers, WithAdditionalMiddlewares / WithRunnerParseOptions)
+- [x] P1: Implement Register(slug, layer, bind) with validation (duplicate slug, nil layer, nil bind)
+- [x] P1: Build ParameterLayers collection from registered layers (stable iteration order)
+- [x] P1: Implement minimal cmds.Command stub (Description().Layers = registered layers) to reuse runner.ParseCommandParameters
+- [x] P1: Implement Parse() to run configured middleware chain (runner.ParseCommandParameters or explicit ExecuteMiddlewares)
+- [x] P1: Implement hydration into grouped T via ParsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t)) with per-layer error context
+- [x] P1: Decide and document v1 contract: requires glazed.parameter tags; missing params are skipped (zero values)
 - [ ] P2: Add unit tests for registration invariants and binder failures (bind returns nil or non-pointer)
 - [ ] P2: Add unit tests for precedence (defaults < config files low→high < env) using temporary YAML config files
 - [ ] P2: Add unit tests for hydration behavior (tag-required, missing params skipped)

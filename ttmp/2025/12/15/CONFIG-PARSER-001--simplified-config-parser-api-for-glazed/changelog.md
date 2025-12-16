@@ -14,3 +14,14 @@
 - Added colleague interview/survey quiz to surface rationale and constraints behind current config parsing architecture and identify cleanup/merge/removal opportunities
 - Reset CONFIG-PARSER-001 direction: added new `appconfig.Parser` design doc (register layers + tagged structs, configurable Parse middlewares) + a detailed redesign diary; marked the prior struct-first design as superseded
 
+
+## 2025-12-16
+
+Step 1: Implement pkg/appconfig.Parser v1 skeleton (commit bf627f0)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/doc.go — Package-level docs for appconfig
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/options.go — ParserOption helpers for env/config files/middlewares
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/appconfig/parser.go — New Parser[T] type with Register + Parse using runner.ParseCommandParameters
+
