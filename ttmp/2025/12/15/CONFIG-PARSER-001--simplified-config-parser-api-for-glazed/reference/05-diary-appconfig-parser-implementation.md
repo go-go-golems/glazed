@@ -287,3 +287,42 @@ This step adds the missing piece for real CLI usage: the ability to have `appcon
 ### What warrants a second pair of eyes
 
 - The exact placement/precedence of `WithMiddlewares(...)` in cobra mode (we aligned it with runner: “additional” is highest precedence).
+
+## Step 6: Make option order define middleware order (remove Cobra special-casing)
+
+This step simplifies the mental model: **the order of options passed to `NewParser(...)` now defines the middleware chain order**. That means we don’t need special cases for Cobra vs runner anymore. Cobra is “just another option” that appends its middlewares (args, then flags). `Parse()` simply executes the composed chain in the correct order for Glazed’s middleware execution semantics.
+
+**Commit (code):** 79e7d31971ac8e68021673ead5b3914f24104f97 — "refactor: build appconfig.Parser middleware chain from option order"
+
+### What I did
+
+- Refactored `parserOptions` to collect an ordered `[]middlewares.Middleware`.
+- Implemented option helpers that **append** middlewares in the order they are called:
+  - `WithDefaults()` (defaults)
+  - `WithConfigFiles(...)` (config)
+  - `WithEnv(prefix)` (env)
+  - `WithCobra(cmd,args)` (args then flags)
+  - `WithValuesForLayers(...)` (programmatic values)
+  - `WithMiddlewares(...)` (escape hatch)
+- Simplified `Parse()` to:
+  - build a `ParameterLayers` collection from registrations
+  - reverse the option-collected list to match `ExecuteMiddlewares` reverse-execution
+  - run `ExecuteMiddlewares` once (no runner, no cobra-mode branch)
+
+### Why
+
+The previous approach had two “modes” (runner vs cobra) which made precedence easy to misunderstand and made it hard to express custom source order. With option-order chaining, users can explicitly control precedence by ordering options, and we keep the API uniform.
+
+### What worked
+
+- All tests still pass (`go test ./... -count=1`).
+
+### What was tricky to build
+
+- Glazed’s middlewares execute in reverse order, so we must invert the collected list for execution while keeping the user-facing “left-to-right = low-to-high precedence” interpretation.
+
+### What warrants a second pair of eyes
+
+- Confirm the intended precedence story is communicated well:
+  - “options earlier = lower precedence”
+  - “options later = higher precedence”
