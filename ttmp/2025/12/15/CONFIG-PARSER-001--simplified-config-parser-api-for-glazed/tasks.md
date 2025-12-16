@@ -22,9 +22,9 @@
 - [x] P1: Implement Parse() to run configured middleware chain (runner.ParseCommandParameters or explicit ExecuteMiddlewares)
 - [x] P1: Implement hydration into grouped T via ParsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t)) with per-layer error context
 - [x] P1: Decide and document v1 contract: requires glazed.parameter tags; missing params are skipped (zero values)
-- [ ] P2: Add unit tests for registration invariants and binder failures (bind returns nil or non-pointer)
-- [ ] P2: Add unit tests for precedence (defaults < config files low→high < env) using temporary YAML config files
-- [ ] P2: Add unit tests for hydration behavior (tag-required, missing params skipped)
+- [x] P2: Add unit tests for registration invariants and binder failures (bind returns nil or non-pointer)
+- [x] P2: Add unit tests for precedence (defaults < config files low→high < env) using temporary YAML config files
+- [x] P2: Add unit tests for hydration behavior (tag-required, missing params skipped)
 - [ ] P3: Add a minimal example (glazed/cmd/examples or pinocchio/cmd/examples) showing two registered layers hydrating into AppSettings
 - [ ] P3: Add docs: quickstart snippet for appconfig.Parser usage and where it fits vs CobraParserConfig
 - [ ] P4: Optional: spike a tiny pinocchio integration replacing manual runner+InitializeStruct wiring with appconfig.Parser
