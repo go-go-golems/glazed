@@ -11,10 +11,17 @@ import (
 )
 
 type registration[T any] struct {
-	slug  string
+	slug  LayerSlug
 	layer layers.ParameterLayer
 	bind  func(*T) any
 }
+
+// LayerSlug is a distinct type to encourage declaring layer slugs as constants.
+//
+// Example:
+//
+//	const RedisSlug appconfig.LayerSlug = "redis"
+type LayerSlug string
 
 // Parser is an incremental config boundary:
 // - callers register layers and bind them to sub-struct pointers inside T
@@ -51,7 +58,7 @@ func NewParser[T any](options ...ParserOption) (*Parser[T], error) {
 // - layer must be non-nil
 // - bind must be non-nil
 // - slug must match layer.GetSlug() (to avoid mismatches between registration keys and parsed layer keys)
-func (p *Parser[T]) Register(slug string, layer layers.ParameterLayer, bind func(*T) any) error {
+func (p *Parser[T]) Register(slug LayerSlug, layer layers.ParameterLayer, bind func(*T) any) error {
 	if slug == "" {
 		return errors.New("slug must not be empty")
 	}
@@ -61,12 +68,12 @@ func (p *Parser[T]) Register(slug string, layer layers.ParameterLayer, bind func
 	if bind == nil {
 		return errors.New("bind must not be nil")
 	}
-	if layer.GetSlug() != slug {
-		return errors.Errorf("slug %q does not match layer.GetSlug() %q", slug, layer.GetSlug())
+	if layer.GetSlug() != string(slug) {
+		return errors.Errorf("slug %q does not match layer.GetSlug() %q", string(slug), layer.GetSlug())
 	}
 	for _, r := range p.regs {
 		if r.slug == slug {
-			return errors.Errorf("layer slug %q already registered", slug)
+			return errors.Errorf("layer slug %q already registered", string(slug))
 		}
 	}
 	p.regs = append(p.regs, registration[T]{slug: slug, layer: layer, bind: bind})
@@ -79,9 +86,10 @@ func (p *Parser[T]) Parse() (*T, error) {
 		return nil, errors.New("no layers registered")
 	}
 
-	desc := cmds.NewCommandDescription("appconfig-parser")
+	const stubCommandName = "appconfig-parser"
+	desc := cmds.NewCommandDescription(stubCommandName)
 	for _, r := range p.regs {
-		desc.Layers.Set(r.slug, r.layer)
+		desc.Layers.Set(string(r.slug), r.layer)
 	}
 
 	cmd := &stubCommand{desc: desc}
@@ -110,14 +118,14 @@ func (p *Parser[T]) Parse() (*T, error) {
 	for _, r := range p.regs {
 		dst := r.bind(&t)
 		if dst == nil {
-			return nil, errors.Errorf("bind returned nil for layer %q", r.slug)
+			return nil, errors.Errorf("bind returned nil for layer %q", string(r.slug))
 		}
 		v := reflect.ValueOf(dst)
 		if v.Kind() != reflect.Ptr || v.IsNil() {
-			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", r.slug, dst)
+			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", string(r.slug), dst)
 		}
-		if err := parsedLayers.InitializeStruct(r.slug, dst); err != nil {
-			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", r.slug)
+		if err := parsedLayers.InitializeStruct(string(r.slug), dst); err != nil {
+			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", string(r.slug))
 		}
 	}
 

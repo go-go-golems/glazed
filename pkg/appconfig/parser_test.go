@@ -42,6 +42,7 @@ func newTestRedisLayer(defaultHost string) layers.ParameterLayer {
 }
 
 func TestParser_Register_Validation(t *testing.T) {
+	const redisSlug LayerSlug = "redis"
 	layer := newTestRedisLayer("default")
 
 	t.Run("empty slug", func(t *testing.T) {
@@ -54,34 +55,35 @@ func TestParser_Register_Validation(t *testing.T) {
 	t.Run("nil layer", func(t *testing.T) {
 		p, err := NewParser[testAppSettings]()
 		require.NoError(t, err)
-		err = p.Register("redis", nil, func(t *testAppSettings) any { return &t.Redis })
+		err = p.Register(redisSlug, nil, func(t *testAppSettings) any { return &t.Redis })
 		require.Error(t, err)
 	})
 
 	t.Run("nil bind", func(t *testing.T) {
 		p, err := NewParser[testAppSettings]()
 		require.NoError(t, err)
-		err = p.Register("redis", layer, nil)
+		err = p.Register(redisSlug, layer, nil)
 		require.Error(t, err)
 	})
 
 	t.Run("slug mismatch with layer.GetSlug", func(t *testing.T) {
 		p, err := NewParser[testAppSettings]()
 		require.NoError(t, err)
-		err = p.Register("not-redis", layer, func(t *testAppSettings) any { return &t.Redis })
+		err = p.Register(LayerSlug("not-redis"), layer, func(t *testAppSettings) any { return &t.Redis })
 		require.Error(t, err)
 	})
 
 	t.Run("duplicate slug", func(t *testing.T) {
 		p, err := NewParser[testAppSettings]()
 		require.NoError(t, err)
-		require.NoError(t, p.Register("redis", layer, func(t *testAppSettings) any { return &t.Redis }))
-		err = p.Register("redis", layer, func(t *testAppSettings) any { return &t.Redis })
+		require.NoError(t, p.Register(redisSlug, layer, func(t *testAppSettings) any { return &t.Redis }))
+		err = p.Register(redisSlug, layer, func(t *testAppSettings) any { return &t.Redis })
 		require.Error(t, err)
 	})
 }
 
 func TestParser_Parse_BinderFailures(t *testing.T) {
+	const redisSlug LayerSlug = "redis"
 	layer := newTestRedisLayer("default")
 
 	t.Run("bind returns nil", func(t *testing.T) {
@@ -89,7 +91,7 @@ func TestParser_Parse_BinderFailures(t *testing.T) {
 			"redis": {"host": "x"},
 		}))
 		require.NoError(t, err)
-		require.NoError(t, p.Register("redis", layer, func(_ *testAppSettings) any { return nil }))
+		require.NoError(t, p.Register(redisSlug, layer, func(_ *testAppSettings) any { return nil }))
 
 		_, err = p.Parse()
 		require.Error(t, err)
@@ -100,7 +102,7 @@ func TestParser_Parse_BinderFailures(t *testing.T) {
 			"redis": {"host": "x"},
 		}))
 		require.NoError(t, err)
-		require.NoError(t, p.Register("redis", layer, func(t *testAppSettings) any { return t.Redis }))
+		require.NoError(t, p.Register(redisSlug, layer, func(t *testAppSettings) any { return t.Redis }))
 
 		_, err = p.Parse()
 		require.Error(t, err)
@@ -111,7 +113,7 @@ func TestParser_Parse_BinderFailures(t *testing.T) {
 			"redis": {"host": "x"},
 		}))
 		require.NoError(t, err)
-		require.NoError(t, p.Register("redis", layer, func(_ *testAppSettings) any {
+		require.NoError(t, p.Register(redisSlug, layer, func(_ *testAppSettings) any {
 			var rs *testRedisSettings
 			return rs
 		}))
@@ -122,6 +124,7 @@ func TestParser_Parse_BinderFailures(t *testing.T) {
 }
 
 func TestParser_Parse_Hydration_TagRequired(t *testing.T) {
+	const redisSlug LayerSlug = "redis"
 	layer := newTestRedisLayer("default")
 
 	type app struct {
@@ -132,7 +135,7 @@ func TestParser_Parse_Hydration_TagRequired(t *testing.T) {
 		"redis": {"host": "from-map"},
 	}))
 	require.NoError(t, err)
-	require.NoError(t, p.Register("redis", layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
@@ -141,6 +144,7 @@ func TestParser_Parse_Hydration_TagRequired(t *testing.T) {
 }
 
 func TestParser_Parse_Precedence_Defaults_Config_Env(t *testing.T) {
+	const redisSlug LayerSlug = "redis"
 	layer := newTestRedisLayer("from-default")
 
 	dir := t.TempDir()
@@ -154,7 +158,7 @@ func TestParser_Parse_Precedence_Defaults_Config_Env(t *testing.T) {
 		WithEnv("MYAPP"),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register("redis", layer, func(t *testAppSettings) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, layer, func(t *testAppSettings) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
