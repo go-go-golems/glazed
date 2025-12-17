@@ -242,7 +242,7 @@ This step created a complete example program demonstrating all four wrapper pack
 
 This step refined the naming to use `Schema` instead of `Sections` and added `CommandDefinition` aliases for better vocabulary consistency.
 
-**Commit (code):** N/A — implementation in progress
+**Commit (code):** `62078a5dfb39bb515cd7ac997e8d29b431014755` — "Refine naming: Sections→Schema, add CommandDefinition aliases"
 
 ### What I did
 - Renamed `schema.Sections` → `schema.Schema` throughout:
