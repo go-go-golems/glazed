@@ -11,11 +11,24 @@ DocType: reference
 Intent: working-document
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: glazed/pkg/cmds/layers/layer.go
+      Note: Debate touches ParameterLayer/ParameterLayers naming
+    - Path: glazed/pkg/cmds/layers/parsed-layer.go
+      Note: Debate touches ParsedLayer/ParsedLayers naming + InitializeStruct
+    - Path: glazed/pkg/cmds/middlewares/layers.go
+      Note: Debate touches middlewares vs sources naming
+    - Path: glazed/pkg/cmds/parameters/parameters.go
+      Note: Debate touches ParameterDefinition naming
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md
+      Note: Option A plan referenced by debate
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md
+      Note: Source of naming bundles
 ExternalSources: []
 Summary: 'Debate setup: candidate roster and questions for the naming/renaming effort (no perf/security)'
 LastUpdated: 2025-12-17T08:33:08.627392269-05:00
 ---
+
 
 # Debate prep: candidates and questions for renaming layers/parameters
 

@@ -21,10 +21,15 @@ RelatedFiles:
       Note: User-facing docs using current names
     - Path: glazed/pkg/doc/tutorials/custom-layer.md
       Note: Tutorial using ParameterLayer/ParameterDefinition/ParsedLayers
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md
+      Note: Option A implementation deep dive derived from this brainstorm
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/reference/01-debate-prep-candidates-and-questions-for-renaming-layers-parameters.md
+      Note: Debate agenda/candidates built from brainstorm questions
 ExternalSources: []
 Summary: Explore naming schemes for ParameterLayer/ParameterDefinition/ParsedLayers and related packages/APIs
 LastUpdated: 2025-12-16T18:04:17.646312962-05:00
 ---
+
 
 # Brainstorm: renaming layers/parameters API for clarity
 
