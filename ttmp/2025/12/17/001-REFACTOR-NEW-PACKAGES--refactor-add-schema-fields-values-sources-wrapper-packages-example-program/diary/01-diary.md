@@ -107,3 +107,61 @@ N/A.
 
 ### What should be done in the future
 - Consider adding other common statuses if/when the repo starts using them (e.g. `review`, `deprecated`).
+
+## Step 3: Implement wrapper packages (schema/fields/values/sources)
+
+This step implemented all four wrapper packages as specified in the design doc. All packages use type aliases for zero-cost compatibility and wrapper functions to provide improved vocabulary.
+
+**Commit (code):** N/A — implementation in progress
+
+### What I did
+- Created `glazed/pkg/cmds/schema/schema.go` with type aliases and wrapper functions
+- Created `glazed/pkg/cmds/fields/fields.go` with type aliases, constructors, and re-exported options/types
+- Created `glazed/pkg/cmds/values/values.go` with type aliases and decode helper functions
+- Created `glazed/pkg/cmds/sources/sources.go` with middleware wrappers and Execute function
+- Verified all packages compile successfully
+
+### Why
+- Provides cleaner vocabulary (schema/fields/values/sources) without breaking existing code
+- Type aliases preserve method sets and identity without runtime overhead
+- Wrapper functions introduce improved verbs (DecodeInto vs InitializeStruct)
+
+### What worked
+- All four packages compile successfully: `go build ./glazed/pkg/cmds/{schema,fields,values,sources}`
+- Type aliases work correctly and preserve all methods from underlying types
+- Wrapper functions provide clean API surface
+
+### What didn't work
+- Initial `NewDefinitions` signature in fields package was incorrect (took `[]func(*Definitions)` instead of `[]parameters.ParameterDefinitionsOption`)
+- Fixed by checking actual signature of `parameters.NewParameterDefinitions`
+
+### What I learned
+- Type aliases (`type X = Y`) are zero-cost and preserve method sets perfectly
+- Need to verify exact function signatures when wrapping, especially for variadic options
+- Go's type system allows seamless interop between aliases and original types
+
+### What was tricky to build
+- Ensuring all re-exported constants and options maintain correct types
+- Getting the `NewDefinitions` signature right (had to check actual implementation)
+
+### What warrants a second pair of eyes
+- Verify that all re-exported options/functions maintain backward compatibility
+- Check that type aliases don't introduce any subtle type identity issues
+- Confirm that wrapper functions correctly forward all parameters
+
+### What should be done in the future
+- Add compile-time validation tests (import and use each package)
+- Create example program demonstrating usage
+- Consider adding `FromConfigFilesForCobra` to sources package (marked optional)
+
+### Code review instructions
+- Start with `glazed/pkg/cmds/schema/schema.go` — verify type aliases and wrapper functions
+- Check `glazed/pkg/cmds/fields/fields.go` — verify all type constants are re-exported correctly
+- Review `glazed/pkg/cmds/values/values.go` — verify DecodeInto/DecodeSectionInto wrappers
+- Inspect `glazed/pkg/cmds/sources/sources.go` — verify middleware wrappers and Execute function
+- Run `go build ./glazed/pkg/cmds/{schema,fields,values,sources}` to verify compilation
+
+### Technical details
+- All packages follow pattern: type aliases + constructor wrappers + option re-exports
+- `sources.Execute` requires type conversions: `(*layers.ParameterLayers)(sections)` and `(*layers.ParsedLayers)(vals)` because aliases don't change underlying type identity for conversions
+- Re-exported options use `var` declarations to avoid function call overhead

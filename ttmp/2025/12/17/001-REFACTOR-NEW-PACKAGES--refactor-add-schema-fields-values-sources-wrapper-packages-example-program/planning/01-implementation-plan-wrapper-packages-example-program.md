@@ -31,56 +31,56 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
 
 ### 1.1 `glazed/pkg/cmds/schema`
 
-- [ ] Add directory `glazed/pkg/cmds/schema/`
-- [ ] Add `glazed/pkg/cmds/schema/schema.go` with:
-  - [ ] `type Section = layers.ParameterLayer`
-  - [ ] `type Sections = layers.ParameterLayers`
-  - [ ] `type SectionImpl = layers.ParameterLayerImpl`
-  - [ ] `type SectionOption = layers.ParameterLayerOptions`
-  - [ ] `type SectionsOption = layers.ParameterLayersOption`
-  - [ ] `const DefaultSlug = layers.DefaultSlug`
-  - [ ] `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` (wrap `layers.NewParameterLayer`)
-  - [ ] `func NewSections(opts ...SectionsOption) *Sections` (wrap `layers.NewParameterLayers`)
-  - [ ] `func WithSections(sections ...Section) SectionsOption` (wrap `layers.WithLayers`)
+- [x] Add directory `glazed/pkg/cmds/schema/`
+- [x] Add `glazed/pkg/cmds/schema/schema.go` with:
+  - [x] `type Section = layers.ParameterLayer`
+  - [x] `type Sections = layers.ParameterLayers`
+  - [x] `type SectionImpl = layers.ParameterLayerImpl`
+  - [x] `type SectionOption = layers.ParameterLayerOptions`
+  - [x] `type SectionsOption = layers.ParameterLayersOption`
+  - [x] `const DefaultSlug = layers.DefaultSlug`
+  - [x] `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` (wrap `layers.NewParameterLayer`)
+  - [x] `func NewSections(opts ...SectionsOption) *Sections` (wrap `layers.NewParameterLayers`)
+  - [x] `func WithSections(sections ...Section) SectionsOption` (wrap `layers.WithLayers`)
 
 ### 1.2 `glazed/pkg/cmds/fields`
 
-- [ ] Add directory `glazed/pkg/cmds/fields/`
-- [ ] Add `glazed/pkg/cmds/fields/fields.go` with:
-  - [ ] `type Definition = parameters.ParameterDefinition`
-  - [ ] `type Definitions = parameters.ParameterDefinitions`
-  - [ ] `type Type = parameters.ParameterType`
-  - [ ] `type Option = parameters.ParameterDefinitionOption`
-  - [ ] `func New(name string, t Type, opts ...Option) *Definition` (wrap `parameters.NewParameterDefinition`)
-  - [ ] Re-export common options:
-    - [ ] `WithHelp`, `WithShortFlag`, `WithDefault`, `WithChoices`, `WithRequired`, `WithIsArgument`
-  - [ ] Re-export parameter type constants (at least the ones used by the example program; optionally all):
-    - [ ] `TypeString`, `TypeBool`, `TypeInteger`, `TypeChoice`, `TypeStringList`, … (map to `parameters.ParameterType*`)
+- [x] Add directory `glazed/pkg/cmds/fields/`
+- [x] Add `glazed/pkg/cmds/fields/fields.go` with:
+  - [x] `type Definition = parameters.ParameterDefinition`
+  - [x] `type Definitions = parameters.ParameterDefinitions`
+  - [x] `type Type = parameters.ParameterType`
+  - [x] `type Option = parameters.ParameterDefinitionOption`
+  - [x] `func New(name string, t Type, opts ...Option) *Definition` (wrap `parameters.NewParameterDefinition`)
+  - [x] Re-export common options:
+    - [x] `WithHelp`, `WithShortFlag`, `WithDefault`, `WithChoices`, `WithRequired`, `WithIsArgument`
+  - [x] Re-export parameter type constants (at least the ones used by the example program; optionally all):
+    - [x] `TypeString`, `TypeBool`, `TypeInteger`, `TypeChoice`, `TypeStringList`, … (map to `parameters.ParameterType*`)
 
 ### 1.3 `glazed/pkg/cmds/values`
 
-- [ ] Add directory `glazed/pkg/cmds/values/`
-- [ ] Add `glazed/pkg/cmds/values/values.go` with:
-  - [ ] `type SectionValues = layers.ParsedLayer`
-  - [ ] `type Values = layers.ParsedLayers`
-  - [ ] `type ValuesOption = layers.ParsedLayersOption`
-  - [ ] `func New(opts ...ValuesOption) *Values` (wrap `layers.NewParsedLayers`)
-  - [ ] `func DecodeInto(v *SectionValues, dst any) error` (wrap `v.InitializeStruct(dst)`)
-  - [ ] `func DecodeSectionInto(vs *Values, sectionSlug string, dst any) error` (wrap `vs.InitializeStruct(sectionSlug, dst)`)
-  - [ ] (Optional) `func AsMap(vs *Values) map[string]any` (wrap `vs.GetDataMap()`)
+- [x] Add directory `glazed/pkg/cmds/values/`
+- [x] Add `glazed/pkg/cmds/values/values.go` with:
+  - [x] `type SectionValues = layers.ParsedLayer`
+  - [x] `type Values = layers.ParsedLayers`
+  - [x] `type ValuesOption = layers.ParsedLayersOption`
+  - [x] `func New(opts ...ValuesOption) *Values` (wrap `layers.NewParsedLayers`)
+  - [x] `func DecodeInto(v *SectionValues, dst any) error` (wrap `v.InitializeStruct(dst)`)
+  - [x] `func DecodeSectionInto(vs *Values, sectionSlug string, dst any) error` (wrap `vs.InitializeStruct(sectionSlug, dst)`)
+  - [x] (Optional) `func AsMap(vs *Values) map[string]any` (wrap `vs.GetDataMap()`)
 
 ### 1.4 `glazed/pkg/cmds/sources`
 
-- [ ] Add directory `glazed/pkg/cmds/sources/`
-- [ ] Add `glazed/pkg/cmds/sources/sources.go` with:
-  - [ ] `type Middleware = middlewares.Middleware`
-  - [ ] Wrapper functions around common sources:
-    - [ ] `FromCobra(cmd *cobra.Command, opts ...parameters.ParseStepOption) Middleware`
-    - [ ] `FromArgs(args []string, opts ...parameters.ParseStepOption) Middleware`
-    - [ ] `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware`
-    - [ ] `FromDefaults(opts ...parameters.ParseStepOption) Middleware`
+- [x] Add directory `glazed/pkg/cmds/sources/`
+- [x] Add `glazed/pkg/cmds/sources/sources.go` with:
+  - [x] `type Middleware = middlewares.Middleware`
+  - [x] Wrapper functions around common sources:
+    - [x] `FromCobra(cmd *cobra.Command, opts ...parameters.ParseStepOption) Middleware`
+    - [x] `FromArgs(args []string, opts ...parameters.ParseStepOption) Middleware`
+    - [x] `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware`
+    - [x] `FromDefaults(opts ...parameters.ParseStepOption) Middleware`
     - [ ] (Optional) `FromConfigFilesForCobra(...) Middleware`
-  - [ ] `func Execute(sections *schema.Sections, vals *values.Values, ms ...Middleware) error` (wrap `middlewares.ExecuteMiddlewares`)
+  - [x] `func Execute(sections *schema.Sections, vals *values.Values, ms ...Middleware) error` (wrap `middlewares.ExecuteMiddlewares`)
 
 ## 2. Create example program (acceptance test)
 
