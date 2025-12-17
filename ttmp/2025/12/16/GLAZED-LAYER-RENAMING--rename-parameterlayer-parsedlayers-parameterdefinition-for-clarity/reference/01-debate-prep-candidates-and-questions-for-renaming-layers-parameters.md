@@ -56,9 +56,13 @@ We’re exploring renames like:
 - `parameters.ParameterDefinition` → “field definition”
 - `layers.ParsedLayers` → “values / resolved values”
 
-But there are multiple viable paths:
+**Already decided / assumed for debate:**
 
-- Rename types only vs rename packages too
+- We are implementing **Option A (Schema / Field / Values)** as the standard vocabulary.
+- We are going to **rename packages** (introduce new import paths like `schema`, `fields`, `values`, `sources`), not only types.
+
+We still have multiple viable paths for the detailed shape:
+
 - Provide aliases vs add façade packages vs add wrapper types
 - Improve nouns only vs also improve verbs (`InitializeStruct` → `DecodeInto`)
 
@@ -68,18 +72,22 @@ But there are multiple viable paths:
 
 #### Primary resolutions
 
-1. **Scope of rename**: Should we rename **types only**, or also introduce **new packages** (`schema`, `fields`, `values`, `sources`)?
+1. **Option A design review (names + API surface)**: Given Schema/Field/Values, are the concrete names *good*?
+   - Are “schema” and “section” the right nouns, or should we prefer “group/namespace”?
+   - Should “FieldDefinition” live under `fields` or `schema`?
+   - What do we call parsed results: `values.Values`, `values.SectionValues`, `values.Resolved`, `values.ResolvedValues`?
+   - What do we call the verbs: `DecodeInto`, `DecodeSectionInto`, `BindInto`, `HydrateInto`?
+   - What stays as legacy vocabulary even in Option A (e.g. keep `layer` internally but expose “section” externally)?
 2. **Transitional strategy**: What is the preferred compatibility path?
    - type aliases only
    - helper functions for new verbs
    - wrapper types for fluent methods
    - façade packages re-exporting old implementation
-3. **Verb cleanup**: Should we introduce “decode/bind” vocabulary (`DecodeInto`, `DecodeSectionInto`) to complement the new nouns?
-4. **Peripheral naming**: Should `cmds/middlewares` be conceptually renamed (at least at API level) to **sources/resolvers**, even if we don’t change the import path?
-5. **Command definition surface**: How should we deal with Glazed command definitions (e.g. `cmds.CommandDescription`, layers/flags/args composition) under the new vocabulary?
+3. **Peripheral naming**: Should `cmds/middlewares` be conceptually renamed (at least at API level) to **sources/resolvers**, even if we don’t change the import path?
+4. **Command definition surface**: How should we deal with Glazed command definitions (e.g. `cmds.CommandDescription`, layers/flags/args composition) under the new vocabulary?
    - Do we keep “layer” terminology in command descriptions, or rename to “schema sections” at the API edge?
    - What is the desired end-state for “flags vs args” definition APIs?
-6. **CLI registration / Cobra wrapping**: What is a better high-level CLI registration story for Glazed commands?
+5. **CLI registration / Cobra wrapping**: What is a better high-level CLI registration story for Glazed commands?
    - Today, tutorials like `glazed/pkg/doc/tutorials/05-build-first-command.md` show `cli.BuildCobraCommand` + `CobraParserConfig`.
    - Should we introduce a higher-level “app/registry” or “CLI builder” that standardizes registration, parsing, and help wiring?
 
