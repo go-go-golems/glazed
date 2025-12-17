@@ -237,3 +237,82 @@ This step created a complete example program demonstrating all four wrapper pack
 - Env key format: `DEMO_<SECTION_PREFIX>_<FIELD_NAME>` where section prefix has hyphens converted to underscores
 - Example: `DEMO_APP_VERBOSE=true` sets `app.verbose` when section has prefix `app-`
 - All wrapper packages work together seamlessly - no compatibility issues
+
+## Step 5: Refine naming - Sections→Schema, add CommandDefinition aliases
+
+This step refined the naming to use `Schema` instead of `Sections` and added `CommandDefinition` aliases for better vocabulary consistency.
+
+**Commit (code):** N/A — implementation in progress
+
+### What I did
+- Renamed `schema.Sections` → `schema.Schema` throughout:
+  - Updated type alias: `type Schema = layers.ParameterLayers`
+  - Updated option type: `type SchemaOption = layers.ParameterLayersOption`
+  - Updated constructor: `func NewSchema(...)` instead of `NewSections`
+  - Updated `sources.Execute()` signature to use `*schema.Schema`
+- Added `schema.NewGlazedSchema()` wrapper for `settings.NewGlazedParameterLayers()`
+- Updated Run method signature to use `*values.Values` directly (type alias compatibility)
+- Added `cmds.WithSchema()` wrapper for `cmds.WithLayers()` accepting `*schema.Schema`
+- Added `CommandDefinition` aliases:
+  - `type CommandDefinition = CommandDescription`
+  - `type CommandDefinitionOption = CommandDescriptionOption`
+  - `func NewCommandDefinition(...)` wrapper for `NewCommandDescription`
+- Updated example program to use all new names:
+  - `schema.NewSchema()` instead of `schema.NewSections()`
+  - `cmds.WithSchema()` instead of `cmds.WithLayers((*layers.ParameterLayers)(schema))`
+  - `cmds.NewCommandDefinition()` instead of `cmds.NewCommandDescription()`
+  - `*cmds.CommandDefinition` instead of `*cmds.CommandDescription`
+  - `*values.Values` in Run method signature instead of `*layers.ParsedLayers`
+- Updated design doc and implementation plan to reflect `Schema` naming
+
+### Why
+- `Schema` is clearer than `Sections` - a Schema contains Sections
+- `CommandDefinition` aligns better with schema/fields/values vocabulary
+- Using new names in Run signature demonstrates type alias compatibility
+- Provides consistent vocabulary throughout the API surface
+
+### What worked
+- All packages compile successfully
+- Example program runs correctly with new names
+- Glaze commands still compile (backward compatibility maintained)
+- Geppetto still compiles (no breaking changes)
+- Type aliases work seamlessly - `*values.Values` satisfies `*layers.ParsedLayers` interface
+
+### What didn't work
+- N/A - all changes worked as expected
+
+### What I learned
+- Type aliases in Go are truly zero-cost and fully compatible with underlying types
+- Can use `*values.Values` in method signatures that require `*layers.ParsedLayers`
+- Renaming collection type (`Sections` → `Schema`) improves clarity without breaking compatibility
+- Adding wrapper functions provides better API ergonomics without changing underlying behavior
+
+### What was tricky to build
+- Ensuring all references to `Sections` were updated (design doc, plan, code)
+- Understanding that type aliases allow using new names in interface implementations
+- Making sure backward compatibility is maintained (old names still work)
+
+### What warrants a second pair of eyes
+- Verify that all `Sections` references were updated consistently
+- Confirm that `CommandDefinition` naming is preferred over `CommandDescription`
+- Check that wrapper functions don't introduce any performance overhead (they shouldn't)
+
+### What should be done in the future
+- Consider updating other examples to use new vocabulary
+- Document migration path for existing code (old names still work)
+- Add more wrapper functions if needed for better ergonomics
+
+### Code review instructions
+- Review `pkg/cmds/schema/schema.go` - verify `Schema` naming
+- Review `pkg/cmds/cmds.go` - verify `CommandDefinition` aliases and `WithSchema` wrapper
+- Review `pkg/cmds/sources/sources.go` - verify `Execute` signature uses `*schema.Schema`
+- Review `cmd/examples/refactor-new-packages/main.go` - verify all new names are used
+- Test: `go build ./cmd/glaze/...` (should still work)
+- Test: `go build ./...` in geppetto (should still work)
+
+### Technical details
+- Type aliases allow using `*values.Values` where `*layers.ParsedLayers` is expected
+- `Schema` is a collection of `Section` items (clearer than `Sections`)
+- `CommandDefinition` provides better vocabulary alignment with schema/fields/values
+- All wrapper functions are zero-cost - they just call underlying functions
+- Backward compatibility: old names (`CommandDescription`, `Sections`) still work

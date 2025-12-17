@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -16,6 +17,9 @@ import (
 // CommandDescription contains the necessary information for registering
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
+//
+// CommandDefinition is an alias for CommandDescription that provides clearer
+// vocabulary when thinking about command definitions vs descriptions.
 type CommandDescription struct {
 	Name  string `yaml:"name"`
 	Short string `yaml:"short"`
@@ -36,6 +40,14 @@ type CommandDescription struct {
 // Steal the builder API from https://github.com/bbkane/warg
 
 type CommandDescriptionOption func(*CommandDescription)
+
+// CommandDefinition is a type alias for CommandDescription.
+// It provides clearer vocabulary when thinking about command definitions.
+type CommandDefinition = CommandDescription
+
+// CommandDefinitionOption is a type alias for CommandDescriptionOption.
+// It provides clearer vocabulary when thinking about command definition options.
+type CommandDefinitionOption = CommandDescriptionOption
 
 func WithName(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
@@ -85,6 +97,12 @@ func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers.Merge(ls)
 	}
+}
+
+// WithSchema is an alias for WithLayers that accepts a schema.Schema.
+// It provides a more intuitive name when working with the schema package.
+func WithSchema(s *schema.Schema) CommandDescriptionOption {
+	return WithLayers((*layers.ParameterLayers)(s))
 }
 
 // WithLayersMap registers layers using explicit slugs from the provided map.
@@ -229,6 +247,12 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	}
 
 	return ret
+}
+
+// NewCommandDefinition creates a new command definition with the given name and options.
+// It is an alias for NewCommandDescription that provides clearer vocabulary.
+func NewCommandDefinition(name string, options ...CommandDefinitionOption) *CommandDefinition {
+	return NewCommandDescription(name, options...)
 }
 
 func (cd *CommandDescription) FullPath() string {

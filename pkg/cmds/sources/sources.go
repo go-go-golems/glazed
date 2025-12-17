@@ -46,6 +46,6 @@ func FromDefaults(opts ...parameters.ParseStepOption) Middleware {
 // 2. Config files (if added)
 // 3. Environment variables (if FromEnv is added)
 // 4. Cobra flags/args (if FromCobra/FromArgs are last, highest precedence)
-func Execute(sections *schema.Sections, vals *values.Values, ms ...Middleware) error {
-	return cmd_middlewares.ExecuteMiddlewares((*layers.ParameterLayers)(sections), (*layers.ParsedLayers)(vals), ms...)
+func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error {
+	return cmd_middlewares.ExecuteMiddlewares((*layers.ParameterLayers)(schema), (*layers.ParsedLayers)(vals), ms...)
 }
