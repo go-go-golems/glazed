@@ -58,6 +58,8 @@ docTypes:
       description: Design document
     - slug: brainstorm
       description: Brainstorming / naming / exploratory notes
+    - slug: debate
+      description: Structured debate rounds and debate-related documents
     - slug: reference
       description: API/reference
     - slug: playbook
