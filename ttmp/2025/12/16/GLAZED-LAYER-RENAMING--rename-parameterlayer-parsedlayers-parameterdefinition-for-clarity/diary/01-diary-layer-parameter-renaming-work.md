@@ -11,11 +11,18 @@ DocType: diary
 Intent: working-document
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md
+      Note: Deep Option A plan referenced by diary
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md
+      Note: Brainstorm snapshot referenced by diary
+    - Path: glazed/ttmp/vocabulary.yaml
+      Note: Tracks new docTypes/intents/topics used by this ticket
 ExternalSources: []
 Summary: Chronological log of work on naming/renaming ParameterLayer/ParsedLayers/ParameterDefinition
 LastUpdated: 2025-12-17T08:30:37.551566127-05:00
 ---
+
 
 # Diary: layer/parameter renaming work
 

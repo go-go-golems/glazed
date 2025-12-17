@@ -12,11 +12,28 @@ DocType: analysis
 Intent: working-document
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: glazed/pkg/cmds/layers/layer.go
+      Note: ParameterLayer/ParameterLayers are the schema-ish core we’re renaming
+    - Path: glazed/pkg/cmds/layers/parsed-layer.go
+      Note: ParsedLayer/ParsedLayers are the values core; InitializeStruct verb is key
+    - Path: glazed/pkg/cmds/middlewares/layers.go
+      Note: ExecuteMiddlewares and source middlewares naming (sources/resolvers)
+    - Path: glazed/pkg/cmds/parameters/parameters.go
+      Note: ParameterDefinition is the field spec; candidate for FieldDefinition
+    - Path: glazed/pkg/doc/topics/layers-guide.md
+      Note: User-facing docs that would need vocabulary updates
+    - Path: glazed/pkg/doc/tutorials/custom-layer.md
+      Note: Tutorial that embeds current names
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md
+      Note: Option A is grounded in this brainstorm; keep aligned
+    - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/reference/01-debate-prep-candidates-and-questions-for-renaming-layers-parameters.md
+      Note: Debate agenda/candidates for evaluating Option A
 ExternalSources: []
 Summary: Deep plan for implementing Bundle A (Schema/Field/Values), including compatibility layer design
 LastUpdated: 2025-12-17T08:27:08.272682492-05:00
 ---
+
 
 # Option A implementation plan: Schema/Field/Values renaming + transitional API
 
