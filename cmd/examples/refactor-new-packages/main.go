@@ -50,7 +50,7 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 		"App",
 		schema.WithPrefix("app-"),
 		schema.WithDescription("Application configuration settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("verbose", fields.TypeBool,
 				fields.WithHelp("Enable verbose logging"),
 				fields.WithDefault(false),
@@ -75,7 +75,7 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 		"Output",
 		schema.WithPrefix("output-"),
 		schema.WithDescription("Output formatting settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("format", fields.TypeChoice,
 				fields.WithHelp("Output format"),
 				fields.WithChoices("json", "yaml", "table"),

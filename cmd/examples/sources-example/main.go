@@ -37,7 +37,7 @@ func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
 		"Config",
 		schema.WithPrefix("config-"),
 		schema.WithDescription("Configuration settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("api-key", fields.TypeString,
 				fields.WithHelp("API key for authentication"),
 				fields.WithDefault("default-key"),
