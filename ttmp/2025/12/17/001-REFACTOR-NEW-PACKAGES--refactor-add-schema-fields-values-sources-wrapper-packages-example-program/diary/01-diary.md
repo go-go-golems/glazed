@@ -165,3 +165,75 @@ This step implemented all four wrapper packages as specified in the design doc. 
 - All packages follow pattern: type aliases + constructor wrappers + option re-exports
 - `sources.Execute` requires type conversions: `(*layers.ParameterLayers)(sections)` and `(*layers.ParsedLayers)(vals)` because aliases don't change underlying type identity for conversions
 - Re-exported options use `var` declarations to avoid function call overhead
+
+## Step 4: Create and test example program
+
+This step created a complete example program demonstrating all four wrapper packages in action. The program defines multiple schema sections, parses from env + cobra, and decodes values into structs.
+
+**Commit (code):** N/A — implementation in progress
+
+### What I did
+- Created `glazed/cmd/examples/refactor-new-packages/main.go` with:
+  - Three schema sections: default (positional args), app (with prefix), output (with prefix)
+  - Field definitions using `fields.New()` with various types (bool, int, string, choice)
+  - Struct decoding using `values.DecodeSectionInto()` for each section
+  - Cobra integration with `cli.BuildCobraCommand()` and `CobraParserConfig.AppName = "demo"`
+- Created `README.md` documenting usage and precedence examples
+- Tested multiple scenarios:
+  - Default values
+  - Environment variable parsing (`DEMO_APP_VERBOSE=true`)
+  - Cobra flag override (`--app-verbose=false` overriding env)
+
+### Why
+- Validates that all wrapper packages work together correctly
+- Demonstrates real-world usage patterns
+- Serves as acceptance test for the new API surface
+- Shows precedence order (defaults < env < flags)
+
+### What worked
+- Program builds and runs successfully
+- Default values work correctly (verbose=false, port=8080, host=localhost)
+- Environment variables parse correctly (`DEMO_APP_VERBOSE=true` sets `app.verbose=true`)
+- Cobra flags override env variables correctly (`--app-verbose=false` overrides `DEMO_APP_VERBOSE=true`)
+- Struct decoding works for all three sections
+- Output shows resolved values in structured format
+
+### What didn't work
+- Initial command structure issue: command was added as subcommand, requiring `refactor-demo refactor-demo input.txt` instead of `refactor-demo input.txt`
+- This is expected behavior (command is a subcommand of root), but could be simplified if needed
+
+### What I learned
+- The new wrapper packages integrate seamlessly with existing Glazed infrastructure
+- Type aliases work perfectly for interop - can convert `*values.Values` to `*layers.ParsedLayers` when needed
+- Environment variable format: `DEMO_APP_VERBOSE` correctly maps to `app.verbose` with prefix `app-`
+- Cobra parser config `AppName` automatically enables env parsing with the correct prefix
+
+### What was tricky to build
+- Understanding the command structure (root command vs subcommand)
+- Getting the env variable format right (`DEMO_APP_VERBOSE` vs `DEMO_APP-VERBOSE`)
+- Converting between alias types when passing to existing APIs (`(*layers.ParameterLayers)(sections)`)
+
+### What warrants a second pair of eyes
+- Verify that all field types work correctly (tested bool, int, string, choice)
+- Confirm env variable key format matches documentation
+- Check that precedence order matches expectations (defaults < env < flags)
+
+### What should be done in the future
+- Consider simplifying command structure (make it the root command directly)
+- Add more field type examples (lists, dates, etc.)
+- Add config file parsing example (optional per plan)
+
+### Code review instructions
+- Start with `glazed/cmd/examples/refactor-new-packages/main.go`
+- Verify schema sections are created correctly with new packages
+- Check that field definitions use `fields.New()` correctly
+- Confirm struct decoding uses `values.DecodeSectionInto()`
+- Test with: `go run ./cmd/examples/refactor-new-packages refactor-demo input.txt`
+- Test env: `DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo input.txt`
+- Test override: `DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo --app-verbose=false input.txt`
+
+### Technical details
+- Command structure: root command `refactor-demo` contains subcommand `refactor-demo` (could be simplified)
+- Env key format: `DEMO_<SECTION_PREFIX>_<FIELD_NAME>` where section prefix has hyphens converted to underscores
+- Example: `DEMO_APP_VERBOSE=true` sets `app.verbose` when section has prefix `app-`
+- All wrapper packages work together seamlessly - no compatibility issues

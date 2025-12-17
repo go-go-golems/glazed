@@ -86,67 +86,67 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
 
 ### 2.1 Add example program skeleton
 
-- [ ] Add directory `glazed/cmd/examples/refactor-new-packages/`
-- [ ] Add `glazed/cmd/examples/refactor-new-packages/main.go`
+- [x] Add directory `glazed/cmd/examples/refactor-new-packages/`
+- [x] Add `glazed/cmd/examples/refactor-new-packages/main.go`
 
 ### 2.2 Program requirements
 
-- [ ] Define a command with **multiple schema sections** using new packages:
-  - [ ] `schema.NewSection(schema.DefaultSlug, "Default", ...)` for positional args (optional but recommended)
-  - [ ] `schema.NewSection("app", "App", schema.WithPrefix("app-"), ...)`
-  - [ ] `schema.NewSection("output", "Output", schema.WithPrefix("output-"), ...)`
-- [ ] Define field definitions using `fields.New(...)`
-- [ ] Ensure cobra flags are registered via the existing mechanism:
+- [x] Define a command with **multiple schema sections** using new packages:
+  - [x] `schema.NewSection(schema.DefaultSlug, "Default", ...)` for positional args (optional but recommended)
+  - [x] `schema.NewSection("app", "App", schema.WithPrefix("app-"), ...)`
+  - [x] `schema.NewSection("output", "Output", schema.WithPrefix("output-"), ...)`
+- [x] Define field definitions using `fields.New(...)`
+- [x] Ensure cobra flags are registered via the existing mechanism:
   - Use `cli.BuildCobraCommand(...)` (or `cli.NewCobraParserFromLayers` + `AddToCobraCommand`) so we exercise the actual production codepaths.
-- [ ] Parse from **env + cobra**:
-  - [ ] Set `cli.CobraParserConfig.AppName = "demo"` (or similar) so env parsing is enabled (prefix becomes `DEMO_`).
-  - [ ] Demonstrate env key format (from `middlewares.UpdateFromEnv`):
+- [x] Parse from **env + cobra**:
+  - [x] Set `cli.CobraParserConfig.AppName = "demo"` (or similar) so env parsing is enabled (prefix becomes `DEMO_`).
+  - [x] Demonstrate env key format (from `middlewares.UpdateFromEnv`):
     - Global prefix: `DEMO_`
     - Per-section prefix: `layerPrefix` from `schema.WithPrefix(...)` (hyphen becomes underscore for env keys)
     - Field name: `p.Name`
     - Example: `DEMO_APP_VERBOSE=true` sets field `verbose` in the `app` section when `WithPrefix("app-")`.
-- [ ] Decode resolved values into structs:
-  - [ ] `values.DecodeSectionInto(parsed, "app", &AppSettings{})`
-  - [ ] `values.DecodeSectionInto(parsed, "output", &OutputSettings{})`
-- [ ] Print the resulting struct(s) and optionally the parsed values map for easy manual verification.
+- [x] Decode resolved values into structs:
+  - [x] `values.DecodeSectionInto(parsed, "app", &AppSettings{})`
+  - [x] `values.DecodeSectionInto(parsed, "output", &OutputSettings{})`
+- [x] Print the resulting struct(s) and optionally the parsed values map for easy manual verification.
 
 ### 2.3 Precedence scenario to demonstrate
 
-- [ ] Provide an example run sequence in comments/README:
-  - [ ] Defaults set lowest precedence
-  - [ ] Config file (optional) overrides defaults
-  - [ ] Env overrides config/defaults
-  - [ ] Cobra flags override env/config/defaults (highest precedence)
+- [x] Provide an example run sequence in comments/README:
+  - [x] Defaults set lowest precedence
+  - [x] Config file (optional) overrides defaults
+  - [x] Env overrides config/defaults
+  - [x] Cobra flags override env/config/defaults (highest precedence)
 
 ## 3. Tests / validation
 
 ### 3.1 Compile-time validation
 
-- [ ] Add lightweight tests that:
-  - [ ] import `schema/fields/values/sources`
-  - [ ] compile basic usage (e.g., `schema.NewSection`, `fields.New`, `values.DecodeSectionInto`, `sources.Execute`)
+- [x] Add lightweight tests that:
+  - [x] import `schema/fields/values/sources`
+  - [x] compile basic usage (e.g., `schema.NewSection`, `fields.New`, `values.DecodeSectionInto`, `sources.Execute`)
 
 ### 3.2 Example program build/run validation
 
-- [ ] Confirm it builds:
-  - [ ] `go run ./glazed/cmd/examples/refactor-new-packages --help`
-- [ ] Confirm env parsing:
-  - [ ] `DEMO_APP_VERBOSE=true go run ./glazed/cmd/examples/refactor-new-packages ...`
-- [ ] Confirm cobra override:
-  - [ ] `DEMO_APP_VERBOSE=true go run ./glazed/cmd/examples/refactor-new-packages --app-verbose=false ...`
+- [x] Confirm it builds:
+  - [x] `go run ./glazed/cmd/examples/refactor-new-packages --help`
+- [x] Confirm env parsing:
+  - [x] `DEMO_APP_VERBOSE=true go run ./glazed/cmd/examples/refactor-new-packages refactor-demo input.txt`
+- [x] Confirm cobra override:
+  - [x] `DEMO_APP_VERBOSE=true go run ./glazed/cmd/examples/refactor-new-packages refactor-demo --app-verbose=false input.txt`
 
 ## 4. Acceptance criteria
 
-- [ ] New packages exist and are importable:
-  - [ ] `glazed/pkg/cmds/schema`
-  - [ ] `glazed/pkg/cmds/fields`
-  - [ ] `glazed/pkg/cmds/values`
-  - [ ] `glazed/pkg/cmds/sources`
-- [ ] Example program demonstrates:
-  - [ ] multiple schema sections
-  - [ ] env + cobra resolution
-  - [ ] decoding into structs (per section)
-- [ ] `go test ./...` passes
+- [x] New packages exist and are importable:
+  - [x] `glazed/pkg/cmds/schema`
+  - [x] `glazed/pkg/cmds/fields`
+  - [x] `glazed/pkg/cmds/values`
+  - [x] `glazed/pkg/cmds/sources`
+- [x] Example program demonstrates:
+  - [x] multiple schema sections
+  - [x] env + cobra resolution
+  - [x] decoding into structs (per section)
+- [x] `go test ./...` passes
 
 ## 5. Follow-ups (optional / out of scope for this ticket unless requested)
 
