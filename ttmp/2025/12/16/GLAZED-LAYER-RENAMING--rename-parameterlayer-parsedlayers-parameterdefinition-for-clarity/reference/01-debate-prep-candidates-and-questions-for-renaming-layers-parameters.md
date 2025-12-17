@@ -20,6 +20,8 @@ RelatedFiles:
       Note: Debate touches middlewares vs sources naming
     - Path: glazed/pkg/cmds/parameters/parameters.go
       Note: Debate touches ParameterDefinition naming
+    - Path: glazed/pkg/doc/tutorials/05-build-first-command.md
+      Note: Example of current CLI registration pattern (BuildCobraCommand/CobraParserConfig) discussed in debate
     - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md
       Note: Option A plan referenced by debate
     - Path: glazed/ttmp/2025/12/16/GLAZED-LAYER-RENAMING--rename-parameterlayer-parsedlayers-parameterdefinition-for-clarity/brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md
@@ -28,6 +30,7 @@ ExternalSources: []
 Summary: 'Debate setup: candidate roster and questions for the naming/renaming effort (no perf/security)'
 LastUpdated: 2025-12-17T08:33:08.627392269-05:00
 ---
+
 
 
 # Debate prep: candidates and questions for renaming layers/parameters
@@ -65,29 +68,34 @@ But there are multiple viable paths:
 
 #### Primary resolutions
 
-1. **Vocabulary bundle**: Should we standardize on **Bundle A (Schema/Field/Values)** or another bundle (Options/Inputs/Config)?
-2. **Scope of rename**: Should we rename **types only**, or also introduce **new packages** (`schema`, `fields`, `values`, `sources`)?
-3. **Transitional strategy**: What is the preferred compatibility path?
+1. **Scope of rename**: Should we rename **types only**, or also introduce **new packages** (`schema`, `fields`, `values`, `sources`)?
+2. **Transitional strategy**: What is the preferred compatibility path?
    - type aliases only
    - helper functions for new verbs
    - wrapper types for fluent methods
    - façade packages re-exporting old implementation
-4. **Verb cleanup**: Should we introduce “decode/bind” vocabulary (`DecodeInto`, `DecodeSectionInto`) to complement the new nouns?
-5. **Peripheral naming**: Should `cmds/middlewares` be conceptually renamed (at least at API level) to **sources/resolvers**, even if we don’t change the import path?
+3. **Verb cleanup**: Should we introduce “decode/bind” vocabulary (`DecodeInto`, `DecodeSectionInto`) to complement the new nouns?
+4. **Peripheral naming**: Should `cmds/middlewares` be conceptually renamed (at least at API level) to **sources/resolvers**, even if we don’t change the import path?
+5. **Command definition surface**: How should we deal with Glazed command definitions (e.g. `cmds.CommandDescription`, layers/flags/args composition) under the new vocabulary?
+   - Do we keep “layer” terminology in command descriptions, or rename to “schema sections” at the API edge?
+   - What is the desired end-state for “flags vs args” definition APIs?
+6. **CLI registration / Cobra wrapping**: What is a better high-level CLI registration story for Glazed commands?
+   - Today, tutorials like `glazed/pkg/doc/tutorials/05-build-first-command.md` show `cli.BuildCobraCommand` + `CobraParserConfig`.
+   - Should we introduce a higher-level “app/registry” or “CLI builder” that standardizes registration, parsing, and help wiring?
 
 #### Secondary questions (tie-breakers)
 
-6. **Where do new names live?**
+7. **Where do new names live?**
    - in-place (within `cmds/layers` and `cmds/parameters`)
    - in new packages (recommended for cleaner imports)
-7. **What is the “unit” of values?**
+8. **What is the “unit” of values?**
    - `ParsedLayer` is “section values”
    - `ParsedLayers` is “all values”
    - do we also want a cross-layer merged view name?
-8. **What do we call “layer” itself?**
+9. **What do we call “layer” itself?**
    - keep “layer” as the grouping word
    - or replace with “section”, “group”, or “namespace” (docs vs code)?
-9. **Do we keep the struct tag `glazed.parameter`?**
+10. **Do we keep the struct tag `glazed.parameter`?**
    - (Debate should cover naming clarity, but the current plan is “do not rename tags”; confirm.)
 
 ### Candidate roster
