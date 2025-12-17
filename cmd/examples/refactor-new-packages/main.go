@@ -8,11 +8,9 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -36,12 +34,12 @@ type DefaultSettings struct {
 }
 
 type RefactorDemoCommand struct {
-	*cmds.CommandDescription
+	*cmds.CommandDefinition
 }
 
 func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
-	// Create glazed layer for output formatting
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	// Create glazed schema section for output formatting
+	glazedSection, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +107,12 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 		return nil, err
 	}
 
-	// Create sections collection
-	sections := schema.NewSections(
-		schema.WithSections(glazedLayer, appSection, outputSection, defaultSection),
+	// Create schema collection
+	schema := schema.NewSchema(
+		schema.WithSections(glazedSection, appSection, outputSection, defaultSection),
 	)
 
-	desc := cmds.NewCommandDescription(
+	desc := cmds.NewCommandDefinition(
 		"refactor-demo",
 		cmds.WithShort("Demonstrate new wrapper packages (schema/fields/values/sources)"),
 		cmds.WithLong(`This example demonstrates the new wrapper packages:
@@ -129,13 +127,13 @@ Precedence order (lowest to highest):
 3. Cobra flags (--app-verbose=true)
 
 Example usage:
-  DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages input.txt
-  DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages --app-verbose=false input.txt
+  DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo input.txt
+  DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo --app-verbose=false input.txt
 `),
-		cmds.WithLayers((*layers.ParameterLayers)(sections)),
+		cmds.WithSchema(schema),
 	)
 
-	return &RefactorDemoCommand{CommandDescription: desc}, nil
+	return &RefactorDemoCommand{CommandDefinition: desc}, nil
 }
 
 // Ensure interface compliance
@@ -143,11 +141,9 @@ var _ cmds.GlazeCommand = &RefactorDemoCommand{}
 
 func (c *RefactorDemoCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	vals *values.Values,
 	gp middlewares.Processor,
 ) error {
-	// Convert to values.Values for the new API
-	vals := (*values.Values)(parsedLayers)
 
 	// Decode each section into its struct
 	appSettings := &AppSettings{}

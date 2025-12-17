@@ -70,14 +70,15 @@ Proposed surface (illustrative):
 
 - **Type aliases**
   - `type Section = layers.ParameterLayer`
-  - `type Sections = layers.ParameterLayers`
+  - `type Schema = layers.ParameterLayers`
   - `type SectionImpl = layers.ParameterLayerImpl` (the common concrete impl)
   - `type SectionOption = layers.ParameterLayerOptions`
-  - `type SectionsOption = layers.ParameterLayersOption`
+  - `type SchemaOption = layers.ParameterLayersOption`
 - **Constructor wrappers**
   - `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` → `layers.NewParameterLayer`
-  - `func NewSections(opts ...SectionsOption) *Sections` → `layers.NewParameterLayers`
-  - `func WithSections(sections ...Section) SectionsOption` → `layers.WithLayers`
+  - `func NewSchema(opts ...SchemaOption) *Schema` → `layers.NewParameterLayers`
+  - `func WithSections(sections ...Section) SchemaOption` → `layers.WithLayers`
+  - `func NewGlazedSchema(opts ...settings.GlazeParameterLayerOption) (Section, error)` → `settings.NewGlazedParameterLayers`
 - **Constants**
   - `const DefaultSlug = layers.DefaultSlug`
 
@@ -132,7 +133,7 @@ Proposed surface:
   - `FromDefaults(opts ...parameters.ParseStepOption) Middleware` → `middlewares.SetFromDefaults`
   - `FromConfigFilesForCobra(...) Middleware` → `middlewares.LoadParametersFromResolvedFilesForCobra` (optional; phase 2)
 - **Execution helper**
-  - `func Execute(sections *schema.Sections, vals *values.Values, ms ...Middleware) error` → `middlewares.ExecuteMiddlewares`
+  - `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` → `middlewares.ExecuteMiddlewares`
 
 ### 2) Add an example program as an acceptance test
 

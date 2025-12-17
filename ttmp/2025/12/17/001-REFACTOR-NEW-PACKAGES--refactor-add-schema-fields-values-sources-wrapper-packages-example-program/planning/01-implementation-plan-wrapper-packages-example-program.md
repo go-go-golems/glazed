@@ -34,14 +34,15 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
 - [x] Add directory `glazed/pkg/cmds/schema/`
 - [x] Add `glazed/pkg/cmds/schema/schema.go` with:
   - [x] `type Section = layers.ParameterLayer`
-  - [x] `type Sections = layers.ParameterLayers`
+  - [x] `type Schema = layers.ParameterLayers`
   - [x] `type SectionImpl = layers.ParameterLayerImpl`
   - [x] `type SectionOption = layers.ParameterLayerOptions`
-  - [x] `type SectionsOption = layers.ParameterLayersOption`
+  - [x] `type SchemaOption = layers.ParameterLayersOption`
   - [x] `const DefaultSlug = layers.DefaultSlug`
   - [x] `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` (wrap `layers.NewParameterLayer`)
-  - [x] `func NewSections(opts ...SectionsOption) *Sections` (wrap `layers.NewParameterLayers`)
-  - [x] `func WithSections(sections ...Section) SectionsOption` (wrap `layers.WithLayers`)
+  - [x] `func NewSchema(opts ...SchemaOption) *Schema` (wrap `layers.NewParameterLayers`)
+  - [x] `func WithSections(sections ...Section) SchemaOption` (wrap `layers.WithLayers`)
+  - [x] `func NewGlazedSchema(opts ...settings.GlazeParameterLayerOption) (Section, error)` (wrap `settings.NewGlazedParameterLayers`)
 
 ### 1.2 `glazed/pkg/cmds/fields`
 
@@ -80,7 +81,7 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
     - [x] `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware`
     - [x] `FromDefaults(opts ...parameters.ParseStepOption) Middleware`
     - [ ] (Optional) `FromConfigFilesForCobra(...) Middleware`
-  - [x] `func Execute(sections *schema.Sections, vals *values.Values, ms ...Middleware) error` (wrap `middlewares.ExecuteMiddlewares`)
+  - [x] `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` (wrap `middlewares.ExecuteMiddlewares`)
 
 ## 2. Create example program (acceptance test)
 
