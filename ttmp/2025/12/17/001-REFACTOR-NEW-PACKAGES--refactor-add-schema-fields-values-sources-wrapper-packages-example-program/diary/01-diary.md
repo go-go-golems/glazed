@@ -112,7 +112,7 @@ N/A.
 
 This step implemented all four wrapper packages as specified in the design doc. All packages use type aliases for zero-cost compatibility and wrapper functions to provide improved vocabulary.
 
-**Commit (code):** N/A — implementation in progress
+**Commit (code):** `8c9f1704e611a5ac2646874697a7bd329db6865a` — "Add wrapper packages (schema/fields/values/sources) with type aliases"
 
 ### What I did
 - Created `glazed/pkg/cmds/schema/schema.go` with type aliases and wrapper functions
