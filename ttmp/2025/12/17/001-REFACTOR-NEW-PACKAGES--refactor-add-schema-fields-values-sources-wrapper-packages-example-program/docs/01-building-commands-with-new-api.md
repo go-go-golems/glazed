@@ -95,6 +95,8 @@ type OutputSettings struct {
 
 Schema sections organize related parameters into logical groups. Each section can have a prefix (like `app-` or `output-`) that affects how flags and environment variables are named. The `schema` package provides constructors that make section creation intuitive.
 
+Attach fields to a section using `schema.WithFields(...)` (which wraps the historical `layers.WithParameterDefinitions(...)`).
+
 ```go
 func NewAppCommand() (*AppCommand, error) {
 	// Create glazed section for built-in output formatting options
@@ -110,7 +112,7 @@ func NewAppCommand() (*AppCommand, error) {
 		"App",
 		schema.WithPrefix("app-"),
 		schema.WithDescription("Application configuration settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("verbose", fields.TypeBool,
 				fields.WithHelp("Enable verbose logging"),
 				fields.WithDefault(false),
@@ -135,7 +137,7 @@ func NewAppCommand() (*AppCommand, error) {
 		"Output",
 		schema.WithPrefix("output-"),
 		schema.WithDescription("Output formatting settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("format", fields.TypeChoice,
 				fields.WithHelp("Output format"),
 				fields.WithChoices("json", "yaml", "table"),
@@ -358,7 +360,7 @@ See `cmd/examples/sources-example/` for a tiny program that uses the new API (`s
 
 ## Step 5: Working with Positional Arguments
 
-Positional arguments are handled through the default section (slug: `schema.DefaultSlug`). Use `schema.WithArguments()` instead of `schema.WithParameterDefinitions()` to mark fields as positional arguments.
+Positional arguments are handled through the default section (slug: `schema.DefaultSlug`). Use `schema.WithArguments()` to mark fields as positional arguments (as opposed to “regular” fields added via `schema.WithFields()`, which become flags/env/config inputs).
 
 ```go
 // Create default section for positional arguments
@@ -464,7 +466,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 		"App",
 		schema.WithPrefix("app-"),
 		schema.WithDescription("Application settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("verbose", fields.TypeBool,
 				fields.WithHelp("Enable verbose logging"),
 				fields.WithDefault(false),
@@ -489,7 +491,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 		"Output",
 		schema.WithPrefix("output-"),
 		schema.WithDescription("Output settings"),
-		schema.WithParameterDefinitions(
+		schema.WithFields(
 			fields.New("format", fields.TypeChoice,
 				fields.WithHelp("Output format"),
 				fields.WithChoices("json", "yaml", "table"),
@@ -711,7 +713,7 @@ APP_CONFIG_API_KEY=env-key go run ./cmd/examples/sources-example --config-file=c
 
 ## Migration from Old API
 
-If you have existing commands using the old API (`layers.ParameterLayer`, `parameters.ParameterDefinition`), you can migrate gradually:
+If you have existing commands using the old API (`layers.ParameterLayer`, `parameters.ParameterDefinition`), you can migrate gradually. In the new vocabulary, “parameter definitions” are called **fields** (hence `schema.WithFields(...)`).
 
 **Old API:**
 ```go
@@ -727,7 +729,7 @@ layer, err := layers.NewParameterLayer("app", "App",
 ```go
 section, err := schema.NewSection("app", "App",
 	schema.WithPrefix("app-"),
-	schema.WithParameterDefinitions(
+	schema.WithFields(
 		fields.New("verbose", fields.TypeBool, ...),
 	),
 )

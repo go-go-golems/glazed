@@ -54,10 +54,12 @@ func NewGlazedSchema(options ...settings.GlazeParameterLayerOption) (Section, er
 
 // Re-export common section options for convenience
 var (
-	WithPrefix               = layers.WithPrefix
-	WithName                 = layers.WithName
-	WithDescription          = layers.WithDescription
-	WithDefaults             = layers.WithDefaults
-	WithParameterDefinitions = layers.WithParameterDefinitions
-	WithArguments            = layers.WithArguments
+	WithPrefix      = layers.WithPrefix
+	WithName        = layers.WithName
+	WithDescription = layers.WithDescription
+	WithDefaults    = layers.WithDefaults
+	// WithFields attaches field definitions to a section.
+	// It is a clearer alias for the historical layers.WithParameterDefinitions.
+	WithFields    = layers.WithParameterDefinitions
+	WithArguments = layers.WithArguments
 )
