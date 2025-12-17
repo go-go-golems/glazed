@@ -28,6 +28,7 @@ LastUpdated: 2025-12-16T18:03:57.550511925-05:00
 - **External Sources**: See frontmatter ExternalSources field
 - **Brainstorm doc**: [brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md](./brainstorm/01-brainstorm-renaming-layers-parameters-api-for-clarity.md)
 - **Option A implementation analysis**: [analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md](./analysis/01-option-a-implementation-plan-schema-field-values-renaming-transitional-api.md)
+- **Diary**: [diary/01-diary-layer-parameter-renaming-work.md](./diary/01-diary-layer-parameter-renaming-work.md)
 
 ## Status
 
