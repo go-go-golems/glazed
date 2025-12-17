@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/appconfig"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 const (
@@ -28,43 +28,31 @@ type DBSettings struct {
 	DSN string `glazed.parameter:"dsn"`
 }
 
-func mustLayer(layer layers.ParameterLayer, err error) layers.ParameterLayer {
+func mustSection(section *schema.SectionImpl, err error) schema.Section {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create layer: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to create section: %v\n", err)
 		os.Exit(1)
 	}
-	return layer
+	return section
 }
 
 func main() {
-	redisLayer := mustLayer(layers.NewParameterLayer(
+	redisLayer := mustSection(schema.NewSection(
 		string(RedisSlug),
 		"Redis",
-		layers.WithPrefix("redis-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"host",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("127.0.0.1"),
-			),
-			parameters.NewParameterDefinition(
-				"port",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(6379),
-			),
+		schema.WithPrefix("redis-"),
+		schema.WithFields(
+			fields.New("host", fields.TypeString, fields.WithDefault("127.0.0.1")),
+			fields.New("port", fields.TypeInteger, fields.WithDefault(6379)),
 		),
 	))
 
-	dbLayer := mustLayer(layers.NewParameterLayer(
+	dbLayer := mustSection(schema.NewSection(
 		string(DBSlug),
 		"Database",
-		layers.WithPrefix("db-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
-				"dsn",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("sqlite://./app.db"),
-			),
+		schema.WithPrefix("db-"),
+		schema.WithFields(
+			fields.New("dsn", fields.TypeString, fields.WithDefault("sqlite://./app.db")),
 		),
 	))
 
