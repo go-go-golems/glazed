@@ -10,7 +10,17 @@ DocType: brainstorm
 Intent: reviewed
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: glazed/pkg/cmds/layers/layer.go
+      Note: Defines ParameterLayer (schema-ish grouping)
+    - Path: glazed/pkg/cmds/layers/parsed-layer.go
+      Note: Defines ParsedLayer/ParsedLayers (resolved values) and InitializeStruct
+    - Path: glazed/pkg/cmds/parameters/parameters.go
+      Note: Defines ParameterDefinition + NewParameterDefinition
+    - Path: glazed/pkg/doc/topics/layers-guide.md
+      Note: User-facing docs using current names
+    - Path: glazed/pkg/doc/tutorials/custom-layer.md
+      Note: Tutorial using ParameterLayer/ParameterDefinition/ParsedLayers
 ExternalSources: []
 Summary: Explore naming schemes for ParameterLayer/ParameterDefinition/ParsedLayers and related packages/APIs
 LastUpdated: 2025-12-16T18:04:17.646312962-05:00
