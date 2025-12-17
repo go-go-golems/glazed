@@ -27,3 +27,13 @@ Implemented all four wrapper packages (schema/fields/values/sources) with type a
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/sources/sources.go — Sources wrapper package with middleware wrappers and Execute function
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/values/values.go — Values wrapper package with SectionValues/Values aliases and DecodeInto helpers
 
+
+## 2025-12-17
+
+Created example program demonstrating wrapper packages. Program successfully demonstrates multiple schema sections, env+cobra parsing, and struct decoding. All tests pass.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/refactor-new-packages/README.md — Documentation for example program
+- /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/refactor-new-packages/main.go — Example program using schema/fields/values packages
+
