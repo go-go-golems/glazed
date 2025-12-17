@@ -87,3 +87,6 @@ intent:
       description: Reviewed/accepted snapshot (still may be updated later)
     - slug: deprecated
       description: Deprecated document (kept for historical reference)
+status:
+    - slug: active
+      description: In progress / active work
