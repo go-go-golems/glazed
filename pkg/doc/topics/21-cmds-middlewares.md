@@ -492,12 +492,18 @@ Load different configurations based on profiles:
 middlewares.ExecuteMiddlewares(layers, parsedLayers,
     middlewares.SetFromDefaults(),
     middlewares.GatherFlagsFromProfiles(
-        "config.yaml",  // default profile file
-        "dev.yaml",     // environment-specific profile
-        "development",  // profile name
+        defaultProfileFile, // default profile file (commonly ~/.config/<app>/profiles.yaml)
+        profileFile,        // selected profile file (can be overridden)
+        profileName,        // selected profile name
     ),
 )
 ```
+
+Notes:
+
+- `GatherFlagsFromProfiles` takes `(defaultProfileFile, profileFile, profileName)`.
+- If `profileName` / `profileFile` themselves can come from env/config/flags, make sure you **resolve them first**
+  (bootstrap parse of `profile-settings`) before instantiating the profiles middleware. See `topics/15-profiles.md`.
 
 ### Custom Profile Sources
 

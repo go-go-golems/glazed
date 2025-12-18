@@ -1,7 +1,7 @@
 ---
 Title: 'Refactor: add schema/fields/values/sources wrapper packages + example program'
 Ticket: 001-REFACTOR-NEW-PACKAGES
-Status: active
+Status: complete
 Topics:
     - glazed
     - api-design
@@ -16,9 +16,10 @@ Owners:
     - manuel
 RelatedFiles: []
 ExternalSources: []
-Summary: "Add new wrapper packages (schema/fields/values/sources) via type aliases + helpers, plus an example program exercising env+cobra parsing and struct decoding."
-LastUpdated: 2025-12-17T09:00:46.998455932-05:00
+Summary: Add new wrapper packages (schema/fields/values/sources) via type aliases + helpers, plus an example program exercising env+cobra parsing and struct decoding.
+LastUpdated: 2025-12-18T15:37:24.726743209-05:00
 ---
+
 
 # Refactor: add schema/fields/values/sources wrapper packages + example program
 

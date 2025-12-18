@@ -1,8 +1,8 @@
 ---
-Title: Implementing Profiles in a Glazed Command
+Title: Implementing Profiles in a Glazed (Cobra) Command
 Slug: implementing-profile-middleware
 Short: |
-  Guide for developers on how to leverage the profile middleware in Glazed commands.
+  How to wire profiles.yaml into a Cobra CLI using Glazed middlewares (including proper profile-selection resolution).
 Topics:
 - middleware
 - profiles
@@ -16,11 +16,14 @@ ShowPerDefault: true
 SectionType: GeneralTopic
 ---
 
-# Implementing Profile Middleware in Pinocchio
+# Implementing Profile Middleware in a Glazed (Cobra) command
 
-This document is intended for developers who want to understand how Pinocchio handles profile-based configuration using
-middleware. It explains how the profile middleware is instantiated and how the `--profile` and `--profile-file` flags (
-along with their corresponding environment variables) are processed.
+For the conceptual overview (file format, precedence, config keys), see:
+
+- `topics/15-profiles.md` (“Profiles (profiles.yaml)”)
+
+This document focuses on the implementation pattern: where to insert the middleware and how to avoid the common
+“profile selection circularity” when profile selection is allowed to come from env/config.
 
 ## Profile Middleware Overview
 
@@ -28,59 +31,40 @@ Profile middleware in Pinocchio is responsible for loading and applying configur
 profile. This middleware allows developers to define different configurations for various environments or use cases,
 which can be dynamically selected at runtime.
 
-## Middleware Instantiation
+## Middleware instantiation (and why the naive approach breaks)
 
-The profile middleware is instantiated as part of the `GetCobraCommandGeppettoMiddlewares` function. This function is
-responsible for setting up the middleware chain that will be applied to a Cobra command.
+The profile middleware takes **constructor arguments** (`defaultProfileFile`, `profileFile`, `profileName`), so if you
+compute those values before env/config are applied, you will capture defaults and load the wrong profile.
 
-Here's an example of how the profile middleware is instantiated:
+The correct approach is usually a **bootstrap parse** of `profile-settings` (and often `command-settings`) first, then
+instantiate the profile middleware with the resolved values.
+
+### Skeleton pattern (bootstrap parse + main chain)
 
 ```go
-func GetCobraCommandGeppettoMiddlewares(
-	commandSettings *cli.GlazedCommandSettings,
+func GetCommandMiddlewares(
+	parsedCommandLayers *layers.ParsedLayers,
 	cmd *cobra.Command,
 	args []string,
 ) ([]middlewares.Middleware, error) {
-	// ... other middleware ...
-
-	xdgConfigPath, err := os.UserConfigDir()
-	if err != nil {
-		return nil, err
-	}
-
-	defaultProfileFile := fmt.Sprintf("%s/YOUR_PROGRAM/profiles.yaml", xdgConfigPath)
-	if commandSettings.ProfileFile == "" {
-		commandSettings.ProfileFile = defaultProfileFile
-	}
-	if commandSettings.Profile == "" {
-		commandSettings.Profile = "default"
-	}
-
-	profileMiddleware := middlewares.GatherFlagsFromProfiles(
-		defaultProfileFile,
-		commandSettings.ProfileFile,
-		commandSettings.Profile,
-		parameters.WithParseStepSource("profiles"),
-		parameters.WithParseStepMetadata(map[string]interface{}{
-			"profileFile": commandSettings.ProfileFile,
-			"profile":     commandSettings.Profile,
-		}),
-	)
-
-	// ... appending profileMiddleware to the middleware chain ...
-
-	return middlewares_, nil
+	// 1) Bootstrap parse profile-settings (+ command-settings if config selection depends on it)
+	//    using defaults + config + env + cobra, then read the resolved selection.
+	//
+	// 2) Build main chain:
+	//    defaults -> profiles -> config -> env -> args -> flags
+	//
+	// (See `topics/15-profiles.md` for details.)
+	return []middlewares.Middleware{/* ... */}, nil
 }
 ```
 
-## Loading Profile Configuration
+## Loading profile configuration (recommended precedence)
 
-The `GatherFlagsFromProfiles` middleware loads the profile specified by the `--profile` flag or the `YOUR_PROGRAM_PROFILE`
-environment variable. These are loaded from the profile file specified by the `--profile-file` flag or the default profile
-path if not specified.
+The recommended precedence is:
 
-The middleware would usually be inserted in front of the "viper" and "defaults" middlewares, so that the profile and profile-file 
-flags can be loaded from the config file or the environment.
+**flags > env > config > profiles > defaults**
+
+Operationally, this usually means inserting `GatherFlagsFromProfiles(...)` *above* defaults but *below* config/env/flags.
 
 ## Profile-Specific Overrides
 
