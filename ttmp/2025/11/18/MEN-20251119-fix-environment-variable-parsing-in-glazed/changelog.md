@@ -24,3 +24,8 @@ Implemented env parsing in updateFromEnv; added unit tests; all passing
 - /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/middlewares/update.go — Updated env parsing to typed via ParseParameter
 - /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/middlewares/update_test.go — Added tests covering multiple types
 
+
+## 2025-12-18
+
+Closed: env var parsing now parses typed values (merged; see glazed/pkg/cmds/middlewares/update.go + update_test.go).
+

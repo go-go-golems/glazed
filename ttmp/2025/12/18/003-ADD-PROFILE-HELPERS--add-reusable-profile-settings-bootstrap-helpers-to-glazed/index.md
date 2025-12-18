@@ -1,42 +1,38 @@
 ---
-Title: Get profile settings after defaults/env/flags/config
-Ticket: 001-GET-PROFILE-SETTINGS
-Status: complete
+Title: Add reusable profile-settings bootstrap helpers to Glazed
+Ticket: 003-ADD-PROFILE-HELPERS
+Status: active
 Topics:
     - glazed
-    - cobra
     - profiles
-    - config
+    - cobra
+    - middleware
+    - refactor
+    - docs
 DocType: index
 Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../geppetto/pkg/doc/topics/01-profiles.md
+      Note: Downstream docs that should reference helper/pattern
     - Path: ../../../../../../geppetto/pkg/layers/layers.go
-      Note: Reference implementation of middleware ordering and current profile-loading circularity note
-    - Path: pkg/cli/cli.go
-      Note: Defines ProfileSettingsSlug and related CLI settings structs
+      Note: Current bootstrap parse implementation to refactor into Glazed helpers
     - Path: pkg/cli/cobra-parser.go
-      Note: Primary orchestration of Cobra parsing + middleware execution in Glazed
+      Note: CobraParser.Parse + ParseCommandSettingsLayer bootstrap limitations
     - Path: pkg/cmds/middlewares/cobra.go
-      Note: ParseFromCobraCommand implementation (flag+arg parsing)
-    - Path: pkg/cmds/middlewares/middlewares.go
-      Note: Middleware chain execution model and handler signatures
+      Note: LoadParametersFromResolvedFilesForCobra helper (potential building block)
     - Path: pkg/cmds/middlewares/profiles.go
-      Note: GatherFlagsFromProfiles implementation
-    - Path: pkg/doc/topics/12-profiles-use-code.md
-      Note: Docs describing intended profile usage and ordering
-    - Path: pkg/doc/topics/21-cmds-middlewares.md
-      Note: Docs describing middleware ordering/precedence and examples
+      Note: GatherFlagsFromProfiles behavior and error semantics
+    - Path: pkg/doc/topics/15-profiles.md
+      Note: New canonical docs page describing bootstrap/circularity
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-18T15:37:19.128398489-05:00
+LastUpdated: 2025-12-18T15:17:08.274426142-05:00
 ---
 
 
-
-
-# Get profile settings after defaults/env/flags/config
+# Add reusable profile-settings bootstrap helpers to Glazed
 
 ## Overview
 
@@ -54,9 +50,11 @@ Current status: **active**
 ## Topics
 
 - glazed
-- cobra
 - profiles
-- config
+- cobra
+- middleware
+- refactor
+- docs
 
 ## Tasks
 

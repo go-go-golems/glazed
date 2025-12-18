@@ -24,3 +24,8 @@ Implemented Option A bootstrap parse + added smoke-test script. Validated preced
 
 Ticket complete: implemented Option A bootstrap parse for profile-settings (defaults+config+env+flags), added smoke-test script with precedence matrix, and ensured unknown profile fails. Also bumped geppetto watermill to v1.5.1 to match AddConsumerHandler API used by CI typecheck.
 
+
+## 2025-12-18
+
+Closed: bootstrap parse for profile-settings implemented and documented (see changelog/tasks).
+

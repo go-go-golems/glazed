@@ -1,7 +1,7 @@
 ---
 Title: Fix environment variable parsing in glazed
 Ticket: MEN-20251119
-Status: active
+Status: complete
 Topics:
     - glazed
     - parameters
@@ -11,44 +11,25 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/middlewares/update.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/middlewares/update.go
       Note: Env update middleware to parse typed values
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/middlewares/update_test.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/middlewares/update_test.go
       Note: New test file for env parsing behavior
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/parameters/gather-parameters.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/parameters/gather-parameters.go
       Note: Map inputs string->typed conversion example
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/parameters/parameters.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/parameters/parameters.go
       Note: Type checking and SetValue helpers
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/parameters/parse.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/parameters/parse.go
       Note: String parsing/typing entry points for various ParameterTypes
-    - Path: /home/manuel/workspaces/2025-11-18/add-mento-startdev-tui/glazed/pkg/cmds/parameters/strings.go
+    - Path: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/pkg/cmds/parameters/strings.go
       Note: Flag parsing from string lists (reference for parsing semantics)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-11-18T21:17:08.126171819-05:00
+LastUpdated: 2025-12-18T15:37:18.894741716-05:00
 ---
 
 
 
----
-Title: Fix environment variable parsing in glazed
-Ticket: MEN-20251119
-Status: draft
-Topics:
-  - glazed
-  - parameters
-  - middleware
-  - env
-DocType: index
-Intent: short-term
-Owners:
-[]
-RelatedFiles: []
-ExternalSources: []
-Summary: >
-  
-LastUpdated: 2025-11-18
----
 
 # Fix environment variable parsing in glazed
 
@@ -63,7 +44,7 @@ LastUpdated: 2025-11-18
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
 
 ## Topics
 

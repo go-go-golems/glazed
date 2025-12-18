@@ -37,3 +37,8 @@ Created example program demonstrating wrapper packages. Program successfully dem
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/refactor-new-packages/README.md — Documentation for example program
 - /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/cmd/examples/refactor-new-packages/main.go — Example program using schema/fields/values packages
 
+
+## 2025-12-18
+
+Closed: wrapper packages + example were implemented and are in git; ticket tasks file was not kept in sync.
+
