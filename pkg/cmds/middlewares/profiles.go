@@ -22,11 +22,19 @@ func GatherFlagsFromProfiles(
 				return err
 			}
 
-			// if the file does not exist and is not the defaultProfileFile, fail
+			// If the file does not exist:
+			// - If the user explicitly set a non-default file path, fail.
+			// - If this is the default profile file and a non-default profile is requested, fail
+			//   (otherwise we silently skip profile loading, which is confusing and breaks
+			//   expectations like PINOCCHIO_PROFILE=foobar should error).
+			// - If this is the default profile file and the default profile is requested, skip.
 			_, err = os.Stat(profileFile)
 			if os.IsNotExist(err) {
 				if profileFile != defaultProfileFile {
 					return errors.Errorf("profile file %s does not exist", profileFile)
+				}
+				if profile != "default" {
+					return errors.Errorf("profile file %s does not exist (requested profile %s)", profileFile, profile)
 				}
 				return nil
 			}
