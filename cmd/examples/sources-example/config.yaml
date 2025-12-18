@@ -1,0 +1,5 @@
+config:
+  api-key: "config-file-key"
+  timeout: 45
+  debug: true
+

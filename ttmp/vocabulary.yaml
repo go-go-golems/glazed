@@ -1,0 +1,92 @@
+topics:
+    - slug: glazed
+      description: Glazed core framework
+    - slug: commands
+      description: Command model, descriptions, and execution
+    - slug: cli
+      description: CLI integration and cobra bridge
+    - slug: cobra
+      description: Cobra-specific integration details
+    - slug: layers
+      description: Layered schemas (ParameterLayers) and grouping concepts
+    - slug: parameters
+      description: Parameter/flag/arg definitions and parsing
+    - slug: schema
+      description: Schema modeling and naming (future-facing)
+    - slug: values
+      description: Parsed/resolved values and hydration/decoding
+    - slug: sources
+      description: Value sources (env/config files/flags/args/defaults) and precedence
+    - slug: middleware
+      description: Middleware chain composition and execution
+    - slug: parsing
+      description: Parsing behavior, precedence, and edge cases
+    - slug: hydration
+      description: Struct hydration/decoding from parsed values
+    - slug: config
+      description: Config file loading and overlays
+    - slug: env
+      description: Environment variable parsing
+    - slug: runner
+      description: Runner and ParseCommandParameters seams
+    - slug: settings
+      description: Built-in settings layers (output, formatting, etc.)
+    - slug: formatters
+      description: Output formats and formatter implementation
+    - slug: docs
+      description: Documentation, tutorials, and examples
+    - slug: examples
+      description: Example programs and recipes
+    - slug: api-design
+      description: Public API design discussions
+    - slug: naming
+      description: Naming, vocabulary, and consistency
+    - slug: migration
+      description: Migration strategies and compatibility
+    - slug: backwards-compatibility
+      description: Compatibility guarantees and transitional APIs
+    - slug: refactor
+      description: Refactors and technical debt cleanup
+    - slug: testing
+      description: Tests and test infrastructure
+    - slug: bug
+      description: Bugs and investigations
+docTypes:
+    - slug: index
+      description: Ticket index
+    - slug: design-doc
+      description: Design document
+    - slug: brainstorm
+      description: Brainstorming / naming / exploratory notes
+    - slug: debate
+      description: Structured debate rounds and debate-related documents
+    - slug: reference
+      description: API/reference
+    - slug: playbook
+      description: Operational playbook
+    - slug: diary
+      description: Diary / lab notebook (chronological work log)
+    - slug: til
+      description: Today I Learned
+    - slug: analysis
+      description: Analysis / synthesis
+    - slug: misc
+      description: Miscellaneous
+    - slug: code-review
+      description: Code review summary
+    - slug: planning
+      description: Planning / detailed analysis documents
+intent:
+    - slug: long-term
+      description: Persistent documentation
+    - slug: short-term
+      description: Ephemeral notes
+    - slug: working-document
+      description: In-progress working document (expected to evolve)
+    - slug: reviewed
+      description: Reviewed/accepted snapshot (still may be updated later)
+    - slug: deprecated
+      description: Deprecated document (kept for historical reference)
+status:
+    - slug: active
+      description: In progress / active work

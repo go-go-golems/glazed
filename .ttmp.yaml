@@ -1,0 +1,6 @@
+root: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/ttmp
+defaults:
+    owners: [manuel]
+    intent: long-term
+filenamePrefixPolicy: ""
+vocabulary: /home/manuel/workspaces/2025-11-18/fix-pinocchio-profiles/glazed/ttmp/vocabulary.yaml
