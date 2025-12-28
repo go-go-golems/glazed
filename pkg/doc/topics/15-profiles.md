@@ -50,10 +50,11 @@ production:
 
 ## Default file location
 
-Glazed’s profile middleware (`middlewares.GatherFlagsFromProfiles`) takes **two paths**:
+Glazed’s profile middleware (`middlewares.GatherFlagsFromProfiles`) takes **two paths** and a default profile name:
 
 - `defaultProfileFile`: the “well-known default” (commonly `os.UserConfigDir() + "/<app>/profiles.yaml"`)
 - `profileFile`: the actual file to load (can be overridden)
+- `defaultProfileName`: the profile name treated as optional when the default file is missing (defaults to `default`)
 
 Recommended convention for apps:
 
@@ -125,11 +126,11 @@ Recommended (and implemented in Glazed’s `GatherFlagsFromProfiles`):
 
 - If `profileFile` does not exist **and it is not the defaultProfileFile** → **error**
 - If `profileFile` is the defaultProfileFile:
-  - profile == `default` → skip silently
-  - profile != `default` → **error** (so `APP_PROFILE=foobar` fails fast)
+  - profile == `defaultProfileName` → skip silently
+  - profile != `defaultProfileName` → **error** (so `APP_PROFILE=foobar` fails fast)
 - If the file exists but the named profile is missing:
-  - profile != `default` → **error**
-  - profile == `default` → skip silently
+  - profile != `defaultProfileName` → **error**
+  - profile == `defaultProfileName` → skip silently
 
 ## Avoiding “profile selection circularity” (important)
 
@@ -156,5 +157,4 @@ Use `--print-parsed-parameters` to inspect parse provenance per parameter, inclu
 - `config` (with metadata like `{ config_file, index }`)
 - `env`
 - `cobra` (flags)
-
 

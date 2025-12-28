@@ -14,12 +14,17 @@ func GatherFlagsFromProfiles(
 	defaultProfileFile string,
 	profileFile string,
 	profile string,
+	defaultProfileName string,
 	options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
+			}
+
+			if defaultProfileName == "" {
+				defaultProfileName = "default"
 			}
 
 			// If the file does not exist:
@@ -33,7 +38,7 @@ func GatherFlagsFromProfiles(
 				if profileFile != defaultProfileFile {
 					return errors.Errorf("profile file %s does not exist", profileFile)
 				}
-				if profile != "default" {
+				if profile != defaultProfileName {
 					return errors.Errorf("profile file %s does not exist (requested profile %s)", profileFile, profile)
 				}
 				return nil
@@ -64,7 +69,7 @@ func GatherFlagsFromProfiles(
 			if profileMap, ok := v[profile]; ok {
 				return updateFromMap(layers_, parsedLayers, profileMap, options...)
 			} else {
-				if profile != "default" {
+				if profile != defaultProfileName {
 					return errors.Errorf("profile %s not found in %s", profile, profileFile)
 				}
 
