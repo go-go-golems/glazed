@@ -1,0 +1,4 @@
+title: "📝 Update ticket diary and changelog"
+description: "Record the commit hash for the profile default fix in the ticket diary and changelog."
+tests:
+  - "Not run (not requested)"

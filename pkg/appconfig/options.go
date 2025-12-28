@@ -296,6 +296,7 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 						defaultProfileFile,
 						profileFile,
 						profileName,
+						pcfg.defaultProfile,
 						parameters.WithParseStepSource("profiles"),
 						parameters.WithParseStepMetadata(map[string]interface{}{
 							"profileFile": profileFile,
