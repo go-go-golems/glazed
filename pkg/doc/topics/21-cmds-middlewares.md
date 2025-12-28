@@ -495,13 +495,14 @@ middlewares.ExecuteMiddlewares(layers, parsedLayers,
         defaultProfileFile, // default profile file (commonly ~/.config/<app>/profiles.yaml)
         profileFile,        // selected profile file (can be overridden)
         profileName,        // selected profile name
+        defaultProfileName, // configured default profile name (typically "default")
     ),
 )
 ```
 
 Notes:
 
-- `GatherFlagsFromProfiles` takes `(defaultProfileFile, profileFile, profileName)`.
+- `GatherFlagsFromProfiles` takes `(defaultProfileFile, profileFile, profileName, defaultProfileName)`.
 - If `profileName` / `profileFile` themselves can come from env/config/flags, make sure you **resolve them first**
   (bootstrap parse of `profile-settings`) before instantiating the profiles middleware. See `topics/15-profiles.md`.
 
@@ -697,13 +698,14 @@ func GetCommandMiddlewares(
         profileFile = defaultProfileFile
     }
 
-    middlewares_ = append(middlewares_,
-        // Profile settings
-        middlewares.GatherFlagsFromProfiles(
-            defaultProfileFile,
-            profileFile,
-            commandSettings.Profile,
-        ),
+	middlewares_ = append(middlewares_,
+		// Profile settings
+		middlewares.GatherFlagsFromProfiles(
+			defaultProfileFile,
+			profileFile,
+			commandSettings.Profile,
+			commandSettings.DefaultProfileName,
+		),
     // Env config for specific layers (if needed)
     middlewares.WrapWithWhitelistedLayers(
         []string{"api", "client"},

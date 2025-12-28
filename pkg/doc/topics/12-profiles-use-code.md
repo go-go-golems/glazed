@@ -221,6 +221,7 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
             defaultProfileFile,
             commandSettings.ProfileFile,
             commandSettings.Profile,
+            commandSettings.DefaultProfileName,
         ),
         
         // 6. Shared organization config
@@ -293,6 +294,6 @@ middlewares.GatherFlagsFromProfiles(
     defaultProfileFile,
     commandSettings.ProfileFile,
     commandSettings.Profile,
+    commandSettings.DefaultProfileName,
 )
 ```
-
