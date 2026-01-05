@@ -4,7 +4,6 @@ package store
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 // createFTSTables creates FTS5 tables and triggers
@@ -53,6 +52,6 @@ func (s *Store) createFTSTables() error {
 		}
 	}
 
-	log.Debug().Msg("Created FTS5 tables and triggers")
+	// log.Trace().Msg("Created FTS5 tables and triggers")
 	return nil
 }
