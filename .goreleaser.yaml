@@ -11,6 +11,12 @@ builds:
   - id: glaze-linux
     env:
       - CGO_ENABLED=1
+      - CC_linux_amd64=gcc
+      - CXX_linux_amd64=g++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
+      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
     main: ./cmd/glaze
     binary: glaze
     goos:
