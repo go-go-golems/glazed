@@ -121,6 +121,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           COSIGN_PWD: ${{ secrets.COSIGN_PWD }}
-          TAP_GITHUB_TOKEN: ${{ secrets.RELEASE_ACTION_PAT }}
+          TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
