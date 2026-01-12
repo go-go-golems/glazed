@@ -1,8 +1,9 @@
-.PHONY: all test build lint lintmax docker-lint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install
+.PHONY: all test build lint lintmax docker-lint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
 
 all: test build
 
-VERSION=v0.1.14
+VERSION ?= $(shell svu current)
+LDFLAGS ?= -X main.version=$(VERSION)
 
 docker-lint:
 	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v2.0.2 golangci-lint run -v
@@ -26,10 +27,10 @@ test:
 
 build:
 	go generate ./...
-	go build ./...
+	go build -tags "fts5" -ldflags "$(LDFLAGS)" ./cmd/glaze
 
 goreleaser:
-	goreleaser release --skip=sign --snapshot --clean
+	GOWORK=off goreleaser release --skip=sign --snapshot --clean
 
 tag-major:
 	git tag $(shell svu major)
@@ -44,11 +45,14 @@ release:
 	git push origin --tags
 	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/glazed@$(shell svu current)
 
+version:
+	@echo $(VERSION)
+
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
 	go mod tidy
 
 install:
-	go build -tags "fts5" -o ./dist/glaze ./cmd/glaze && \
+	go build -tags "fts5" -ldflags "$(LDFLAGS)" -o ./dist/glaze ./cmd/glaze && \
 		cp ./dist/glaze $(shell which glaze)

@@ -13,9 +13,8 @@ permissions:
 
 
 jobs:
-  goreleaser:
+  goreleaser-linux:
     runs-on: ubuntu-latest
-    environment: release
     steps:
       - uses: actions/checkout@v6
         with:
@@ -25,6 +24,75 @@ jobs:
         with:
           go-version: '>=1.19.5'
           cache: true
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: "~> v2"
+          args: release --clean --split
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GGOOS: linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: dist/**
+
+  goreleaser-darwin:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '>=1.19.5'
+          cache: true
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: "~> v2"
+          args: release --clean --split
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GGOOS: darwin
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-darwin
+          path: dist/**
+
+  goreleaser-merge:
+    runs-on: ubuntu-latest
+    environment: release
+    needs:
+      - goreleaser-linux
+      - goreleaser-darwin
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '>=1.19.5'
+          cache: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-parts
+
+      - name: Merge dist artifacts
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp -a dist-parts/dist-linux/. dist/
+          cp -a dist-parts/dist-darwin/. dist/
 
       - name: Import GPG key
         id: import_gpg
@@ -36,11 +104,12 @@ jobs:
 
       - uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+          distribution: goreleaser-pro
+          version: "~> v2"
+          args: continue --merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           COSIGN_PWD: ${{ secrets.COSIGN_PWD }}
           TAP_GITHUB_TOKEN: ${{ secrets.RELEASE_ACTION_PAT }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}

@@ -8,20 +8,36 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
-      - CGO_ENABLED=0
+  - id: glaze-linux
+    env:
+      - CGO_ENABLED=1
     main: ./cmd/glaze
     binary: glaze
     goos:
       - linux
 # I am not able to test windows at the time
 #      - windows
+    goarch:
+      - amd64
+      - arm64
+    tags:
+      - fts5
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+  - id: glaze-darwin
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/glaze
+    binary: glaze
+    goos:
       - darwin
     goarch:
       - amd64
       - arm64
     tags:
       - fts5
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
 checksum:
   name_template: 'checksums.txt'
 
