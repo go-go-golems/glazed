@@ -14,219 +14,561 @@ SectionType: GeneralTopic
 
 # Documentation Style Guide
 
-## 1. Overview
+## Why This Matters
 
-This document provides a set of standards and best practices for writing clear, consistent, and helpful documentation for the Glazed project. The goal is to ensure that all documentation, whether written by humans or AI, is easy to understand, accurate, and useful for our target audience of developers.
+Bad documentation wastes developer time. When a developer reads your doc and still doesn't understand how to accomplish their goal, they:
+- Dig through source code (your job, not theirs)
+- Ask questions in Slack/Discord (your time, not theirs)
+- Give up and use a different library
 
-Following these guidelines will help us create a cohesive and professional documentation suite that empowers users to learn and succeed with the Glazed framework.
+Good documentation respects the reader's time by being **immediately useful**. Every sentence should either teach something or help the reader navigate to what they need.
 
-## 2. Core Principles
+## Quick Reference
 
-All documentation should adhere to these fundamental principles:
+| Rule | Why |
+|------|-----|
+| Lead with "Why" | Readers need motivation before details |
+| One concept per section | Cognitive load kills comprehension |
+| Code examples must be runnable | Broken examples destroy trust |
+| Comments explain *why*, not *what* | "Create user" is obvious; "Validate before insert" isn't |
+| End with troubleshooting table | Readers often arrive via error messages |
+| Add "See Also" cross-references | Help readers find related content |
+| Tables for comparisons, bullets for lists | Tables are scannable; bullets are readable |
 
--   **Clarity**: Write in simple, direct, and unambiguous language. Avoid jargon where possible, or explain it clearly if it's necessary.
--   **Accuracy**: Ensure all information, especially code examples and technical specifications, is correct, tested, and up-to-date.
--   **Conciseness**: Be direct and to the point. Eliminate wordiness and focus on delivering information efficiently.
--   **Completeness**: Cover the topic thoroughly, but avoid going off-topic. Anticipate the user's questions and answer them proactively.
--   **Audience-Centric**: Always write with the developer-user in mind. What is their goal? What problem are they trying to solve? Frame your explanation in that context.
+## Avoiding Terse Documentation
 
-## 3. Document Structure
+Terse docs are the most common failure mode. They assume the reader already knows what you know. They don't.
 
-A well-structured document is easy to navigate and digest. Every documentation page should follow this general structure.
+### The Problem
 
-### 3.1. YAML Front Matter
+Terse documentation looks like this:
 
-All documents must begin with a YAML front matter block that provides metadata for the help system.
+```markdown
+## Tool Registry
 
-```yaml
----
-Title: Glazed Commands Reference
-Slug: commands-reference
-Short: Complete reference for creating, configuring, and running commands in Glazed
-Topics:
-- commands
-- interfaces
-- flags
-IsTemplate: false
-IsTopLevel: true
-ShowPerDefault: true
-SectionType: GeneralTopic
----
+Use `toolcontext.WithRegistry(ctx, registry)` to attach tools.
 ```
 
-### 3.2. Main Title
+This tells the reader *what* to do but not:
+- **Why** they need to do it
+- **When** to do it (before or after something else?)
+- **What happens** if they don't
+- **What it connects to** in the bigger picture
 
-The `H1` title should match the `Title` field in the front matter.
+### The Fix: Expand Every Section
 
-### 3.3. Section Introduction Paragraphs
+For each concept, answer these questions:
 
-Every major `H2` section must begin with a single, topic-focused paragraph. This paragraph should **explain the core concept** of the section, not just describe what the section contains. Its purpose is to give the reader immediate context and understanding of the "what" and "why" before they dive into the details.
+1. **What is it?** — One sentence definition
+2. **Why does it exist?** — The problem it solves
+3. **When do you use it?** — The triggering situation
+4. **How do you use it?** — Code example
+5. **What happens if you don't?** — The failure mode
+6. **What's related?** — Links to connected concepts
 
-**Example: How to write a good introductory paragraph**
+### Before and After
 
--   **Avoid (Simple Section Overview):**
-    > This section will cover the command interfaces. It will explain what `BareCommand`, `WriterCommand`, and `GlazeCommand` are and provide examples for each one.
+**Before (Terse):**
 
--   **Prefer (Topic-Focused Explanation):**
-    > A command's output contract is defined by the interface it implements. Glazed offers three primary interfaces to support different use cases: `BareCommand` for direct `stdout` control, `WriterCommand` for sending text to any `io.Writer`, and `GlazeCommand` for producing structured data that can be automatically formatted. This design allows a command's business logic to be decoupled from its final output format.
+```markdown
+## Tool Registry
 
-The second example is much better because it immediately teaches the reader about the core design principle (decoupling logic from output) and the purpose of the interfaces, rather than just stating what the section is about.
+Use `toolcontext.WithRegistry(ctx, registry)` to attach tools.
+```
 
-### 3.4. Headings and Content
+**After (Complete):**
 
--   Use `##` (H2) for major sections and `###` (H3) for sub-sections.
--   Keep paragraphs short and focused on a single idea.
--   Use bulleted lists to break up long blocks of text and present information in a scannable format.
+```markdown
+## Tool Registry
 
-### 3.5. Code Blocks
+The tool registry is an in-memory store of callable tools. Engines read from the registry to know which tools to advertise to the model.
 
-Code examples are the most critical part of developer documentation.
+**Why it exists:** Tools contain function pointers, which aren't serializable. Keeping the registry in `context.Context` separates runtime state from persistable Turn data.
 
--   **Keep them minimal and focused:** An example should demonstrate exactly one concept. Remove all boilerplate or irrelevant logic.
--   **Use comments to explain the *why*, not the *what*:**
-    -   **Bad:** `// Create a new row`
-    -   **Good:** `// Use types.MRP to ensure type-safe key-value pairs`
--   **Ensure they are runnable:** Whenever possible, code examples should be copy-paste-runnable.
--   **Show the output:** For commands or code that produces output, show the expected result in a separate block or as a comment.
+**When to use it:** Before calling `RunInference` or `RunToolCallingLoop`, attach the registry to your context:
+
+```go
+ctx = toolcontext.WithRegistry(ctx, registry)
+```
+
+**What happens if you skip this:** The engine won't advertise any tools to the model, so tool calls will never be requested.
+
+**See also:** [Tools](07-tools.md), [Turns](08-turns.md)
+```
+
+The expanded version is 10x more useful because it answers the questions readers actually have.
+
+### Expansion Checklist
+
+Before publishing any section, verify:
+
+- [ ] First paragraph explains *what* and *why*, not just *what*
+- [ ] At least one code example with context
+- [ ] Failure mode documented ("What happens if...")
+- [ ] Cross-references to related concepts
+- [ ] No undefined jargon (or jargon is explained on first use)
+
+## Document Types
+
+Choose the right format for your content:
+
+### Topics (Reference)
+
+**Purpose:** Explain a concept thoroughly. Reader might read end-to-end or jump to a section.
+
+**Structure:**
+```markdown
+# Concept Name
+
+## Why [Concept]?
+Motivation and problem solved.
+
+## Core Concepts
+Key abstractions and how they relate.
+
+## Usage
+How to use it with examples.
+
+## Configuration
+Options, flags, settings.
+
+## Troubleshooting
+Common problems and solutions.
+
+## See Also
+Related docs.
+```
+
+**Example:** [Events](04-events.md), [Turns](08-turns.md)
+
+### Tutorials (Learning)
+
+**Purpose:** Teach by building. Reader follows start-to-finish.
+
+**Structure:**
+```markdown
+# Build [Thing]
+
+## What You'll Build
+Concrete outcome.
+
+## Prerequisites
+What reader needs before starting.
+
+## Step 1 — [First Action]
+Explanation + code.
+
+## Step 2 — [Second Action]
+Explanation + code.
+
+...
+
+## Complete Example
+Full working code.
+
+## Troubleshooting
+Common problems during the tutorial.
+
+## See Also
+Where to go next.
+```
+
+**Example:** [Streaming Tutorial](../tutorials/01-streaming-inference-with-tools.md)
+
+### Playbooks (Operations)
+
+**Purpose:** Step-by-step checklist for a specific task. Reader wants to accomplish something now.
+
+**Structure:**
+```markdown
+# [Task Name]
+
+## Prerequisites
+What's needed before starting.
+
+## Steps
+
+### Step 1: [Action]
+Minimal explanation + code.
+
+### Step 2: [Action]
+Minimal explanation + code.
+
+...
+
+## Complete Example
+Working code combining all steps.
+
+## Troubleshooting
+| Problem | Cause | Solution |
+
+## See Also
+Related docs.
+```
+
+**Example:** [Add a New Tool](../playbooks/01-add-a-new-tool.md)
+
+### When to Use Each
+
+| Reader's Question | Document Type |
+|-------------------|---------------|
+| "What is X and how does it work?" | Topic |
+| "How do I learn to use X?" | Tutorial |
+| "How do I do X right now?" | Playbook |
+
+## Section Introductions
+
+Every `##` section must start with a paragraph that **explains the concept**, not just describes the section.
+
+### Bad (Meta-description)
+
+> This section covers the event system. It explains event types, routing, and handlers.
+
+This tells the reader what the section *contains* but teaches nothing.
+
+### Good (Concept-focused)
+
+> Events flow from engines through a Watermill-backed router to your handlers. Each token, tool call, and error becomes a structured event you can log, display, or aggregate. This enables responsive UIs that show results as they stream in, rather than after a 10-second wait.
+
+This teaches the reader *what events are* and *why they matter* before diving into details.
+
+### Template
+
+Use this pattern:
+
+> [What it is] + [How it works at a high level] + [Why you'd care / what it enables]
+
+## Code Examples
+
+Code examples are the most important part of developer documentation. Get them right.
+
+### Keep Examples Minimal
+
+Remove everything that isn't essential to the concept:
+
+**Bad:**
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "os/signal"
+    "syscall"
+    
+    "github.com/go-go-golems/geppetto/pkg/embeddings"
+    "github.com/go-go-golems/glazed/pkg/cli"
+    // ... 10 more imports
+)
+
+func main() {
+    ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+    defer stop()
+    
+    // ... 50 lines of setup
+    
+    embedding, err := provider.GenerateEmbedding(ctx, "Hello")
+    // ... error handling, cleanup, etc.
+}
+```
+
+**Good:**
+```go
+provider := embeddings.NewOpenAIProvider(apiKey, model, 1536)
+
+embedding, err := provider.GenerateEmbedding(ctx, "Hello, world!")
+if err != nil { panic(err) }
+
+fmt.Printf("Generated %d-dimensional vector\n", len(embedding))
+```
+
+The good example shows only what's needed to understand the concept.
+
+### Comments Explain *Why*, Not *What*
+
+**Bad:**
+```go
+// Create a new registry
+registry := tools.NewInMemoryToolRegistry()
+
+// Register the tool
+registry.RegisterTool("get_weather", *toolDef)
+
+// Attach to context
+ctx = toolcontext.WithRegistry(ctx, registry)
+```
+
+**Good:**
+```go
+registry := tools.NewInMemoryToolRegistry()
+registry.RegisterTool("get_weather", *toolDef)
+
+// Engines read from context, not from Turn.Data (functions aren't serializable)
+ctx = toolcontext.WithRegistry(ctx, registry)
+```
+
+### Show Expected Output
+
+When code produces output, show it:
+
+```go
+similarity := cosineSimilarity(vec1, vec2)
+fmt.Printf("Similarity: %.4f\n", similarity)
+// Output: Similarity: 0.9234
+```
+
+Or in a separate block:
 
 ```bash
-# Example command
-./my-app list-users --output json
-
-# Expected output
-[
-  {
-    "id": 1,
-    "name": "Alice"
-  }
-]
+$ go run main.go
+Similarity: 0.9234
 ```
 
-### 3.6. Linking Between Documents
+## Tables vs Bullets
 
-Always use the `glaze help` format for internal links. This ensures that the documentation is accessible both on the web and from the command line.
+Use the right format for your content:
 
--   **Do:**
-    > For more details, see the layers guide:
-    > ```
-    > glaze help layers-guide
-    > ```
+### Use Tables For
 
--   **Don't:**
-    > For more details, see the [layers guide](./layers-guide.md).
-
-## 4. Writing Style and Tone
-
--   **Audience:** Assume the reader is a developer familiar with Go but new to the Glazed framework.
--   **Tone:** Professional, helpful, and direct.
--   **Voice:** Use the active voice. It is more direct and easier to read.
-    -   **Good:** "The framework provides three interfaces."
-    -   **Bad:** "Three interfaces are provided by the framework."
--   **Terminology:** Use consistent names for concepts. For example, always refer to them as "Parameter Layers," not "Layers of Parameters" or "Parameter Groups."
-
-## 5. A Complete Example
-
-Here is a full "before and after" of a section being improved to meet these guidelines.
-
-### Before (Lacks context, examples are too long)
+- **Comparisons:** When items have multiple attributes to compare
+- **Options/Config:** When documenting flags, parameters, or settings
+- **Troubleshooting:** Problem/Cause/Solution format
+- **Quick reference:** Scannable lookup information
 
 ```markdown
-## Command Interfaces
-
-This section describes the command interfaces in Glazed.
-
-### GlazeCommand
-
-The `GlazeCommand` is for commands that output structured data.
-
-```go
-type MonitorServersCommand struct {
-    *cmds.CommandDescription
-}
-
-func (c *MonitorServersCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    s := &MonitorSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
-        return err
-    }
-    
-    // Get server data from various sources
-    servers := getServersFromInventory(s.Environment)
-    
-    for _, server := range servers {
-        // Check server health
-        health := checkServerHealth(server.Hostname)
-        
-        // Produce a rich data row with nested information
-        row := types.NewRow(
-            types.MRP("hostname", server.Hostname),
-            types.MRP("environment", server.Environment),
-            types.MRP("cpu_percent", health.CPUPercent),
-            // ... and 10 more fields ...
-        )
-        
-        if err := gp.AddRow(ctx, row); err != nil {
-            return err
-        }
-    }
-    
-    return nil
-}
-```
+| Provider | Model | Dimensions |
+|----------|-------|------------|
+| OpenAI | text-embedding-3-small | 1536 |
+| Ollama | all-minilm | 384 |
 ```
 
-### After (Adds a topic-focused intro, trims the example)
+### Use Bullets For
+
+- **Lists of items:** When items are peers without attributes to compare
+- **Steps that need explanation:** When each item needs a paragraph
+- **Features/benefits:** Marketing-style lists
 
 ```markdown
-## Command Interfaces
-
-A command's output contract is defined by the interface it implements. Glazed offers three primary interfaces to support different use cases: `BareCommand` for direct `stdout` control, `WriterCommand` for sending text to any `io.Writer`, and `GlazeCommand` for producing structured data that can be automatically formatted. This design allows a command's business logic to be decoupled from its final output format.
-
-### GlazeCommand
-
-The `GlazeCommand` interface is for commands that produce structured data. By yielding `types.Row` objects to a `Processor`, your command can automatically support multiple output formats (JSON, YAML, CSV, etc.) without any format-specific code.
-
 **Use cases:**
-- API clients that fetch and display data
-- Commands that query a database
-- Any tool whose output is meant to be piped or consumed by other scripts
-
-**Example implementation:**
-```go
-type ListUsersCommand struct {
-    *cmds.CommandDescription
-}
-
-func (c *ListUsersCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
-    gp middlewares.Processor,
-) error {
-    // Business logic to fetch users would go here
-    users := []User{
-        {ID: 1, Name: "Alice", Email: "alice@example.com"},
-        {ID: 2, Name: "Bob", Email: "bob@example.com"},
-    }
-
-    // Instead of printing, create structured rows
-    for _, user := range users {
-        row := types.NewRow(
-            types.MRP("id", user.ID),
-            types.MRP("name", user.Name),
-            types.MRP("email", user.Email),
-        )
-        
-        // The processor handles filtering, formatting, and output
-        if err := gp.AddRow(ctx, row); err != nil {
-            return err
-        }
-    }
-    
-    return nil
-}
+- Semantic search over documents
+- Clustering similar texts
+- Classification based on content
 ```
-``` 
+
+### Use Numbered Lists For
+
+- **Sequential steps:** When order matters
+- **Prioritized items:** When ranking is important
+
+## Troubleshooting Tables
+
+Every doc should end with a troubleshooting table. Readers often arrive via error messages.
+
+```markdown
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| "tool not found" error | Registry not attached | Add `ctx = toolcontext.WithRegistry(ctx, registry)` |
+| No events received | Router not running | Wait for `<-router.Running()` before inference |
+| Tokens not streaming | Sink not configured | Pass `engine.WithSink(sink)` when creating engine |
+```
+
+**Why this format works:**
+- Problem column matches what reader is searching for
+- Cause column helps reader understand
+- Solution column gives actionable fix
+
+## Cross-References
+
+End every doc with a "See Also" section:
+
+```markdown
+## See Also
+
+- [Related Concept](path/to/doc.md) — One-line description
+- [Tutorial](path/to/tutorial.md) — What you'll build
+- Example: `path/to/example/main.go`
+```
+
+**Rules:**
+- Use relative markdown links for doc-to-doc references
+- Include a brief description (not just the link)
+- Link to examples when they exist
+
+## Anti-Patterns
+
+### Wall of Text
+
+**Problem:** Long paragraphs without structure.
+
+**Fix:** Break into sections, use bullets, add headings.
+
+### Code-First, Explanation-Later
+
+**Problem:** Jumping straight to code without context.
+
+**Fix:** One paragraph explaining *what* and *why* before every code block.
+
+### Undefined Jargon
+
+**Problem:** Using terms without explanation.
+
+**Bad:** "Attach the sink to the context."
+
+**Good:** "Attach the sink (the event publisher) to the context so that helpers and tools can emit events."
+
+### Missing Failure Modes
+
+**Problem:** Only explaining the happy path.
+
+**Fix:** Add "What happens if you don't..." or a troubleshooting section.
+
+### Orphan Docs
+
+**Problem:** Docs with no links to or from other docs.
+
+**Fix:** Add cross-references in both directions.
+
+## Writing Style
+
+### Voice and Tone
+
+- **Active voice:** "The engine processes the Turn" not "The Turn is processed by the engine"
+- **Direct:** "Use `WithSink`" not "You might want to consider using `WithSink`"
+- **Helpful, not formal:** Write like you're explaining to a colleague
+
+### Terminology
+
+Use consistent names. Pick one and stick with it:
+
+| Use This | Not These |
+|----------|-----------|
+| Turn | conversation, message, request |
+| Block | message, content, part |
+| Engine | step, provider, client |
+| Registry | store, map, collection |
+
+### Assume the Reader
+
+- Knows Go
+- Is new to this library
+- Wants to accomplish something specific
+- Will skim before reading closely
+
+## Templates
+
+### Topic Template
+
+```markdown
+---
+Title: [Concept Name]
+Slug: [concept-name]
+Short: [One sentence description]
+Topics:
+- [topic1]
+- [topic2]
+IsTopLevel: true
+SectionType: GeneralTopic
+---
+
+# [Concept Name]
+
+## Why [Concept]?
+
+[2-3 sentences explaining the problem this solves and why you'd use it.]
+
+## Quick Start
+
+```[language]
+[Minimal working example - 5-10 lines]
+```
+
+## Core Concepts
+
+[Explanation of key abstractions with diagrams if helpful]
+
+## [Main Section 1]
+
+[Content]
+
+## [Main Section 2]
+
+[Content]
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| ... | ... | ... |
+
+## See Also
+
+- [Related Doc](path.md) — Description
+```
+
+### Tutorial Template
+
+```markdown
+---
+Title: [Build/Create] [Thing]
+Slug: [thing]-tutorial
+Short: [What you'll build in one sentence]
+SectionType: Tutorial
+---
+
+# [Build/Create] [Thing]
+
+## What You'll Build
+
+[Concrete description of the end result]
+
+## Prerequisites
+
+- [Requirement 1]
+- [Requirement 2]
+
+## Step 1 — [First Action]
+
+[Explanation of what and why]
+
+```[language]
+[Code for this step]
+```
+
+## Step 2 — [Second Action]
+
+[Explanation]
+
+```[language]
+[Code]
+```
+
+## Complete Example
+
+```[language]
+[Full working code combining all steps]
+```
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| ... | ... | ... |
+
+## See Also
+
+- [Topic Reference](path.md)
+- Example: `path/to/example/`
+```
+
+## Checklist Before Publishing
+
+- [ ] Every section starts with a concept-focused paragraph
+- [ ] All code examples are runnable
+- [ ] Jargon is explained on first use
+- [ ] Troubleshooting section exists
+- [ ] See Also section with cross-references
+- [ ] No orphan docs (linked from index or related docs)
+- [ ] Failure modes documented
