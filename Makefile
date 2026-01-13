@@ -4,6 +4,8 @@ all: test build
 
 VERSION ?= $(shell svu current)
 LDFLAGS ?= -X main.version=$(VERSION)
+GORELEASER_ARGS ?= --skip=sign --snapshot --clean
+GORELEASER_TARGET ?= --single-target
 
 docker-lint:
 	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v2.0.2 golangci-lint run -v
@@ -30,7 +32,7 @@ build:
 	go build -tags "fts5" -ldflags "$(LDFLAGS)" ./cmd/glaze
 
 goreleaser:
-	GOWORK=off goreleaser release --skip=sign --snapshot --clean
+	GOWORK=off goreleaser release $(GORELEASER_ARGS) $(GORELEASER_TARGET)
 
 tag-major:
 	git tag $(shell svu major)
