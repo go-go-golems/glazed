@@ -25,7 +25,7 @@ Glazed enables you to build CLI commands that automatically support multiple out
 
 ## Prerequisites
 
-- Go 1.19+ installed
+- Go 1.25+ installed
 - Basic familiarity with Go and command-line tools
 
 ## Step 1: Set Up Your Project
@@ -63,12 +63,12 @@ import (
 
     "github.com/go-go-golems/glazed/pkg/cli"
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/values"
     "github.com/go-go-golems/glazed/pkg/help"
     help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
     "github.com/go-go-golems/glazed/pkg/middlewares"
-    "github.com/go-go-golems/glazed/pkg/settings"
     "github.com/go-go-golems/glazed/pkg/types"
     "github.com/spf13/cobra"
 )
@@ -100,19 +100,19 @@ type ListUsersSettings struct {
 
 ### Core Command Logic
 
-The `GlazeCommand` interface requires implementing `RunIntoGlazeProcessor`, which receives parsed parameters and a processor for structured output. Instead of writing directly to stdout, you create `types.Row` objects that the processor can format into multiple output types automatically.
+The `GlazeCommand` interface requires implementing `RunIntoGlazeProcessor`, which receives resolved values and a processor for structured output. Instead of writing directly to stdout, you create `types.Row` objects that the processor can format into multiple output types automatically.
 
 ```go
 
 // Step 2.3: Implement the GlazeCommand interface
 func (c *ListUsersCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    vals *values.Values,
     gp middlewares.Processor,
 ) error {
     // Parse settings from command line
     settings := &ListUsersSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
         return err
     }
 
@@ -141,24 +141,25 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 
 **Implementation details:**
 
-1. **Settings Extraction**: `parsedLayers.InitializeStruct()` populates the settings struct from command-line flags with automatic parsing and validation
+1. **Settings Extraction**: `values.DecodeSectionInto()` (or `vals.InitializeStruct()`) populates the settings struct from resolved values with automatic parsing and validation
 2. **Business Logic**: `generateMockUsers()` simulates data retrieval with the parsed settings
 3. **Structured Output**: Creates `types.Row` objects instead of using direct output functions
 4. **Row Structure**: `types.MRP("key", value)` creates key-value pairs for each data field
 
 The `GlazeProcessor` collects these rows and can output them in multiple formats without additional format-specific code.
 
-**Important — Parse flags via InitializeStruct:** Always parse flags into your settings struct with `parsedLayers.InitializeStruct(layers.DefaultSlug, &YourSettings{})`. This is the canonical way to access parameters in Glazed. Avoid reading Cobra flags directly; `InitializeStruct` ensures defaults, validation, and help text stay consistent with your `parameters.ParameterDefinition`s and active layers.
+**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `values.DecodeSectionInto(vals, schema.DefaultSlug, &YourSettings{})` (or the underlying `vals.InitializeStruct(schema.DefaultSlug, &YourSettings{})`). Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
 
 ### Command Configuration and Parameters
 
-Command configuration combines custom parameters with Glazed's built-in output formatting capabilities. The `NewGlazedParameterLayers()` function adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom parameter definitions specify the command's business logic inputs.
+Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `schema.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedParameterLayers()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
 
 ```go
 // Step 2.4: Create constructor function
 func NewListUsersCommand() (*ListUsersCommand, error) {
-    // Create glazed layer for output formatting options
-    glazedLayer, err := settings.NewGlazedParameterLayers()
+    // Create glazed schema section for output formatting options
+    // Note: cli.BuildCobraCommand will also auto-add this section for GlazeCommand implementations.
+    glazedLayer, err := schema.NewGlazedSchema()
     if err != nil {
         return nil, err
     }
@@ -188,26 +189,26 @@ Examples:
         
         // Define command flags
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "limit",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(10),
-                parameters.WithHelp("Maximum number of users to show"),
-                parameters.WithShortFlag("l"),
+                fields.TypeInteger,
+                fields.WithDefault(10),
+                fields.WithHelp("Maximum number of users to show"),
+                fields.WithShortFlag("l"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "name-filter",
-                parameters.ParameterTypeString,
-                parameters.WithDefault(""),
-                parameters.WithHelp("Filter users by name or email"),
-                parameters.WithShortFlag("f"),
+                fields.TypeString,
+                fields.WithDefault(""),
+                fields.WithHelp("Filter users by name or email"),
+                fields.WithShortFlag("f"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "active-only",
-                parameters.ParameterTypeBool,
-                parameters.WithDefault(false),
-                parameters.WithHelp("Show only active users"),
-                parameters.WithShortFlag("a"),
+                fields.TypeBool,
+                fields.WithDefault(false),
+                fields.WithHelp("Show only active users"),
+                fields.WithShortFlag("a"),
             ),
         ),
         
@@ -223,7 +224,7 @@ Examples:
 
 **Configuration components:**
 
-1. **Glazed Layer**: `settings.NewGlazedParameterLayers()` adds built-in parameters like `--output`, `--fields`, `--sort-columns`
+1. **Glazed Schema Section**: `schema.NewGlazedSchema()` adds built-in parameters like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
 2. **Command Settings Layer**: `cli.NewCommandSettingsLayer()` adds debugging and configuration parameters:
    - `--print-parsed-parameters`: Debug parameter parsing
    - `--print-schema`: Show command schema
@@ -324,7 +325,7 @@ func main() {
     // Convert to Cobra command with enhanced options
     cobraListUsersCmd, err := cli.BuildCobraCommand(listUsersCmd,
         cli.WithParserConfig(cli.CobraParserConfig{
-            ShortHelpLayers: []string{layers.DefaultSlug},
+            ShortHelpLayers: []string{schema.DefaultSlug},
             MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
         }),
     )
@@ -494,9 +495,9 @@ type StatusSettings struct {
 }
 
 // Classic mode - simple text output
-func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *StatusCommand) Run(ctx context.Context, vals *values.Values) error {
     settings := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
         return err
     }
     
@@ -516,11 +517,11 @@ func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLaye
 // Glaze mode - structured output
 func (c *StatusCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    vals *values.Values,
     gp middlewares.Processor,
 ) error {
     settings := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
         return err
     }
     
@@ -553,12 +554,12 @@ func NewStatusCommand() (*StatusCommand, error) {
         cmds.WithShort("Show system status"),
         cmds.WithLong("Show system status in either human-readable or structured format"),
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "verbose",
-                parameters.ParameterTypeBool,
-                parameters.WithDefault(false),
-                parameters.WithHelp("Show additional details"),
-                parameters.WithShortFlag("v"),
+                fields.TypeBool,
+                fields.WithDefault(false),
+                fields.WithHelp("Show additional details"),
+                fields.WithShortFlag("v"),
             ),
         ),
         cmds.WithLayersList(commandSettingsLayer),
@@ -588,7 +589,7 @@ The `StatusCommand` implements two interfaces:
 
 ### Integrating the Dual Command
 
-Dual commands require the `BuildCobraCommandDualMode` builder instead of the standard builder. This function detects both interface implementations and creates a toggle flag to switch between output modes.
+Dual commands enable dual-mode behavior via `cli.WithDualMode(true)` (or the deprecated `BuildCobraCommandDualMode` helper). The builder detects both interface implementations and creates a toggle flag to switch between output modes.
 
 ```go
 // Create status command with dual mode
@@ -603,7 +604,7 @@ cobraStatusCmd, err := cli.BuildCobraCommand(statusCmd,
     cli.WithDualMode(true),
     cli.WithGlazeToggleFlag("with-glaze-output"),
     cli.WithParserConfig(cli.CobraParserConfig{
-        ShortHelpLayers: []string{layers.DefaultSlug},
+        ShortHelpLayers: []string{schema.DefaultSlug},
         MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
     }),
 )
@@ -621,7 +622,7 @@ help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 **Key differences from single-mode commands:**
 
-1. **`BuildCobraCommandDualMode`**: Uses the dual-mode builder instead of the standard builder
+1. **Dual mode option**: Use `cli.WithDualMode(true)` to enable the dual-command toggle
 2. **Toggle Flag**: `WithGlazeToggleFlag("with-glaze-output")` creates a flag that switches between interfaces
 3. **Automatic Detection**: Glazed detects both interface implementations and configures the toggle mechanism
 
@@ -695,19 +696,19 @@ Glazed supports various parameter types beyond basic strings, integers, and bool
 ```go
 cmds.WithFlags(
     // File parameter validates file exists
-    parameters.NewParameterDefinition(
+    fields.New(
         "config-file",
-        parameters.ParameterTypeFile,
-        parameters.WithHelp("Configuration file path"),
+        fields.TypeFile,
+        fields.WithHelp("Configuration file path"),
     ),
     
     // Choice parameter limits valid options
-    parameters.NewParameterDefinition(
+    fields.New(
         "output-format",
-        parameters.ParameterTypeChoice,
-        parameters.WithChoices("json", "yaml", "xml"),
-        parameters.WithDefault("json"),
-        parameters.WithHelp("Output format"),
+        fields.TypeChoice,
+        fields.WithChoices("json", "yaml", "xml"),
+        fields.WithDefault("json"),
+        fields.WithHelp("Output format"),
     ),
 )
 ```
@@ -717,9 +718,9 @@ cmds.WithFlags(
 **Structured Logging**: Add logging for debugging and monitoring:
 
 ```go
-func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
     settings := &ListUsersSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
         return fmt.Errorf("failed to parse settings: %w", err)
     }
     
