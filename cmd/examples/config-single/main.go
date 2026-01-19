@@ -7,8 +7,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -23,21 +24,21 @@ type DemoBareCommand struct {
 }
 
 func NewDemoBareCommand() (*DemoBareCommand, error) {
-	demoLayer, err := layers.NewParameterLayer(
+	demoSection, err := schema.NewSection(
 		"demo",
 		"Demo settings",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New(
 				"api-key",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("API key from config/env/flags"),
+				fields.TypeString,
+				fields.WithHelp("API key from config/env/flags"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"threshold",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(10),
-				parameters.WithHelp("Numeric threshold"),
+				fields.TypeInteger,
+				fields.WithDefault(10),
+				fields.WithHelp("Numeric threshold"),
 			),
 		),
 	)
@@ -48,7 +49,7 @@ func NewDemoBareCommand() (*DemoBareCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"demo",
 		cmds.WithShort("Minimal custom layer with single config file"),
-		cmds.WithLayersList(demoLayer),
+		cmds.WithLayersList(demoSection),
 	)
 
 	return &DemoBareCommand{CommandDescription: desc}, nil
@@ -56,9 +57,9 @@ func NewDemoBareCommand() (*DemoBareCommand, error) {
 
 var _ cmds.BareCommand = &DemoBareCommand{}
 
-func (c *DemoBareCommand) Run(ctx context.Context, pl *layers.ParsedLayers) error {
+func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &DemoSettings{}
-	if err := pl.InitializeStruct("demo", s); err != nil {
+	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -136,7 +137,7 @@ func main() {
 				pds := layer.GetParameterDefinitions()
 				// Build set of known parameter names
 				known := map[string]bool{}
-				pds.ForEach(func(pd *parameters.ParameterDefinition) {
+				pds.ForEach(func(pd *fields.Definition) {
 					known[pd.Name] = true
 				})
 				for key, val := range m {

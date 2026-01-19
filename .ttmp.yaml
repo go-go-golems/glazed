@@ -1,6 +1,6 @@
-root: /workspace/glazed/ttmp
+root: ttmp
 defaults:
     owners: [manuel]
     intent: long-term
 filenamePrefixPolicy: ""
-vocabulary: /workspace/glazed/ttmp/vocabulary.yaml
+vocabulary: ttmp/vocabulary.yaml

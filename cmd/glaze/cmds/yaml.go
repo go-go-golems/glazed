@@ -3,19 +3,20 @@ package cmds
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"strings"
 )
 
 type YamlCommand struct {
@@ -25,7 +26,7 @@ type YamlCommand struct {
 var _ cmds.GlazeCommand = (*YamlCommand)(nil)
 
 func NewYamlCommand() (*YamlCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
@@ -35,34 +36,34 @@ func NewYamlCommand() (*YamlCommand, error) {
 			"yaml",
 			cmds.WithShort("Format YAML data"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"input-is-array",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Input is an array of objects"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Input is an array of objects"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"sanitize",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Sanitize input (very hacky, meant for LLM cleanup)"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Sanitize input (very hacky, meant for LLM cleanup)"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"from-markdown",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Input is markdown"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Input is markdown"),
+					fields.WithDefault(false),
 				),
 			),
 			cmds.WithArguments(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"input-files",
-					parameters.ParameterTypeStringList,
-					parameters.WithRequired(true),
+					fields.TypeStringList,
+					fields.WithRequired(true),
 				),
 			),
 			cmds.WithLayersList(
-				glazedParameterLayer,
+				glazedLayer,
 			),
 		),
 	}, nil
@@ -75,9 +76,9 @@ type YamlSettings struct {
 	InputFiles   []string `glazed.parameter:"input-files"`
 }
 
-func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &YamlSettings{}
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
 	}

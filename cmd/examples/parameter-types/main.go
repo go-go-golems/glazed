@@ -10,12 +10,13 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ type ParameterTypesCommand struct {
 var _ cmds.GlazeCommand = (*ParameterTypesCommand)(nil)
 
 func NewParameterTypesCommand() (*ParameterTypesCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+	glazedSection, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
@@ -80,134 +81,134 @@ Parameter types demonstrated:
 Use --help to see all available parameters and their descriptions.`),
 			cmds.WithFlags(
 				// Basic types
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-param",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("A simple string parameter"),
-					parameters.WithDefault("default-string"),
+					fields.TypeString,
+					fields.WithHelp("A simple string parameter"),
+					fields.WithDefault("default-string"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"secret-param",
-					parameters.ParameterTypeSecret,
-					parameters.WithHelp("A secret parameter (will be masked when displayed)"),
-					parameters.WithDefault("secret-value"),
+					fields.TypeSecret,
+					fields.WithHelp("A secret parameter (will be masked when displayed)"),
+					fields.WithDefault("secret-value"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"integer-param",
-					parameters.ParameterTypeInteger,
-					parameters.WithHelp("An integer parameter"),
-					parameters.WithDefault(42),
+					fields.TypeInteger,
+					fields.WithHelp("An integer parameter"),
+					fields.WithDefault(42),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"float-param",
-					parameters.ParameterTypeFloat,
-					parameters.WithHelp("A floating point parameter"),
-					parameters.WithDefault(3.14),
+					fields.TypeFloat,
+					fields.WithHelp("A floating point parameter"),
+					fields.WithDefault(3.14),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"bool-param",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("A boolean parameter"),
-					parameters.WithDefault(true),
+					fields.TypeBool,
+					fields.WithHelp("A boolean parameter"),
+					fields.WithDefault(true),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"date-param",
-					parameters.ParameterTypeDate,
-					parameters.WithHelp("A date parameter (RFC3339 format or natural language)"),
-					parameters.WithDefault("2024-01-01T00:00:00Z"),
+					fields.TypeDate,
+					fields.WithHelp("A date parameter (RFC3339 format or natural language)"),
+					fields.WithDefault("2024-01-01T00:00:00Z"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"choice-param",
-					parameters.ParameterTypeChoice,
-					parameters.WithHelp("A choice parameter with predefined options"),
-					parameters.WithChoices("option1", "option2", "option3"),
-					parameters.WithDefault("option1"),
+					fields.TypeChoice,
+					fields.WithHelp("A choice parameter with predefined options"),
+					fields.WithChoices("option1", "option2", "option3"),
+					fields.WithDefault("option1"),
 				),
 
 				// List types
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-list-param",
-					parameters.ParameterTypeStringList,
-					parameters.WithHelp("A list of strings"),
-					parameters.WithDefault([]string{"item1", "item2"}),
+					fields.TypeStringList,
+					fields.WithHelp("A list of strings"),
+					fields.WithDefault([]string{"item1", "item2"}),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"integer-list-param",
-					parameters.ParameterTypeIntegerList,
-					parameters.WithHelp("A list of integers"),
-					parameters.WithDefault([]int{1, 2, 3}),
+					fields.TypeIntegerList,
+					fields.WithHelp("A list of integers"),
+					fields.WithDefault([]int{1, 2, 3}),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"float-list-param",
-					parameters.ParameterTypeFloatList,
-					parameters.WithHelp("A list of floating point numbers"),
-					parameters.WithDefault([]float64{1.1, 2.2, 3.3}),
+					fields.TypeFloatList,
+					fields.WithHelp("A list of floating point numbers"),
+					fields.WithDefault([]float64{1.1, 2.2, 3.3}),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"choice-list-param",
-					parameters.ParameterTypeChoiceList,
-					parameters.WithHelp("A list of choices from predefined options"),
-					parameters.WithChoices("red", "green", "blue"),
-					parameters.WithDefault([]string{"red", "blue"}),
+					fields.TypeChoiceList,
+					fields.WithHelp("A list of choices from predefined options"),
+					fields.WithChoices("red", "green", "blue"),
+					fields.WithDefault([]string{"red", "blue"}),
 				),
 
 				// File types
-				parameters.NewParameterDefinition(
+				fields.New(
 					"file-param",
-					parameters.ParameterTypeFile,
-					parameters.WithHelp("A file parameter that loads file metadata"),
+					fields.TypeFile,
+					fields.WithHelp("A file parameter that loads file metadata"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"file-list-param",
-					parameters.ParameterTypeFileList,
-					parameters.WithHelp("A list of files with metadata"),
+					fields.TypeFileList,
+					fields.WithHelp("A list of files with metadata"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-from-file-param",
-					parameters.ParameterTypeStringFromFile,
-					parameters.WithHelp("Load string content from a file"),
+					fields.TypeStringFromFile,
+					fields.WithHelp("Load string content from a file"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-from-files-param",
-					parameters.ParameterTypeStringFromFiles,
-					parameters.WithHelp("Load and concatenate string content from multiple files"),
+					fields.TypeStringFromFiles,
+					fields.WithHelp("Load and concatenate string content from multiple files"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-list-from-file-param",
-					parameters.ParameterTypeStringListFromFile,
-					parameters.WithHelp("Load lines from a file as a string list"),
+					fields.TypeStringListFromFile,
+					fields.WithHelp("Load lines from a file as a string list"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"string-list-from-files-param",
-					parameters.ParameterTypeStringListFromFiles,
-					parameters.WithHelp("Load lines from multiple files as a string list"),
+					fields.TypeStringListFromFiles,
+					fields.WithHelp("Load lines from multiple files as a string list"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"object-from-file-param",
-					parameters.ParameterTypeObjectFromFile,
-					parameters.WithHelp("Load a JSON/YAML object from a file"),
+					fields.TypeObjectFromFile,
+					fields.WithHelp("Load a JSON/YAML object from a file"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"object-list-from-file-param",
-					parameters.ParameterTypeObjectListFromFile,
-					parameters.WithHelp("Load a list of objects from a file"),
+					fields.TypeObjectListFromFile,
+					fields.WithHelp("Load a list of objects from a file"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"object-list-from-files-param",
-					parameters.ParameterTypeObjectListFromFiles,
-					parameters.WithHelp("Load and merge object lists from multiple files"),
+					fields.TypeObjectListFromFiles,
+					fields.WithHelp("Load and merge object lists from multiple files"),
 				),
 
 				// Key-value type
-				parameters.NewParameterDefinition(
+				fields.New(
 					"key-value-param",
-					parameters.ParameterTypeKeyValue,
-					parameters.WithHelp("Key-value pairs (format: key:value or @filename for JSON/YAML file)"),
-					parameters.WithDefault(map[string]string{"default-key": "default-value"}),
+					fields.TypeKeyValue,
+					fields.WithHelp("Key-value pairs (format: key:value or @filename for JSON/YAML file)"),
+					fields.WithDefault(map[string]string{"default-key": "default-value"}),
 				),
 			),
 			cmds.WithLayersList(
-				glazedParameterLayer,
+				glazedSection,
 			),
 		),
 	}, nil
@@ -215,11 +216,11 @@ Use --help to see all available parameters and their descriptions.`),
 
 func (c *ParameterTypesCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	vals *values.Values,
 	gp middlewares.Processor,
 ) error {
 	s := &ParameterTypesSettings{}
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize settings from parameters")
 	}

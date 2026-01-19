@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	cmdmw "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -22,13 +22,13 @@ type OverlaySettings struct {
 type OverlayCommand struct{ *cmds.CommandDescription }
 
 func NewOverlayCommand() (*OverlayCommand, error) {
-	demo, err := layers.NewParameterLayer(
+	demo, err := schema.NewSection(
 		"demo",
 		"Overlay demo",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString, parameters.WithHelp("API key")),
-			parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger, parameters.WithDefault(10), parameters.WithHelp("Threshold")),
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString, fields.WithHelp("API key")),
+			fields.New("threshold", fields.TypeInteger, fields.WithDefault(10), fields.WithHelp("Threshold")),
 		),
 	)
 	if err != nil {
@@ -40,9 +40,9 @@ func NewOverlayCommand() (*OverlayCommand, error) {
 
 var _ cmds.BareCommand = &OverlayCommand{}
 
-func (c *OverlayCommand) Run(ctx context.Context, pl *layers.ParsedLayers) error {
+func (c *OverlayCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &OverlaySettings{}
-	if err := pl.InitializeStruct("demo", s); err != nil {
+	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	// Provide a custom files resolver returning low->high precedence files
-	filesResolver := func(_ *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+	filesResolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
 		return []string{
 			"cmd/examples/config-overlay/base.yaml",
 			"cmd/examples/config-overlay/env.yaml",
@@ -84,10 +84,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// For demonstration, add an extra command to show parsed steps by printing the map
-	// Users can also run with env overrides: e.g. DEMO_API_KEY and demo threshold flags
-	_ = cmdmw.UpdateFromEnv // ensure middleware is referenced (no-op here)
 
 	// validate command: validates each overlay file individually
 	validateCmd := &cobra.Command{
@@ -131,7 +127,7 @@ func main() {
 					}
 					pds := layer.GetParameterDefinitions()
 					known := map[string]bool{}
-					pds.ForEach(func(pd *parameters.ParameterDefinition) { known[pd.Name] = true })
+					pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 					for key, val := range m {
 						if !known[key] {
 							issues = append(issues, fmt.Sprintf("%s: unknown parameter %s.%s", f, layerSlug, key))

@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -29,23 +29,23 @@ func NewExampleBareCommand() (*ExampleBareCommand, error) {
 			cmds.WithShort("Example bare command"),
 			cmds.WithLong("A simple bare command that outputs text directly"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"message",
-					parameters.ParameterTypeString,
-					parameters.WithDefault("Hello from bare command!"),
-					parameters.WithHelp("Message to display"),
+					fields.TypeString,
+					fields.WithDefault("Hello from bare command!"),
+					fields.WithHelp("Message to display"),
 				),
 			),
 		),
 	}, nil
 }
 
-func (c *ExampleBareCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := struct {
 		Message string `glazed.parameter:"message"`
 	}{}
 
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -66,23 +66,23 @@ func NewExampleWriterCommand() (*ExampleWriterCommand, error) {
 			cmds.WithShort("Example writer command"),
 			cmds.WithLong("A writer command that outputs to a specified writer"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"count",
-					parameters.ParameterTypeInteger,
-					parameters.WithDefault(3),
-					parameters.WithHelp("Number of lines to output"),
+					fields.TypeInteger,
+					fields.WithDefault(3),
+					fields.WithHelp("Number of lines to output"),
 				),
 			),
 		),
 	}, nil
 }
 
-func (c *ExampleWriterCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+func (c *ExampleWriterCommand) RunIntoWriter(ctx context.Context, vals *values.Values, w io.Writer) error {
 	s := struct {
 		Count int `glazed.parameter:"count"`
 	}{}
 
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -99,38 +99,29 @@ type ExampleGlazeCommand struct {
 }
 
 func NewExampleGlazeCommand() (*ExampleGlazeCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
-	if err != nil {
-		return nil, err
-	}
-
-	glazedLayers := layers.NewParameterLayers()
-	glazedLayers.Set(settings.GlazedSlug, glazedParameterLayer)
-
 	return &ExampleGlazeCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"glaze",
 			cmds.WithShort("Example glaze command"),
 			cmds.WithLong("A glaze command that outputs structured data"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"rows",
-					parameters.ParameterTypeInteger,
-					parameters.WithDefault(2),
-					parameters.WithHelp("Number of data rows to output"),
+					fields.TypeInteger,
+					fields.WithDefault(2),
+					fields.WithHelp("Number of data rows to output"),
 				),
 			),
-			cmds.WithLayers(glazedLayers),
 		),
 	}, nil
 }
 
-func (c *ExampleGlazeCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ExampleGlazeCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := struct {
 		Rows int `glazed.parameter:"rows"`
 	}{}
 
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -161,17 +152,17 @@ func NewExampleDualCommand() (*ExampleDualCommand, error) {
 			cmds.WithShort("Example dual command"),
 			cmds.WithLong("A dual command that can run in both classic and glaze modes"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"name",
-					parameters.ParameterTypeString,
-					parameters.WithDefault("World"),
-					parameters.WithHelp("Name to greet"),
+					fields.TypeString,
+					fields.WithDefault("World"),
+					fields.WithHelp("Name to greet"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"times",
-					parameters.ParameterTypeInteger,
-					parameters.WithDefault(1),
-					parameters.WithHelp("Number of greetings"),
+					fields.TypeInteger,
+					fields.WithDefault(1),
+					fields.WithHelp("Number of greetings"),
 				),
 			),
 		),
@@ -179,13 +170,13 @@ func NewExampleDualCommand() (*ExampleDualCommand, error) {
 }
 
 // Implement BareCommand interface for classic mode
-func (c *ExampleDualCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleDualCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := struct {
 		Name  string `glazed.parameter:"name"`
 		Times int    `glazed.parameter:"times"`
 	}{}
 
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -197,13 +188,13 @@ func (c *ExampleDualCommand) Run(ctx context.Context, parsedLayers *layers.Parse
 }
 
 // Implement GlazeCommand interface for glaze mode
-func (c *ExampleDualCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ExampleDualCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := struct {
 		Name  string `glazed.parameter:"name"`
 		Times int    `glazed.parameter:"times"`
 	}{}
 
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}

@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,31 +45,23 @@ var configEx8 []byte
 // It shows how to use declarative mapping rules instead of writing custom Go functions.
 
 func main() {
-	// Create parameter layers
-	demoLayer, err := layers.NewParameterLayer(
+	// Create schema section
+	demoLayer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString,
-				parameters.WithHelp("API key for authentication")),
-			parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger,
-				parameters.WithHelp("Threshold value")),
-			parameters.NewParameterDefinition("timeout", parameters.ParameterTypeInteger,
-				parameters.WithHelp("Timeout in seconds"),
-				parameters.WithDefault(30)),
-			parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString,
-				parameters.WithHelp("Development API key")),
-			parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString,
-				parameters.WithHelp("Production API key")),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString, fields.WithHelp("API key for authentication")),
+			fields.New("threshold", fields.TypeInteger, fields.WithHelp("Threshold value")),
+			fields.New("timeout", fields.TypeInteger, fields.WithHelp("Timeout in seconds"), fields.WithDefault(30)),
+			fields.New("dev-api-key", fields.TypeString, fields.WithHelp("Development API key")),
+			fields.New("prod-api-key", fields.TypeString, fields.WithHelp("Production API key")),
 		),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	paramLayers := layers.NewParameterLayers(
-		layers.WithLayers(demoLayer),
-	)
+	paramLayers := schema.NewSchema(schema.WithSections(demoLayer))
 
 	// Simple CLI switch: `validate [config.yaml]` validates the config against mappings.yaml
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
@@ -240,13 +232,11 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// Use the pattern mapper with LoadParametersFromFile
-		_ = middlewares.LoadParametersFromFile(
+		// Use the pattern mapper with sources.FromFile (wraps LoadParametersFromFile)
+		_ = sources.FromFile(
 			"config.yaml",
-			middlewares.WithConfigMapper(mapper),
-			middlewares.WithParseOptions(
-				parameters.WithParseStepSource("config"),
-			),
+			sources.WithConfigMapper(mapper),
+			sources.WithParseOptions(sources.WithSource("config")),
 		)
 
 		fmt.Println("Pattern mapper can be used with LoadParametersFromFile middleware")

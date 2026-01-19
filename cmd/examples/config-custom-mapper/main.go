@@ -7,9 +7,10 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -25,21 +26,21 @@ type DemoBareCommand struct {
 }
 
 func NewDemoBareCommand() (*DemoBareCommand, error) {
-	demoLayer, err := layers.NewParameterLayer(
+	demoLayer, err := schema.NewSection(
 		"demo",
 		"Demo settings",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New(
 				"api-key",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("API key from config/env/flags"),
+				fields.TypeString,
+				fields.WithHelp("API key from config/env/flags"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"threshold",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(10),
-				parameters.WithHelp("Numeric threshold"),
+				fields.TypeInteger,
+				fields.WithDefault(10),
+				fields.WithHelp("Numeric threshold"),
 			),
 		),
 	)
@@ -58,9 +59,9 @@ func NewDemoBareCommand() (*DemoBareCommand, error) {
 
 var _ cmds.BareCommand = &DemoBareCommand{}
 
-func (c *DemoBareCommand) Run(ctx context.Context, pl *layers.ParsedLayers) error {
+func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &DemoSettings{}
-	if err := pl.InitializeStruct("demo", s); err != nil {
+	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -132,24 +133,18 @@ func main() {
 		demo,
 		cli.WithParserConfig(cli.CobraParserConfig{
 			SkipCommandSettingsLayer: true,
-			MiddlewaresFunc: func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]middlewares.Middleware, error) {
-				return []middlewares.Middleware{
+			MiddlewaresFunc: func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]sources.Middleware, error) {
+				return []sources.Middleware{
 					// Highest priority: command-line flags
-					middlewares.ParseFromCobraCommand(cmd,
-						parameters.WithParseStepSource("flags"),
-					),
+					sources.FromCobra(cmd, sources.WithSource("flags")),
 					// Medium priority: custom config file with mapper
-					middlewares.LoadParametersFromFile(
+					sources.FromFile(
 						"cmd/examples/config-custom-mapper/config.yaml",
-						middlewares.WithConfigFileMapper(flatConfigMapper),
-						middlewares.WithParseOptions(
-							parameters.WithParseStepSource("config"),
-						),
+						sources.WithConfigFileMapper(flatConfigMapper),
+						sources.WithParseOptions(sources.WithSource("config")),
 					),
 					// Lowest priority: defaults
-					middlewares.SetFromDefaults(
-						parameters.WithParseStepSource(parameters.SourceDefaults),
-					),
+					sources.FromDefaults(sources.WithSource("defaults")),
 				}, nil
 			},
 		}),
@@ -195,7 +190,7 @@ func main() {
 				pmap := kv
 				pds := layer.GetParameterDefinitions()
 				known := map[string]bool{}
-				pds.ForEach(func(pd *parameters.ParameterDefinition) { known[pd.Name] = true })
+				pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 				for key, val := range pmap {
 					if !known[key] {
 						issues = append(issues, fmt.Sprintf("unknown parameter in layer %s: %s", layerSlug, key))

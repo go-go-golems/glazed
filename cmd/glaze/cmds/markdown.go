@@ -9,8 +9,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -424,11 +425,16 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	g, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		panic(err)
 	}
-	err = g.AddLayerToCobraCommand(parseCmd)
+	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	if !ok {
+		panic("glazed layer is not a CobraParameterLayer")
+	}
+
+	err = cobraLayer.AddLayerToCobraCommand(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -438,7 +444,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = g.AddLayerToCobraCommand(splitByHeadingCmd)
+	err = cobraLayer.AddLayerToCobraCommand(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}

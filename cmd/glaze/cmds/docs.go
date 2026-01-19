@@ -6,6 +6,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
@@ -53,9 +54,9 @@ func init() {
 	// If we extracted out the docs command into a cmd.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
-	gpl, err := settings.NewGlazedParameterLayers(
+	glazedLayer, err := schema.NewGlazedSchema(
 		settings.WithFieldsFiltersParameterLayerOptions(
-			layers.WithDefaults(
+			schema.WithDefaults(
 				&settings.FieldsFilterFlagsDefaults{
 					Fields: []string{
 						"path",
@@ -76,7 +77,12 @@ func init() {
 		panic(err)
 	}
 
-	err = gpl.AddLayerToCobraCommand(DocsCmd)
+	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	if !ok {
+		panic("glazed layer is not a CobraParameterLayer")
+	}
+
+	err = cobraLayer.AddLayerToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}
