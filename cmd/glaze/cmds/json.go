@@ -5,17 +5,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	json2 "github.com/go-go-golems/glazed/pkg/helpers/json"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"io"
 	"os"
 	"time"
+
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 type JsonCommand struct {
@@ -33,7 +34,7 @@ type JsonSettings struct {
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
@@ -42,48 +43,48 @@ func NewJsonCommand() (*JsonCommand, error) {
 			"json",
 			cmds.WithShort("Format JSON data"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"input-is-array",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Input is an array of objects (multiple files will be concatenated)"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Input is an array of objects (multiple files will be concatenated)"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"sanitize",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Sanitize JSON input"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Sanitize JSON input"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"from-markdown",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Input is markdown"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Input is markdown"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"tail",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Tail mode: read one JSON object per line"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Tail mode: read one JSON object per line"),
+					fields.WithDefault(false),
 				),
 			),
 			cmds.WithArguments(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"input-files",
-					parameters.ParameterTypeStringList,
-					parameters.WithRequired(true),
+					fields.TypeStringList,
+					fields.WithRequired(true),
 				),
 			),
 			cmds.WithLayersList(
-				glazedParameterLayer,
+				glazedLayer,
 			),
 		),
 	}, nil
 }
 
-func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &JsonSettings{}
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize json settings from parameters")
 	}

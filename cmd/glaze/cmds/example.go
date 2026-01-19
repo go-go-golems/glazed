@@ -6,14 +6,13 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/settings"
-	"github.com/pkg/errors"
-
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
+	"github.com/pkg/errors"
 )
 
 type ExampleCommand struct {
@@ -28,7 +27,7 @@ type ExampleSettings struct {
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
@@ -38,23 +37,23 @@ func NewExampleCommand() (*ExampleCommand, error) {
 			"example",
 			cmds.WithShort("Example command"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"count",
-					parameters.ParameterTypeInteger,
-					parameters.WithHelp("Number of rows to output"),
-					parameters.WithDefault(10),
+					fields.TypeInteger,
+					fields.WithHelp("Number of rows to output"),
+					fields.WithDefault(10),
 				),
 			),
 			cmds.WithArguments(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"test",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Whether to add a test column"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Whether to add a test column"),
+					fields.WithDefault(false),
 				),
 			),
 			cmds.WithLayersList(
-				glazedParameterLayer,
+				glazedLayer,
 			),
 		),
 	}, nil
@@ -69,9 +68,9 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
-func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &ExampleSettings{}
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize example settings from parameters")
 	}

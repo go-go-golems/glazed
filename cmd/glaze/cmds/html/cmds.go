@@ -1,12 +1,15 @@
 package html
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/html"
-	"os"
 )
 
 func NewHTMLCommand() (*cobra.Command, error) {
@@ -49,11 +52,16 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	g, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
-	err = g.AddLayerToCobraCommand(parseCmd)
+	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	if !ok {
+		return nil, fmt.Errorf("glazed layer is not a CobraParameterLayer")
+	}
+
+	err = cobraLayer.AddLayerToCobraCommand(parseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +116,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
 	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
 
-	err = g.AddLayerToCobraCommand(extractCmd)
+	err = cobraLayer.AddLayerToCobraCommand(extractCmd)
 	if err != nil {
 		return nil, err
 	}

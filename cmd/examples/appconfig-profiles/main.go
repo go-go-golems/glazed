@@ -146,7 +146,7 @@ func mustSection(section *schema.SectionImpl, err error) schema.Section {
 	return section
 }
 
-func addLayer(cmd *cobra.Command, layer layers.ParameterLayer) error {
+func addLayer(cmd *cobra.Command, layer schema.Section) error {
 	cobraLayer, ok := layer.(layers.CobraParameterLayer)
 	if !ok {
 		return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetSlug())

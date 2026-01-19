@@ -2,15 +2,16 @@ package cmds
 
 import (
 	"context"
-	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/csv"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"os"
+
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 type CsvCommand struct {
@@ -20,7 +21,7 @@ type CsvCommand struct {
 var _ cmds.GlazeCommand = (*CsvCommand)(nil)
 
 func NewCsvCommand() (*CsvCommand, error) {
-	glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -30,46 +31,46 @@ func NewCsvCommand() (*CsvCommand, error) {
 			"csv",
 			cmds.WithShort("Format CSV files"),
 			cmds.WithArguments(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"input-files",
-					parameters.ParameterTypeStringList,
-					parameters.WithRequired(true),
+					fields.TypeStringList,
+					fields.WithRequired(true),
 				),
 			),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"delimiter",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("delimiter to use"),
-					parameters.WithDefault(","),
+					fields.TypeString,
+					fields.WithHelp("delimiter to use"),
+					fields.WithDefault(","),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"comment",
-					parameters.ParameterTypeString,
-					parameters.WithHelp("comment character to use"),
-					parameters.WithDefault("#"),
+					fields.TypeString,
+					fields.WithHelp("comment character to use"),
+					fields.WithDefault("#"),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"fields-per-record",
-					parameters.ParameterTypeInteger,
-					parameters.WithHelp("number of fields per record (negative to disable)"),
-					parameters.WithDefault(0),
+					fields.TypeInteger,
+					fields.WithHelp("number of fields per record (negative to disable)"),
+					fields.WithDefault(0),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"trim-leading-space",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("trim leading space"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("trim leading space"),
+					fields.WithDefault(false),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"lazy-quotes",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("allow lazy quotes"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("allow lazy quotes"),
+					fields.WithDefault(false),
 				),
 			),
 			cmds.WithLayersList(
-				glazedParameterLayer,
+				glazedLayer,
 			),
 		),
 	}, nil
@@ -84,9 +85,9 @@ type CsvSettings struct {
 	LazyQuotes       bool     `glazed.parameter:"lazy-quotes"`
 }
 
-func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &CsvSettings{}
-	err := parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize csv settings from parameters")
 	}
