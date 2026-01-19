@@ -10,13 +10,17 @@ Topics:
 - values
 - sources
 - commands
+Commands:
+- none
+Flags:
+- none
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
 SectionType: Tutorial
 ---
 
-# Migrating to the New Facade Packages (schema/fields/values/sources)
+## Overview
 
 Glazed introduced **additive** facade packages under `github.com/go-go-golems/glazed/pkg/cmds/`:
 
@@ -182,4 +186,3 @@ Migrating piecemeal is fine; because facade types are aliases, interoperability 
 - `go test ./...`
 - Run one of the examples with env + flags and confirm precedence:
   - defaults < config files < env < flags
-
