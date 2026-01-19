@@ -6,10 +6,10 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -25,26 +25,26 @@ type DemoCommand struct {
 }
 
 func NewDemoCommand() (*DemoCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedSection, err := schema.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
 
-	demoLayer, err := layers.NewParameterLayer(
+	demoSection, err := schema.NewSection(
 		"demo",
 		"Demo settings",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New(
 				"api-key",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("API key loaded from config/env/flags"),
+				fields.TypeString,
+				fields.WithHelp("API key loaded from config/env/flags"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"threshold",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(10),
-				parameters.WithHelp("Numeric threshold"),
+				fields.TypeInteger,
+				fields.WithDefault(10),
+				fields.WithHelp("Numeric threshold"),
 			),
 		),
 	)
@@ -55,7 +55,7 @@ func NewDemoCommand() (*DemoCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"demo",
 		cmds.WithShort("Demonstrate config/env/flags middlewares"),
-		cmds.WithLayersList(glazedLayer, demoLayer),
+		cmds.WithLayersList(glazedSection, demoSection),
 	)
 
 	return &DemoCommand{CommandDescription: desc}, nil
@@ -66,11 +66,11 @@ var _ cmds.GlazeCommand = &DemoCommand{}
 
 func (c *DemoCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	vals *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &DemoSettings{}
-	if err := parsedLayers.InitializeStruct("demo", settings); err != nil {
+	if err := values.DecodeSectionInto(vals, "demo", settings); err != nil {
 		return err
 	}
 	row := types.NewRow(

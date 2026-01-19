@@ -9,8 +9,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/spf13/cobra"
 )
 
@@ -22,13 +23,13 @@ type Settings struct {
 type Command struct{ *cmds.CommandDescription }
 
 func NewCommand() (*Command, error) {
-	demo, err := layers.NewParameterLayer(
+	demo, err := schema.NewSection(
 		"demo",
 		"Overlay override demo",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString, parameters.WithHelp("API key")),
-			parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger, parameters.WithDefault(10), parameters.WithHelp("Threshold")),
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString, fields.WithHelp("API key")),
+			fields.New("threshold", fields.TypeInteger, fields.WithDefault(10), fields.WithHelp("Threshold")),
 		),
 	)
 	if err != nil {
@@ -40,9 +41,9 @@ func NewCommand() (*Command, error) {
 
 var _ cmds.BareCommand = &Command{}
 
-func (c *Command) Run(ctx context.Context, pl *layers.ParsedLayers) error {
+func (c *Command) Run(ctx context.Context, vals *values.Values) error {
 	s := &Settings{}
-	if err := pl.InitializeStruct("demo", s); err != nil {
+	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -66,7 +67,7 @@ func main() {
 	}
 
 	// Config files resolver: start from --config-file if provided, then add sibling <base>.override.yaml
-	resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+	resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
 		cs := &cli.CommandSettings{}
 		_ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
 		files := []string{}

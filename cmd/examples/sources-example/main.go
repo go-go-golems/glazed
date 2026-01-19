@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -15,8 +14,6 @@ import (
 )
 
 // Note: This example demonstrates manual middleware execution using the sources package.
-// The BareCommand interface requires *layers.ParsedLayers, but we use *values.Values
-// internally (they are type aliases, so conversions are safe).
 
 // Settings struct for the command
 type ConfigSettings struct {
@@ -87,11 +84,7 @@ Precedence order (lowest to highest):
 // Ensure interface compliance
 var _ cmds.BareCommand = &SourcesExampleCommand{}
 
-func (c *SourcesExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
-	// Convert to values.Values for decoding (type alias, so this is safe)
-	// We use the new API type (values.Values) for clarity
-	vals := (*values.Values)(parsedLayers)
-
+func (c *SourcesExampleCommand) Run(ctx context.Context, vals *values.Values) error {
 	// Decode settings from resolved values using the new API
 	settings := &ConfigSettings{}
 	if err := values.DecodeSectionInto(vals, "config", settings); err != nil {
@@ -177,10 +170,7 @@ func main() {
 	}
 
 	// Run the command with resolved values
-	// BareCommand.Run requires *layers.ParsedLayers, but vals is *values.Values
-	// They are type aliases, so conversion is safe
-	parsedLayers := (*layers.ParsedLayers)(vals)
-	if err := cmd.Run(context.Background(), parsedLayers); err != nil {
+	if err := cmd.Run(context.Background(), vals); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running command: %v\n", err)
 		os.Exit(1)
 	}
