@@ -237,6 +237,32 @@ Examples:
    - **Short Flag**: Single-letter abbreviations for convenience
 5. **Layer Composition**: Combines custom parameters with Glazed's built-in layers
 
+### Practical Gotchas (Not Obvious from “Hello World”)
+
+These are common stumbling blocks once you move beyond a single toy command:
+
+1. **`schema.Section` is an interface — don’t use `*schema.Section`**  
+   If you start composing multi-section schemas (e.g. an `api` section + a `documents` section), remember that `schema.Section` is an interface. Returning or storing `*schema.Section` is a “pointer to interface” and will produce confusing compiler errors. Prefer returning `schema.Section` (the interface) or the concrete `*schema.SectionImpl` returned by `schema.NewSection(...)`.
+
+2. **Field types vary by Glazed version**  
+   Not every repository/version has every field type you might expect (for example, some setups don’t have a built-in “duration” type). A pragmatic pattern is `--timeout-seconds` as an integer and then convert to `time.Duration` in code.
+
+3. **Grouping commands (“documents …”, “quiz …”)**  
+   For multi-command CLIs, you can either:
+   - use `cmds.WithParents("documents")` to declare parent groups in metadata, or
+   - create explicit parent `cobra.Command`s and attach Glazed-built subcommands to them.
+   
+   The tutorial focuses on a single command; real apps usually need grouping.
+
+4. **Pointers in table output**  
+   Table output will print Go pointer values as addresses (`0xc000...`). If your API types use `*int`/`*string` for nullable fields, dereference (or convert to `nil`/concrete values) before adding them to a `types.Row`.
+
+5. **HTTP-backed commands need careful URL handling**  
+   If your command calls a REST API, avoid naive string concatenation for URLs. Handle:
+   - base URLs with optional path prefixes (`http://host/prefix`)
+   - path segment escaping (`url.PathEscape`)
+   - query params (`url.Values`)
+
 ### Interface Compliance and Mock Data
 
 ```go
