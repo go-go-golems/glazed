@@ -307,3 +307,63 @@ remarquee upload bundle /home/manuel/workspaces/2026-02-02/refactor-glazed-names
   --remote-dir "/ai/2026/02/02/GL-001-ADD-MIGRATION-DOCS" \
   --toc-depth 2
 ```
+
+## Step 5: Commit Documentation and Analysis Artifacts
+
+I committed the migration guide updates plus the new ticket documents, scripts, and analysis artifacts to git. This captures the migration doc changes alongside the supporting analysis and tooling in a single commit.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Commit the completed documentation and analysis artifacts to git.
+
+**Inferred user intent:** Keep a durable record of the migration update work in version control.
+
+**Commit (code):** 4a08ca2 — "Docs: add migration analysis for facade API changes"
+
+### What I did
+
+- Staged the migration guide and the new ticket directory.
+- Created a git commit with the documentation and analysis artifacts.
+
+### Why
+
+- The user requested a git commit once the work was complete.
+
+### What worked
+
+- Commit succeeded with the updated docs and ticket assets.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- N/A
+
+### What was tricky to build
+
+- N/A
+
+### What warrants a second pair of eyes
+
+- N/A
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review the commit `4a08ca2` and the files under `glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/`.
+
+### Technical details
+
+```bash
+git -C glazed add pkg/doc/tutorials/migrating-to-facade-packages.md \
+  ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes
+
+git -C glazed commit -m "Docs: add migration analysis for facade API changes"
+```

@@ -9,4 +9,4 @@
 - [x] Store analysis scripts (import + SQL queries)
 - [x] Run compilation/tests
 - [x] Upload ticket docs to reMarkable
-- [ ] Commit changes
+- [x] Commit changes
