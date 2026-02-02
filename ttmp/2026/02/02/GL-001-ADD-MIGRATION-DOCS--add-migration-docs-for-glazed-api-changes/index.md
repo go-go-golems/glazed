@@ -1,0 +1,58 @@
+---
+Title: Add migration docs for glazed API changes
+Ticket: GL-001-ADD-MIGRATION-DOCS
+Status: active
+Topics:
+    - glazed
+    - migration
+    - api-design
+    - docs
+DocType: index
+Intent: long-term
+Owners: []
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-02-02T14:56:11.437904291-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Add migration docs for glazed API changes
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- glazed
+- migration
+- api-design
+- docs
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts

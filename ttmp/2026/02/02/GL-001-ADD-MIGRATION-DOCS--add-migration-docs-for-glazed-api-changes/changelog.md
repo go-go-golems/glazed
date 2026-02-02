@@ -1,0 +1,16 @@
+# Changelog
+
+## 2026-02-02
+
+- Initial workspace created
+
+
+## 2026-02-02
+
+Update migration guide and add API diff analysis docs/scripts; compile passes after go.work fix
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-to-facade-packages.md — Migration guide updates
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/reference/01-api-change-analysis-origin-main-head.md — API change analysis reference
+

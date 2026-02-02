@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "base_ref": "origin/main",
+    "base_commit": "3ea1f83d2fe4d30472559cf4f63f36152daa9937",
+    "head_ref": "HEAD",
+    "head_commit": "f1327e8665fdb24b024cbc2460f17831bd09d73d",
+    "generated_at": "2026-02-02T20:01:19.880271Z",
+    "repo": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed"
+  },
+  "counts": {
+    "files": 133,
+    "symbols_added": 13,
+    "symbols_removed": 3
+  },
+  "symbols_added": [
+    {
+      "path": "pkg/cmds/schema/schema.go",
+      "package": "schema",
+      "kind": "type",
+      "receiver": "",
+      "name": "CommandFlagGroupUsage"
+    },
+    {
+      "path": "pkg/cmds/schema/schema.go",
+      "package": "schema",
+      "kind": "func",
+      "receiver": "",
+      "name": "ComputeCommandFlagGroupUsage"
+    },
+    {
+      "path": "pkg/cmds/schema/schema.go",
+      "package": "schema",
+      "kind": "type",
+      "receiver": "",
+      "name": "FlagGroupUsage"
+    },
+    {
+      "path": "pkg/cmds/schema/schema.go",
+      "package": "schema",
+      "kind": "func",
+      "receiver": "",
+      "name": "NewSectionFromYAML"
+    },
+    {
+      "path": "pkg/cmds/sources/sources.go",
+      "package": "sources",
+      "kind": "func",
+      "receiver": "",
+      "name": "FromMapAsDefault"
+    },
+    {
+      "path": "pkg/cmds/sources/sources.go",
+      "package": "sources",
+      "kind": "func",
+      "receiver": "",
+      "name": "FromMapAsDefaultFirst"
+    },
+    {
+      "path": "pkg/cmds/sources/sources.go",
+      "package": "sources",
+      "kind": "func",
+      "receiver": "",
+      "name": "FromMapFirst"
+    },
+    {
+      "path": "pkg/cmds/sources/sources.go",
+      "package": "sources",
+      "kind": "const",
+      "receiver": "",
+      "name": "SourceDefaults"
+    },
+    {
+      "path": "pkg/cmds/values/values.go",
+      "package": "values",
+      "kind": "func",
+      "receiver": "",
+      "name": "NewSectionValues"
+    },
+    {
+      "path": "pkg/cmds/values/values.go",
+      "package": "values",
+      "kind": "type",
+      "receiver": "",
+      "name": "SectionValuesOption"
+    },
+    {
+      "path": "pkg/cmds/values/values.go",
+      "package": "values",
+      "kind": "func",
+      "receiver": "",
+      "name": "WithParameterValue"
+    },
+    {
+      "path": "pkg/cmds/values/values.go",
+      "package": "values",
+      "kind": "func",
+      "receiver": "",
+      "name": "WithParameters"
+    },
+    {
+      "path": "pkg/settings/glazed_layer.go",
+      "package": "settings",
+      "kind": "func",
+      "receiver": "",
+      "name": "NewGlazedSchema"
+    }
+  ],
+  "symbols_removed": [
+    {
+      "path": "pkg/cmds/cmds.go",
+      "package": "cmds",
+      "kind": "type",
+      "receiver": "",
+      "name": "CommandDefinition"
+    },
+    {
+      "path": "pkg/cmds/cmds.go",
+      "package": "cmds",
+      "kind": "type",
+      "receiver": "",
+      "name": "CommandDefinitionOption"
+    },
+    {
+      "path": "pkg/cmds/schema/schema.go",
+      "package": "schema",
+      "kind": "func",
+      "receiver": "",
+      "name": "NewGlazedSchema"
+    }
+  ]
+}
