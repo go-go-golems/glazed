@@ -1,0 +1,135 @@
+name: agent-review
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to review"
+        required: true
+        type: number
+      mode:
+        description: "Review mode (mock|codex)"
+        required: false
+        default: "codex"
+        type: string
+      model:
+        description: "Model for Codex CLI (gpt-5.2-codex, gpt-5.1-codex-mini, etc.)"
+        required: false
+        default: "gpt-5.2-codex"
+        type: string
+      mock_scenario:
+        description: "Mock tool scenario (only for mode=mock)"
+        required: false
+        default: "full"
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # Comment-triggered reviews (uses Codex CLI)
+  review-comment:
+    if: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@agent') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Agent Review (comment trigger)
+        uses: go-go-golems/go-go-agent-action@v1
+        env:
+          # CODEX_API_KEY is preferred per https://developers.openai.com/codex/noninteractive
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_MODEL: gpt-5.2-codex
+          LOG_INPUT: true
+          LOG_OUTPUT: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: "@agent"
+          tool_mode: cmd
+          tool_cmd: ./scripts/openai-review-tool.sh
+          tool_args_json: "[]"
+          prompt_template_path: docs/prompts/agent-review.md.tmpl
+          prompt_template_vars_json: '{"project_name":"glazed","focus":"code quality"}'
+          include_diary: "true"
+          include_patch: true
+          include_file_contents: false
+          output_mode: review+diary+summary
+          max_comments: "20"
+          dry_run: "false"
+          debug_github_api: false
+
+  # Manual dispatch - Mock mode for testing
+  review-dispatch-mock:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'mock' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Agent Review (mock mode)
+        uses: go-go-golems/go-go-agent-action@v1
+        env:
+          MOCK_REVIEW_SCENARIO: ${{ inputs.mock_scenario }}
+          LOG_INPUT: true
+          LOG_OUTPUT: true
+        with:
+          pr_number: ${{ inputs.pr_number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: ""
+          tool_mode: cmd
+          tool_cmd: ./scripts/mock-review-tool.sh
+          tool_args_json: "[]"
+          prompt_template_path: docs/prompts/agent-review.md.tmpl
+          prompt_template_vars_json: '{"project_name":"glazed","focus":"code quality"}'
+          include_diary: "true"
+          include_patch: true
+          include_file_contents: false
+          output_mode: review+diary+summary
+          max_comments: "20"
+          dry_run: "false"
+          debug_github_api: false
+
+  # Manual dispatch - Codex CLI mode for real reviews
+  review-dispatch-codex:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'codex' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Agent Review (Codex CLI)
+        uses: go-go-golems/go-go-agent-action@v1
+        env:
+          # CODEX_API_KEY is preferred per https://developers.openai.com/codex/noninteractive
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_MODEL: ${{ inputs.model }}
+          GO_GO_AGENT_ACTION_LOG_TOOL_STDERR: "1"
+          LOG_INPUT: true
+          LOG_OUTPUT: true
+          USE_API_FALLBACK: "0"
+        with:
+          pr_number: ${{ inputs.pr_number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: ""
+          tool_mode: cmd
+          tool_cmd: ./scripts/openai-review-tool.sh
+          tool_args_json: "[]"
+          prompt_template_path: docs/prompts/agent-review.md.tmpl
+          prompt_template_vars_json: '{"project_name":"glazed","focus":"code quality"}'
+          include_diary: "true"
+          include_patch: true
+          include_file_contents: false
+          output_mode: review+diary+summary
+          max_comments: "20"
+          dry_run: "false"
+          debug_github_api: false
