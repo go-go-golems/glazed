@@ -41,7 +41,7 @@ Add a “strict validation” pass for the default structure (no mapper):
 Required handling:
 - Required parameters are enforced by the parameter system during parsing/merging. Config-only validation does not need to re-enforce required. Optionally, you can add a post-parse assertion that requireds are satisfied across all sources (see helper below).
 
-Effort: small. These are straightforward loops over `layers.ParameterLayers`, `ParameterDefinitions`, and `ParsedLayers`.
+Effort: small. These are straightforward loops over `schema.Schema`, `ParameterDefinitions`, and `ParsedLayers`.
 
 ### Proposed API: Config validation helpers (layer-structured files)
 
@@ -72,7 +72,7 @@ type ConfigValidationPolicy struct {
 // Single-file/raw-object validation for default structure
 // raw is a YAML/JSON-unmarshaled object (map[string]interface{} at top-level)
 func ValidateRawConfigAgainstLayers(
-    layers *layers.ParameterLayers,
+    layers *schema.Schema,
     raw interface{},
     policy ConfigValidationPolicy,
 ) ([]ValidationIssue, error)
@@ -80,7 +80,7 @@ func ValidateRawConfigAgainstLayers(
 // Multi-file convenience helper; aggregates issues and returns error if any
 // issue with mode ValidationError occurred under the provided policy.
 func ValidateConfigFilesAgainstLayers(
-    layers *layers.ParameterLayers,
+    layers *schema.Schema,
     files []string,
     policy ConfigValidationPolicy,
 ) ([]ValidationIssue, error)
@@ -142,7 +142,7 @@ Effort: minimal for per-file validation; moderate for overlay-aware requireds if
 Example (pseudocode):
 
 ```go
-func validateConfigFilesStrict(layers *layers.ParameterLayers, files []string, mapper middlewares.ConfigMapper) error {
+func validateConfigFilesStrict(layers *schema.Schema, files []string, mapper middlewares.ConfigMapper) error {
     for _, f := range files {
         raw, err := readYAMLOrJSON(f)
         if err != nil { return err }
@@ -182,12 +182,12 @@ func validateConfigFilesStrict(layers *layers.ParameterLayers, files []string, m
 Post-parse requireds (overlay-aware, across all sources):
 
 ```go
-func validateRequiredAfterParse(layers_ *layers.ParameterLayers, parsed *layers.ParsedLayers) error {
+func validateRequiredAfterParse(layers_ *schema.Schema, parsed *values.Values) error {
     missing := []string{}
-    _ = layers_.ForEachE(func(_ string, l layers.ParameterLayer) error {
+    _ = layers_.ForEachE(func(_ string, l schema.Section) error {
         parsedL := parsed.GetOrCreate(l)
         pds := l.GetParameterDefinitions()
-        return pds.ForEachE(func(p *parameters.ParameterDefinition) error {
+        return pds.ForEachE(func(p *fields.Definition) error {
             if p.Required {
                 if _, ok := parsedL.Parameters.Get(p.Name); !ok {
                     missing = append(missing, fmt.Sprintf("%s.%s", l.GetSlug(), p.Name))

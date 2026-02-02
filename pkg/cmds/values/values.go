@@ -2,6 +2,8 @@ package values
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 // SectionValues is a type alias for layers.ParsedLayer.
@@ -16,16 +18,38 @@ type Values = layers.ParsedLayers
 // ValuesOption configures a Values collection during construction.
 type ValuesOption = layers.ParsedLayersOption
 
+// SectionValuesOption is a type alias for layers.ParsedLayerOption.
+// SectionValuesOption configures a SectionValues instance during construction.
+type SectionValuesOption = layers.ParsedLayerOption
+
 // New creates a new collection of resolved values.
 // It wraps layers.NewParsedLayers.
 func New(options ...ValuesOption) *Values {
 	return layers.NewParsedLayers(options...)
 }
 
+// NewSectionValues creates a new SectionValues for the provided schema section.
+// It wraps layers.NewParsedLayer.
+func NewSectionValues(section schema.Section, options ...SectionValuesOption) (*SectionValues, error) {
+	return layers.NewParsedLayer(section, options...)
+}
+
 // WithSectionValues returns a ValuesOption that adds a section's values to a Values collection.
 // It wraps layers.WithParsedLayer.
 func WithSectionValues(slug string, v *SectionValues) ValuesOption {
 	return layers.WithParsedLayer(slug, v)
+}
+
+// WithParameters attaches parsed parameters to a SectionValues builder option.
+// It wraps layers.WithParsedParameters.
+func WithParameters(params *parameters.ParsedParameters) SectionValuesOption {
+	return layers.WithParsedParameters(params)
+}
+
+// WithParameterValue attaches a single parameter value to a SectionValues builder option.
+// It wraps layers.WithParsedParameterValue.
+func WithParameterValue(name string, value interface{}) SectionValuesOption {
+	return layers.WithParsedParameterValue(name, value)
 }
 
 // DecodeInto decodes resolved values from a single section into the destination struct.

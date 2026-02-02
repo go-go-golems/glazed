@@ -182,7 +182,7 @@ middleware := LoadParametersFromFile(
     "config.yaml",
     WithConfigMapper(mapper),
     WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```

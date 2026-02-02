@@ -52,24 +52,24 @@ Your command’s parameters (both flags and positional arguments) are grouped in
 
 ### 3.1 Defining Parameter Definitions
 
-Parameters themselves are described by `parameters.ParameterDefinition` from the `glazed/pkg/cmds/parameters` package. For example:
+Parameters themselves are described by `fields.Definition` from the `glazed/pkg/cmds/parameters` package. For example:
 
 ```go
-paramHost := parameters.NewParameterDefinition(
+paramHost := fields.New(
     "host",
-    parameters.ParameterTypeString,
-    parameters.WithHelp("The host to connect to"),
-    parameters.WithDefault("localhost"),
-    // parameters.WithRequired(true), etc.
+    fields.TypeString,
+    fields.WithHelp("The host to connect to"),
+    fields.WithDefault("localhost"),
+    // fields.WithRequired(true), etc.
 )
 ```
 
 **Common parameter definition functions**:
 
-- `parameters.NewParameterDefinition(name string, paramType ParameterType, opts ...ParameterDefinitionOption)`
-- `parameters.WithHelp("...")`
-- `parameters.WithDefault(...)`
-- `parameters.WithRequired(true|false)`
+- `fields.New(name string, paramType ParameterType, opts ...ParameterDefinitionOption)`
+- `fields.WithHelp("...")`
+- `fields.WithDefault(...)`
+- `fields.WithRequired(true|false)`
 - etc.
 
 ### 3.2 Adding Flags
@@ -80,16 +80,16 @@ Flags are typically optional or named parameters. You call `WithFlags(...)` with
 cd := cmds.NewCommandDescription("my-command",
     cmds.WithShort("Do something"),
     cmds.WithFlags(
-        parameters.NewParameterDefinition(
+        fields.New(
             "host",
-            parameters.ParameterTypeString,
-            parameters.WithHelp("The host to connect to"),
-            parameters.WithDefault("localhost"),
+            fields.TypeString,
+            fields.WithHelp("The host to connect to"),
+            fields.WithDefault("localhost"),
         ),
-        parameters.NewParameterDefinition(
+        fields.New(
             "verbose",
-            parameters.ParameterTypeBool,
-            parameters.WithHelp("Enable verbose output"),
+            fields.TypeBool,
+            fields.WithHelp("Enable verbose output"),
             // no default => false by default
         ),
     ),
@@ -104,11 +104,11 @@ Positional arguments (like `my-command [ARGS ...]`) are also stored as parameter
 cd := cmds.NewCommandDescription("my-command",
     cmds.WithShort("Process some files"),
     cmds.WithArguments(
-        parameters.NewParameterDefinition(
+        fields.New(
             "files",
-            parameters.ParameterTypeStringList,  // e.g. a list of filenames
-            parameters.WithHelp("The files to process"),
-            parameters.WithRequired(true),
+            fields.TypeStringList,  // e.g. a list of filenames
+            fields.WithHelp("The files to process"),
+            fields.WithRequired(true),
         ),
     ),
 )
@@ -137,7 +137,7 @@ You can pass various function options into `NewCommandDescription(...)`. The mai
 5. **`WithArguments(arguments ...*ParameterDefinition)`**  
    Adds parameter definitions as **positional arguments** to the default layer.
 
-6. **`WithLayers(ls *layers.ParameterLayers)`** or **`WithLayersList(ls ...ParameterLayer)`**  
+6. **`WithLayers(ls *schema.Schema)`** or **`WithLayersList(ls ...ParameterLayer)`**  
    Used if you already have a custom `ParameterLayers` object or multiple parameter layers. Typically more advanced usage.
 
 7. **`WithReplaceLayers(layers_ ...ParameterLayer)`**  
@@ -192,27 +192,27 @@ func makeMyCommand() *cmds.CommandDescription {
         
         // Add some flags
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "host",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Hostname to connect"),
-                parameters.WithDefault("localhost"),
+                fields.TypeString,
+                fields.WithHelp("Hostname to connect"),
+                fields.WithDefault("localhost"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "port",
-                parameters.ParameterTypeInt,
-                parameters.WithHelp("Port to use"),
-                parameters.WithDefault(8080),
+                fields.TypeInt,
+                fields.WithHelp("Port to use"),
+                fields.WithDefault(8080),
             ),
         ),
 
         // Add some arguments
         cmds.WithArguments(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "paths",
-                parameters.ParameterTypeStringList,
-                parameters.WithHelp("Paths to process"),
-                parameters.WithRequired(true),
+                fields.TypeStringList,
+                fields.WithHelp("Paths to process"),
+                fields.WithRequired(true),
             ),
         ),
 

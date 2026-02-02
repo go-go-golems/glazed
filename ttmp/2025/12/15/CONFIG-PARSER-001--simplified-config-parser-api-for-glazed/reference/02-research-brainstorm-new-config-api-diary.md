@@ -190,7 +190,7 @@ This step is the “health inspector tour”: identify the pieces that already e
 
 Key symbols found:
 
-- `ParseCommandParameters(cmd cmds.Command, options ...ParseOption) (*layers.ParsedLayers, error)`
+- `ParseCommandParameters(cmd cmds.Command, options ...ParseOption) (*values.Values, error)`
 - `WithEnvMiddleware(prefix string)`
 - `WithConfigFiles(files ...string)`
 - `WithValuesForLayers(values map[string]map[string]interface{})`
@@ -258,7 +258,7 @@ Read:
 Key symbols:
 
 - `type MappingRule struct { Source, TargetLayer, TargetParameter string; Rules []MappingRule; Required bool }`
-- `NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (middlewares.ConfigMapper, error)`
+- `NewConfigMapper(layers *schema.Schema, rules ...MappingRule) (middlewares.ConfigMapper, error)`
 - `ConfigMapperBuilder` fluent builder
 - `LoadMapperFromFile(layers, filename)` and mapping file schema (snake_case keys)
 

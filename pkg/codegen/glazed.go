@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	"github.com/dave/jennifer/jen"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 const GlazedCommandsPath = "github.com/go-go-golems/glazed/pkg/cmds"
@@ -13,7 +13,7 @@ const GlazedParametersPath = "github.com/go-go-golems/glazed/pkg/cmds/parameters
 const ClaySqlPath = "github.com/go-go-golems/clay/pkg/sql"
 const MapsHelpersPath = "github.com/go-go-golems/glazed/pkg/helpers/maps"
 
-func ParameterDefinitionToDict(p *parameters.ParameterDefinition) (jen.Code, error) {
+func ParameterDefinitionToDict(p *fields.Definition) (jen.Code, error) {
 	ret := jen.Dict{
 		jen.Id("Name"): jen.Lit(p.Name),
 		jen.Id("Type"): jen.Lit(string(p.Type)),
@@ -39,7 +39,7 @@ func ParameterDefinitionToDict(p *parameters.ParameterDefinition) (jen.Code, err
 	return ret, nil
 }
 
-func FlagValueToJen(p *parameters.ParameterDefinition) (jen.Code, error) {
+func FlagValueToJen(p *fields.Definition) (jen.Code, error) {
 	d, err := p.CheckParameterDefaultValueValidity()
 	if err != nil {
 		return nil, err
@@ -48,40 +48,40 @@ func FlagValueToJen(p *parameters.ParameterDefinition) (jen.Code, error) {
 	return LiteralToJen(reflect.ValueOf(d))
 }
 
-func FlagTypeToGoType(s *jen.Statement, parameterType parameters.ParameterType) *jen.Statement {
+func FlagTypeToGoType(s *jen.Statement, parameterType fields.Type) *jen.Statement {
 	switch parameterType {
-	case parameters.ParameterTypeFloat:
+	case fields.TypeFloat:
 		return s.Id("float64")
-	case parameters.ParameterTypeFloatList:
+	case fields.TypeFloatList:
 		return s.Index().Id("float64")
-	case parameters.ParameterTypeInteger:
+	case fields.TypeInteger:
 		return s.Id("int")
-	case parameters.ParameterTypeIntegerList:
+	case fields.TypeIntegerList:
 		return s.Index().Id("int")
-	case parameters.ParameterTypeBool:
+	case fields.TypeBool:
 		return s.Id("bool")
-	case parameters.ParameterTypeDate:
+	case fields.TypeDate:
 		return s.Qual("time", "Time")
-	case parameters.ParameterTypeStringFromFile,
-		parameters.ParameterTypeStringFromFiles,
-		parameters.ParameterTypeChoice,
-		parameters.ParameterTypeString,
-		parameters.ParameterTypeSecret:
+	case fields.TypeStringFromFile,
+		fields.TypeStringFromFiles,
+		fields.TypeChoice,
+		fields.TypeString,
+		fields.TypeSecret:
 		return s.Id("string")
-	case parameters.ParameterTypeStringList,
-		parameters.ParameterTypeStringListFromFile,
-		parameters.ParameterTypeStringListFromFiles,
-		parameters.ParameterTypeChoiceList:
+	case fields.TypeStringList,
+		fields.TypeStringListFromFile,
+		fields.TypeStringListFromFiles,
+		fields.TypeChoiceList:
 		return s.Index().Id("string")
-	case parameters.ParameterTypeFile:
+	case fields.TypeFile:
 		return s.Qual(GlazedParametersPath, "FileData")
-	case parameters.ParameterTypeFileList:
+	case fields.TypeFileList:
 		return s.Index().Qual(GlazedParametersPath, "FileData")
-	case parameters.ParameterTypeObjectFromFile:
+	case fields.TypeObjectFromFile:
 		return s.Map(jen.Id("string")).Id("interface{}")
-	case parameters.ParameterTypeObjectListFromFile, parameters.ParameterTypeObjectListFromFiles:
+	case fields.TypeObjectListFromFile, fields.TypeObjectListFromFiles:
 		return s.Index().Map(jen.Id("string")).Id("interface{}")
-	case parameters.ParameterTypeKeyValue:
+	case fields.TypeKeyValue:
 		return s.Map(jen.Id("string")).Id("string")
 	default:
 		return s.Id(string(parameterType))

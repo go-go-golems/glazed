@@ -7,7 +7,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/html"
 )
@@ -52,7 +52,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}

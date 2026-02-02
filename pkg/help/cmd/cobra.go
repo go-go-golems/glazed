@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Masterminds/sprig"
-	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 )
 

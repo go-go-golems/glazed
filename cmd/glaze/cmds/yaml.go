@@ -13,6 +13,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ type YamlCommand struct {
 var _ cmds.GlazeCommand = (*YamlCommand)(nil)
 
 func NewYamlCommand() (*YamlCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}

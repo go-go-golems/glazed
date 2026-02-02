@@ -5,6 +5,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
@@ -25,15 +28,15 @@ type FieldsFilterFlagsDefaults struct {
 }
 
 type FieldsFiltersParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
 var _ layers.CobraParameterLayer = &FieldsFiltersParameterLayer{}
-var _ layers.ParameterLayer = &FieldsFiltersParameterLayer{}
+var _ schema.Section = &FieldsFiltersParameterLayer{}
 
-func (f *FieldsFiltersParameterLayer) Clone() layers.ParameterLayer {
+func (f *FieldsFiltersParameterLayer) Clone() schema.Section {
 	return &FieldsFiltersParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
@@ -48,13 +51,13 @@ type FieldsFilterSettings struct {
 	ReorderColumns   []string `glazed.parameter:"reorder-columns"`
 }
 
-func NewFieldsFiltersParameterLayer(options ...layers.ParameterLayerOptions) (*FieldsFiltersParameterLayer, error) {
+func NewFieldsFiltersParameterLayer(options ...schema.SectionOption) (*FieldsFiltersParameterLayer, error) {
 	ret := &FieldsFiltersParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(fieldsFiltersFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(fieldsFiltersFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create fields and filters parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
@@ -76,14 +79,14 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.ParameterLayerImpl.AddLayerToCobraCommand(cmd)
+	return f.SectionImpl.AddLayerToCobraCommand(cmd)
 }
 
 func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	cmd *cobra.Command,
 	options ...parameters.ParseStepOption,
-) (*layers.ParsedLayer, error) {
-	l, err := f.ParameterLayerImpl.ParseLayerFromCobraCommand(cmd, options...)
+) (*values.SectionValues, error) {
+	l, err := f.SectionImpl.ParseLayerFromCobraCommand(cmd, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
@@ -93,7 +96,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	// This means we'd have to store if a flag was changed in the parsed layer
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Parameters.Get("filter")
-		options_ := append(options, parameters.WithParseStepSource("override-fields-filter"))
+		options_ := append(options, sources.WithSource("override-fields-filter"))
 		if !ok {
 			pd, ok := f.ParameterDefinitions.Get("filter")
 			if !ok {
@@ -118,7 +121,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	return l, nil
 }
 
-func NewFieldsFilterSettings(glazedLayer *layers.ParsedLayer) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(glazedLayer *values.SectionValues) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {

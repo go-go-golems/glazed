@@ -39,26 +39,26 @@ These packages are implemented using **type aliases** plus small wrapper functio
 
 ### Schema and fields
 
-- `pkg/cmds/layers.ParameterLayer` → `pkg/cmds/schema.Section`
-- `pkg/cmds/layers.ParameterLayers` → `pkg/cmds/schema.Schema`
-- `pkg/cmds/parameters.ParameterDefinition` → `pkg/cmds/fields.Definition`
-- `pkg/cmds/parameters.ParameterType*` → `pkg/cmds/fields.Type*`
+- `pkg/cmds/schema.Section` → `pkg/cmds/schema.Section`
+- `pkg/cmds/schema.Schema` → `pkg/cmds/schema.Schema`
+- `pkg/cmds/fields.Definition` → `pkg/cmds/fields.Definition`
+- `pkg/cmds/fields.Type*` → `pkg/cmds/fields.Type*`
 
 ### Resolved values
 
-- `pkg/cmds/layers.ParsedLayers` → `pkg/cmds/values.Values`
-- `pkg/cmds/layers.ParsedLayer` → `pkg/cmds/values.SectionValues`
+- `pkg/cmds/values.Values` → `pkg/cmds/values.Values`
+- `pkg/cmds/values.SectionValues` → `pkg/cmds/values.SectionValues`
 - `parsed.InitializeStruct(slug, &dst)` → `values.DecodeSectionInto(vals, slug, &dst)`
 
 ### Sources / middleware chain
 
-- `middlewares.ParseFromCobraCommand` → `sources.FromCobra`
-- `middlewares.GatherArguments` → `sources.FromArgs`
-- `middlewares.UpdateFromEnv` → `sources.FromEnv`
-- `middlewares.SetFromDefaults` → `sources.FromDefaults`
-- `middlewares.LoadParametersFromFile(s)` → `sources.FromFile` / `sources.FromFiles`
-- `middlewares.UpdateFromMap` → `sources.FromMap`
-- `middlewares.ExecuteMiddlewares` → `sources.Execute`
+- `sources.FromCobra` → `sources.FromCobra`
+- `sources.FromArgs` → `sources.FromArgs`
+- `sources.FromEnv` → `sources.FromEnv`
+- `sources.FromDefaults` → `sources.FromDefaults`
+- `sources.FromFile(s)` → `sources.FromFile` / `sources.FromFiles`
+- `sources.FromMap` → `sources.FromMap`
+- `sources.Execute` → `sources.Execute`
 
 ## Important: aliases and interface signatures
 
@@ -70,7 +70,7 @@ func (c *MyCmd) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, 
 }
 ```
 
-…and it still satisfies interfaces that mention `*layers.ParsedLayers`, because `values.Values` is an alias for `layers.ParsedLayers`.
+…and it still satisfies interfaces that mention `*values.Values`, because `values.Values` is an alias for `values.Values`.
 
 ## Step-by-step migration recipe
 
@@ -96,7 +96,7 @@ You can keep old imports for advanced/legacy types (for example `parameters.File
 Before:
 
 ```go
-parameters.NewParameterDefinition("limit", parameters.ParameterTypeInteger, parameters.WithDefault(10))
+fields.New("limit", fields.TypeInteger, fields.WithDefault(10))
 ```
 
 After:
@@ -112,10 +112,10 @@ If you currently build explicit layers:
 Before:
 
 ```go
-demoLayer, _ := layers.NewParameterLayer("demo", "Demo",
+demoLayer, _ := schema.NewSection("demo", "Demo",
     layers.WithPrefix("demo-"),
-    layers.WithParameterDefinitions(
-        parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+    schema.WithFields(
+        fields.New("api-key", fields.TypeString),
     ),
 )
 ```
@@ -137,7 +137,7 @@ Before:
 
 ```go
 settings := &MySettings{}
-_ = parsedLayers.InitializeStruct(layers.DefaultSlug, settings)
+_ = parsedLayers.InitializeStruct(schema.DefaultSlug, settings)
 ```
 
 After:
@@ -166,7 +166,7 @@ err := sources.Execute(schema_, vals,
 ## Glazed “output flags” layer: what to do now
 
 - If your command implements `cmds.GlazeCommand`, `cli.BuildCobraCommand(...)` will ensure the glazed output layer exists, so you usually don’t need to add it manually.
-- If you do want to add it explicitly (e.g. when building a schema yourself), prefer `schema.NewGlazedSchema()` (wrapper around `settings.NewGlazedParameterLayers()`).
+- If you do want to add it explicitly (e.g. when building a schema yourself), prefer `settings.NewGlazedSchema()` (wrapper around `settings.NewGlazedParameterLayers()`).
 
 ## When you still need the old packages
 

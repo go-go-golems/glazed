@@ -4,8 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -17,7 +18,7 @@ func GatherFlagsFromProfiles(
 	defaultProfileName string,
 	options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -104,7 +105,7 @@ func GatherFlagsFromProfiles(
 //	)
 func GatherFlagsFromCustomProfiles(profileName string, options ...ProfileOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err

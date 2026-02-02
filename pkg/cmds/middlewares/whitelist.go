@@ -2,6 +2,8 @@ package middlewares
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 // WhitelistLayersHandler only leaves the specified layers from the given ParameterLayers.
@@ -12,9 +14,9 @@ func WhitelistLayersHandler(slugs []string) HandlerFunc {
 	for _, s := range slugs {
 		slugsToKeep[s] = nil
 	}
-	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 		toDelete := []string{}
-		layers_.ForEach(func(key string, l layers.ParameterLayer) {
+		layers_.ForEach(func(key string, l schema.Section) {
 			if _, ok := slugsToKeep[key]; !ok {
 				toDelete = append(toDelete, key)
 			}
@@ -27,10 +29,10 @@ func WhitelistLayersHandler(slugs []string) HandlerFunc {
 }
 
 func WhitelistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
-	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 		layersToDelete := []string{}
-		layersToUpdate := map[string]layers.ParameterLayer{}
-		layers_.ForEach(func(key string, l layers.ParameterLayer) {
+		layersToUpdate := map[string]schema.Section{}
+		layers_.ForEach(func(key string, l schema.Section) {
 			if _, ok := parameters_[key]; !ok {
 				layersToDelete = append(layersToDelete, key)
 				return
@@ -54,7 +56,7 @@ func WhitelistLayerParametersHandler(parameters_ map[string][]string) HandlerFun
 
 func WhitelistLayers(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -67,7 +69,7 @@ func WhitelistLayers(slugs []string) Middleware {
 
 func WhitelistLayersFirst(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := WhitelistLayersHandler(slugs)(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -80,7 +82,7 @@ func WhitelistLayersFirst(slugs []string) Middleware {
 
 func WhitelistLayerParameters(parameters_ map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -93,7 +95,7 @@ func WhitelistLayerParameters(parameters_ map[string][]string) Middleware {
 
 func WhitelistLayerParametersFirst(parameters_ map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := WhitelistLayerParametersHandler(parameters_)(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -112,9 +114,9 @@ func BlacklistLayersHandler(slugs []string) HandlerFunc {
 	for _, s := range slugs {
 		slugsToDelete[s] = nil
 	}
-	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 		toDelete := []string{}
-		layers_.ForEach(func(key string, l layers.ParameterLayer) {
+		layers_.ForEach(func(key string, l schema.Section) {
 			if _, ok := slugsToDelete[key]; ok {
 				toDelete = append(toDelete, key)
 			}
@@ -127,10 +129,10 @@ func BlacklistLayersHandler(slugs []string) HandlerFunc {
 }
 
 func BlacklistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
-	return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 		layersToDelete := []string{}
-		layersToUpdate := map[string]layers.ParameterLayer{}
-		layers_.ForEach(func(key string, l layers.ParameterLayer) {
+		layersToUpdate := map[string]schema.Section{}
+		layers_.ForEach(func(key string, l schema.Section) {
 			if _, ok := parameters_[key]; !ok {
 				return
 			}
@@ -154,7 +156,7 @@ func BlacklistLayerParametersHandler(parameters_ map[string][]string) HandlerFun
 // BlacklistLayers is a middleware that removes the given layers from ParameterLayers after running `next`.
 func BlacklistLayers(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -168,7 +170,7 @@ func BlacklistLayers(slugs []string) Middleware {
 // BlacklistLayersFirst is a middleware that removes the given layers from ParameterLayers before running `next`.
 func BlacklistLayersFirst(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -182,7 +184,7 @@ func BlacklistLayersFirst(slugs []string) Middleware {
 // BlacklistLayerParameters is a middleware that removes the given parameters from ParameterLayers after running `next`.
 func BlacklistLayerParameters(parameters_ map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -196,7 +198,7 @@ func BlacklistLayerParameters(parameters_ map[string][]string) Middleware {
 // BlacklistLayerParametersFirst is a middleware that removes the given parameters from ParameterLayers before running `next`.
 func BlacklistLayerParametersFirst(parameters_ map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := BlacklistLayerParametersHandler(parameters_)(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -217,7 +219,7 @@ func BlacklistLayerParametersFirst(parameters_ map[string][]string) Middleware {
 // to continue as normal.
 func WrapWithLayerModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err

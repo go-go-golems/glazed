@@ -11,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -34,12 +35,12 @@ type DefaultSettings struct {
 }
 
 type RefactorDemoCommand struct {
-	*cmds.CommandDefinition
+	*cmds.CommandDescription
 }
 
 func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	// Create glazed schema section for output formatting
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ Example usage:
 		cmds.WithSchema(schema),
 	)
 
-	return &RefactorDemoCommand{CommandDefinition: desc}, nil
+	return &RefactorDemoCommand{CommandDescription: desc}, nil
 }
 
 // Ensure interface compliance

@@ -2,18 +2,21 @@ package cliopatra
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 func getCliopatraParameters(
-	definitions *parameters.ParameterDefinitions,
+	definitions *fields.Definitions,
 	ps *parameters.ParsedParameters,
 	prefix string,
 ) []*Parameter {
 	ret := []*Parameter{}
 
-	definitions.ForEach(func(p *parameters.ParameterDefinition) {
+	definitions.ForEach(func(p *fields.Definition) {
 		name := prefix + p.Name
 		shortFlag := p.ShortFlag
 		flag := name
@@ -35,7 +38,7 @@ func getCliopatraParameters(
 			Value: v.Value,
 			Log:   v.Log,
 		}
-		if p.Type == parameters.ParameterTypeBool {
+		if p.Type == fields.TypeBool {
 			param.NoValue = true
 		}
 
@@ -47,7 +50,7 @@ func getCliopatraParameters(
 
 		isFromDefault := true
 		for _, l := range v.Log {
-			if l.Source != parameters.SourceDefaults {
+			if l.Source != sources.SourceDefaults {
 				isFromDefault = false
 				break
 			}
@@ -72,7 +75,7 @@ func getCliopatraParameters(
 // option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
-	parsedLayers *layers.ParsedLayers,
+	parsedLayers *values.Values,
 	opts ...ProgramOption,
 ) *Program {
 	ret := &Program{
@@ -80,7 +83,7 @@ func NewProgramFromCapture(
 		Description: description.Short,
 	}
 
-	description.Layers.ForEach(func(_ string, layer layers.ParameterLayer) {
+	description.Layers.ForEach(func(_ string, layer schema.Section) {
 		if layer.GetSlug() == "glazed-command" {
 			// skip the meta glazed command flags, which also contain the create-cliopatra flag
 			return

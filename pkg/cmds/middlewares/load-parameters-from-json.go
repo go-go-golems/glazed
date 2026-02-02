@@ -2,12 +2,14 @@ package middlewares
 
 import (
 	"encoding/json"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 // ConfigFileMapper is a function that transforms an arbitrary config file structure
@@ -28,7 +30,7 @@ type ConfigFileMapper func(rawConfig interface{}) (map[string]map[string]interfa
 // To use a custom config file structure, provide a ConfigFileMapper via WithConfigFileMapper.
 func LoadParametersFromFile(filename string, options ...ConfigFileOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -53,7 +55,7 @@ func LoadParametersFromFile(filename string, options ...ConfigFileOption) Middle
 // To use a custom config file structure, provide a ConfigFileMapper via WithConfigFileMapper.
 func LoadParametersFromFiles(files []string, options ...ConfigFileOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			if err := next(layers_, parsedLayers); err != nil {
 				return err
 			}

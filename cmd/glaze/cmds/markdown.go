@@ -10,8 +10,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -425,7 +425,7 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		panic(err)
 	}

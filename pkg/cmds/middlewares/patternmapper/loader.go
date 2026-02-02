@@ -4,8 +4,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -95,7 +95,7 @@ func LoadRulesFromFile(filename string) ([]MappingRule, error) {
 }
 
 // LoadMapperFromFile loads a ConfigMapper from a YAML/JSON mapping file using the provided layers.
-func LoadMapperFromFile(layers_ *layers.ParameterLayers, filename string) (middlewares.ConfigMapper, error) {
+func LoadMapperFromFile(layers_ *schema.Schema, filename string) (middlewares.ConfigMapper, error) {
 	rules, err := LoadRulesFromFile(filename)
 	if err != nil {
 		return nil, err

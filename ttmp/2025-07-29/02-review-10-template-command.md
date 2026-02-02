@@ -44,13 +44,13 @@ The example should be simplified to focus *only* on the loading mechanism and a 
 
 func runTemplateCommand(cmd *cmds.TemplateCommand, values map[string]interface{}) {
 	// Get default parameter layer
-	defaultLayer, ok := cmd.Description().Layers.Get(layers.DefaultSlug)
+	defaultLayer, ok := cmd.Description().Layers.Get(schema.DefaultSlug)
 	if !ok {
 		panic("default layer not found")
 	}
 	
 	// Create parsed layer with parameter values
-	var options []layers.ParsedLayerOption
+	var options []values.SectionValuesOption
 	for k, v := range values {
 		// ... (manual creation of ParsedLayerOption) ...
 	}

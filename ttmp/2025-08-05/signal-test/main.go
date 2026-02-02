@@ -11,8 +11,9 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -36,11 +37,11 @@ type SignalTestSettings struct {
 
 func (c *SignalTestCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedLayers *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &SignalTestSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := values.DecodeSectionInto(parsedLayers, schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 
@@ -201,40 +202,40 @@ Examples:
   signal-test --test-type tcp-connect --host 127.0.0.1 --port 5432 --create-notify-context
 		`),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"test-type",
-				parameters.ParameterTypeChoice,
-				parameters.WithChoices("sleep", "tcp-connect", "tcp-dial-context", "raw-socket"),
-				parameters.WithDefault("sleep"),
-				parameters.WithHelp("Type of cancellation test to run"),
-				parameters.WithShortFlag("t"),
+				fields.TypeChoice,
+				fields.WithChoices("sleep", "tcp-connect", "tcp-dial-context", "raw-socket"),
+				fields.WithDefault("sleep"),
+				fields.WithHelp("Type of cancellation test to run"),
+				fields.WithShortFlag("t"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"duration",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(10),
-				parameters.WithHelp("Test duration in seconds"),
-				parameters.WithShortFlag("d"),
+				fields.TypeInteger,
+				fields.WithDefault(10),
+				fields.WithHelp("Test duration in seconds"),
+				fields.WithShortFlag("d"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"create-notify-context",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Create signal.NotifyContext to test interference"),
-				parameters.WithShortFlag("n"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Create signal.NotifyContext to test interference"),
+				fields.WithShortFlag("n"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"host",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("127.0.0.1"),
-				parameters.WithHelp("Host for network tests"),
+				fields.TypeString,
+				fields.WithDefault("127.0.0.1"),
+				fields.WithHelp("Host for network tests"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"port",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(5432),
-				parameters.WithHelp("Port for network tests"),
-				parameters.WithShortFlag("p"),
+				fields.TypeInteger,
+				fields.WithDefault(5432),
+				fields.WithHelp("Port for network tests"),
+				fields.WithShortFlag("p"),
 			),
 		),
 		cmds.WithLayersList(glazedLayer, commandSettingsLayer),
@@ -265,7 +266,7 @@ func main() {
 	// Convert to Cobra command
 	cobraSignalTestCmd, err := cli.BuildCobraCommand(signalTestCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
+			ShortHelpLayers: []string{schema.DefaultSlug},
 			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
 		}),
 	)

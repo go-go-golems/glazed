@@ -220,12 +220,12 @@ The system distinguishes between parameter specifications (what's possible) and 
 **Parameter Definitions** (specifications stored in layers):
 ```go
 // This defines what's POSSIBLE
-parameters.NewParameterDefinition(
+fields.New(
     "log-level",                    // Parameter name
-    parameters.ParameterTypeChoice, // Data type constraint
-    parameters.WithDefault("info"), // Default value
-    parameters.WithChoices("debug", "info", "warn", "error"), // Valid options
-    parameters.WithHelp("Set the logging level"), // User guidance
+    fields.TypeChoice, // Data type constraint
+    fields.WithDefault("info"), // Default value
+    fields.WithChoices("debug", "info", "warn", "error"), // Valid options
+    fields.WithHelp("Set the logging level"), // User guidance
 )
 ```
 
@@ -268,7 +268,7 @@ Dynamic layer assembly based on runtime conditions:
 
 ```go
 // Build layer list based on features
-layers := []layers.ParameterLayer{baseLayer}
+layers := []schema.Section{baseLayer}
 
 if needsDatabase {
     layers = append(layers, databaseLayer)
@@ -290,8 +290,8 @@ Building specialized variants from existing layers:
 // Extend existing layer without modification
 extendedDbLayer := databaseLayer.Clone()
 extendedDbLayer.AddFlags(
-    parameters.NewParameterDefinition("pool-size", parameters.ParameterTypeInteger),
-    parameters.NewParameterDefinition("connection-timeout", parameters.ParameterTypeString),
+    fields.New("pool-size", fields.TypeInteger),
+    fields.New("connection-timeout", fields.TypeString),
 )
 ```
 
@@ -306,7 +306,7 @@ Glazed provides standard layer types for common CLI application requirements.
 The Default Layer contains command-specific parameters unique to individual commands.
 
 - **Purpose**: Command-specific flags and arguments defining core functionality
-- **Slug**: `"default"` (constant: `layers.DefaultSlug`) 
+- **Slug**: `"default"` (constant: `schema.DefaultSlug`) 
 - **Creation**: Automatically created with `cmds.WithFlags()` or `cmds.WithArguments()`
 - **Use Case**: Parameters fundamental to command operation, unlikely to be shared
 
@@ -314,11 +314,11 @@ The Default Layer contains command-specific parameters unique to individual comm
 // Default layer created automatically
 commandDesc := cmds.NewCommandDescription("serve",
     cmds.WithFlags(
-        parameters.NewParameterDefinition("port", parameters.ParameterTypeInteger),
-        parameters.NewParameterDefinition("host", parameters.ParameterTypeString),
+        fields.New("port", fields.TypeInteger),
+        fields.New("host", fields.TypeString),
     ),
     cmds.WithArguments(
-        parameters.NewParameterDefinition("config-file", parameters.ParameterTypeString),
+        fields.New("config-file", fields.TypeString),
     ),
 )
 // Parameters live in default layer, unique to "serve" command
@@ -351,13 +351,13 @@ Application-specific layers address domain requirements through custom parameter
 Individual parameter specifications define acceptable input and behavior:
 
 ```go
-paramDef := parameters.NewParameterDefinition(
+paramDef := fields.New(
     "connection-timeout",              // Parameter name
-    parameters.ParameterTypeString,    // Type constraint (use string for duration parsing)
-    parameters.WithDefault("30s"),     // Default value
-    parameters.WithHelp("Connection timeout for database operations"), // User guidance
-    parameters.WithRequired(false),    // Whether required
-    parameters.WithShortFlag("t"),     // Short flag convenience
+    fields.TypeString,    // Type constraint (use string for duration parsing)
+    fields.WithDefault("30s"),     // Default value
+    fields.WithHelp("Connection timeout for database operations"), // User guidance
+    fields.WithRequired(false),    // Whether required
+    fields.WithShortFlag("t"),     // Short flag convenience
 )
 ```
 
@@ -374,19 +374,19 @@ Parameter definitions include built-in validation for common patterns:
 
 ```go
 // Choice parameters with automatic validation
-parameters.NewParameterDefinition(
+fields.New(
     "log-level",
-    parameters.ParameterTypeChoice,
-    parameters.WithChoices("debug", "info", "warn", "error", "fatal"),
-    parameters.WithDefault("info"),
+    fields.TypeChoice,
+    fields.WithChoices("debug", "info", "warn", "error", "fatal"),
+    fields.WithDefault("info"),
 )
 // Automatically rejects invalid choices and shows valid options
 
 // Numeric parameters with defaults
-parameters.NewParameterDefinition(
+fields.New(
     "retry-count",
-    parameters.ParameterTypeInteger,
-    parameters.WithDefault(3),
+    fields.TypeInteger,
+    fields.WithDefault(3),
 )
 ```
 
@@ -399,28 +399,28 @@ This validation approach catches user errors early and provides helpful feedback
 Direct layer creation for straightforward parameter grouping:
 
 ```go
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewDatabaseLayer() (schema.Section, error) {
+    return schema.NewSection(
         "database",                    // Layer identifier
         "Database Configuration",      // Human-readable name
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "db-host",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("localhost"),
-                parameters.WithHelp("Database host to connect to"),
+                fields.TypeString,
+                fields.WithDefault("localhost"),
+                fields.WithHelp("Database host to connect to"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-port",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(5432),
-                parameters.WithHelp("Database port (PostgreSQL default: 5432)"),
+                fields.TypeInteger,
+                fields.WithDefault(5432),
+                fields.WithHelp("Database port (PostgreSQL default: 5432)"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-name",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Database name (required for connection)"),
-                parameters.WithRequired(true),
+                fields.TypeString,
+                fields.WithHelp("Database name (required for connection)"),
+                fields.WithRequired(true),
             ),
         ),
     )
@@ -443,52 +443,52 @@ type DatabaseSettings struct {
 }
 
 // 2. Create layer with parameter definitions
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewDatabaseLayer() (schema.Section, error) {
+    return schema.NewSection(
         "database",
         "Database Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "db-host",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("localhost"),
-                parameters.WithHelp("Database host"),
+                fields.TypeString,
+                fields.WithDefault("localhost"),
+                fields.WithHelp("Database host"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-port", 
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(5432),
-                parameters.WithHelp("Database port"),
+                fields.TypeInteger,
+                fields.WithDefault(5432),
+                fields.WithHelp("Database port"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-name",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Database name"),
-                parameters.WithRequired(true),
+                fields.TypeString,
+                fields.WithHelp("Database name"),
+                fields.WithRequired(true),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-username",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Database username"),
+                fields.TypeString,
+                fields.WithHelp("Database username"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-password",
-                parameters.ParameterTypeSecret,  // Masked in output
-                parameters.WithHelp("Database password"),
+                fields.TypeSecret,  // Masked in output
+                fields.WithHelp("Database password"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-ssl-mode",
-                parameters.ParameterTypeChoice,
-                parameters.WithChoices("disable", "require", "verify-ca", "verify-full"),
-                parameters.WithDefault("require"),
-                parameters.WithHelp("SSL mode for database connection"),
+                fields.TypeChoice,
+                fields.WithChoices("disable", "require", "verify-ca", "verify-full"),
+                fields.WithDefault("require"),
+                fields.WithHelp("SSL mode for database connection"),
             ),
         ),
     )
 }
 
 // 3. Helper function for settings extraction
-func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+func GetDatabaseSettings(parsedLayers *values.Values) (*DatabaseSettings, error) {
     settings := &DatabaseSettings{}
     err := parsedLayers.InitializeStruct("database", settings)
     return settings, err
@@ -497,7 +497,7 @@ func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, 
 // 4. Usage in command implementation
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Extract database settings from the "database" layer
@@ -526,13 +526,13 @@ For complex scenarios requiring conditional parameters:
 
 ```go
 type DatabaseLayerBuilder struct {
-    layer      layers.ParameterLayer
+    layer      schema.Section
     includeSSL bool
     includePool bool
 }
 
 func NewDatabaseLayerBuilder() *DatabaseLayerBuilder {
-    layer, _ := layers.NewParameterLayer("database", "Database Configuration")
+    layer, _ := schema.NewSection("database", "Database Configuration")
     return &DatabaseLayerBuilder{layer: layer}
 }
 
@@ -546,31 +546,31 @@ func (b *DatabaseLayerBuilder) WithConnectionPool() *DatabaseLayerBuilder {
     return b
 }
 
-func (b *DatabaseLayerBuilder) Build() (layers.ParameterLayer, error) {
+func (b *DatabaseLayerBuilder) Build() (schema.Section, error) {
     // Add basic parameters
     b.layer.AddFlags(
-        parameters.NewParameterDefinition("db-host", parameters.ParameterTypeString, 
-            parameters.WithDefault("localhost")),
-        parameters.NewParameterDefinition("db-port", parameters.ParameterTypeInteger,
-            parameters.WithDefault(5432)),
+        fields.New("db-host", fields.TypeString, 
+            fields.WithDefault("localhost")),
+        fields.New("db-port", fields.TypeInteger,
+            fields.WithDefault(5432)),
     )
     
     // Conditionally add SSL parameters
     if b.includeSSL {
         b.layer.AddFlags(
-            parameters.NewParameterDefinition("db-ssl-mode", parameters.ParameterTypeChoice,
-                parameters.WithChoices("disable", "require", "verify-ca")),
-            parameters.NewParameterDefinition("db-ssl-cert", parameters.ParameterTypeFile),
+            fields.New("db-ssl-mode", fields.TypeChoice,
+                fields.WithChoices("disable", "require", "verify-ca")),
+            fields.New("db-ssl-cert", fields.TypeFile),
         )
     }
     
     // Conditionally add connection pool parameters
     if b.includePool {
         b.layer.AddFlags(
-            parameters.NewParameterDefinition("db-max-connections", parameters.ParameterTypeInteger,
-                parameters.WithDefault(10)),
-            parameters.NewParameterDefinition("db-idle-timeout", parameters.ParameterTypeString,
-                parameters.WithDefault("5m")),
+            fields.New("db-max-connections", fields.TypeInteger,
+                fields.WithDefault(10)),
+            fields.New("db-idle-timeout", fields.TypeString,
+                fields.WithDefault("5m")),
         )
     }
     
@@ -594,7 +594,7 @@ loggingLayer, _ := NewLoggingLayer()    // internal slug: "logging"
 
 cmd := cmds.NewCommandDescription(
     "process",
-    cmds.WithLayersMap(map[string]layers.ParameterLayer{
+    cmds.WithLayersMap(map[string]schema.Section{
         "db":  dbLayer,    // registered under explicit slug "db"
         "log": loggingLayer,
     }),
@@ -604,7 +604,7 @@ cmd := cmds.NewCommandDescription(
 ```
 
 Note:
-- If a layer's internal slug differs from the map key and the layer is a `*layers.ParameterLayerImpl`, Glazed will clone the layer and align its slug to the provided key for consistent runtime behavior.
+- If a layer's internal slug differs from the map key and the layer is a `*schema.SectionImpl`, Glazed will clone the layer and align its slug to the provided key for consistent runtime behavior.
 - For custom layer implementations, prefer using matching internal and registration slugs when possible.
 
 ## Practical Examples
@@ -646,101 +646,101 @@ type DatabaseSettings struct {
 }
 
 // Layer creation functions
-func NewServerLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewServerLayer() (schema.Section, error) {
+    return schema.NewSection(
         "server",
         "Web Server Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "host",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("localhost"),
-                parameters.WithHelp("Server host to bind to"),
-                parameters.WithShortFlag("H"),
+                fields.TypeString,
+                fields.WithDefault("localhost"),
+                fields.WithHelp("Server host to bind to"),
+                fields.WithShortFlag("H"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "port",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(8080),
-                parameters.WithHelp("Server port to listen on"),
-                parameters.WithShortFlag("p"),
+                fields.TypeInteger,
+                fields.WithDefault(8080),
+                fields.WithHelp("Server port to listen on"),
+                fields.WithShortFlag("p"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "read-timeout",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("30s"),
-                parameters.WithHelp("HTTP read timeout"),
+                fields.TypeString,
+                fields.WithDefault("30s"),
+                fields.WithHelp("HTTP read timeout"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "write-timeout",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("30s"),
-                parameters.WithHelp("HTTP write timeout"),
+                fields.TypeString,
+                fields.WithDefault("30s"),
+                fields.WithHelp("HTTP write timeout"),
             ),
         ),
     )
 }
 
-func NewLoggingLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewLoggingLayer() (schema.Section, error) {
+    return schema.NewSection(
         "logging",
         "Logging Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "log-level",
-                parameters.ParameterTypeChoice,
-                parameters.WithChoices("debug", "info", "warn", "error", "fatal"),
-                parameters.WithDefault("info"),
-                parameters.WithHelp("Logging level"),
+                fields.TypeChoice,
+                fields.WithChoices("debug", "info", "warn", "error", "fatal"),
+                fields.WithDefault("info"),
+                fields.WithHelp("Logging level"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "log-format",
-                parameters.ParameterTypeChoice,
-                parameters.WithChoices("text", "json"),
-                parameters.WithDefault("text"),
-                parameters.WithHelp("Log output format"),
+                fields.TypeChoice,
+                fields.WithChoices("text", "json"),
+                fields.WithDefault("text"),
+                fields.WithHelp("Log output format"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "log-file",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Log file path (default: stderr)"),
+                fields.TypeString,
+                fields.WithHelp("Log file path (default: stderr)"),
             ),
         ),
     )
 }
 
-func NewDatabaseLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewDatabaseLayer() (schema.Section, error) {
+    return schema.NewSection(
         "database",
         "Database Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "db-host",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("localhost"),
-                parameters.WithHelp("Database host"),
+                fields.TypeString,
+                fields.WithDefault("localhost"),
+                fields.WithHelp("Database host"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-port",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(5432),
-                parameters.WithHelp("Database port"),
+                fields.TypeInteger,
+                fields.WithDefault(5432),
+                fields.WithHelp("Database port"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-name",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Database name"),
-                parameters.WithRequired(true),
+                fields.TypeString,
+                fields.WithHelp("Database name"),
+                fields.WithRequired(true),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-username",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Database username"),
+                fields.TypeString,
+                fields.WithHelp("Database username"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "db-password",
-                parameters.ParameterTypeSecret,
-                parameters.WithHelp("Database password"),
+                fields.TypeSecret,
+                fields.WithHelp("Database password"),
             ),
         ),
     )
@@ -789,11 +789,11 @@ func NewHealthCheckCommand() (*cmds.CommandDescription, error) {
         "health",
         cmds.WithShort("Check server health"),
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "endpoint",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("/health"),
-                parameters.WithHelp("Health check endpoint"),
+                fields.TypeString,
+                fields.WithDefault("/health"),
+                fields.WithHelp("Health check endpoint"),
             ),
         ),
         cmds.WithLayersList(serverLayer, loggingLayer), // No database layer
@@ -801,19 +801,19 @@ func NewHealthCheckCommand() (*cmds.CommandDescription, error) {
 }
 
 // Settings extraction helpers demonstrate how to use InitializeStruct with layer-specific settings
-func GetServerSettings(parsedLayers *layers.ParsedLayers) (*ServerSettings, error) {
+func GetServerSettings(parsedLayers *values.Values) (*ServerSettings, error) {
     settings := &ServerSettings{}
     err := parsedLayers.InitializeStruct("server", settings)
     return settings, err
 }
 
-func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error) {
+func GetLoggingSettings(parsedLayers *values.Values) (*LoggingSettings, error) {
     settings := &LoggingSettings{}
     err := parsedLayers.InitializeStruct("logging", settings)
     return settings, err
 }
 
-func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+func GetDatabaseSettings(parsedLayers *values.Values) (*DatabaseSettings, error) {
     settings := &DatabaseSettings{}
     err := parsedLayers.InitializeStruct("database", settings)
     return settings, err
@@ -824,7 +824,7 @@ type ServerCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *ServerCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ServerCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     // Extract settings from each layer
     serverSettings, err := GetServerSettings(parsedLayers)
     if err != nil {
@@ -871,55 +871,55 @@ Layer composition for applications with conditional functionality. This example 
 
 ```go
 // Feature layers for optional inclusion
-func NewCacheLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewCacheLayer() (schema.Section, error) {
+    return schema.NewSection(
         "cache",
         "Caching Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "cache-enabled",
-                parameters.ParameterTypeBool,
-                parameters.WithDefault(true),
-                parameters.WithHelp("Enable caching"),
+                fields.TypeBool,
+                fields.WithDefault(true),
+                fields.WithHelp("Enable caching"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "cache-ttl",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("1h"),
-                parameters.WithHelp("Cache time-to-live"),
+                fields.TypeString,
+                fields.WithDefault("1h"),
+                fields.WithHelp("Cache time-to-live"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "cache-size",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(1000),
-                parameters.WithHelp("Maximum cache entries"),
+                fields.TypeInteger,
+                fields.WithDefault(1000),
+                fields.WithHelp("Maximum cache entries"),
             ),
         ),
     )
 }
 
-func NewMetricsLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewMetricsLayer() (schema.Section, error) {
+    return schema.NewSection(
         "metrics",
         "Metrics and Monitoring",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "metrics-enabled",
-                parameters.ParameterTypeBool,
-                parameters.WithDefault(false),
-                parameters.WithHelp("Enable metrics collection"),
+                fields.TypeBool,
+                fields.WithDefault(false),
+                fields.WithHelp("Enable metrics collection"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "metrics-port",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(9090),
-                parameters.WithHelp("Metrics server port"),
+                fields.TypeInteger,
+                fields.WithDefault(9090),
+                fields.WithHelp("Metrics server port"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "metrics-path",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("/metrics"),
-                parameters.WithHelp("Metrics endpoint path"),
+                fields.TypeString,
+                fields.WithDefault("/metrics"),
+                fields.WithHelp("Metrics endpoint path"),
             ),
         ),
     )
@@ -927,7 +927,7 @@ func NewMetricsLayer() (layers.ParameterLayer, error) {
 
 // Command builder with optional features
 type AppCommandBuilder struct {
-    baseLayers    []layers.ParameterLayer
+    baseLayers    []schema.Section
     enableCache   bool
     enableMetrics bool
     enableAuth    bool
@@ -937,7 +937,7 @@ func NewAppCommandBuilder() *AppCommandBuilder {
     loggingLayer, _ := NewLoggingLayer()
     
     return &AppCommandBuilder{
-        baseLayers: []layers.ParameterLayer{loggingLayer},
+        baseLayers: []schema.Section{loggingLayer},
     }
 }
 
@@ -957,7 +957,7 @@ func (b *AppCommandBuilder) WithAuth() *AppCommandBuilder {
 }
 
 func (b *AppCommandBuilder) BuildProcessCommand() (*cmds.CommandDescription, error) {
-    commandLayers := append([]layers.ParameterLayer{}, b.baseLayers...)
+    commandLayers := append([]schema.Section{}, b.baseLayers...)
     
     // Add optional layers based on enabled features
     if b.enableCache {
@@ -988,16 +988,16 @@ func (b *AppCommandBuilder) BuildProcessCommand() (*cmds.CommandDescription, err
         "process",
         cmds.WithShort("Process data with optional features"),
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "input-file",
-                parameters.ParameterTypeFile,
-                parameters.WithHelp("Input file to process"),
-                parameters.WithRequired(true),
+                fields.TypeFile,
+                fields.WithHelp("Input file to process"),
+                fields.WithRequired(true),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "output-file", 
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Output file path"),
+                fields.TypeString,
+                fields.WithHelp("Output file path"),
             ),
         ),
         cmds.WithLayersList(commandLayers...),
@@ -1018,13 +1018,13 @@ type MetricsSettings struct {
 }
 
 // Helper functions for optional layer settings
-func GetCacheSettings(parsedLayers *layers.ParsedLayers) (*CacheSettings, error) {
+func GetCacheSettings(parsedLayers *values.Values) (*CacheSettings, error) {
     settings := &CacheSettings{}
     err := parsedLayers.InitializeStruct("cache", settings)
     return settings, err
 }
 
-func GetMetricsSettings(parsedLayers *layers.ParsedLayers) (*MetricsSettings, error) {
+func GetMetricsSettings(parsedLayers *values.Values) (*MetricsSettings, error) {
     settings := &MetricsSettings{}
     err := parsedLayers.InitializeStruct("metrics", settings)
     return settings, err
@@ -1035,7 +1035,7 @@ type ProcessCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *ProcessCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ProcessCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     // Always extract logging settings
     logSettings, err := GetLoggingSettings(parsedLayers)
     if err != nil {
@@ -1099,21 +1099,21 @@ Extending existing layers without modification:
 
 ```go
 // Base database layer
-func NewBaseDatabaseLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewBaseDatabaseLayer() (schema.Section, error) {
+    return schema.NewSection(
         "database",
         "Database Configuration",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("db-host", parameters.ParameterTypeString,
-                parameters.WithDefault("localhost")),
-            parameters.NewParameterDefinition("db-port", parameters.ParameterTypeInteger,
-                parameters.WithDefault(5432)),
+        schema.WithFields(
+            fields.New("db-host", fields.TypeString,
+                fields.WithDefault("localhost")),
+            fields.New("db-port", fields.TypeInteger,
+                fields.WithDefault(5432)),
         ),
     )
 }
 
 // Extended database layer with additional features
-func NewAdvancedDatabaseLayer() (layers.ParameterLayer, error) {
+func NewAdvancedDatabaseLayer() (schema.Section, error) {
     // Start with base layer
     baseLayer, err := NewBaseDatabaseLayer()
     if err != nil {
@@ -1125,12 +1125,12 @@ func NewAdvancedDatabaseLayer() (layers.ParameterLayer, error) {
     
     // Add additional parameters
     advancedLayer.AddFlags(
-        parameters.NewParameterDefinition("db-pool-size", parameters.ParameterTypeInteger,
-            parameters.WithDefault(10)),
-        parameters.NewParameterDefinition("db-ssl-mode", parameters.ParameterTypeChoice,
-            parameters.WithChoices("disable", "require", "verify-full")),
-        parameters.NewParameterDefinition("db-connection-timeout", parameters.ParameterTypeDuration,
-            parameters.WithDefault("30s")),
+        fields.New("db-pool-size", fields.TypeInteger,
+            fields.WithDefault(10)),
+        fields.New("db-ssl-mode", fields.TypeChoice,
+            fields.WithChoices("disable", "require", "verify-full")),
+        fields.New("db-connection-timeout", fields.TypeDuration,
+            fields.WithDefault("30s")),
     )
     
     return advancedLayer, nil
@@ -1147,7 +1147,7 @@ type EnvironmentConfig struct {
     Features    []string
 }
 
-func NewEnvironmentAwareDatabaseLayer(config EnvironmentConfig) (layers.ParameterLayer, error) {
+func NewEnvironmentAwareDatabaseLayer(config EnvironmentConfig) (schema.Section, error) {
     layer, err := NewBaseDatabaseLayer()
     if err != nil {
         return nil, err
@@ -1157,18 +1157,18 @@ func NewEnvironmentAwareDatabaseLayer(config EnvironmentConfig) (layers.Paramete
     switch config.Environment {
     case "development":
         layer.AddFlags(
-            parameters.NewParameterDefinition("db-debug-queries", parameters.ParameterTypeBool,
-                parameters.WithDefault(true)),
-            parameters.NewParameterDefinition("db-auto-migrate", parameters.ParameterTypeBool,
-                parameters.WithDefault(true)),
+            fields.New("db-debug-queries", fields.TypeBool,
+                fields.WithDefault(true)),
+            fields.New("db-auto-migrate", fields.TypeBool,
+                fields.WithDefault(true)),
         )
     case "production":
         layer.AddFlags(
-            parameters.NewParameterDefinition("db-ssl-mode", parameters.ParameterTypeChoice,
-                parameters.WithChoices("require", "verify-full"),
-                parameters.WithDefault("verify-full")),
-            parameters.NewParameterDefinition("db-connection-pool-size", parameters.ParameterTypeInteger,
-                parameters.WithDefault(50)),
+            fields.New("db-ssl-mode", fields.TypeChoice,
+                fields.WithChoices("require", "verify-full"),
+                fields.WithDefault("verify-full")),
+            fields.New("db-connection-pool-size", fields.TypeInteger,
+                fields.WithDefault(50)),
         )
     }
     
@@ -1177,14 +1177,14 @@ func NewEnvironmentAwareDatabaseLayer(config EnvironmentConfig) (layers.Paramete
         switch feature {
         case "monitoring":
             layer.AddFlags(
-                parameters.NewParameterDefinition("db-monitor-slow-queries", parameters.ParameterTypeBool),
-                parameters.NewParameterDefinition("db-slow-query-threshold", parameters.ParameterTypeDuration,
-                    parameters.WithDefault("1s")),
+                fields.New("db-monitor-slow-queries", fields.TypeBool),
+                fields.New("db-slow-query-threshold", fields.TypeDuration,
+                    fields.WithDefault("1s")),
             )
         case "backup":
             layer.AddFlags(
-                parameters.NewParameterDefinition("db-backup-enabled", parameters.ParameterTypeBool),
-                parameters.NewParameterDefinition("db-backup-schedule", parameters.ParameterTypeString),
+                fields.New("db-backup-enabled", fields.TypeBool),
+                fields.New("db-backup-schedule", fields.TypeString),
             )
         }
     }
@@ -1199,17 +1199,17 @@ Runtime layer registration for plugin systems:
 
 ```go
 type LayerRegistry struct {
-    layers map[string]layers.ParameterLayer
+    layers map[string]schema.Section
     mutex  sync.RWMutex
 }
 
 func NewLayerRegistry() *LayerRegistry {
     return &LayerRegistry{
-        layers: make(map[string]layers.ParameterLayer),
+        layers: make(map[string]schema.Section),
     }
 }
 
-func (r *LayerRegistry) RegisterLayer(slug string, layer layers.ParameterLayer) error {
+func (r *LayerRegistry) RegisterLayer(slug string, layer schema.Section) error {
     r.mutex.Lock()
     defer r.mutex.Unlock()
     
@@ -1221,7 +1221,7 @@ func (r *LayerRegistry) RegisterLayer(slug string, layer layers.ParameterLayer) 
     return nil
 }
 
-func (r *LayerRegistry) GetLayer(slug string) (layers.ParameterLayer, error) {
+func (r *LayerRegistry) GetLayer(slug string) (schema.Section, error) {
     r.mutex.RLock()
     defer r.mutex.RUnlock()
     
@@ -1234,7 +1234,7 @@ func (r *LayerRegistry) GetLayer(slug string) (layers.ParameterLayer, error) {
 }
 
 func (r *LayerRegistry) BuildCommand(name string, layerSlugs []string) (*cmds.CommandDescription, error) {
-    var commandLayers []layers.ParameterLayer
+    var commandLayers []schema.Section
     
     for _, slug := range layerSlugs {
         layer, err := r.GetLayer(slug)
@@ -1275,7 +1275,7 @@ type LayerValidator struct {
     rules []ValidationRule
 }
 
-type ValidationRule func(*layers.ParsedLayers) error
+type ValidationRule func(*values.Values) error
 
 func NewLayerValidator() *LayerValidator {
     return &LayerValidator{}
@@ -1285,7 +1285,7 @@ func (v *LayerValidator) AddRule(rule ValidationRule) {
     v.rules = append(v.rules, rule)
 }
 
-func (v *LayerValidator) Validate(parsedLayers *layers.ParsedLayers) error {
+func (v *LayerValidator) Validate(parsedLayers *values.Values) error {
     for _, rule := range v.rules {
         if err := rule(parsedLayers); err != nil {
             return err
@@ -1295,7 +1295,7 @@ func (v *LayerValidator) Validate(parsedLayers *layers.ParsedLayers) error {
 }
 
 // Cross-layer validation rules
-func DatabaseConnectionRule(parsedLayers *layers.ParsedLayers) error {
+func DatabaseConnectionRule(parsedLayers *values.Values) error {
     dbLayer, ok := parsedLayers.Get("database")
     if !ok {
         return nil // Skip if database layer not present
@@ -1319,7 +1319,7 @@ func DatabaseConnectionRule(parsedLayers *layers.ParsedLayers) error {
     return nil
 }
 
-func SSLConfigurationRule(parsedLayers *layers.ParsedLayers) error {
+func SSLConfigurationRule(parsedLayers *values.Values) error {
     dbLayer, ok := parsedLayers.Get("database")
     if !ok {
         return nil // Skip if database layer not present
@@ -1342,7 +1342,7 @@ func SSLConfigurationRule(parsedLayers *layers.ParsedLayers) error {
 }
 
 // Usage in command implementation
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     // Validate layer configuration
     validator := NewLayerValidator()
     validator.AddRule(DatabaseConnectionRule)

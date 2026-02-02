@@ -33,7 +33,7 @@ Glazed provides a flexible middleware system for loading parameter values from v
 A middleware function in the Glazed framework has the following signature:
 
 ```go
-type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error
+type HandlerFunc func(layers *schema.Schema, parsedLayers *values.Values) error
 type Middleware func(next HandlerFunc) HandlerFunc
 ```
 
@@ -94,8 +94,8 @@ Will execute in this order:
 Use `SetFromDefaults` to populate parameters with their default values:
 
 ```go
-middleware := middlewares.SetFromDefaults(
-    parameters.WithParseStepSource("defaults"),
+middleware := sources.FromDefaults(
+    sources.WithSource("defaults"),
 )
 ```
 
@@ -106,8 +106,8 @@ This middleware reads the default values specified in parameter definitions and 
 Use `UpdateFromEnv` to load values from environment variables:
 
 ```go
-middleware := middlewares.UpdateFromEnv("APP", 
-    parameters.WithParseStepSource("env"),
+middleware := sources.FromEnv("APP", 
+    sources.WithSource("env"),
 )
 ```
 
@@ -120,9 +120,9 @@ This will look for environment variables with the specified prefix. For example:
 Load parameters from JSON or YAML files using `LoadParametersFromFile`:
 
 ```go
-middleware := middlewares.LoadParametersFromFile("config.yaml",
+middleware := sources.FromFile("config.yaml",
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
@@ -166,11 +166,11 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
 }
 
 // Use the mapper when loading the config file
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigFileMapper(mapper),
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
@@ -199,15 +199,15 @@ The mapper handles both structures and maps them to the standard layer format. T
 For CLI applications using Cobra:
 
 ```go
-middleware := middlewares.ParseFromCobraCommand(cmd,
-    parameters.WithParseStepSource("flags"),
+middleware := sources.FromCobra(cmd,
+    sources.WithSource("flags"),
 )
 ```
 
 For positional arguments (from command line):
 ```go
-middleware := middlewares.GatherArguments(args,
-    parameters.WithParseStepSource("args"),
+middleware := sources.FromArgs(args,
+    sources.WithSource("args"),
 )
 ```
 
@@ -217,17 +217,17 @@ Load one or more config files using built-in middlewares:
 
 ```go
 // Single file
-middlewares.LoadParametersFromFile("config.yaml",
+sources.FromFile("config.yaml",
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 
 // Multiple files (low -> high precedence)
-middlewares.LoadParametersFromFiles([]string{
+sources.FromFiles([]string{
     "base.yaml", "env.yaml", "local.yaml",
 }, middlewares.WithParseOptions(
-    parameters.WithParseStepSource("config"),
+    sources.WithSource("config"),
 ))
 ```
 
@@ -237,18 +237,18 @@ Load parameters from specific config files using built-in file middlewares:
 
 ```go
 // Load from a specific config file (standard format)
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "/path/to/custom-config.yaml",
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 
 // Load multiple config files with overlay precedence (low -> high)
-middleware := middlewares.LoadParametersFromFiles(
+middleware := sources.FromFiles(
     []string{"base.yaml", "env.yaml", "local.yaml"},
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 
@@ -257,11 +257,11 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
     // Transform your custom config structure to layer map format
     // ...
 }
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "custom-structure.yaml",
     middlewares.WithConfigFileMapper(mapper),
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
@@ -277,8 +277,8 @@ These middlewares are useful for:
 Set values only if they haven't been set already:
 
 ```go
-middleware := middlewares.UpdateFromMapAsDefault(values,
-    parameters.WithParseStepSource("defaults"),
+middleware := sources.FromMapAsDefault(values,
+    sources.WithSource("defaults"),
 )
 ```
 
@@ -334,7 +334,7 @@ These selective middlewares are useful when you want to:
 
 Example using selective operations:
 ```go
-middlewares.ExecuteMiddlewares(layers, parsedLayers,
+sources.Execute(layers, parsedLayers,
     // Replace only the base configuration layers
     middlewares.ReplaceParsedLayersSelective(baseConfig, []string{"system", "defaults"}),
     
@@ -354,7 +354,7 @@ These layer manipulation middlewares are useful when you need to:
 
 Example combining multiple operations:
 ```go
-middlewares.ExecuteMiddlewares(layers, parsedLayers,
+sources.Execute(layers, parsedLayers,
     // Replace base configuration
     middlewares.ReplaceParsedLayer("base", baseConfig),
     // Merge environment-specific settings
@@ -372,9 +372,9 @@ Use `Chain` to combine multiple middlewares:
 
 ```go
 combined := middlewares.Chain(
-    middlewares.SetFromDefaults(),
-    middlewares.UpdateFromEnv("APP"),
-    middlewares.LoadParametersFromFile("config.yaml"),
+    sources.FromDefaults(),
+    sources.FromEnv("APP"),
+    sources.FromFile("config.yaml"),
 )
 ```
 
@@ -392,10 +392,10 @@ func ConditionalMiddleware(condition bool, middleware middlewares.Middleware) mi
 
 // Usage
 middlewares := []middlewares.Middleware{
-    middlewares.ParseFromCobraCommand(cmd),
+    sources.FromCobra(cmd),
     ConditionalMiddleware(enableConfigFile,
-        middlewares.LoadParametersFromFile("config.yaml")),
-    middlewares.SetFromDefaults(),
+        sources.FromFile("config.yaml")),
+    sources.FromDefaults(),
 }
 ```
 
@@ -407,13 +407,13 @@ Restrict middleware operation to specific layers:
 // Only apply to specified layers
 middleware := middlewares.WrapWithWhitelistedLayers(
     []string{"config", "api"},
-    middlewares.UpdateFromEnv("APP"),
+    sources.FromEnv("APP"),
 )
 
 // Exclude specific layers
 middleware := middlewares.WrapWithBlacklistedLayers(
     []string{"internal"},
-    middlewares.UpdateFromEnv("APP"),
+    sources.FromEnv("APP"),
 )
 ```
 
@@ -429,8 +429,8 @@ values := map[string]map[string]interface{}{
     },
 }
 
-middleware := middlewares.UpdateFromMap(values,
-    parameters.WithParseStepSource("map"),
+middleware := sources.FromMap(values,
+    sources.WithSource("map"),
 )
 ```
 
@@ -450,7 +450,7 @@ middleware := middlewares.UpdateFromMap(values,
 
 3. **Error Handling**: Always check for errors returned by `ExecuteMiddlewares`:
    ```go
-   err := middlewares.ExecuteMiddlewares(layers, parsedLayers, 
+   err := sources.Execute(layers, parsedLayers, 
        // ... middlewares ...
    )
    if err != nil {
@@ -467,20 +467,20 @@ middleware := middlewares.UpdateFromMap(values,
 A typical configuration loading pattern:
 
 ```go
-middlewares.ExecuteMiddlewares(layers, parsedLayers,
+sources.Execute(layers, parsedLayers,
     // Base defaults
-    middlewares.SetFromDefaults(),
+    sources.FromDefaults(),
     
     // Configuration files (base overlays)
-    middlewares.LoadParametersFromFiles([]string{
+    sources.FromFiles([]string{
         "config.yaml", "config.local.yaml",
     }),
     
     // Environment overrides
-    middlewares.UpdateFromEnv("APP"),
+    sources.FromEnv("APP"),
     
     // Command-line flags (highest priority)
-    middlewares.ParseFromCobraCommand(cmd),
+    sources.FromCobra(cmd),
 )
 ```
 
@@ -489,8 +489,8 @@ middlewares.ExecuteMiddlewares(layers, parsedLayers,
 Load different configurations based on profiles:
 
 ```go
-middlewares.ExecuteMiddlewares(layers, parsedLayers,
-    middlewares.SetFromDefaults(),
+sources.Execute(layers, parsedLayers,
+    sources.FromDefaults(),
     middlewares.GatherFlagsFromProfiles(
         defaultProfileFile, // default profile file (commonly ~/.config/<app>/profiles.yaml)
         profileFile,        // selected profile file (can be overridden)
@@ -515,14 +515,14 @@ Load profiles from custom locations or other applications:
 middleware := middlewares.GatherFlagsFromCustomProfiles(
     "production",
     middlewares.WithProfileFile("/etc/app/custom-profiles.yaml"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("custom-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("custom-profiles")),
 )
 
 // Load from another app's profiles
 middleware := middlewares.GatherFlagsFromCustomProfiles(
     "shared-config",
     middlewares.WithProfileAppName("central-config"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("shared-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("shared-profiles")),
 )
 
 // Load with required validation
@@ -546,11 +546,11 @@ This is useful for:
 ```go
 func TestSetFromDefaults(t *testing.T) {
     layers := createTestLayers()
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
-    middleware := middlewares.SetFromDefaults()
+    middleware := sources.FromDefaults()
 
-    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, middleware)
+    err := sources.Execute(layers, parsedLayers, middleware)
     require.NoError(t, err)
 
     // Verify default values were set
@@ -565,18 +565,18 @@ func TestSetFromDefaults(t *testing.T) {
 ```go
 func TestMiddlewareChain(t *testing.T) {
     layers := createTestLayers()
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     // Set up test environment
     os.Setenv("APP_PARAM1", "env-value")
     defer os.Unsetenv("APP_PARAM1")
 
     mws := []middlewares.Middleware{
-        middlewares.UpdateFromEnv("APP"),
-        middlewares.SetFromDefaults(),
+        sources.FromEnv("APP"),
+        sources.FromDefaults(),
     }
 
-    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, mws...)
+    err := sources.Execute(layers, parsedLayers, mws...)
     require.NoError(t, err)
 
     // Environment should override defaults
@@ -590,14 +590,14 @@ func TestMiddlewareChain(t *testing.T) {
 ```go
 func TestCustomValidationMiddleware(t *testing.T) {
     layers := createTestLayers()
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     // Add a value that should fail validation
     parsedLayers.SetParameter("default", "email", "invalid-email")
 
     middleware := ValidateEmailMiddleware()
 
-    err := middlewares.ExecuteMiddlewares(layers, parsedLayers, middleware)
+    err := sources.Execute(layers, parsedLayers, middleware)
     assert.Error(t, err)
     assert.Contains(t, err.Error(), "invalid email format")
 }
@@ -608,7 +608,7 @@ func TestCustomValidationMiddleware(t *testing.T) {
 1. Use logging middleware to track parameter changes:
 ```go
 middleware := func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
-    return func(l *layers.ParameterLayers, pl *layers.ParsedLayers) error {
+    return func(l *schema.Schema, pl *values.Values) error {
         // Log before
         err := next(l, pl)
         // Log after
@@ -649,8 +649,8 @@ func GetMiddlewares(
     args []string,
 ) ([]middlewares.Middleware, error) {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.SetFromDefaults(),
+        sources.FromCobra(cmd),
+        sources.FromDefaults(),
     }, nil
 }
 ```
@@ -680,14 +680,14 @@ func GetCommandMiddlewares(
 ) ([]middlewares.Middleware, error) {
     middlewares_ := []middlewares.Middleware{
         // Command line args (highest priority)
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.GatherArguments(args),
+        sources.FromCobra(cmd),
+        sources.FromArgs(args),
     }
 
     // Optional config file
     if commandSettings.LoadParametersFromFile != "" {
         middlewares_ = append(middlewares_,
-            middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+            sources.FromFile(commandSettings.LoadParametersFromFile))
     }
 
     // Profile support
@@ -709,10 +709,10 @@ func GetCommandMiddlewares(
     // Env config for specific layers (if needed)
     middlewares.WrapWithWhitelistedLayers(
         []string{"api", "client"},
-        middlewares.UpdateFromEnv("APP"),
+        sources.FromEnv("APP"),
     ),
         // Defaults (lowest priority)
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     )
 
     return middlewares_, nil
@@ -737,7 +737,7 @@ Restrict middleware to specific layers:
 ```go
 middlewares.WrapWithWhitelistedLayers(
     []string{"api", "client"},
-        middlewares.UpdateFromEnv("APP_"),
+        sources.FromEnv("APP_"),
 )
 ```
 
@@ -760,21 +760,21 @@ import (
 
 func main() {
     // Create a new parameter layer
-    layer, err := layers.NewParameterLayer(
+    layer, err := schema.NewSection(
         "config",
         "Configuration Options",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition(
+        schema.WithFields(
+            fields.New(
                 "host",
-                parameters.ParameterTypeString,
-                parameters.WithDefault("localhost"),
-                parameters.WithHelp("Server hostname"),
+                fields.TypeString,
+                fields.WithDefault("localhost"),
+                fields.WithHelp("Server hostname"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "port",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(8080),
-                parameters.WithHelp("Server port"),
+                fields.TypeInteger,
+                fields.WithDefault(8080),
+                fields.WithHelp("Server port"),
             ),
         ),
     )
@@ -783,7 +783,7 @@ func main() {
     }
 
     // Create parameter layers container
-    parameterLayers := layers.NewParameterLayers(
+    parameterLayers := schema.NewSchema(
         layers.WithLayers(layer),
     )
 }
@@ -806,14 +806,14 @@ The `SetFromDefaults` middleware demonstrates the basic middleware pattern of pr
 ```go
 func useDefaultsMiddleware() {
     // Create empty parsed layers
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     // Create and execute the middleware
-    middleware := middlewares.SetFromDefaults(
-        parameters.WithParseStepSource(parameters.SourceDefaults),
+    middleware := sources.FromDefaults(
+        sources.WithSource(sources.SourceDefaults),
     )
 
-    err := middlewares.ExecuteMiddlewares(
+    err := sources.Execute(
         parameterLayers,
         parsedLayers,
         middleware,
@@ -842,7 +842,7 @@ The `UpdateFromMap` middleware shows how to override values from an external sou
 
 ```go
 func useMapMiddleware() {
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     // Define the update map
     updateMap := map[string]map[string]interface{}{
@@ -852,10 +852,10 @@ func useMapMiddleware() {
         },
     }
 
-    err := middlewares.ExecuteMiddlewares(
+    err := sources.Execute(
         parameterLayers,
         parsedLayers,
-        middlewares.UpdateFromMap(updateMap),
+        sources.FromMap(updateMap),
     )
     if err != nil {
         panic(err)
@@ -874,7 +874,7 @@ This demonstrates:
 After middlewares process the parameters, there are several ways to access the results. These patterns align with different use cases in the architecture:
 
 ```go
-func accessParsedValues(parsedLayers *layers.ParsedLayers) {
+func accessParsedValues(parsedLayers *values.Values) {
     // 1. Direct access through layer
     configLayer, _ := parsedLayers.Get("config")
     hostValue, _ := configLayer.GetParameter("host")
@@ -908,7 +908,7 @@ These access patterns support:
 One of the key features of Glazed's middleware system is its ability to track parameter changes. This helps debug parameter processing and understand value origins:
 
 ```go
-func checkParameterHistory(parsedLayers *layers.ParsedLayers) {
+func checkParameterHistory(parsedLayers *values.Values) {
     configLayer, _ := parsedLayers.Get("config")
     hostParam, _ := configLayer.Parameters.Get("host")
 
@@ -931,7 +931,7 @@ This example demonstrates how multiple middlewares work together in the chain, f
 
 ```go
 func chainMiddlewares() {
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     // Define different parameter sources
     configMap := map[string]map[string]interface{}{
@@ -949,14 +949,14 @@ func chainMiddlewares() {
     }
 
     // Execute middlewares in order (last middleware has highest precedence)
-    err := middlewares.ExecuteMiddlewares(
+    err := sources.Execute(
         parameterLayers,
         parsedLayers,
-        middlewares.UpdateFromMapAsDefault(defaultMap),  // Lowest precedence
-        middlewares.SetFromDefaults(
-            parameters.WithParseStepSource(parameters.SourceDefaults),
+        sources.FromMapAsDefault(defaultMap),  // Lowest precedence
+        sources.FromDefaults(
+            sources.WithSource(sources.SourceDefaults),
         ),
-        middlewares.UpdateFromMap(configMap),  // Highest precedence
+        sources.FromMap(configMap),  // Highest precedence
     )
     if err != nil {
         panic(err)
@@ -977,7 +977,7 @@ Layer restriction is a powerful feature that implements the modular parameter ha
 
 ```go
 func useRestrictedLayers() {
-    parsedLayers := layers.NewParsedLayers()
+    parsedLayers := values.New()
 
     updateMap := map[string]map[string]interface{}{
         "config": {
@@ -988,16 +988,16 @@ func useRestrictedLayers() {
     // Only apply to whitelisted layers
     whitelistedMiddleware := middlewares.WrapWithWhitelistedLayers(
         []string{"config"},
-        middlewares.UpdateFromMap(updateMap),
+        sources.FromMap(updateMap),
     )
 
     // Or blacklist specific layers
     blacklistedMiddleware := middlewares.WrapWithBlacklistedLayers(
         []string{"other-layer"},
-        middlewares.UpdateFromMap(updateMap),
+        sources.FromMap(updateMap),
     )
 
-    err := middlewares.ExecuteMiddlewares(
+    err := sources.Execute(
         parameterLayers,
         parsedLayers,
         whitelistedMiddleware,

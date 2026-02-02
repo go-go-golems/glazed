@@ -704,7 +704,7 @@ type TransformFunc func(
 
 ```go
 // Option 1: Direct usage
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigFileMapper(
         patternmapper.NewConfigMapper().
@@ -712,18 +712,18 @@ middleware := middlewares.LoadParametersFromFile(
             Build(),
     ),
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 
 // Option 2: Load from config file
 mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
 if err != nil { /* handle */ }
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
@@ -899,11 +899,11 @@ Scope (Phase 2 builder only):
 Proposed API:
 ```go
 type ConfigMapperBuilder struct {
-    layers *layers.ParameterLayers
+    layers *schema.Schema
     rules  []patternmapper.MappingRule
 }
 
-func NewConfigMapperBuilder(layers *layers.ParameterLayers) *ConfigMapperBuilder
+func NewConfigMapperBuilder(layers *schema.Schema) *ConfigMapperBuilder
 
 // Map adds a simple leaf rule. If required is provided and true, sets Required.
 func (b *ConfigMapperBuilder) Map(source string, targetLayer string, targetParameter string, required ...bool) *ConfigMapperBuilder

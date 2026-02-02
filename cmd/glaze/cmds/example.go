@@ -11,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -27,7 +28,7 @@ type ExampleSettings struct {
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}

@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -133,7 +133,7 @@ func (a *CommandAlias) ToYAML(w io.Writer) error {
 	return enc.Encode(a)
 }
 
-func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
@@ -144,7 +144,7 @@ func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *
 	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
 }
 
-func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *values.Values, w io.Writer) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}

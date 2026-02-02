@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
@@ -15,7 +17,7 @@ type SortFlagsSettings struct {
 	SortBy []string `glazed.parameter:"sort-by"`
 }
 
-func NewSortSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SortFlagsSettings, error) {
+func NewSortSettingsFromParameters(glazedLayer *values.SectionValues) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
@@ -26,23 +28,23 @@ func NewSortSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SortFlagsS
 }
 
 type SortParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParameterLayer, error) {
+func NewSortParameterLayer(options ...schema.SectionOption) (*SortParameterLayer, error) {
 	ret := &SortParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(sortFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(sortFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create sort parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
 
-func (f *SortParameterLayer) Clone() layers.ParameterLayer {
+func (f *SortParameterLayer) Clone() schema.Section {
 	return &SortParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 

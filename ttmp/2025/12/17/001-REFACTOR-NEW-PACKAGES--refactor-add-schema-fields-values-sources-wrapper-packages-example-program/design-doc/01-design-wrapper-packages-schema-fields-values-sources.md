@@ -31,9 +31,9 @@ LastUpdated: 2025-12-17T09:01:05.389827519-05:00
 
 We will introduce four **new, additive** packages under `glazed/pkg/cmds/`:
 
-- `schema`: schema sections (today: `layers.ParameterLayer` + `layers.ParameterLayers`)
-- `fields`: field definitions and field types (today: `parameters.ParameterDefinition`, `parameters.ParameterType`)
-- `values`: resolved values (today: `layers.ParsedLayer` + `layers.ParsedLayers`) + “decode” helpers
+- `schema`: schema sections (today: `schema.Section` + `schema.Schema`)
+- `fields`: field definitions and field types (today: `fields.Definition`, `fields.Type`)
+- `values`: resolved values (today: `values.SectionValues` + `values.Values`) + “decode” helpers
 - `sources`: value sources / resolvers (today: `cmds/middlewares`) + “execute chain” helpers
 
 These packages will be implemented using **Go type aliases** (`type X = Y`) and **wrapper functions** (not wrapper types), so:
@@ -48,8 +48,8 @@ We will also add an **example program** under `glazed/cmd/examples/` that define
 
 Glazed currently exposes core concepts via packages and names that are semantically overloaded or hard to discover:
 
-- “Schema” is expressed as `layers.ParameterLayer(s)`, even though many users think in terms of **schema sections** and **fields**.
-- Resolved values are expressed as `layers.ParsedLayer(s)`, which does not communicate “values” at the API edge.
+- “Schema” is expressed as `schema.Section(s)`, even though many users think in terms of **schema sections** and **fields**.
+- Resolved values are expressed as `values.SectionValues(s)`, which does not communicate “values” at the API edge.
 - Resolution logic lives in `cmds/middlewares`, but these are primarily **value sources/resolvers** (cobra, env, config, defaults), not generic middleware.
 
 The result is a higher onboarding cost and lower API clarity, especially in tutorials and example programs.
@@ -69,18 +69,18 @@ Primary goal: make it easy to talk about “schema sections” without importing
 Proposed surface (illustrative):
 
 - **Type aliases**
-  - `type Section = layers.ParameterLayer`
-  - `type Schema = layers.ParameterLayers`
-  - `type SectionImpl = layers.ParameterLayerImpl` (the common concrete impl)
-  - `type SectionOption = layers.ParameterLayerOptions`
-  - `type SchemaOption = layers.ParameterLayersOption`
+  - `type Section = schema.Section`
+  - `type Schema = schema.Schema`
+  - `type SectionImpl = schema.SectionImpl` (the common concrete impl)
+  - `type SectionOption = schema.SectionOptions`
+  - `type SchemaOption = schema.SchemaOption`
 - **Constructor wrappers**
-  - `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` → `layers.NewParameterLayer`
-  - `func NewSchema(opts ...SchemaOption) *Schema` → `layers.NewParameterLayers`
+  - `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` → `schema.NewSection`
+  - `func NewSchema(opts ...SchemaOption) *Schema` → `schema.NewSchema`
   - `func WithSections(sections ...Section) SchemaOption` → `layers.WithLayers`
   - `func NewGlazedSchema(opts ...settings.GlazeParameterLayerOption) (Section, error)` → `settings.NewGlazedParameterLayers`
 - **Constants**
-  - `const DefaultSlug = layers.DefaultSlug`
+  - `const DefaultSlug = schema.DefaultSlug`
 
 #### `glazed/pkg/cmds/fields`
 
@@ -89,17 +89,17 @@ Primary goal: clarify that `ParameterDefinition` is a **field definition**, and 
 Proposed surface:
 
 - **Type aliases**
-  - `type Definition = parameters.ParameterDefinition`
-  - `type Definitions = parameters.ParameterDefinitions`
-  - `type Type = parameters.ParameterType`
-  - `type Option = parameters.ParameterDefinitionOption`
+  - `type Definition = fields.Definition`
+  - `type Definitions = fields.Definitions`
+  - `type Type = fields.Type`
+  - `type Option = fields.DefinitionOption`
 - **Constructor wrappers**
-  - `func New(name string, t Type, opts ...Option) *Definition` → `parameters.NewParameterDefinition`
+  - `func New(name string, t Type, opts ...Option) *Definition` → `fields.New`
   - `func NewDefinitions(opts ...func(*Definitions)) *Definitions` (optional sugar; can be deferred)
 - **Option re-exports**
   - `WithHelp`, `WithShortFlag`, `WithDefault`, `WithChoices`, `WithRequired`, `WithIsArgument`
 - **Type constant re-exports**
-  - `TypeString`, `TypeBool`, `TypeInteger`, … (mirror `parameters.ParameterType*`)
+  - `TypeString`, `TypeBool`, `TypeInteger`, … (mirror `fields.Type*`)
 
 #### `glazed/pkg/cmds/values`
 
@@ -108,11 +108,11 @@ Primary goal: rename “parsed layers” to “values” and provide “decode�
 Proposed surface:
 
 - **Type aliases**
-  - `type SectionValues = layers.ParsedLayer`
-  - `type Values = layers.ParsedLayers`
-  - `type ValuesOption = layers.ParsedLayersOption`
+  - `type SectionValues = values.SectionValues`
+  - `type Values = values.Values`
+  - `type ValuesOption = values.ValuesOption`
 - **Constructor wrappers**
-  - `func New(opts ...ValuesOption) *Values` → `layers.NewParsedLayers`
+  - `func New(opts ...ValuesOption) *Values` → `values.New`
 - **Verb wrappers (functions)**
   - `func DecodeInto(v *SectionValues, dst any) error` → `v.InitializeStruct(dst)`
   - `func DecodeSectionInto(vs *Values, sectionSlug string, dst any) error` → `vs.InitializeStruct(sectionSlug, dst)`
@@ -127,13 +127,13 @@ Proposed surface:
 - **Type aliases**
   - `type Middleware = middlewares.Middleware`
 - **Wrapper functions for common sources**
-  - `FromCobra(cmd *cobra.Command, opts ...parameters.ParseStepOption) Middleware` → `middlewares.ParseFromCobraCommand`
-  - `FromArgs(args []string, opts ...parameters.ParseStepOption) Middleware` → `middlewares.GatherArguments`
-  - `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware` → `middlewares.UpdateFromEnv`
-  - `FromDefaults(opts ...parameters.ParseStepOption) Middleware` → `middlewares.SetFromDefaults`
+  - `FromCobra(cmd *cobra.Command, opts ...parameters.ParseStepOption) Middleware` → `sources.FromCobra`
+  - `FromArgs(args []string, opts ...parameters.ParseStepOption) Middleware` → `sources.FromArgs`
+  - `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware` → `sources.FromEnv`
+  - `FromDefaults(opts ...parameters.ParseStepOption) Middleware` → `sources.FromDefaults`
   - `FromConfigFilesForCobra(...) Middleware` → `middlewares.LoadParametersFromResolvedFilesForCobra` (optional; phase 2)
 - **Execution helper**
-  - `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` → `middlewares.ExecuteMiddlewares`
+  - `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` → `sources.Execute`
 
 ### 2) Add an example program as an acceptance test
 
@@ -148,7 +148,7 @@ We add `glazed/cmd/examples/refactor-new-packages/` with a runnable program that
   - cobra flags + args (highest precedence)
 - Decodes resolved values into section-specific structs using `values.DecodeSectionInto` (or underlying method)
 
-This example intentionally mirrors the existing precedence chain in the cobra parser (`cli.CobraParserConfig`), which already composes `middlewares.ParseFromCobraCommand`, `middlewares.GatherArguments`, `middlewares.UpdateFromEnv`, config file loading, and defaults.
+This example intentionally mirrors the existing precedence chain in the cobra parser (`cli.CobraParserConfig`), which already composes `sources.FromCobra`, `sources.FromArgs`, `sources.FromEnv`, config file loading, and defaults.
 
 ## Design Decisions
 
@@ -187,7 +187,7 @@ See: [Implementation plan: wrapper packages + example program](../planning/01-im
 1. **Exact naming of the “all values” container**  
    Keep it as `values.Values` (simple) vs something more explicit like `values.All` or `values.Set`.
 
-2. **How much of `parameters.ParameterType*` to re-export in `fields`**  
+2. **How much of `fields.Type*` to re-export in `fields`**  
    All for completeness vs a minimal subset initially.
 
 3. **Should `sources` provide a “default chain builder”**  

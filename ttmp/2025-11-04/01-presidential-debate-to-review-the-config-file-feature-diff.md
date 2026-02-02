@@ -106,7 +106,7 @@ With one declarative rule `app.{env}.settings.api_key -> {env}-api-key`, I map b
 ```go
 -	if commandSettings.LoadParametersFromFile != "" {
 -		middlewares_ = append(middlewares_,
--			cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+-			cmd_sources.FromFile(commandSettings.LoadParametersFromFile))
 -	}
 ```
 
@@ -196,7 +196,7 @@ CobraParserConfig{
 **ConfigFile:** But Skip, the callback gives control! Example - load `base.yaml` plus `base.override.yaml` if it exists:
 
 ```go
-ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
     files := []string{"base.yaml"}
     if _, err := os.Stat("base.override.yaml"); err == nil {
         files = append(files, "base.override.yaml")

@@ -71,7 +71,7 @@ func NewMyCommand() (*MyCommand, error) {
 
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Initialize logging settings from parsed layers
@@ -310,7 +310,7 @@ return logging.SetupLogging(settings)
 #### NewLoggingLayer
 
 ```go
-func NewLoggingLayer() (layers.ParameterLayer, error)
+func NewLoggingLayer() (schema.Section, error)
 ```
 
 Creates parameter layer for command definitions.

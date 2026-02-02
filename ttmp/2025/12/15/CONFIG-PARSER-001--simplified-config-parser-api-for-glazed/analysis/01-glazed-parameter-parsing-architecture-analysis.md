@@ -89,8 +89,8 @@ func NewParameterDefinition(
 **Key Symbols**:
 ```go
 type ParameterLayer interface {
-    AddFlags(flag ...*parameters.ParameterDefinition)
-    GetParameterDefinitions() *parameters.ParameterDefinitions
+    AddFlags(flag ...*fields.Definition)
+    GetParameterDefinitions() *fields.Definitions
     InitializeParameterDefaultsFromStruct(s interface{}) error
     GetName() string
     GetSlug() string
@@ -104,7 +104,7 @@ type ParameterLayerImpl struct {
     Slug                 string
     Description          string
     Prefix               string
-    ParameterDefinitions *parameters.ParameterDefinitions
+    ParameterDefinitions *fields.Definitions
     ChildLayers          []ParameterLayer
 }
 
@@ -196,11 +196,11 @@ func parsedTagOptions(tag string) (*tagOptions, error)
 **Key Symbols**:
 ```go
 type Middleware func(HandlerFunc) HandlerFunc
-type HandlerFunc func(*layers.ParameterLayers, *layers.ParsedLayers) error
+type HandlerFunc func(*schema.Schema, *values.Values) error
 
 func ExecuteMiddlewares(
-    layers_ *layers.ParameterLayers,
-    parsedLayers *layers.ParsedLayers,
+    layers_ *schema.Schema,
+    parsedLayers *values.Values,
     middlewares ...Middleware,
 ) error
 ```
@@ -238,7 +238,7 @@ func ExecuteMiddlewares(
 **Key Symbols**:
 ```go
 type CobraParser struct {
-    Layers              *layers.ParameterLayers
+    Layers              *schema.Schema
     middlewaresFunc     CobraMiddlewaresFunc
     shortHelpLayers     []string
     skipCommandSettingsLayer bool
@@ -247,13 +247,13 @@ type CobraParser struct {
 }
 
 type CobraMiddlewaresFunc func(
-    parsedCommandLayers *layers.ParsedLayers,
+    parsedCommandLayers *values.Values,
     cmd *cobra.Command,
     args []string,
 ) ([]cmd_middlewares.Middleware, error)
 
 func CobraCommandDefaultMiddlewares(
-    parsedCommandLayers *layers.ParsedLayers,
+    parsedCommandLayers *values.Values,
     cmd *cobra.Command,
     args []string,
 ) ([]cmd_middlewares.Middleware, error)

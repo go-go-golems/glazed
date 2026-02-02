@@ -54,7 +54,7 @@ func init() {
 	// If we extracted out the docs command into a cmd.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
-	glazedLayer, err := schema.NewGlazedSchema(
+	glazedLayer, err := settings.NewGlazedSchema(
 		settings.WithFieldsFiltersParameterLayerOptions(
 			schema.WithDefaults(
 				&settings.FieldsFilterFlagsDefaults{

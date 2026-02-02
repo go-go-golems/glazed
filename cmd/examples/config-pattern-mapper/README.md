@@ -121,7 +121,7 @@ mappings:
 // Go
 mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
 if err != nil { /* handle */ }
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )

@@ -2,11 +2,13 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"os"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
-	"os"
 )
 
 type ReplaceSettings struct {
@@ -38,29 +40,29 @@ func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error 
 }
 
 type ReplaceParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
 //go:embed "flags/replace.yaml"
 var replaceFlagsYaml []byte
 
-func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*ReplaceParameterLayer, error) {
+func NewReplaceParameterLayer(options ...schema.SectionOption) (*ReplaceParameterLayer, error) {
 	ret := &ReplaceParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(replaceFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(replaceFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
-func (f *ReplaceParameterLayer) Clone() layers.ParameterLayer {
+func (f *ReplaceParameterLayer) Clone() schema.Section {
 	return &ReplaceParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewReplaceSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromParameters(glazedLayer *values.SectionValues) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {

@@ -3,18 +3,18 @@ package layers
 import (
 	"encoding/json"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 // SerializableParameterLayer represents a parameter layer in a format suitable for
 // YAML/JSON serialization
 type SerializableParameterLayer struct {
-	Name        string                           `yaml:"name" json:"name"`
-	Slug        string                           `yaml:"slug" json:"slug"`
-	Description string                           `yaml:"description" json:"description"`
-	Prefix      string                           `yaml:"prefix,omitempty" json:"prefix,omitempty"`
-	Parameters  *parameters.ParameterDefinitions `yaml:"parameters" json:"parameters"`
+	Name        string              `yaml:"name" json:"name"`
+	Slug        string              `yaml:"slug" json:"slug"`
+	Description string              `yaml:"description" json:"description"`
+	Prefix      string              `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Parameters  *fields.Definitions `yaml:"parameters" json:"parameters"`
 }
 
 // ToSerializable converts a ParameterLayer to its serializable representation

@@ -36,23 +36,23 @@ import (
 
 func run(cmd *cobra.Command, args []string) error {
     // Define layers
-    demo, _ := layers.NewParameterLayer(
+    demo, _ := schema.NewSection(
         "demo", "Demo",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-            parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger, parameters.WithDefault(10)),
+        schema.WithFields(
+            fields.New("api-key", fields.TypeString),
+            fields.New("threshold", fields.TypeInteger, fields.WithDefault(10)),
         ),
     )
-    pls := layers.NewParameterLayers(layers.WithLayers(demo))
-    parsed := layers.NewParsedLayers()
+    pls := schema.NewSchema(layers.WithLayers(demo))
+    parsed := values.New()
 
     // Apply middlewares in reverse-precedence order so later sources override earlier ones
-    err := middlewares.ExecuteMiddlewares(pls, parsed,
-        middlewares.SetFromDefaults(),                                // Defaults
-        middlewares.LoadParametersFromFiles([]string{"base.yaml"}),  // Config (low → high)
-        middlewares.UpdateFromEnv("MYAPP"),                           // Env (prefix)
-        middlewares.GatherArguments(args),                            // Positional args
-        middlewares.ParseFromCobraCommand(cmd),                       // Flags
+    err := sources.Execute(pls, parsed,
+        sources.FromDefaults(),                                // Defaults
+        sources.FromFiles([]string{"base.yaml"}),  // Config (low → high)
+        sources.FromEnv("MYAPP"),                           // Env (prefix)
+        sources.FromArgs(args),                            // Positional args
+        sources.FromCobra(cmd),                       // Flags
     )
     return err
 }
@@ -75,11 +75,11 @@ import (
 )
 
 func build() (*cobra.Command, error) {
-    demo, _ := layers.NewParameterLayer(
+    demo, _ := schema.NewSection(
         "demo", "Demo",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-            parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger, parameters.WithDefault(10)),
+        schema.WithFields(
+            fields.New("api-key", fields.TypeString),
+            fields.New("threshold", fields.TypeInteger, fields.WithDefault(10)),
         ),
     )
     desc := cmds.NewCommandDescription("demo", cmds.WithLayersList(demo))
@@ -91,7 +91,7 @@ func build() (*cobra.Command, error) {
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName:       "myapp",
             ConfigPath:    "", // optional explicit file (can come from --config-file too)
-            ConfigFilesFunc: func(_ *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+            ConfigFilesFunc: func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
                 return []string{"base.yaml", "local.yaml"}, nil
             },
         }),
@@ -111,10 +111,10 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 )
 
-layers_ := layers.NewParameterLayers(/* ... */)
-parsed := layers.NewParsedLayers()
-_ = middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.LoadParametersFromFile("/etc/myapp/config.yaml"),
+layers_ := schema.NewSchema(/* ... */)
+parsed := values.New()
+_ = sources.Execute(layers_, parsed,
+    sources.FromFile("/etc/myapp/config.yaml"),
 )
 ```
 
@@ -131,8 +131,8 @@ import (
 )
 
 files := []string{"base.yaml", "env.yaml", "local.yaml"} // low → high precedence
-_ = middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.LoadParametersFromFiles(files),
+_ = sources.Execute(layers_, parsed,
+    sources.FromFiles(files),
 )
 ```
 
@@ -171,7 +171,7 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds/layers"
 )
 
-resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     cs := &cli.CommandSettings{}
     _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
     if cs.ConfigFile == "" { return nil, nil }
@@ -219,14 +219,14 @@ import (
     "github.com/go-go-golems/glazed/pkg/cmds/parameters"
 )
 
-demo, _ := layers.NewParameterLayer("demo", "Demo",
-    layers.WithParameterDefinitions(
-        parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-        parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
-        parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
+demo, _ := schema.NewSection("demo", "Demo",
+    schema.WithFields(
+        fields.New("api-key", fields.TypeString),
+        fields.New("dev-api-key", fields.TypeString),
+        fields.New("prod-api-key", fields.TypeString),
     ),
 )
-pls := layers.NewParameterLayers(layers.WithLayers(demo))
+pls := schema.NewSchema(layers.WithLayers(demo))
 
 mapper, _ := pm.NewConfigMapper(pls,
     pm.MappingRule{
@@ -238,8 +238,8 @@ mapper, _ := pm.NewConfigMapper(pls,
     },
 )
 
-_ = middlewares.ExecuteMiddlewares(pls, layers.NewParsedLayers(),
-    middlewares.LoadParametersFromFile("config.yaml", middlewares.WithConfigMapper(mapper)),
+_ = sources.Execute(pls, values.New(),
+    sources.FromFile("config.yaml", middlewares.WithConfigMapper(mapper)),
 )
 ```
 
@@ -263,8 +263,8 @@ var mapper middlewares.ConfigFileMapper = func(raw interface{}) (map[string]map[
     }, nil
 }
 
-_ = middlewares.ExecuteMiddlewares(pls, layers.NewParsedLayers(),
-    middlewares.LoadParametersFromFile("config.yaml", middlewares.WithConfigFileMapper(mapper)),
+_ = sources.Execute(pls, values.New(),
+    sources.FromFile("config.yaml", middlewares.WithConfigFileMapper(mapper)),
 )
 ```
 
@@ -310,7 +310,7 @@ import (
     "gopkg.in/yaml.v3"
 )
 
-func validateConfigFile(layers_ *layers.ParameterLayers, path string) error {
+func validateConfigFile(layers_ *schema.Schema, path string) error {
     b, err := os.ReadFile(path)
     if err != nil { return err }
     var raw map[string]interface{}
@@ -324,7 +324,7 @@ func validateConfigFile(layers_ *layers.ParameterLayers, path string) error {
         if !ok { issues = append(issues, fmt.Sprintf("layer %s must be an object", layerSlug)); continue }
         pds := layer.GetParameterDefinitions()
         known := map[string]bool{}
-        pds.ForEach(func(pd *parameters.ParameterDefinition) { known[pd.Name] = true })
+        pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
         for key, val := range kv {
             if !known[key] { issues = append(issues, fmt.Sprintf("unknown parameter %s.%s", layerSlug, key)); continue }
             pd, _ := pds.Get(key)
@@ -371,7 +371,7 @@ These guidelines help keep your configuration predictable across environments an
 - Keep overlays small and ordered: `base.yaml`, `env.yaml`, `local.yaml`.
 - Prefer named captures over wildcards in pattern rules when collecting multiple values.
 - Use `AppName` in `CobraParserConfig` to enable env overrides automatically.
-- Record parse sources with `parameters.WithParseStepSource("config")` (done for you by the config middlewares).
+- Record parse sources with `sources.WithSource("config")` (done for you by the config middlewares).
 
 ## Example projects and scripts
 

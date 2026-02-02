@@ -54,7 +54,7 @@ The main output of this step is documentation scaffolding; no code behavior chan
 N/A.
 
 ### What I learned
-- The existing Glazed cobra integration already composes env parsing via `cli.CobraParserConfig.AppName` + `middlewares.UpdateFromEnv`, so the example program can rely on real production codepaths rather than inventing a new test harness.
+- The existing Glazed cobra integration already composes env parsing via `cli.CobraParserConfig.AppName` + `sources.FromEnv`, so the example program can rely on real production codepaths rather than inventing a new test harness.
 
 ### What was tricky to build
 N/A (scaffolding only).
@@ -132,8 +132,8 @@ This step implemented all four wrapper packages as specified in the design doc. 
 - Wrapper functions provide clean API surface
 
 ### What didn't work
-- Initial `NewDefinitions` signature in fields package was incorrect (took `[]func(*Definitions)` instead of `[]parameters.ParameterDefinitionsOption`)
-- Fixed by checking actual signature of `parameters.NewParameterDefinitions`
+- Initial `NewDefinitions` signature in fields package was incorrect (took `[]func(*Definitions)` instead of `[]fields.DefinitionsOption`)
+- Fixed by checking actual signature of `fields.News`
 
 ### What I learned
 - Type aliases (`type X = Y`) are zero-cost and preserve method sets perfectly
@@ -163,7 +163,7 @@ This step implemented all four wrapper packages as specified in the design doc. 
 
 ### Technical details
 - All packages follow pattern: type aliases + constructor wrappers + option re-exports
-- `sources.Execute` requires type conversions: `(*layers.ParameterLayers)(sections)` and `(*layers.ParsedLayers)(vals)` because aliases don't change underlying type identity for conversions
+- `sources.Execute` requires type conversions: `(*schema.Schema)(sections)` and `(*values.Values)(vals)` because aliases don't change underlying type identity for conversions
 - Re-exported options use `var` declarations to avoid function call overhead
 
 ## Step 4: Create and test example program
@@ -204,14 +204,14 @@ This step created a complete example program demonstrating all four wrapper pack
 
 ### What I learned
 - The new wrapper packages integrate seamlessly with existing Glazed infrastructure
-- Type aliases work perfectly for interop - can convert `*values.Values` to `*layers.ParsedLayers` when needed
+- Type aliases work perfectly for interop - can convert `*values.Values` to `*values.Values` when needed
 - Environment variable format: `DEMO_APP_VERBOSE` correctly maps to `app.verbose` with prefix `app-`
 - Cobra parser config `AppName` automatically enables env parsing with the correct prefix
 
 ### What was tricky to build
 - Understanding the command structure (root command vs subcommand)
 - Getting the env variable format right (`DEMO_APP_VERBOSE` vs `DEMO_APP-VERBOSE`)
-- Converting between alias types when passing to existing APIs (`(*layers.ParameterLayers)(sections)`)
+- Converting between alias types when passing to existing APIs (`(*schema.Schema)(sections)`)
 
 ### What warrants a second pair of eyes
 - Verify that all field types work correctly (tested bool, int, string, choice)
@@ -246,11 +246,11 @@ This step refined the naming to use `Schema` instead of `Sections` and added `Co
 
 ### What I did
 - Renamed `schema.Sections` → `schema.Schema` throughout:
-  - Updated type alias: `type Schema = layers.ParameterLayers`
-  - Updated option type: `type SchemaOption = layers.ParameterLayersOption`
+  - Updated type alias: `type Schema = schema.Schema`
+  - Updated option type: `type SchemaOption = schema.SchemaOption`
   - Updated constructor: `func NewSchema(...)` instead of `NewSections`
   - Updated `sources.Execute()` signature to use `*schema.Schema`
-- Added `schema.NewGlazedSchema()` wrapper for `settings.NewGlazedParameterLayers()`
+- Added `settings.NewGlazedSchema()` wrapper for `settings.NewGlazedParameterLayers()`
 - Updated Run method signature to use `*values.Values` directly (type alias compatibility)
 - Added `cmds.WithSchema()` wrapper for `cmds.WithLayers()` accepting `*schema.Schema`
 - Added `CommandDefinition` aliases:
@@ -259,10 +259,10 @@ This step refined the naming to use `Schema` instead of `Sections` and added `Co
   - `func NewCommandDefinition(...)` wrapper for `NewCommandDescription`
 - Updated example program to use all new names:
   - `schema.NewSchema()` instead of `schema.NewSections()`
-  - `cmds.WithSchema()` instead of `cmds.WithLayers((*layers.ParameterLayers)(schema))`
+  - `cmds.WithSchema()` instead of `cmds.WithLayers((*schema.Schema)(schema))`
   - `cmds.NewCommandDefinition()` instead of `cmds.NewCommandDescription()`
   - `*cmds.CommandDefinition` instead of `*cmds.CommandDescription`
-  - `*values.Values` in Run method signature instead of `*layers.ParsedLayers`
+  - `*values.Values` in Run method signature instead of `*values.Values`
 - Updated design doc and implementation plan to reflect `Schema` naming
 
 ### Why
@@ -276,14 +276,14 @@ This step refined the naming to use `Schema` instead of `Sections` and added `Co
 - Example program runs correctly with new names
 - Glaze commands still compile (backward compatibility maintained)
 - Geppetto still compiles (no breaking changes)
-- Type aliases work seamlessly - `*values.Values` satisfies `*layers.ParsedLayers` interface
+- Type aliases work seamlessly - `*values.Values` satisfies `*values.Values` interface
 
 ### What didn't work
 - N/A - all changes worked as expected
 
 ### What I learned
 - Type aliases in Go are truly zero-cost and fully compatible with underlying types
-- Can use `*values.Values` in method signatures that require `*layers.ParsedLayers`
+- Can use `*values.Values` in method signatures that require `*values.Values`
 - Renaming collection type (`Sections` → `Schema`) improves clarity without breaking compatibility
 - Adding wrapper functions provides better API ergonomics without changing underlying behavior
 
@@ -311,7 +311,7 @@ This step refined the naming to use `Schema` instead of `Sections` and added `Co
 - Test: `go build ./...` in geppetto (should still work)
 
 ### Technical details
-- Type aliases allow using `*values.Values` where `*layers.ParsedLayers` is expected
+- Type aliases allow using `*values.Values` where `*values.Values` is expected
 - `Schema` is a collection of `Section` items (clearer than `Sections`)
 - `CommandDefinition` provides better vocabulary alignment with schema/fields/values
 - All wrapper functions are zero-cost - they just call underlying functions

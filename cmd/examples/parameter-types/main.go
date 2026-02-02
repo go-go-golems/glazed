@@ -17,6 +17,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ type ParameterTypesCommand struct {
 var _ cmds.GlazeCommand = (*ParameterTypesCommand)(nil)
 
 func NewParameterTypesCommand() (*ParameterTypesCommand, error) {
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}
@@ -230,34 +231,34 @@ func (c *ParameterTypesCommand) RunIntoGlazeProcessor(
 	// Create a result row for each parameter
 	parameterData := []struct {
 		name         string
-		paramType    parameters.ParameterType
+		paramType    fields.Type
 		realValue    interface{}
 		help         string
 		required     bool
 		choices      []string
 		defaultValue interface{}
 	}{
-		{"string-param", parameters.ParameterTypeString, s.StringParam, "A simple string parameter", false, nil, "default-string"},
-		{"secret-param", parameters.ParameterTypeSecret, s.SecretParam, "A secret parameter (will be masked when displayed)", false, nil, "secret-value"},
-		{"integer-param", parameters.ParameterTypeInteger, s.IntegerParam, "An integer parameter", false, nil, 42},
-		{"float-param", parameters.ParameterTypeFloat, s.FloatParam, "A floating point parameter", false, nil, 3.14},
-		{"bool-param", parameters.ParameterTypeBool, s.BoolParam, "A boolean parameter", false, nil, true},
-		{"date-param", parameters.ParameterTypeDate, s.DateParam, "A date parameter (RFC3339 format or natural language)", false, nil, "2024-01-01T00:00:00Z"},
-		{"choice-param", parameters.ParameterTypeChoice, s.ChoiceParam, "A choice parameter with predefined options", false, []string{"option1", "option2", "option3"}, "option1"},
-		{"string-list-param", parameters.ParameterTypeStringList, s.StringListParam, "A list of strings", false, nil, []string{"item1", "item2"}},
-		{"integer-list-param", parameters.ParameterTypeIntegerList, s.IntegerListParam, "A list of integers", false, nil, []int{1, 2, 3}},
-		{"float-list-param", parameters.ParameterTypeFloatList, s.FloatListParam, "A list of floating point numbers", false, nil, []float64{1.1, 2.2, 3.3}},
-		{"choice-list-param", parameters.ParameterTypeChoiceList, s.ChoiceListParam, "A list of choices from predefined options", false, []string{"red", "green", "blue"}, []string{"red", "blue"}},
-		{"file-param", parameters.ParameterTypeFile, s.FileParam, "A file parameter that loads file metadata", false, nil, nil},
-		{"file-list-param", parameters.ParameterTypeFileList, s.FileListParam, "A list of files with metadata", false, nil, nil},
-		{"string-from-file-param", parameters.ParameterTypeStringFromFile, s.StringFromFileParam, "Load string content from a file", false, nil, nil},
-		{"string-from-files-param", parameters.ParameterTypeStringFromFiles, s.StringFromFilesParam, "Load and concatenate string content from multiple files", false, nil, nil},
-		{"string-list-from-file-param", parameters.ParameterTypeStringListFromFile, s.StringListFromFileParam, "Load lines from a file as a string list", false, nil, nil},
-		{"string-list-from-files-param", parameters.ParameterTypeStringListFromFiles, s.StringListFromFilesParam, "Load lines from multiple files as a string list", false, nil, nil},
-		{"object-from-file-param", parameters.ParameterTypeObjectFromFile, s.ObjectFromFileParam, "Load a JSON/YAML object from a file", false, nil, nil},
-		{"object-list-from-file-param", parameters.ParameterTypeObjectListFromFile, s.ObjectListFromFileParam, "Load a list of objects from a file", false, nil, nil},
-		{"object-list-from-files-param", parameters.ParameterTypeObjectListFromFiles, s.ObjectListFromFilesParam, "Load and merge object lists from multiple files", false, nil, nil},
-		{"key-value-param", parameters.ParameterTypeKeyValue, s.KeyValueParam, "Key-value pairs (format: key:value or @filename for JSON/YAML file)", false, nil, map[string]string{"default-key": "default-value"}},
+		{"string-param", fields.TypeString, s.StringParam, "A simple string parameter", false, nil, "default-string"},
+		{"secret-param", fields.TypeSecret, s.SecretParam, "A secret parameter (will be masked when displayed)", false, nil, "secret-value"},
+		{"integer-param", fields.TypeInteger, s.IntegerParam, "An integer parameter", false, nil, 42},
+		{"float-param", fields.TypeFloat, s.FloatParam, "A floating point parameter", false, nil, 3.14},
+		{"bool-param", fields.TypeBool, s.BoolParam, "A boolean parameter", false, nil, true},
+		{"date-param", fields.TypeDate, s.DateParam, "A date parameter (RFC3339 format or natural language)", false, nil, "2024-01-01T00:00:00Z"},
+		{"choice-param", fields.TypeChoice, s.ChoiceParam, "A choice parameter with predefined options", false, []string{"option1", "option2", "option3"}, "option1"},
+		{"string-list-param", fields.TypeStringList, s.StringListParam, "A list of strings", false, nil, []string{"item1", "item2"}},
+		{"integer-list-param", fields.TypeIntegerList, s.IntegerListParam, "A list of integers", false, nil, []int{1, 2, 3}},
+		{"float-list-param", fields.TypeFloatList, s.FloatListParam, "A list of floating point numbers", false, nil, []float64{1.1, 2.2, 3.3}},
+		{"choice-list-param", fields.TypeChoiceList, s.ChoiceListParam, "A list of choices from predefined options", false, []string{"red", "green", "blue"}, []string{"red", "blue"}},
+		{"file-param", fields.TypeFile, s.FileParam, "A file parameter that loads file metadata", false, nil, nil},
+		{"file-list-param", fields.TypeFileList, s.FileListParam, "A list of files with metadata", false, nil, nil},
+		{"string-from-file-param", fields.TypeStringFromFile, s.StringFromFileParam, "Load string content from a file", false, nil, nil},
+		{"string-from-files-param", fields.TypeStringFromFiles, s.StringFromFilesParam, "Load and concatenate string content from multiple files", false, nil, nil},
+		{"string-list-from-file-param", fields.TypeStringListFromFile, s.StringListFromFileParam, "Load lines from a file as a string list", false, nil, nil},
+		{"string-list-from-files-param", fields.TypeStringListFromFiles, s.StringListFromFilesParam, "Load lines from multiple files as a string list", false, nil, nil},
+		{"object-from-file-param", fields.TypeObjectFromFile, s.ObjectFromFileParam, "Load a JSON/YAML object from a file", false, nil, nil},
+		{"object-list-from-file-param", fields.TypeObjectListFromFile, s.ObjectListFromFileParam, "Load a list of objects from a file", false, nil, nil},
+		{"object-list-from-files-param", fields.TypeObjectListFromFiles, s.ObjectListFromFilesParam, "Load and merge object lists from multiple files", false, nil, nil},
+		{"key-value-param", fields.TypeKeyValue, s.KeyValueParam, "Key-value pairs (format: key:value or @filename for JSON/YAML file)", false, nil, map[string]string{"default-key": "default-value"}},
 	}
 
 	for _, param := range parameterData {

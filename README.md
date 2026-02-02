@@ -100,7 +100,7 @@ type MyCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     fmt.Println("Hello, World!")
     return nil
 }
@@ -111,7 +111,7 @@ Commands that produce structured data output:
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     row := types.NewRow(
@@ -138,12 +138,12 @@ Organize command parameters into logical, reusable groups:
 
 ```go
 // Define layers for different concerns
-func NewDatabaseLayer() *layers.ParameterLayer {
-    return layers.NewParameterLayer("database", "Database configuration",
-        parameters.NewParameterDefinition("host", parameters.ParameterTypeString,
-            parameters.WithDefault("localhost")),
-        parameters.NewParameterDefinition("port", parameters.ParameterTypeInteger,
-            parameters.WithDefault(5432)),
+func NewDatabaseLayer() *schema.Section {
+    return schema.NewSection("database", "Database configuration",
+        fields.New("host", fields.TypeString,
+            fields.WithDefault("localhost")),
+        fields.New("port", fields.TypeInteger,
+            fields.WithDefault(5432)),
     )
 }
 

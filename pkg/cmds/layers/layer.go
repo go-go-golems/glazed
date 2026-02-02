@@ -3,6 +3,7 @@ package layers
 import (
 	"encoding/json"
 
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/spf13/cobra"
@@ -16,8 +17,8 @@ import (
 //
 // TODO(manuel, 2023-12-20) This is a pretty messy interface, I think it used to be a struct?
 type ParameterLayer interface {
-	AddFlags(flag ...*parameters.ParameterDefinition)
-	GetParameterDefinitions() *parameters.ParameterDefinitions
+	AddFlags(flag ...*fields.Definition)
+	GetParameterDefinitions() *fields.Definitions
 
 	InitializeParameterDefaultsFromStruct(s interface{}) error
 
@@ -125,10 +126,10 @@ func (pl *ParameterLayers) Clone() *ParameterLayers {
 	return ret.Merge(pl)
 }
 
-func (pl *ParameterLayers) GetAllParameterDefinitions() *parameters.ParameterDefinitions {
-	ret := parameters.NewParameterDefinitions()
+func (pl *ParameterLayers) GetAllParameterDefinitions() *fields.Definitions {
+	ret := fields.NewDefinitions()
 	pl.ForEach(func(_ string, v ParameterLayer) {
-		v.GetParameterDefinitions().ForEach(func(p *parameters.ParameterDefinition) {
+		v.GetParameterDefinitions().ForEach(func(p *fields.Definition) {
 			prefix := v.GetPrefix()
 			ret.Set(prefix+p.Name, p)
 		})
@@ -166,7 +167,7 @@ func InitializeParameterLayerWithDefaults(
 ) error {
 	pds := v.GetParameterDefinitions()
 
-	err := pds.ForEachE(func(pd *parameters.ParameterDefinition) error {
+	err := pds.ForEachE(func(pd *fields.Definition) error {
 		v, err := pd.CheckParameterDefaultValueValidity()
 		if err != nil {
 			return err

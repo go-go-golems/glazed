@@ -45,17 +45,17 @@ func NewExampleCommand() (*ExampleCommand, error) {
 			"example",
 			cmds.WithShort("Example command"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"count",
-					parameters.ParameterTypeInteger,
-					parameters.WithHelp("Number of rows to output"),
-					parameters.WithDefault(10),
+					fields.TypeInteger,
+					fields.WithHelp("Number of rows to output"),
+					fields.WithDefault(10),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"test",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Whether to add a test column"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Whether to add a test column"),
+					fields.WithDefault(false),
 				),
 			),
 		),

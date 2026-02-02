@@ -213,7 +213,7 @@ Typed slugs make it slightly harder to accidentally pass the wrong string and ma
 
 ### What I learned
 
-- We do not currently have a shared slug type in Glazed core packages; slugs are generally plain `string` values today (e.g. `layers.DefaultSlug`).
+- We do not currently have a shared slug type in Glazed core packages; slugs are generally plain `string` values today (e.g. `schema.DefaultSlug`).
 
 ### What warrants a second pair of eyes
 

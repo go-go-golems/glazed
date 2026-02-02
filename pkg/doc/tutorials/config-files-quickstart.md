@@ -26,12 +26,12 @@ This tutorial shows how to load configuration from one or more files using Glaze
 Create a minimal command with a single custom layer and an explicit config file path:
 
 ```go
-demoLayer, _ := layers.NewParameterLayer(
+demoLayer, _ := schema.NewSection(
     "demo", "Demo settings",
     layers.WithPrefix("demo-"),
-    layers.WithParameterDefinitions(
-        parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-        parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger, parameters.WithDefault(10)),
+    schema.WithFields(
+        fields.New("api-key", fields.TypeString),
+        fields.New("threshold", fields.TypeInteger, fields.WithDefault(10)),
     ),
 )
 
@@ -72,7 +72,7 @@ api_key=cfg-one threshold=33
 Use a resolver to return an ordered list of files (low → high precedence):
 
 ```go
-resolver := func(_ *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+resolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     return []string{"base.yaml", "env.yaml", "local.yaml"}, nil
 }
 
@@ -162,7 +162,7 @@ go run ./cmd/examples/config-overlay overlay --demo-threshold 77
 To layer `<base>.override.yaml` automatically on top of `--config-file`:
 
 ```go
-resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     cs := &cli.CommandSettings{}
     _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
     files := []string{}
@@ -193,14 +193,14 @@ Map arbitrary config structures to parameters without custom Go by using the pat
 
 ```go
 // Define a layer
-demoLayer, _ := layers.NewParameterLayer("demo", "Demo",
-    layers.WithParameterDefinitions(
-        parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-        parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
-        parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
+demoLayer, _ := schema.NewSection("demo", "Demo",
+    schema.WithFields(
+        fields.New("api-key", fields.TypeString),
+        fields.New("dev-api-key", fields.TypeString),
+        fields.New("prod-api-key", fields.TypeString),
     ),
 )
-paramLayers := layers.NewParameterLayers(layers.WithLayers(demoLayer))
+paramLayers := schema.NewSchema(layers.WithLayers(demoLayer))
 
 // Create a mapper using a named capture {env}
 mapper, _ := patternmapper.NewConfigMapper(paramLayers,
@@ -214,10 +214,10 @@ mapper, _ := patternmapper.NewConfigMapper(paramLayers,
 )
 
 // Use the mapper when loading the file
-mw := middlewares.LoadParametersFromFile("config.yaml",
+mw := sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
-_ = middlewares.ExecuteMiddlewares(paramLayers, layers.NewParsedLayers(), mw)
+_ = sources.Execute(paramLayers, values.New(), mw)
 ```
 
 Builder API (fluent):
@@ -235,11 +235,11 @@ mapper, _ := b.Build()
 You can execute middlewares directly without relying on the Cobra parser config:
 
 ```go
-err := middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.SetFromDefaults(),
-    middlewares.LoadParametersFromFiles([]string{"base.yaml", "local.yaml"}),
-    middlewares.UpdateFromEnv("APP"),
-    middlewares.ParseFromCobraCommand(cmd), // flags & args
+err := sources.Execute(layers_, parsed,
+    sources.FromDefaults(),
+    sources.FromFiles([]string{"base.yaml", "local.yaml"}),
+    sources.FromEnv("APP"),
+    sources.FromCobra(cmd), // flags & args
 )
 ```
 
@@ -265,11 +265,11 @@ err := middlewares.ExecuteMiddlewares(layers_, parsed,
 Legacy Viper-based config parsing (e.g., `GatherFlagsFromViper`) is deprecated. Prefer config file middlewares plus env and flags:
 
 ```go
-err := middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.SetFromDefaults(),
-    middlewares.LoadParametersFromFiles([]string{"base.yaml", "env.yaml", "local.yaml"}),
-    middlewares.UpdateFromEnv("APP"),
-    middlewares.ParseFromCobraCommand(cmd),
+err := sources.Execute(layers_, parsed,
+    sources.FromDefaults(),
+    sources.FromFiles([]string{"base.yaml", "env.yaml", "local.yaml"}),
+    sources.FromEnv("APP"),
+    sources.FromCobra(cmd),
 )
 ```
 

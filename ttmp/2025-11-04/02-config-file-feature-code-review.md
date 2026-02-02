@@ -160,13 +160,13 @@ pkg/doc/
 1. **Single file loading**:
    ```go
    LoadParametersFromFile("config.yaml",
-       WithParseOptions(parameters.WithParseStepSource("config")))
+       WithParseOptions(sources.WithSource("config")))
    ```
 
 2. **Multi-file overlays** (low → high precedence):
    ```go
    LoadParametersFromFiles([]string{"base.yaml", "env.yaml", "local.yaml"},
-       WithParseOptions(parameters.WithParseStepSource("config")))
+       WithParseOptions(sources.WithSource("config")))
    ```
    Each file is tracked with metadata: `{config_file: "base.yaml", index: 0}`
 
@@ -232,7 +232,7 @@ type CobraParserConfig struct {
     ConfigPath string
     
     // Callback returning ordered config files (low → high precedence)
-    ConfigFilesFunc func(*layers.ParsedLayers, *cobra.Command, []string) ([]string, error)
+    ConfigFilesFunc func(*values.Values, *cobra.Command, []string) ([]string, error)
 }
 ```
 
@@ -272,7 +272,7 @@ CobraParserConfig{
 ```go
 CobraParserConfig{
     AppName: "myapp",
-    ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+    ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
         // Custom logic: overlays, conditional loading, etc.
         return []string{"base.yaml", "local.yaml"}, nil
     },
@@ -303,7 +303,7 @@ CobraParserConfig{
 
 1. **Deprecated**: `InitLoggerFromViper()`
 2. **New**: `InitLoggerFromCobra(cmd *cobra.Command)` - reads flags directly
-3. **New**: `SetupLoggingFromParsedLayers(parsed *layers.ParsedLayers)` - from middleware
+3. **New**: `SetupLoggingFromParsedLayers(parsed *values.Values)` - from middleware
 
 #### Old Pattern (Problematic)
 
@@ -380,15 +380,15 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 
 **Before:**
 ```go
-middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper"))
+middlewares.GatherFlagsFromViper(sources.WithSource("viper"))
 ```
 
 **After:**
 ```go
-middlewares.LoadParametersFromFiles([]string{"config.yaml"},
-    middlewares.WithParseOptions(parameters.WithParseStepSource("config"))),
-middlewares.UpdateFromEnv("APP",
-    parameters.WithParseStepSource("env")),
+sources.FromFiles([]string{"config.yaml"},
+    middlewares.WithParseOptions(sources.WithSource("config"))),
+sources.FromEnv("APP",
+    sources.WithSource("env")),
 ```
 
 #### Recommendation
@@ -569,7 +569,7 @@ configPath, _ := appconfig.ResolveAppConfigPath("myapp", "")
 // Option 3: Custom resolver (most flexible)
 CobraParserConfig{
     AppName: "myapp",
-    ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+    ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
         // Custom discovery logic
         return []string{configPath}, nil
     },

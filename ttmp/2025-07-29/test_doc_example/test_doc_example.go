@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 func main() {
@@ -34,29 +35,29 @@ template: "Hello {{.name}}!"`
 	})
 }
 
-func runTemplateCommand(cmd *cmds.TemplateCommand, values map[string]interface{}) {
+func runTemplateCommand(cmd *cmds.TemplateCommand, inputValues map[string]interface{}) {
 	// Get default parameter layer
-	defaultLayer, ok := cmd.Description().Layers.Get(layers.DefaultSlug)
+	defaultLayer, ok := cmd.Description().Layers.Get(schema.DefaultSlug)
 	if !ok {
 		panic("default layer not found")
 	}
 
 	// Create parsed layer with parameter values
-	var options []layers.ParsedLayerOption
-	for k, v := range values {
+	var options []values.SectionValuesOption
+	for k, v := range inputValues {
 		if _, exists := defaultLayer.GetParameterDefinitions().Get(k); exists {
-			options = append(options, layers.WithParsedParameterValue(k, v))
+			options = append(options, values.WithParameterValue(k, v))
 		}
 	}
 
-	parsedLayer, err := layers.NewParsedLayer(defaultLayer, options...)
+	parsedLayer, err := values.NewSectionValues(defaultLayer, options...)
 	if err != nil {
 		panic(err)
 	}
 
 	// Execute template
-	parsedLayers := layers.NewParsedLayers()
-	parsedLayers.Set(layers.DefaultSlug, parsedLayer)
+	parsedLayers := values.New()
+	parsedLayers.Set(schema.DefaultSlug, parsedLayer)
 
 	var output strings.Builder
 	err = cmd.RunIntoWriter(context.Background(), parsedLayers, &output)

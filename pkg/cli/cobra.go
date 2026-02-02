@@ -12,8 +12,9 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli/cliopatra"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 
@@ -25,7 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type CobraRunFunc func(ctx context.Context, parsedLayers *layers.ParsedLayers) error
+type CobraRunFunc func(ctx context.Context, parsedLayers *values.Values) error
 
 func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	var verbs []string
@@ -61,7 +62,7 @@ func runCobraCommand(
 		commandSettings := &CommandSettings{}
 		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
 			var printYAML, printParsedParameters_, printSchema bool
-			err = minimalLayer.InitializeStruct(commandSettings)
+			err = values.DecodeInto(minimalLayer, commandSettings)
 			cobra.CheckErr(err)
 			printYAML = commandSettings.PrintYAML
 			printParsedParameters_ = commandSettings.PrintParsedParameters
@@ -90,7 +91,7 @@ func runCobraCommand(
 		// Create command settings: cliopatra, alias, create
 		if createLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
 			createSettings := &CreateCommandSettings{}
-			err = createLayer.InitializeStruct(createSettings)
+			err = values.DecodeInto(createLayer, createSettings)
 			cobra.CheckErr(err)
 
 			if createSettings.CreateCliopatra != "" {
@@ -316,13 +317,13 @@ func BuildCobraCommandAlias(
 	argumentDefinitions := description.GetDefaultArguments()
 	provided, err := argumentDefinitions.GatherArguments(
 		alias.Arguments, true, true,
-		parameters.WithParseStepSource("cobra-alias"),
+		sources.WithSource("cobra-alias"),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	argumentDefinitions.ForEach(func(argDef *parameters.ParameterDefinition) {
+	argumentDefinitions.ForEach(func(argDef *fields.Definition) {
 		_, ok := provided.Get(argDef.Name)
 		if argDef.Required && !ok {
 			minArgs++
@@ -381,7 +382,7 @@ func BuildCobraCommandFromCommand(
 	opts ...CobraOption,
 ) (*cobra.Command, error) {
 	// Generic run function for classic mode (WriterCommand or BareCommand)
-	runFunc := func(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+	runFunc := func(ctx context.Context, parsedLayers *values.Values) error {
 		if writerCmd, ok := s.(cmds.WriterCommand); ok {
 			err := writerCmd.RunIntoWriter(ctx, parsedLayers, os.Stdout)
 			if _, exitWithoutGlaze := err.(*cmds.ExitWithoutGlazeError); exitWithoutGlaze {

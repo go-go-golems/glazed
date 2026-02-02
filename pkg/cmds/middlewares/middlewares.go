@@ -1,10 +1,11 @@
 package middlewares
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
-type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error
+type HandlerFunc func(layers *schema.Schema, parsedLayers *values.Values) error
 
 type Middleware func(HandlerFunc) HandlerFunc
 
@@ -18,7 +19,7 @@ type Middleware func(HandlerFunc) HandlerFunc
 // - [x] fill from cobra (flags, arguments)
 // - [x] fill from viper
 
-func Identity(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+func Identity(layers_ *schema.Schema, parsedLayers *values.Values) error {
 	return nil
 }
 
@@ -52,7 +53,7 @@ func Chain(ms ...Middleware) Middleware {
 //   - if you want to modify the layers before parsing, use the
 //     call `next` last. This means that the middlewares further down the list will
 //     get the newly updated ParameterLayers and thus potentially restrict which parameters they parse.
-func ExecuteMiddlewares(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers, middlewares ...Middleware) error {
+func ExecuteMiddlewares(layers_ *schema.Schema, parsedLayers *values.Values, middlewares ...Middleware) error {
 	handler := Identity
 	reversedMiddlewares := make([]Middleware, len(middlewares))
 	for i, m_ := range middlewares {

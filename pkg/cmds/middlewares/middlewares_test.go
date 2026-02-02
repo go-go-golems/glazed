@@ -2,15 +2,17 @@ package middlewares_test
 
 import (
 	_ "embed"
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/cmds/helpers"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	"github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type test struct {
@@ -38,8 +40,8 @@ func TestSetFromDefaults(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
 			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
-			middleware := middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults))
-			err := middleware(func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			middleware := middlewares.SetFromDefaults(sources.WithSource(sources.SourceDefaults))
+			err := middleware(func(layers *schema.Schema, parsedLayers *values.Values) error {
 				return nil
 			})(layers_, parsedLayers)
 
@@ -71,7 +73,7 @@ func TestUpdateFromMap(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
 			parsedLayers := helpers.NewTestParsedLayers(layers_, tt.ParsedLayers...)
 
-			err = middlewares.ExecuteMiddlewares(
+			err = sources.Execute(
 				layers_, parsedLayers,
 				middlewares.UpdateFromMap(tt.UpdateMaps),
 			)
@@ -176,7 +178,7 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := layers.NewParsedLayers()
+			parsedLayers := values.New()
 
 			ms_ := []middlewares.Middleware{}
 

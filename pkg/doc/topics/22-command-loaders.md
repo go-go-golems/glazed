@@ -229,7 +229,7 @@ func (mcl *MyCustomLoader) loadMyCommandFromReader(
 	// if err != nil { ... handle error ... }
 	commandName := "parsed-name" // Replace with actual parsed value
 	shortDesc := "parsed-short" // Replace with actual parsed value
-	paramDefs := []*parameters.ParameterDefinition{ /* ... parsed params ... */ }
+	paramDefs := []*fields.Definition{ /* ... parsed params ... */ }
 
 
 	// 2. Create the CommandDescription, applying passed-in options FIRST
@@ -256,7 +256,7 @@ type MySpecificCommand struct {
 	*cmds.CommandDescription
 	// ... other fields ...
 }
-func (msc *MySpecificCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error { /* ... */}
+func (msc *MySpecificCommand) Run(ctx context.Context, parsedLayers *values.Values) error { /* ... */}
 func NewMySpecificCommand(desc *cmds.CommandDescription) *MySpecificCommand { /* ... */ }
 
 ```

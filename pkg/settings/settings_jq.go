@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 )
@@ -17,26 +19,26 @@ type JqSettings struct {
 var jqFlagsYaml []byte
 
 type JqParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterLayer, error) {
+func NewJqParameterLayer(options ...schema.SectionOption) (*JqParameterLayer, error) {
 	ret := &JqParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(jqFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(jqFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create jq parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
-func (f *JqParameterLayer) Clone() layers.ParameterLayer {
+func (f *JqParameterLayer) Clone() schema.Section {
 	return &JqParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewJqSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*JqSettings, error) {
+func NewJqSettingsFromParameters(glazedLayer *values.SectionValues) (*JqSettings, error) {
 	s := &JqSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {

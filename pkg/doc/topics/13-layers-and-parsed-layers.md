@@ -46,8 +46,8 @@ layer, err := NewParameterLayer("config", "Configuration",
     WithDescription("Configuration options for the application"),
     WithPrefix("config-"),
     WithParameterDefinitions(
-        parameters.NewParameterDefinition("verbose", parameters.ParameterTypeBool),
-        parameters.NewParameterDefinition("output", parameters.ParameterTypeString),
+        fields.New("verbose", fields.TypeBool),
+        fields.New("output", fields.TypeString),
     ),
 )
 if err != nil {
@@ -61,8 +61,8 @@ You can add parameters to an existing layer using the `AddFlags` method:
 
 ```go
 layer.AddFlags(
-    parameters.NewParameterDefinition("log-level", parameters.ParameterTypeString),
-    parameters.NewParameterDefinition("max-retries", parameters.ParameterTypeInteger),
+    fields.New("log-level", fields.TypeString),
+    fields.New("max-retries", fields.TypeInteger),
 )
 ```
 
@@ -167,13 +167,13 @@ When creating a `cmds.CommandDescription`, you can register layers under explici
 
 ```go
 // Create layers with internal slugs
-cfgLayer, _ := layers.NewParameterLayer("config", "Configuration")
-outLayer, _ := layers.NewParameterLayer("output", "Output")
+cfgLayer, _ := schema.NewSection("config", "Configuration")
+outLayer, _ := schema.NewSection("output", "Output")
 
 // Register them under different command slugs
 cmd := cmds.NewCommandDescription(
     "run",
-    cmds.WithLayersMap(map[string]layers.ParameterLayer{
+    cmds.WithLayersMap(map[string]schema.Section{
         "cfg": cfgLayer,   // registered as "cfg"
         "out": outLayer,   // registered as "out"
     }),
@@ -183,7 +183,7 @@ cmd := cmds.NewCommandDescription(
 // parsedLayers.InitializeStruct("cfg", &myCfg)
 ```
 
-Note: If the layer is a `*layers.ParameterLayerImpl` and the key differs from the layer's internal slug, the layer is cloned and aligned to the registration key to maintain consistency at runtime.
+Note: If the layer is a `*schema.SectionImpl` and the key differs from the layer's internal slug, the layer is cloned and aligned to the registration key to maintain consistency at runtime.
 
 ### Accessing Layer Information
 
@@ -385,33 +385,33 @@ Middlewares in the Glazed framework provide a powerful mechanism to manage param
 
 1. **SetFromDefaults**: Populates parameters with their default values if no value exists.
    ```go
-   middleware := middlewares.SetFromDefaults(
-       parameters.WithParseStepSource("defaults"),
+   middleware := sources.FromDefaults(
+       sources.WithSource("defaults"),
    )
    ```
 
 2. **UpdateFromEnv**: Loads values from environment variables.
    ```go
-   middleware := middlewares.UpdateFromEnv("APP", 
-       parameters.WithParseStepSource("env"),
+   middleware := sources.FromEnv("APP", 
+       sources.WithSource("env"),
    )
    ```
 
 3. **LoadParametersFromFile / LoadParametersFromFiles**: Load parameters from JSON or YAML files.
    ```go
    // Single file
-   middleware := middlewares.LoadParametersFromFile("config.yaml",
-       middlewares.WithParseOptions(parameters.WithParseStepSource("config")))
+   middleware := sources.FromFile("config.yaml",
+       middlewares.WithParseOptions(sources.WithSource("config")))
 
    // Multiple files (low -> high precedence)
-   middleware2 := middlewares.LoadParametersFromFiles([]string{"base.yaml", "local.yaml"},
-       middlewares.WithParseOptions(parameters.WithParseStepSource("config")))
+   middleware2 := sources.FromFiles([]string{"base.yaml", "local.yaml"},
+       middlewares.WithParseOptions(sources.WithSource("config")))
    ```
 
 4. **ParseFromCobraCommand**: Parses parameter values from a Cobra command, typically used for CLI applications.
    ```go
-   middleware := middlewares.ParseFromCobraCommand(cmd,
-       parameters.WithParseStepSource("flags"),
+   middleware := sources.FromCobra(cmd,
+       sources.WithSource("flags"),
    )
    ```
 
@@ -421,11 +421,11 @@ To use middlewares, chain them together and execute them with your parameter lay
 
 
 ```go
-middlewares.ExecuteMiddlewares(layers, parsedLayers,
-    middlewares.SetFromDefaults(),
-    middlewares.LoadParametersFromFiles([]string{"config.yaml", "config.local.yaml"}),
-    middlewares.UpdateFromEnv("APP"),
-    middlewares.ParseFromCobraCommand(cmd),
+sources.Execute(layers, parsedLayers,
+    sources.FromDefaults(),
+    sources.FromFiles([]string{"config.yaml", "config.local.yaml"}),
+    sources.FromEnv("APP"),
+    sources.FromCobra(cmd),
 )
 ```
 

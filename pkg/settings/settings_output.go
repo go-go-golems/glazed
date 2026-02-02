@@ -7,7 +7,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/Masterminds/sprig"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
@@ -52,27 +53,27 @@ type OutputFormatterSettings struct {
 var outputFlagsYaml []byte
 
 type OutputParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputParameterLayer, error) {
+func NewOutputParameterLayer(options ...schema.SectionOption) (*OutputParameterLayer, error) {
 	ret := &OutputParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(outputFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(outputFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
 
-func (f *OutputParameterLayer) Clone() layers.ParameterLayer {
+func (f *OutputParameterLayer) Clone() schema.Section {
 	return &OutputParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(glazedLayer *values.SectionValues) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {

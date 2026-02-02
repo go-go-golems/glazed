@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 )
@@ -295,7 +295,7 @@ func AddFlagGroupToCobraCommand(
 	cmd *cobra.Command,
 	id string,
 	name string,
-	flags *parameters.ParameterDefinitions,
+	flags *fields.Definitions,
 	prefix string,
 ) {
 	flagNames := []string{}

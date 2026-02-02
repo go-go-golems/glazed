@@ -91,7 +91,7 @@ mapper, _ := patternmapper.NewConfigMapper(layers,
         TargetParameter: "api-key",
     },
 )
-middlewares.LoadParametersFromFile("config.yaml",
+sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(mapper))
 ```
 
@@ -103,7 +103,7 @@ mapper := func(raw interface{}) (map[string]map[string]interface{}, error) {
         "demo": {"api-key": raw["api-key"]},
     }, nil
 }
-middlewares.LoadParametersFromFile("config.yaml",
+sources.FromFile("config.yaml",
     middlewares.WithConfigFileMapper(mapper))
 ```
 
@@ -123,11 +123,11 @@ import (
 
 func GetCommandMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         middlewares.GatherFlagsFromViper(
-            parameters.WithParseStepSource("viper"),
+            sources.WithSource("viper"),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -148,14 +148,14 @@ import (
 
 func GetCommandMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.UpdateFromEnv("APP"),  // Explicit env prefix
-        middlewares.LoadParametersFromFile("config.yaml",
+        sources.FromCobra(cmd),
+        sources.FromEnv("APP"),  // Explicit env prefix
+        sources.FromFile("config.yaml",
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("config"),
+                sources.WithSource("config"),
             ),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -171,9 +171,9 @@ The new approach:
 For applications with a single config file, use `LoadParametersFromFile`:
 
 ```go
-middlewares.LoadParametersFromFile("/etc/myapp/config.yaml",
+sources.FromFile("/etc/myapp/config.yaml",
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
@@ -191,12 +191,12 @@ demo:
 For applications that compose configuration from multiple files, use `LoadParametersFromFiles`:
 
 ```go
-middlewares.LoadParametersFromFiles([]string{
+sources.FromFiles([]string{
     "base.yaml",
     "env.yaml", 
     "local.yaml",
 }, middlewares.WithParseOptions(
-    parameters.WithParseStepSource("config"),
+    sources.WithSource("config"),
 ))
 ```
 
@@ -215,7 +215,7 @@ import (
 
 func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         
         // Profile-specific override file
         middlewares.GatherFlagsFromCustomViper(
@@ -223,7 +223,7 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
                 fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile),
             ),
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("profile-overrides"),
+                sources.WithSource("profile-overrides"),
             ),
         ),
         
@@ -231,11 +231,11 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
         middlewares.GatherFlagsFromCustomViper(
             middlewares.WithAppName("shared-config"),
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("shared"),
+                sources.WithSource("shared"),
             ),
         ),
         
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -263,13 +263,13 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
     }
     
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.LoadParametersFromFiles(files,
+        sources.FromCobra(cmd),
+        sources.FromFiles(files,
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("config"),
+                sources.WithSource("config"),
             ),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -363,10 +363,10 @@ import (
 func runCommand(cmd *cobra.Command, args []string) error {
     // ... setup layers and parse ...
     
-    err := middlewares.ExecuteMiddlewares(layers_, parsed,
-        middlewares.LoadParametersFromFile("config.yaml"),
-        middlewares.UpdateFromEnv("APP"),
-        middlewares.ParseFromCobraCommand(cmd),
+    err := sources.Execute(layers_, parsed,
+        sources.FromFile("config.yaml"),
+        sources.FromEnv("APP"),
+        sources.FromCobra(cmd),
     )
     if err != nil {
         return err
@@ -427,7 +427,7 @@ func buildCommand() (*cobra.Command, error) {
     cobraCmd, err := cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",  // Enables env prefix MYAPP_ and config discovery
-            ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
                 // Use explicit path if provided via --config-file
                 cs := &cli.CommandSettings{}
                 _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
@@ -496,7 +496,7 @@ mapper, err := pm.NewConfigMapper(layers_,
 )
 
 // Use with LoadParametersFromFile
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -529,7 +529,7 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
     return result, nil
 }
 
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigFileMapper(mapper),
 )
@@ -548,16 +548,16 @@ The precedence order remains the same, but the way you express it changes. Remem
 ### Correct Precedence Order
 
 ```go
-middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.SetFromDefaults(),                              // Lowest priority
-    middlewares.LoadParametersFromFiles([]string{               // Config files (low → high)
+sources.Execute(layers_, parsed,
+    sources.FromDefaults(),                              // Lowest priority
+    sources.FromFiles([]string{               // Config files (low → high)
         "base.yaml",
         "env.yaml", 
         "local.yaml",
     }),
-    middlewares.UpdateFromEnv("APP"),                           // Environment variables
-    middlewares.GatherArguments(args),                          // Positional arguments
-    middlewares.ParseFromCobraCommand(cmd),                     // Flags (highest priority)
+    sources.FromEnv("APP"),                           // Environment variables
+    sources.FromArgs(args),                          // Positional arguments
+    sources.FromCobra(cmd),                     // Flags (highest priority)
 )
 ```
 
@@ -620,7 +620,7 @@ import appconfig "github.com/go-go-golems/glazed/pkg/config"
 
 configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
 if err == nil {
-    middlewares.LoadParametersFromFile(configPath)
+    sources.FromFile(configPath)
 }
 ```
 
@@ -641,7 +641,7 @@ files := []string{}
 if profile != "" {
     files = append(files, fmt.Sprintf("/etc/myapp/%s.yaml", profile))
 }
-middlewares.LoadParametersFromFiles(files)
+sources.FromFiles(files)
 ```
 
 ### Pattern 3: Environment Variable Overrides
@@ -652,7 +652,7 @@ Viper automatically merged environment variables based on prefix and key naming.
 **After:**
 ```go
 // Explicit env prefix
-middlewares.UpdateFromEnv("APP")  // Reads APP_* variables
+sources.FromEnv("APP")  // Reads APP_* variables
 ```
 
 Environment variable names follow the pattern: `{PREFIX}_{LAYER}_{PARAMETER}` (e.g., `APP_DEMO_API_KEY` for `demo.api-key`).
@@ -664,7 +664,7 @@ Manual Viper config file merging with custom precedence.
 
 **After:**
 ```go
-resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     cs := &cli.CommandSettings{}
     _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
     files := []string{}
@@ -708,7 +708,7 @@ import (
     "gopkg.in/yaml.v3"
 )
 
-func validateConfigFile(layers_ *layers.ParameterLayers, path string) error {
+func validateConfigFile(layers_ *schema.Schema, path string) error {
     b, err := os.ReadFile(path)
     if err != nil {
         return err
@@ -823,9 +823,9 @@ func main() {
 
 func GetMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         middlewares.GatherFlagsFromViper(),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -863,7 +863,7 @@ func buildCommand() (*cobra.Command, error) {
     return cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",
-            ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
                 cs := &cli.CommandSettings{}
                 _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
                 if cs.ConfigFile != "" {

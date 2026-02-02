@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -128,9 +131,9 @@ import (
 // }
 
 type TestParameterLayer struct {
-	Name        string                            `yaml:"name"`
-	Definitions []*parameters.ParameterDefinition `yaml:"definitions,omitempty"`
-	Prefix      string                            `yaml:"prefix"`
+	Name        string               `yaml:"name"`
+	Definitions []*fields.Definition `yaml:"definitions,omitempty"`
+	Prefix      string               `yaml:"prefix"`
 }
 
 type TestParsedParameter struct {
@@ -189,15 +192,15 @@ type TestMiddlewares []TestMiddleware
 func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 	ret := []middlewares.Middleware{}
 	for _, m := range t {
-		options := []parameters.ParseStepOption{}
+		options := []sources.ParseOption{}
 		for _, o := range m.Options {
 			switch o.Name {
 			case TestParseStepOptionSource:
-				options = append(options, parameters.WithParseStepSource(o.Value.(string)))
+				options = append(options, sources.WithSource(o.Value.(string)))
 			case TestParseStepOptionValue:
 				options = append(options, parameters.WithParseStepValue(o.Value))
 			case TestParseStepOptionMetadata:
-				options = append(options, parameters.WithParseStepMetadata(o.Value.(map[string]interface{})))
+				options = append(options, sources.WithMetadata(o.Value.(map[string]interface{})))
 			default:
 				return nil, errors.Newf("unknown option name %s", o.Name)
 			}
@@ -205,13 +208,13 @@ func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 
 		switch m.Name {
 		case TestMiddlewareSetFromDefaults:
-			ret = append(ret, middlewares.SetFromDefaults(options...))
+			ret = append(ret, sources.FromDefaults(options...))
 		case TestMiddlewareUpdateFromMap:
-			ret = append(ret, middlewares.UpdateFromMap(*m.Map, options...))
+			ret = append(ret, sources.FromMap(*m.Map, options...))
 		case TestMiddlewareUpdateFromMapAsDefault:
-			ret = append(ret, middlewares.UpdateFromMapAsDefault(*m.Map, options...))
+			ret = append(ret, sources.FromMapAsDefault(*m.Map, options...))
 		case TestMiddlewareUpdateFromEnv:
-			ret = append(ret, middlewares.UpdateFromEnv(*m.Prefix, options...))
+			ret = append(ret, sources.FromEnv(*m.Prefix, options...))
 		case TestWhitelistLayers:
 			ret = append(ret, middlewares.WhitelistLayers(*m.Layers))
 		case TestWhitelistLayersFirst:
@@ -237,11 +240,11 @@ func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 }
 
 // NewTestParameterLayer is a helper function to create a ParameterLayer from parameterDefinition
-func NewTestParameterLayer(l TestParameterLayer) layers.ParameterLayer {
-	definitions_ := []*parameters.ParameterDefinition{}
+func NewTestParameterLayer(l TestParameterLayer) schema.Section {
+	definitions_ := []*fields.Definition{}
 	definitions_ = append(definitions_, l.Definitions...)
-	ret, err := layers.NewParameterLayer(l.Name, l.Name,
-		layers.WithParameterDefinitions(definitions_...))
+	ret, err := schema.NewSection(l.Name, l.Name,
+		schema.WithFields(definitions_...))
 	if err != nil {
 		panic(err)
 	}
@@ -249,8 +252,8 @@ func NewTestParameterLayer(l TestParameterLayer) layers.ParameterLayer {
 	return ret
 }
 
-func NewTestParameterLayers(ls []TestParameterLayer) *layers.ParameterLayers {
-	ret := layers.NewParameterLayers()
+func NewTestParameterLayers(ls []TestParameterLayer) *schema.Schema {
+	ret := schema.NewSchema()
 	for _, l := range ls {
 		ret.Set(l.Name, NewTestParameterLayer(l))
 	}
@@ -258,7 +261,7 @@ func NewTestParameterLayers(ls []TestParameterLayer) *layers.ParameterLayers {
 }
 
 // NewTestParsedLayer helper function to create a ParsedLayers from TestParsedParameter
-func NewTestParsedLayer(pl layers.ParameterLayer, l TestParsedLayer) *layers.ParsedLayer {
+func NewTestParsedLayer(pl schema.Section, l TestParsedLayer) *values.SectionValues {
 	params_ := parameters.NewParsedParameters()
 	pds := pl.GetParameterDefinitions()
 	for _, p := range l.Parameters {
@@ -272,7 +275,7 @@ func NewTestParsedLayer(pl layers.ParameterLayer, l TestParsedLayer) *layers.Par
 		}
 	}
 
-	ret, err := layers.NewParsedLayer(pl, layers.WithParsedParameters(params_))
+	ret, err := values.NewSectionValues(pl, values.WithParameters(params_))
 	if err != nil {
 		panic(err)
 	}
@@ -280,8 +283,8 @@ func NewTestParsedLayer(pl layers.ParameterLayer, l TestParsedLayer) *layers.Par
 	return ret
 }
 
-func NewTestParsedLayers(pls *layers.ParameterLayers, ls ...TestParsedLayer) *layers.ParsedLayers {
-	ret := layers.NewParsedLayers()
+func NewTestParsedLayers(pls *schema.Schema, ls ...TestParsedLayer) *values.Values {
+	ret := values.New()
 	for _, l := range ls {
 		pl, ok := pls.Get(l.Name)
 		if !ok {
@@ -303,7 +306,7 @@ func compareValues(t *testing.T, expected, actual interface{}, key string) {
 	assert.Equal(t, normalizedExpected, normalizedActual, "mismatch for key %s", key)
 }
 
-func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parsedLayers *layers.ParsedLayers) {
+func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parsedLayers *values.Values) {
 	expectedLayers_ := map[string]TestExpectedLayer{}
 	for _, l_ := range expectedLayers {
 		expectedLayers_[l_.Name] = l_
@@ -332,7 +335,7 @@ func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parse
 		}
 	}
 
-	parsedLayers.ForEach(func(key string, l *layers.ParsedLayer) {
+	parsedLayers.ForEach(func(key string, l *values.SectionValues) {
 		if _, ok := expectedLayers_[key]; !ok {
 			t.Errorf("did not expect layer %s to be present", key)
 		}

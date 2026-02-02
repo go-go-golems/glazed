@@ -17,6 +17,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/go-go-golems/glazed/pkg/settings"
 )
 
 type JsonCommand struct {
@@ -34,7 +35,7 @@ type JsonSettings struct {
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
 	}

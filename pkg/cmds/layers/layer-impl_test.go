@@ -1,16 +1,17 @@
 package layers
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createSimpleParameterLayer(t *testing.T, options ...ParameterLayerOptions) *ParameterLayerImpl {
 	options_ := append([]ParameterLayerOptions{
 		WithParameterDefinitions(
-			parameters.NewParameterDefinition("flag1", parameters.ParameterTypeString),
+			fields.New("flag1", fields.TypeString),
 		),
 	}, options...)
 	layer, err := NewParameterLayer("simple", "Simple", options_...)

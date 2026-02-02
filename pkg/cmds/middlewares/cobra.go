@@ -3,8 +3,11 @@ package middlewares
 import (
 	"sync"
 
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -20,13 +23,13 @@ import (
 //	middleware := middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("flags"))
 func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
 			}
 
-			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+			err = layers_.ForEachE(func(key string, l schema.Section) error {
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepMetadata(map[string]interface{}{
 						"layer":          l.GetName(),
@@ -70,13 +73,13 @@ func ParseFromCobraCommand(cmd *cobra.Command, options ...parameters.ParseStepOp
 //	middleware := middlewares.GatherArguments(args, parameters.WithParseStepSource("args"))
 func GatherArguments(args []string, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
 			}
 
-			if defaultLayer, ok := layers_.Get(layers.DefaultSlug); ok {
+			if defaultLayer, ok := layers_.Get(schema.DefaultSlug); ok {
 				pds := defaultLayer.GetParameterDefinitions()
 				ps_, err := pds.GatherArguments(args, false, false, append(options, parameters.WithParseStepSource("arguments"))...)
 				if err != nil {
@@ -97,7 +100,7 @@ func GatherArguments(args []string, options ...parameters.ParseStepOption) Middl
 
 // ConfigFilesResolver is a callback used by Cobra-specific middleware to resolve the list
 // of config files to load in low -> high precedence order.
-type ConfigFilesResolver func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
+type ConfigFilesResolver func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]string, error)
 
 // LoadParametersFromResolvedFilesForCobra loads parameters from a resolver-provided list of files
 // (low -> high precedence). Each file is tracked as a separate parse step with metadata.
@@ -108,7 +111,7 @@ func LoadParametersFromResolvedFilesForCobra(
 	options ...parameters.ParseStepOption,
 ) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			if err := next(layers_, parsedLayers); err != nil {
 				return err
 			}
@@ -122,7 +125,7 @@ func LoadParametersFromResolvedFilesForCobra(
 			if len(options) > 0 {
 				configOpts = append(configOpts, WithParseOptions(options...))
 			}
-			return LoadParametersFromFiles(files, configOpts...)(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })(layers_, parsedLayers)
+			return LoadParametersFromFiles(files, configOpts...)(func(_ *schema.Schema, _ *values.Values) error { return nil })(layers_, parsedLayers)
 		}
 	}
 }
@@ -142,13 +145,13 @@ func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
 		log.Warn().Msg("middlewares.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
 	})
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
 			}
-			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+			err = layers_.ForEachE(func(key string, l schema.Section) error {
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepSource("viper"),
 					parameters.WithParseStepMetadata(map[string]interface{}{
@@ -203,12 +206,12 @@ func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseSte
 		log.Warn().Msg("middlewares.GatherSpecificFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
 	})
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
 			}
-			err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+			err = layers_.ForEachE(func(key string, l schema.Section) error {
 				options_ := append([]parameters.ParseStepOption{
 					parameters.WithParseStepSource("viper"),
 					parameters.WithParseStepMetadata(map[string]interface{}{
@@ -221,7 +224,7 @@ func GatherSpecificFlagsFromViper(flags []string, options ...parameters.ParseSte
 				prefix := l.GetPrefix()
 
 				// Filter the parameter definitions based on the specified flags
-				filteredDefinitions := parameters.NewParameterDefinitions()
+				filteredDefinitions := fields.NewDefinitions()
 				for _, flag := range flags {
 					if pd, ok := parameterDefinitions.Get(flag); ok {
 						filteredDefinitions.Set(pd.Name, pd)

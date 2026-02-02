@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -44,29 +46,29 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 }
 
 type TemplateParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
 const GlazedTemplateLayerSlug = "glazed-template"
 
-func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {
+func NewTemplateParameterLayer(options ...schema.SectionOption) (*TemplateParameterLayer, error) {
 	ret := &TemplateParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(templateFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(templateFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create template parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
 
-func (f *TemplateParameterLayer) Clone() layers.ParameterLayer {
+func (f *TemplateParameterLayer) Clone() schema.Section {
 	return &TemplateParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
+func NewTemplateSettings(layer *values.SectionValues) (*TemplateSettings, error) {
 	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStruct I think
 
 	// templates get applied before flattening

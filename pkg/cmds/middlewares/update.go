@@ -4,8 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 // SetFromDefaults is a middleware that sets default values from parameter definitions.
@@ -13,7 +15,7 @@ import (
 // If a default is defined, it sets that as the parameter value in the parsed layer.
 func SetFromDefaults(options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -32,7 +34,7 @@ func SetFromDefaults(options ...parameters.ParseStepOption) Middleware {
 // values into the parsed layers, skipping any layers not present in layers_.
 func UpdateFromMap(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -48,7 +50,7 @@ func UpdateFromMap(m map[string]map[string]interface{}, options ...parameters.Pa
 // values into the parsed layers, skipping any layers not present in layers_.
 func UpdateFromMapFirst(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := updateFromMap(layers_, parsedLayers, m, options...)
 			if err != nil {
 				return err
@@ -64,7 +66,7 @@ func UpdateFromMapFirst(m map[string]map[string]interface{}, options ...paramete
 // values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
 func UpdateFromMapAsDefault(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -80,7 +82,7 @@ func UpdateFromMapAsDefault(m map[string]map[string]interface{}, options ...para
 // values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
 func UpdateFromMapAsDefaultFirst(m map[string]map[string]interface{}, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := updateFromMapAsDefault(layers_, parsedLayers, m, options...)
 			if err != nil {
 				return err
@@ -92,8 +94,8 @@ func UpdateFromMapAsDefaultFirst(m map[string]map[string]interface{}, options ..
 }
 
 func updateFromMap(
-	layers_ *layers.ParameterLayers,
-	parsedLayers *layers.ParsedLayers,
+	layers_ *schema.Schema,
+	parsedLayers *values.Values,
 	m map[string]map[string]interface{},
 	options ...parameters.ParseStepOption) error {
 	for k, v := range m {
@@ -116,8 +118,8 @@ func updateFromMap(
 }
 
 func updateFromMapAsDefault(
-	layers_ *layers.ParameterLayers,
-	parsedLayers *layers.ParsedLayers,
+	layers_ *schema.Schema,
+	parsedLayers *values.Values,
 	m map[string]map[string]interface{},
 	options ...parameters.ParseStepOption) error {
 	for k, v := range m {
@@ -140,16 +142,16 @@ func updateFromMapAsDefault(
 }
 
 func updateFromEnv(
-	layers_ *layers.ParameterLayers,
-	parsedLayers *layers.ParsedLayers,
+	layers_ *schema.Schema,
+	parsedLayers *values.Values,
 	prefix string,
 	options ...parameters.ParseStepOption,
 ) error {
-	err := layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+	err := layers_.ForEachE(func(key string, l schema.Section) error {
 		parsedLayer := parsedLayers.GetOrCreate(l)
 		pds := l.GetParameterDefinitions()
 		layerPrefix := l.GetPrefix()
-		err := pds.ForEachE(func(p *parameters.ParameterDefinition) error {
+		err := pds.ForEachE(func(p *fields.Definition) error {
 			// Compute env key based on layer prefix + param name, hyphen->underscore, uppercase,
 			// and optional global prefix (app name) separated by underscore.
 			base := layerPrefix + p.Name
@@ -211,7 +213,7 @@ func updateFromEnv(
 
 func UpdateFromEnv(prefix string, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -222,8 +224,8 @@ func UpdateFromEnv(prefix string, options ...parameters.ParseStepOption) Middlew
 	}
 }
 
-func updateFromStringList(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers, prefix string, args []string, options ...parameters.ParseStepOption) error {
-	err := layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, prefix string, args []string, options ...parameters.ParseStepOption) error {
+	err := layers_.ForEachE(func(key string, l schema.Section) error {
 		parsedLayer := parsedLayers.GetOrCreate(l)
 		pds := l.GetParameterDefinitions()
 		ps, remainingArgs, err := pds.GatherFlagsFromStringList(args, true, true, prefix, options...)
@@ -258,7 +260,7 @@ func updateFromStringList(layers_ *layers.ParameterLayers, parsedLayers *layers.
 
 func UpdateFromStringList(prefix string, args []string, options ...parameters.ParseStepOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err

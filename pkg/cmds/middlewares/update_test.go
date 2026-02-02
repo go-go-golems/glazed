@@ -5,32 +5,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 	// Define a layer with a prefix so env keys are: PREFIX + "_" + UPPER(prefix+name)
-	cfgLayer, err := layers.NewParameterLayer("cfg", "Config",
-		layers.WithPrefix("cfg-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("verbose", parameters.ParameterTypeBool),
-			parameters.NewParameterDefinition("retries", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("ratio", parameters.ParameterTypeFloat),
-			parameters.NewParameterDefinition("start", parameters.ParameterTypeDate),
-			parameters.NewParameterDefinition("mode", parameters.ParameterTypeChoice, parameters.WithChoices("a", "b")),
-			parameters.NewParameterDefinition("names", parameters.ParameterTypeStringList),
-			parameters.NewParameterDefinition("nums", parameters.ParameterTypeIntegerList),
-			parameters.NewParameterDefinition("floats", parameters.ParameterTypeFloatList),
-			parameters.NewParameterDefinition("labels", parameters.ParameterTypeKeyValue),
-			parameters.NewParameterDefinition("user", parameters.ParameterTypeString),
+	cfgLayer, err := schema.NewSection("cfg", "Config",
+		schema.WithPrefix("cfg-"),
+		schema.WithFields(
+			fields.New("verbose", fields.TypeBool),
+			fields.New("retries", fields.TypeInteger),
+			fields.New("ratio", fields.TypeFloat),
+			fields.New("start", fields.TypeDate),
+			fields.New("mode", fields.TypeChoice, fields.WithChoices("a", "b")),
+			fields.New("names", fields.TypeStringList),
+			fields.New("nums", fields.TypeIntegerList),
+			fields.New("floats", fields.TypeFloatList),
+			fields.New("labels", fields.TypeKeyValue),
+			fields.New("user", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
 
-	pl := layers.NewParameterLayers(layers.WithLayers(cfgLayer))
-	parsed := layers.NewParsedLayers()
+	pl := schema.NewSchema(schema.WithSections(cfgLayer))
+	parsed := values.New()
 
 	// Set env vars
 	env := map[string]string{
@@ -113,16 +115,16 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 }
 
 func TestUpdateFromEnvInvalidChoice(t *testing.T) {
-	cfgLayer, err := layers.NewParameterLayer("cfg", "Config",
-		layers.WithPrefix("cfg-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("mode", parameters.ParameterTypeChoice, parameters.WithChoices("a", "b")),
+	cfgLayer, err := schema.NewSection("cfg", "Config",
+		schema.WithPrefix("cfg-"),
+		schema.WithFields(
+			fields.New("mode", fields.TypeChoice, fields.WithChoices("a", "b")),
 		),
 	)
 	require.NoError(t, err)
 
-	pl := layers.NewParameterLayers(layers.WithLayers(cfgLayer))
-	parsed := layers.NewParsedLayers()
+	pl := schema.NewSchema(schema.WithSections(cfgLayer))
+	parsed := values.New()
 
 	prev, had := os.LookupEnv("APP_CFG_MODE")
 	_ = os.Setenv("APP_CFG_MODE", "c") // invalid

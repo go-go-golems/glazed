@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/spf13/cobra"
 )
 
@@ -27,80 +28,80 @@ type LoggingSettings struct {
 const LoggingLayerSlug = "logging"
 
 // NewLoggingLayer creates a new parameter layer for logging configuration
-func NewLoggingLayer() (layers.ParameterLayer, error) {
-	return layers.NewParameterLayer(
+func NewLoggingLayer() (schema.Section, error) {
+	return schema.NewSection(
 		LoggingLayerSlug,
 		"Logging configuration options",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"with-caller",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Log caller information"),
-				parameters.WithDefault(false),
+				fields.TypeBool,
+				fields.WithHelp("Log caller information"),
+				fields.WithDefault(false),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"log-level",
-				parameters.ParameterTypeChoice,
-				parameters.WithHelp("Log level (trace, debug, info, warn, error, fatal)"),
-				parameters.WithDefault("info"),
-				parameters.WithChoices("trace", "debug", "info", "warn", "error", "fatal", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"),
+				fields.TypeChoice,
+				fields.WithHelp("Log level (trace, debug, info, warn, error, fatal)"),
+				fields.WithDefault("info"),
+				fields.WithChoices("trace", "debug", "info", "warn", "error", "fatal", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"log-format",
-				parameters.ParameterTypeChoice,
-				parameters.WithHelp("Log format (json, text)"),
-				parameters.WithDefault("text"),
-				parameters.WithChoices("json", "text"),
+				fields.TypeChoice,
+				fields.WithHelp("Log format (json, text)"),
+				fields.WithDefault("text"),
+				fields.WithChoices("json", "text"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"log-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Log file (default: stderr)"),
-				parameters.WithDefault(""),
+				fields.TypeString,
+				fields.WithHelp("Log file (default: stderr)"),
+				fields.WithDefault(""),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"log-to-stdout",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Log to stdout even when log-file is set"),
-				parameters.WithDefault(false),
+				fields.TypeBool,
+				fields.WithHelp("Log to stdout even when log-file is set"),
+				fields.WithDefault(false),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-enabled",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Enable logging to Logstash"),
-				parameters.WithDefault(false),
+				fields.TypeBool,
+				fields.WithHelp("Enable logging to Logstash"),
+				fields.WithDefault(false),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-host",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Logstash host"),
-				parameters.WithDefault("logstash"),
+				fields.TypeString,
+				fields.WithHelp("Logstash host"),
+				fields.WithDefault("logstash"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-port",
-				parameters.ParameterTypeInteger,
-				parameters.WithHelp("Logstash port"),
-				parameters.WithDefault(5044),
+				fields.TypeInteger,
+				fields.WithHelp("Logstash port"),
+				fields.WithDefault(5044),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-protocol",
-				parameters.ParameterTypeChoice,
-				parameters.WithHelp("Logstash protocol (tcp, udp)"),
-				parameters.WithDefault("tcp"),
-				parameters.WithChoices("tcp", "udp"),
+				fields.TypeChoice,
+				fields.WithHelp("Logstash protocol (tcp, udp)"),
+				fields.WithDefault("tcp"),
+				fields.WithChoices("tcp", "udp"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-app-name",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Application name for Logstash logs"),
-				parameters.WithDefault(""),
+				fields.TypeString,
+				fields.WithHelp("Application name for Logstash logs"),
+				fields.WithDefault(""),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"logstash-environment",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Environment name for Logstash logs (development, staging, production)"),
-				parameters.WithDefault("development"),
-				parameters.WithChoices("development", "staging", "production"),
+				fields.TypeString,
+				fields.WithHelp("Environment name for Logstash logs (development, staging, production)"),
+				fields.WithDefault("development"),
+				fields.WithChoices("development", "staging", "production"),
 			),
 		),
 	)
@@ -128,7 +129,7 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	// XXX this would be the proper way to do it if we could easily add parameter definitions as persistent flags. For now, do it manually.
 	// Don't delete this code
 	// ---
-	// loggingLayer.GetParameterDefinitions().ForEachE(func(definition *parameters.ParameterDefinition) error {
+	// loggingLayer.GetParameterDefinitions().ForEachE(func(definition *fields.Definition) error {
 	// 	rootCmd.PersistentFlags().String(definition.Name, definition.Default, definition.Help)
 	// 	return nil
 	// })
@@ -151,7 +152,7 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 }
 
 // SetupLoggingFromParsedLayers configures global logger from command-line parameters
-func SetupLoggingFromParsedLayers(parsedLayers *layers.ParsedLayers) error {
+func SetupLoggingFromParsedLayers(parsedLayers *values.Values) error {
 	settings, err := GetLoggingSettings(parsedLayers)
 	if err != nil {
 		return fmt.Errorf("failed to get logging settings: %w", err)
@@ -160,9 +161,9 @@ func SetupLoggingFromParsedLayers(parsedLayers *layers.ParsedLayers) error {
 }
 
 // GetLoggingSettings extracts logging configuration for custom validation or setup
-func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error) {
+func GetLoggingSettings(parsedLayers *values.Values) (*LoggingSettings, error) {
 	var settings LoggingSettings
-	err := parsedLayers.InitializeStruct(LoggingLayerSlug, &settings)
+	err := values.DecodeSectionInto(parsedLayers, LoggingLayerSlug, &settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
 	}

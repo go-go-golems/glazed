@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
@@ -27,6 +26,10 @@ type ConfigFileMapper = cmd_middlewares.ConfigFileMapper
 
 // ConfigMapper is a type alias for middlewares.ConfigMapper (function-based or pattern-based mappers).
 type ConfigMapper = cmd_middlewares.ConfigMapper
+
+// SourceDefaults is the canonical source label for default values.
+// It wraps parameters.SourceDefaults.
+const SourceDefaults = parameters.SourceDefaults
 
 // WithSource sets the parse-step source label (e.g. "env", "flags", "config", "defaults").
 // It wraps parameters.WithParseStepSource.
@@ -106,6 +109,24 @@ func FromMap(m map[string]map[string]interface{}, opts ...ParseOption) Middlewar
 	return cmd_middlewares.UpdateFromMap(m, opts...)
 }
 
+// FromMapFirst creates a middleware that applies UpdateFromMap with first-apply semantics.
+// It wraps middlewares.UpdateFromMapFirst.
+func FromMapFirst(m map[string]map[string]interface{}, opts ...ParseOption) Middleware {
+	return cmd_middlewares.UpdateFromMapFirst(m, opts...)
+}
+
+// FromMapAsDefault creates a middleware that updates values only when they are unset.
+// It wraps middlewares.UpdateFromMapAsDefault.
+func FromMapAsDefault(m map[string]map[string]interface{}, opts ...ParseOption) Middleware {
+	return cmd_middlewares.UpdateFromMapAsDefault(m, opts...)
+}
+
+// FromMapAsDefaultFirst creates a middleware that applies UpdateFromMapAsDefault with first-apply semantics.
+// It wraps middlewares.UpdateFromMapAsDefaultFirst.
+func FromMapAsDefaultFirst(m map[string]map[string]interface{}, opts ...ParseOption) Middleware {
+	return cmd_middlewares.UpdateFromMapAsDefaultFirst(m, opts...)
+}
+
 // Execute executes a chain of middlewares to resolve values from multiple sources.
 // It wraps middlewares.ExecuteMiddlewares.
 //
@@ -121,6 +142,6 @@ func FromMap(m map[string]map[string]interface{}, opts ...ParseOption) Middlewar
 // To achieve that, pass middlewares in the *reverse* order:
 //
 //	FromCobra, FromEnv, FromMap, FromFile/FromFiles, FromDefaults
-func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error {
-	return cmd_middlewares.ExecuteMiddlewares((*layers.ParameterLayers)(schema), (*layers.ParsedLayers)(vals), ms...)
+func Execute(schema_ *schema.Schema, vals *values.Values, ms ...Middleware) error {
+	return cmd_middlewares.ExecuteMiddlewares(schema_, vals, ms...)
 }

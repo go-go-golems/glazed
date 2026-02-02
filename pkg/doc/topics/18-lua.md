@@ -90,19 +90,19 @@ Converts a Glazed table to a Lua table.
 
 1. **ParseLuaTableToLayer**
 ```go
-func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer layers.ParameterLayer) (*layers.ParsedLayer, error)
+func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Section) (*values.SectionValues, error)
 ```
 Parses a Lua table into a ParsedLayer.
 
 2. **ParseNestedLuaTableToParsedLayers**
 ```go
-func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *layers.ParameterLayers) (*layers.ParsedLayers, error)
+func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *schema.Schema) (*values.Values, error)
 ```
 Parses a nested Lua table into ParsedLayers.
 
 3. **ParseParameterFromLua**
 ```go
-func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters.ParameterDefinition) (interface{}, error)
+func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *fields.Definition) (interface{}, error)
 ```
 Parses a Lua value into a Go value based on the parameter definition.
 

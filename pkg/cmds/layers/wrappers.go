@@ -1,6 +1,6 @@
 package layers
 
-import "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+import "github.com/go-go-golems/glazed/pkg/cmds/fields"
 
 type WhitelistParameterLayer struct {
 	ParameterLayer
@@ -16,10 +16,10 @@ func NewWhitelistParameterLayer(layer ParameterLayer, whitelistedParameters map[
 	}
 }
 
-func (l *WhitelistParameterLayer) GetParameterDefinitions() *parameters.ParameterDefinitions {
+func (l *WhitelistParameterLayer) GetParameterDefinitions() *fields.Definitions {
 	pds := l.ParameterLayer.GetParameterDefinitions()
-	ret := parameters.NewParameterDefinitions()
-	pds.ForEach(func(pd *parameters.ParameterDefinition) {
+	ret := fields.NewDefinitions()
+	pds.ForEach(func(pd *fields.Definition) {
 		if _, ok := l.WhitelistedParameters[pd.Name]; ok {
 			ret.Set(pd.Name, pd)
 		}
@@ -41,10 +41,10 @@ func NewBlacklistParameterLayer(layer ParameterLayer, blacklistedParameters map[
 	}
 }
 
-func (l *BlacklistParameterLayer) GetParameterDefinitions() *parameters.ParameterDefinitions {
+func (l *BlacklistParameterLayer) GetParameterDefinitions() *fields.Definitions {
 	pds := l.ParameterLayer.GetParameterDefinitions()
-	ret := parameters.NewParameterDefinitions()
-	pds.ForEach(func(pd *parameters.ParameterDefinition) {
+	ret := fields.NewDefinitions()
+	pds.ForEach(func(pd *fields.Definition) {
 		if _, ok := l.BlacklistedParameters[pd.Name]; !ok {
 			ret.Set(pd.Name, pd)
 		}

@@ -1,22 +1,25 @@
 package cliopatra
 
 import (
+	"testing"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
-func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *layers.ParsedLayers {
-	defaultLayer, ok := desc.GetLayer(layers.DefaultSlug)
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.ParsedParameters) *values.Values {
+	defaultLayer, ok := desc.GetLayer(schema.DefaultSlug)
 	if !ok {
 		return nil
 	}
 
-	ret := layers.NewParsedLayers()
-	ret.Set(layers.DefaultSlug, &layers.ParsedLayer{
+	ret := values.New()
+	ret.Set(schema.DefaultSlug, &values.SectionValues{
 		Layer:      defaultLayer,
 		Parameters: ps,
 	})
@@ -25,7 +28,7 @@ func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *parameters.Parsed
 }
 
 func TestSingleFlag(t *testing.T) {
-	testPd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
+	testPd := fields.New("test", fields.TypeString)
 	desc := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
 			testPd,
@@ -41,15 +44,15 @@ func TestSingleFlag(t *testing.T) {
 	assert.Len(t, p.Flags, 1)
 	assert.Equal(t, "test", p.Flags[0].Name)
 	assert.Equal(t, "", p.Flags[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[0].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[0].Type)
 	assert.Equal(t, "foobar", p.Flags[0].Value)
 }
 
 func TestSingleFlagDefaultValue(t *testing.T) {
-	pdTest := parameters.NewParameterDefinition("test",
-		parameters.ParameterTypeString,
-		parameters.WithDefault("foobar"),
-		parameters.WithHelp("testing help"),
+	pdTest := fields.New("test",
+		fields.TypeString,
+		fields.WithDefault("foobar"),
+		fields.WithHelp("testing help"),
 	)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
@@ -69,13 +72,13 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 	assert.Len(t, p.Flags, 1)
 	assert.Equal(t, "test", p.Flags[0].Name)
 	assert.Equal(t, "testing help", p.Flags[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[0].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[0].Type)
 	assert.Equal(t, "foobar2", p.Flags[0].Value)
 }
 
 func TestTwoFlags(t *testing.T) {
-	pd1 := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
-	pd2 := parameters.NewParameterDefinition("test2", parameters.ParameterTypeString)
+	pd1 := fields.New("test", fields.TypeString)
+	pd2 := fields.New("test2", fields.TypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithFlags(
 			pd1,
@@ -95,16 +98,16 @@ func TestTwoFlags(t *testing.T) {
 	assert.Len(t, p.Flags, 2)
 	assert.Equal(t, "test", p.Flags[0].Name)
 	assert.Equal(t, "", p.Flags[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[0].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[0].Type)
 	assert.Equal(t, "foobar", p.Flags[0].Value)
 	assert.Equal(t, "test2", p.Flags[1].Name)
 	assert.Equal(t, "", p.Flags[1].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[1].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[1].Type)
 	assert.Equal(t, "foobar2", p.Flags[1].Value)
 }
 
 func TestSingleArg(t *testing.T) {
-	pd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
+	pd := fields.New("test", fields.TypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithArguments(
 			pd,
@@ -121,15 +124,15 @@ func TestSingleArg(t *testing.T) {
 	assert.Len(t, p.Args, 1)
 	assert.Equal(t, "test", p.Args[0].Name)
 	assert.Equal(t, "", p.Args[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Args[0].Type)
+	assert.Equal(t, fields.TypeString, p.Args[0].Type)
 	assert.Equal(t, "foobar", p.Args[0].Value)
 }
 
 func TestTwoArgsTwoFlags(t *testing.T) {
-	pd1 := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
-	pd2 := parameters.NewParameterDefinition("test2", parameters.ParameterTypeString)
-	pd3 := parameters.NewParameterDefinition("test3", parameters.ParameterTypeString)
-	pd4 := parameters.NewParameterDefinition("test4", parameters.ParameterTypeString)
+	pd1 := fields.New("test", fields.TypeString)
+	pd2 := fields.New("test2", fields.TypeString)
+	pd3 := fields.New("test3", fields.TypeString)
+	pd4 := fields.New("test4", fields.TypeString)
 	d := cmds.NewCommandDescription("test",
 		cmds.WithArguments(
 			pd1,
@@ -155,27 +158,27 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 	assert.Len(t, p.Args, 2)
 	assert.Equal(t, "test", p.Args[0].Name)
 	assert.Equal(t, "", p.Args[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Args[0].Type)
+	assert.Equal(t, fields.TypeString, p.Args[0].Type)
 	assert.Equal(t, "foobar", p.Args[0].Value)
 	assert.Equal(t, "test2", p.Args[1].Name)
 	assert.Equal(t, "", p.Args[1].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Args[1].Type)
+	assert.Equal(t, fields.TypeString, p.Args[1].Type)
 	assert.Equal(t, "foobar2", p.Args[1].Value)
 	assert.Len(t, p.Flags, 2)
 	assert.Equal(t, "test3", p.Flags[0].Name)
 	assert.Equal(t, "", p.Flags[0].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[0].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[0].Type)
 	assert.Equal(t, "foobar3", p.Flags[0].Value)
 	assert.Equal(t, "test4", p.Flags[1].Name)
 	assert.Equal(t, "", p.Flags[1].Short)
-	assert.Equal(t, parameters.ParameterTypeString, p.Flags[1].Type)
+	assert.Equal(t, fields.TypeString, p.Flags[1].Type)
 	assert.Equal(t, "foobar4", p.Flags[1].Value)
 }
 
 func TestSingleLayer(t *testing.T) {
-	pd := parameters.NewParameterDefinition("test", parameters.ParameterTypeString)
-	layer, err2 := layers.NewParameterLayer("test-layer", "test-layer",
-		layers.WithParameterDefinitions(
+	pd := fields.New("test", fields.TypeString)
+	layer, err2 := schema.NewSection("test-layer", "test-layer",
+		schema.WithFields(
 			pd,
 		),
 	)
@@ -187,8 +190,8 @@ func TestSingleLayer(t *testing.T) {
 		),
 	)
 
-	ret := layers.NewParsedLayers()
-	ret.Set("test-layer", &layers.ParsedLayer{
+	ret := values.New()
+	ret.Set("test-layer", &values.SectionValues{
 		Layer: layer,
 		Parameters: parameters.NewParsedParameters(
 			parameters.WithParsedParameter(pd, "test", "foobar"))})

@@ -9,30 +9,31 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
 // Parameter describes a cliopatra parameter, which can be either a flag or an argument.
-// It does mirror the definition of parameters.ParameterDefinition, but here we only
+// It does mirror the definition of fields.Definition, but here we only
 // have a Value, and a Short description (which should actually describe which value we chose).
 //
 // The Flag makes it possible to override the flag used on the CLI, if necessary.
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
 type Parameter struct {
-	Name       string                   `yaml:"name"`
-	Flag       string                   `yaml:"flag,omitempty"`
-	Short      string                   `yaml:"short"`
-	Type       parameters.ParameterType `yaml:"type"`
-	Value      interface{}              `yaml:"value"`
-	Raw        string                   `yaml:"raw,omitempty"`
-	NoValue    bool                     `yaml:"noValue,omitempty"`
-	IsArgument bool                     `yaml:"isArgument,omitempty"`
-	Log        []parameters.ParseStep   `yaml:"log,omitempty"`
+	Name       string                 `yaml:"name"`
+	Flag       string                 `yaml:"flag,omitempty"`
+	Short      string                 `yaml:"short"`
+	Type       fields.Type            `yaml:"type"`
+	Value      interface{}            `yaml:"value"`
+	Raw        string                 `yaml:"raw,omitempty"`
+	NoValue    bool                   `yaml:"noValue,omitempty"`
+	IsArgument bool                   `yaml:"isArgument,omitempty"`
+	Log        []parameters.ParseStep `yaml:"log,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files
@@ -316,7 +317,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedLayers *values.Values,
 	w io.Writer,
 ) error {
 	var err error
@@ -408,7 +409,7 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 			flag_ = "--" + flag.Name
 		}
 		if flag.NoValue {
-			if flag.Type != parameters.ParameterTypeBool {
+			if flag.Type != fields.TypeBool {
 				return nil, errors.Errorf("flag %s is not a bool flag, only bool flags can be noValue", flag.Name)
 			}
 			if flag.Value.(bool) {

@@ -278,68 +278,68 @@ const (
 )
 
 // NewLoggingLayer creates a new parameter layer for logging configuration.
-func NewLoggingLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewLoggingLayer() (schema.Section, error) {
+    return schema.NewSection(
         LoggingSlug,
         "Logging Configuration",
-        layers.WithParameterDefinitions(
+        schema.WithFields(
             // Core logging parameters - the ones everyone needs
-            parameters.NewParameterDefinition(
+            fields.New(
                 "log-level",
-                parameters.ParameterTypeChoice,
-                parameters.WithHelp("Set the logging level"),
-                parameters.WithDefault("info"), // Safe default - not too noisy, not too quiet
-                parameters.WithChoices("debug", "info", "warn", "error", "fatal", "panic"),
-                parameters.WithShortFlag("L"), // Capital L to avoid conflicts with -l (list)
+                fields.TypeChoice,
+                fields.WithHelp("Set the logging level"),
+                fields.WithDefault("info"), // Safe default - not too noisy, not too quiet
+                fields.WithChoices("debug", "info", "warn", "error", "fatal", "panic"),
+                fields.WithShortFlag("L"), // Capital L to avoid conflicts with -l (list)
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "log-format",
-                parameters.ParameterTypeChoice,
-                parameters.WithHelp("Set the log output format"),
-                parameters.WithDefault("text"), // Human-readable by default
-                parameters.WithChoices("text", "json"), // JSON for log aggregation systems
+                fields.TypeChoice,
+                fields.WithHelp("Set the log output format"),
+                fields.WithDefault("text"), // Human-readable by default
+                fields.WithChoices("text", "json"), // JSON for log aggregation systems
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "log-file",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Log file path (default: stderr)"),
-                parameters.WithDefault(""), // Empty means stderr - explicit in help text
+                fields.TypeString,
+                fields.WithHelp("Log file path (default: stderr)"),
+                fields.WithDefault(""), // Empty means stderr - explicit in help text
             ),
             
             // Developer convenience parameters
-            parameters.NewParameterDefinition(
+            fields.New(
                 "with-caller",
-                parameters.ParameterTypeBool,
-                parameters.WithHelp("Include caller information in log entries"),
-                parameters.WithDefault(false), // Off by default - performance impact
+                fields.TypeBool,
+                fields.WithHelp("Include caller information in log entries"),
+                fields.WithDefault(false), // Off by default - performance impact
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "verbose",
-                parameters.ParameterTypeBool,
-                parameters.WithHelp("Enable verbose logging (sets level to debug)"),
-                parameters.WithDefault(false),
-                parameters.WithShortFlag("v"), // Classic Unix convention
+                fields.TypeBool,
+                fields.WithHelp("Enable verbose logging (sets level to debug)"),
+                fields.WithDefault(false),
+                fields.WithShortFlag("v"), // Classic Unix convention
             ),
             
             // Enterprise/production features
-            parameters.NewParameterDefinition(
+            fields.New(
                 "logstash-host",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Logstash server host for centralized logging"),
-                parameters.WithDefault(""), // Optional feature - empty disables
+                fields.TypeString,
+                fields.WithHelp("Logstash server host for centralized logging"),
+                fields.WithDefault(""), // Optional feature - empty disables
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "logstash-port",
-                parameters.ParameterTypeInteger,
-                parameters.WithHelp("Logstash server port"),
-                parameters.WithDefault(5044), // Standard Logstash Beats port
+                fields.TypeInteger,
+                fields.WithHelp("Logstash server port"),
+                fields.WithDefault(5044), // Standard Logstash Beats port
             ),
         ),
     )
 }
 
 // NewLoggingLayerWithOptions creates a logging layer with customization options
-func NewLoggingLayerWithOptions(opts ...LoggingLayerOption) (layers.ParameterLayer, error) {
+func NewLoggingLayerWithOptions(opts ...LoggingLayerOption) (schema.Section, error) {
     config := &loggingLayerConfig{
         includeLogstash: false,
         defaultLevel:    "info",
@@ -423,7 +423,7 @@ import (
 )
 
 // GetLoggingSettings extracts logging settings from parsed layers
-func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, error) {
+func GetLoggingSettings(parsedLayers *values.Values) (*LoggingSettings, error) {
     settings := &LoggingSettings{}
     if err := parsedLayers.InitializeStruct(LoggingSlug, settings); err != nil {
         return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
@@ -432,7 +432,7 @@ func GetLoggingSettings(parsedLayers *layers.ParsedLayers) (*LoggingSettings, er
 }
 
 // InitializeLogging sets up logging from parsed layers
-func InitializeLogging(parsedLayers *layers.ParsedLayers) error {
+func InitializeLogging(parsedLayers *values.Values) error {
     settings, err := GetLoggingSettings(parsedLayers)
     if err != nil {
         return err
@@ -454,7 +454,7 @@ func InitializeLogging(parsedLayers *layers.ParsedLayers) error {
 }
 
 // MustInitializeLogging sets up logging or panics on error
-func MustInitializeLogging(parsedLayers *layers.ParsedLayers) {
+func MustInitializeLogging(parsedLayers *values.Values) {
     if err := InitializeLogging(parsedLayers); err != nil {
         panic(fmt.Sprintf("Failed to initialize logging: %v", err))
     }
@@ -513,7 +513,7 @@ type ProcessDataSettings struct {
 
 func (c *ProcessDataCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Initialize logging first
@@ -525,7 +525,7 @@ func (c *ProcessDataCommand) RunIntoGlazeProcessor(
     
     // Get command settings
     settings := &ProcessDataSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, settings); err != nil {
         return err
     }
     
@@ -603,32 +603,32 @@ Examples:
         `),
         
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "input-file",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Input file to process"),
-                parameters.WithRequired(true),
-                parameters.WithShortFlag("i"),
+                fields.TypeString,
+                fields.WithHelp("Input file to process"),
+                fields.WithRequired(true),
+                fields.WithShortFlag("i"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "output-path",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Output file path"),
-                parameters.WithDefault("output.processed"),
-                parameters.WithShortFlag("o"),
+                fields.TypeString,
+                fields.WithHelp("Output file path"),
+                fields.WithDefault("output.processed"),
+                fields.WithShortFlag("o"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "workers",
-                parameters.ParameterTypeInteger,
-                parameters.WithHelp("Number of worker processes"),
-                parameters.WithDefault(2),
-                parameters.WithShortFlag("w"),
+                fields.TypeInteger,
+                fields.WithHelp("Number of worker processes"),
+                fields.WithDefault(2),
+                fields.WithShortFlag("w"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "dry-run",
-                parameters.ParameterTypeBool,
-                parameters.WithHelp("Perform a dry run without actual processing"),
-                parameters.WithDefault(false),
+                fields.TypeBool,
+                fields.WithHelp("Perform a dry run without actual processing"),
+                fields.WithDefault(false),
             ),
         ),
         
@@ -656,7 +656,7 @@ type AnalyzeDataSettings struct {
 
 func (c *AnalyzeDataCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Initialize logging (same layer, reused!)
@@ -667,7 +667,7 @@ func (c *AnalyzeDataCommand) RunIntoGlazeProcessor(
     log.Info().Msg("Starting data analysis command")
     
     settings := &AnalyzeDataSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, settings); err != nil {
         return err
     }
     
@@ -718,24 +718,24 @@ func NewAnalyzeDataCommand() (*AnalyzeDataCommand, error) {
         cmds.WithLong("Analyze data files using various algorithms with the same logging configuration."),
         
         cmds.WithFlags(
-            parameters.NewParameterDefinition(
+            fields.New(
                 "data-file",
-                parameters.ParameterTypeString,
-                parameters.WithHelp("Data file to analyze"),
-                parameters.WithRequired(true),
+                fields.TypeString,
+                fields.WithHelp("Data file to analyze"),
+                fields.WithRequired(true),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "algorithm",
-                parameters.ParameterTypeChoice,
-                parameters.WithChoices("linear", "logistic", "random-forest", "neural-net"),
-                parameters.WithDefault("linear"),
-                parameters.WithHelp("Analysis algorithm to use"),
+                fields.TypeChoice,
+                fields.WithChoices("linear", "logistic", "random-forest", "neural-net"),
+                fields.WithDefault("linear"),
+                fields.WithHelp("Analysis algorithm to use"),
             ),
-            parameters.NewParameterDefinition(
+            fields.New(
                 "iterations",
-                parameters.ParameterTypeInteger,
-                parameters.WithDefault(3),
-                parameters.WithHelp("Number of analysis iterations"),
+                fields.TypeInteger,
+                fields.WithDefault(3),
+                fields.WithHelp("Number of analysis iterations"),
             ),
         ),
         
@@ -859,7 +859,7 @@ parseOptions := []runner.ParseOption{
 Create specialized layers by combining the logging layer with others:
 
 ```go
-func NewDatabaseLayerWithLogging() ([]layers.ParameterLayer, error) {
+func NewDatabaseLayerWithLogging() ([]schema.Section, error) {
     loggingLayer, err := logging.NewLoggingLayer()
     if err != nil {
         return nil, err
@@ -870,7 +870,7 @@ func NewDatabaseLayerWithLogging() ([]layers.ParameterLayer, error) {
         return nil, err
     }
     
-    return []layers.ParameterLayer{loggingLayer, dbLayer}, nil
+    return []schema.Section{loggingLayer, dbLayer}, nil
 }
 ```
 

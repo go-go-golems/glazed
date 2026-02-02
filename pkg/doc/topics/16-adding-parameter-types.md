@@ -307,7 +307,7 @@ After implementing the core parameter functionality, you may need to update addi
 ```go
 switch param.Type {
 // ... existing cases ...
-case parameters.ParameterTypeCredentials:
+case fields.TypeCredentials:
     prop.Type = "object"
     prop.Properties = map[string]*JSONSchemaProperty{
         "username": {Type: "string"},
@@ -318,10 +318,10 @@ case parameters.ParameterTypeCredentials:
 
 ### Code Generation Support (`codegen/glazed.go`)
 ```go
-func FlagTypeToGoType(s *jen.Statement, parameterType parameters.ParameterType) *jen.Statement {
+func FlagTypeToGoType(s *jen.Statement, parameterType fields.Type) *jen.Statement {
     switch parameterType {
     // ... existing cases ...
-    case parameters.ParameterTypeCredentials:
+    case fields.TypeCredentials:
         return s.Map(jen.Id("string")).Id("string")
     }
 }
@@ -329,10 +329,10 @@ func FlagTypeToGoType(s *jen.Statement, parameterType parameters.ParameterType) 
 
 ### Lua Integration Support (`lua/lua.go`)
 ```go
-func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters.ParameterDefinition) (interface{}, error) {
+func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *fields.Definition) (interface{}, error) {
     switch paramDef.Type {
     // ... existing cases ...
-    case parameters.ParameterTypeCredentials:
+    case fields.TypeCredentials:
         if table, ok := value.(*lua.LTable); ok {
             creds := make(map[string]string)
             table.ForEach(func(k, v lua.LValue) {
@@ -359,11 +359,11 @@ Update the parameter types example command in [`cmd/examples/parameter-types/mai
 Add your parameter to the `cmds.WithFlags()` section:
 
 ```go
-parameters.NewParameterDefinition(
+fields.New(
     "credentials-param",
-    parameters.ParameterTypeCredentials,
-    parameters.WithHelp("A credentials parameter for username/password pairs"),
-    parameters.WithDefault(map[string]string{"username": "admin", "password": "secret"}),
+    fields.TypeCredentials,
+    fields.WithHelp("A credentials parameter for username/password pairs"),
+    fields.WithDefault(map[string]string{"username": "admin", "password": "secret"}),
 ),
 ```
 
@@ -381,7 +381,7 @@ type ParameterTypesSettings struct {
 Add an entry to the `parameterData` slice in `RunIntoGlazeProcessor`:
 
 ```go
-{"credentials-param", parameters.ParameterTypeCredentials, s.CredentialsParam, "A credentials parameter for username/password pairs", false, nil, map[string]string{"username": "admin", "password": "secret"}},
+{"credentials-param", fields.TypeCredentials, s.CredentialsParam, "A credentials parameter for username/password pairs", false, nil, map[string]string{"username": "admin", "password": "secret"}},
 ```
 
 This ensures that developers and users can easily test and understand how your new parameter type works in practice.

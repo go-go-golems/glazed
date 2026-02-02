@@ -148,17 +148,17 @@ func NewGenerateCommand(store *UserStore) (*GenerateCommand, error) {
             "generate",
             cmds.WithShort("Generate user records"),
             cmds.WithFlags(
-                parameters.NewParameterDefinition(
+                fields.New(
                     "count",
-                    parameters.ParameterTypeInteger,
-                    parameters.WithHelp("Number of users to generate"),
-                    parameters.WithDefault(5),
+                    fields.TypeInteger,
+                    fields.WithHelp("Number of users to generate"),
+                    fields.WithDefault(5),
                 ),
-                parameters.NewParameterDefinition(
+                fields.New(
                     "verbose",
-                    parameters.ParameterTypeBool,
-                    parameters.WithHelp("Enable verbose output"),
-                    parameters.WithDefault(false),
+                    fields.TypeBool,
+                    fields.WithHelp("Enable verbose output"),
+                    fields.WithDefault(false),
                 ),
             ),
         ),
@@ -166,7 +166,7 @@ func NewGenerateCommand(store *UserStore) (*GenerateCommand, error) {
     }, nil
 }
 
-func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
     type GenerateSettings struct {
         Count   int  `glazed.parameter:"count"`
         Verbose bool `glazed.parameter:"verbose"`
@@ -233,7 +233,7 @@ func NewListCommand(store *UserStore) (*ListCommand, error) {
     }, nil
 }
 
-func (c *ListCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *ListCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
     users := c.store.ListUsers()
     for _, user := range users {
         row := types.NewRow(
@@ -280,11 +280,11 @@ func NewDeleteCommand(store *UserStore) (*DeleteCommand, error) {
             cmds.WithShort("Delete a user record by ID"),
             cmds.WithFlags(),
             cmds.WithArguments(
-                parameters.NewParameterDefinition(
+                fields.New(
                     "id",
-                    parameters.ParameterTypeInteger,
-                    parameters.WithHelp("ID of the user to delete"),
-                    parameters.WithRequired(true),
+                    fields.TypeInteger,
+                    fields.WithHelp("ID of the user to delete"),
+                    fields.WithRequired(true),
                 ),
             ),
         ),
@@ -292,7 +292,7 @@ func NewDeleteCommand(store *UserStore) (*DeleteCommand, error) {
     }, nil
 }
 
-func (c *DeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *DeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
     type DeleteSettings struct {
         ID int `glazed.parameter:"id"`
     }

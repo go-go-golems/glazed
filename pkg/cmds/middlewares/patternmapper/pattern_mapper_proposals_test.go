@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,15 +14,15 @@ import (
 // TestMultiMatchPolicy tests proposal 2: Multi-match policy for wildcards
 func TestMultiMatchPolicy(t *testing.T) {
 	// Create test layers
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
-	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+	testLayers := schema.NewSchema(schema.WithSections(layer))
 
 	config := map[string]interface{}{
 		"app": map[string]interface{}{
@@ -83,15 +83,15 @@ func TestMultiMatchPolicy(t *testing.T) {
 // TestCollisionDetection tests proposal 3: Collision detection across rules
 func TestCollisionDetection(t *testing.T) {
 	// Create test layers
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
-	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+	testLayers := schema.NewSchema(schema.WithSections(layer))
 
 	config := map[string]interface{}{
 		"app": map[string]interface{}{
@@ -132,16 +132,16 @@ func TestCollisionDetection(t *testing.T) {
 	})
 
 	t.Run("no collision - different parameters", func(t *testing.T) {
-		layerMulti, err := layers.NewParameterLayer(
+		layerMulti, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-				parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger),
+			schema.WithFields(
+				fields.New("api-key", fields.TypeString),
+				fields.New("threshold", fields.TypeInteger),
 			),
 		)
 		require.NoError(t, err)
-		testLayersMulti := layers.NewParameterLayers(layers.WithLayers(layerMulti))
+		testLayersMulti := schema.NewSchema(schema.WithSections(layerMulti))
 
 		rulesMulti := []pm.MappingRule{
 			{
@@ -184,16 +184,16 @@ func TestCollisionDetection(t *testing.T) {
 func TestPrefixAwareErrorMessages(t *testing.T) {
 	t.Run("error message includes prefix-adjusted name", func(t *testing.T) {
 		// Create a layer with a prefix
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithPrefix("demo-"),
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("demo-api-key", parameters.ParameterTypeString),
+			schema.WithPrefix("demo-"),
+			schema.WithFields(
+				fields.New("demo-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		rules := []pm.MappingRule{
 			{
@@ -221,17 +221,17 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 
 	t.Run("error message shows both unprefixed and prefixed names (compile-time)", func(t *testing.T) {
 		// Create a layer with a prefix
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithPrefix("demo-"),
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("demo-threshold", parameters.ParameterTypeInteger),
+			schema.WithPrefix("demo-"),
+			schema.WithFields(
+				fields.New("demo-threshold", fields.TypeInteger),
 				// Note: demo-api-key does NOT exist, so we can test error
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		rules := []pm.MappingRule{
 			{
@@ -254,16 +254,16 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 
 	t.Run("error message for parameter with prefix already included (compile-time)", func(t *testing.T) {
 		// Create a layer with a prefix
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithPrefix("demo-"),
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("demo-threshold", parameters.ParameterTypeInteger),
+			schema.WithPrefix("demo-"),
+			schema.WithFields(
+				fields.New("demo-threshold", fields.TypeInteger),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		rules := []pm.MappingRule{
 			{
@@ -286,15 +286,15 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 // TestCombinedScenarios tests combinations of the proposals
 func TestCombinedScenarios(t *testing.T) {
 	t.Run("capture shadowing warning on nested rules", func(t *testing.T) {
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
+			schema.WithFields(
+				fields.New("dev-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		// Parent captures {env}, child also captures {env} -> shadowing warning
 		rules := []pm.MappingRule{
@@ -323,15 +323,15 @@ func TestCombinedScenarios(t *testing.T) {
 		assert.Contains(t, out, "{env}")
 	})
 	t.Run("multi-match with collision detection", func(t *testing.T) {
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+			schema.WithFields(
+				fields.New("api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		config := map[string]interface{}{
 			"app": map[string]interface{}{
@@ -371,16 +371,16 @@ func TestCombinedScenarios(t *testing.T) {
 	})
 
 	t.Run("prefix-aware error with collision", func(t *testing.T) {
-		layer, err := layers.NewParameterLayer(
+		layer, err := schema.NewSection(
 			"demo",
 			"Demo Layer",
-			layers.WithPrefix("demo-"),
-			layers.WithParameterDefinitions(
-				parameters.NewParameterDefinition("demo-api-key", parameters.ParameterTypeString),
+			schema.WithPrefix("demo-"),
+			schema.WithFields(
+				fields.New("demo-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+		testLayers := schema.NewSchema(schema.WithSections(layer))
 
 		config := map[string]interface{}{
 			"app": map[string]interface{}{

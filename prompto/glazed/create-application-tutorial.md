@@ -138,8 +138,8 @@ cmd/
        Token string `glazed.parameter:"token"`
    }
 
-   func NewAuthLayer() (layers.ParameterLayer, error) {
-       return layers.NewParameterLayer(
+   func NewAuthLayer() (schema.Section, error) {
+       return schema.NewSection(
            "auth",
            "Authentication settings",
            // ... focused parameter definitions
@@ -152,10 +152,10 @@ cmd/
    // Compose middleware in a logical order
    middlewares := []middlewares.Middleware{
        // 1. Parse input
-       middlewares.ParseFromCobraCommand(cmd),
+       sources.FromCobra(cmd),
        // 2. Load configuration from files and env
-       middlewares.LoadParametersFromFile("config.yaml"),
-       middlewares.UpdateFromEnv("MYAPP"),
+       sources.FromFile("config.yaml"),
+       sources.FromEnv("MYAPP"),
        // 3. Validate
        customMiddlewares.ValidateSettings(),
        // 4. Transform
@@ -342,7 +342,7 @@ func NewListGlazedCmd() (*ListCommand, error) {
     }
 
     // 3. Combine layers
-    layers_ := layers.NewParameterLayers(layers.WithLayers(
+    layers_ := schema.NewSchema(layers.WithLayers(
         glazedParameterLayer,
         appLayer,
     ))
@@ -360,7 +360,7 @@ func NewListGlazedCmd() (*ListCommand, error) {
 
 func (c *ListCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // 1. Parse settings

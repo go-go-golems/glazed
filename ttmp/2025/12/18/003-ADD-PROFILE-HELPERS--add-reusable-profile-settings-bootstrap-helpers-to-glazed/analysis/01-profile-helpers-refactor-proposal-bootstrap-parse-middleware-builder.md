@@ -55,9 +55,9 @@ The default discovery uses `config.ResolveAppConfigPath(appName, explicit)`:
 
 ### 2) Middleware primitives
 
-- `middlewares.LoadParametersFromFiles(files, ...)`
-- `middlewares.UpdateFromEnv(prefix, ...)`
-- `middlewares.ParseFromCobraCommand(cmd, ...)`
+- `sources.FromFiles(files, ...)`
+- `sources.FromEnv(prefix, ...)`
+- `sources.FromCobra(cmd, ...)`
 - `middlewares.GatherFlagsFromProfiles(defaultProfileFile, profileFile, profileName, ...)`
 - `middlewares.LoadParametersFromResolvedFilesForCobra(cmd, args, resolver, ...)` (Cobra-specific wrapper)
 
@@ -100,7 +100,7 @@ type ResolveProfileSelectionOptions struct {
     AppName string // required to compute env prefix + default profile path
 
     // Optional: config file resolver (low -> high). If nil, use ResolveAppConfigPath + --config-file.
-    ConfigFilesFunc func(parsedCommandLayers *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
+    ConfigFilesFunc func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]string, error)
 
     // Optional: config mapper used by LoadParametersFromFiles for non-standard config structures
     ConfigMapper middlewares.ConfigFileMapper
@@ -136,7 +136,7 @@ type ProfileBootstrapOptions struct {
     AppName string
 
     // Optional: config file resolver. If nil, use ResolveAppConfigPath + --config-file.
-    ConfigFilesFunc func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error)
+    ConfigFilesFunc func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error)
 
     // Optional: config mapper for non-standard config structure
     ConfigMapper ConfigFileMapper
@@ -187,12 +187,12 @@ profileMw, configFiles, err := middlewares.ProfileMiddlewareFromBootstrap(cmd, a
 if err != nil { return nil, err }
 
 middlewares_ := []middlewares.Middleware{
-    middlewares.ParseFromCobraCommand(cmd),
-    middlewares.GatherArguments(args),
-    middlewares.UpdateFromEnv("PINOCCHIO"),
-    middlewares.LoadParametersFromFiles(configFiles, ...),
+    sources.FromCobra(cmd),
+    sources.FromArgs(args),
+    sources.FromEnv("PINOCCHIO"),
+    sources.FromFiles(configFiles, ...),
     profileMw,
-    middlewares.SetFromDefaults(),
+    sources.FromDefaults(),
 }
 ```
 

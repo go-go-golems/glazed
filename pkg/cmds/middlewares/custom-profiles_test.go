@@ -5,8 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,29 +35,29 @@ production:
 	require.NoError(t, err)
 
 	// Create parameter definitions
-	hostParam := &parameters.ParameterDefinition{
+	hostParam := &fields.Definition{
 		Name: "host",
-		Type: parameters.ParameterTypeString,
+		Type: fields.TypeString,
 	}
-	portParam := &parameters.ParameterDefinition{
+	portParam := &fields.Definition{
 		Name: "port",
-		Type: parameters.ParameterTypeInteger,
+		Type: fields.TypeInteger,
 	}
-	debugParam := &parameters.ParameterDefinition{
+	debugParam := &fields.Definition{
 		Name: "debug",
-		Type: parameters.ParameterTypeBool,
+		Type: fields.TypeBool,
 	}
 
 	// Create layers
-	layer, err := layers.NewParameterLayer("config", "Config layer", layers.WithParameterDefinitions(
+	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := layers.NewParameterLayers()
+	parameterLayers := schema.NewSchema()
 	parameterLayers.Set("config", layer)
 
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	// Test middleware with custom profile file - development profile
 	middleware := GatherFlagsFromCustomProfiles(
@@ -111,29 +113,29 @@ production:
 	require.NoError(t, err)
 
 	// Create parameter definitions
-	hostParam := &parameters.ParameterDefinition{
+	hostParam := &fields.Definition{
 		Name: "host",
-		Type: parameters.ParameterTypeString,
+		Type: fields.TypeString,
 	}
-	portParam := &parameters.ParameterDefinition{
+	portParam := &fields.Definition{
 		Name: "port",
-		Type: parameters.ParameterTypeInteger,
+		Type: fields.TypeInteger,
 	}
-	debugParam := &parameters.ParameterDefinition{
+	debugParam := &fields.Definition{
 		Name: "debug",
-		Type: parameters.ParameterTypeBool,
+		Type: fields.TypeBool,
 	}
 
 	// Create layers
-	layer, err := layers.NewParameterLayer("config", "Config layer", layers.WithParameterDefinitions(
+	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := layers.NewParameterLayers()
+	parameterLayers := schema.NewSchema()
 	parameterLayers.Set("config", layer)
 
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	// Test middleware with custom profile file - production profile
 	middleware := GatherFlagsFromCustomProfiles(
@@ -169,21 +171,21 @@ production:
 
 func TestGatherFlagsFromCustomProfilesWithAppName(t *testing.T) {
 	// Create parameter definitions
-	testParam := &parameters.ParameterDefinition{
+	testParam := &fields.Definition{
 		Name: "test-param",
-		Type: parameters.ParameterTypeString,
+		Type: fields.TypeString,
 	}
 
 	// Create layers
-	layer, err := layers.NewParameterLayer("config", "Config layer", layers.WithParameterDefinitions(
+	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
 		testParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := layers.NewParameterLayers()
+	parameterLayers := schema.NewSchema()
 	parameterLayers.Set("config", layer)
 
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	// Test middleware with app name (should not fail even if config doesn't exist)
 	middleware := GatherFlagsFromCustomProfiles(
@@ -213,21 +215,21 @@ development:
 	require.NoError(t, err)
 
 	// Create parameter definitions
-	testParam := &parameters.ParameterDefinition{
+	testParam := &fields.Definition{
 		Name: "test-param",
-		Type: parameters.ParameterTypeString,
+		Type: fields.TypeString,
 	}
 
 	// Create layers
-	layer, err := layers.NewParameterLayer("config", "Config layer", layers.WithParameterDefinitions(
+	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
 		testParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := layers.NewParameterLayers()
+	parameterLayers := schema.NewSchema()
 	parameterLayers.Set("config", layer)
 
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	// Test middleware with non-existent profile but required
 	middleware := GatherFlagsFromCustomProfiles(

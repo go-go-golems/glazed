@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -23,15 +24,15 @@ type testRedisSettingsNoTags struct {
 	Host string
 }
 
-func newTestRedisLayer(defaultHost string) layers.ParameterLayer {
-	layer, err := layers.NewParameterLayer(
+func newTestRedisLayer(defaultHost string) schema.Section {
+	layer, err := schema.NewSection(
 		"redis",
 		"Redis",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"host",
-				parameters.ParameterTypeString,
-				parameters.WithDefault(defaultHost),
+				fields.TypeString,
+				fields.WithDefault(defaultHost),
 			),
 		),
 	)

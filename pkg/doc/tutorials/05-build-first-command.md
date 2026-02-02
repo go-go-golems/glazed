@@ -152,14 +152,14 @@ The `GlazeProcessor` collects these rows and can output them in multiple formats
 
 ### Command Configuration and Parameters
 
-Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `schema.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedParameterLayers()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
+Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedParameterLayers()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
 
 ```go
 // Step 2.4: Create constructor function
 func NewListUsersCommand() (*ListUsersCommand, error) {
     // Create glazed schema section for output formatting options
     // Note: cli.BuildCobraCommand will also auto-add this section for GlazeCommand implementations.
-    glazedLayer, err := schema.NewGlazedSchema()
+    glazedLayer, err := settings.NewGlazedSchema()
     if err != nil {
         return nil, err
     }
@@ -224,7 +224,7 @@ Examples:
 
 **Configuration components:**
 
-1. **Glazed Schema Section**: `schema.NewGlazedSchema()` adds built-in parameters like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
+1. **Glazed Schema Section**: `settings.NewGlazedSchema()` adds built-in parameters like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
 2. **Command Settings Layer**: `cli.NewCommandSettingsLayer()` adds debugging and configuration parameters:
    - `--print-parsed-parameters`: Debug parameter parsing
    - `--print-schema`: Show command schema

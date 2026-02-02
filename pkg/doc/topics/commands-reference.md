@@ -120,7 +120,7 @@ BareCommand provides direct control over output. Commands implementing this inte
 // BareCommand interface definition
 type BareCommand interface {
     Command
-    Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
+    Run(ctx context.Context, parsedLayers *values.Values) error
 }
 ```
 
@@ -136,9 +136,9 @@ type CleanupCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     s := &CleanupSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -184,7 +184,7 @@ WriterCommand allows commands to write text output to any destination (files, st
 // WriterCommand interface definition
 type WriterCommand interface {
     Command
-    RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
+    RunIntoWriter(ctx context.Context, parsedLayers *values.Values, w io.Writer) error
 }
 ```
 
@@ -202,9 +202,9 @@ type HealthReportCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *HealthReportCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+func (c *HealthReportCommand) RunIntoWriter(ctx context.Context, parsedLayers *values.Values, w io.Writer) error {
     s := &HealthReportSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -245,7 +245,7 @@ GlazeCommand produces structured data that Glazed processes into various output 
 // GlazeCommand interface definition
 type GlazeCommand interface {
     Command
-    RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
+    RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error
 }
 ```
 
@@ -265,11 +265,11 @@ type MonitorServersCommand struct {
 
 func (c *MonitorServersCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     s := &MonitorSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -329,9 +329,9 @@ type StatusCommand struct {
 }
 
 // Implement BareCommand for classic mode
-func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *StatusCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -345,11 +345,11 @@ func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLaye
 // Implement GlazeCommand for structured output mode
 func (c *StatusCommand) RunIntoGlazeProcessor(
     ctx context.Context, 
-    parsedLayers *layers.ParsedLayers, 
+    parsedLayers *values.Values, 
     gp middlewares.Processor,
 ) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -397,19 +397,19 @@ type MyCommandSettings struct {
 }
 ```
 
-The `InitializeStruct` method populates the settings struct from parsed layers. Always specify the correct layer slug (use `layers.DefaultSlug` for command-specific parameters):
+The `InitializeStruct` method populates the settings struct from parsed layers. Always specify the correct layer slug (use `schema.DefaultSlug` for command-specific parameters):
 
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Create settings struct instance
     s := &MyCommandSettings{}
     
     // Extract values from the "default" layer into the struct
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
@@ -455,12 +455,12 @@ type LoggingSettings struct {
 
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Extract command-specific settings
     cmdSettings := &MyCommandSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, cmdSettings); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, cmdSettings); err != nil {
         return err
     }
     
@@ -489,13 +489,13 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 
 **Pattern 1: Inline struct definition (for simple cases)**
 ```go
-func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     s := struct {
         Message string `glazed.parameter:"message"`
         Count   int    `glazed.parameter:"count"`
     }{}
 
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, &s); err != nil {
         return err
     }
 
@@ -511,9 +511,9 @@ type ExampleSettings struct {
     Count   int    `glazed.parameter:"count"`
 }
 
-func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     s := &ExampleSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return err
     }
 
@@ -524,7 +524,7 @@ func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 
 **Pattern 3: Helper function for reusable settings**
 ```go
-func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+func GetDatabaseSettings(parsedLayers *values.Values) (*DatabaseSettings, error) {
     settings := &DatabaseSettings{}
     err := parsedLayers.InitializeStruct("database", settings)
     return settings, err
@@ -653,7 +653,7 @@ row := types.NewRowFromStruct(&user, true) // true = lowercase field names
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     // Process data and create rows
@@ -679,11 +679,11 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedLayers *values.Values,
     gp middlewares.Processor,
 ) error {
     s := &MyCommandSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
         return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
@@ -724,7 +724,7 @@ func (c *MyCommand) validateSettings(s *MyCommandSettings) error {
 Commands can control application exit behavior:
 
 ```go
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     // For early exit without error
     if shouldExit {
         return &cmds.ExitWithoutGlazeError{}
@@ -818,18 +818,18 @@ Parameter types define data structure, parsing behavior, and validation rules. E
 ### Parameter Definition Options
 
 ```go
-parameters.NewParameterDefinition(
+fields.New(
     "parameter-name",                    // Required: parameter name
-    parameters.ParameterTypeString,      // Required: parameter type
+    fields.TypeString,      // Required: parameter type
     
     // Optional configuration
-    parameters.WithDefault("default"),   // Default value
-    parameters.WithHelp("Description"),  // Help text
-    parameters.WithRequired(true),       // Mark as required
-    parameters.WithShortFlag("n"),       // Short flag (-n)
+    fields.WithDefault("default"),   // Default value
+    fields.WithHelp("Description"),  // Help text
+    fields.WithRequired(true),       // Mark as required
+    fields.WithShortFlag("n"),       // Short flag (-n)
     
     // For choice types
-    parameters.WithChoices("opt1", "opt2", "opt3"),
+    fields.WithChoices("opt1", "opt2", "opt3"),
     
     // For file types
     parameters.WithFileExtensions(".txt", ".md"),
@@ -842,17 +842,17 @@ Arguments are positional parameters that don't use flags:
 
 ```go
 cmds.WithArguments(
-    parameters.NewParameterDefinition(
+    fields.New(
         "input-file",
-        parameters.ParameterTypeFile,
-        parameters.WithHelp("Input file to process"),
-        parameters.WithRequired(true),
+        fields.TypeFile,
+        fields.WithHelp("Input file to process"),
+        fields.WithRequired(true),
     ),
-    parameters.NewParameterDefinition(
+    fields.New(
         "output-file",
-        parameters.ParameterTypeString,
-        parameters.WithHelp("Output file path"),
-        parameters.WithRequired(false),
+        fields.TypeString,
+        fields.WithHelp("Output file path"),
+        fields.WithRequired(false),
     ),
 )
 ```
@@ -951,10 +951,10 @@ Provide sensible defaults so commands work with minimal flags. If your command r
 Write clear help text with examples for complex parameters:
 
 ```go
-parameters.NewParameterDefinition(
+fields.New(
     "filter",
-    parameters.ParameterTypeString,
-    parameters.WithHelp("Filter results using SQL-like syntax. Examples: 'status = \"active\"', 'created_at > \"2023-01-01\"'"),
+    fields.TypeString,
+    fields.WithHelp("Filter results using SQL-like syntax. Examples: 'status = \"active\"', 'created_at > \"2023-01-01\"'"),
 )
 ```
 

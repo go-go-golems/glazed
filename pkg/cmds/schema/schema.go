@@ -2,7 +2,7 @@ package schema
 
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/spf13/cobra"
 )
 
 // Section is a type alias for layers.ParameterLayer.
@@ -12,6 +12,14 @@ type Section = layers.ParameterLayer
 // Schema is a type alias for layers.ParameterLayers.
 // Schema is an ordered collection of schema sections.
 type Schema = layers.ParameterLayers
+
+// FlagGroupUsage is a type alias for layers.FlagGroupUsage.
+// FlagGroupUsage describes a formatted cobra flag group.
+type FlagGroupUsage = layers.FlagGroupUsage
+
+// CommandFlagGroupUsage is a type alias for layers.CommandFlagGroupUsage.
+// CommandFlagGroupUsage aggregates flag group usages for a cobra command.
+type CommandFlagGroupUsage = layers.CommandFlagGroupUsage
 
 // SectionImpl is a type alias for layers.ParameterLayerImpl.
 // SectionImpl is the common concrete implementation of Section.
@@ -34,6 +42,12 @@ func NewSection(slug string, name string, options ...SectionOption) (*SectionImp
 	return layers.NewParameterLayer(slug, name, options...)
 }
 
+// NewSectionFromYAML creates a new schema section from YAML definitions.
+// It wraps layers.NewParameterLayerFromYAML.
+func NewSectionFromYAML(s []byte, options ...SectionOption) (*SectionImpl, error) {
+	return layers.NewParameterLayerFromYAML(s, options...)
+}
+
 // NewSchema creates a new collection of schema sections.
 // It wraps layers.NewParameterLayers.
 func NewSchema(options ...SchemaOption) *Schema {
@@ -46,10 +60,10 @@ func WithSections(sections ...Section) SchemaOption {
 	return layers.WithLayers(sections...)
 }
 
-// NewGlazedSchema creates a new glazed schema section containing all glazed output/formatting settings.
-// It wraps settings.NewGlazedParameterLayers.
-func NewGlazedSchema(options ...settings.GlazeParameterLayerOption) (Section, error) {
-	return settings.NewGlazedParameterLayers(options...)
+// ComputeCommandFlagGroupUsage computes flag group usage information for a cobra command.
+// It wraps layers.ComputeCommandFlagGroupUsage.
+func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
+	return layers.ComputeCommandFlagGroupUsage(c)
 }
 
 // Re-export common section options for convenience

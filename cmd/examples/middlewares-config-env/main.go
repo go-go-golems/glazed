@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,7 @@ type DemoCommand struct {
 }
 
 func NewDemoCommand() (*DemoCommand, error) {
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}

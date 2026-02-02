@@ -1,16 +1,17 @@
 package middlewares
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 )
 
 // ReplaceParsedLayer is a middleware that replaces a parsed layer with a new one.
 // It first calls next, then replaces the specified layer with a clone of the provided one.
 // If the layer doesn't exist in the original parsedLayers, it will be added.
-func ReplaceParsedLayer(layerSlug string, newLayer *layers.ParsedLayer) Middleware {
+func ReplaceParsedLayer(layerSlug string, newLayer *values.SectionValues) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -29,9 +30,9 @@ func ReplaceParsedLayer(layerSlug string, newLayer *layers.ParsedLayer) Middlewa
 // ReplaceParsedLayers is a middleware that replaces multiple parsed layers at once.
 // It first calls next, then replaces all specified layers with clones of the provided ones.
 // If a layer doesn't exist in the original parsedLayers, it will be added.
-func ReplaceParsedLayers(newLayers *layers.ParsedLayers) Middleware {
+func ReplaceParsedLayers(newLayers *values.Values) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -41,7 +42,7 @@ func ReplaceParsedLayers(newLayers *layers.ParsedLayers) Middleware {
 				return errors.New("cannot replace with nil layers")
 			}
 
-			newLayers.ForEach(func(k string, v *layers.ParsedLayer) {
+			newLayers.ForEach(func(k string, v *values.SectionValues) {
 				parsedLayers.Set(k, v.Clone())
 			})
 			return nil
@@ -52,9 +53,9 @@ func ReplaceParsedLayers(newLayers *layers.ParsedLayers) Middleware {
 // ReplaceParsedLayersSelective is a middleware that replaces only the specified layers from the provided ParsedLayers.
 // It first calls next, then replaces only the layers specified in slugs with clones from newLayers.
 // If a layer in slugs doesn't exist in newLayers, it is skipped.
-func ReplaceParsedLayersSelective(newLayers *layers.ParsedLayers, slugs []string) Middleware {
+func ReplaceParsedLayersSelective(newLayers *values.Values, slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -77,9 +78,9 @@ func ReplaceParsedLayersSelective(newLayers *layers.ParsedLayers, slugs []string
 // MergeParsedLayer is a middleware that merges a parsed layer into an existing one.
 // It first calls next, then merges the provided layer into the specified one.
 // If the target layer doesn't exist, it will be created.
-func MergeParsedLayer(layerSlug string, layerToMerge *layers.ParsedLayer) Middleware {
+func MergeParsedLayer(layerSlug string, layerToMerge *values.SectionValues) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -107,9 +108,9 @@ func MergeParsedLayer(layerSlug string, layerToMerge *layers.ParsedLayer) Middle
 // MergeParsedLayers is a middleware that merges multiple parsed layers at once.
 // It first calls next, then merges all provided layers into the existing ones.
 // If a target layer doesn't exist, it will be created.
-func MergeParsedLayers(layersToMerge *layers.ParsedLayers) Middleware {
+func MergeParsedLayers(layersToMerge *values.Values) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err
@@ -132,9 +133,9 @@ func MergeParsedLayers(layersToMerge *layers.ParsedLayers) Middleware {
 // It first calls next, then merges only the layers specified in slugs from layersToMerge into the existing layers.
 // If a layer in slugs doesn't exist in layersToMerge, it is skipped.
 // If a target layer doesn't exist in parsedLayers, it will be created.
-func MergeParsedLayersSelective(layersToMerge *layers.ParsedLayers, slugs []string) Middleware {
+func MergeParsedLayersSelective(layersToMerge *values.Values, slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			err := next(layers_, parsedLayers)
 			if err != nil {
 				return err

@@ -52,9 +52,9 @@ Scope constraints:
 
 We’re exploring renames like:
 
-- `layers.ParameterLayer` → “schema section”
-- `parameters.ParameterDefinition` → “field definition”
-- `layers.ParsedLayers` → “values / resolved values”
+- `schema.Section` → “schema section”
+- `fields.Definition` → “field definition”
+- `values.Values` → “values / resolved values”
 
 **Already decided / assumed for debate:**
 

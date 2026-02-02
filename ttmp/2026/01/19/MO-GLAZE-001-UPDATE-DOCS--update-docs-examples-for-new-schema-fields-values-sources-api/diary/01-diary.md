@@ -51,8 +51,8 @@ The goal here was not to change behavior, but to update imports, decoding langua
 
 ### What I did
 - Updated the tutorial code blocks to import and use `pkg/cmds/schema`, `pkg/cmds/fields`, `pkg/cmds/values`.
-- Replaced `parsedLayers.InitializeStruct(layers.DefaultSlug, ...)` examples with `values.DecodeSectionInto(vals, schema.DefaultSlug, ...)`.
-- Updated parameter definitions from `parameters.NewParameterDefinition(...)` to `fields.New(...)`.
+- Replaced `parsedLayers.InitializeStruct(schema.DefaultSlug, ...)` examples with `values.DecodeSectionInto(vals, schema.DefaultSlug, ...)`.
+- Updated parameter definitions from `fields.New(...)` to `fields.New(...)`.
 - Updated short-help layer references to `schema.DefaultSlug`.
 - Matched the tutorial’s Go prerequisite to `go.mod` (Go 1.25+).
 - Compile-checked the tutorial code by assembling it into a standalone temp module with a `go.mod` `replace` to the local checkout and running `go build ./...`.
@@ -62,7 +62,7 @@ The goal here was not to change behavior, but to update imports, decoding langua
 - Keeping tutorial examples compiling is the fastest way to prevent drift during refactors.
 
 ### What worked
-- The wrapper API covered the tutorial’s needs directly (`schema.NewGlazedSchema`, `fields.New`, `values.DecodeSectionInto`).
+- The wrapper API covered the tutorial’s needs directly (`settings.NewGlazedSchema`, `fields.New`, `values.DecodeSectionInto`).
 - The assembled quickstart program compiled cleanly against the local checkout.
 
 ### What didn't work
@@ -70,7 +70,7 @@ The goal here was not to change behavior, but to update imports, decoding langua
   - `/usr/bin/zsh -lc 'rm -rf /tmp/glazed-build-first-command.QbuBrs' rejected: blocked by policy`
 
 ### What I learned
-- `cli.BuildCobraCommand` auto-adds the glazed schema section for `GlazeCommand` implementations, so tutorials/examples can often omit the explicit `schema.NewGlazedSchema()` unless they want to show the schema composition explicitly.
+- `cli.BuildCobraCommand` auto-adds the glazed schema section for `GlazeCommand` implementations, so tutorials/examples can often omit the explicit `settings.NewGlazedSchema()` unless they want to show the schema composition explicitly.
 
 ### What was tricky to build
 - Keeping examples “new API vocabulary” while still reflecting the underlying alias reality (e.g. some glue points still talk about `layers` in other parts of the codebase).
@@ -155,7 +155,7 @@ This keeps the examples directory consistent with the tutorial and reduces confu
 
 ### Technical details
 - Wrapper packages used:
-  - `schema.NewSection`, `schema.WithFields`, `schema.NewGlazedSchema`
+  - `schema.NewSection`, `schema.WithFields`, `settings.NewGlazedSchema`
   - `fields.New`, `fields.Type*`
   - `values.DecodeSectionInto`
   - `sources.FromCobra`, `sources.FromEnv`, `sources.FromFile`, `sources.FromDefaults`, `sources.Execute`

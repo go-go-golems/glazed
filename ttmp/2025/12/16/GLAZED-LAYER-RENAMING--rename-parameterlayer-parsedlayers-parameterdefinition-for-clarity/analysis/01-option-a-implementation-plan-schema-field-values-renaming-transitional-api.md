@@ -59,10 +59,10 @@ This document focuses on: **how to implement Bundle A in a migration-friendly wa
 
 Core concepts today:
 
-- `parameters.ParameterDefinition`: one **field spec** (type/default/help/required; flag or arg).
-- `layers.ParameterLayer`: one **schema section** (group of field specs; slug/prefix/help metadata).
-- `layers.ParsedLayer`: **values for one schema section**.
-- `layers.ParsedLayers`: **values across all schema sections**.
+- `fields.Definition`: one **field spec** (type/default/help/required; flag or arg).
+- `schema.Section`: one **schema section** (group of field specs; slug/prefix/help metadata).
+- `values.SectionValues`: **values for one schema section**.
+- `values.Values`: **values across all schema sections**.
 
 Bundle A target vocabulary:
 
@@ -77,7 +77,7 @@ Changing `pkg/cmds/layers` → `pkg/cmds/schema` breaks every downstream import.
 
 ### Constraint 2: Go type aliases help for names, but not for method renames
 
-Type aliases (`type Section = layers.ParameterLayer`) are great for “new nouns”, but:
+Type aliases (`type Section = schema.Section`) are great for “new nouns”, but:
 
 - You can’t add methods on an alias type.
 - You can’t rename existing methods by aliasing.
@@ -162,7 +162,7 @@ Once Bundle A has baked:
 
 We want two things simultaneously:
 
-1. **Legacy programs** keep compiling with `layers.ParameterLayer`, `parameters.ParameterDefinition`, `parsedLayers.InitializeStruct`, etc.
+1. **Legacy programs** keep compiling with `schema.Section`, `fields.Definition`, `parsedLayers.InitializeStruct`, etc.
 2. **New programs** can write code using Bundle A nouns and (ideally) verbs.
 
 ### Transitional API, level 1: noun-only transition (type synonyms)
@@ -192,7 +192,7 @@ Since we can’t rename methods cheaply, provide *new verbs as free functions* i
 
 Examples:
 
-- `values.DecodeSectionInto(v *layers.ParsedLayers, section string, dst any) error`
+- `values.DecodeSectionInto(v *values.Values, section string, dst any) error`
   - internally calls `v.InitializeStruct(section, dst)`
 - `schema.AddToCobra(cmd, sections)` wraps `ParameterLayers.AddToCobraCommand`
 
@@ -206,7 +206,7 @@ If we really want method names to change (e.g. `DecodeInto`), introduce *new def
 
 ```go
 // pkg/cmds/values
-type Values struct{ inner *layers.ParsedLayers }
+type Values struct{ inner *values.Values }
 func (v Values) DecodeInto(section string, dst any) error { return v.inner.InitializeStruct(section, dst) }
 ```
 
@@ -240,14 +240,14 @@ This is a suggested mapping to implement first (minimal + high impact):
 
 ### Schema nouns
 
-- `layers.ParameterLayer` → `layers.SchemaSection` (alias)
-- `layers.ParameterLayers` → `layers.SchemaSections` (alias)
-- `parameters.ParameterDefinition` → `parameters.FieldDefinition` (alias)
+- `schema.Section` → `layers.SchemaSection` (alias)
+- `schema.Schema` → `layers.SchemaSections` (alias)
+- `fields.Definition` → `parameters.FieldDefinition` (alias)
 
 ### Values nouns
 
-- `layers.ParsedLayer` → `layers.SectionValues` (alias)
-- `layers.ParsedLayers` → `layers.Values` (alias)
+- `values.SectionValues` → `layers.SectionValues` (alias)
+- `values.Values` → `layers.Values` (alias)
 
 ### Verbs (via helpers)
 
@@ -293,10 +293,10 @@ Add free functions (either in the same packages or in new façade packages) to i
 
 Examples:
 
-- `layers.DecodeSectionInto(values *layers.ParsedLayers, sectionKey string, dst any) error`
+- `layers.DecodeSectionInto(values *values.Values, sectionKey string, dst any) error`
   - implementation: `return values.InitializeStruct(sectionKey, dst)`
-- `layers.DecodeDefaultInto(values *layers.ParsedLayers, dst any) error`
-  - implementation: `return values.InitializeStruct(layers.DefaultSlug, dst)`
+- `layers.DecodeDefaultInto(values *values.Values, dst any) error`
+  - implementation: `return values.InitializeStruct(schema.DefaultSlug, dst)`
 
 This pattern can be mirrored in a new package `pkg/cmds/values` if we want imports to reflect “values”.
 

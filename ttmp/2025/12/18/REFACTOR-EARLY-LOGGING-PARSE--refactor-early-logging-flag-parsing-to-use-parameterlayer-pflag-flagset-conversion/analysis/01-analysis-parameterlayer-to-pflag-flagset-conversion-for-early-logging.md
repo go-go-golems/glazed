@@ -62,12 +62,12 @@ func initEarlyLoggingFromArgs(args []string) error {
 ### Glazed's Logging Layer (`glazed/pkg/cmds/logging/layer.go`)
 
 ```go
-func NewLoggingLayer() (layers.ParameterLayer, error) {
-    return layers.NewParameterLayer(
+func NewLoggingLayer() (schema.Section, error) {
+    return schema.NewSection(
         LoggingLayerSlug,
         "Logging configuration options",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("log-level", ParameterTypeChoice, ...),
+        schema.WithFields(
+            fields.New("log-level", ParameterTypeChoice, ...),
             // ... other definitions
         ),
     )
@@ -96,7 +96,7 @@ Create a reusable function in glazed that converts a `ParameterLayer` to a stand
 ```go
 // CreatePflagSetFromLayer creates a standalone pflag.FlagSet from a ParameterLayer
 func CreatePflagSetFromLayer(
-    layer layers.ParameterLayer,
+    layer schema.Section,
     name string,
     options ...PflagSetOption,
 ) (*pflag.FlagSet, error)
@@ -207,7 +207,7 @@ Parse the FlagSet into a `ParsedLayer` using existing parsing infrastructure.
 
 **Recommendation**: Option A is simpler for early initialization use case. We can add a helper:
 ```go
-func ExtractValuesFromFlagSet(fs *pflag.FlagSet, layer layers.ParameterLayer) (map[string]interface{}, error)
+func ExtractValuesFromFlagSet(fs *pflag.FlagSet, layer schema.Section) (map[string]interface{}, error)
 ```
 
 This iterates over the layer's parameter definitions and extracts values using the appropriate `pflag.FlagSet` getter methods.
@@ -218,7 +218,7 @@ This iterates over the layer's parameter definitions and extracts values using t
 
 **Proposed behavior**: Create a reusable function:
 ```go
-func FilterArgsForLayer(args []string, layer layers.ParameterLayer, prefix string) []string
+func FilterArgsForLayer(args []string, layer schema.Section, prefix string) []string
 ```
 
 This function:

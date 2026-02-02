@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -54,26 +55,26 @@ type RenameFlagsDefaults struct {
 var renameFlagsYaml []byte
 
 type RenameParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenameParameterLayer, error) {
+func NewRenameParameterLayer(options ...schema.SectionOption) (*RenameParameterLayer, error) {
 	ret := &RenameParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(renameFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(renameFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create rename parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 	return ret, nil
 }
 
-func (f *RenameParameterLayer) Clone() layers.ParameterLayer {
+func (f *RenameParameterLayer) Clone() schema.Section {
 	return &RenameParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*RenameSettings, error) {
+func NewRenameSettingsFromParameters(glazedLayer *values.SectionValues) (*RenameSettings, error) {
 	ps := glazedLayer.Parameters
 	rename := ps.GetValue("rename")
 	if rename == nil {

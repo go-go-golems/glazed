@@ -347,10 +347,10 @@ When loading this YAML, the system essentially constructs a `CommandDescription`
    - In Go code, this corresponds to something like:
 
      ```go
-     parameters.NewParameterDefinition(
+     fields.New(
        "name",
-       parameters.ParameterTypeStringList,
-       parameters.WithHelp("List of coupon names"),
+       fields.TypeStringList,
+       fields.WithHelp("List of coupon names"),
      )
      ```
 

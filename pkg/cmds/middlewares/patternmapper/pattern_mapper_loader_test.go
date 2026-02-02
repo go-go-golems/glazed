@@ -6,20 +6,20 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
-func buildTestLayers(t *testing.T, defs ...*parameters.ParameterDefinition) *layers.ParameterLayers {
+func buildTestLayers(t *testing.T, defs ...*fields.Definition) *schema.Schema {
 	t.Helper()
-	l, err := layers.NewParameterLayer("demo", "Demo",
-		layers.WithParameterDefinitions(defs...),
+	l, err := schema.NewSection("demo", "Demo",
+		schema.WithFields(defs...),
 	)
 	if err != nil {
 		t.Fatalf("failed to create layer: %v", err)
 	}
-	return layers.NewParameterLayers(layers.WithLayers(l))
+	return schema.NewSchema(schema.WithSections(l))
 }
 
 func TestLoadRulesFromYAML_Object(t *testing.T) {
@@ -85,9 +85,9 @@ mappings:
 	}
 
 	// Layers with expected params
-	defs := []*parameters.ParameterDefinition{
-		parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
+	defs := []*fields.Definition{
+		fields.New("dev-api-key", fields.TypeString),
+		fields.New("prod-api-key", fields.TypeString),
 	}
 	pls := buildTestLayers(t, defs...)
 

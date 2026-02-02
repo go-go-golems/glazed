@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -16,7 +18,7 @@ type SelectSettings struct {
 	SelectTemplate  string `glazed.parameter:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SelectSettings, error) {
+func NewSelectSettingsFromParameters(glazedLayer *values.SectionValues) (*SelectSettings, error) {
 	s := &SelectSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
@@ -35,22 +37,22 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 }
 
 type SelectParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectParameterLayer, error) {
+func NewSelectParameterLayer(options ...schema.SectionOption) (*SelectParameterLayer, error) {
 	ret := &SelectParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(selectFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(selectFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create select parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
 
-func (f *SelectParameterLayer) Clone() layers.ParameterLayer {
+func (f *SelectParameterLayer) Clone() schema.Section {
 	return &SelectParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

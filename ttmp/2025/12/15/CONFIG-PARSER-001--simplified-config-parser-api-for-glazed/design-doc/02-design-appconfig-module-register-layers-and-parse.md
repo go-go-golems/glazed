@@ -101,10 +101,10 @@ Notes:
 
 Alternative registration variants (optional, later):
 
-- `RegisterLayer(slug string, layer layers.ParameterLayer, bind func(*T) any)`
+- `RegisterLayer(slug string, layer schema.Section, bind func(*T) any)`
 - `Register(reg Registration[T])` where `Registration` is a small struct:
   - `Slug string`
-  - `Layer layers.ParameterLayer`
+  - `Layer schema.Section`
   - `Bind func(*T) any`
 
 ### Parse
@@ -117,7 +117,7 @@ if err != nil { ... }
 
 Semantics:
 
-1. Build a `layers.ParameterLayers` collection from all registered layers.
+1. Build a `schema.Schema` collection from all registered layers.
 2. Execute a middleware chain (configured via options) to populate `ParsedLayers`.
 3. For each registration:
    - call `parsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t))`
@@ -154,7 +154,7 @@ Two implementation strategies:
    - Call `runner.ParseCommandParameters(stubCmd, runnerOptions...)`.
 
 2) **Direct middleware execution**:
-   - Call `cmd_middlewares.ExecuteMiddlewares(layers, parsedLayers, middlewares...)` directly.
+   - Call `cmd_sources.Execute(layers, parsedLayers, middlewares...)` directly.
    - This duplicates runner’s ordering logic unless we re-expose it.
 
 Given we want option-driven middleware configuration, strategy (1) is the cleanest starting point.

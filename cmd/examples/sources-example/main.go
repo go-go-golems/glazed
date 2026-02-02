@@ -24,7 +24,7 @@ type ConfigSettings struct {
 
 // BareCommand that uses sources package for manual middleware execution
 type SourcesExampleCommand struct {
-	*cmds.CommandDefinition
+	*cmds.CommandDescription
 }
 
 func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
@@ -78,7 +78,7 @@ Precedence order (lowest to highest):
 		cmds.WithSchema(schema_),
 	)
 
-	return &SourcesExampleCommand{CommandDefinition: desc}, nil
+	return &SourcesExampleCommand{CommandDescription: desc}, nil
 }
 
 // Ensure interface compliance
@@ -114,7 +114,7 @@ func main() {
 	}
 
 	// Get the schema from the command
-	// cmd.Layers is *layers.ParameterLayers, but we convert to schema.Schema (type alias)
+	// cmd.Layers is *schema.Schema, but we convert to schema.Schema (type alias)
 	// to use the new API vocabulary
 	cmdSchema := (*schema.Schema)(cmd.Layers)
 

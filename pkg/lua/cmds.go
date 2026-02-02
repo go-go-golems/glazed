@@ -4,33 +4,36 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	lua2 "github.com/yuin/gopher-lua"
-	"strings"
 )
 
 // CallGlazedCommandFromLua executes a GlazeCommand with parameters from a Lua table
 func CallGlazedCommandFromLua(L *lua2.LState, cmd cmds.GlazeCommand, luaTable *lua2.LTable) (*types.Table, error) {
 	// Create parsed layers
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	// Define middlewares
 	middlewares_ := []middlewares.Middleware{
 		// Parse from Lua table (highest priority)
 		ParseNestedLuaTableMiddleware(L, luaTable),
 		// Set defaults (lowest priority)
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
 	}
 
 	// Execute middlewares
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Layers, parsedLayers, middlewares_...)
 	if err != nil {
 		return nil, fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -88,14 +91,14 @@ func LuaCallGlazedCommand(L *lua2.LState) int {
 
 // CallGlazedBareCommandFromLua executes a BareCcommand with parameters from a Lua table
 func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable *lua2.LTable) error {
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	middlewares_ := []middlewares.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
 	}
 
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Layers, parsedLayers, middlewares_...)
 	if err != nil {
 		return fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -113,14 +116,14 @@ func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable
 
 // CallGlazedWriterCommandFromLua executes a WriterCommand with parameters from a Lua table
 func CallGlazedWriterCommandFromLua(L *lua2.LState, cmd cmds.WriterCommand, luaTable *lua2.LTable) (string, error) {
-	parsedLayers := layers.NewParsedLayers()
+	parsedLayers := values.New()
 
 	middlewares_ := []middlewares.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
 	}
 
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Layers, parsedLayers, middlewares_...)
 	if err != nil {
 		return "", fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -249,11 +252,11 @@ func RegisterGlazedCommand(L *lua2.LState, cmd interface{}) {
 	layersTable := L.CreateTable(0, desc.Layers.Len())
 
 	// Iterate through all layers
-	desc.Layers.ForEach(func(layerName string, layer layers.ParameterLayer) {
+	desc.Layers.ForEach(func(layerName string, layer schema.Section) {
 		layerTable := L.CreateTable(0, layer.GetParameterDefinitions().Len())
 
 		// Add parameters for this layer
-		layer.GetParameterDefinitions().ForEach(func(param *parameters.ParameterDefinition) {
+		layer.GetParameterDefinitions().ForEach(func(param *fields.Definition) {
 			paramInfo := L.CreateTable(0, 5)
 			paramInfo.RawSetString("name", lua2.LString(param.Name))
 			paramInfo.RawSetString("type", lua2.LString(string(param.Type)))

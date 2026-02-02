@@ -2,14 +2,15 @@ package layers
 
 import (
 	"fmt"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // Helper function to create a parameter layer
-func createParameterLayer(t *testing.T, slug, name string, paramDefs ...*parameters.ParameterDefinition) ParameterLayer {
+func createParameterLayer(t *testing.T, slug, name string, paramDefs ...*fields.Definition) ParameterLayer {
 	layer, err := NewParameterLayer(slug, name, WithParameterDefinitions(paramDefs...))
 	require.NoError(t, err)
 	require.NotNil(t, layer)
@@ -174,10 +175,10 @@ func TestParameterLayersClone(t *testing.T) {
 
 func TestParameterLayersGetAllParameterDefinitions(t *testing.T) {
 	layer1 := createParameterLayer(t, "layer1", "Layer 1",
-		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+		fields.New("param1", fields.TypeString),
 	)
 	layer2 := createParameterLayer(t, "layer2", "Layer 2",
-		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+		fields.New("param2", fields.TypeInteger),
 	)
 
 	layers := NewParameterLayers(WithLayers(layer1, layer2))

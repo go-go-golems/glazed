@@ -68,7 +68,7 @@ mapper, err := pm.NewConfigMapper(layers_,
 )
 
 // Use with LoadParametersFromFile
-mw := middlewares.LoadParametersFromFile(
+mw := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -96,7 +96,7 @@ if err != nil {
 }
 
 // Use with LoadParametersFromFile
-mw := middlewares.LoadParametersFromFile(
+mw := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -150,7 +150,7 @@ if err != nil { panic(err) }
 mapper2, err := pm.LoadMapperFromFile(layers_, "mappings.yaml")
 if err != nil { panic(err) }
 
-mw := middlewares.LoadParametersFromFile(
+mw := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -481,14 +481,14 @@ import (
 
 func main() {
     // Define parameter layers
-    layer, _ := layers.NewParameterLayer("demo", "Demo",
-        layers.WithParameterDefinitions(
-            parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-            parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
-            parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
+    layer, _ := schema.NewSection("demo", "Demo",
+        schema.WithFields(
+            fields.New("api-key", fields.TypeString),
+            fields.New("dev-api-key", fields.TypeString),
+            fields.New("prod-api-key", fields.TypeString),
         ),
     )
-    paramLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+    paramLayers := schema.NewSchema(layers.WithLayers(layer))
 
     // Create pattern mapper with capture inheritance
     mapper, err := patternmapper.NewConfigMapper(paramLayers,
@@ -505,14 +505,14 @@ func main() {
     }
 
     // Use with middleware
-    middleware := middlewares.LoadParametersFromFile(
+    middleware := sources.FromFile(
         "config.yaml",
         middlewares.WithConfigMapper(mapper),
     )
 
     // Execute middleware chain
-    parsedLayers := layers.NewParsedLayers()
-    err = middlewares.ExecuteMiddlewares(paramLayers, parsedLayers, middleware)
+    parsedLayers := values.New()
+    err = sources.Execute(paramLayers, parsedLayers, middleware)
     if err != nil {
         panic(err)
     }
@@ -529,12 +529,12 @@ funcMapper := func(raw interface{}) (map[string]map[string]interface{}, error) {
     // Custom logic
     return result, nil
 }
-middleware1 := middlewares.LoadParametersFromFile("config.yaml",
+middleware1 := sources.FromFile("config.yaml",
     middlewares.WithConfigFileMapper(funcMapper))
 
 // New way (pattern-based)
 patternMapper, _ := patternmapper.NewConfigMapper(layers, rules...)
-middleware2 := middlewares.LoadParametersFromFile("config.yaml",
+middleware2 := sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(patternMapper))
 ```
 

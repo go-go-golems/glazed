@@ -3,9 +3,9 @@ package patternmapper_test
 import (
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,16 +15,16 @@ import (
 // are identical across matches, the resulting value is stable.
 func TestDeterministicWildcardOrder_SortedKeys(t *testing.T) {
 	// Create a simple layer
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
 
-	pls := layers.NewParameterLayers(layers.WithLayers(layer))
+	pls := schema.NewSchema(schema.WithSections(layer))
 
 	// Rule uses wildcard: multiple environment keys under app
 	rules := []pm.MappingRule{

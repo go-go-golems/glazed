@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
@@ -17,7 +18,7 @@ import (
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
 // the glazed processing layer.
 //
-// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `parameters.ParameterDefinition`
+// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `fields.Definition`
 // abstraction to define your CLI applications, which allows you to use Layers and other nice features
 // of the glazed ecosystem.
 //
@@ -28,7 +29,7 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, nil, err
 	}
 
-	layers_ := layers.NewParameterLayers(layers.WithLayers(gpl))
+	layers_ := schema.NewSchema(schema.WithSections(gpl))
 	parser, err := NewCobraParserFromLayers(layers_, &CobraParserConfig{
 		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
 	})
@@ -65,9 +66,9 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 	return gpl.AddLayerToCobraCommand(cmd)
 }
 
-func printParsedParameters(parsedLayers *layers.ParsedLayers) {
+func printParsedParameters(parsedLayers *values.Values) {
 	layersMap := map[string]map[string]interface{}{}
-	parsedLayers.ForEach(func(layerName string, layer *layers.ParsedLayer) {
+	parsedLayers.ForEach(func(layerName string, layer *values.SectionValues) {
 		params := map[string]interface{}{}
 		layer.Parameters.ForEach(func(name string, parameter *parameters.ParsedParameter) {
 			paramMap := map[string]interface{}{

@@ -1,31 +1,31 @@
 package cli
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 const CreateCommandSettingsSlug = "create-command-settings"
 
-func NewCreateCommandSettingsLayer() (layers.ParameterLayer, error) {
-	createCommandSettingsLayer, err := layers.NewParameterLayer(
+func NewCreateCommandSettingsLayer() (schema.Section, error) {
+	createCommandSettingsLayer, err := schema.NewSection(
 		CreateCommandSettingsSlug,
 		"Create command settings",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"create-command",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Create a new command for the query, with the defaults updated"),
+				fields.TypeString,
+				fields.WithHelp("Create a new command for the query, with the defaults updated"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"create-alias",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Create a CLI alias for the query"),
+				fields.TypeString,
+				fields.WithHelp("Create a CLI alias for the query"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"create-cliopatra",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Print the CLIopatra YAML for the command"),
+				fields.TypeString,
+				fields.WithHelp("Print the CLIopatra YAML for the command"),
 			),
 		),
 	)
@@ -49,20 +49,20 @@ type ProfileSettings struct {
 
 const ProfileSettingsSlug = "profile-settings"
 
-func NewProfileSettingsLayer() (layers.ParameterLayer, error) {
-	profileSettingsLayer, err := layers.NewParameterLayer(
+func NewProfileSettingsLayer() (schema.Section, error) {
+	profileSettingsLayer, err := schema.NewSection(
 		ProfileSettingsSlug,
 		"Profile settings",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"profile",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the profile"),
+				fields.TypeString,
+				fields.WithHelp("Load the profile"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"profile-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the profile from a file"),
+				fields.TypeString,
+				fields.WithHelp("Load the profile from a file"),
 			),
 		),
 	)
@@ -84,31 +84,31 @@ type CommandSettings struct {
 
 const CommandSettingsSlug = "command-settings"
 
-func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
-	glazedMinimalCommandLayer, err := layers.NewParameterLayer(
+func NewCommandSettingsLayer() (schema.Section, error) {
+	glazedMinimalCommandLayer, err := schema.NewSection(
 		CommandSettingsSlug,
 		"General purpose command options",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"print-yaml",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the command's YAML"),
+				fields.TypeBool,
+				fields.WithHelp("Print the command's YAML"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"print-parsed-parameters",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the parsed parameters"),
+				fields.TypeBool,
+				fields.WithHelp("Print the parsed parameters"),
 			),
 			// Deprecated: legacy per-command parameter file injection (removed from default flow)
-			parameters.NewParameterDefinition(
+			fields.New(
 				"print-schema",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the command's schema"),
+				fields.TypeBool,
+				fields.WithHelp("Print the command's schema"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"config-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Explicit config file path to load via middlewares"),
+				fields.TypeString,
+				fields.WithHelp("Explicit config file path to load via middlewares"),
 			),
 		),
 	)

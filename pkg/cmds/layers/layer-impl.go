@@ -1,6 +1,7 @@
 package layers
 
 import (
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -9,12 +10,12 @@ import (
 // ParameterLayerImpl is a straight forward simple implementation of ParameterLayer
 // that can easily be reused in more complex implementations.
 type ParameterLayerImpl struct {
-	Name                 string                           `yaml:"name"`
-	Slug                 string                           `yaml:"slug"`
-	Description          string                           `yaml:"description"`
-	Prefix               string                           `yaml:"prefix"`
-	ParameterDefinitions *parameters.ParameterDefinitions `yaml:"flags,omitempty"`
-	ChildLayers          []ParameterLayer                 `yaml:"childLayers,omitempty"`
+	Name                 string              `yaml:"name"`
+	Slug                 string              `yaml:"slug"`
+	Description          string              `yaml:"description"`
+	Prefix               string              `yaml:"prefix"`
+	ParameterDefinitions *fields.Definitions `yaml:"flags,omitempty"`
+	ChildLayers          []ParameterLayer    `yaml:"childLayers,omitempty"`
 }
 
 var _ ParameterLayer = &ParameterLayerImpl{}
@@ -38,12 +39,12 @@ func (p *ParameterLayerImpl) GetPrefix() string {
 
 func (p *ParameterLayerImpl) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var raw struct {
-		Name        string                           `yaml:"name"`
-		Slug        string                           `yaml:"slug"`
-		Description string                           `yaml:"description"`
-		Flags       *parameters.ParameterDefinitions `yaml:"flags,omitempty"`
+		Name        string              `yaml:"name"`
+		Slug        string              `yaml:"slug"`
+		Description string              `yaml:"description"`
+		Flags       *fields.Definitions `yaml:"flags,omitempty"`
 	}
-	raw.Flags = parameters.NewParameterDefinitions()
+	raw.Flags = fields.NewDefinitions()
 	if err := unmarshal(&raw); err != nil {
 		return err
 	}
@@ -60,7 +61,7 @@ func NewParameterLayer(slug string, name string, options ...ParameterLayerOption
 	ret := &ParameterLayerImpl{
 		Slug:                 slug,
 		Name:                 name,
-		ParameterDefinitions: parameters.NewParameterDefinitions(),
+		ParameterDefinitions: fields.NewDefinitions(),
 	}
 
 	for _, o := range options {
@@ -106,7 +107,7 @@ func WithDefaults(s interface{}) ParameterLayerOptions {
 	}
 }
 
-func WithParameterDefinitions(parameterDefinitions ...*parameters.ParameterDefinition) ParameterLayerOptions {
+func WithParameterDefinitions(parameterDefinitions ...*fields.Definition) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
 		for _, f := range parameterDefinitions {
 			p.ParameterDefinitions.Set(f.Name, f)
@@ -115,7 +116,7 @@ func WithParameterDefinitions(parameterDefinitions ...*parameters.ParameterDefin
 	}
 }
 
-func WithArguments(arguments ...*parameters.ParameterDefinition) ParameterLayerOptions {
+func WithArguments(arguments ...*fields.Definition) ParameterLayerOptions {
 	return func(p *ParameterLayerImpl) error {
 		for _, a := range arguments {
 			a.IsArgument = true
@@ -158,7 +159,7 @@ func NewParameterLayerFromYAML(s []byte, options ...ParameterLayerOptions) (*Par
 	return ret, nil
 }
 
-func (p *ParameterLayerImpl) AddFlags(flag ...*parameters.ParameterDefinition) {
+func (p *ParameterLayerImpl) AddFlags(flag ...*fields.Definition) {
 	for _, f := range flag {
 		p.ParameterDefinitions.Set(f.Name, f)
 	}
@@ -167,8 +168,8 @@ func (p *ParameterLayerImpl) AddFlags(flag ...*parameters.ParameterDefinition) {
 // GetParameterDefinitions returns a map that maps all parameters (flags and arguments) to their name.
 // I'm not sure if this is worth caching, but if we hook this up like something like
 // a lambda that might become more relevant.
-func (p *ParameterLayerImpl) GetParameterDefinitions() *parameters.ParameterDefinitions {
-	ret := parameters.NewParameterDefinitions()
+func (p *ParameterLayerImpl) GetParameterDefinitions() *fields.Definitions {
+	ret := fields.NewDefinitions()
 	for f := p.ParameterDefinitions.Oldest(); f != nil; f = f.Next() {
 		ret.Set(f.Key, f.Value)
 	}
@@ -270,7 +271,7 @@ func (p *ParameterLayerImpl) Clone() ParameterLayer {
 		Slug:                 p.Slug,
 		Description:          p.Description,
 		Prefix:               p.Prefix,
-		ParameterDefinitions: parameters.NewParameterDefinitions(),
+		ParameterDefinitions: fields.NewDefinitions(),
 	}
 	for v := p.ParameterDefinitions.Oldest(); v != nil; v = v.Next() {
 		ret.ParameterDefinitions.Set(v.Key, v.Value.Clone())

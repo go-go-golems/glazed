@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/go-go-golems/glazed/pkg/settings"
 )
 
 type CsvCommand struct {
@@ -21,7 +22,7 @@ type CsvCommand struct {
 var _ cmds.GlazeCommand = (*CsvCommand)(nil)
 
 func NewCsvCommand() (*CsvCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedLayer, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}

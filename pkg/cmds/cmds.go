@@ -5,10 +5,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -17,20 +17,17 @@ import (
 // CommandDescription contains the necessary information for registering
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
-//
-// CommandDefinition is an alias for CommandDescription that provides clearer
-// vocabulary when thinking about command definitions vs descriptions.
 type CommandDescription struct {
 	Name  string `yaml:"name"`
 	Short string `yaml:"short"`
 	Long  string `yaml:"long,omitempty"`
 	// TODO(manuel, 2023-12-21) Does this need to be a list of pointers? Could it just be a list of struct?
-	Layout         []*layout.Section       `yaml:"layout,omitempty"`
-	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
-	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
-	Type           string                  `yaml:"type,omitempty"`
-	Tags           []string                `yaml:"tags,omitempty"`
-	Metadata       map[string]interface{}  `yaml:"metadata,omitempty"`
+	Layout         []*layout.Section      `yaml:"layout,omitempty"`
+	Layers         *schema.Schema         `yaml:"layers,omitempty"`
+	AdditionalData map[string]interface{} `yaml:"additionalData,omitempty"`
+	Type           string                 `yaml:"type,omitempty"`
+	Tags           []string               `yaml:"tags,omitempty"`
+	Metadata       map[string]interface{} `yaml:"metadata,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -40,14 +37,6 @@ type CommandDescription struct {
 // Steal the builder API from https://github.com/bbkane/warg
 
 type CommandDescriptionOption func(*CommandDescription)
-
-// CommandDefinition is a type alias for CommandDescription.
-// It provides clearer vocabulary when thinking about command definitions.
-type CommandDefinition = CommandDescription
-
-// CommandDefinitionOption is a type alias for CommandDescriptionOption.
-// It provides clearer vocabulary when thinking about command definition options.
-type CommandDefinitionOption = CommandDescriptionOption
 
 func WithName(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
@@ -85,7 +74,7 @@ func WithMetadata(metadata map[string]interface{}) CommandDescriptionOption {
 	}
 }
 
-func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
+func WithLayersList(ls ...schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range ls {
 			c.Layers.Set(l.GetSlug(), l)
@@ -93,7 +82,7 @@ func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
 	}
 }
 
-func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
+func WithLayers(ls *schema.Schema) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		c.Layers.Merge(ls)
 	}
@@ -102,7 +91,7 @@ func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
 // WithSchema is an alias for WithLayers that accepts a schema.Schema.
 // It provides a more intuitive name when working with the schema package.
 func WithSchema(s *schema.Schema) CommandDescriptionOption {
-	return WithLayers((*layers.ParameterLayers)(s))
+	return WithLayers((*schema.Schema)(s))
 }
 
 // WithLayersMap registers layers using explicit slugs from the provided map.
@@ -111,23 +100,23 @@ func WithSchema(s *schema.Schema) CommandDescriptionOption {
 // to align them when possible so that runtime parsing and lookups are
 // consistent:
 //   - Prefer cloning the layer and overriding the slug on the clone when the
-//     clone is a *layers.ParameterLayerImpl (common for wrapper types that
-//     embed ParameterLayerImpl and whose Clone returns a ParameterLayerImpl).
+//     clone is a *schema.SectionImpl (common for wrapper types that embed
+//     SectionImpl and whose Clone returns a SectionImpl).
 //   - Otherwise, the layer is registered under the provided key as-is.
 //
-// Note: If a non-ParameterLayerImpl is registered under a key that differs
+// Note: If a non-SectionImpl is registered under a key that differs
 // from its internal slug, middlewares that derive parsed layer slugs from the
 // layer's GetSlug() may use the internal slug instead of the registration key.
-// Prefer using matching slugs or ParameterLayerImpl when you need explicit
+// Prefer using matching slugs or SectionImpl when you need explicit
 // remapping.
-func WithLayersMap(m map[string]layers.ParameterLayer) CommandDescriptionOption {
+func WithLayersMap(m map[string]schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for slug, l := range m {
 			if l.GetSlug() != slug {
 				// Try a generic clone: many wrapper types embed ParameterLayerImpl,
 				// whose Clone returns *ParameterLayerImpl. If so, set the slug.
 				cloned := l.Clone()
-				if impl, ok := cloned.(*layers.ParameterLayerImpl); ok {
+				if impl, ok := cloned.(*schema.SectionImpl); ok {
 					impl.Slug = slug
 					c.Layers.Set(slug, impl)
 					log.Debug().Str("slug", slug).Str("internalSlug", l.GetSlug()).Msg("WithLayersMap: cloned layer and set overridden slug")
@@ -145,13 +134,13 @@ func WithLayersMap(m map[string]layers.ParameterLayer) CommandDescriptionOption 
 // WithFlags is a convenience function to add arguments to the default layer, useful
 // to make the transition from explicit flags and arguments to a default layer a bit easier.
 func WithFlags(
-	flags ...*parameters.ParameterDefinition,
+	flags ...*fields.Definition,
 ) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Flags")
+			layer, err = schema.NewSection(schema.DefaultSlug, "Flags")
 			if err != nil {
 				panic(err)
 			}
@@ -168,13 +157,13 @@ func WithFlags(
 // WithArguments is a convenience function to add arguments to the default layer, useful
 // to make the transition from explicit flags and arguments to a default layer a bit easier.
 func WithArguments(
-	arguments ...*parameters.ParameterDefinition,
+	arguments ...*fields.Definition,
 ) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		layer, ok := c.GetDefaultLayer()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Arguments")
+			layer, err = schema.NewSection(schema.DefaultSlug, "Arguments")
 			if err != nil {
 				panic(err)
 			}
@@ -198,7 +187,7 @@ func WithLayout(l *layout.Layout) CommandDescriptionOption {
 	}
 }
 
-func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOption {
+func WithReplaceLayers(layers_ ...schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
 		for _, l := range layers_ {
 			c.Layers.Set(l.GetSlug(), l)
@@ -239,7 +228,7 @@ func WithPrependSource(s string) CommandDescriptionOption {
 func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
 	ret := &CommandDescription{
 		Name:   name,
-		Layers: layers.NewParameterLayers(),
+		Layers: schema.NewSchema(),
 	}
 
 	for _, o := range options {
@@ -251,7 +240,7 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 
 // NewCommandDefinition creates a new command definition with the given name and options.
 // It is an alias for NewCommandDescription that provides clearer vocabulary.
-func NewCommandDefinition(name string, options ...CommandDefinitionOption) *CommandDefinition {
+func NewCommandDefinition(name string, options ...CommandDescriptionOption) *CommandDescription {
 	return NewCommandDescription(name, options...)
 }
 
@@ -262,22 +251,22 @@ func (cd *CommandDescription) FullPath() string {
 	return strings.Join(cd.Parents, "/") + "/" + cd.Name
 }
 
-func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
-	return cd.GetLayer(layers.DefaultSlug)
+func (cd *CommandDescription) GetDefaultLayer() (schema.Section, bool) {
+	return cd.GetLayer(schema.DefaultSlug)
 }
 
-func (cd *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
+func (cd *CommandDescription) GetDefaultFlags() *fields.Definitions {
 	l, ok := cd.GetDefaultLayer()
 	if !ok {
-		return parameters.NewParameterDefinitions()
+		return fields.NewDefinitions()
 	}
 	return l.GetParameterDefinitions().GetFlags()
 }
 
-func (cd *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
+func (cd *CommandDescription) GetDefaultArguments() *fields.Definitions {
 	l, ok := cd.GetDefaultLayer()
 	if !ok {
-		return parameters.NewParameterDefinitions()
+		return fields.NewDefinitions()
 	}
 
 	return l.GetParameterDefinitions().GetArguments()
@@ -307,13 +296,13 @@ func (cd *CommandDescription) GetDefaultsMap() (map[string]interface{}, error) {
 	return paramsMap, nil
 }
 
-func (cd *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
+func (cd *CommandDescription) GetLayer(name string) (schema.Section, bool) {
 	return cd.Layers.Get(name)
 }
 
 func (cd *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
 	// clone flags
-	layers_ := layers.NewParameterLayers()
+	layers_ := schema.NewSchema()
 	if cloneLayers {
 		layers_ = cd.Layers.Clone()
 	}
@@ -351,7 +340,7 @@ func (cd *CommandDescription) Description() *CommandDescription {
 	return cd
 }
 
-func (cd *CommandDescription) SetLayers(layers ...layers.ParameterLayer) {
+func (cd *CommandDescription) SetLayers(layers ...schema.Section) {
 	for _, l := range layers {
 		cd.Layers.Set(l.GetSlug(), l)
 	}
@@ -364,7 +353,7 @@ type Command interface {
 
 type CommandWithMetadata interface {
 	Command
-	Metadata(ctx context.Context, parsedLayers *layers.ParsedLayers) (map[string]interface{}, error)
+	Metadata(ctx context.Context, parsedLayers *values.Values) (map[string]interface{}, error)
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
@@ -376,12 +365,12 @@ type CommandWithMetadata interface {
 
 type BareCommand interface {
 	Command
-	Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
+	Run(ctx context.Context, parsedLayers *values.Values) error
 }
 
 type WriterCommand interface {
 	Command
-	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
+	RunIntoWriter(ctx context.Context, parsedLayers *values.Values, w io.Writer) error
 }
 
 type GlazeCommand interface {
@@ -400,7 +389,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
+	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error
 }
 
 type ExitWithoutGlazeError struct{}

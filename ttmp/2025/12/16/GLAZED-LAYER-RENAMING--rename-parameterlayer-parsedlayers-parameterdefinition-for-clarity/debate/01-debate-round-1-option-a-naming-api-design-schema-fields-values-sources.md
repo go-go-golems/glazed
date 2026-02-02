@@ -110,7 +110,7 @@ We’ve decided to rename packages, but we should keep the initial Option A pack
 The biggest risk is a vocabulary split where:
 
 - docs say “schema/fields/values”
-- but the code still reads `layers.ParameterLayer` and `parameters.ParameterDefinition`
+- but the code still reads `schema.Section` and `fields.Definition`
 - and users have to learn both anyway.
 
 So my proposal:

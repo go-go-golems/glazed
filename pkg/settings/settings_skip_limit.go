@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 )
 
@@ -14,7 +16,7 @@ type SkipLimitSettings struct {
 	Limit int `glazed.parameter:"glazed-limit"`
 }
 
-func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SkipLimitSettings, error) {
+func NewSkipLimitSettingsFromParameters(glazedLayer *values.SectionValues) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
 	err := glazedLayer.Parameters.InitializeStruct(s)
 	if err != nil {
@@ -25,21 +27,21 @@ func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SkipL
 }
 
 type SkipLimitParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSkipLimitParameterLayer(options ...layers.ParameterLayerOptions) (*SkipLimitParameterLayer, error) {
+func NewSkipLimitParameterLayer(options ...schema.SectionOption) (*SkipLimitParameterLayer, error) {
 	ret := &SkipLimitParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(skipLimitFlagsYaml, options...)
+	layer, err := schema.NewSectionFromYAML(skipLimitFlagsYaml, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create skipLimit parameter layer")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = layer
 
 	return ret, nil
 }
-func (f *SkipLimitParameterLayer) Clone() layers.ParameterLayer {
+func (f *SkipLimitParameterLayer) Clone() schema.Section {
 	return &SkipLimitParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

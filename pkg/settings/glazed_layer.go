@@ -4,8 +4,11 @@ import (
 	_ "embed"
 	"io"
 
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/simple"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -32,10 +35,16 @@ type GlazedParameterLayers struct {
 
 const GlazedSlug = "glazed"
 
-var _ layers.ParameterLayer = (*GlazedParameterLayers)(nil)
+var _ schema.Section = (*GlazedParameterLayers)(nil)
 var _ layers.CobraParameterLayer = (*GlazedParameterLayers)(nil)
 
-func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
+// NewGlazedSchema creates a new glazed schema section containing all glazed output/formatting settings.
+// It wraps NewGlazedParameterLayers for the schema facade package.
+func NewGlazedSchema(options ...GlazeParameterLayerOption) (schema.Section, error) {
+	return NewGlazedParameterLayers(options...)
+}
+
+func (g *GlazedParameterLayers) Clone() schema.Section {
 	return &GlazedParameterLayers{
 		FieldsFiltersParameterLayer: g.FieldsFiltersParameterLayer.Clone().(*FieldsFiltersParameterLayer),
 		OutputParameterLayer:        g.OutputParameterLayer.Clone().(*OutputParameterLayer),
@@ -50,12 +59,12 @@ func (g *GlazedParameterLayers) Clone() layers.ParameterLayer {
 }
 
 func (g *GlazedParameterLayers) MarshalYAML() (interface{}, error) {
-	return &layers.ParameterLayerImpl{
+	return &schema.SectionImpl{
 		Name:        g.GetName(),
 		Slug:        g.GetSlug(),
 		Description: g.GetDescription(),
 		Prefix:      g.GetPrefix(),
-		ChildLayers: []layers.ParameterLayer{
+		ChildLayers: []schema.Section{
 			g.FieldsFiltersParameterLayer,
 			g.OutputParameterLayer,
 			g.RenameParameterLayer,
@@ -84,12 +93,12 @@ func (g *GlazedParameterLayers) GetPrefix() string {
 	return g.FieldsFiltersParameterLayer.GetPrefix()
 }
 
-func (g *GlazedParameterLayers) AddFlags(...*parameters.ParameterDefinition) {
+func (g *GlazedParameterLayers) AddFlags(...*fields.Definition) {
 	panic("not supported me")
 }
 
-func (g *GlazedParameterLayers) GetParameterDefinitions() *parameters.ParameterDefinitions {
-	ret := parameters.NewParameterDefinitions()
+func (g *GlazedParameterLayers) GetParameterDefinitions() *fields.Definitions {
+	ret := fields.NewDefinitions()
 	ret.Merge(g.OutputParameterLayer.GetParameterDefinitions()).
 		Merge(g.FieldsFiltersParameterLayer.GetParameterDefinitions()).
 		Merge(g.SelectParameterLayer.GetParameterDefinitions()).
@@ -127,8 +136,8 @@ func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error
 func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 	cmd *cobra.Command,
 	options ...parameters.ParseStepOption,
-) (*layers.ParsedLayer, error) {
-	res := &layers.ParsedLayer{
+) (*values.SectionValues, error) {
+	res := &values.SectionValues{
 		Layer: g,
 	}
 	ps := parameters.NewParsedParameters()
@@ -165,7 +174,7 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 ) (*parameters.ParsedParameters, error) {
 	ps := parameters.NewParsedParameters()
 
-	layers := []layers.ParameterLayer{
+	layers := []schema.Section{
 		g.OutputParameterLayer,
 		g.SelectParameterLayer,
 		g.RenameParameterLayer,
@@ -191,7 +200,7 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 }
 
 func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interface{}) error {
-	layers := []layers.ParameterLayer{
+	layers := []schema.Section{
 		g.OutputParameterLayer,
 		g.FieldsFiltersParameterLayer,
 		g.SelectParameterLayer,
@@ -213,10 +222,10 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 
 type GlazeParameterLayerOption func(*GlazedParameterLayers) error
 
-func WithOutputParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithOutputParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.OutputParameterLayer.ParameterLayerImpl)
+			err := option(g.OutputParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -225,10 +234,10 @@ func WithOutputParameterLayerOptions(options ...layers.ParameterLayerOptions) Gl
 	}
 }
 
-func WithSelectParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithSelectParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.SelectParameterLayer.ParameterLayerImpl)
+			err := option(g.SelectParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -237,10 +246,10 @@ func WithSelectParameterLayerOptions(options ...layers.ParameterLayerOptions) Gl
 	}
 }
 
-func WithTemplateParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithTemplateParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.TemplateParameterLayer.ParameterLayerImpl)
+			err := option(g.TemplateParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -249,10 +258,10 @@ func WithTemplateParameterLayerOptions(options ...layers.ParameterLayerOptions) 
 	}
 }
 
-func WithRenameParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithRenameParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.RenameParameterLayer.ParameterLayerImpl)
+			err := option(g.RenameParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -261,10 +270,10 @@ func WithRenameParameterLayerOptions(options ...layers.ParameterLayerOptions) Gl
 	}
 }
 
-func WithReplaceParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithReplaceParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.ReplaceParameterLayer.ParameterLayerImpl)
+			err := option(g.ReplaceParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -273,10 +282,10 @@ func WithReplaceParameterLayerOptions(options ...layers.ParameterLayerOptions) G
 	}
 }
 
-func WithFieldsFiltersParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithFieldsFiltersParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.FieldsFiltersParameterLayer.ParameterLayerImpl)
+			err := option(g.FieldsFiltersParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -285,10 +294,10 @@ func WithFieldsFiltersParameterLayerOptions(options ...layers.ParameterLayerOpti
 	}
 }
 
-func WithJqParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithJqParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.JqParameterLayer.ParameterLayerImpl)
+			err := option(g.JqParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -297,10 +306,10 @@ func WithJqParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeP
 	}
 }
 
-func WithSortParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithSortParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.SortParameterLayer.ParameterLayerImpl)
+			err := option(g.SortParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -309,10 +318,10 @@ func WithSortParameterLayerOptions(options ...layers.ParameterLayerOptions) Glaz
 	}
 }
 
-func WithSkipLimitParameterLayerOptions(options ...layers.ParameterLayerOptions) GlazeParameterLayerOption {
+func WithSkipLimitParameterLayerOptions(options ...schema.SectionOption) GlazeParameterLayerOption {
 	return func(g *GlazedParameterLayers) error {
 		for _, option := range options {
-			err := option(g.SkipLimitParameterLayer.ParameterLayerImpl)
+			err := option(g.SkipLimitParameterLayer.SectionImpl)
 			if err != nil {
 				return err
 			}
@@ -380,7 +389,7 @@ func NewGlazedParameterLayers(options ...GlazeParameterLayerOption) (*GlazedPara
 	return ret, nil
 }
 
-func SetupRowOutputFormatter(glazedLayer *layers.ParsedLayer) (formatters.RowOutputFormatter, error) {
+func SetupRowOutputFormatter(glazedLayer *values.SectionValues) (formatters.RowOutputFormatter, error) {
 	outputSettings, err := NewOutputFormatterSettings(glazedLayer)
 	if err != nil {
 		return nil, err
@@ -394,7 +403,7 @@ func SetupRowOutputFormatter(glazedLayer *layers.ParsedLayer) (formatters.RowOut
 	return of, nil
 }
 
-func SetupTableOutputFormatter(glazedLayer *layers.ParsedLayer) (formatters.TableOutputFormatter, error) {
+func SetupTableOutputFormatter(glazedLayer *values.SectionValues) (formatters.TableOutputFormatter, error) {
 	selectSettings, err := NewSelectSettingsFromParameters(glazedLayer)
 	if err != nil {
 		return nil, err
@@ -439,7 +448,7 @@ func SetupSimpleTableProcessor(
 //
 // DO(manuel, 2023-06-30) It would be good to used a parsedLayer here, if we ever refactor that part
 func SetupTableProcessor(
-	glazedLayer *layers.ParsedLayer,
+	glazedLayer *values.SectionValues,
 	options ...middlewares.TableProcessorOption,
 ) (*middlewares.TableProcessor, error) {
 	// TODO(manuel, 2023-03-06): This is where we should check that flags that are mutually incompatible don't clash
@@ -559,7 +568,7 @@ func SetupTableProcessor(
 // It also returns the output formatter that was created.
 func SetupProcessorOutput(
 	gp *middlewares.TableProcessor,
-	glazedLayer *layers.ParsedLayer,
+	glazedLayer *values.SectionValues,
 	w io.Writer,
 ) (formatters.OutputFormatter, error) {
 	// first, try to get a row updater

@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 )
@@ -40,7 +40,7 @@ func WithGlazeProcessor(p middlewares.Processor) RunOption {
 func RunCommand(
 	ctx context.Context,
 	cmd cmds.Command,
-	parsedLayers *layers.ParsedLayers,
+	parsedLayers *values.Values,
 	options ...RunOption,
 ) error {
 	// Setup default options
@@ -150,7 +150,7 @@ func WithEnvMiddleware(prefix string) ParseOption {
 func ParseCommandParameters(
 	cmd cmds.Command,
 	options ...ParseOption,
-) (*layers.ParsedLayers, error) {
+) (*values.Values, error) {
 	opts := &ParseOptions{}
 
 	// Apply provided options
@@ -167,8 +167,8 @@ func ParseCommandParameters(
 	// Add environment variables middleware if enabled
 	if opts.UseEnv {
 		middlewares_ = append(middlewares_,
-			cmd_middlewares.UpdateFromEnv(opts.EnvPrefix,
-				parameters.WithParseStepSource("env"),
+			cmd_sources.FromEnv(opts.EnvPrefix,
+				cmd_sources.WithSource("env"),
 			),
 		)
 	}
@@ -176,9 +176,9 @@ func ParseCommandParameters(
 	// Add config files middleware if provided
 	if len(opts.ConfigFiles) > 0 {
 		middlewares_ = append(middlewares_,
-			cmd_middlewares.LoadParametersFromFiles(opts.ConfigFiles,
-				cmd_middlewares.WithParseOptions(
-					parameters.WithParseStepSource("config"),
+			cmd_sources.FromFiles(opts.ConfigFiles,
+				cmd_sources.WithParseOptions(
+					cmd_sources.WithSource("config"),
 				),
 			),
 		)
@@ -187,22 +187,22 @@ func ParseCommandParameters(
 	// Add values for layers middleware if provided
 	if opts.ValuesForLayers != nil {
 		middlewares_ = append(middlewares_,
-			cmd_middlewares.UpdateFromMap(opts.ValuesForLayers,
-				parameters.WithParseStepSource("provided-values"),
+			cmd_sources.FromMap(opts.ValuesForLayers,
+				cmd_sources.WithSource("provided-values"),
 			),
 		)
 	}
 
 	// Add base defaults middleware
 	middlewares_ = append(middlewares_,
-		cmd_middlewares.SetFromDefaults(
-			parameters.WithParseStepSource(parameters.SourceDefaults),
+		cmd_sources.FromDefaults(
+			cmd_sources.WithSource(cmd_sources.SourceDefaults),
 		),
 	)
 
 	// Create parsed layers and execute middleware chain
-	parsedLayers := layers.NewParsedLayers()
-	err := cmd_middlewares.ExecuteMiddlewares(
+	parsedLayers := values.New()
+	err := cmd_sources.Execute(
 		cmd.Description().Layers,
 		parsedLayers,
 		middlewares_...,

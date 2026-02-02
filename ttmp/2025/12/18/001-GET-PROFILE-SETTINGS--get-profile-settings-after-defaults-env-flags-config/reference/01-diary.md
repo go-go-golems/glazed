@@ -61,7 +61,7 @@ This step created the ticket + docs and did a first read of the Glazed middlewar
 
 - `CobraParser.Parse()` performs a **bootstrap parse**:
   - It calls `ParseCommandSettingsLayer(cmd)` which builds layers for `command-settings`, `profile-settings`, and `create-command-settings`.
-  - That bootstrap parse uses `middlewares.ParseFromCobraCommand(cmd)` only.
+  - That bootstrap parse uses `sources.FromCobra(cmd)` only.
   - Therefore, **env/config/defaults cannot currently affect profile selection or config-path selection** via this bootstrap phase.
 
 ### What was tricky to reason about

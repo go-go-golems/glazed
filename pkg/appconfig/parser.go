@@ -3,14 +3,16 @@ package appconfig
 import (
 	"reflect"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 )
 
 type registration[T any] struct {
 	slug  LayerSlug
-	layer layers.ParameterLayer
+	layer schema.Section
 	bind  func(*T) any
 }
 
@@ -25,7 +27,7 @@ type LayerSlug string
 // - callers register layers and bind them to sub-struct pointers inside T
 // - Parse executes a configurable middleware chain and returns a populated T.
 //
-// V1 hydration uses ParsedLayers.InitializeStruct, which means fields are only
+// V1 hydration uses values.DecodeSectionInto, which means fields are only
 // populated when the destination structs have explicit `glazed.parameter` tags.
 type Parser[T any] struct {
 	opts parserOptions
@@ -56,7 +58,7 @@ func NewParser[T any](options ...ParserOption) (*Parser[T], error) {
 // - layer must be non-nil
 // - bind must be non-nil
 // - slug must match layer.GetSlug() (to avoid mismatches between registration keys and parsed layer keys)
-func (p *Parser[T]) Register(slug LayerSlug, layer layers.ParameterLayer, bind func(*T) any) error {
+func (p *Parser[T]) Register(slug LayerSlug, layer schema.Section, bind func(*T) any) error {
 	if slug == "" {
 		return errors.New("slug must not be empty")
 	}
@@ -84,7 +86,7 @@ func (p *Parser[T]) Parse() (*T, error) {
 		return nil, errors.New("no layers registered")
 	}
 
-	paramLayers := layers.NewParameterLayers()
+	paramLayers := schema.NewSchema()
 	for _, r := range p.regs {
 		paramLayers.Set(string(r.slug), r.layer)
 	}
@@ -100,8 +102,8 @@ func (p *Parser[T]) Parse() (*T, error) {
 		execMiddlewares = append(execMiddlewares, p.opts.middlewares[i])
 	}
 
-	parsedLayers := layers.NewParsedLayers()
-	if err := cmd_middlewares.ExecuteMiddlewares(paramLayers, parsedLayers, execMiddlewares...); err != nil {
+	parsedLayers := values.New()
+	if err := cmd_sources.Execute(paramLayers, parsedLayers, execMiddlewares...); err != nil {
 		return nil, errors.Wrap(err, "failed to parse parameters")
 	}
 
@@ -115,7 +117,7 @@ func (p *Parser[T]) Parse() (*T, error) {
 		if v.Kind() != reflect.Ptr || v.IsNil() {
 			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", string(r.slug), dst)
 		}
-		if err := parsedLayers.InitializeStruct(string(r.slug), dst); err != nil {
+		if err := values.DecodeSectionInto(parsedLayers, string(r.slug), dst); err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", string(r.slug))
 		}
 	}

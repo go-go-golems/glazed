@@ -3,9 +3,9 @@ package patternmapper_test
 import (
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ import (
 func TestEdgeCases(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupLayers func(t *testing.T) *layers.ParameterLayers
+		setupLayers func(t *testing.T) *schema.Schema
 		rules       []pm.MappingRule
 		config      map[string]interface{}
 		expected    map[string]map[string]interface{}
@@ -143,16 +143,16 @@ func TestEdgeCases(t *testing.T) {
 		},
 		{
 			name: "boolean values",
-			setupLayers: func(t *testing.T) *layers.ParameterLayers {
-				layer, err := layers.NewParameterLayer(
+			setupLayers: func(t *testing.T) *schema.Schema {
+				layer, err := schema.NewSection(
 					"demo",
 					"Demo Layer",
-					layers.WithParameterDefinitions(
-						parameters.NewParameterDefinition("enabled", parameters.ParameterTypeBool),
+					schema.WithFields(
+						fields.New("enabled", fields.TypeBool),
 					),
 				)
 				require.NoError(t, err)
-				return layers.NewParameterLayers(layers.WithLayers(layer))
+				return schema.NewSchema(schema.WithSections(layer))
 			},
 			rules: []pm.MappingRule{
 				{
@@ -177,16 +177,16 @@ func TestEdgeCases(t *testing.T) {
 		},
 		{
 			name: "capture with special characters in matched value",
-			setupLayers: func(t *testing.T) *layers.ParameterLayers {
-				layer, err := layers.NewParameterLayer(
+			setupLayers: func(t *testing.T) *schema.Schema {
+				layer, err := schema.NewSection(
 					"demo",
 					"Demo Layer",
-					layers.WithParameterDefinitions(
-						parameters.NewParameterDefinition("dev-us-east-1-api-key", parameters.ParameterTypeString),
+					schema.WithFields(
+						fields.New("dev-us-east-1-api-key", fields.TypeString),
 					),
 				)
 				require.NoError(t, err)
-				return layers.NewParameterLayers(layers.WithLayers(layer))
+				return schema.NewSchema(schema.WithSections(layer))
 			},
 			rules: []pm.MappingRule{
 				{
@@ -360,18 +360,18 @@ func TestErrorMessages(t *testing.T) {
 // TestLayerPrefix tests handling of layer prefixes
 func TestLayerPrefix(t *testing.T) {
 	// Create a layer with a prefix
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithPrefix("demo-"),
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("demo-api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("demo-threshold", parameters.ParameterTypeInteger),
+		schema.WithPrefix("demo-"),
+		schema.WithFields(
+			fields.New("demo-api-key", fields.TypeString),
+			fields.New("demo-threshold", fields.TypeInteger),
 		),
 	)
 	require.NoError(t, err)
 
-	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+	testLayers := schema.NewSchema(schema.WithSections(layer))
 
 	tests := []struct {
 		name        string
@@ -448,18 +448,18 @@ func TestLayerPrefix(t *testing.T) {
 // TestComplexCaptureScenarios tests complex capture patterns
 func TestComplexCaptureScenarios(t *testing.T) {
 	// Create test layers with environment-region parameters
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("us-east-dev-api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("us-west-prod-api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("eu-central-dev-api-key", parameters.ParameterTypeString),
+		schema.WithFields(
+			fields.New("us-east-dev-api-key", fields.TypeString),
+			fields.New("us-west-prod-api-key", fields.TypeString),
+			fields.New("eu-central-dev-api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
 
-	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+	testLayers := schema.NewSchema(schema.WithSections(layer))
 
 	tests := []struct {
 		name        string
@@ -551,20 +551,20 @@ func TestComplexCaptureScenarios(t *testing.T) {
 
 // TestConfigTypes tests handling of different value types
 func TestConfigTypes(t *testing.T) {
-	layer, err := layers.NewParameterLayer(
+	layer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("string-param", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("int-param", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("float-param", parameters.ParameterTypeFloat),
-			parameters.NewParameterDefinition("bool-param", parameters.ParameterTypeBool),
-			parameters.NewParameterDefinition("list-param", parameters.ParameterTypeStringList),
+		schema.WithFields(
+			fields.New("string-param", fields.TypeString),
+			fields.New("int-param", fields.TypeInteger),
+			fields.New("float-param", fields.TypeFloat),
+			fields.New("bool-param", fields.TypeBool),
+			fields.New("list-param", fields.TypeStringList),
 		),
 	)
 	require.NoError(t, err)
 
-	testLayers := layers.NewParameterLayers(layers.WithLayers(layer))
+	testLayers := schema.NewSchema(schema.WithSections(layer))
 
 	mapper, err := pm.NewConfigMapper(testLayers,
 		pm.MappingRule{

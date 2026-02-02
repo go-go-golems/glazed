@@ -148,10 +148,10 @@ In Go, handle these nested tables using the `ParseNestedLuaTableMiddleware`:
 ```go
 middlewares_ := []middlewares.Middleware{
     lua2.ParseNestedLuaTableMiddleware(L, luaTable),
-    middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+    sources.FromDefaults(sources.WithSource("defaults")),
 }
 
-err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, 
+err := sources.Execute(cmd.Description().Layers, 
     parsedLayers, 
     middlewares_...)
 ```

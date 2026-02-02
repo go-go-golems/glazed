@@ -3,33 +3,33 @@ package patternmapper_test
 import (
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // createTestLayers creates a test parameter layer structure
-func createTestLayers(t *testing.T) *layers.ParameterLayers {
-	demoLayer, err := layers.NewParameterLayer(
+func createTestLayers(t *testing.T) *schema.Schema {
+	demoLayer, err := schema.NewSection(
 		"demo",
 		"Demo Layer",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition("api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("threshold", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("timeout", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("dev-api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("prod-api-key", parameters.ParameterTypeString),
-			parameters.NewParameterDefinition("dev-threshold", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("prod-threshold", parameters.ParameterTypeInteger),
-			parameters.NewParameterDefinition("db-host", parameters.ParameterTypeString),
+		schema.WithFields(
+			fields.New("api-key", fields.TypeString),
+			fields.New("threshold", fields.TypeInteger),
+			fields.New("timeout", fields.TypeInteger),
+			fields.New("dev-api-key", fields.TypeString),
+			fields.New("prod-api-key", fields.TypeString),
+			fields.New("dev-threshold", fields.TypeInteger),
+			fields.New("prod-threshold", fields.TypeInteger),
+			fields.New("db-host", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
 
-	return layers.NewParameterLayers(
-		layers.WithLayers(demoLayer),
+	return schema.NewSchema(
+		schema.WithSections(demoLayer),
 	)
 }
 

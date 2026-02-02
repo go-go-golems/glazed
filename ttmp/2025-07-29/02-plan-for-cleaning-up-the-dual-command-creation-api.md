@@ -53,7 +53,7 @@ type commandBuildConfig struct {
 ```go
 func runCobraCommand(
     cmd *cobra.Command,
-    runFunc func(context.Context, *layers.ParsedLayers) error,
+    runFunc func(context.Context, *values.Values) error,
     parser *CobraParser,
     cfg commandBuildConfig,
 ) {
@@ -75,7 +75,7 @@ func runCobraCommand(
 3.1 **Change** `NewCobraParserFromLayers` to:
 ```go
 func NewCobraParserFromLayers(
-    layers *layers.ParameterLayers,
+    layers *schema.Schema,
     cfg *CobraParserConfig,
 ) (*CobraParser, error)
 ```

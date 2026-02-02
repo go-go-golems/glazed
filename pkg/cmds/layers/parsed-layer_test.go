@@ -3,7 +3,7 @@ package layers
 import (
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,12 +57,12 @@ func TestParsedLayersGetOrCreate(t *testing.T) {
 
 func TestParsedLayersGetDataMap(t *testing.T) {
 	layer1 := createParameterLayer(t, "layer1", "Layer 1",
-		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+		fields.New("param1", fields.TypeString),
 	)
 	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
 	layer2 := createParameterLayer(t, "layer2", "Layer 2",
-		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+		fields.New("param2", fields.TypeInteger),
 	)
 	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
@@ -84,8 +84,8 @@ func TestParsedLayersInitializeStruct(t *testing.T) {
 	}
 
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+		fields.New("param1", fields.TypeString),
+		fields.New("param2", fields.TypeInteger),
 	)
 	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{
 		"param1": "value1",
@@ -102,12 +102,12 @@ func TestParsedLayersInitializeStruct(t *testing.T) {
 
 func TestParsedLayersGetAllParsedParameters(t *testing.T) {
 	layer1 := createParameterLayer(t, "layer1", "Layer 1",
-		parameters.NewParameterDefinition("param1", parameters.ParameterTypeString),
+		fields.New("param1", fields.TypeString),
 	)
 	parsedLayer1 := createParsedLayer(t, layer1, map[string]interface{}{"param1": "value1"})
 
 	layer2 := createParameterLayer(t, "layer2", "Layer 2",
-		parameters.NewParameterDefinition("param2", parameters.ParameterTypeInteger),
+		fields.New("param2", fields.TypeInteger),
 	)
 	parsedLayer2 := createParsedLayer(t, layer2, map[string]interface{}{"param2": 42})
 
@@ -128,7 +128,7 @@ func TestParsedLayersGetAllParsedParameters(t *testing.T) {
 
 func TestParsedLayersGetParameter(t *testing.T) {
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+		fields.New("param", fields.TypeString),
 	)
 	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"param": "value"})
 	parsedLayers := NewParsedLayers(WithParsedLayer("test", parsedLayer))
@@ -208,7 +208,7 @@ func TestParsedLayersForEachE(t *testing.T) {
 
 func TestParsedLayerInitializeStructWithUnexportedFields(t *testing.T) {
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("exported", parameters.ParameterTypeString),
+		fields.New("exported", fields.TypeString),
 	)
 	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"exported": "value"})
 
@@ -230,7 +230,7 @@ func TestParsedLayerInitializeStructWithUnexportedFields(t *testing.T) {
 func TestParsedLayersInitializeStructWithNonPointer(t *testing.T) {
 	parsedLayers := NewParsedLayers()
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("param", parameters.ParameterTypeString),
+		fields.New("param", fields.TypeString),
 	)
 	parsedLayer := createParsedLayer(t, layer, map[string]interface{}{"param": "value"})
 	parsedLayers.Set("test", parsedLayer)
@@ -262,8 +262,8 @@ func TestParsedLayersGetOrCreateNilLayer(t *testing.T) {
 
 func TestParsedLayersInitializeStructUnsupportedTypes(t *testing.T) {
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("supported", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("unsupported", parameters.ParameterTypeString),
+		fields.New("supported", fields.TypeString),
+		fields.New("unsupported", fields.TypeString),
 	)
 	parsedValues := map[string]interface{}{
 		"supported":   "value",
@@ -319,12 +319,12 @@ func TestParsedLayersInitializeStructStringTypes(t *testing.T) {
 
 	// Create a parameter layer with all the necessary definitions
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("string_field", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("string_alias_field", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("string_declaration_field", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("string_list_field", parameters.ParameterTypeStringList),
-		parameters.NewParameterDefinition("string_alias_list_field", parameters.ParameterTypeStringList),
-		parameters.NewParameterDefinition("string_decl_list_field", parameters.ParameterTypeStringList),
+		fields.New("string_field", fields.TypeString),
+		fields.New("string_alias_field", fields.TypeString),
+		fields.New("string_declaration_field", fields.TypeString),
+		fields.New("string_list_field", fields.TypeStringList),
+		fields.New("string_alias_list_field", fields.TypeStringList),
+		fields.New("string_decl_list_field", fields.TypeStringList),
 	)
 
 	// Create a parsed layer with test values
@@ -378,9 +378,9 @@ func TestParsedLayersInitializeStructStringPointerTypes(t *testing.T) {
 
 	// Create a parameter layer with all the necessary definitions
 	layer := createParameterLayer(t, "test", "Test Layer",
-		parameters.NewParameterDefinition("string_ptr_field", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("string_alias_ptr_field", parameters.ParameterTypeString),
-		parameters.NewParameterDefinition("string_declaration_ptr_field", parameters.ParameterTypeString),
+		fields.New("string_ptr_field", fields.TypeString),
+		fields.New("string_alias_ptr_field", fields.TypeString),
+		fields.New("string_declaration_ptr_field", fields.TypeString),
 	)
 
 	// Create a parsed layer with test values

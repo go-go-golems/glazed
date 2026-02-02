@@ -91,12 +91,12 @@ Define parameters using `ParameterDefinition`, specifying name, type, and option
 import "github.com/go-go-golems/glazed/pkg/cmds/parameters"
 
 // Define a string parameter with a default value
-paramName := parameters.NewParameterDefinition(
+paramName := fields.New(
     "username",
-    parameters.ParameterTypeString,
-    parameters.WithHelp("The name of the user"),
-    parameters.WithDefault("guest"),
-    parameters.WithRequired(false),
+    fields.TypeString,
+    fields.WithHelp("The name of the user"),
+    fields.WithDefault("guest"),
+    fields.WithRequired(false),
 )
 ```
 
@@ -122,8 +122,8 @@ Access parsed parameter values via `ParsedParameters`.
 
 ```go
 // Create a collection of parameter definitions
-paramDefs := parameters.NewParameterDefinitions(
-    parameters.WithParameterDefinitionList([]*parameters.ParameterDefinition{paramName}),
+paramDefs := fields.News(
+    parameters.WithParameterDefinitionList([]*fields.Definition{paramName}),
 )
 
 // Parse a parameter value
@@ -146,7 +146,7 @@ Manage parsed parameters using these methods: updating values, merging parameter
 Update a parsed parameter's value, optionally appending a new parsing step.
 
 ```go
-parsedParam.Update("new_username", parameters.WithParseStepSource("override"))
+parsedParam.Update("new_username", sources.WithSource("override"))
 ```
 
 ### Merging Parameters
@@ -171,11 +171,11 @@ Specify default values and enforce required parameters.
 
 ```go
 // Define a required integer parameter without a default
-ageParam := parameters.NewParameterDefinition(
+ageParam := fields.New(
     "age",
-    parameters.ParameterTypeInteger,
-    parameters.WithHelp("The age of the user"),
-    parameters.WithRequired(true),
+    fields.TypeInteger,
+    fields.WithHelp("The age of the user"),
+    fields.WithRequired(true),
 )
 ```
 
@@ -208,11 +208,11 @@ Define parameters to accept values from files (e.g., JSON, YAML, CSV).
 
 ```go
 // Define a parameter that expects a JSON file
-fileParam := parameters.NewParameterDefinition(
+fileParam := fields.New(
     "config",
-    parameters.ParameterTypeObjectFromFile,
-    parameters.WithHelp("Path to the configuration file"),
-    parameters.WithRequired(true),
+    fields.TypeObjectFromFile,
+    fields.WithHelp("Path to the configuration file"),
+    fields.WithRequired(true),
 )
 
 // Parse the parameter from file input

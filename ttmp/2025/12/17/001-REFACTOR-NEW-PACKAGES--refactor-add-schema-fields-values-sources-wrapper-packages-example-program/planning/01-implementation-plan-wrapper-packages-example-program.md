@@ -33,14 +33,14 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
 
 - [x] Add directory `glazed/pkg/cmds/schema/`
 - [x] Add `glazed/pkg/cmds/schema/schema.go` with:
-  - [x] `type Section = layers.ParameterLayer`
-  - [x] `type Schema = layers.ParameterLayers`
-  - [x] `type SectionImpl = layers.ParameterLayerImpl`
-  - [x] `type SectionOption = layers.ParameterLayerOptions`
-  - [x] `type SchemaOption = layers.ParameterLayersOption`
-  - [x] `const DefaultSlug = layers.DefaultSlug`
-  - [x] `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` (wrap `layers.NewParameterLayer`)
-  - [x] `func NewSchema(opts ...SchemaOption) *Schema` (wrap `layers.NewParameterLayers`)
+  - [x] `type Section = schema.Section`
+  - [x] `type Schema = schema.Schema`
+  - [x] `type SectionImpl = schema.SectionImpl`
+  - [x] `type SectionOption = schema.SectionOptions`
+  - [x] `type SchemaOption = schema.SchemaOption`
+  - [x] `const DefaultSlug = schema.DefaultSlug`
+  - [x] `func NewSection(slug, name string, opts ...SectionOption) (*SectionImpl, error)` (wrap `schema.NewSection`)
+  - [x] `func NewSchema(opts ...SchemaOption) *Schema` (wrap `schema.NewSchema`)
   - [x] `func WithSections(sections ...Section) SchemaOption` (wrap `layers.WithLayers`)
   - [x] `func NewGlazedSchema(opts ...settings.GlazeParameterLayerOption) (Section, error)` (wrap `settings.NewGlazedParameterLayers`)
 
@@ -48,24 +48,24 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
 
 - [x] Add directory `glazed/pkg/cmds/fields/`
 - [x] Add `glazed/pkg/cmds/fields/fields.go` with:
-  - [x] `type Definition = parameters.ParameterDefinition`
-  - [x] `type Definitions = parameters.ParameterDefinitions`
-  - [x] `type Type = parameters.ParameterType`
-  - [x] `type Option = parameters.ParameterDefinitionOption`
-  - [x] `func New(name string, t Type, opts ...Option) *Definition` (wrap `parameters.NewParameterDefinition`)
+  - [x] `type Definition = fields.Definition`
+  - [x] `type Definitions = fields.Definitions`
+  - [x] `type Type = fields.Type`
+  - [x] `type Option = fields.DefinitionOption`
+  - [x] `func New(name string, t Type, opts ...Option) *Definition` (wrap `fields.New`)
   - [x] Re-export common options:
     - [x] `WithHelp`, `WithShortFlag`, `WithDefault`, `WithChoices`, `WithRequired`, `WithIsArgument`
   - [x] Re-export parameter type constants (at least the ones used by the example program; optionally all):
-    - [x] `TypeString`, `TypeBool`, `TypeInteger`, `TypeChoice`, `TypeStringList`, … (map to `parameters.ParameterType*`)
+    - [x] `TypeString`, `TypeBool`, `TypeInteger`, `TypeChoice`, `TypeStringList`, … (map to `fields.Type*`)
 
 ### 1.3 `glazed/pkg/cmds/values`
 
 - [x] Add directory `glazed/pkg/cmds/values/`
 - [x] Add `glazed/pkg/cmds/values/values.go` with:
-  - [x] `type SectionValues = layers.ParsedLayer`
-  - [x] `type Values = layers.ParsedLayers`
-  - [x] `type ValuesOption = layers.ParsedLayersOption`
-  - [x] `func New(opts ...ValuesOption) *Values` (wrap `layers.NewParsedLayers`)
+  - [x] `type SectionValues = values.SectionValues`
+  - [x] `type Values = values.Values`
+  - [x] `type ValuesOption = values.ValuesOption`
+  - [x] `func New(opts ...ValuesOption) *Values` (wrap `values.New`)
   - [x] `func DecodeInto(v *SectionValues, dst any) error` (wrap `v.InitializeStruct(dst)`)
   - [x] `func DecodeSectionInto(vs *Values, sectionSlug string, dst any) error` (wrap `vs.InitializeStruct(sectionSlug, dst)`)
   - [x] (Optional) `func AsMap(vs *Values) map[string]any` (wrap `vs.GetDataMap()`)
@@ -81,7 +81,7 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
     - [x] `FromEnv(prefix string, opts ...parameters.ParseStepOption) Middleware`
     - [x] `FromDefaults(opts ...parameters.ParseStepOption) Middleware`
     - [ ] (Optional) `FromConfigFilesForCobra(...) Middleware`
-  - [x] `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` (wrap `middlewares.ExecuteMiddlewares`)
+  - [x] `func Execute(schema *schema.Schema, vals *values.Values, ms ...Middleware) error` (wrap `sources.Execute`)
 
 ## 2. Create example program (acceptance test)
 
@@ -101,7 +101,7 @@ LastUpdated: 2025-12-17T09:01:05.565205899-05:00
   - Use `cli.BuildCobraCommand(...)` (or `cli.NewCobraParserFromLayers` + `AddToCobraCommand`) so we exercise the actual production codepaths.
 - [x] Parse from **env + cobra**:
   - [x] Set `cli.CobraParserConfig.AppName = "demo"` (or similar) so env parsing is enabled (prefix becomes `DEMO_`).
-  - [x] Demonstrate env key format (from `middlewares.UpdateFromEnv`):
+  - [x] Demonstrate env key format (from `sources.FromEnv`):
     - Global prefix: `DEMO_`
     - Per-section prefix: `layerPrefix` from `schema.WithPrefix(...)` (hyphen becomes underscore for env keys)
     - Field name: `p.Name`

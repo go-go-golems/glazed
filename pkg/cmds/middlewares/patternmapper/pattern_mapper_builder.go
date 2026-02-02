@@ -1,19 +1,19 @@
 package patternmapper
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 // ConfigMapperBuilder provides a fluent API to assemble MappingRules and
 // build a ConfigMapper that reuses NewConfigMapper validation and semantics.
 type ConfigMapperBuilder struct {
-	layers *layers.ParameterLayers
+	layers *schema.Schema
 	rules  []MappingRule
 }
 
 // NewConfigMapperBuilder creates a new builder for pattern-based mappers.
-func NewConfigMapperBuilder(l *layers.ParameterLayers) *ConfigMapperBuilder {
+func NewConfigMapperBuilder(l *schema.Schema) *ConfigMapperBuilder {
 	return &ConfigMapperBuilder{
 		layers: l,
 		rules:  make([]MappingRule, 0, 8),

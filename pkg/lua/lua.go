@@ -6,17 +6,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
 // ParseNestedLuaTableToParsedLayers parses a nested Lua table into ParsedLayers
-func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *layers.ParameterLayers) (*layers.ParsedLayers, error) {
-	parsedLayers := layers.NewParsedLayers()
+func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *schema.Schema) (*values.Values, error) {
+	parsedLayers := values.New()
 	var conversionErrors []string
 
 	luaTable.ForEach(func(key, value lua.LValue) {
@@ -49,7 +52,7 @@ func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, para
 }
 
 // ParseLuaTableToLayer parses a Lua table into a ParsedLayer
-func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer layers.ParameterLayer) (*layers.ParsedLayer, error) {
+func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Section) (*values.SectionValues, error) {
 	params := make(map[string]interface{})
 	var conversionErrors []string
 
@@ -72,19 +75,19 @@ func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer layers.Para
 	}
 
 	// Parse parameters using the layer's definitions
-	parsedParams, err := layer.GetParameterDefinitions().GatherParametersFromMap(params, true, parameters.WithParseStepSource("lua"))
+	parsedParams, err := layer.GetParameterDefinitions().GatherParametersFromMap(params, true, sources.WithSource("lua"))
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a parsed layer
-	return layers.NewParsedLayer(layer, layers.WithParsedParameters(parsedParams))
+	return values.NewSectionValues(layer, values.WithParameters(parsedParams))
 }
 
 // Middleware to parse Lua table into a ParsedLayer
 func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName string) middlewares.Middleware {
 	return func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			// Look up the specific layer
 			layer, ok := layers_.Get(layerName)
 			if !ok {
@@ -109,7 +112,7 @@ func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName stri
 // Middleware to parse nested Lua table into ParsedLayers
 func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewares.Middleware {
 	return func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
-		return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			newParsedLayers, err := ParseNestedLuaTableToParsedLayers(L, luaTable, layers_)
 			if err != nil {
 				return err
@@ -127,29 +130,29 @@ func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewa
 }
 
 // ParseParameterFromLua parses a Lua value into a Go value based on the parameter definition
-func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters.ParameterDefinition) (interface{}, error) {
+func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *fields.Definition) (interface{}, error) {
 	switch paramDef.Type {
-	case parameters.ParameterTypeString, parameters.ParameterTypeSecret:
+	case fields.TypeString, fields.TypeSecret:
 		if v, ok := value.(lua.LString); ok {
 			return string(v), nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected string, got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeInteger:
+	case fields.TypeInteger:
 		if v, ok := value.(lua.LNumber); ok {
 			return int(v), nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected integer, got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeFloat:
+	case fields.TypeFloat:
 		if v, ok := value.(lua.LNumber); ok {
 			return float64(v), nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected float, got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeBool:
+	case fields.TypeBool:
 		if v, ok := value.(lua.LBool); ok {
 			return bool(v), nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected boolean, got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeStringList:
+	case fields.TypeStringList:
 		if tbl, ok := value.(*lua.LTable); ok {
 			var list []string
 			var invalidTypes []string
@@ -166,7 +169,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return list, nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (string list), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeIntegerList:
+	case fields.TypeIntegerList:
 		if tbl, ok := value.(*lua.LTable); ok {
 			var list []int
 			var invalidTypes []string
@@ -183,7 +186,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return list, nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (integer list), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeFloatList:
+	case fields.TypeFloatList:
 		if tbl, ok := value.(*lua.LTable); ok {
 			var list []float64
 			var invalidTypes []string
@@ -200,7 +203,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return list, nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (float list), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeChoice:
+	case fields.TypeChoice:
 		if v, ok := value.(lua.LString); ok {
 			choice := string(v)
 			for _, c := range paramDef.Choices {
@@ -211,7 +214,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return nil, fmt.Errorf("invalid choice '%s' for parameter '%s'", choice, paramDef.Name)
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected string (choice), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeChoiceList:
+	case fields.TypeChoiceList:
 		if tbl, ok := value.(*lua.LTable); ok {
 			var choices []string
 			var invalidChoices []string
@@ -243,7 +246,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return choices, nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (choice list), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeDate:
+	case fields.TypeDate:
 		if v, ok := value.(lua.LString); ok {
 			parsedDate, err := parameters.ParseDate(string(v))
 			if err == nil {
@@ -252,7 +255,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return nil, fmt.Errorf("invalid date '%s' for parameter '%s': %v", v, paramDef.Name, err)
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected string (date), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeKeyValue:
+	case fields.TypeKeyValue:
 		if tbl, ok := value.(*lua.LTable); ok {
 			keyValue := make(map[string]interface{})
 			tbl.ForEach(func(k, v lua.LValue) {
@@ -263,15 +266,15 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters
 			return keyValue, nil
 		}
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (key-value), got %s", paramDef.Name, value.Type())
-	case parameters.ParameterTypeFile,
-		parameters.ParameterTypeFileList,
-		parameters.ParameterTypeObjectListFromFile,
-		parameters.ParameterTypeObjectListFromFiles,
-		parameters.ParameterTypeObjectFromFile,
-		parameters.ParameterTypeStringFromFile,
-		parameters.ParameterTypeStringFromFiles,
-		parameters.ParameterTypeStringListFromFile,
-		parameters.ParameterTypeStringListFromFiles:
+	case fields.TypeFile,
+		fields.TypeFileList,
+		fields.TypeObjectListFromFile,
+		fields.TypeObjectListFromFiles,
+		fields.TypeObjectFromFile,
+		fields.TypeStringFromFile,
+		fields.TypeStringFromFiles,
+		fields.TypeStringListFromFile,
+		fields.TypeStringListFromFiles:
 		return nil, fmt.Errorf("parameter type '%s' for '%s' is not implemented for Lua conversion", paramDef.Type, paramDef.Name)
 	}
 	return nil, fmt.Errorf("unsupported parameter type '%s' for '%s'", paramDef.Type, paramDef.Name)
@@ -415,7 +418,7 @@ func InterfaceToLuaValue(L *lua.LState, value interface{}) lua.LValue {
 }
 
 // ParsedLayerToLuaTable converts a ParsedLayer to a Lua table
-func ParsedLayerToLuaTable(L *lua.LState, parsedLayer *layers.ParsedLayer) *lua.LTable {
+func ParsedLayerToLuaTable(L *lua.LState, parsedLayer *values.SectionValues) *lua.LTable {
 	luaTable := L.CreateTable(0, len(parsedLayer.Parameters.ToMap()))
 
 	parsedLayer.Parameters.ForEach(func(name string, param *parameters.ParsedParameter) {
@@ -426,10 +429,10 @@ func ParsedLayerToLuaTable(L *lua.LState, parsedLayer *layers.ParsedLayer) *lua.
 }
 
 // ParsedLayersToLuaTable converts ParsedLayers to a nested Lua table
-func ParsedLayersToLuaTable(L *lua.LState, parsedLayers *layers.ParsedLayers) *lua.LTable {
+func ParsedLayersToLuaTable(L *lua.LState, parsedLayers *values.Values) *lua.LTable {
 	luaTable := L.CreateTable(0, parsedLayers.Len())
 
-	parsedLayers.ForEach(func(layerName string, parsedLayer *layers.ParsedLayer) {
+	parsedLayers.ForEach(func(layerName string, parsedLayer *values.SectionValues) {
 		layerTable := ParsedLayerToLuaTable(L, parsedLayer)
 		luaTable.RawSetString(layerName, layerTable)
 	})

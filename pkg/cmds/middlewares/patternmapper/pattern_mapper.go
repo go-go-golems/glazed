@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 )
@@ -48,7 +48,7 @@ type MappingRule struct {
 // patternMapper implements ConfigMapper using pattern matching rules
 type patternMapper struct {
 	rules            []MappingRule
-	layers           *layers.ParameterLayers
+	layers           *schema.Schema
 	compiledPatterns []compiledPattern
 }
 
@@ -66,7 +66,7 @@ type compiledPattern struct {
 //   - All patterns are valid syntax
 //   - All target parameters exist in their respective layers
 //   - Capture references in target parameters match captures in source patterns
-func NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (middlewares.ConfigMapper, error) {
+func NewConfigMapper(layers *schema.Schema, rules ...MappingRule) (middlewares.ConfigMapper, error) {
 	if layers == nil {
 		return nil, errors.New("layers cannot be nil")
 	}
@@ -603,7 +603,7 @@ func compilePatternToRegex(pattern string) (*regexp.Regexp, []string, error) {
 
 // resolveCanonicalParameterName resolves the canonical parameter name including prefix
 // This is proposal 9: explicit helper for canonical parameter name resolution
-func resolveCanonicalParameterName(layer layers.ParameterLayer, targetParam string) string {
+func resolveCanonicalParameterName(layer schema.Section, targetParam string) string {
 	if layer.GetPrefix() != "" {
 		// If layer has prefix, check if targetParam already includes it
 		if !strings.HasPrefix(targetParam, layer.GetPrefix()) {
