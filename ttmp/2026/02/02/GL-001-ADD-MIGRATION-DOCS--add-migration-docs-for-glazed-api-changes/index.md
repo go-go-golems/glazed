@@ -1,7 +1,7 @@
 ---
 Title: Add migration docs for glazed API changes
 Ticket: GL-001-ADD-MIGRATION-DOCS
-Status: active
+Status: complete
 Topics:
     - glazed
     - migration
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T14:56:11.437904291-05:00
+LastUpdated: 2026-02-02T17:00:34.890771016-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add migration docs for glazed API changes
 

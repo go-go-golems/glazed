@@ -33,3 +33,8 @@ Refactor: remove alias facades and migrate to schema/fields/values/sources
 
 Bump Go version to 1.25.6 for govulncheck
 
+
+## 2026-02-02
+
+Ticket closed
+
