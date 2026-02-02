@@ -575,3 +575,35 @@ LEFTHOOK=0 git commit -m "Refactor: remove alias facades and migrate to schema/f
 docmgr changelog update --ticket GL-001-ADD-MIGRATION-DOCS --entry "Refactor: remove alias facades and migrate to schema/fields/values/sources"
 docmgr task check --ticket GL-001-ADD-MIGRATION-DOCS --id 14
 ```
+
+## Step 9: Upgrade Go Toolchain to 1.25.6
+
+I updated the module to Go 1.25.6, refreshed the workspace toolchain via `go work use`, and re-ran the full test suite to ensure the upgrade doesn’t break compilation.
+
+### Prompt Context
+
+**User prompt (verbatim):** "update to 1.25.6 in the go.mod in glazed, run go.work use. Then what? push if not pushed"
+
+**Assistant interpretation:** Bump the module Go version, update the workspace, and validate with tests.
+
+**Inferred user intent:** Clear the govulncheck failures by moving to the fixed Go toolchain.
+
+**Commit (code):** Pending
+
+### What I did
+- Updated `glazed/go.mod` to `go 1.25.6`.
+- Ran `go work use ./glazed` from the workspace root (updating `go.work` to 1.25.6).
+- Re-ran `go test ./...` to confirm compilation.
+
+### Why
+- Go 1.25.6 includes the stdlib fixes flagged by govulncheck.
+
+### What worked
+- The test suite completed successfully under Go 1.25.6.
+
+### Technical details
+
+```bash
+go work use ./glazed
+go test ./...
+```

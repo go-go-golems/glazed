@@ -28,3 +28,8 @@ Commit 4a08ca2 with migration doc updates, diff analysis assets, and reMarkable 
 
 Refactor: remove alias facades and migrate to schema/fields/values/sources
 
+
+## 2026-02-02
+
+Bump Go version to 1.25.6 for govulncheck
+
