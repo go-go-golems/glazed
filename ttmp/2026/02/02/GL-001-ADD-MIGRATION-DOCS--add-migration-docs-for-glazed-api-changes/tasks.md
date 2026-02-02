@@ -15,4 +15,4 @@
 - [x] Design + (optional) implement Go AST migration tool for package/name rewrite.
 - [x] Exhaustive documentation deprecation audit (per-file index + update/removal guidance).
 - [x] Upload audit/design bundle to reMarkable.
-- [ ] Commit new changes.
+- [x] Commit new changes.

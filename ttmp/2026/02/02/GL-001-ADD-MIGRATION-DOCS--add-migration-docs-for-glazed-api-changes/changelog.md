@@ -23,3 +23,8 @@ Commit 4a08ca2 with migration doc updates, diff analysis assets, and reMarkable 
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-to-facade-packages.md — Migration guide
 
+
+## 2026-02-02
+
+Refactor: remove alias facades and migrate to schema/fields/values/sources
+
