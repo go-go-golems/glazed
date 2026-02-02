@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	pm "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -236,7 +236,7 @@ func main() {
 		_ = sources.FromFile(
 			"config.yaml",
 			sources.WithConfigMapper(mapper),
-			sources.WithParseOptions(sources.WithSource("config")),
+			sources.WithParseOptions(fields.WithSource("config")),
 		)
 
 		fmt.Println("Pattern mapper can be used with LoadParametersFromFile middleware")

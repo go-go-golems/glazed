@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -25,11 +24,11 @@ func CallGlazedCommandFromLua(L *lua2.LState, cmd cmds.GlazeCommand, luaTable *l
 	parsedLayers := values.New()
 
 	// Define middlewares
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		// Parse from Lua table (highest priority)
 		ParseNestedLuaTableMiddleware(L, luaTable),
 		// Set defaults (lowest priority)
-		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
 	// Execute middlewares
@@ -93,9 +92,9 @@ func LuaCallGlazedCommand(L *lua2.LState) int {
 func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable *lua2.LTable) error {
 	parsedLayers := values.New()
 
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
 	err := sources.Execute(cmd.Description().Layers, parsedLayers, middlewares_...)
@@ -118,9 +117,9 @@ func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable
 func CallGlazedWriterCommandFromLua(L *lua2.LState, cmd cmds.WriterCommand, luaTable *lua2.LTable) (string, error) {
 	parsedLayers := values.New()
 
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
 	err := sources.Execute(cmd.Description().Layers, parsedLayers, middlewares_...)
@@ -253,10 +252,10 @@ func RegisterGlazedCommand(L *lua2.LState, cmd interface{}) {
 
 	// Iterate through all layers
 	desc.Layers.ForEach(func(layerName string, layer schema.Section) {
-		layerTable := L.CreateTable(0, layer.GetParameterDefinitions().Len())
+		layerTable := L.CreateTable(0, layer.GetDefinitions().Len())
 
 		// Add parameters for this layer
-		layer.GetParameterDefinitions().ForEach(func(param *fields.Definition) {
+		layer.GetDefinitions().ForEach(func(param *fields.Definition) {
 			paramInfo := L.CreateTable(0, 5)
 			paramInfo.RawSetString("name", lua2.LString(param.Name))
 			paramInfo.RawSetString("type", lua2.LString(string(param.Type)))

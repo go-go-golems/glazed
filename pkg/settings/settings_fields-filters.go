@@ -2,11 +2,8 @@ package settings
 
 import (
 	_ "embed"
-
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	fields "github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
-	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -31,7 +28,7 @@ type FieldsFiltersParameterLayer struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-var _ layers.CobraParameterLayer = &FieldsFiltersParameterLayer{}
+var _ schema.CobraSection = &FieldsFiltersParameterLayer{}
 var _ schema.Section = &FieldsFiltersParameterLayer{}
 
 func (f *FieldsFiltersParameterLayer) Clone() schema.Section {
@@ -74,7 +71,7 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 		defaults.Fields = []string{"all"}
 	}
 	// this would be more elegant with a middleware for handling defaults, I think
-	err = f.InitializeParameterDefaultsFromStruct(defaults)
+	err = f.InitializeDefaultsFromStruct(defaults)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
@@ -84,7 +81,7 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 
 func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	cmd *cobra.Command,
-	options ...parameters.ParseStepOption,
+	options ...fields.ParseOption,
 ) (*values.SectionValues, error) {
 	l, err := f.SectionImpl.ParseLayerFromCobraCommand(cmd, options...)
 	if err != nil {
@@ -96,14 +93,14 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	// This means we'd have to store if a flag was changed in the parsed layer
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Parameters.Get("filter")
-		options_ := append(options, sources.WithSource("override-fields-filter"))
+		options_ := append(options, fields.WithSource("override-fields-filter"))
 		if !ok {
-			pd, ok := f.ParameterDefinitions.Get("filter")
+			pd, ok := f.Definitions.Get("filter")
 			if !ok {
 				return nil, errors.New("Failed to find default filter parameter definition")
 			}
-			p := &parameters.ParsedParameter{
-				ParameterDefinition: pd,
+			p := &fields.ParsedParameter{
+				Definition: pd,
 			}
 			err := p.Update([]string{}, options_...)
 			if err != nil {

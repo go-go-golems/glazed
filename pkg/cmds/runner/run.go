@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
@@ -95,7 +95,7 @@ func RunCommand(
 type ParseOptions struct {
 	ValuesForLayers       map[string]map[string]interface{}
 	EnvPrefix             string
-	AdditionalMiddlewares []cmd_middlewares.Middleware
+	AdditionalMiddlewares []cmd_sources.Middleware
 	UseViper              bool
 	UseEnv                bool
 	ConfigFiles           []string
@@ -118,7 +118,7 @@ func WithEnvPrefix(prefix string) ParseOption {
 }
 
 // WithAdditionalMiddlewares adds custom middlewares to the parsing chain
-func WithAdditionalMiddlewares(middlewares ...cmd_middlewares.Middleware) ParseOption {
+func WithAdditionalMiddlewares(middlewares ...cmd_sources.Middleware) ParseOption {
 	return func(o *ParseOptions) {
 		o.AdditionalMiddlewares = append(o.AdditionalMiddlewares, middlewares...)
 	}
@@ -159,7 +159,7 @@ func ParseCommandParameters(
 	}
 
 	// Create middleware chain
-	middlewares_ := []cmd_middlewares.Middleware{}
+	middlewares_ := []cmd_sources.Middleware{}
 	middlewares_ = append(middlewares_, opts.AdditionalMiddlewares...)
 
 	// Deprecated: Viper support is removed; Use WithConfigFiles/WithEnvMiddleware instead
@@ -168,7 +168,7 @@ func ParseCommandParameters(
 	if opts.UseEnv {
 		middlewares_ = append(middlewares_,
 			cmd_sources.FromEnv(opts.EnvPrefix,
-				cmd_sources.WithSource("env"),
+				fields.WithSource("env"),
 			),
 		)
 	}
@@ -178,7 +178,7 @@ func ParseCommandParameters(
 		middlewares_ = append(middlewares_,
 			cmd_sources.FromFiles(opts.ConfigFiles,
 				cmd_sources.WithParseOptions(
-					cmd_sources.WithSource("config"),
+					fields.WithSource("config"),
 				),
 			),
 		)
@@ -188,7 +188,7 @@ func ParseCommandParameters(
 	if opts.ValuesForLayers != nil {
 		middlewares_ = append(middlewares_,
 			cmd_sources.FromMap(opts.ValuesForLayers,
-				cmd_sources.WithSource("provided-values"),
+				fields.WithSource("provided-values"),
 			),
 		)
 	}
@@ -196,7 +196,7 @@ func ParseCommandParameters(
 	// Add base defaults middleware
 	middlewares_ = append(middlewares_,
 		cmd_sources.FromDefaults(
-			cmd_sources.WithSource(cmd_sources.SourceDefaults),
+			fields.WithSource(fields.SourceDefaults),
 		),
 	)
 

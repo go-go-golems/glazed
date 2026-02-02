@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/spf13/cobra"
@@ -592,8 +590,8 @@ func testCommandParseHelper(
 ) {
 	var flagsError error
 	var argsError error
-	var flagParameters *parameters.ParsedParameters
-	var argumentParameters *parameters.ParsedParameters
+	var flagParameters *fields.ParsedParameters
+	var argumentParameters *fields.ParsedParameters
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
@@ -610,7 +608,7 @@ func testCommandParseHelper(
 
 	defaultLayer, ok := desc.GetDefaultLayer()
 	require.True(t, ok)
-	defaultLayer_, ok := defaultLayer.(layers.CobraParameterLayer)
+	defaultLayer_, ok := defaultLayer.(schema.CobraSection)
 	require.True(t, ok)
 
 	err := defaultLayer_.AddLayerToCobraCommand(cmd)

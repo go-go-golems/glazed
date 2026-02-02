@@ -61,7 +61,7 @@ var _ cmds.BareCommand = &DemoBareCommand{}
 
 func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &DemoSettings{}
-	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
+	if err := vals.InitializeStruct("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -136,15 +136,15 @@ func main() {
 			MiddlewaresFunc: func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]sources.Middleware, error) {
 				return []sources.Middleware{
 					// Highest priority: command-line flags
-					sources.FromCobra(cmd, sources.WithSource("flags")),
+					sources.FromCobra(cmd, fields.WithSource("flags")),
 					// Medium priority: custom config file with mapper
 					sources.FromFile(
 						"cmd/examples/config-custom-mapper/config.yaml",
 						sources.WithConfigFileMapper(flatConfigMapper),
-						sources.WithParseOptions(sources.WithSource("config")),
+						sources.WithParseOptions(fields.WithSource("config")),
 					),
 					// Lowest priority: defaults
-					sources.FromDefaults(sources.WithSource("defaults")),
+					sources.FromDefaults(fields.WithSource("defaults")),
 				}, nil
 			},
 		}),
@@ -188,7 +188,7 @@ func main() {
 					continue
 				}
 				pmap := kv
-				pds := layer.GetParameterDefinitions()
+				pds := layer.GetDefinitions()
 				known := map[string]bool{}
 				pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 				for key, val := range pmap {

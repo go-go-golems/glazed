@@ -129,7 +129,7 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	// XXX this would be the proper way to do it if we could easily add parameter definitions as persistent flags. For now, do it manually.
 	// Don't delete this code
 	// ---
-	// loggingLayer.GetParameterDefinitions().ForEachE(func(definition *fields.Definition) error {
+	// loggingLayer.GetDefinitions().ForEachE(func(definition *fields.Definition) error {
 	// 	rootCmd.PersistentFlags().String(definition.Name, definition.Default, definition.Help)
 	// 	return nil
 	// })
@@ -151,8 +151,8 @@ func AddLoggingLayerToRootCommand(rootCmd *cobra.Command, appName string) error 
 	return nil
 }
 
-// SetupLoggingFromParsedLayers configures global logger from command-line parameters
-func SetupLoggingFromParsedLayers(parsedLayers *values.Values) error {
+// SetupLoggingFromValues configures global logger from command-line parameters
+func SetupLoggingFromValues(parsedLayers *values.Values) error {
 	settings, err := GetLoggingSettings(parsedLayers)
 	if err != nil {
 		return fmt.Errorf("failed to get logging settings: %w", err)
@@ -163,7 +163,7 @@ func SetupLoggingFromParsedLayers(parsedLayers *values.Values) error {
 // GetLoggingSettings extracts logging configuration for custom validation or setup
 func GetLoggingSettings(parsedLayers *values.Values) (*LoggingSettings, error) {
 	var settings LoggingSettings
-	err := values.DecodeSectionInto(parsedLayers, LoggingLayerSlug, &settings)
+	err := parsedLayers.InitializeStruct(LoggingLayerSlug, &settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
 	}

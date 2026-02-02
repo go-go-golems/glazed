@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -17,8 +15,8 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// ParseNestedLuaTableToParsedLayers parses a nested Lua table into ParsedLayers
-func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *schema.Schema) (*values.Values, error) {
+// ParseNestedLuaTableToValues parses a nested Lua table into Values
+func ParseNestedLuaTableToValues(L *lua.LState, luaTable *lua.LTable, parameterLayers *schema.Schema) (*values.Values, error) {
 	parsedLayers := values.New()
 	var conversionErrors []string
 
@@ -51,14 +49,14 @@ func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, para
 	return parsedLayers, nil
 }
 
-// ParseLuaTableToLayer parses a Lua table into a ParsedLayer
+// ParseLuaTableToLayer parses a Lua table into a SectionValues
 func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Section) (*values.SectionValues, error) {
 	params := make(map[string]interface{})
 	var conversionErrors []string
 
 	luaTable.ForEach(func(key, value lua.LValue) {
 		if keyStr, ok := key.(lua.LString); ok {
-			paramDef, _ := layer.GetParameterDefinitions().Get(string(keyStr))
+			paramDef, _ := layer.GetDefinitions().Get(string(keyStr))
 			if paramDef != nil {
 				convertedValue, err := ParseParameterFromLua(L, value, paramDef)
 				if err != nil {
@@ -75,7 +73,7 @@ func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Sect
 	}
 
 	// Parse parameters using the layer's definitions
-	parsedParams, err := layer.GetParameterDefinitions().GatherParametersFromMap(params, true, sources.WithSource("lua"))
+	parsedParams, err := layer.GetDefinitions().GatherParametersFromMap(params, true, fields.WithSource("lua"))
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +82,9 @@ func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Sect
 	return values.NewSectionValues(layer, values.WithParameters(parsedParams))
 }
 
-// Middleware to parse Lua table into a ParsedLayer
-func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName string) middlewares.Middleware {
-	return func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
+// Middleware to parse Lua table into a SectionValues
+func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName string) sources.Middleware {
+	return func(next sources.HandlerFunc) sources.HandlerFunc {
 		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 			// Look up the specific layer
 			layer, ok := layers_.Get(layerName)
@@ -109,17 +107,17 @@ func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName stri
 	}
 }
 
-// Middleware to parse nested Lua table into ParsedLayers
-func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewares.Middleware {
-	return func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
+// Middleware to parse nested Lua table into Values
+func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) sources.Middleware {
+	return func(next sources.HandlerFunc) sources.HandlerFunc {
 		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			newParsedLayers, err := ParseNestedLuaTableToParsedLayers(L, luaTable, layers_)
+			newValues, err := ParseNestedLuaTableToValues(L, luaTable, layers_)
 			if err != nil {
 				return err
 			}
 
 			// Merge the new parsed layers with the existing ones
-			err = parsedLayers.Merge(newParsedLayers)
+			err = parsedLayers.Merge(newValues)
 			if err != nil {
 				return err
 			}
@@ -248,7 +246,7 @@ func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *fields.Def
 		return nil, fmt.Errorf("invalid type for parameter '%s': expected table (choice list), got %s", paramDef.Name, value.Type())
 	case fields.TypeDate:
 		if v, ok := value.(lua.LString); ok {
-			parsedDate, err := parameters.ParseDate(string(v))
+			parsedDate, err := fields.ParseDate(string(v))
 			if err == nil {
 				return parsedDate, nil
 			}
@@ -417,23 +415,23 @@ func InterfaceToLuaValue(L *lua.LState, value interface{}) lua.LValue {
 	return lua.LString(fmt.Sprintf("%v", value))
 }
 
-// ParsedLayerToLuaTable converts a ParsedLayer to a Lua table
-func ParsedLayerToLuaTable(L *lua.LState, parsedLayer *values.SectionValues) *lua.LTable {
+// SectionValuesToLuaTable converts a SectionValues to a Lua table
+func SectionValuesToLuaTable(L *lua.LState, parsedLayer *values.SectionValues) *lua.LTable {
 	luaTable := L.CreateTable(0, len(parsedLayer.Parameters.ToMap()))
 
-	parsedLayer.Parameters.ForEach(func(name string, param *parameters.ParsedParameter) {
+	parsedLayer.Parameters.ForEach(func(name string, param *fields.ParsedParameter) {
 		luaTable.RawSetString(name, InterfaceToLuaValue(L, param.Value))
 	})
 
 	return luaTable
 }
 
-// ParsedLayersToLuaTable converts ParsedLayers to a nested Lua table
-func ParsedLayersToLuaTable(L *lua.LState, parsedLayers *values.Values) *lua.LTable {
+// ValuesToLuaTable converts Values to a nested Lua table
+func ValuesToLuaTable(L *lua.LState, parsedLayers *values.Values) *lua.LTable {
 	luaTable := L.CreateTable(0, parsedLayers.Len())
 
 	parsedLayers.ForEach(func(layerName string, parsedLayer *values.SectionValues) {
-		layerTable := ParsedLayerToLuaTable(L, parsedLayer)
+		layerTable := SectionValuesToLuaTable(L, parsedLayer)
 		luaTable.RawSetString(layerName, layerTable)
 	})
 

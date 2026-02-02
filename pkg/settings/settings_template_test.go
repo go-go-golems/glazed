@@ -3,7 +3,7 @@ package settings
 import (
 	"testing"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -14,14 +14,14 @@ import (
 func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string) *TemplateSettings {
 	layer, err := NewTemplateParameterLayer()
 	require.NoError(t, err)
-	err = layer.InitializeParameterDefaultsFromStruct(defaults)
+	err = layer.InitializeDefaultsFromStruct(defaults)
 	require.NoError(t, err)
 
 	layers_ := schema.NewSchema(schema.WithSections(layer))
 	parsedLayers := values.New()
 	err = sources.Execute(layers_, parsedLayers,
-		middlewares.UpdateFromStringList("", args, sources.WithSource("string-list")),
-		sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
+		sources.UpdateFromStringList("", args, fields.WithSource("string-list")),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	)
 	require.NoError(t, err)
 

@@ -71,7 +71,7 @@ func (c *DemoCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &DemoSettings{}
-	if err := values.DecodeSectionInto(vals, "demo", settings); err != nil {
+	if err := vals.InitializeStruct("demo", settings); err != nil {
 		return err
 	}
 	row := types.NewRow(

@@ -3,16 +3,15 @@ package cli
 import (
 	"os"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
-
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	fields "github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
@@ -70,7 +69,7 @@ func printParsedParameters(parsedLayers *values.Values) {
 	layersMap := map[string]map[string]interface{}{}
 	parsedLayers.ForEach(func(layerName string, layer *values.SectionValues) {
 		params := map[string]interface{}{}
-		layer.Parameters.ForEach(func(name string, parameter *parameters.ParsedParameter) {
+		layer.Parameters.ForEach(func(name string, parameter *fields.ParsedParameter) {
 			paramMap := map[string]interface{}{
 				"value": parameter.Value,
 			}

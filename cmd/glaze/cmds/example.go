@@ -64,14 +64,14 @@ func NewExampleCommand() (*ExampleCommand, error) {
 //
 // parsedLayers contains the result of parsing each layer that has been
 // registered with the command description. These layers can be glazed structured data
-// flags, database connection parameters, application specification parameters.
+// flags, database connection parameters, application specification fields.
 //
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
 func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &ExampleSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.InitializeStruct(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize example settings from parameters")
 	}

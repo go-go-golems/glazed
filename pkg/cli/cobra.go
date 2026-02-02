@@ -13,7 +13,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/list"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
@@ -62,7 +61,7 @@ func runCobraCommand(
 		commandSettings := &CommandSettings{}
 		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
 			var printYAML, printParsedParameters_, printSchema bool
-			err = values.DecodeInto(minimalLayer, commandSettings)
+			err = minimalLayer.InitializeStruct(commandSettings)
 			cobra.CheckErr(err)
 			printYAML = commandSettings.PrintYAML
 			printParsedParameters_ = commandSettings.PrintParsedParameters
@@ -91,7 +90,7 @@ func runCobraCommand(
 		// Create command settings: cliopatra, alias, create
 		if createLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
 			createSettings := &CreateCommandSettings{}
-			err = values.DecodeInto(createLayer, createSettings)
+			err = createLayer.InitializeStruct(createSettings)
 			cobra.CheckErr(err)
 
 			if createSettings.CreateCliopatra != "" {
@@ -317,7 +316,7 @@ func BuildCobraCommandAlias(
 	argumentDefinitions := description.GetDefaultArguments()
 	provided, err := argumentDefinitions.GatherArguments(
 		alias.Arguments, true, true,
-		sources.WithSource("cobra-alias"),
+		fields.WithSource("cobra-alias"),
 	)
 	if err != nil {
 		return nil, err

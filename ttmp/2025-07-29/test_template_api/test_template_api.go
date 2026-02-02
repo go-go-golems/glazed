@@ -74,7 +74,7 @@ func runTemplateCommand(cmd *cmds.TemplateCommand, inputValues map[string]interf
 	// Prepare options for creating parsed layer
 	var options []values.SectionValuesOption
 	for k, v := range inputValues {
-		if _, ok := defaultLayer.GetParameterDefinitions().Get(k); ok {
+		if _, ok := defaultLayer.GetDefinitions().Get(k); ok {
 			options = append(options, values.WithParameterValue(k, v))
 		}
 	}

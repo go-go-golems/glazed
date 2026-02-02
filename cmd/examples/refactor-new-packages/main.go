@@ -148,17 +148,17 @@ func (c *RefactorDemoCommand) RunIntoGlazeProcessor(
 
 	// Decode each section into its struct
 	appSettings := &AppSettings{}
-	if err := values.DecodeSectionInto(vals, "app", appSettings); err != nil {
+	if err := vals.InitializeStruct("app", appSettings); err != nil {
 		return fmt.Errorf("failed to decode app settings: %w", err)
 	}
 
 	outputSettings := &OutputSettings{}
-	if err := values.DecodeSectionInto(vals, "output", outputSettings); err != nil {
+	if err := vals.InitializeStruct("output", outputSettings); err != nil {
 		return fmt.Errorf("failed to decode output settings: %w", err)
 	}
 
 	defaultSettings := &DefaultSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, defaultSettings); err != nil {
+	if err := vals.InitializeStruct(schema.DefaultSlug, defaultSettings); err != nil {
 		return fmt.Errorf("failed to decode default settings: %w", err)
 	}
 

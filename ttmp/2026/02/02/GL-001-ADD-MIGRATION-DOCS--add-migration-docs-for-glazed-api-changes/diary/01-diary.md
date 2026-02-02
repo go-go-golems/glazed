@@ -1,3 +1,34 @@
+---
+Title: Diary
+Ticket: GL-001-ADD-MIGRATION-DOCS
+Status: active
+Topics:
+    - glazed
+    - migration
+    - docs
+    - diary
+DocType: reference
+Intent: short-term
+Owners: []
+RelatedFiles:
+    - Path: pkg/cli/cobra-parser.go
+      Note: Cobra parser migration to new names
+    - Path: pkg/cmds/schema/layer.go
+      Note: Schema interface updates and defaults handling
+    - Path: pkg/cmds/sources/cobra.go
+      Note: Sources parsing middleware adjustments
+    - Path: pkg/cmds/values/parsed-layer.go
+      Note: Values/SectionValues refactor
+    - Path: ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/rename_glazed_api.go
+      Note: AST migration tool (used for rewrites)
+ExternalSources: []
+Summary: ""
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
+---
+
+
 # Diary
 
 ## Goal
@@ -366,4 +397,134 @@ git -C glazed add pkg/doc/tutorials/migrating-to-facade-packages.md \
   ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes
 
 git -C glazed commit -m "Docs: add migration analysis for facade API changes"
+```
+
+## Step 6: No-Return Refactor + Compile Stabilization
+
+I removed the facade alias packages and migrated the codebase to the concrete `schema`, `fields`, `values`, and `sources` packages, then fixed the resulting compile breakages across core packages, settings, CLI, examples, and tests. I also broke the schema↔values import cycle by defining a minimal section interface in `values`, aligned parse options to `fields.WithSource`, and replaced legacy decode helpers with `InitializeStruct` equivalents.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Remove all aliases. No return. If necessary, you might want to write a go ast tool to do the migration (which is going to be very useful moving forward). Write a design document for such a refactor and migration tool, very detailed, and add to the ticket and upload to remarkable for me to review."
+
+**Assistant interpretation:** Remove all compatibility aliases and migrate the codebase to the new schema/fields/values/sources API, ensuring everything builds and tests pass.
+
+**Inferred user intent:** Force a hard break from legacy naming and keep the repo + examples consistent with the new API.
+
+**Commit (code):** N/A
+
+### What I did
+- Removed alias facades and migrated code/tests/examples to concrete schema/fields/values/sources packages.
+- Introduced a minimal `values.Section` interface + default section to break schema↔values import cycles.
+- Replaced `values.DecodeSectionInto`/`values.DecodeInto` usage with `Values.InitializeStruct` and `SectionValues.InitializeStruct`.
+- Normalized parsing metadata to `fields.WithSource` / `fields.SourceDefaults` and updated middleware usage accordingly.
+- Fixed package name mismatches in tests (fields/sources), updated pattern-mapper types, and cleaned duplicate imports.
+- Ran `gofmt` over all touched Go files and re-ran `go test ./...` until everything passed.
+
+### Why
+- The user required a no-return refactor with zero backwards-compatibility shims.
+
+### What worked
+- Incremental compile/test passes (`go test ./pkg/...`, `go test ./...`) exposed gaps quickly and confirmed the full repo now builds.
+
+### What didn't work
+- Initial `go test ./...` failed due to package name collisions and import cycles:
+
+```text
+pkg/cmds/cmds.go:8:2: found packages fields (cobra.go) and parameters (initialize-struct_test.go) in .../pkg/cmds/fields
+package .../pkg/cmds/schema from parsed-layer.go: import cycle not allowed
+pkg/cli/cliopatra/capture.go:8:2: found packages sources (cobra.go) and middlewares (middlewares_test.go) in .../pkg/cmds/sources
+```
+
+- Follow-on failures required iterative fixes (undefined `DecodeSectionInto`, `sources.WithSource`, stale `layers.*` references, and duplicate imports).
+
+### What I learned
+- Moving parsed values into `values` requires a minimal shared interface (not the full schema interface) to avoid import cycles.
+
+### What was tricky to build
+- Preventing cycles while preserving `SectionValues` semantics: the solution was to define a small interface in `values` and keep schema-specific helpers in `schema`.
+
+### What warrants a second pair of eyes
+- Validate the new `values.Section` interface boundaries and ensure no hidden reliance on schema-only methods.
+- Verify any remaining exported names still referencing “ParameterLayer” in settings packages are acceptable long-term.
+
+### What should be done in the future
+- Use the audit report to update/remove legacy docs and keep naming consistent across the documentation set.
+
+### Code review instructions
+- Start with `glazed/pkg/cmds/schema/layer.go`, `glazed/pkg/cmds/values/parsed-layer.go`, and `glazed/pkg/cmds/sources/middlewares.go`.
+- Validate with `go test ./...` in `glazed`.
+
+### Technical details
+
+```bash
+rg "ParameterLayer|ParsedLayer|ParameterDefinition|parameters\." -g "*.go"
+rg "sources\.WithSource" -g "*.go"
+rg "DecodeSectionInto|DecodeInto" -g "*.go"
+
+gofmt -w $(git -C glazed diff --name-only -- '*.go')
+
+go test ./pkg/...
+go test ./...
+```
+
+## Step 7: Documentation Deprecation Audit Report
+
+I generated an exhaustive documentation deprecation audit by running the scan script, producing a JSON match report and a full per-file Markdown index, then added frontmatter and related file links so the docmgr ticket can track it properly.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a tawsk to replace AddFlag with AddFields whem handling layers. Also, now that layers are named schema, maybe other names like that can be cleaned up?
+
+Furthermore, create a detailed analysis of all the documentation that refers to previous names and concepts, and which is now fully deprecated and could be removed, and which needs to be updated and how. Keep a very very exhaustive index, going through each doc file one by one, to make sure everything is top notch. Write the most detailed report known to mankind, and upload to remarkable. 
+
+Keep a frequent diary as you go."
+
+**Assistant interpretation:** Produce a per-doc audit of legacy terms (layers/parameters/middlewares/etc), with update/removal guidance, and keep it tracked in the ticket.
+
+**Inferred user intent:** Ensure documentation is comprehensively updated to the no-return API vocabulary.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran `doc_deprecation_scan.py` to collect per-file matches into JSON.
+- Generated an exhaustive Markdown report with status, counts, guidance, and per-line matches for each file.
+- Added ticket frontmatter + docmgr related files for the audit report.
+
+### Why
+- The user asked for an exhaustive index and removal/update guidance for legacy doc references.
+
+### What worked
+- The scan + report pipeline produced a complete index of 67 doc files with 19 containing legacy terms.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The highest-entropy docs are concentrated in the “layers/parsed layers” and “cmds middlewares” topics, which will need careful manual rewrites.
+
+### What was tricky to build
+- Ensuring docmgr could discover the audit document required adding missing frontmatter after generating the report content.
+
+### What warrants a second pair of eyes
+- Confirm the “remove/replace” classification for the facade migration doc and validate any other candidates for deletion.
+
+### What should be done in the future
+- Upload the audit + design doc bundle to reMarkable and then commit the new changes.
+
+### Code review instructions
+- Review `glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/01-documentation-deprecation-audit-layers-parameters-schema-fields-values-sources.md`.
+- Cross-check with `glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/02-doc-deprecation-scan.json`.
+
+### Technical details
+
+```bash
+python3 glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/doc_deprecation_scan.py \
+  --root /home/manuel/workspaces/2026-02-02/refactor-glazed-names \
+  --out glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/02-doc-deprecation-scan.json
+
+docmgr doc relate --doc glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/01-documentation-deprecation-audit-layers-parameters-schema-fields-values-sources.md \
+  --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/02-doc-deprecation-scan.json:Raw scan output (per-file matches)" \
+  --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/doc_deprecation_scan.py:Scanner script" \
+  --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/13-layers-and-parsed-layers.md:High-signal doc with legacy terminology"
 ```

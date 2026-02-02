@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
@@ -194,8 +193,8 @@ func TestParser_Parse_Precedence_CobraFlagsOverrideEnv(t *testing.T) {
 	}
 
 	// IMPORTANT: appconfig.Parser expects the layer flags to already be on the cobra command.
-	cobraLayer, ok := layer.(layers.CobraParameterLayer)
-	require.True(t, ok, "test layer must implement layers.CobraParameterLayer")
+	cobraLayer, ok := layer.(schema.CobraSection)
+	require.True(t, ok, "test layer must implement schema.CobraSection")
 	require.NoError(t, cobraLayer.AddLayerToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--host", "from-flag"})

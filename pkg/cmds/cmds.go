@@ -150,7 +150,7 @@ func WithFlags(
 				panic(err)
 			}
 		}
-		layer.AddFlags(flags...)
+		layer.AddFields(flags...)
 	}
 }
 
@@ -177,7 +177,7 @@ func WithArguments(
 		for _, arg := range arguments {
 			arg.IsArgument = true
 		}
-		layer.AddFlags(arguments...)
+		layer.AddFields(arguments...)
 	}
 }
 
@@ -260,7 +260,7 @@ func (cd *CommandDescription) GetDefaultFlags() *fields.Definitions {
 	if !ok {
 		return fields.NewDefinitions()
 	}
-	return l.GetParameterDefinitions().GetFlags()
+	return l.GetDefinitions().GetFlags()
 }
 
 func (cd *CommandDescription) GetDefaultArguments() *fields.Definitions {
@@ -269,7 +269,7 @@ func (cd *CommandDescription) GetDefaultArguments() *fields.Definitions {
 		return fields.NewDefinitions()
 	}
 
-	return l.GetParameterDefinitions().GetArguments()
+	return l.GetDefinitions().GetArguments()
 }
 
 // GetDefaultsMap returns a map of parameter names to their default values

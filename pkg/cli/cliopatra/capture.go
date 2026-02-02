@@ -3,15 +3,13 @@ package cliopatra
 import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
-	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
 func getCliopatraParameters(
 	definitions *fields.Definitions,
-	ps *parameters.ParsedParameters,
+	ps *fields.ParsedParameters,
 	prefix string,
 ) []*Parameter {
 	ret := []*Parameter{}
@@ -50,7 +48,7 @@ func getCliopatraParameters(
 
 		isFromDefault := true
 		for _, l := range v.Log {
-			if l.Source != sources.SourceDefaults {
+			if l.Source != fields.SourceDefaults {
 				isFromDefault = false
 				break
 			}
@@ -68,7 +66,7 @@ func getCliopatraParameters(
 //
 // It will go over all the ParameterDefinition (from all layers, which now also include the default layers).
 // and will try to create the best cliopatra map it can. It tries to resolve the prefixes
-// of layered parameters.
+// of layered fields.
 //
 // Values in the parameter map that are not present under the form of a ParameterDefinition
 // will not be added to the command, and should be added separately using the WithRawFlags
@@ -95,7 +93,7 @@ func NewProgramFromCapture(
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
 		parameters_ := getCliopatraParameters(
-			layer.GetParameterDefinitions(),
+			layer.GetDefinitions(),
 			parsedLayer.Parameters,
 			layer.GetPrefix())
 		flags := []*Parameter{}

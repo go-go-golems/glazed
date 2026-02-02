@@ -59,7 +59,7 @@ var _ cmds.BareCommand = &DemoBareCommand{}
 
 func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &DemoSettings{}
-	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
+	if err := vals.InitializeStruct("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -134,7 +134,7 @@ func main() {
 					issues = append(issues, fmt.Sprintf("layer %s must be an object", layerSlug))
 					continue
 				}
-				pds := layer.GetParameterDefinitions()
+				pds := layer.GetDefinitions()
 				// Build set of known parameter names
 				known := map[string]bool{}
 				pds.ForEach(func(pd *fields.Definition) {

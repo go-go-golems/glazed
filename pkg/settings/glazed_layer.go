@@ -5,8 +5,6 @@ import (
 	"io"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
@@ -36,7 +34,7 @@ type GlazedParameterLayers struct {
 const GlazedSlug = "glazed"
 
 var _ schema.Section = (*GlazedParameterLayers)(nil)
-var _ layers.CobraParameterLayer = (*GlazedParameterLayers)(nil)
+var _ schema.CobraSection = (*GlazedParameterLayers)(nil)
 
 // NewGlazedSchema creates a new glazed schema section containing all glazed output/formatting settings.
 // It wraps NewGlazedParameterLayers for the schema facade package.
@@ -93,27 +91,27 @@ func (g *GlazedParameterLayers) GetPrefix() string {
 	return g.FieldsFiltersParameterLayer.GetPrefix()
 }
 
-func (g *GlazedParameterLayers) AddFlags(...*fields.Definition) {
+func (g *GlazedParameterLayers) AddFields(...*fields.Definition) {
 	panic("not supported me")
 }
 
-func (g *GlazedParameterLayers) GetParameterDefinitions() *fields.Definitions {
+func (g *GlazedParameterLayers) GetDefinitions() *fields.Definitions {
 	ret := fields.NewDefinitions()
-	ret.Merge(g.OutputParameterLayer.GetParameterDefinitions()).
-		Merge(g.FieldsFiltersParameterLayer.GetParameterDefinitions()).
-		Merge(g.SelectParameterLayer.GetParameterDefinitions()).
-		Merge(g.TemplateParameterLayer.GetParameterDefinitions()).
-		Merge(g.RenameParameterLayer.GetParameterDefinitions()).
-		Merge(g.ReplaceParameterLayer.GetParameterDefinitions()).
-		Merge(g.JqParameterLayer.GetParameterDefinitions()).
-		Merge(g.SortParameterLayer.GetParameterDefinitions()).
-		Merge(g.SkipLimitParameterLayer.GetParameterDefinitions())
+	ret.Merge(g.OutputParameterLayer.GetDefinitions()).
+		Merge(g.FieldsFiltersParameterLayer.GetDefinitions()).
+		Merge(g.SelectParameterLayer.GetDefinitions()).
+		Merge(g.TemplateParameterLayer.GetDefinitions()).
+		Merge(g.RenameParameterLayer.GetDefinitions()).
+		Merge(g.ReplaceParameterLayer.GetDefinitions()).
+		Merge(g.JqParameterLayer.GetDefinitions()).
+		Merge(g.SortParameterLayer.GetDefinitions()).
+		Merge(g.SkipLimitParameterLayer.GetDefinitions())
 
 	return ret
 }
 
 func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error {
-	layers := []layers.CobraParameterLayer{
+	layers := []schema.CobraSection{
 		g.OutputParameterLayer,
 		g.FieldsFiltersParameterLayer,
 		g.SelectParameterLayer,
@@ -135,14 +133,14 @@ func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error
 
 func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 	cmd *cobra.Command,
-	options ...parameters.ParseStepOption,
+	options ...fields.ParseOption,
 ) (*values.SectionValues, error) {
 	res := &values.SectionValues{
 		Layer: g,
 	}
-	ps := parameters.NewParsedParameters()
+	ps := fields.NewParsedParameters()
 
-	layers := []layers.CobraParameterLayer{
+	layers := []schema.CobraSection{
 		g.OutputParameterLayer,
 		g.SelectParameterLayer,
 		g.RenameParameterLayer,
@@ -170,9 +168,9 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 
 func (g *GlazedParameterLayers) GatherParametersFromMap(
 	m map[string]interface{}, onlyProvided bool,
-	options ...parameters.ParseStepOption,
-) (*parameters.ParsedParameters, error) {
-	ps := parameters.NewParsedParameters()
+	options ...fields.ParseOption,
+) (*fields.ParsedParameters, error) {
+	ps := fields.NewParsedParameters()
 
 	layers := []schema.Section{
 		g.OutputParameterLayer,
@@ -187,7 +185,7 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 	}
 
 	for _, layer := range layers {
-		ps_, err := layer.GetParameterDefinitions().GatherParametersFromMap(m, onlyProvided, options...)
+		ps_, err := layer.GetDefinitions().GatherParametersFromMap(m, onlyProvided, options...)
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +197,7 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 	return ps, nil
 }
 
-func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interface{}) error {
+func (g *GlazedParameterLayers) InitializeDefaultsFromStruct(s interface{}) error {
 	layers := []schema.Section{
 		g.OutputParameterLayer,
 		g.FieldsFiltersParameterLayer,
@@ -213,7 +211,7 @@ func (g *GlazedParameterLayers) InitializeParameterDefaultsFromStruct(s interfac
 	}
 
 	for _, layer := range layers {
-		if err := layer.InitializeParameterDefaultsFromStruct(s); err != nil {
+		if err := layer.InitializeDefaultsFromStruct(s); err != nil {
 			return err
 		}
 	}

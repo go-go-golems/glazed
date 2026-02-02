@@ -7,8 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -23,7 +22,7 @@ type CobraMiddlewaresFunc func(
 	parsedCommandLayers *values.Values,
 	cmd *cobra.Command,
 	args []string,
-) ([]cmd_middlewares.Middleware, error)
+) ([]cmd_sources.Middleware, error)
 
 // CobraCommandDefaultMiddlewares is the default implementation for creating
 // the middlewares used in a Cobra command. It handles parsing parameters
@@ -36,25 +35,25 @@ func CobraCommandDefaultMiddlewares(
 	parsedCommandLayers *values.Values,
 	cmd *cobra.Command,
 	args []string,
-) ([]cmd_middlewares.Middleware, error) {
+) ([]cmd_sources.Middleware, error) {
 	commandSettings := &CommandSettings{}
-	err := values.DecodeSectionInto(parsedCommandLayers, CommandSettingsSlug, commandSettings)
+	err := parsedCommandLayers.InitializeStruct(CommandSettingsSlug, commandSettings)
 	if err != nil {
 		return nil, err
 	}
 
 	// Default chain without legacy per-command file injection
-	middlewares_ := []cmd_middlewares.Middleware{
+	middlewares_ := []cmd_sources.Middleware{
 		cmd_sources.FromCobra(cmd,
-			cmd_sources.WithSource("cobra"),
+			fields.WithSource("cobra"),
 		),
 		cmd_sources.FromArgs(args,
-			cmd_sources.WithSource("arguments"),
+			fields.WithSource("arguments"),
 		),
 	}
 
 	middlewares_ = append(middlewares_,
-		cmd_sources.FromDefaults(cmd_sources.WithSource(cmd_sources.SourceDefaults)),
+		cmd_sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	)
 
 	return middlewares_, nil
@@ -62,7 +61,7 @@ func CobraCommandDefaultMiddlewares(
 
 // CobraParser takes a CommandDescription, and hooks it up to a cobra command.
 // It can then be used to parse the cobra flags and arguments back into a
-// set of ParsedLayer and a map[string]interface{} for the lose stuff.
+// set of SectionValues and a map[string]interface{} for the lose stuff.
 //
 // That command however doesn't have a Run* method, which is left to the caller to implement.
 //
@@ -72,7 +71,7 @@ type CobraParser struct {
 	Layers *schema.Schema
 	// middlewaresFunc is called after the command has been executed, once the
 	// GlazedCommandSettings struct has been filled. At this point, cobra has done the parsing
-	// of CLI flags and arguments, but these haven't yet been parsed into ParsedLayers
+	// of CLI flags and arguments, but these haven't yet been parsed into Values
 	// by the glazed framework.
 	//
 	// This hooks allows the implementor to specify additional ways of loading parameters
@@ -141,21 +140,21 @@ func NewCobraParserFromLayers(
 		// If no custom middlewares func provided, construct one that leverages AppName/ConfigPath
 		if cfg.MiddlewaresFunc == nil {
 			cfgCopy := *cfg
-			ret.middlewaresFunc = func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]cmd_middlewares.Middleware, error) {
-				middlewares_ := []cmd_middlewares.Middleware{}
+			ret.middlewaresFunc = func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]cmd_sources.Middleware, error) {
+				middlewares_ := []cmd_sources.Middleware{}
 
 				// Append in reverse precedence so the last applied has highest precedence (flags)
 				// Flags (highest precedence)
 				middlewares_ = append(middlewares_,
 					cmd_sources.FromCobra(cmd,
-						cmd_sources.WithSource("cobra"),
+						fields.WithSource("cobra"),
 					),
 				)
 
 				// Positional arguments
 				middlewares_ = append(middlewares_,
 					cmd_sources.FromArgs(args,
-						cmd_sources.WithSource("arguments"),
+						fields.WithSource("arguments"),
 					),
 				)
 
@@ -164,7 +163,7 @@ func NewCobraParserFromLayers(
 					envPrefix := strings.ToUpper(cfgCopy.AppName)
 					middlewares_ = append(middlewares_,
 						cmd_sources.FromEnv(envPrefix,
-							cmd_sources.WithSource("env"),
+							fields.WithSource("env"),
 						),
 					)
 				}
@@ -177,7 +176,7 @@ func NewCobraParserFromLayers(
 						if cfgCopy.ConfigPath != "" || cfgCopy.AppName != "" {
 							explicit := cfgCopy.ConfigPath
 							cs := &CommandSettings{}
-							if err := values.DecodeSectionInto(parsed, CommandSettingsSlug, cs); err == nil {
+							if err := parsed.InitializeStruct(CommandSettingsSlug, cs); err == nil {
 								if cs.ConfigFile != "" {
 									explicit = cs.ConfigFile
 								}
@@ -195,17 +194,17 @@ func NewCobraParserFromLayers(
 					return resolver(parsedCommandLayers, cmd_, args_)
 				}
 				middlewares_ = append(middlewares_,
-					cmd_middlewares.LoadParametersFromResolvedFilesForCobra(
+					cmd_sources.LoadParametersFromResolvedFilesForCobra(
 						cmd,
 						args,
 						wrapped,
-						cmd_sources.WithSource("config"),
+						fields.WithSource("config"),
 					),
 				)
 
 				// Defaults (lowest precedence)
 				middlewares_ = append(middlewares_,
-					cmd_sources.FromDefaults(cmd_sources.WithSource(cmd_sources.SourceDefaults)),
+					cmd_sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 				)
 
 				return middlewares_, nil
@@ -247,12 +246,12 @@ func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
 	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the Layers/parameters that get added to the CLI
 	// If we want to remove some parameters from the CLI args (for example some output settings or so)
 	err := c.Layers.ForEachE(func(_ string, layer schema.Section) error {
-		// check that layer is a CobraParameterLayer
+		// check that layer is a CobraSection
 		// if not, return an error
-		cobraLayer, ok := layer.(layers.CobraParameterLayer)
+		cobraLayer, ok := layer.(schema.CobraSection)
 		if !ok {
-			log.Error().Str("layer", layer.GetName()).Msg("Layer is not a CobraParameterLayer")
-			return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetName())
+			log.Error().Str("layer", layer.GetName()).Msg("Layer is not a CobraSection")
+			return errors.Errorf("layer %s is not a CobraSection", layer.GetName())
 		}
 
 		err := cobraLayer.AddLayerToCobraCommand(cmd)
@@ -328,10 +327,10 @@ func ParseCommandSettingsLayer(cmd *cobra.Command) (*values.Values, error) {
 	))
 
 	// Parse the glazed command settings from the cobra command
-	middlewares_ := []cmd_middlewares.Middleware{}
+	middlewares_ := []cmd_sources.Middleware{}
 
 	if cmd != nil {
-		middlewares_ = append(middlewares_, cmd_sources.FromCobra(cmd, cmd_sources.WithSource("cobra")))
+		middlewares_ = append(middlewares_, cmd_sources.FromCobra(cmd, fields.WithSource("cobra")))
 	}
 
 	err = cmd_sources.Execute(commandSettingsLayers, parsedLayers, middlewares_...)

@@ -8,7 +8,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/appconfig"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -147,9 +146,9 @@ func mustSection(section *schema.SectionImpl, err error) schema.Section {
 }
 
 func addLayer(cmd *cobra.Command, layer schema.Section) error {
-	cobraLayer, ok := layer.(layers.CobraParameterLayer)
+	cobraLayer, ok := layer.(schema.CobraSection)
 	if !ok {
-		return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetSlug())
+		return errors.Errorf("layer %s is not a CobraSection", layer.GetSlug())
 	}
 	return cobraLayer.AddLayerToCobraCommand(cmd)
 }

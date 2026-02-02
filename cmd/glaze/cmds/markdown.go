@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -429,9 +429,9 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	cobraLayer, ok := glazedLayer.(schema.CobraSection)
 	if !ok {
-		panic("glazed layer is not a CobraParameterLayer")
+		panic("glazed layer is not a CobraSection")
 	}
 
 	err = cobraLayer.AddLayerToCobraCommand(parseCmd)

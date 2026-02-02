@@ -1,0 +1,1031 @@
+{
+  "root": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed",
+  "files": [
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/appconfig-parser/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/appconfig-profiles/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-custom-mapper/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-overlay/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/main.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-single/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/help-system/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/markdown-code-blocks/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/middlewares-config-env/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/new-api-build-first-command/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/new-api-dual-mode/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/overlay-override/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/parameter-types/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/refactor-new-packages/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/register-cobra/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/sources-example/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/csv.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/docs.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/example.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/html/cmds.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/html/parse.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/html/parse_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/json.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/markdown.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/cmds/yaml.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/glaze/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/appconfig/doc.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/appconfig/options.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/appconfig/parser.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/appconfig/parser_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/appconfig/profile_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cli.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cliopatra/capture.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cliopatra/capture_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cliopatra/program.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cobra-parser.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cobra.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/helpers.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/alias/alias.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/cmds.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/cobra_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/doc.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/cobra.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/cobra_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/errors.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/file.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/file_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/gather-arguments.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/gather-arguments_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/gather-parameters.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/gather-parameters_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/initialize-struct.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/initialize-struct_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parameter-type.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parameters.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parameters_from_defaults_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parameters_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parse.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parse_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parsed-parameter.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/render.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/render_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/serialize.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/strings.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/strings_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/viper.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/helpers/test-helpers.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/json-schema.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/layout/layout.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/loaders/loaders.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/loaders/multi-loader.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/logging/init-early.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/logging/init-logging.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/logging/init.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/logging/layer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/logging/logstash_writer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/runner/run.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/cobra.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/cobra_flag_groups.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/errors.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/layer-impl.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/layer-impl_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/layer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/layer_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/serialize.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/wrappers.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/cobra.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/config-mapper-interface.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/custom-profiles_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/layers.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/load-parameters-from-json.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/middlewares.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/middlewares_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/exports.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/loader.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_builder.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_edge_cases_test.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_loader_test.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_orderedmap_test.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_proposals_test.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_test.go",
+      "importsChanged": {
+        "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper": "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
+      },
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/profiles.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/update.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/update_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/whitelist.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/template.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/values/parsed-layer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/values/parsed-layer_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/values/serialize_parsed.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/codegen/glazed.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/codegen/helpers.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/codegen/helpers_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/config/cobra-config-command.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/config/editor.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/config/resolve.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/doc.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/codec_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/csv/csv.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/csv/csv_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/excel/excel.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/formatter.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/json/json.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/json/json_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/simple/simple.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/sql/sql.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/sql/sql_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/table/style.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/table/style_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/table/table.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/table/table_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/template/template.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/template/template_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/yaml/yaml.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/formatters/yaml/yaml_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/cmd/cobra.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/cmd/ui.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/compiler.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/dsl.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/dsl_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/example_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/lexer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/new_features_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl/parser.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl_bridge.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/dsl_bridge_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/example_store_usage.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/help.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/model/section.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/query.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/query_store_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/query_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/render.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/compat.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/example_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/fts5.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/loader.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/loader_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/nofts.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/query.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/query_fts5.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/query_nofts.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/query_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/store.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/store/store_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/ui/model.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/help/ui/model_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/assert/assert.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/capture-output.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/cast.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/interface.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/map.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/normalize.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/string.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/cast/string_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/compare/compare.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/compare/compare_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/compare/remove_duplicates.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/csv/csv.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/files/file_formats.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/files/files.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/files/temp-files.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/files/temp-files_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/json/extract.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/list/list.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/list/list_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/maps/maps.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/markdown/markdown.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/markdown/markdown_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/reflect/reflect.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/reflect/reflect_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/strings/code.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/strings/strings.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/strings/strings_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/templating/templating.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/templating/templating_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/yaml/yaml.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/helpers/yaml/yaml_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/cmds.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/lua.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/jq.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/jq_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/mod.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/object/template.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/processor.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/add-field.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/add-field_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/fields-filter.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/fields-filter_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/flatten-object.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/flatten-object_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/lambda.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/output.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/remove-duplicates.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/remove-duplicates_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/remove-nulls.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/rename-columns.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/rename-columns_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/reorder-column.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/reorder-column_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/replace.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/replace_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/skip-limit.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/skip-limit_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/sort-columns.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/sort-columns_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/template.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/row/template_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/table/null.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/table/output.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/table/sortby.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/middlewares/table/sortby_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/glazed_layer.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_fields-filters.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_jq.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_output.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_rename.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_replace.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_select.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_skip_limit.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_sort.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_template.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/settings/settings_template_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/tools.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/types/mod.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/types/table.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/types/table_test.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-07-29/test_defaults/test_defaults.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-07-29/test_doc_example/test_doc_example.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-07-29/test_template_api/test_template_api.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-08-05/signal-test/main.go",
+      "skipped": false
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/rename_glazed_api.go",
+      "skipped": false
+    }
+  ]
+}

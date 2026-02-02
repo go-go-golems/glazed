@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -25,15 +24,15 @@ import (
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
 type Parameter struct {
-	Name       string                 `yaml:"name"`
-	Flag       string                 `yaml:"flag,omitempty"`
-	Short      string                 `yaml:"short"`
-	Type       fields.Type            `yaml:"type"`
-	Value      interface{}            `yaml:"value"`
-	Raw        string                 `yaml:"raw,omitempty"`
-	NoValue    bool                   `yaml:"noValue,omitempty"`
-	IsArgument bool                   `yaml:"isArgument,omitempty"`
-	Log        []parameters.ParseStep `yaml:"log,omitempty"`
+	Name       string             `yaml:"name"`
+	Flag       string             `yaml:"flag,omitempty"`
+	Short      string             `yaml:"short"`
+	Type       fields.Type        `yaml:"type"`
+	Value      interface{}        `yaml:"value"`
+	Raw        string             `yaml:"raw,omitempty"`
+	NoValue    bool               `yaml:"noValue,omitempty"`
+	IsArgument bool               `yaml:"isArgument,omitempty"`
+	Log        []fields.ParseStep `yaml:"log,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files
@@ -391,7 +390,7 @@ func (p *Program) RunIntoWriter(
 	return nil
 }
 
-func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error) {
+func (p *Program) ComputeArgs(ps *fields.ParsedParameters) ([]string, error) {
 	var err error
 
 	args := []string{}
@@ -430,7 +429,7 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 		}
 
 		if value_ == "" {
-			value_, err = parameters.RenderValue(flag.Type, flag.Value)
+			value_, err = fields.RenderValue(flag.Type, flag.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}
@@ -445,14 +444,14 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 		if !ok {
 			value_ = arg.Raw
 		} else {
-			value_, err = parameters.RenderValue(arg.Type, value.Value)
+			value_, err = fields.RenderValue(arg.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}
 		}
 
 		if value_ == "" {
-			value_, err = parameters.RenderValue(arg.Type, arg.Value)
+			value_, err = fields.RenderValue(arg.Type, arg.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}

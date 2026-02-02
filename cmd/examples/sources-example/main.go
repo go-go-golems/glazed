@@ -87,7 +87,7 @@ var _ cmds.BareCommand = &SourcesExampleCommand{}
 func (c *SourcesExampleCommand) Run(ctx context.Context, vals *values.Values) error {
 	// Decode settings from resolved values using the new API
 	settings := &ConfigSettings{}
-	if err := values.DecodeSectionInto(vals, "config", settings); err != nil {
+	if err := vals.InitializeStruct("config", settings); err != nil {
 		return fmt.Errorf("failed to decode config settings: %w", err)
 	}
 
@@ -140,26 +140,26 @@ func main() {
 	// Ordering: first middleware has highest precedence (runs last); last middleware has lowest precedence (runs first).
 	// So we pass: flags > env > map > config-file > defaults.
 	middlewares := []sources.Middleware{
-		sources.FromCobra(root, sources.WithSource("flags")),
-		sources.FromEnv("APP", sources.WithSource("env")),
+		sources.FromCobra(root, fields.WithSource("flags")),
+		sources.FromEnv("APP", fields.WithSource("env")),
 		sources.FromMap(map[string]map[string]interface{}{
 			"config": {
 				"api-key": "custom-map-key",
 				"timeout": 60,
 			},
-		}, sources.WithSource("custom-map")),
+		}, fields.WithSource("custom-map")),
 	}
 	if configFile != "" {
 		middlewares = append(middlewares,
 			sources.FromFile(configFile,
 				sources.WithParseOptions(
-					sources.WithSource("config-file"),
+					fields.WithSource("config-file"),
 				),
 			),
 		)
 	}
 	middlewares = append(middlewares,
-		sources.FromDefaults(sources.WithSource("defaults")),
+		sources.FromDefaults(fields.WithSource("defaults")),
 	)
 
 	// Execute middleware chain using sources.Execute with new API types

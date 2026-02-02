@@ -9,7 +9,7 @@ import (
 
 const GlazedCommandsPath = "github.com/go-go-golems/glazed/pkg/cmds"
 const GlazedMiddlewaresPath = "github.com/go-go-golems/glazed/pkg/middlewares"
-const GlazedParametersPath = "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+const GlazedFieldsPath = "github.com/go-go-golems/glazed/pkg/cmds/fields"
 const ClaySqlPath = "github.com/go-go-golems/clay/pkg/sql"
 const MapsHelpersPath = "github.com/go-go-golems/glazed/pkg/helpers/maps"
 
@@ -74,9 +74,9 @@ func FlagTypeToGoType(s *jen.Statement, parameterType fields.Type) *jen.Statemen
 		fields.TypeChoiceList:
 		return s.Index().Id("string")
 	case fields.TypeFile:
-		return s.Qual(GlazedParametersPath, "FileData")
+		return s.Qual(GlazedFieldsPath, "FileData")
 	case fields.TypeFileList:
-		return s.Index().Qual(GlazedParametersPath, "FileData")
+		return s.Index().Qual(GlazedFieldsPath, "FileData")
 	case fields.TypeObjectFromFile:
 		return s.Map(jen.Id("string")).Id("interface{}")
 	case fields.TypeObjectListFromFile, fields.TypeObjectListFromFiles:

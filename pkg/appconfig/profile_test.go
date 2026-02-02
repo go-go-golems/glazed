@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -160,10 +160,10 @@ prod:
 	// Ensure flags exist so Cobra accepts them.
 	psLayer, err := cli.NewProfileSettingsLayer()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psLayer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
 
 	// Also add the redis layer flags (not strictly needed for this test, but keeps the pattern consistent).
-	require.NoError(t, layer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, layer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--profile", "prod"})
 	require.NoError(t, rootCmd.Execute())
@@ -215,10 +215,10 @@ func TestWithProfile_Precedence_FlagsOverrideEnvConfigProfilesDefaults(t *testin
 	}
 
 	// Ensure flags exist so Cobra accepts them.
-	require.NoError(t, layer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, layer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
 	psLayer, err := cli.NewProfileSettingsLayer()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psLayer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--host", "from-flag"})
 	require.NoError(t, rootCmd.Execute())

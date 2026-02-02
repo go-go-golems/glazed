@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
@@ -40,8 +39,8 @@ type ParameterTypesSettings struct {
 	ChoiceListParam  []string  `glazed.parameter:"choice-list-param"`
 
 	// File types
-	FileParam                *parameters.FileData     `glazed.parameter:"file-param"`
-	FileListParam            []*parameters.FileData   `glazed.parameter:"file-list-param"`
+	FileParam                *fields.FileData         `glazed.parameter:"file-param"`
+	FileListParam            []*fields.FileData       `glazed.parameter:"file-list-param"`
 	StringFromFileParam      string                   `glazed.parameter:"string-from-file-param"`
 	StringFromFilesParam     string                   `glazed.parameter:"string-from-files-param"`
 	StringListFromFileParam  []string                 `glazed.parameter:"string-list-from-file-param"`
@@ -221,7 +220,7 @@ func (c *ParameterTypesCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	s := &ParameterTypesSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.InitializeStruct(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize settings from parameters")
 	}
@@ -274,7 +273,7 @@ func (c *ParameterTypesCommand) RunIntoGlazeProcessor(
 
 			if !isNil {
 				var err error
-				renderedValue, err = parameters.RenderValue(param.paramType, param.realValue)
+				renderedValue, err = fields.RenderValue(param.paramType, param.realValue)
 				if err != nil {
 					renderedValue = fmt.Sprintf("ERROR: %v", err)
 				}

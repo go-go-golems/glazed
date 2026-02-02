@@ -42,7 +42,7 @@ var _ cmds.BareCommand = &OverlayCommand{}
 
 func (c *OverlayCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &OverlaySettings{}
-	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
+	if err := vals.InitializeStruct("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -125,7 +125,7 @@ func main() {
 						issues = append(issues, fmt.Sprintf("%s: layer %s must be an object", f, layerSlug))
 						continue
 					}
-					pds := layer.GetParameterDefinitions()
+					pds := layer.GetDefinitions()
 					known := map[string]bool{}
 					pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 					for key, val := range m {

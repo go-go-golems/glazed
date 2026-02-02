@@ -1,0 +1,2100 @@
+{
+  "root": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names",
+  "file_count": 67,
+  "patterns": [
+    "pkg/cmds/layers import",
+    "pkg/cmds/parameters import",
+    "pkg/cmds/middlewares import",
+    "layers.ParameterLayer",
+    "layers.ParameterLayers",
+    "ParameterLayer",
+    "ParameterLayers",
+    "ParsedLayer",
+    "ParsedLayers",
+    "parameters.ParameterDefinition",
+    "parameters.ParameterDefinitions",
+    "ParameterDefinition",
+    "ParameterDefinitions",
+    "ParameterType",
+    "AddFlags",
+    "AddFlag",
+    "CobraParameterLayer",
+    "ExecuteMiddlewares",
+    "ParseFromCobraCommand",
+    "GatherArguments",
+    "UpdateFromEnv",
+    "SetFromDefaults",
+    "LoadParametersFromFile",
+    "LoadParametersFromFiles",
+    "WithParseStepSource",
+    "CommandDefinition"
+  ],
+  "results": [
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/README.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/applications/01-exposing-a-simple-sql-table.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/applications/02-iterating-over-a-column-in-shell.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/applications/03-user-store-command.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 134,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 213,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 265,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 135,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 214,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 266,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 3,
+        "pkg/cmds/parameters import": 3
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/cliopatra/cliopatra.md",
+      "matches": [
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 31,
+          "text": "map it to the ParameterDefinition the Command uses, and create a YAML file with the default values."
+        }
+      ],
+      "counts": {
+        "ParameterDefinition": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/filter/remove-duplicates.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/help/help-example-1.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/help/help-example-2.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/jq/01-jq-replace.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/jq/02-jq-filter.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/output/multiple-output-file.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/output/sql-output.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/regex-filters/regex-filters.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/rename/01-rename-column.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/rename/02-rename-regexps.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/rename/03-rename-yaml.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/replace/replace-add-fields.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/select/select-example-1.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/select/select-example-2.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/skip-limit/01-skip-limit.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/sort/01-sort-by.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/templates/templates-example-1.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/templates/templates-example-2.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/templates/templates-example-3.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/examples/yaml/yaml-sanitize.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/00-documentation-guidelines.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/01-help-system.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/02-markdown-style.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/03-templates.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/04-flag-groups.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/05-table-format.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/06-usage-string.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/07-load-parameters-from-json.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/08-file-parameter-type.md",
+      "matches": [
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 86,
+          "text": "## The `file` ParameterType"
+        }
+      ],
+      "counts": {
+        "ParameterType": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/09-gather-flags-from-string-list.md",
+      "matches": [
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 25,
+          "text": "params []*ParameterDefinition,"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 35,
+          "text": "- `params`: a slice of `*ParameterDefinition` representing the parameter definitions."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 49,
+          "text": "params := []*ParameterDefinition{"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 50,
+          "text": "{Name: \"verbose\", ShortFlag: \"v\", Type: ParameterTypeBool},"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 51,
+          "text": "{Name: \"output\", ShortFlag: \"o\", Type: ParameterTypeString},"
+        }
+      ],
+      "counts": {
+        "ParameterDefinition": 3,
+        "ParameterType": 2
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/10-template-command.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/11-markdown-code-blocks.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/12-profiles-use-code.md",
+      "matches": [
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 71,
+          "text": "For advanced use cases, combine profile middleware with additional config files using `LoadParametersFromFile` or `LoadParametersFromFiles`:"
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 71,
+          "text": "For advanced use cases, combine profile middleware with additional config files using `LoadParametersFromFile` or `LoadParametersFromFiles`:"
+        }
+      ],
+      "counts": {
+        "LoadParametersFromFile": 1,
+        "LoadParametersFromFiles": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/13-layers-and-parsed-layers.md",
+      "matches": [
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 32,
+          "text": "1. **ParameterLayer**: An interface that groups parameter definitions and provides metadata."
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 33,
+          "text": "2. **ParameterLayers**: A collection of ParameterLayer objects."
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 38,
+          "text": "`ParameterLayer` interface."
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 201,
+          "text": "parameterLayers.ForEach(func(key string, p ParameterLayer) {"
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 205,
+          "text": "err := parameterLayers.ForEachE(func(key string, p ParameterLayer) error {"
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 255,
+          "text": "arguments, configuration files, or environment variables) using a ParameterLayer"
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 258,
+          "text": "1. **Layer**: A reference to the original ParameterLayer used for parsing."
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 33,
+          "text": "2. **ParameterLayers**: A collection of ParameterLayer objects."
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 156,
+          "text": "### Creating ParameterLayers"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 213,
+          "text": "Create a new ParameterLayers containing only the specified layers:"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 230,
+          "text": "Merge two ParameterLayers collections:"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 238,
+          "text": "Create a deep copy of ParameterLayers:"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 380,
+          "text": "- **Middleware Structure**: Each middleware processes parameters before and/or after calling the next handler in the chain. They work with `ParameterLayers` and `ParsedLayers` to manage parameter definitions and values."
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 254,
+          "text": "A ParsedLayer is the result of parsing input data (such as command-line"
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 264,
+          "text": "ParsedLayers is a collection of ParsedLayer objects, typically representing all the layers used in a command or application."
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 277,
+          "text": "### Creating a ParsedLayer"
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 339,
+          "text": "parsedLayers.ForEach(func(k string, v *ParsedLayer) {"
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 343,
+          "text": "err := parsedLayers.ForEachE(func(k string, v *ParsedLayer) error {"
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 359,
+          "text": "Get an existing ParsedLayer or create a new one if it doesn't exist:"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 264,
+          "text": "ParsedLayers is a collection of ParsedLayer objects, typically representing all the layers used in a command or application."
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 266,
+          "text": "### Usage of ParsedLayers"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 268,
+          "text": "ParsedLayers are primarily used to:"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 288,
+          "text": "### Creating ParsedLayers"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 306,
+          "text": "### Initializing Structs from ParsedLayers"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 321,
+          "text": "### Merging ParsedLayers"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 367,
+          "text": "Create a deep copy of ParsedLayers:"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 380,
+          "text": "- **Middleware Structure**: Each middleware processes parameters before and/or after calling the next handler in the chain. They work with `ParameterLayers` and `ParsedLayers` to manage parameter definitions and values."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 30,
+          "text": "A `ParameterDefinition` defines a parameter's properties, including name, type, default value, choices, and required status."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 260,
+          "text": "- The original ParameterDefinition"
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 60,
+          "text": "You can add parameters to an existing layer using the `AddFlags` method:"
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 63,
+          "text": "layer.AddFlags("
+        },
+        {
+          "label": "ParseFromCobraCommand",
+          "pattern": "\\bParseFromCobraCommand\\b",
+          "line": 411,
+          "text": "4. **ParseFromCobraCommand**: Parses parameter values from a Cobra command, typically used for CLI applications."
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 393,
+          "text": "2. **UpdateFromEnv**: Loads values from environment variables."
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 386,
+          "text": "1. **SetFromDefaults**: Populates parameters with their default values if no value exists."
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 400,
+          "text": "3. **LoadParametersFromFile / LoadParametersFromFiles**: Load parameters from JSON or YAML files."
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 400,
+          "text": "3. **LoadParametersFromFile / LoadParametersFromFiles**: Load parameters from JSON or YAML files."
+        },
+        {
+          "label": "WithParseStepSource",
+          "pattern": "\\bWithParseStepSource\\b",
+          "line": 436,
+          "text": "- **Source Tracking**: Use `WithParseStepSource` to track where parameter values originate."
+        }
+      ],
+      "counts": {
+        "ParameterLayer": 7,
+        "ParameterLayers": 6,
+        "ParsedLayer": 6,
+        "ParsedLayers": 8,
+        "ParameterDefinition": 2,
+        "AddFlags": 2,
+        "ParseFromCobraCommand": 1,
+        "UpdateFromEnv": 1,
+        "SetFromDefaults": 1,
+        "LoadParametersFromFile": 1,
+        "LoadParametersFromFiles": 1,
+        "WithParseStepSource": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/14-writing-help-entries.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/15-profiles.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/16-adding-parameter-types.md",
+      "matches": [
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 88,
+          "text": "func (p *ParameterDefinition) ParseParameter(v []string, options ...ParseStepOption) (*ParsedParameter, error) {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 136,
+          "text": "func (p *ParameterDefinition) ParseFromReader(f io.Reader, filename string, options ...ParseStepOption) (*ParsedParameter, error) {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 163,
+          "text": "func (p *ParameterDefinition) CheckValueValidity(v interface{}) (interface{}, error) {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 203,
+          "text": "func (p *ParameterDefinition) InitializeValueToEmptyValue(value reflect.Value) error {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 216,
+          "text": "func (p *ParameterDefinition) SetValueFromInterface(value reflect.Value, v interface{}) error {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 445,
+          "text": "pd := &ParameterDefinition{"
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 237,
+          "text": "func (ps *ParameterDefinitions) AddToCobraCommand(cmd *cobra.Command) error {"
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 261,
+          "text": "func (ps *ParameterDefinitions) SetupCobraCompletions(cmd *cobra.Command) error {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 60,
+          "text": "ParameterTypeCredentials ParameterType = \"credentials\""
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 67,
+          "text": "func (p ParameterType) IsList() bool {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 69,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 94,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 142,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 169,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 207,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 222,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 243,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 265,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 278,
+          "text": "func RenderValue(parameterType ParameterType, value interface{}) (string, error) {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 282,
+          "text": "case ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 371,
+          "text": "Add a field to the `ParameterTypesSettings` struct:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 374,
+          "text": "type ParameterTypesSettings struct {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 447,
+          "text": "Type: ParameterTypeCredentials,"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 471,
+          "text": "ParameterTypeCredentials ParameterType = \"credentials\""
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 474,
+          "text": "func (p ParameterType) IsKeyValue() bool {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 476,
+          "text": "case ParameterTypeKeyValue, ParameterTypeCredentials:"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 508,
+          "text": "1. **Consistent naming**: Use the pattern `ParameterType<Name>` for constants"
+        }
+      ],
+      "counts": {
+        "ParameterDefinition": 6,
+        "ParameterDefinitions": 2,
+        "ParameterType": 19
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/16-parsing-parameters.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 91,
+          "text": "import \"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 21,
+          "text": "### ParameterDefinition"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 23,
+          "text": "A `ParameterDefinition` defines a parameter's properties, including name, type, default value, choices, and required status."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 26,
+          "text": "type ParameterDefinition struct {"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 40,
+          "text": "`ParameterDefinitions` is an ordered map of `ParameterDefinition` instances, indexed by name."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 44,
+          "text": "*orderedmap.OrderedMap[string, *ParameterDefinition]"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 50,
+          "text": "A `ParsedParameter` contains the parsed value, its `ParameterDefinition`, and a log of parsing steps."
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 55,
+          "text": "ParameterDefinition *ParameterDefinition"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 88,
+          "text": "Define parameters using `ParameterDefinition`, specifying name, type, and options like default values or choices."
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 38,
+          "text": "### ParameterDefinitions"
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 40,
+          "text": "`ParameterDefinitions` is an ordered map of `ParameterDefinition` instances, indexed by name."
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 43,
+          "text": "type ParameterDefinitions struct {"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 29,
+          "text": "Type       ParameterType `yaml:\"type\"`"
+        }
+      ],
+      "counts": {
+        "pkg/cmds/parameters import": 1,
+        "ParameterDefinition": 8,
+        "ParameterDefinitions": 3,
+        "ParameterType": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/17-processor.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/18-lua.md",
+      "matches": [
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 95,
+          "text": "Parses a Lua table into a ParsedLayer."
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 65,
+          "text": "Middleware to parse nested Lua tables into ParsedLayers."
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 101,
+          "text": "Parses a nested Lua table into ParsedLayers."
+        }
+      ],
+      "counts": {
+        "ParsedLayer": 1,
+        "ParsedLayers": 2
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/19-writing-yaml-commands.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/20-using-multi-loader.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/21-cmds-middlewares.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 756,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 757,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 758,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 750,
+          "text": "The foundation of Glazed's parameter system is the `ParameterLayer`. Before we can use middlewares, we need to define our parameter structure. This example shows how to create a layer that matches the architectural concepts discussed earlier:"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 40,
+          "text": "### Relationship between ParameterLayers and ParsedLayers"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 42,
+          "text": "- **ParameterLayers**: These are collections of parameter definitions. They define the structure and metadata of parameters, such as their names, types, and default values."
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 70,
+          "text": "- `ParameterLayers`: Contains parameter definitions"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 40,
+          "text": "### Relationship between ParameterLayers and ParsedLayers"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 44,
+          "text": "- **ParsedLayers**: These are collections of parsed parameter values. They store the actual values obtained from various sources like command-line arguments, environment variables, or configuration files."
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 71,
+          "text": "- `ParsedLayers`: Stores the actual parameter values"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 833,
+          "text": "- Creation of empty ParsedLayers to store results"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 10,
+          "text": "- ExecuteMiddlewares"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 75,
+          "text": "Middlewares are executed in reverse order of how they're provided to `ExecuteMiddlewares`. For example:"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 78,
+          "text": "ExecuteMiddlewares(layers, parsedLayers,"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 443,
+          "text": "ExecuteMiddlewares(layers, parsedLayers,"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 451,
+          "text": "3. **Error Handling**: Always check for errors returned by `ExecuteMiddlewares`:"
+        },
+        {
+          "label": "ParseFromCobraCommand",
+          "pattern": "\\bParseFromCobraCommand\\b",
+          "line": 14,
+          "text": "- ParseFromCobraCommand"
+        },
+        {
+          "label": "ParseFromCobraCommand",
+          "pattern": "\\bParseFromCobraCommand\\b",
+          "line": 447,
+          "text": "ParseFromCobraCommand(),     // Most specific"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 12,
+          "text": "- UpdateFromEnv"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 80,
+          "text": "UpdateFromEnv(\"APP\"),"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 87,
+          "text": "2. UpdateFromEnv"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 106,
+          "text": "Use `UpdateFromEnv` to load values from environment variables:"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 445,
+          "text": "UpdateFromEnv(\"APP\"),        // More specific"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 11,
+          "text": "- SetFromDefaults"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 79,
+          "text": "SetFromDefaults(),"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 88,
+          "text": "3. SetFromDefaults"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 94,
+          "text": "Use `SetFromDefaults` to populate parameters with their default values:"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 444,
+          "text": "SetFromDefaults(),           // Most general"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 802,
+          "text": "#### SetFromDefaults Middleware"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 804,
+          "text": "The `SetFromDefaults` middleware demonstrates the basic middleware pattern of processing parameters after the next handler:"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 13,
+          "text": "- LoadParametersFromFile"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 81,
+          "text": "LoadParametersFromFile(\"config.yaml\"),"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 86,
+          "text": "1. LoadParametersFromFile"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 120,
+          "text": "Load parameters from JSON or YAML files using `LoadParametersFromFile`:"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 130,
+          "text": "By default, `LoadParametersFromFile` expects the config file to have this structure:"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 446,
+          "text": "LoadParametersFromFile(),    // More specific"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 688,
+          "text": "if commandSettings.LoadParametersFromFile != \"\" {"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 690,
+          "text": "sources.FromFile(commandSettings.LoadParametersFromFile))"
+        },
+        {
+          "label": "WithParseStepSource",
+          "pattern": "\\bWithParseStepSource\\b",
+          "line": 439,
+          "text": "1. **Source Tracking**: Always specify the source using `WithParseStepSource` to track where values came from."
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 1,
+        "pkg/cmds/parameters import": 1,
+        "pkg/cmds/middlewares import": 1,
+        "ParameterLayer": 1,
+        "ParameterLayers": 3,
+        "ParsedLayers": 4,
+        "ExecuteMiddlewares": 5,
+        "ParseFromCobraCommand": 2,
+        "UpdateFromEnv": 5,
+        "SetFromDefaults": 7,
+        "LoadParametersFromFile": 8,
+        "WithParseStepSource": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/22-command-loaders.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 146,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        }
+      ],
+      "counts": {
+        "pkg/cmds/parameters import": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/22-templating-helpers.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/23-pattern-based-config-mapping.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 56,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 85,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 137,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 476,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 479,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 57,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 58,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 86,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 87,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 138,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 139,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 477,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 478,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 26,
+          "text": "- Using the Mapper: Wire into `LoadParametersFromFile`"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 70,
+          "text": "// Use with LoadParametersFromFile"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 98,
+          "text": "// Use with LoadParametersFromFile"
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 4,
+        "pkg/cmds/parameters import": 1,
+        "pkg/cmds/middlewares import": 8,
+        "LoadParametersFromFile": 3
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/24-config-files.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 31,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 73,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 110,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 129,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 171,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 216,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 308,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 352,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 33,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 74,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 219,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 309,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 32,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 111,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 130,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 210,
+          "text": "Use `github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper` to declare mapping rules and pass the mapper to `LoadParametersFromFile`."
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 217,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 218,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 256,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 353,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 210,
+          "text": "Use `github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper` to declare mapping rules and pass the mapper to `LoadParametersFromFile`."
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 390,
+          "text": "Legacy Viper-based middlewares like `GatherFlagsFromViper` and per-command `--load-parameters-from-file` are deprecated. Prefer config middlewares (`LoadParametersFromFiles`) with resolvers and `--config-file`."
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 8,
+        "pkg/cmds/parameters import": 4,
+        "pkg/cmds/middlewares import": 8,
+        "LoadParametersFromFile": 1,
+        "LoadParametersFromFiles": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/commands-reference.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 96,
+          "text": "- `github.com/go-go-golems/glazed/pkg/cmds/layers`: Parameter layering system"
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 95,
+          "text": "- `github.com/go-go-golems/glazed/pkg/cmds/parameters`: Parameter types and definitions"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 56,
+          "text": "\u2502  Parameters  \u2502          \u2502 ParsedLayers    \u2502"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 87,
+          "text": "5. **ParsedLayers**: Runtime values after collecting from CLI flags, environment, config files, and defaults"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 784,
+          "text": "Glazed treats command-line parameters as more than just strings. They are typed objects with built-in validation, default values, and help text. This approach shifts the burden of parsing and validation from the command's business logic to the framework itself. By defining a parameter's type (e.g., `ParameterTypeInteger`, `ParameterTypeDate`, `ParameterTypeFile`), you get automatic error handling and a more robust and user-friendly CLI."
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 793,
+          "text": "**`ParameterTypeString`**: The workhorse for text inputs - names, descriptions, URLs"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 794,
+          "text": "**`ParameterTypeSecret`**: Like strings, but values are masked in help and logs (perfect for passwords, API keys)"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 795,
+          "text": "**`ParameterTypeInteger`**: Whole numbers with automatic range validation"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 796,
+          "text": "**`ParameterTypeFloat`**: Decimal numbers for measurements, percentages, ratios"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 797,
+          "text": "**`ParameterTypeBool`**: True/false flags that work with `--flag` and `--no-flag` patterns"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 798,
+          "text": "**`ParameterTypeDate`**: Intelligent date parsing that handles multiple formats"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 801,
+          "text": "**`ParameterTypeStringList`**: Multiple values like `--tag web --tag api --tag production`"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 802,
+          "text": "**`ParameterTypeIntegerList`**: Lists of numbers for ports, IDs, quantities"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 803,
+          "text": "**`ParameterTypeFloatList`**: Multiple decimal values for coordinates, measurements"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 806,
+          "text": "**`ParameterTypeChoice`**: Single selection from predefined options (with tab completion!)"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 807,
+          "text": "**`ParameterTypeChoiceList`**: Multiple selections from predefined options"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 810,
+          "text": "**`ParameterTypeFile`**: File paths with existence validation and tab completion"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 811,
+          "text": "**`ParameterTypeFileList`**: Multiple file paths"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 812,
+          "text": "**`ParameterTypeStringFromFile`**: Read text content from a file (useful for large inputs)"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 813,
+          "text": "**`ParameterTypeStringListFromFile`**: Read line-separated lists from files"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 816,
+          "text": "**`ParameterTypeKeyValue`**: Map-like inputs: `--env DATABASE_URL=postgres://... --env DEBUG=true`"
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 1,
+        "pkg/cmds/parameters import": 1,
+        "ParsedLayers": 2,
+        "ParameterType": 17
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/how-to-write-good-documentation-pages.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/layers-guide.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 622,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 623,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 292,
+          "text": "extendedDbLayer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 551,
+          "text": "b.layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 560,
+          "text": "b.layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 569,
+          "text": "b.layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 1127,
+          "text": "advancedLayer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 1159,
+          "text": "layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 1166,
+          "text": "layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 1179,
+          "text": "layer.AddFlags("
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 1185,
+          "text": "layer.AddFlags("
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 1,
+        "pkg/cmds/parameters import": 1,
+        "AddFlags": 9
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/logging-layer.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/simple-query-dsl.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/user-query-dsl.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/topics/using-the-query-api.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/01-a-simple-table-cli.md",
+      "matches": [
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 20,
+          "text": "- `ParameterDefinition`: This struct is used to define the parameters (flags or arguments) that the command takes. It"
+        }
+      ],
+      "counts": {
+        "ParameterDefinition": 1
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/02-a-simple-help-system.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/04-lua.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/05-build-first-command.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/config-files-quickstart.md",
+      "matches": [],
+      "counts": {}
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/custom-layer.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 271,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 421,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 493,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 272,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 494,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 3,
+        "pkg/cmds/parameters import": 2
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-from-viper-to-config-files.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 360,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 420,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/layers\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 121,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 146,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 248,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/parameters\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 120,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 145,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 213,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 247,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 481,
+          "text": "pm \"github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper\""
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 793,
+          "text": "\"github.com/go-go-golems/glazed/pkg/cmds/middlewares\""
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 765,
+          "text": "3. `UpdateFromEnv` middleware is included in your middleware chain"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 27,
+          "text": "1. **Config File Loading**: Replace `GatherFlagsFromViper()` and `GatherFlagsFromCustomViper()` with `LoadParametersFromFile()` or `LoadParametersFromFiles()`"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 141,
+          "text": "### After: Using LoadParametersFromFile"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 171,
+          "text": "For applications with a single config file, use `LoadParametersFromFile`:"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 498,
+          "text": "// Use with LoadParametersFromFile"
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 27,
+          "text": "1. **Config File Loading**: Replace `GatherFlagsFromViper()` and `GatherFlagsFromCustomViper()` with `LoadParametersFromFile()` or `LoadParametersFromFiles()`"
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 191,
+          "text": "For applications that compose configuration from multiple files, use `LoadParametersFromFiles`:"
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 243,
+          "text": "### After: Using LoadParametersFromFiles"
+        },
+        {
+          "label": "LoadParametersFromFiles",
+          "pattern": "\\bLoadParametersFromFiles\\b",
+          "line": 771,
+          "text": "2. Check config file order in `LoadParametersFromFiles` (low \u2192 high)"
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 2,
+        "pkg/cmds/parameters import": 3,
+        "pkg/cmds/middlewares import": 6,
+        "UpdateFromEnv": 1,
+        "LoadParametersFromFile": 4,
+        "LoadParametersFromFiles": 4
+      }
+    },
+    {
+      "path": "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-to-facade-packages.md",
+      "matches": [
+        {
+          "label": "pkg/cmds/layers import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/layers",
+          "line": 107,
+          "text": "- `github.com/go-go-golems/glazed/pkg/cmds/layers`"
+        },
+        {
+          "label": "pkg/cmds/parameters import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/parameters",
+          "line": 108,
+          "text": "- `github.com/go-go-golems/glazed/pkg/cmds/parameters`"
+        },
+        {
+          "label": "pkg/cmds/middlewares import",
+          "pattern": "github\\.com/go-go-golems/glazed/pkg/cmds/middlewares",
+          "line": 109,
+          "text": "- `github.com/go-go-golems/glazed/pkg/cmds/middlewares`"
+        },
+        {
+          "label": "layers.ParameterLayer",
+          "pattern": "layers\\.ParameterLayer",
+          "line": 42,
+          "text": "- `pkg/cmds/layers.ParameterLayer` \u2192 `pkg/cmds/schema.Section`"
+        },
+        {
+          "label": "layers.ParameterLayer",
+          "pattern": "layers\\.ParameterLayer",
+          "line": 43,
+          "text": "- `pkg/cmds/layers.ParameterLayers` \u2192 `pkg/cmds/schema.Schema`"
+        },
+        {
+          "label": "layers.ParameterLayer",
+          "pattern": "layers\\.ParameterLayer",
+          "line": 88,
+          "text": "- `cmds.CommandDescription.Layers` is now `*schema.Schema` (was `*layers.ParameterLayers`)."
+        },
+        {
+          "label": "layers.ParameterLayer",
+          "pattern": "layers\\.ParameterLayer",
+          "line": 89,
+          "text": "- `layers.ParameterLayer` interface methods now use `*fields.Definition` / `*fields.Definitions`:"
+        },
+        {
+          "label": "layers.ParameterLayers",
+          "pattern": "layers\\.ParameterLayers",
+          "line": 43,
+          "text": "- `pkg/cmds/layers.ParameterLayers` \u2192 `pkg/cmds/schema.Schema`"
+        },
+        {
+          "label": "layers.ParameterLayers",
+          "pattern": "layers\\.ParameterLayers",
+          "line": 88,
+          "text": "- `cmds.CommandDescription.Layers` is now `*schema.Schema` (was `*layers.ParameterLayers`)."
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 42,
+          "text": "- `pkg/cmds/layers.ParameterLayer` \u2192 `pkg/cmds/schema.Section`"
+        },
+        {
+          "label": "ParameterLayer",
+          "pattern": "\\bParameterLayer\\b",
+          "line": 89,
+          "text": "- `layers.ParameterLayer` interface methods now use `*fields.Definition` / `*fields.Definitions`:"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 43,
+          "text": "- `pkg/cmds/layers.ParameterLayers` \u2192 `pkg/cmds/schema.Schema`"
+        },
+        {
+          "label": "ParameterLayers",
+          "pattern": "\\bParameterLayers\\b",
+          "line": 88,
+          "text": "- `cmds.CommandDescription.Layers` is now `*schema.Schema` (was `*layers.ParameterLayers`)."
+        },
+        {
+          "label": "ParsedLayer",
+          "pattern": "\\bParsedLayer\\b",
+          "line": 51,
+          "text": "- `pkg/cmds/layers.ParsedLayer` \u2192 `pkg/cmds/values.SectionValues`"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 50,
+          "text": "- `pkg/cmds/layers.ParsedLayers` \u2192 `pkg/cmds/values.Values`"
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 79,
+          "text": "\u2026and it still satisfies interfaces that mention `*layers.ParsedLayers`, because `values.Values` is an alias for `layers.ParsedLayers`."
+        },
+        {
+          "label": "ParsedLayers",
+          "pattern": "\\bParsedLayers\\b",
+          "line": 165,
+          "text": "func (c *MyCmd) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {"
+        },
+        {
+          "label": "parameters.ParameterDefinition",
+          "pattern": "parameters\\.ParameterDefinition",
+          "line": 44,
+          "text": "- `pkg/cmds/parameters.ParameterDefinition` \u2192 `pkg/cmds/fields.Definition`"
+        },
+        {
+          "label": "parameters.ParameterDefinition",
+          "pattern": "parameters\\.ParameterDefinition",
+          "line": 45,
+          "text": "- `pkg/cmds/parameters.ParameterDefinitions` \u2192 `pkg/cmds/fields.Definitions`"
+        },
+        {
+          "label": "parameters.ParameterDefinitions",
+          "pattern": "parameters\\.ParameterDefinitions",
+          "line": 45,
+          "text": "- `pkg/cmds/parameters.ParameterDefinitions` \u2192 `pkg/cmds/fields.Definitions`"
+        },
+        {
+          "label": "ParameterDefinition",
+          "pattern": "\\bParameterDefinition\\b",
+          "line": 44,
+          "text": "- `pkg/cmds/parameters.ParameterDefinition` \u2192 `pkg/cmds/fields.Definition`"
+        },
+        {
+          "label": "ParameterDefinitions",
+          "pattern": "\\bParameterDefinitions\\b",
+          "line": 45,
+          "text": "- `pkg/cmds/parameters.ParameterDefinitions` \u2192 `pkg/cmds/fields.Definitions`"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 46,
+          "text": "- `pkg/cmds/parameters.ParameterType*` \u2192 `pkg/cmds/fields.Type*`"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 125,
+          "text": "parameters.NewParameterDefinition(\"limit\", parameters.ParameterTypeInteger, parameters.WithDefault(10))"
+        },
+        {
+          "label": "ParameterType",
+          "pattern": "\\bParameterType\\w*\\b",
+          "line": 144,
+          "text": "parameters.NewParameterDefinition(\"api-key\", parameters.ParameterTypeString),"
+        },
+        {
+          "label": "AddFlags",
+          "pattern": "\\bAddFlags\\b",
+          "line": 90,
+          "text": "- `AddFlags(...*fields.Definition)`"
+        },
+        {
+          "label": "CobraParameterLayer",
+          "pattern": "\\bCobraParameterLayer\\b",
+          "line": 221,
+          "text": "- Cobra-only plumbing: attaching layers to Cobra uses `layers.CobraParameterLayer`."
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 66,
+          "text": "- `middlewares.ExecuteMiddlewares` \u2192 `sources.Execute`"
+        },
+        {
+          "label": "ExecuteMiddlewares",
+          "pattern": "\\bExecuteMiddlewares\\b",
+          "line": 95,
+          "text": "- `middlewares.HandlerFunc` / `middlewares.ExecuteMiddlewares` (now `sources.Execute`)"
+        },
+        {
+          "label": "ParseFromCobraCommand",
+          "pattern": "\\bParseFromCobraCommand\\b",
+          "line": 60,
+          "text": "- `middlewares.ParseFromCobraCommand` \u2192 `sources.FromCobra`"
+        },
+        {
+          "label": "GatherArguments",
+          "pattern": "\\bGatherArguments\\b",
+          "line": 61,
+          "text": "- `middlewares.GatherArguments` \u2192 `sources.FromArgs`"
+        },
+        {
+          "label": "UpdateFromEnv",
+          "pattern": "\\bUpdateFromEnv\\b",
+          "line": 62,
+          "text": "- `middlewares.UpdateFromEnv` \u2192 `sources.FromEnv`"
+        },
+        {
+          "label": "SetFromDefaults",
+          "pattern": "\\bSetFromDefaults\\b",
+          "line": 63,
+          "text": "- `middlewares.SetFromDefaults` \u2192 `sources.FromDefaults`"
+        },
+        {
+          "label": "LoadParametersFromFile",
+          "pattern": "\\bLoadParametersFromFile\\b",
+          "line": 64,
+          "text": "- `middlewares.LoadParametersFromFile(s)` \u2192 `sources.FromFile` / `sources.FromFiles`"
+        },
+        {
+          "label": "WithParseStepSource",
+          "pattern": "\\bWithParseStepSource\\b",
+          "line": 67,
+          "text": "- `parameters.WithParseStepSource(...)` \u2192 `sources.WithSource(...)`"
+        },
+        {
+          "label": "CommandDefinition",
+          "pattern": "\\bCommandDefinition\\b",
+          "line": 87,
+          "text": "- `cmds.CommandDefinition` and `cmds.CommandDefinitionOption` were removed. Use `cmds.CommandDescription` and `cmds.CommandDescriptionOption` instead."
+        }
+      ],
+      "counts": {
+        "pkg/cmds/layers import": 1,
+        "pkg/cmds/parameters import": 1,
+        "pkg/cmds/middlewares import": 1,
+        "layers.ParameterLayer": 4,
+        "layers.ParameterLayers": 2,
+        "ParameterLayer": 2,
+        "ParameterLayers": 2,
+        "ParsedLayer": 1,
+        "ParsedLayers": 3,
+        "parameters.ParameterDefinition": 2,
+        "parameters.ParameterDefinitions": 1,
+        "ParameterDefinition": 1,
+        "ParameterDefinitions": 1,
+        "ParameterType": 3,
+        "AddFlags": 1,
+        "CobraParameterLayer": 1,
+        "ExecuteMiddlewares": 2,
+        "ParseFromCobraCommand": 1,
+        "GatherArguments": 1,
+        "UpdateFromEnv": 1,
+        "SetFromDefaults": 1,
+        "LoadParametersFromFile": 1,
+        "WithParseStepSource": 1,
+        "CommandDefinition": 1
+      }
+    }
+  ]
+}

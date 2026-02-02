@@ -125,9 +125,9 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 }
 
 // InitLoggerFromViper initializes the logger using settings from Viper
-// Deprecated: Initialize logging from parsed layers using SetupLoggingFromParsedLayers instead.
+// Deprecated: Initialize logging from parsed layers using SetupLoggingFromValues instead.
 func InitLoggerFromViper() error {
-	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromParsedLayers")
+	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromValues")
 	settings := &LoggingSettings{
 		LogLevel:            viper.GetString("log-level"),
 		LogFile:             viper.GetString("log-file"),

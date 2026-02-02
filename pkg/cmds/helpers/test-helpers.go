@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -31,7 +29,7 @@ import (
 //    The YAML can use the Test* structs defined here for specific fields.
 // 2. Load the YAML file using the LoadTestFromYAML function into your table-driven test struct.
 //
-// 3. Use the New* functions to convert the data loaded from YAML into appropriate form for the glazed library (typically, ParsedLayers, ParsedDefinitions, ParameterLayers)
+// 3. Use the New* functions to convert the data loaded from YAML into appropriate form for the glazed library (typically, Values, ParsedDefinitions, ParameterLayers)
 //
 // 4. Write a standard table-driven test loop.
 //
@@ -98,9 +96,9 @@ import (
 //
 // type test struct {
 // 	name            string
-// 	parameterLayers []parameters.TestParameterLayer
-// 	parsedLayers    []parameters.TestParsedLayer
-// 	expectedLayers  []parameters.TestExpectedLayer
+// 	parameterLayers []fields.TestParameterLayer
+// 	parsedLayers    []fields.TestSectionValues
+// 	expectedLayers  []fields.TestExpectedLayer
 // 	expectedError   bool
 // }
 //
@@ -109,8 +107,8 @@ import (
 //
 // 	for _, tt := range tests {
 // 		t.Run(tt.name, func(t *testing.T) {
-// 			layers_ := parameters.NewTestParameterLayers(tt.parameterLayers)
-// 			parsedLayers := parameters.NewTestParsedLayers(layers_, tt.parsedLayers)
+// 			layers_ := fields.NewTestParameterLayers(tt.parameterLayers)
+// 			parsedLayers := fields.NewTestValues(layers_, tt.parsedLayers)
 //
 //          YourTest()
 //
@@ -141,15 +139,15 @@ type TestParsedParameter struct {
 	Value interface{} `yaml:"value"`
 }
 
-type TestParsedLayer struct {
+type TestSectionValues struct {
 	Name       string                `yaml:"name"`
 	Parameters []TestParsedParameter `yaml:"parameters"`
 }
 
 type TestExpectedLayer struct {
-	Name   string                            `yaml:"name"`
-	Values map[string]interface{}            `yaml:"values"`
-	Logs   map[string][]parameters.ParseStep `yaml:"logs"`
+	Name   string                        `yaml:"name"`
+	Values map[string]interface{}        `yaml:"values"`
+	Logs   map[string][]fields.ParseStep `yaml:"logs"`
 }
 
 type TestMiddlewareName string
@@ -167,20 +165,20 @@ const TestBlacklistLayersFirst = "blacklistLayersFirst"
 const TestBlacklistLayerParameters = "blacklistLayerParameters"
 const TestBlacklistLayerParametersFirst = "blacklistLayerParametersFirst"
 
-type TestParseStepOptionName string
+type TestParseOptionName string
 
-const TestParseStepOptionSource = "source"
-const TestParseStepOptionValue = "value"
-const TestParseStepOptionMetadata = "metadata"
+const TestParseOptionSource = "source"
+const TestParseOptionValue = "value"
+const TestParseOptionMetadata = "metadata"
 
-type TestParseStepOption struct {
-	Name  TestParseStepOptionName `yaml:"name"`
-	Value interface{}             `yaml:"value"`
+type TestParseOption struct {
+	Name  TestParseOptionName `yaml:"name"`
+	Value interface{}         `yaml:"value"`
 }
 
 type TestMiddleware struct {
 	Name       TestMiddlewareName                 `yaml:"name"`
-	Options    []TestParseStepOption              `yaml:"options"`
+	Options    []TestParseOption                  `yaml:"options"`
 	Map        *map[string]map[string]interface{} `yaml:"map"`
 	Prefix     *string                            `yaml:"prefix"`
 	Layers     *[]string                          `yaml:"layers"`
@@ -189,18 +187,18 @@ type TestMiddleware struct {
 
 type TestMiddlewares []TestMiddleware
 
-func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
-	ret := []middlewares.Middleware{}
+func (t TestMiddlewares) ToMiddlewares() ([]sources.Middleware, error) {
+	ret := []sources.Middleware{}
 	for _, m := range t {
-		options := []sources.ParseOption{}
+		options := []fields.ParseOption{}
 		for _, o := range m.Options {
 			switch o.Name {
-			case TestParseStepOptionSource:
-				options = append(options, sources.WithSource(o.Value.(string)))
-			case TestParseStepOptionValue:
-				options = append(options, parameters.WithParseStepValue(o.Value))
-			case TestParseStepOptionMetadata:
-				options = append(options, sources.WithMetadata(o.Value.(map[string]interface{})))
+			case TestParseOptionSource:
+				options = append(options, fields.WithSource(o.Value.(string)))
+			case TestParseOptionValue:
+				options = append(options, fields.WithParseStepValue(o.Value))
+			case TestParseOptionMetadata:
+				options = append(options, fields.WithMetadata(o.Value.(map[string]interface{})))
 			default:
 				return nil, errors.Newf("unknown option name %s", o.Name)
 			}
@@ -216,21 +214,21 @@ func (t TestMiddlewares) ToMiddlewares() ([]middlewares.Middleware, error) {
 		case TestMiddlewareUpdateFromEnv:
 			ret = append(ret, sources.FromEnv(*m.Prefix, options...))
 		case TestWhitelistLayers:
-			ret = append(ret, middlewares.WhitelistLayers(*m.Layers))
+			ret = append(ret, sources.WhitelistLayers(*m.Layers))
 		case TestWhitelistLayersFirst:
-			ret = append(ret, middlewares.WhitelistLayersFirst(*m.Layers))
+			ret = append(ret, sources.WhitelistLayersFirst(*m.Layers))
 		case TestWhitelistLayerParameters:
-			ret = append(ret, middlewares.WhitelistLayerParameters(*m.Parameters))
+			ret = append(ret, sources.WhitelistLayerParameters(*m.Parameters))
 		case TestWhitelistLayerParametersFirst:
-			ret = append(ret, middlewares.WhitelistLayerParametersFirst(*m.Parameters))
+			ret = append(ret, sources.WhitelistLayerParametersFirst(*m.Parameters))
 		case TestBlacklistLayers:
-			ret = append(ret, middlewares.BlacklistLayers(*m.Layers))
+			ret = append(ret, sources.BlacklistLayers(*m.Layers))
 		case TestBlacklistLayersFirst:
-			ret = append(ret, middlewares.BlacklistLayersFirst(*m.Layers))
+			ret = append(ret, sources.BlacklistLayersFirst(*m.Layers))
 		case TestBlacklistLayerParameters:
-			ret = append(ret, middlewares.BlacklistLayerParameters(*m.Parameters))
+			ret = append(ret, sources.BlacklistLayerParameters(*m.Parameters))
 		case TestBlacklistLayerParametersFirst:
-			ret = append(ret, middlewares.BlacklistLayerParametersFirst(*m.Parameters))
+			ret = append(ret, sources.BlacklistLayerParametersFirst(*m.Parameters))
 		default:
 			return nil, errors.Newf("unknown middleware name %s", m.Name)
 		}
@@ -260,10 +258,10 @@ func NewTestParameterLayers(ls []TestParameterLayer) *schema.Schema {
 	return ret
 }
 
-// NewTestParsedLayer helper function to create a ParsedLayers from TestParsedParameter
-func NewTestParsedLayer(pl schema.Section, l TestParsedLayer) *values.SectionValues {
-	params_ := parameters.NewParsedParameters()
-	pds := pl.GetParameterDefinitions()
+// NewTestSectionValues helper function to create a Values from TestParsedParameter
+func NewTestSectionValues(pl schema.Section, l TestSectionValues) *values.SectionValues {
+	params_ := fields.NewParsedParameters()
+	pds := pl.GetDefinitions()
 	for _, p := range l.Parameters {
 		pd, ok := pds.Get(p.Name)
 		if !ok {
@@ -283,14 +281,14 @@ func NewTestParsedLayer(pl schema.Section, l TestParsedLayer) *values.SectionVal
 	return ret
 }
 
-func NewTestParsedLayers(pls *schema.Schema, ls ...TestParsedLayer) *values.Values {
+func NewTestValues(pls *schema.Schema, ls ...TestSectionValues) *values.Values {
 	ret := values.New()
 	for _, l := range ls {
 		pl, ok := pls.Get(l.Name)
 		if !ok {
 			panic("parameter layer not found")
 		}
-		ret.Set(l.Name, NewTestParsedLayer(pl, l))
+		ret.Set(l.Name, NewTestSectionValues(pl, l))
 	}
 	return ret
 }

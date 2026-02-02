@@ -3,7 +3,6 @@ package appconfig
 import (
 	"reflect"
 
-	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -97,7 +96,7 @@ func (p *Parser[T]) Parse() (*T, error) {
 
 	// Options collect middlewares in low->high precedence order (last wins).
 	// ExecuteMiddlewares expects the reverse order.
-	execMiddlewares := make([]cmd_middlewares.Middleware, 0, len(p.opts.middlewares))
+	execMiddlewares := make([]cmd_sources.Middleware, 0, len(p.opts.middlewares))
 	for i := len(p.opts.middlewares) - 1; i >= 0; i-- {
 		execMiddlewares = append(execMiddlewares, p.opts.middlewares[i])
 	}
@@ -117,7 +116,7 @@ func (p *Parser[T]) Parse() (*T, error) {
 		if v.Kind() != reflect.Ptr || v.IsNil() {
 			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", string(r.slug), dst)
 		}
-		if err := values.DecodeSectionInto(parsedLayers, string(r.slug), dst); err != nil {
+		if err := parsedLayers.InitializeStruct(string(r.slug), dst); err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", string(r.slug))
 		}
 	}

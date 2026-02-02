@@ -5,7 +5,6 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -50,7 +49,7 @@ var DocsCmd = &cobra.Command{
 
 func init() {
 	DocsCmd.Flags().SortFlags = false
-	// This is an example of selective use of glazed parameter layers.
+	// This is an example of selective use of glazed parameter schema.
 	// If we extracted out the docs command into a cmd.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
@@ -77,9 +76,9 @@ func init() {
 		panic(err)
 	}
 
-	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	cobraLayer, ok := glazedLayer.(schema.CobraSection)
 	if !ok {
-		panic("glazed layer is not a CobraParameterLayer")
+		panic("glazed layer is not a CobraSection")
 	}
 
 	err = cobraLayer.AddLayerToCobraCommand(DocsCmd)
