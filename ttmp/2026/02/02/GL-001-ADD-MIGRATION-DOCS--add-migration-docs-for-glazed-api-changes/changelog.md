@@ -38,3 +38,8 @@ Bump Go version to 1.25.6 for govulncheck
 
 Ticket closed
 
+
+## 2026-02-02
+
+Add rename options audit for external review
+

@@ -607,3 +607,32 @@ I updated the module to Go 1.25.6, refreshed the workspace toolchain via `go wor
 go work use ./glazed
 go test ./...
 ```
+
+## Step 10: Rename Options Audit for External Review
+
+I authored a new exhaustive renaming options document for the schema/fields/values/sources vocabulary so we can ask for external feedback.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Suggest better names for ParsedParameters... I'm note sure ParsedLayers -> Values is the best name either, since we're not handling multiple Sections, and Schema instead of ParameterLayers?
+
+Write a whole document about the renames and thigns to be renamed and things that could be renamed, and different options. For each symbol, also add a bit of code snippets to show how it's being uysed. We're going to ask our big brother to see if they have a useful insight. Be very exhaustive, cover eveyrthing, make sure the big brother has enough context to provide great answers, and store the document in the ticket."
+
+**Assistant interpretation:** Produce a full symbol-by-symbol naming audit with usage snippets, rename options, and explicit questions for external review.
+
+**Inferred user intent:** Gather a comprehensive rename decision record to share with a senior reviewer.
+
+**Commit (code):** Pending
+
+### What I did
+- Created an analysis document that enumerates current symbols, usage snippets, and rename options across schema/fields/values/sources/cmds.
+- Highlighted the highest-impact naming questions and listed leftover legacy naming inside the new API.
+
+### Why
+- The user wants an exhaustive context document to enable a high-quality review by a senior peer.
+
+### Technical details
+
+```bash
+cat ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/analysis/03-naming-options-and-rename-audit.md
+```
