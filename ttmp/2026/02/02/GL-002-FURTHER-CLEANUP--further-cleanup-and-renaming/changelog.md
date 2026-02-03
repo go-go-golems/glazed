@@ -80,3 +80,14 @@ Rename pattern mapper fields to sections/fields and refresh inventory
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/README.md — Docs updated to TargetSection/TargetField
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/mappings.yaml — YAML keys updated
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/03-layer-parameter-inventory.md — Inventory report
+
+## 2026-02-03
+
+Align CLI command settings with parsed-fields naming and remove legacy cobra builders (commit 5766e46)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cli.go — Renamed parsed-fields flag and removed legacy load-from-file flag
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cobra.go — Cleaned cobra builder wrappers and section/values naming
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-overlay/main.go — Updated parser config field names
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-08-05/signal-test/main.go — Updated parser config field names in ttmp app

@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T20:27:50-05:00
+LastUpdated: 2026-02-03T22:20:00-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -734,3 +734,115 @@ go test ./...
 - `cmd/examples/config-pattern-mapper/README.md`
 - `cmd/examples/config-pattern-mapper/mappings.yaml`
 - `analysis/03-layer-parameter-inventory.md`
+
+## Step 10: Appconfig cleanup + runner parse renames
+
+### What I did
+- Renamed appconfig LayerSlug → SectionSlug and WithValuesForLayers → WithValuesForSections.
+- Updated appconfig parser/options/tests/examples to section/values terminology.
+- Renamed CLI helpers (New*SettingsLayer → New*SettingsSection) and updated call sites.
+- Renamed runner ParseCommandParameters → ParseCommandValues and WithValuesForLayers → WithValuesForSections.
+- Cleaned runner error strings and comments to remove parameter/layer terminology.
+
+### Commands and queries
+
+```bash
+rg -n "LayerSlug" -g'!ttmp/**'
+rg -n "WithValuesForLayers" -g'!ttmp/**'
+rg -n "ParseCommandParameters" -g'*.go' -g'!ttmp/**'
+
+perl -pi -e 's/Layer/Section/g; s/layer/section/g' pkg/appconfig/*.go pkg/appconfig/*_test.go cmd/examples/appconfig-parser/main.go cmd/examples/appconfig-profiles/main.go
+perl -pi -e 's/Layer/Section/g; s/layer/section/g' pkg/cli/cli.go pkg/cli/cobra-parser.go
+
+gofmt -w cmd/examples/appconfig-parser/main.go cmd/examples/appconfig-profiles/main.go \
+  pkg/appconfig/doc.go pkg/appconfig/options.go pkg/appconfig/parser.go \
+  pkg/appconfig/parser_test.go pkg/appconfig/profile_test.go \
+  pkg/cli/cli.go pkg/cli/cobra-parser.go pkg/cmds/runner/run.go
+```
+
+### Files touched
+- `pkg/appconfig/parser.go`
+- `pkg/appconfig/options.go`
+- `pkg/appconfig/doc.go`
+- `pkg/appconfig/parser_test.go`
+- `pkg/appconfig/profile_test.go`
+- `cmd/examples/appconfig-parser/main.go`
+- `cmd/examples/appconfig-profiles/main.go`
+- `pkg/cli/cli.go`
+- `pkg/cli/cobra-parser.go`
+- `pkg/cmds/runner/run.go`
+- `ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/tasks.md`
+
+## Step 11: Align CLI flags + cobra builder cleanup
+
+I aligned CLI command settings with the parsed-fields vocabulary, removed legacy cobra builder wrappers, and updated parser config field names in examples and the ttmp signal-test app. This keeps the API surface consistent with the no-back-compat stance and avoids lingering layer/parameter naming in active code paths.
+
+I also fixed a naming collision in cobra run flow, confirmed tests via the pre-commit hook suite, and captured the hook timeout during the first commit attempt.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue the cleanup pass, make progress on remaining tasks, keep the diary updated, and ensure the codebase compiles.
+
+**Inferred user intent:** Make steady, traceable progress on the no-back-compat renames with a verifiable build and documented changes.
+
+**Commit (code):** 5766e46 — "Refactor: update appconfig and CLI section naming"
+
+### What I did
+- Renamed CLI command settings to `print-parsed-fields` and removed the legacy load-from-file flag.
+- Updated cobra run flow to use parsed values/sections naming and removed deprecated builder wrappers.
+- Fixed `CobraParserConfig` field renames in examples and `ttmp/2025-08-05/signal-test`.
+- Ran gofmt, go test, and pre-commit hook toolchain (golangci-lint, gosec, govulncheck).
+
+### Why
+- Keep public CLI/debug flags aligned with the section/field naming and drop legacy API surfaces.
+- Ensure sample apps and ttmp utilities compile against the updated config structs.
+
+### What worked
+- `go test ./...` succeeded after updating ttmp signal-test.
+- Pre-commit hooks passed after rerunning commit with longer timeout.
+
+### What didn't work
+- `git commit -m "Refactor: update appconfig and CLI section naming"` timed out on the first attempt due to long-running pre-commit hooks (command timeout after ~10s). Re-ran with a longer timeout.
+
+### What I learned
+- The lefthook pre-commit chain can exceed short command timeouts; rerunning with a larger timeout is required for full lint/security checks.
+
+### What was tricky to build
+- Avoiding the `printParsedFields` name collision with a local boolean required renaming the bool flag to keep the function call intact.
+- Tests include some ttmp apps; renamed config fields in `ttmp/2025-08-05/signal-test` were necessary for the full suite to pass.
+
+### What warrants a second pair of eyes
+- Confirm dropping the legacy `load-parameters-from-file` flag is acceptable for downstream users.
+- Sanity-check that removing deprecated cobra builder wrappers won’t break any external consumers expecting those helpers.
+
+### What should be done in the future
+- Continue eliminating remaining layer/parameter vocabulary in docs, filenames, and settings helpers.
+
+### Code review instructions
+- Start in `pkg/cli/cli.go`, `pkg/cli/cobra.go`, and `pkg/cli/helpers.go` to review CLI flag and wrapper changes.
+- Review example updates in `cmd/examples/config-*` and `ttmp/2025-08-05/signal-test/main.go`.
+- Validate with `go test ./...`.
+
+### Technical details
+
+```bash
+rg -n "ShortHelpLayers|SkipCommandSettingsLayer" cmd -g'*.go'
+perl -pi -e 's/SkipCommandSettingsLayer/SkipCommandSettingsSection/g; s/ShortHelpLayers/ShortHelpSections/g' \
+  cmd/examples/config-single/main.go \
+  cmd/examples/config-overlay/main.go \
+  cmd/examples/config-custom-mapper/main.go \
+  cmd/examples/new-api-build-first-command/main.go
+
+perl -pi -e 's/NewCommandSettingsLayer/NewCommandSettingsSection/g; s/ShortHelpLayers/ShortHelpSections/g' \
+  ttmp/2025-08-05/signal-test/main.go
+
+gofmt -w cmd/examples/config-custom-mapper/main.go cmd/examples/config-overlay/main.go \
+  cmd/examples/config-single/main.go cmd/examples/new-api-build-first-command/main.go \
+  pkg/cli/cli.go pkg/cli/cobra.go pkg/cli/helpers.go \
+  ttmp/2025-08-05/signal-test/main.go
+
+go test ./...
+git commit -m "Refactor: update appconfig and CLI section naming"
+```

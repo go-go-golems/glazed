@@ -21,9 +21,10 @@
 - [x] Rename `values` API surface to Section/Field naming (fields, options, accessors, errors).
 - [x] Publish inventory report from scripts (analysis/03-layer-parameter-inventory.md).
 - [x] Pattern mapper rename (TargetParameter → TargetField) including config tags, error strings, and tests.
-- [ ] Appconfig layer vocabulary cleanup (LayerSlug → SectionSlug, WithValuesForLayers → WithValuesForSections, error strings, tests, examples).
+- [x] Appconfig layer vocabulary cleanup (LayerSlug → SectionSlug, WithValuesForLayers → WithValuesForSections, error strings, tests, examples).
 - [ ] Lua conversion naming cleanup (ParseLuaTableToSection, ParseFieldFromLua, error strings).
-- [ ] CLI flag + help text cleanup (parsed-parameters → parsed-fields, parameters-from-file → fields-from-file).
+- [x] CLI flag + help text cleanup (parsed-parameters → parsed-fields; dropped legacy load-from-file flag).
+- [x] Remove legacy cobra builder wrappers + update parser config fields in examples/ttmp.
 - [ ] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.
 - [ ] Rename files/dirs containing `layer` or `parameter` in names (code + docs + examples).
 - [ ] Update docs/tutorials/examples/prompto/pinocchio to remove `layer`/`parameter` vocabulary.
