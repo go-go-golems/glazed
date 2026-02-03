@@ -126,9 +126,8 @@ Step 14: sanitize bundle for PDF upload + reMarkable upload (commit 8a9c26e)
 
 ## 2026-02-03
 
-Step 15: expand postmortem with concrete examples (commit TBD)
+Step 15: expand postmortem with concrete examples (commit 37b787d)
 
 ### Related Files
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/04-postmortem-gl-002-refactor-and-tooling.md — Add concrete examples and commits
-

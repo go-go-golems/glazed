@@ -1076,7 +1076,7 @@ The goal was to move from a narrative postmortem to a reusable, evidence-backed 
 
 **Inferred user intent:** Make the postmortem more actionable and traceable by anchoring it in concrete artifacts.
 
-**Commit (code):** TBD — "Docs: expand GL-002 postmortem examples"
+**Commit (code):** 37b787d — "Docs: expand GL-002 postmortem examples"
 
 ### What I did
 - Added a new “Concrete examples” section to `analysis/04-postmortem-gl-002-refactor-and-tooling.md` with specific paths, errors, scripts, and commits.
