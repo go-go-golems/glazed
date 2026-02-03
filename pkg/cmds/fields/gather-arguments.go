@@ -25,9 +25,9 @@ func (pds *Definitions) GatherArguments(
 	onlyProvided bool,
 	ignoreRequired bool,
 	parseOptions ...ParseOption,
-) (*ParsedParameters, error) {
+) (*FieldValues, error) {
 	_ = args
-	result := NewParsedParameters()
+	result := NewFieldValues()
 	argsIdx := 0
 
 	err := pds.ForEachE(func(argument *Definition) error {
@@ -35,7 +35,7 @@ func (pds *Definitions) GatherArguments(
 			return nil
 		}
 
-		p := &ParsedParameter{
+		p := &FieldValue{
 			Definition: argument,
 		}
 
@@ -67,7 +67,7 @@ func (pds *Definitions) GatherArguments(
 		} else {
 			argsIdx++
 		}
-		i2, err := argument.ParseParameter(v, parseOptions...)
+		i2, err := argument.ParseField(v, parseOptions...)
 		if err != nil {
 			return err
 		}

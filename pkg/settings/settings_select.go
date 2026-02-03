@@ -20,7 +20,7 @@ type SelectSettings struct {
 
 func NewSelectSettingsFromParameters(glazedLayer *values.SectionValues) (*SelectSettings, error) {
 	s := &SelectSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize select settings from parameters")
 	}

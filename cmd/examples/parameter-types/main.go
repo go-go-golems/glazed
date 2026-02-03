@@ -220,7 +220,7 @@ func (c *ParameterTypesCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	s := &ParameterTypesSettings{}
-	err := vals.InitializeStruct(schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize settings from parameters")
 	}

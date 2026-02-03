@@ -71,7 +71,7 @@ func NewExampleCommand() (*ExampleCommand, error) {
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
 func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &ExampleSettings{}
-	err := vals.InitializeStruct(schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize example settings from parameters")
 	}

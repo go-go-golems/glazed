@@ -75,7 +75,7 @@ func runTemplateCommand(cmd *cmds.TemplateCommand, inputValues map[string]interf
 	var options []values.SectionValuesOption
 	for k, v := range inputValues {
 		if _, ok := defaultLayer.GetDefinitions().Get(k); ok {
-			options = append(options, values.WithParameterValue(k, v))
+			options = append(options, values.WithFieldValue(k, v))
 		}
 	}
 

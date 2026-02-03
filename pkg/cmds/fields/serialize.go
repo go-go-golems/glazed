@@ -6,57 +6,57 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-// SerializableParsedParameter represents a parsed parameter in a format suitable for
+// SerializableFieldValue represents a parsed parameter in a format suitable for
 // YAML/JSON serialization, excluding the Definition
-type SerializableParsedParameter struct {
+type SerializableFieldValue struct {
 	Value interface{} `yaml:"value" json:"value"`
 	Log   []ParseStep `yaml:"log" json:"log"`
 }
 
-// ToSerializableParsedParameter converts a ParsedParameter to its serializable representation
-func ToSerializableParsedParameter(pp *ParsedParameter) *SerializableParsedParameter {
-	return &SerializableParsedParameter{
+// ToSerializableFieldValue converts a FieldValue to its serializable representation
+func ToSerializableFieldValue(pp *FieldValue) *SerializableFieldValue {
+	return &SerializableFieldValue{
 		Value: pp.Value,
 		Log:   pp.Log,
 	}
 }
 
-// SerializableParsedParameters represents a collection of parsed parameters in a format suitable
+// SerializableFieldValues represents a collection of parsed parameters in a format suitable
 // for YAML/JSON serialization, maintaining the order of parameters
-type SerializableParsedParameters struct {
-	// Using orderedmap to maintain parameter order while having name-based access
-	Parameters *orderedmap.OrderedMap[string, *SerializableParsedParameter] `yaml:"parameters" json:"parameters"`
+type SerializableFieldValues struct {
+	// Using orderedmap to maintain field order while having name-based access
+	Fields *orderedmap.OrderedMap[string, *SerializableFieldValue] `yaml:"fields" json:"fields"`
 }
 
-// ToSerializableParsedParameters converts a ParsedParameters collection to its serializable representation
-func ToSerializableParsedParameters(pp *ParsedParameters) *SerializableParsedParameters {
-	ret := &SerializableParsedParameters{
-		Parameters: orderedmap.New[string, *SerializableParsedParameter](),
+// ToSerializableFieldValues converts a FieldValues collection to its serializable representation
+func ToSerializableFieldValues(pp *FieldValues) *SerializableFieldValues {
+	ret := &SerializableFieldValues{
+		Fields: orderedmap.New[string, *SerializableFieldValue](),
 	}
 
-	pp.ForEach(func(key string, value *ParsedParameter) {
-		serialized := ToSerializableParsedParameter(value)
-		ret.Parameters.Set(key, serialized)
+	pp.ForEach(func(key string, value *FieldValue) {
+		serialized := ToSerializableFieldValue(value)
+		ret.Fields.Set(key, serialized)
 	})
 
 	return ret
 }
 
-// MarshalYAML implements yaml.Marshaler for SerializableParsedParameters
-func (spp *SerializableParsedParameters) MarshalYAML() (interface{}, error) {
+// MarshalYAML implements yaml.Marshaler for SerializableFieldValues
+func (spp *SerializableFieldValues) MarshalYAML() (interface{}, error) {
 	// Convert to a map for YAML serialization
-	m := make(map[string]*SerializableParsedParameter)
-	for pair := spp.Parameters.Oldest(); pair != nil; pair = pair.Next() {
+	m := make(map[string]*SerializableFieldValue)
+	for pair := spp.Fields.Oldest(); pair != nil; pair = pair.Next() {
 		m[pair.Key] = pair.Value
 	}
 	return m, nil
 }
 
-// MarshalJSON implements json.Marshaler for SerializableParsedParameters
-func (spp *SerializableParsedParameters) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for SerializableFieldValues
+func (spp *SerializableFieldValues) MarshalJSON() ([]byte, error) {
 	// Convert to a map for JSON serialization
-	m := make(map[string]*SerializableParsedParameter)
-	for pair := spp.Parameters.Oldest(); pair != nil; pair = pair.Next() {
+	m := make(map[string]*SerializableFieldValue)
+	for pair := spp.Fields.Oldest(); pair != nil; pair = pair.Next() {
 		m[pair.Key] = pair.Value
 	}
 	return json.Marshal(m)

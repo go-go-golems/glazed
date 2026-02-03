@@ -610,3 +610,88 @@ scripts/04-rename-add-layer-to-section.py
 # cleanup
 rm /tmp/glazed_symbol_inventory.go
 ```
+
+## Step 8: Rename parsed parameters to field values + update values API
+
+Implemented the FieldValue/FieldValues renames, expanded the AST rename tool, and updated the values API to use Section/Field naming. This includes new decode naming and serialization updates plus test fixture changes to keep `go test ./...` green.
+
+### Prompt Context
+
+**User prompt (verbatim):** "yes, add tasks if you haven't already, for each of these, then go task by task, work, make sure things compile, commit, check task off. Keep a frequent diary. Be systematic."
+
+**Assistant interpretation:** Proceed task-by-task, updating naming across fields/values, keeping compile green, and logging every query/command used.
+
+**Inferred user intent:** No lingering parameter/layer terminology in the public API, plus reproducible tooling and test coverage.
+
+**Commit (code):** Pending
+
+### What I did
+- Added tool build tags and expanded the AST rename tool in the ticket scripts.
+- Renamed `ParsedParameter(s)` → `FieldValue(s)` and updated related helpers (`ParseField`, `GatherFieldsFromMap`, `CheckDefaultValueValidity`, `AddFieldsToCobraCommand`).
+- Introduced `FieldValues.DecodeInto` and updated call sites.
+- Renamed `values.SectionValues` internals to `Section`/`Fields`, added `MergeFields`, `GetField`, `AllFieldValues`, `DefaultSectionValues`, and `DecodeSectionInto`.
+- Updated schema serialization types to `SerializableSection` / `SerializableSchema` with `fields`/`sections` tags.
+- Updated YAML test fixtures under `pkg/cmds/sources/tests` to use `fields:` keys.
+- Fixed failing tests and verified with `go test ./...`.
+
+### Why
+- “Parameter” and “layer” naming clashes with the new `schema/fields/values` vocabulary.
+- FieldValues/Decode naming better reflect resolved values with provenance.
+
+### What worked
+- The scripted renames and targeted patches kept the API consistent and tests passing.
+
+### What didn't work
+- Initial global `DecodeInto` rename broke Values decoding; required a follow-up `DecodeSectionInto` pass.
+
+### What I learned
+- The test fixtures encode field names (`parameters:`) that must be updated alongside struct tag changes.
+
+### What was tricky to build
+- Avoiding accidental renames of unrelated `.Parameters` fields and keeping Values vs SectionValues decoding distinct.
+
+### What warrants a second pair of eyes
+- Confirm the `SerializableSchema`/`SerializableSection` rename matches expected external formats.
+- Review the new `DecodeSectionInto` API usage in examples and docs.
+
+### What should be done in the future
+- Continue renaming remaining layer/parameter vocabulary in docs, filenames, and tests.
+- Update pattern mapper config keys (`target_parameter` → `target_field`) and docs.
+
+### Code review instructions
+- Focus on `pkg/cmds/fields`, `pkg/cmds/values`, and `pkg/cmds/schema/serialize.go` for naming consistency.
+- Validate `pkg/cmds/sources/tests/*.yaml` fixture updates.
+
+### Technical details
+
+```bash
+# queries
+rg -n "\\bparameter(s)?\\b|\\blayer(s)?\\b" -g'!*ttmp/*'
+rg -n "ParameterLayer|ParsedLayer|ParameterDefinition|ParameterDefinitions|ParameterType|ParsedParameters|Parameter" pkg/cmds
+rg -n "InitializeStruct" -g'*.go'
+rg -n "ParseParameter|GatherParametersFromMap|CheckParameterDefaultValueValidity|ParsedParameters|ParsedParameter" -g'*.go' -g'*.md'
+rg -n "\\.Parameters" -g'*.go'
+rg -n "DecodeInto" -g'*.go'
+rg -n "DecodeSectionInto" -g'*.go'
+rg -n "GetAllParsedParameters" -g'*.go'
+rg -n "GetParameter" -g'*.go'
+rg -n "Parameters:" -g'*.go'
+rg -n "SectionValues\\{" -g'*.go'
+
+# scripts created / run
+scripts/05-rename-glazed-api.go
+scripts/06-rename-parsed-fields.py
+scripts/07-rename-decode-into.py
+scripts/08-rename-dot-parameters.py
+scripts/09-rename-values-decode.py
+scripts/10-rename-yaml-parameters.py
+
+python scripts/06-rename-parsed-fields.py
+python scripts/07-rename-decode-into.py
+python scripts/08-rename-dot-parameters.py
+python scripts/09-rename-values-decode.py
+python scripts/10-rename-yaml-parameters.py
+
+# tests
+go test ./...
+```

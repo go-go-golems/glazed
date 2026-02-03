@@ -80,7 +80,7 @@ func TestParsedParametersFromDefaults_BasicTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.parameterDefinitions.ParsedParametersFromDefaults()
+			result, err := tt.parameterDefinitions.FieldValuesFromDefaults()
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 				return
@@ -169,7 +169,7 @@ func TestParsedParametersFromDefaults_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.parameterDefinitions.ParsedParametersFromDefaults()
+			result, err := tt.parameterDefinitions.FieldValuesFromDefaults()
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 				return
@@ -218,7 +218,7 @@ func TestParsedParametersFromDefaults_ListTypes(t *testing.T) {
 		}),
 	)
 
-	result, err := pd.ParsedParametersFromDefaults()
+	result, err := pd.FieldValuesFromDefaults()
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -259,7 +259,7 @@ func TestParsedParametersFromDefaults_MapTypes(t *testing.T) {
 		}),
 	)
 
-	result, err := pd.ParsedParametersFromDefaults()
+	result, err := pd.FieldValuesFromDefaults()
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -293,7 +293,7 @@ func TestParsedParametersFromDefaults_FileLoadingTypes(t *testing.T) {
 		}),
 	)
 
-	result, err := pd.ParsedParametersFromDefaults()
+	result, err := pd.FieldValuesFromDefaults()
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -332,7 +332,7 @@ func TestParsedParametersFromDefaults_EmptyCollections(t *testing.T) {
 		}),
 	)
 
-	result, err := pd.ParsedParametersFromDefaults()
+	result, err := pd.FieldValuesFromDefaults()
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -414,7 +414,7 @@ func TestParsedParametersFromDefaults_NilComplexTypes(t *testing.T) {
 		}),
 	)
 
-	result, err := pd.ParsedParametersFromDefaults()
+	result, err := pd.FieldValuesFromDefaults()
 	require.NoError(t, err)
 	require.NotNil(t, result)
 

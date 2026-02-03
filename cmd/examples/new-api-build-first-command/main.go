@@ -75,7 +75,7 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ListUsersSettings{}
-	if err := vals.InitializeStruct(schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

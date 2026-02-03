@@ -497,7 +497,7 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 				return
 			}
 			got := map[string]interface{}{}
-			got_.ForEach(func(key string, p *ParsedParameter) {
+			got_.ForEach(func(key string, p *FieldValue) {
 				got[key] = p.Value
 			})
 			if !reflect.DeepEqual(got, tt.want) {

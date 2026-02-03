@@ -96,7 +96,7 @@ func MergeSectionValues(layerSlug string, layerToMerge *values.SectionValues) Mi
 				return nil
 			}
 
-			err = targetLayer.MergeParameters(layerToMerge)
+			err = targetLayer.MergeFields(layerToMerge)
 			if err != nil {
 				return err
 			}
@@ -151,7 +151,7 @@ func MergeValuesSelective(layersToMerge *values.Values, slugs []string) Middlewa
 					if !exists {
 						parsedLayers.Set(slug, layer.Clone())
 					} else {
-						err = targetLayer.MergeParameters(layer)
+						err = targetLayer.MergeFields(layer)
 						if err != nil {
 							return err
 						}

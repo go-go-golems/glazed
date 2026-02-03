@@ -40,7 +40,7 @@ func (f *JqParameterLayer) Clone() schema.Section {
 
 func NewJqSettingsFromParameters(glazedLayer *values.SectionValues) (*JqSettings, error) {
 	s := &JqSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize jq settings from parameters")
 	}

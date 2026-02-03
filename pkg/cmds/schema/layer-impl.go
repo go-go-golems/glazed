@@ -133,7 +133,7 @@ func (p *SectionImpl) LoadFromYAML(s []byte) error {
 	}
 
 	for f_ := p.Definitions.Oldest(); f_ != nil; f_ = f_.Next() {
-		_, err := f_.Value.CheckParameterDefaultValueValidity()
+		_, err := f_.Value.CheckDefaultValueValidity()
 		if err != nil {
 			return err
 		}
@@ -217,7 +217,7 @@ func (p *SectionImpl) InitializeStructFromParameterDefaults(s interface{}) error
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.
 func (p *SectionImpl) AddSectionToCobraCommand(cmd *cobra.Command) error {
-	err := p.Definitions.AddParametersToCobraCommand(cmd, p.Prefix)
+	err := p.Definitions.AddFieldsToCobraCommand(cmd, p.Prefix)
 	if err != nil {
 		return err
 	}
@@ -253,16 +253,16 @@ func (p *SectionImpl) ParseLayerFromCobraCommand(
 	}
 
 	return &values.SectionValues{
-		Layer:      p,
-		Parameters: ps,
+		Section: p,
+		Fields:  ps,
 	}, nil
 }
 
-func (p *SectionImpl) GatherParametersFromMap(
+func (p *SectionImpl) GatherFieldsFromMap(
 	m map[string]interface{}, onlyProvided bool,
 	options ...fields.ParseOption,
-) (*fields.ParsedParameters, error) {
-	return p.Definitions.GatherParametersFromMap(m, onlyProvided, options...)
+) (*fields.FieldValues, error) {
+	return p.Definitions.GatherFieldsFromMap(m, onlyProvided, options...)
 }
 
 func (p *SectionImpl) Clone() Section {

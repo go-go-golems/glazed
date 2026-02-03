@@ -8,7 +8,7 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-type ParsedParameter struct {
+type FieldValue struct {
 	Value      interface{}
 	Definition *Definition
 	// Log contains a history of the parsing steps that were taken to arrive at the value.
@@ -51,8 +51,8 @@ func NewParseStep(options ...ParseOption) ParseStep {
 	return ret
 }
 
-// Update sets the value of the parsedParameter, and appends a new parseStep.
-func (p *ParsedParameter) Update(value interface{}, options ...ParseOption) error {
+// Update sets the value of the fieldValue, and appends a new parseStep.
+func (p *FieldValue) Update(value interface{}, options ...ParseOption) error {
 	v, err := p.Definition.CheckValueValidity(value)
 	if err != nil {
 		return err
@@ -70,12 +70,12 @@ func (p *ParsedParameter) Update(value interface{}, options ...ParseOption) erro
 	return nil
 }
 
-func (p *ParsedParameter) RenderValue() (string, error) {
+func (p *FieldValue) RenderValue() (string, error) {
 	return RenderValue(p.Definition.Type, p.Value)
 }
 
-// UpdateWithLog sets the value of the parsedParameter, and appends the given log.
-func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) error {
+// UpdateWithLog sets the value of the fieldValue, and appends the given log.
+func (p *FieldValue) UpdateWithLog(value interface{}, log ...ParseStep) error {
 	v, err := p.Definition.CheckValueValidity(value)
 	if err != nil {
 		return err
@@ -86,8 +86,8 @@ func (p *ParsedParameter) UpdateWithLog(value interface{}, log ...ParseStep) err
 	return nil
 }
 
-// Set sets the value of the parsedParameter, and manually updates the log
-func (p *ParsedParameter) Set(value interface{}, log ...ParseStep) {
+// Set sets the value of the fieldValue, and manually updates the log
+func (p *FieldValue) Set(value interface{}, log ...ParseStep) {
 	v, err := p.Definition.CheckValueValidity(value)
 	if err != nil {
 		// XXX add proper error return here
@@ -97,15 +97,15 @@ func (p *ParsedParameter) Set(value interface{}, log ...ParseStep) {
 	p.Log = log
 }
 
-func (p *ParsedParameter) Merge(v *ParsedParameter, options ...ParseOption) {
+func (p *FieldValue) Merge(v *FieldValue, options ...ParseOption) {
 	options = append(options, WithSource("merge"), WithParseStepValue(v.Value))
 	p.Log = append(p.Log, NewParseStep(options...))
 	p.Log = append(p.Log, v.Log...)
 	p.Value = v.Value
 }
 
-func (p *ParsedParameter) Clone() *ParsedParameter {
-	ret := &ParsedParameter{
+func (p *FieldValue) Clone() *FieldValue {
+	ret := &FieldValue{
 		Value:      p.Value,
 		Definition: p.Definition,
 		Log:        make([]ParseStep, len(p.Log)),
@@ -117,7 +117,7 @@ func (p *ParsedParameter) Clone() *ParsedParameter {
 // GetInterfaceValue returns the value as an interface{}. If the type of the parameter is a list,
 // it will return a []interface{}. If the type is an object, it will return a map[string]interface{}.
 // If the type is a list of objects, it will return a []interface{} of map[string]interface{}.
-func (p *ParsedParameter) GetInterfaceValue() (interface{}, error) {
+func (p *FieldValue) GetInterfaceValue() (interface{}, error) {
 	parameterType := p.Definition.Type
 	switch {
 	case parameterType.IsList():
@@ -152,24 +152,24 @@ func (p *ParsedParameter) GetInterfaceValue() (interface{}, error) {
 	}
 }
 
-type ParsedParameters struct {
-	*orderedmap.OrderedMap[string, *ParsedParameter]
+type FieldValues struct {
+	*orderedmap.OrderedMap[string, *FieldValue]
 }
 
-type ParsedParametersOption func(*ParsedParameters)
+type FieldValuesOption func(*FieldValues)
 
-func WithParsedParameter(pd *Definition, key string, value interface{}) ParsedParametersOption {
-	return func(p *ParsedParameters) {
-		p.Set(key, &ParsedParameter{
+func WithFieldValue(pd *Definition, key string, value interface{}) FieldValuesOption {
+	return func(p *FieldValues) {
+		p.Set(key, &FieldValue{
 			Definition: pd,
 			Value:      value,
 		})
 	}
 }
 
-func NewParsedParameters(options ...ParsedParametersOption) *ParsedParameters {
-	ret := &ParsedParameters{
-		OrderedMap: orderedmap.New[string, *ParsedParameter](),
+func NewFieldValues(options ...FieldValuesOption) *FieldValues {
+	ret := &FieldValues{
+		OrderedMap: orderedmap.New[string, *FieldValue](),
 	}
 	for _, o := range options {
 		o(ret)
@@ -177,7 +177,7 @@ func NewParsedParameters(options ...ParsedParametersOption) *ParsedParameters {
 	return ret
 }
 
-func (p *ParsedParameters) GetValue(key string) interface{} {
+func (p *FieldValues) GetValue(key string) interface{} {
 	v, ok := p.Get(key)
 	if !ok {
 		return nil
@@ -185,9 +185,9 @@ func (p *ParsedParameters) GetValue(key string) interface{} {
 	return v.Value
 }
 
-func (p *ParsedParameters) Clone() *ParsedParameters {
-	ret := NewParsedParameters()
-	p.ForEach(func(k string, v *ParsedParameter) {
+func (p *FieldValues) Clone() *FieldValues {
+	ret := NewFieldValues()
+	p.ForEach(func(k string, v *FieldValue) {
 		ret.Set(k, v.Clone())
 	})
 	return ret
@@ -195,7 +195,7 @@ func (p *ParsedParameters) Clone() *ParsedParameters {
 
 // UpdateExistingValue updates the value of an existing parameter, and returns true if the parameter existed.
 // If the parameter did not exist, it returns false.
-func (p *ParsedParameters) UpdateExistingValue(
+func (p *FieldValues) UpdateExistingValue(
 	key string, v interface{},
 	options ...ParseOption,
 ) (bool, error) {
@@ -210,8 +210,8 @@ func (p *ParsedParameters) UpdateExistingValue(
 	return true, nil
 }
 
-func (p *ParsedParameters) Update(
-	key string, pp *ParsedParameter,
+func (p *FieldValues) Update(
+	key string, pp *FieldValue,
 ) {
 	v_, ok := p.Get(key)
 	if !ok {
@@ -222,7 +222,7 @@ func (p *ParsedParameters) Update(
 }
 
 // XXX Add proper error return handling here
-func (p *ParsedParameters) UpdateValue(
+func (p *FieldValues) UpdateValue(
 	key string,
 	pd *Definition,
 	v interface{},
@@ -230,7 +230,7 @@ func (p *ParsedParameters) UpdateValue(
 ) error {
 	v_, ok := p.Get(key)
 	if !ok {
-		v_ = &ParsedParameter{
+		v_ = &FieldValue{
 			Definition: pd,
 		}
 		p.Set(key, v_)
@@ -242,7 +242,7 @@ func (p *ParsedParameters) UpdateValue(
 	return nil
 }
 
-func (p *ParsedParameters) MustUpdateValue(
+func (p *FieldValues) MustUpdateValue(
 	key string,
 	v interface{},
 	options ...ParseOption,
@@ -258,14 +258,14 @@ func (p *ParsedParameters) MustUpdateValue(
 	return nil
 }
 
-func (p *ParsedParameters) UpdateWithLog(
+func (p *FieldValues) UpdateWithLog(
 	key string, pd *Definition,
 	v interface{},
 	log ...ParseStep,
 ) error {
 	v_, ok := p.Get(key)
 	if !ok {
-		v_ = &ParsedParameter{
+		v_ = &FieldValue{
 			Definition: pd,
 		}
 		p.Set(key, v_)
@@ -278,7 +278,7 @@ func (p *ParsedParameters) UpdateWithLog(
 }
 
 // SetAsDefault sets the current value of the parameter if no value has yet been set.
-func (p *ParsedParameters) SetAsDefault(
+func (p *FieldValues) SetAsDefault(
 	key string, pd *Definition, v interface{},
 	options ...ParseOption,
 ) error {
@@ -292,16 +292,16 @@ func (p *ParsedParameters) SetAsDefault(
 }
 
 // ForEach applies the passed function to each key-value pair from oldest to newest
-// in ParsedParameters.
-func (p *ParsedParameters) ForEach(f func(key string, value *ParsedParameter)) {
+// in FieldValues.
+func (p *FieldValues) ForEach(f func(key string, value *FieldValue)) {
 	for v := p.Oldest(); v != nil; v = v.Next() {
 		f(v.Key, v.Value)
 	}
 }
 
 // ForEachE applies the passed function (that returns an error) to each pair in
-// ParsedParameters. It stops at, and returns, the first error encountered.
-func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) error) error {
+// FieldValues. It stops at, and returns, the first error encountered.
+func (p *FieldValues) ForEachE(f func(key string, value *FieldValue) error) error {
 	for v := p.Oldest(); v != nil; v = v.Next() {
 		err := f(v.Key, v.Value)
 		if err != nil {
@@ -313,10 +313,10 @@ func (p *ParsedParameters) ForEachE(f func(key string, value *ParsedParameter) e
 }
 
 // Merge is actually more complex than it seems, other takes precedence. If the key already exists in the map,
-// we actually merge the ParsedParameter themselves, by appending the entire history of the other parameter to the
+// we actually merge the FieldValue themselves, by appending the entire history of the other parameter to the
 // current one.
-func (p *ParsedParameters) Merge(other *ParsedParameters) (*ParsedParameters, error) {
-	err := other.ForEachE(func(k string, v *ParsedParameter) error {
+func (p *FieldValues) Merge(other *FieldValues) (*FieldValues, error) {
+	err := other.ForEachE(func(k string, v *FieldValue) error {
 		err := p.UpdateWithLog(k, v.Definition, v.Value, v.Log...)
 		if err != nil {
 			return err
@@ -330,8 +330,8 @@ func (p *ParsedParameters) Merge(other *ParsedParameters) (*ParsedParameters, er
 }
 
 // MergeAsDefault only sets the value if the key does not already exist in the map.
-func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...ParseOption) (*ParsedParameters, error) {
-	err := other.ForEachE(func(k string, v *ParsedParameter) error {
+func (p *FieldValues) MergeAsDefault(other *FieldValues, options ...ParseOption) (*FieldValues, error) {
+	err := other.ForEachE(func(k string, v *FieldValue) error {
 		err := p.SetAsDefault(k, v.Definition, v.Value, options...)
 		if err != nil {
 			return err
@@ -344,20 +344,20 @@ func (p *ParsedParameters) MergeAsDefault(other *ParsedParameters, options ...Pa
 	return p, nil
 }
 
-// ToMap converts ParsedParameters to map[string]interface{} by assigning each ParsedParameter's value to its key.
-func (p *ParsedParameters) ToMap() map[string]interface{} {
+// ToMap converts FieldValues to map[string]interface{} by assigning each FieldValue's value to its key.
+func (p *FieldValues) ToMap() map[string]interface{} {
 	ret := map[string]interface{}{}
-	p.ForEach(func(k string, v *ParsedParameter) {
+	p.ForEach(func(k string, v *FieldValue) {
 		ret[k] = v.Value
 	})
 	return ret
 }
 
-// ToInterfaceMap converts ParsedParameters to map[string]interface{} by converting each ParsedParameter's value to interface{}.
-// It returns an error if it fails to convert any ParsedParameter's value.
-func (p *ParsedParameters) ToInterfaceMap() (map[string]interface{}, error) {
+// ToInterfaceMap converts FieldValues to map[string]interface{} by converting each FieldValue's value to interface{}.
+// It returns an error if it fails to convert any FieldValue's value.
+func (p *FieldValues) ToInterfaceMap() (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
-	err := p.ForEachE(func(k string, v *ParsedParameter) error {
+	err := p.ForEachE(func(k string, v *FieldValue) error {
 		var err error
 		ret[k], err = v.GetInterfaceValue()
 		if err != nil {
@@ -371,12 +371,12 @@ func (p *ParsedParameters) ToInterfaceMap() (map[string]interface{}, error) {
 	return ret, nil
 }
 
-// MarshalYAML implements yaml.Marshaler for ParsedParameters
-func (p *ParsedParameters) MarshalYAML() (interface{}, error) {
-	return ToSerializableParsedParameters(p), nil
+// MarshalYAML implements yaml.Marshaler for FieldValues
+func (p *FieldValues) MarshalYAML() (interface{}, error) {
+	return ToSerializableFieldValues(p), nil
 }
 
-// MarshalJSON implements json.Marshaler for ParsedParameters
-func (p *ParsedParameters) MarshalJSON() ([]byte, error) {
-	return json.Marshal(ToSerializableParsedParameters(p))
+// MarshalJSON implements json.Marshaler for FieldValues
+func (p *FieldValues) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ToSerializableFieldValues(p))
 }

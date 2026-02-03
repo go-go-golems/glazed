@@ -11,16 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *fields.ParsedParameters) *values.Values {
-	defaultLayer, ok := desc.GetLayer(schema.DefaultSlug)
+func makeParsedDefaultLayer(desc *cmds.CommandDescription, ps *fields.FieldValues) *values.Values {
+	defaultSection, ok := desc.GetLayer(schema.DefaultSlug)
 	if !ok {
 		return nil
 	}
 
 	ret := values.New()
 	ret.Set(schema.DefaultSlug, &values.SectionValues{
-		Layer:      defaultLayer,
-		Parameters: ps,
+		Section: defaultSection,
+		Fields:  ps,
 	})
 
 	return ret
@@ -35,7 +35,7 @@ func TestSingleFlag(t *testing.T) {
 	)
 	p := NewProgramFromCapture(
 		desc,
-		makeParsedDefaultLayer(desc, fields.NewParsedParameters(fields.WithParsedParameter(testPd, "test", "foobar"))),
+		makeParsedDefaultLayer(desc, fields.NewFieldValues(fields.WithFieldValue(testPd, "test", "foobar"))),
 	)
 
 	assert.Equal(t, "test", p.Name)
@@ -58,13 +58,13 @@ func TestSingleFlagDefaultValue(t *testing.T) {
 			pdTest,
 		),
 	)
-	p := NewProgramFromCapture(d, makeParsedDefaultLayer(d, fields.NewParsedParameters(fields.WithParsedParameter(pdTest, "test", "foobar"))))
+	p := NewProgramFromCapture(d, makeParsedDefaultLayer(d, fields.NewFieldValues(fields.WithFieldValue(pdTest, "test", "foobar"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
 	assert.Len(t, p.Flags, 0)
 
-	p = NewProgramFromCapture(d, makeParsedDefaultLayer(d, fields.NewParsedParameters(fields.WithParsedParameter(pdTest, "test", "foobar2"))))
+	p = NewProgramFromCapture(d, makeParsedDefaultLayer(d, fields.NewFieldValues(fields.WithFieldValue(pdTest, "test", "foobar2"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -87,9 +87,9 @@ func TestTwoFlags(t *testing.T) {
 
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, fields.NewParsedParameters(
-			fields.WithParsedParameter(pd1, "test", "foobar"),
-			fields.WithParsedParameter(pd2, "test2", "foobar2"),
+		makeParsedDefaultLayer(d, fields.NewFieldValues(
+			fields.WithFieldValue(pd1, "test", "foobar"),
+			fields.WithFieldValue(pd2, "test2", "foobar2"),
 		)))
 
 	assert.Equal(t, "test", p.Name)
@@ -115,8 +115,8 @@ func TestSingleArg(t *testing.T) {
 	p := NewProgramFromCapture(
 		d,
 		makeParsedDefaultLayer(d,
-			fields.NewParsedParameters(
-				fields.WithParsedParameter(pd, "test", "foobar"))))
+			fields.NewFieldValues(
+				fields.WithFieldValue(pd, "test", "foobar"))))
 
 	assert.Equal(t, "test", p.Name)
 	assert.Equal(t, "", p.Description)
@@ -144,11 +144,11 @@ func TestTwoArgsTwoFlags(t *testing.T) {
 	)
 	p := NewProgramFromCapture(
 		d,
-		makeParsedDefaultLayer(d, fields.NewParsedParameters(
-			fields.WithParsedParameter(pd1, "test", "foobar"),
-			fields.WithParsedParameter(pd2, "test2", "foobar2"),
-			fields.WithParsedParameter(pd3, "test3", "foobar3"),
-			fields.WithParsedParameter(pd4, "test4", "foobar4"),
+		makeParsedDefaultLayer(d, fields.NewFieldValues(
+			fields.WithFieldValue(pd1, "test", "foobar"),
+			fields.WithFieldValue(pd2, "test2", "foobar2"),
+			fields.WithFieldValue(pd3, "test3", "foobar3"),
+			fields.WithFieldValue(pd4, "test4", "foobar4"),
 		)),
 	)
 
@@ -191,9 +191,9 @@ func TestSingleLayer(t *testing.T) {
 
 	ret := values.New()
 	ret.Set("test-layer", &values.SectionValues{
-		Layer: layer,
-		Parameters: fields.NewParsedParameters(
-			fields.WithParsedParameter(pd, "test", "foobar"))})
+		Section: layer,
+		Fields: fields.NewFieldValues(
+			fields.WithFieldValue(pd, "test", "foobar"))})
 
 	p := NewProgramFromCapture(d, ret)
 

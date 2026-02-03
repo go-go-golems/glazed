@@ -35,7 +35,7 @@ func (t *testSection) GetSlug() string {
 	return t.slug
 }
 
-func createParameterLayer(t *testing.T, slug, name string, paramDefs ...*fields.Definition) Section {
+func createSection(t *testing.T, slug, name string, paramDefs ...*fields.Definition) Section {
 	definitions := fields.NewDefinitions()
 	for _, def := range paramDefs {
 		definitions.Set(def.Name, def)
@@ -49,20 +49,20 @@ func createParameterLayer(t *testing.T, slug, name string, paramDefs ...*fields.
 	}
 }
 
-func createSectionValues(t *testing.T, layer Section, parsedValues map[string]interface{}) *SectionValues {
-	sectionValues, err := NewSectionValues(layer)
+func createSectionValues(t *testing.T, section Section, parsedValues map[string]interface{}) *SectionValues {
+	sectionValues, err := NewSectionValues(section)
 	require.NoError(t, err)
 	if len(parsedValues) == 0 {
 		return sectionValues
 	}
 
 	for key, value := range parsedValues {
-		definition, ok := layer.GetDefinitions().Get(key)
+		definition, ok := section.GetDefinitions().Get(key)
 		require.True(t, ok, "definition %s missing", key)
-		parsed := &fields.ParsedParameter{Definition: definition}
+		parsed := &fields.FieldValue{Definition: definition}
 		err := parsed.Update(value)
 		require.NoError(t, err)
-		sectionValues.Parameters.Set(key, parsed)
+		sectionValues.Fields.Set(key, parsed)
 	}
 
 	return sectionValues

@@ -105,7 +105,7 @@
           default: 42
   parsedLayers:
     - name: "layer1"
-      parameters:
+      fields:
         - name: "param1"
           value: "existingValue"
   expectedLayers:
@@ -133,9 +133,9 @@
           default: true
   parsedLayers:
     - name: "layer1"
-      parameters: [ ]
+      fields: [ ]
     - name: "layer2"
-      parameters: [ ]
+      fields: [ ]
   expectedLayers:
     - name: "layer1"
       values:
@@ -183,7 +183,7 @@
           type: "int"
   parsedLayers:
     - name: "layer1"
-      parameters: [ ]
+      fields: [ ]
   expectedLayers:
     - name: "layer1"
       values: { }
@@ -201,7 +201,7 @@
           default: 42
   parsedLayers:
     - name: "layer1"
-      parameters:
+      fields:
         - name: "param1"
           value: "existingValue"
   expectedLayers:
@@ -241,7 +241,7 @@
           required: true
   parsedLayers:
     - name: "layer1"
-      parameters: [ ]
+      fields: [ ]
   expectedLayers:
     - name: "layer1"
       values: { }
@@ -255,7 +255,7 @@
           type: "string"
   parsedLayers:
     - name: "layer1"
-      parameters: [ ]
+      fields: [ ]
   expectedLayers:
     - name: "layer1"
       values: { }

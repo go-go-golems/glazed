@@ -45,7 +45,7 @@ func (c *ExampleBareCommand) Run(ctx context.Context, vals *values.Values) error
 		Message string `glazed:"message"`
 	}{}
 
-	err := vals.InitializeStruct(schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (c *ExampleWriterCommand) RunIntoWriter(ctx context.Context, vals *values.V
 		Count int `glazed:"count"`
 	}{}
 
-	err := vals.InitializeStruct(schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (c *ExampleGlazeCommand) RunIntoGlazeProcessor(ctx context.Context, vals *v
 		Rows int `glazed:"rows"`
 	}{}
 
-	err := vals.InitializeStruct(schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (c *ExampleDualCommand) Run(ctx context.Context, vals *values.Values) error
 		Times int    `glazed:"times"`
 	}{}
 
-	err := vals.InitializeStruct(schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (c *ExampleDualCommand) RunIntoGlazeProcessor(ctx context.Context, vals *va
 		Times int    `glazed:"times"`
 	}{}
 
-	err := vals.InitializeStruct(schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}

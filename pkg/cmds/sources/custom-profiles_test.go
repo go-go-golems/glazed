@@ -74,17 +74,17 @@ production:
 	require.True(t, ok)
 	require.NotNil(t, parsedLayer)
 
-	hostParamParsed, ok := parsedLayer.Parameters.Get("host")
+	hostParamParsed, ok := parsedLayer.Fields.Get("host")
 	require.True(t, ok)
 	require.NotNil(t, hostParamParsed)
 	assert.Equal(t, "dev.example.com", hostParamParsed.Value)
 
-	portParamParsed, ok := parsedLayer.Parameters.Get("port")
+	portParamParsed, ok := parsedLayer.Fields.Get("port")
 	require.True(t, ok)
 	require.NotNil(t, portParamParsed)
 	assert.Equal(t, 3000, portParamParsed.Value)
 
-	debugParamParsed, ok := parsedLayer.Parameters.Get("debug")
+	debugParamParsed, ok := parsedLayer.Fields.Get("debug")
 	require.True(t, ok)
 	require.NotNil(t, debugParamParsed)
 	assert.Equal(t, true, debugParamParsed.Value)
@@ -152,17 +152,17 @@ production:
 	require.True(t, ok)
 	require.NotNil(t, parsedLayer)
 
-	hostParamParsed, ok := parsedLayer.Parameters.Get("host")
+	hostParamParsed, ok := parsedLayer.Fields.Get("host")
 	require.True(t, ok)
 	require.NotNil(t, hostParamParsed)
 	assert.Equal(t, "prod.example.com", hostParamParsed.Value)
 
-	portParamParsed, ok := parsedLayer.Parameters.Get("port")
+	portParamParsed, ok := parsedLayer.Fields.Get("port")
 	require.True(t, ok)
 	require.NotNil(t, portParamParsed)
 	assert.Equal(t, 8080, portParamParsed.Value)
 
-	debugParamParsed, ok := parsedLayer.Parameters.Get("debug")
+	debugParamParsed, ok := parsedLayer.Fields.Get("debug")
 	require.True(t, ok)
 	require.NotNil(t, debugParamParsed)
 	assert.Equal(t, false, debugParamParsed.Value)

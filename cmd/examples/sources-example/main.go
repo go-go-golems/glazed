@@ -87,7 +87,7 @@ var _ cmds.BareCommand = &SourcesExampleCommand{}
 func (c *SourcesExampleCommand) Run(ctx context.Context, vals *values.Values) error {
 	// Decode settings from resolved values using the new API
 	settings := &ConfigSettings{}
-	if err := vals.InitializeStruct("config", settings); err != nil {
+	if err := vals.DecodeSectionInto("config", settings); err != nil {
 		return fmt.Errorf("failed to decode config settings: %w", err)
 	}
 

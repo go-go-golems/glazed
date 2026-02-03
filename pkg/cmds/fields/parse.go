@@ -26,7 +26,7 @@ type ParseStep struct {
 
 const SourceDefaults = "defaults"
 
-// ParseParameter parses command line arguments according to the given Definition.
+// ParseField parses command line arguments according to the given Definition.
 // It returns the parsed parameter value and a non-nil error if parsing failed.
 //
 // The function takes a list of strings that can be gathered from the command line arguments.
@@ -78,8 +78,8 @@ const SourceDefaults = "defaults"
 // TypeKeyValue -> map[string]interface{}
 //
 // TODO(manuel, 2023-12-22) We should provide the parsing context from higher up here, instead of just calling it strings
-func (p *Definition) ParseParameter(v []string, options ...ParseOption) (*ParsedParameter, error) {
-	ret := &ParsedParameter{
+func (p *Definition) ParseField(v []string, options ...ParseOption) (*FieldValue, error) {
+	ret := &FieldValue{
 		Definition: p,
 	}
 
@@ -352,8 +352,8 @@ func (p *Definition) ParseParameter(v []string, options ...ParseOption) (*Parsed
 	return ret, nil
 }
 
-func parseFromFileName(fileName string, p *Definition, options ...ParseOption) (*ParsedParameter, error) {
-	ret := &ParsedParameter{
+func parseFromFileName(fileName string, p *Definition, options ...ParseOption) (*FieldValue, error) {
+	ret := &FieldValue{
 		Definition: p,
 	}
 	if fileName == "" {
@@ -442,8 +442,8 @@ func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error)
 func (p *Definition) ParseFromReader(
 	f io.Reader, filename string,
 	options ...ParseOption,
-) (*ParsedParameter, error) {
-	ret := &ParsedParameter{
+) (*FieldValue, error) {
+	ret := &FieldValue{
 		Definition: p,
 	}
 
@@ -612,8 +612,8 @@ func (p *Definition) parseObjectListFromReader(
 	f io.Reader,
 	filename string,
 	options ...ParseOption,
-) (*ParsedParameter, error) {
-	ret := &ParsedParameter{
+) (*FieldValue, error) {
+	ret := &FieldValue{
 		Definition: p,
 	}
 

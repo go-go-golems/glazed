@@ -15,7 +15,7 @@ func TestNewValues(t *testing.T) {
 }
 
 func TestValuesWithSectionValues(t *testing.T) {
-	layer := createParameterLayer(t, "test", "Test Layer")
+	layer := createSection(t, "test", "Test Layer")
 	parsedLayer := createSectionValues(t, layer, nil)
 
 	parsedLayers := New(WithSectionValues("test", parsedLayer))
@@ -27,7 +27,7 @@ func TestValuesWithSectionValues(t *testing.T) {
 }
 
 func TestValuesClone(t *testing.T) {
-	layer := createParameterLayer(t, "test", "Test Layer")
+	layer := createSection(t, "test", "Test Layer")
 	parsedLayer := createSectionValues(t, layer, nil)
 	parsedLayers := New(WithSectionValues("test", parsedLayer))
 
@@ -38,17 +38,17 @@ func TestValuesClone(t *testing.T) {
 	clonedVal, present := cloned.Get("test")
 	assert.True(t, present)
 	assert.NotSame(t, originalVal, clonedVal)
-	assert.Equal(t, originalVal.Layer, clonedVal.Layer)
+	assert.Equal(t, originalVal.Section, clonedVal.Section)
 }
 
 func TestValuesGetOrCreate(t *testing.T) {
 	parsedLayers := New()
-	layer := createParameterLayer(t, "test", "Test Layer")
+	layer := createSection(t, "test", "Test Layer")
 
 	// Get non-existent layer (should create)
 	parsedLayer := parsedLayers.GetOrCreate(layer)
 	assert.NotNil(t, parsedLayer)
-	assert.Equal(t, layer, parsedLayer.Layer)
+	assert.Equal(t, layer, parsedLayer.Section)
 
 	// Get existing layer
 	sameLayer := parsedLayers.GetOrCreate(layer)
@@ -56,12 +56,12 @@ func TestValuesGetOrCreate(t *testing.T) {
 }
 
 func TestValuesGetDataMap(t *testing.T) {
-	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+	layer1 := createSection(t, "layer1", "Layer 1",
 		fields.New("param1", fields.TypeString),
 	)
 	parsedLayer1 := createSectionValues(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+	layer2 := createSection(t, "layer2", "Layer 2",
 		fields.New("param2", fields.TypeInteger),
 	)
 	parsedLayer2 := createSectionValues(t, layer2, map[string]interface{}{"param2": 42})
@@ -83,7 +83,7 @@ func TestValuesInitializeStruct(t *testing.T) {
 		Param2 int    `glazed:"param2"`
 	}
 
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("param1", fields.TypeString),
 		fields.New("param2", fields.TypeInteger),
 	)
@@ -94,19 +94,19 @@ func TestValuesInitializeStruct(t *testing.T) {
 	parsedLayers := New(WithSectionValues("test", parsedLayer))
 
 	var result TestStruct
-	err := parsedLayers.InitializeStruct("test", &result)
+	err := parsedLayers.DecodeSectionInto("test", &result)
 	assert.NoError(t, err)
 	assert.Equal(t, "value1", result.Param1)
 	assert.Equal(t, 42, result.Param2)
 }
 
-func TestValuesGetAllParsedParameters(t *testing.T) {
-	layer1 := createParameterLayer(t, "layer1", "Layer 1",
+func TestValuesAllFieldValues(t *testing.T) {
+	layer1 := createSection(t, "layer1", "Layer 1",
 		fields.New("param1", fields.TypeString),
 	)
 	parsedLayer1 := createSectionValues(t, layer1, map[string]interface{}{"param1": "value1"})
 
-	layer2 := createParameterLayer(t, "layer2", "Layer 2",
+	layer2 := createSection(t, "layer2", "Layer 2",
 		fields.New("param2", fields.TypeInteger),
 	)
 	parsedLayer2 := createSectionValues(t, layer2, map[string]interface{}{"param2": 42})
@@ -116,7 +116,7 @@ func TestValuesGetAllParsedParameters(t *testing.T) {
 		WithSectionValues("layer2", parsedLayer2),
 	)
 
-	allParams := parsedLayers.GetAllParsedParameters()
+	allParams := parsedLayers.AllFieldValues()
 	assert.Equal(t, 2, allParams.Len())
 	param1, present := allParams.Get("param1")
 	assert.True(t, present)
@@ -126,41 +126,41 @@ func TestValuesGetAllParsedParameters(t *testing.T) {
 	assert.Equal(t, 42, param2.Value)
 }
 
-func TestValuesGetParameter(t *testing.T) {
-	layer := createParameterLayer(t, "test", "Test Layer",
+func TestValuesGetField(t *testing.T) {
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("param", fields.TypeString),
 	)
 	parsedLayer := createSectionValues(t, layer, map[string]interface{}{"param": "value"})
 	parsedLayers := New(WithSectionValues("test", parsedLayer))
 
-	param, present := parsedLayers.GetParameter("test", "param")
+	param, present := parsedLayers.GetField("test", "param")
 	assert.True(t, present)
 	assert.Equal(t, "value", param.Value)
 
-	_, present = parsedLayers.GetParameter("non_existent", "param")
+	_, present = parsedLayers.GetField("non_existent", "param")
 	assert.False(t, present)
 
-	_, present = parsedLayers.GetParameter("test", "non_existent")
+	_, present = parsedLayers.GetField("test", "non_existent")
 	assert.False(t, present)
 }
 
-func TestValuesGetDefaultParameterLayer(t *testing.T) {
+func TestValuesDefaultSectionValues(t *testing.T) {
 	parsedLayers := New()
 
-	defaultLayer := parsedLayers.GetDefaultParameterLayer()
-	assert.NotNil(t, defaultLayer)
-	assert.Equal(t, DefaultSlug, defaultLayer.Layer.GetSlug())
+	defaultSection := parsedLayers.DefaultSectionValues()
+	assert.NotNil(t, defaultSection)
+	assert.Equal(t, DefaultSlug, defaultSection.Section.GetSlug())
 
-	// Calling it again should return the same layer
-	sameDefaultLayer := parsedLayers.GetDefaultParameterLayer()
-	assert.Equal(t, defaultLayer, sameDefaultLayer)
+	// Calling it again should return the same section
+	sameDefaultSection := parsedLayers.DefaultSectionValues()
+	assert.Equal(t, defaultSection, sameDefaultSection)
 }
 
 func TestValuesForEach(t *testing.T) {
-	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer1 := createSection(t, "layer1", "Layer 1")
 	parsedLayer1 := createSectionValues(t, layer1, nil)
 
-	layer2 := createParameterLayer(t, "layer2", "Layer 2")
+	layer2 := createSection(t, "layer2", "Layer 2")
 	parsedLayer2 := createSectionValues(t, layer2, nil)
 
 	parsedLayers := New(
@@ -177,10 +177,10 @@ func TestValuesForEach(t *testing.T) {
 }
 
 func TestValuesForEachE(t *testing.T) {
-	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer1 := createSection(t, "layer1", "Layer 1")
 	parsedLayer1 := createSectionValues(t, layer1, nil)
 
-	layer2 := createParameterLayer(t, "layer2", "Layer 2")
+	layer2 := createSection(t, "layer2", "Layer 2")
 	parsedLayer2 := createSectionValues(t, layer2, nil)
 
 	parsedLayers := New(
@@ -207,7 +207,7 @@ func TestValuesForEachE(t *testing.T) {
 }
 
 func TestSectionValuesInitializeStructWithUnexportedFields(t *testing.T) {
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("exported", fields.TypeString),
 	)
 	parsedLayer := createSectionValues(t, layer, map[string]interface{}{"exported": "value"})
@@ -220,7 +220,7 @@ func TestSectionValuesInitializeStructWithUnexportedFields(t *testing.T) {
 	result := TestStruct{
 		unexported: "unexported",
 	}
-	err := parsedLayer.InitializeStruct(&result)
+	err := parsedLayer.DecodeInto(&result)
 	assert.NoError(t, err)
 	assert.Equal(t, "value", result.Exported)
 	assert.Equal(t, "unexported", result.unexported)
@@ -229,7 +229,7 @@ func TestSectionValuesInitializeStructWithUnexportedFields(t *testing.T) {
 
 func TestValuesInitializeStructWithNonPointer(t *testing.T) {
 	parsedLayers := New()
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("param", fields.TypeString),
 	)
 	parsedLayer := createSectionValues(t, layer, map[string]interface{}{"param": "value"})
@@ -240,15 +240,15 @@ func TestValuesInitializeStructWithNonPointer(t *testing.T) {
 	}
 
 	var result TestStruct
-	err := parsedLayers.InitializeStruct("test", result) // Note: passing result, not &result
+	err := parsedLayers.DecodeSectionInto("test", result) // Note: passing result, not &result
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pointer")
 }
 
-func TestValuesGetParameterNonExistentLayer(t *testing.T) {
+func TestValuesGetFieldNonExistentSection(t *testing.T) {
 	parsedLayers := New()
 
-	_, present := parsedLayers.GetParameter("non_existent", "param")
+	_, present := parsedLayers.GetField("non_existent", "param")
 	assert.False(t, present)
 }
 
@@ -261,7 +261,7 @@ func TestValuesGetOrCreateNilLayer(t *testing.T) {
 }
 
 func TestValuesInitializeStructUnsupportedTypes(t *testing.T) {
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("supported", fields.TypeString),
 		fields.New("unsupported", fields.TypeString),
 	)
@@ -271,16 +271,16 @@ func TestValuesInitializeStructUnsupportedTypes(t *testing.T) {
 	}
 	options := make([]SectionValuesOption, 0, len(parsedValues))
 	for key, value := range parsedValues {
-		options = append(options, WithParameterValue(key, value))
+		options = append(options, WithFieldValue(key, value))
 	}
 	_, err := NewSectionValues(layer, options...)
 	assert.Error(t, err)
 }
 
 func TestValuesForEachEWithError(t *testing.T) {
-	layer1 := createParameterLayer(t, "layer1", "Layer 1")
+	layer1 := createSection(t, "layer1", "Layer 1")
 	parsedLayer1 := createSectionValues(t, layer1, nil)
-	layer2 := createParameterLayer(t, "layer2", "Layer 2")
+	layer2 := createSection(t, "layer2", "Layer 2")
 	parsedLayer2 := createSectionValues(t, layer2, nil)
 
 	parsedLayers := New(
@@ -318,7 +318,7 @@ func TestValuesInitializeStructStringTypes(t *testing.T) {
 	}
 
 	// Create a parameter layer with all the necessary definitions
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("string_field", fields.TypeString),
 		fields.New("string_alias_field", fields.TypeString),
 		fields.New("string_declaration_field", fields.TypeString),
@@ -342,7 +342,7 @@ func TestValuesInitializeStructStringTypes(t *testing.T) {
 
 	// Initialize the struct
 	var result TestStruct
-	err := parsedLayers.InitializeStruct("test", &result)
+	err := parsedLayers.DecodeSectionInto("test", &result)
 
 	// Assert no error occurred
 	assert.NoError(t, err)
@@ -377,7 +377,7 @@ func TestValuesInitializeStructStringPointerTypes(t *testing.T) {
 	}
 
 	// Create a parameter layer with all the necessary definitions
-	layer := createParameterLayer(t, "test", "Test Layer",
+	layer := createSection(t, "test", "Test Layer",
 		fields.New("string_ptr_field", fields.TypeString),
 		fields.New("string_alias_ptr_field", fields.TypeString),
 		fields.New("string_declaration_ptr_field", fields.TypeString),
@@ -395,7 +395,7 @@ func TestValuesInitializeStructStringPointerTypes(t *testing.T) {
 
 	// Initialize the struct
 	var result TestStruct
-	err := parsedLayers.InitializeStruct("test", &result)
+	err := parsedLayers.DecodeSectionInto("test", &result)
 
 	// Assert no error occurred
 	assert.NoError(t, err)

@@ -16,14 +16,14 @@ type TestStruct struct {
 
 // TestInitializeStructWithValidStruct tests initializing a struct with valid parameters
 func TestInitializeStructWithValidStruct(t *testing.T) {
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"name",
 				fields.TypeString),
 			"name",
 			"John Doe"),
-		fields.WithParsedParameter(
+		fields.WithFieldValue(
 			fields.New(
 				"age",
 				fields.TypeInteger),
@@ -32,7 +32,7 @@ func TestInitializeStructWithValidStruct(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
@@ -41,20 +41,20 @@ func TestInitializeStructWithValidStruct(t *testing.T) {
 
 // TestInitializeStructWithNilInput tests initializing a struct with a nil input
 func TestInitializeStructWithNilInput(t *testing.T) {
-	parsedParams := &fields.ParsedParameters{}
+	parsedParams := &fields.FieldValues{}
 
-	err := parsedParams.InitializeStruct(nil)
+	err := parsedParams.DecodeInto(nil)
 
 	assert.Error(t, err)
-	assert.Equal(t, "Can't initialize nil struct", err.Error())
+	assert.Equal(t, "can't decode into nil struct", err.Error())
 }
 
 // TestInitializeStructWithNonPointerInput tests initializing a struct with a non-pointer input
 func TestInitializeStructWithNonPointerInput(t *testing.T) {
-	parsedParams := &fields.ParsedParameters{}
+	parsedParams := &fields.FieldValues{}
 
 	testStruct := TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Equal(t, "s is not a pointer", err.Error())
@@ -62,10 +62,10 @@ func TestInitializeStructWithNonPointerInput(t *testing.T) {
 
 // TestInitializeStructWithNonStructPointer tests initializing a struct with a pointer to a non-struct type
 func TestInitializeStructWithNonStructPointer(t *testing.T) {
-	parsedParams := &fields.ParsedParameters{}
+	parsedParams := &fields.FieldValues{}
 
 	nonStruct := "I am not a struct"
-	err := parsedParams.InitializeStruct(&nonStruct)
+	err := parsedParams.DecodeInto(&nonStruct)
 
 	assert.Error(t, err)
 	assert.Equal(t, "s is not a pointer to a struct", err.Error())
@@ -73,8 +73,8 @@ func TestInitializeStructWithNonStructPointer(t *testing.T) {
 
 // TestInitializeStructWithMissingParameters tests initializing a struct with missing parameters
 func TestInitializeStructWithMissingParameters(t *testing.T) {
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"name",
 				fields.TypeString),
@@ -84,7 +84,7 @@ func TestInitializeStructWithMissingParameters(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
@@ -97,8 +97,8 @@ func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
 		Config string `glazed:"config,from_json"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -108,7 +108,7 @@ func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
 
 	testStruct := &TestStructWithJSONTag{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "from_json tag can only be used on pointer fields")
@@ -120,8 +120,8 @@ func TestParseStringListSuccessfully(t *testing.T) {
 		Tags []string `glazed:"tags"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"tags",
 				fields.TypeStringList),
@@ -131,7 +131,7 @@ func TestParseStringListSuccessfully(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"go", "testing", "glazed"}, testStruct.Tags)
@@ -143,8 +143,8 @@ func TestParseIntListSuccessfully(t *testing.T) {
 		Numbers []int `glazed:"numbers"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"numbers",
 				fields.TypeIntegerList),
@@ -154,7 +154,7 @@ func TestParseIntListSuccessfully(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, testStruct.Numbers)
@@ -166,8 +166,8 @@ func TestParseObjectFromFileSuccessfully(t *testing.T) {
 		Config map[string]interface{} `glazed:"config"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeObjectFromFile),
@@ -180,7 +180,7 @@ func TestParseObjectFromFileSuccessfully(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.NoError(t, err)
 	expectedConfig := map[string]interface{}{
@@ -196,8 +196,8 @@ func TestInitializeStructWithInvalidJSON(t *testing.T) {
 		Config *map[string]interface{} `glazed:"config,from_json"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -207,7 +207,7 @@ func TestInitializeStructWithInvalidJSON(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unmarshal JSON")
@@ -219,8 +219,8 @@ func TestInitializeStructWithUnsupportedTypeForJSON(t *testing.T) {
 		Active bool `glazed:"active,from_json"` // Unsupported type for JSON unmarshaling
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"active",
 				fields.TypeString),
@@ -230,7 +230,7 @@ func TestInitializeStructWithUnsupportedTypeForJSON(t *testing.T) {
 
 	testStruct := &TestStruct{}
 
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "from_json tag can only be used on pointer fields")
@@ -243,14 +243,14 @@ type TestStructWithWildcard struct {
 
 // TestInitializeStructWithWildcardMultipleMatches tests wildcard pattern matching multiple parameters
 func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"openai_api_key",
 				fields.TypeString),
 			"openai_api_key",
 			"openai-secret"),
-		fields.WithParsedParameter(
+		fields.WithFieldValue(
 			fields.New(
 				"google_api_key",
 				fields.TypeString),
@@ -259,7 +259,7 @@ func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
 	)
 
 	testStruct := &TestStructWithWildcard{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
@@ -270,10 +270,10 @@ func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
 
 // TestInitializeStructWithWildcardNoMatches tests wildcard pattern matching no parameters
 func TestInitializeStructWithWildcardNoMatches(t *testing.T) {
-	parsedParams := fields.NewParsedParameters()
+	parsedParams := fields.NewFieldValues()
 
 	testStruct := &TestStructWithWildcard{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Empty(t, testStruct.ApiKeys)
@@ -285,8 +285,8 @@ func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
 		ApiKeys string `glazed:"*_api_key"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"openai_api_key",
 				fields.TypeString),
@@ -295,7 +295,7 @@ func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
 	)
 
 	testStruct := &TestStructNonMapWildcard{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "wildcard parameters require a map field")
@@ -307,14 +307,14 @@ func TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes(t *testing.T) 
 		ApiKeys map[string]int `glazed:"*_api_key"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"openai_api_key",
 				fields.TypeString),
 			"openai_api_key",
 			"openai-secret"),
-		fields.WithParsedParameter(
+		fields.WithFieldValue(
 			fields.New(
 				"google_api_key",
 				fields.TypeString),
@@ -323,7 +323,7 @@ func TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes(t *testing.T) 
 	)
 
 	testStruct := &TestStructMapWildcardIncorrectTypes{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to set wildcard values for ")
@@ -331,8 +331,8 @@ func TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes(t *testing.T) 
 
 // TestInitializeStructWithWildcardOnMapWithCorrectValueTypes tests wildcard pattern on a map with correct value types
 func TestInitializeStructWithWildcardOnMapWithCorrectValueTypes(t *testing.T) {
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"openai_api_key",
 				fields.TypeString),
@@ -341,7 +341,7 @@ func TestInitializeStructWithWildcardOnMapWithCorrectValueTypes(t *testing.T) {
 	)
 
 	testStruct := &TestStructWithWildcard{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
@@ -355,20 +355,20 @@ func TestInitializeStructWithWildcardComplexPatterns(t *testing.T) {
 		ApiKeys map[string]string `glazed:"*api_key"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"openai_api_key",
 				fields.TypeString),
 			"openai_api_key",
 			"openai-secret"),
-		fields.WithParsedParameter(
+		fields.WithFieldValue(
 			fields.New(
 				"google_api_key",
 				fields.TypeString),
 			"google_api_key",
 			"google-secret"),
-		fields.WithParsedParameter(
+		fields.WithFieldValue(
 			fields.New(
 				"api_key_unrelated",
 				fields.TypeString),
@@ -377,7 +377,7 @@ func TestInitializeStructWithWildcardComplexPatterns(t *testing.T) {
 	)
 
 	testStruct := &TestStructComplexWildcard{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
@@ -392,8 +392,8 @@ func TestInitializeStructNormalBehavior(t *testing.T) {
 		Name string `glazed:"name"`
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"name",
 				fields.TypeString),
@@ -402,7 +402,7 @@ func TestInitializeStructNormalBehavior(t *testing.T) {
 	)
 
 	testStruct := &TestStructNormal{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, "John Doe", testStruct.Name)
@@ -525,8 +525,8 @@ func TestInitializeStructWithJSONFromStruct(t *testing.T) {
 		Port: 8080,
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -535,7 +535,7 @@ func TestInitializeStructWithJSONFromStruct(t *testing.T) {
 	)
 
 	testStruct := &TestStructWithJSONPtr{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	require.NotNil(t, testStruct.Config)
@@ -560,8 +560,8 @@ func TestInitializeStructWithJSONFromMap(t *testing.T) {
 		},
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -570,7 +570,7 @@ func TestInitializeStructWithJSONFromMap(t *testing.T) {
 	)
 
 	testStruct := &TestStructWithJSONPtr{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	require.NotNil(t, testStruct.Config)
@@ -588,8 +588,8 @@ func TestInitializeStructWithJSONFromUnmarshallable(t *testing.T) {
 	// Create a channel which cannot be marshaled to JSON
 	ch := make(chan int)
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -598,7 +598,7 @@ func TestInitializeStructWithJSONFromUnmarshallable(t *testing.T) {
 	)
 
 	testStruct := &TestStructWithJSONPtr{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to marshal value of type chan int to JSON")
@@ -614,8 +614,8 @@ func TestInitializeStructWithFileDataToString(t *testing.T) {
 		Content: "test content",
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"content",
 				fields.TypeString),
@@ -624,7 +624,7 @@ func TestInitializeStructWithFileDataToString(t *testing.T) {
 	)
 
 	testStruct := &TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, "test content", testStruct.Content)
@@ -640,8 +640,8 @@ func TestInitializeStructWithFileDataToBytes(t *testing.T) {
 		RawContent: []byte("test content"),
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"raw_content",
 				fields.TypeString),
@@ -650,7 +650,7 @@ func TestInitializeStructWithFileDataToBytes(t *testing.T) {
 	)
 
 	testStruct := &TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, []byte("test content"), testStruct.RawContent)
@@ -676,8 +676,8 @@ func TestInitializeStructWithFileDataToParsedContent(t *testing.T) {
 		ParsedContent: parsedConfig,
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -686,7 +686,7 @@ func TestInitializeStructWithFileDataToParsedContent(t *testing.T) {
 	)
 
 	testStruct := &TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	assert.Equal(t, "localhost", testStruct.Config.Host)
@@ -703,8 +703,8 @@ func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
 		RawContent: []byte("test content"),
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"content",
 				fields.TypeString),
@@ -713,7 +713,7 @@ func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
 	)
 
 	testStruct := &TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot set FileData to slice of type int")
@@ -743,8 +743,8 @@ func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
 		ParsedContent: inputMap,
 	}
 
-	parsedParams := fields.NewParsedParameters(
-		fields.WithParsedParameter(
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
 			fields.New(
 				"config",
 				fields.TypeString),
@@ -753,7 +753,7 @@ func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
 	)
 
 	testStruct := &TestStruct{}
-	err := parsedParams.InitializeStruct(testStruct)
+	err := parsedParams.DecodeInto(testStruct)
 
 	require.NoError(t, err)
 	require.NotNil(t, testStruct.Config)

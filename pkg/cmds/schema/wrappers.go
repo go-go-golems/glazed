@@ -2,50 +2,50 @@ package schema
 
 import "github.com/go-go-golems/glazed/pkg/cmds/fields"
 
-type WhitelistParameterLayer struct {
+type WhitelistSection struct {
 	Section
-	WhitelistedParameters map[string]interface{}
+	WhitelistedFields map[string]interface{}
 }
 
-var _ Section = (*WhitelistParameterLayer)(nil)
+var _ Section = (*WhitelistSection)(nil)
 
-func NewWhitelistParameterLayer(layer Section, whitelistedParameters map[string]interface{}) *WhitelistParameterLayer {
-	return &WhitelistParameterLayer{
-		Section:               layer,
-		WhitelistedParameters: whitelistedParameters,
+func NewWhitelistSection(section Section, whitelistedFields map[string]interface{}) *WhitelistSection {
+	return &WhitelistSection{
+		Section:           section,
+		WhitelistedFields: whitelistedFields,
 	}
 }
 
-func (l *WhitelistParameterLayer) GetDefinitions() *fields.Definitions {
+func (l *WhitelistSection) GetDefinitions() *fields.Definitions {
 	pds := l.Section.GetDefinitions()
 	ret := fields.NewDefinitions()
 	pds.ForEach(func(pd *fields.Definition) {
-		if _, ok := l.WhitelistedParameters[pd.Name]; ok {
+		if _, ok := l.WhitelistedFields[pd.Name]; ok {
 			ret.Set(pd.Name, pd)
 		}
 	})
 	return ret
 }
 
-type BlacklistParameterLayer struct {
+type BlacklistSection struct {
 	Section
-	BlacklistedParameters map[string]interface{}
+	BlacklistedFields map[string]interface{}
 }
 
-var _ Section = (*BlacklistParameterLayer)(nil)
+var _ Section = (*BlacklistSection)(nil)
 
-func NewBlacklistParameterLayer(layer Section, blacklistedParameters map[string]interface{}) *BlacklistParameterLayer {
-	return &BlacklistParameterLayer{
-		Section:               layer,
-		BlacklistedParameters: blacklistedParameters,
+func NewBlacklistSection(section Section, blacklistedFields map[string]interface{}) *BlacklistSection {
+	return &BlacklistSection{
+		Section:           section,
+		BlacklistedFields: blacklistedFields,
 	}
 }
 
-func (l *BlacklistParameterLayer) GetDefinitions() *fields.Definitions {
+func (l *BlacklistSection) GetDefinitions() *fields.Definitions {
 	pds := l.Section.GetDefinitions()
 	ret := fields.NewDefinitions()
 	pds.ForEach(func(pd *fields.Definition) {
-		if _, ok := l.BlacklistedParameters[pd.Name]; !ok {
+		if _, ok := l.BlacklistedFields[pd.Name]; !ok {
 			ret.Set(pd.Name, pd)
 		}
 	})

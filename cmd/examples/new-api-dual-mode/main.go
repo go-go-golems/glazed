@@ -51,7 +51,7 @@ var _ cmds.GlazeCommand = &StatusCommand{}
 
 func (c *StatusCommand) Run(ctx context.Context, vals *values.Values) error {
 	settings := &StatusSettings{}
-	if err := vals.InitializeStruct(schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 
@@ -71,7 +71,7 @@ func (c *StatusCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &StatusSettings{}
-	if err := vals.InitializeStruct(schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

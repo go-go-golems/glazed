@@ -40,7 +40,7 @@ func ParameterDefinitionToDict(p *fields.Definition) (jen.Code, error) {
 }
 
 func FlagValueToJen(p *fields.Definition) (jen.Code, error) {
-	d, err := p.CheckParameterDefaultValueValidity()
+	d, err := p.CheckDefaultValueValidity()
 	if err != nil {
 		return nil, err
 	}

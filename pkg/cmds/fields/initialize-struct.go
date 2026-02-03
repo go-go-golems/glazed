@@ -52,11 +52,11 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 	}, nil
 }
 
-// InitializeStruct initializes a struct from a ParsedParameters map.
+// DecodeInto decodes a struct from a FieldValues map.
 //
 // It iterates through the struct fields looking for those tagged with
 // "glazed". For each tagged field, it will lookup the corresponding
-// parameter value in the ParsedParameters map and set the field's value.
+// parameter value in the FieldValues map and set the field's value.
 //
 // If the tag open `from_json` is appended to `glazed` and the parameter
 // value is a string, bytes, rawMessage or FileData, the value is parsed from json.
@@ -73,7 +73,7 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 //
 // s should be a pointer to the struct to initialize.
 //
-// ps is the ParsedParameters map to lookup parameter values from.
+// ps is the FieldValues map to lookup parameter values from.
 //
 // Example struct:
 //
@@ -129,9 +129,9 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 // - s is not a pointer to a struct
 // - A tagged field does not have a matching parameter value in ps
 // - Failed to set the value of a field
-func (p *ParsedParameters) InitializeStruct(s interface{}) error {
+func (p *FieldValues) DecodeInto(s interface{}) error {
 	if s == nil {
-		return errors.Errorf("Can't initialize nil struct")
+		return errors.Errorf("can't decode into nil struct")
 	}
 	of := reflect.TypeOf(s)
 	if of.Kind() != reflect.Ptr {
@@ -176,7 +176,7 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 	return nil
 }
 
-// setWildcardValues matches parameter names from ParsedParameters against a supplied pattern using the
+// setWildcardValues matches field names from FieldValues against a supplied pattern using the
 // filepath.Match method.
 //
 // The pattern may consist of literal characters,
@@ -184,15 +184,15 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 // The wildcard * matches zero or more characters, and the wildcard ? matches a single character.
 //
 // The function sets the matches in a map in the destination reflect.Value,
-// using the parameter name as the key and the parameter value as the map value.
+// using the field name as the key and the field value as the map value.
 //
 // This way, you can match multiple flags at once and stored them in a map.
 //
 // Parameters:
-//   - dst: A reflect.Value acting as the container for storing the matched keys and their parameter values.
-//   - pattern: String pattern used for matching parameter names. It can include literal characters,
+//   - dst: A reflect.Value acting as the container for storing the matched keys and their field values.
+//   - pattern: String pattern used for matching field names. It can include literal characters,
 //     character ranges enclosed in brackets and wildcards.
-func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, fromJson bool) error {
+func (p *FieldValues) setWildcardValues(dst reflect.Value, pattern string, fromJson bool) error {
 	// Get the type of elements in dst
 	var elemType reflect.Type
 	if dst.Kind() != reflect.Map {
@@ -205,7 +205,7 @@ func (p *ParsedParameters) setWildcardValues(dst reflect.Value, pattern string, 
 		dst.Set(reflect.MakeMapWithSize(reflect.MapOf(keyType, elemType), 0))
 	}
 
-	err := p.ForEachE(func(paramName string, parameter *ParsedParameter) error {
+	err := p.ForEachE(func(paramName string, parameter *FieldValue) error {
 		if matched, _ := filepath.Match(pattern, paramName); matched {
 			// Check if the type of parameter.Value is compatible with the map's value type
 			if reflect.TypeOf(parameter.Value) != elemType {
@@ -278,7 +278,7 @@ func sanitizeMapForJSON(v interface{}) interface{} {
 	}
 }
 
-func (p *ParsedParameters) handleFromJSON(dst reflect.Value, value interface{}) error {
+func (p *FieldValues) handleFromJSON(dst reflect.Value, value interface{}) error {
 	// The destination must be a pointer for JSON unmarshaling
 	if dst.Kind() != reflect.Ptr {
 		return errors.Errorf("from_json tag can only be used on pointer fields")
@@ -304,7 +304,7 @@ func (p *ParsedParameters) handleFromJSON(dst reflect.Value, value interface{}) 
 	return nil
 }
 
-func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) (bool, error) {
+func (p *FieldValues) handleFileData(dst reflect.Value, value interface{}) (bool, error) {
 	var fd *FileData
 	switch v := value.(type) {
 	case FileData:
@@ -386,7 +386,7 @@ func (p *ParsedParameters) handleFileData(dst reflect.Value, value interface{}) 
 	return true, nil
 }
 
-func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, fromJson bool) error {
+func (p *FieldValues) setTargetValue(dst reflect.Value, value interface{}, fromJson bool) error {
 	// Handle pointer destination
 	wasPointer := false
 	if dst.Kind() == reflect.Ptr {
@@ -427,7 +427,7 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 
 	// Recursive struct initialization
 	if dst.Kind() == reflect.Struct {
-		return p.InitializeStruct(dst.Addr().Interface())
+		return p.DecodeInto(dst.Addr().Interface())
 	}
 
 	err := reflect2.SetReflectValue(dst, value)

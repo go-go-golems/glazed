@@ -63,38 +63,38 @@ func (d *defaultSection) GetSlug() string {
 // specification. For example, it could be the result of parsing cobra command flags,
 // or a JSON body, or HTTP query fields.
 type SectionValues struct {
-	Layer      Section
-	Parameters *fields.ParsedParameters
+	Section Section
+	Fields  *fields.FieldValues
 }
 
 type SectionValuesOption func(*SectionValues) error
 
-func WithParameterValue(
+func WithFieldValue(
 	key string, value interface{},
 	options ...fields.ParseOption,
 ) SectionValuesOption {
 	return func(pl *SectionValues) error {
-		pd, ok := pl.Layer.GetDefinitions().Get(key)
+		pd, ok := pl.Section.GetDefinitions().Get(key)
 		if !ok {
-			return errors.Errorf("parameter definition %s not found in layer %s", key, pl.Layer.GetName())
+			return errors.Errorf("field definition %s not found in section %s", key, pl.Section.GetName())
 		}
-		p := &fields.ParsedParameter{
+		p := &fields.FieldValue{
 			Definition: pd,
 		}
 		err := p.Update(value, options...)
 		if err != nil {
 			return err
 		}
-		pl.Parameters.Set(key, p)
+		pl.Fields.Set(key, p)
 
 		return nil
 	}
 }
 
-func WithParameters(pds *fields.ParsedParameters) SectionValuesOption {
+func WithFields(pds *fields.FieldValues) SectionValuesOption {
 	return func(pl *SectionValues) error {
-		pds.ForEach(func(k string, v *fields.ParsedParameter) {
-			pl.Parameters.Set(k, v)
+		pds.ForEach(func(k string, v *fields.FieldValue) {
+			pl.Fields.Set(k, v)
 		})
 		return nil
 	}
@@ -102,8 +102,8 @@ func WithParameters(pds *fields.ParsedParameters) SectionValuesOption {
 
 func NewSectionValues(layer Section, options ...SectionValuesOption) (*SectionValues, error) {
 	ret := &SectionValues{
-		Layer:      layer,
-		Parameters: fields.NewParsedParameters(),
+		Section: layer,
+		Fields:  fields.NewFieldValues(),
 	}
 
 	for _, o := range options {
@@ -116,40 +116,40 @@ func NewSectionValues(layer Section, options ...SectionValuesOption) (*SectionVa
 	return ret, nil
 }
 
-// Clone returns a copy of the parsedParameterLayer with a fresh Parameters map.
-// However, neither the Layer nor the Parameters are deep copied.
+// Clone returns a copy of the SectionValues with a fresh Fields map.
+// However, neither the Section nor the Fields are deep copied.
 func (ppl *SectionValues) Clone() *SectionValues {
-	parameters_, err := fields.NewParsedParameters().Merge(ppl.Parameters)
+	fields_, err := fields.NewFieldValues().Merge(ppl.Fields)
 	if err != nil {
 		panic(err)
 	}
 	ret := &SectionValues{
-		Layer:      ppl.Layer,
-		Parameters: parameters_,
+		Section: ppl.Section,
+		Fields:  fields_,
 	}
-	ppl.Parameters.ForEach(func(k string, v *fields.ParsedParameter) {
-		ret.Parameters.Set(k, v)
+	ppl.Fields.ForEach(func(k string, v *fields.FieldValue) {
+		ret.Fields.Set(k, v)
 	})
 	return ret
 }
 
-// MergeParameters merges the other SectionValues into this one, overwriting any
-// existing values. This doesn't replace the actual Layer pointer.
-func (ppl *SectionValues) MergeParameters(other *SectionValues) error {
-	_, err := ppl.Parameters.Merge(other.Parameters)
+// MergeFields merges the other SectionValues into this one, overwriting any
+// existing values. This doesn't replace the actual Section pointer.
+func (ppl *SectionValues) MergeFields(other *SectionValues) error {
+	_, err := ppl.Fields.Merge(other.Fields)
 	return err
 }
 
-func (ppl *SectionValues) GetParameter(k string) (interface{}, bool) {
-	v, ok := ppl.Parameters.Get(k)
+func (ppl *SectionValues) GetField(k string) (interface{}, bool) {
+	v, ok := ppl.Fields.Get(k)
 	if !ok {
 		return nil, false
 	}
 	return v.Value, true
 }
 
-func (ppl *SectionValues) InitializeStruct(s interface{}) error {
-	return ppl.Parameters.InitializeStruct(s)
+func (ppl *SectionValues) DecodeInto(s interface{}) error {
+	return ppl.Fields.DecodeInto(s)
 }
 
 type Values struct {
@@ -188,7 +188,7 @@ func (p *Values) Merge(other *Values) error {
 	err := p.ForEachE(func(k string, v *SectionValues) error {
 		o, ok := other.Get(k)
 		if ok {
-			err := v.MergeParameters(o)
+			err := v.MergeFields(o)
 			if err != nil {
 				panic(err)
 			}
@@ -203,7 +203,7 @@ func (p *Values) Merge(other *Values) error {
 		if !ok {
 			p.Set(k, v)
 		} else {
-			err := o_.MergeParameters(v)
+			err := o_.MergeFields(v)
 			if err != nil {
 				return err
 			}
@@ -216,58 +216,58 @@ func (p *Values) Merge(other *Values) error {
 	return nil
 }
 
-func (p *Values) GetOrCreate(layer Section) *SectionValues {
-	if layer == nil {
-		panic("layer must not be nil")
+func (p *Values) GetOrCreate(section Section) *SectionValues {
+	if section == nil {
+		panic("section must not be nil")
 	}
-	slug := layer.GetSlug()
+	slug := section.GetSlug()
 	v, ok := p.Get(slug)
 	if !ok {
 		v = &SectionValues{
-			Layer:      layer,
-			Parameters: fields.NewParsedParameters(),
+			Section: section,
+			Fields:  fields.NewFieldValues(),
 		}
 		p.Set(slug, v)
 	}
 	return v
 }
 
-// GetDataMap is useful when rendering out templates using all passed in layers.
+// GetDataMap is useful when rendering out templates using all passed in sections.
 func (p *Values) GetDataMap() map[string]interface{} {
 	ps := map[string]interface{}{}
 	p.ForEach(func(k string, v *SectionValues) {
-		v.Parameters.ForEach(func(k string, v *fields.ParsedParameter) {
+		v.Fields.ForEach(func(k string, v *fields.FieldValue) {
 			ps[v.Definition.Name] = v.Value
 		})
 	})
 	return ps
 }
 
-// InitializeStruct initializes a struct with values from a SectionValues specified by the key.
-// If the key is "default", it creates a fresh empty default layer for defaults and initializes the struct with it.
-// If the layer specified by the key is not found, it returns an error.
+// DecodeSectionInto decodes a struct with values from a SectionValues specified by the key.
+// If the key is "default", it creates a fresh empty default section for defaults and decodes into the struct with it.
+// If the section specified by the key is not found, it returns an error.
 // The struct must be passed by reference as the s parameter.
-func (p *Values) InitializeStruct(layerKey string, dst interface{}) error {
-	// We special case Default because we will create a fresh empty default layer for defaults.
+func (p *Values) DecodeSectionInto(sectionKey string, dst interface{}) error {
+	// We special case Default because we will create a fresh empty default section for defaults.
 	// Not sure how necessary that is, honestly
-	if layerKey == DefaultSlug {
-		return p.GetDefaultParameterLayer().InitializeStruct(dst)
+	if sectionKey == DefaultSlug {
+		return p.DefaultSectionValues().DecodeInto(dst)
 	}
-	v, ok := p.Get(layerKey)
+	v, ok := p.Get(sectionKey)
 	if !ok {
-		return errors.Errorf("layer %s not found", layerKey)
+		return errors.Errorf("section %s not found", sectionKey)
 	}
-	return v.InitializeStruct(dst)
+	return v.DecodeInto(dst)
 }
 
-// GetAllParsedParameters returns a new instance of fields.ParsedParameters
-// that merges the parameters from all Values.
-// The returned parameters are a deep clone of the fields.
-func (p *Values) GetAllParsedParameters() *fields.ParsedParameters {
-	ret := fields.NewParsedParameters()
+// AllFieldValues returns a new instance of fields.FieldValues
+// that merges the fields from all Values.
+// The returned fields are a deep clone of the values.
+func (p *Values) AllFieldValues() *fields.FieldValues {
+	ret := fields.NewFieldValues()
 	p.ForEach(
 		func(_ string, v *SectionValues) {
-			_, err := ret.Merge(v.Parameters.Clone())
+			_, err := ret.Merge(v.Fields.Clone())
 			if err != nil {
 				// this should never happen, we don't try to do any interesting type coercion here
 				panic(err)
@@ -277,27 +277,27 @@ func (p *Values) GetAllParsedParameters() *fields.ParsedParameters {
 	return ret
 }
 
-func (p *Values) GetParameter(slug string, key string) (*fields.ParsedParameter, bool) {
-	layer, ok := p.Get(slug)
+func (p *Values) GetField(slug string, key string) (*fields.FieldValue, bool) {
+	section, ok := p.Get(slug)
 	if !ok {
 		return nil, false
 	}
-	return layer.Parameters.Get(key)
+	return section.Fields.Get(key)
 }
 
-func (p *Values) GetDefaultParameterLayer() *SectionValues {
+func (p *Values) DefaultSectionValues() *SectionValues {
 	v, ok := p.Get(DefaultSlug)
 	if ok {
 		return v
 	}
-	defaultParameterLayer := newDefaultSection(DefaultSlug, "Default")
-	defaultLayer := &SectionValues{
-		Layer:      defaultParameterLayer,
-		Parameters: fields.NewParsedParameters(),
+	defaultSection := newDefaultSection(DefaultSlug, "Default")
+	defaultValues := &SectionValues{
+		Section: defaultSection,
+		Fields:  fields.NewFieldValues(),
 	}
-	p.Set(DefaultSlug, defaultLayer)
+	p.Set(DefaultSlug, defaultValues)
 
-	return defaultLayer
+	return defaultValues
 }
 
 func (p *Values) ForEach(fn func(k string, v *SectionValues)) {

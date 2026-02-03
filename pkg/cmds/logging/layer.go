@@ -163,7 +163,7 @@ func SetupLoggingFromValues(parsedLayers *values.Values) error {
 // GetLoggingSettings extracts logging configuration for custom validation or setup
 func GetLoggingSettings(parsedLayers *values.Values) (*LoggingSettings, error) {
 	var settings LoggingSettings
-	err := parsedLayers.InitializeStruct(LoggingLayerSlug, &settings)
+	err := parsedLayers.DecodeSectionInto(LoggingLayerSlug, &settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logging settings: %w", err)
 	}

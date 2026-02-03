@@ -276,10 +276,10 @@ func (p *Definition) SetValueFromInterface(value reflect.Value, v interface{}) e
 	return nil
 }
 
-// ParsedParametersFromDefaults uses the parameter definitions default values to create a ParsedParameters
+// FieldValuesFromDefaults uses the parameter definitions default values to create a FieldValues
 // object.
-func (pds *Definitions) ParsedParametersFromDefaults() (*ParsedParameters, error) {
-	ret := NewParsedParameters()
+func (pds *Definitions) FieldValuesFromDefaults() (*FieldValues, error) {
+	ret := NewFieldValues()
 	err := pds.ForEachE(func(definition *Definition) error {
 		if definition.Default == nil {
 			return nil
@@ -305,11 +305,11 @@ func (pds *Definitions) ParsedParametersFromDefaults() (*ParsedParameters, error
 // the corresponding `Definition`. If no `Definition` is found for a field, an error
 // is returned.
 func (pds *Definitions) InitializeStructFromDefaults(s interface{}) error {
-	parsedParameters, err := pds.ParsedParametersFromDefaults()
+	fieldValues, err := pds.FieldValuesFromDefaults()
 	if err != nil {
 		return err
 	}
-	return parsedParameters.InitializeStruct(s)
+	return fieldValues.DecodeInto(s)
 }
 
 // InitializeDefaultsFromStruct initializes the parameters definitions from a struct.
@@ -407,9 +407,9 @@ func (pds *Definitions) InitializeDefaultsFromMap(
 	return nil
 }
 
-// CheckParameterDefaultValueValidity checks if the Definition's Default is valid.
+// CheckDefaultValueValidity checks if the Definition's Default is valid.
 // This is used when validating loading from a YAML file or setting up cobra flag definitions.
-func (p *Definition) CheckParameterDefaultValueValidity() (interface{}, error) {
+func (p *Definition) CheckDefaultValueValidity() (interface{}, error) {
 	// no default at all is valid
 	if p.Default == nil {
 		return nil, nil
@@ -625,7 +625,7 @@ func LoadDefinitionsFromYAML(yamlContent []byte) *Definitions {
 	}
 
 	for _, p := range parameters {
-		_, err := p.CheckParameterDefaultValueValidity()
+		_, err := p.CheckDefaultValueValidity()
 		if err != nil {
 			panic(errors.Wrap(err, "Failed to check parameter default value validity"))
 		}

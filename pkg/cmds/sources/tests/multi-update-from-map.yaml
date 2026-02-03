@@ -18,7 +18,7 @@
             default: "original"
     parsedLayers:
       - name: "layer1"
-        parameters:
+        fields:
           - name: param1
             value: "initial"
     expectedLayers:
@@ -41,7 +41,7 @@
             default: "original"
     parsedLayers:
       - name: "layer1"
-        parameters:
+        fields:
           - name: param1
             value: ["initial"]
     expectedLayers:
@@ -66,7 +66,7 @@
                 param2: "original"
     parsedLayers:
       - name: "layer1"
-        parameters:
+        fields:
           - name: param1
             value:
               original:
@@ -95,7 +95,7 @@
                   param2: "original2"
     parsedLayers:
       - name: "layer1"
-        parameters:
+        fields:
           - name: param1
             value:
               - original:
@@ -123,7 +123,7 @@
             default: 1
     parsedLayers:
       - name: "layer1"
-        parameters:
+        fields:
           - name: param1
             value: "initial"
           - name: param2

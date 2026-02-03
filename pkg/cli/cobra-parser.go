@@ -28,7 +28,7 @@ type CobraMiddlewaresFunc func(
 // the middlewares used in a Cobra command. It handles parsing parameters
 // from Cobra flags, command line arguments, environment variables, and
 // default values. The middlewares gather all these parameters into a
-// ParsedParameters object.
+// FieldValues object.
 //
 // If the commandSettings specify parameters to be loaded from a file, this gets added as a middleware.
 func CobraCommandDefaultMiddlewares(
@@ -37,7 +37,7 @@ func CobraCommandDefaultMiddlewares(
 	args []string,
 ) ([]cmd_sources.Middleware, error) {
 	commandSettings := &CommandSettings{}
-	err := parsedCommandLayers.InitializeStruct(CommandSettingsSlug, commandSettings)
+	err := parsedCommandLayers.DecodeSectionInto(CommandSettingsSlug, commandSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func NewCobraParserFromLayers(
 						if cfgCopy.ConfigPath != "" || cfgCopy.AppName != "" {
 							explicit := cfgCopy.ConfigPath
 							cs := &CommandSettings{}
-							if err := parsed.InitializeStruct(CommandSettingsSlug, cs); err == nil {
+							if err := parsed.DecodeSectionInto(CommandSettingsSlug, cs); err == nil {
 								if cs.ConfigFile != "" {
 									explicit = cs.ConfigFile
 								}

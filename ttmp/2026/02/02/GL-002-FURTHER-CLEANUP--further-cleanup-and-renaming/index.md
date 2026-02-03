@@ -25,8 +25,8 @@ RelatedFiles:
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
       Note: Updated parameter/layer inventory (non-ttmp)
 ExternalSources: []
-Summary: ""
-LastUpdated: 2026-02-02T20:25:39-05:00
+Summary: "Renamed parsed parameters to field values and updated values/schema serialization."
+LastUpdated: 2026-02-02T20:57:11-05:00
 WhatFor: ""
 WhenToUse: ""
 ---

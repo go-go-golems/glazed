@@ -278,12 +278,12 @@ func (cd *CommandDescription) GetDefaultsMap() (map[string]interface{}, error) {
 	flags := cd.GetDefaultFlags()
 	arguments := cd.GetDefaultArguments()
 
-	params, err := flags.ParsedParametersFromDefaults()
+	params, err := flags.FieldValuesFromDefaults()
 	if err != nil {
 		return nil, err
 	}
 
-	argsParams, err := arguments.ParsedParametersFromDefaults()
+	argsParams, err := arguments.FieldValuesFromDefaults()
 	if err != nil {
 		return nil, err
 	}

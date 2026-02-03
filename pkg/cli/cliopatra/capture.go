@@ -9,7 +9,7 @@ import (
 
 func getCliopatraParameters(
 	definitions *fields.Definitions,
-	ps *fields.ParsedParameters,
+	ps *fields.FieldValues,
 	prefix string,
 ) []*Parameter {
 	ret := []*Parameter{}
@@ -94,7 +94,7 @@ func NewProgramFromCapture(
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
 		parameters_ := getCliopatraParameters(
 			layer.GetDefinitions(),
-			parsedLayer.Parameters,
+			parsedLayer.Fields,
 			layer.GetPrefix())
 		flags := []*Parameter{}
 		arguments := []*Parameter{}

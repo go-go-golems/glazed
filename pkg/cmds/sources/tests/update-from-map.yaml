@@ -9,7 +9,7 @@
           type: "int"
   parsedLayers:
     - name: "layer1"
-      parameters:
+      fields:
         - name: param1
           value: "initial"
   updateMaps:
@@ -64,7 +64,7 @@
           type: "string"
   parsedLayers:
     - name: "layer1"
-      parameters:
+      fields:
         - name: "param1"
           value: "initial"
   updateMaps:

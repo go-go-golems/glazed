@@ -75,7 +75,7 @@ func (f *RenameParameterLayer) Clone() schema.Section {
 }
 
 func NewRenameSettingsFromParameters(glazedLayer *values.SectionValues) (*RenameSettings, error) {
-	ps := glazedLayer.Parameters
+	ps := glazedLayer.Fields
 	rename := ps.GetValue("rename")
 	if rename == nil {
 		return &RenameSettings{

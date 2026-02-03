@@ -74,11 +74,11 @@ func NewTemplateSettings(layer *values.SectionValues) (*TemplateSettings, error)
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 
-	templateArgument, ok := layer.Parameters.GetValue("template").(string)
+	templateArgument, ok := layer.Fields.GetValue("template").(string)
 	if ok && templateArgument != "" {
 		templates["_0"] = templateArgument
 	} else {
-		v := layer.Parameters.GetValue("template-field")
+		v := layer.Fields.GetValue("template-field")
 		templateFields, err := cast.ConvertMapToInterfaceMap(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to convert template-field to map[string]interface{}")
@@ -92,7 +92,7 @@ func NewTemplateSettings(layer *values.SectionValues) (*TemplateSettings, error)
 		}
 	}
 
-	useRowTemplates, ok := layer.Parameters.GetValue("use-row-templates").(bool)
+	useRowTemplates, ok := layer.Fields.GetValue("use-row-templates").(bool)
 	if !ok {
 		useRowTemplates = false
 	}

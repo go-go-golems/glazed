@@ -41,7 +41,7 @@ func WhitelistLayerParametersHandler(parameters_ map[string][]string) HandlerFun
 			for _, p := range parameters_[key] {
 				parametersToKeep[p] = nil
 			}
-			layersToUpdate[key] = schema.NewWhitelistParameterLayer(l, parametersToKeep)
+			layersToUpdate[key] = schema.NewWhitelistSection(l, parametersToKeep)
 		})
 		for _, key := range layersToDelete {
 			layers_.Delete(key)
@@ -140,7 +140,7 @@ func BlacklistLayerParametersHandler(parameters_ map[string][]string) HandlerFun
 			for _, p := range parameters_[key] {
 				parametersToKeep[p] = nil
 			}
-			layersToUpdate[key] = schema.NewBlacklistParameterLayer(l, parametersToKeep)
+			layersToUpdate[key] = schema.NewBlacklistSection(l, parametersToKeep)
 		})
 		for _, key := range layersToDelete {
 			layers_.Delete(key)

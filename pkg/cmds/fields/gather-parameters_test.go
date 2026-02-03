@@ -32,13 +32,13 @@ func TestGatherParametersFromMap(t *testing.T) {
 		t.Run(tt.Title, func(t *testing.T) {
 			pds := NewDefinitions(WithDefinitionList(tt.ParameterDefs))
 
-			parsedParameters, err := pds.GatherParametersFromMap(tt.Data, tt.OnlyProvided)
+			fieldValues, err := pds.GatherFieldsFromMap(tt.Data, tt.OnlyProvided)
 
 			if tt.ExpectedError != "" {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.ExpectedResult, parsedParameters.ToMap())
+				require.Equal(t, tt.ExpectedResult, fieldValues.ToMap())
 			}
 		})
 	}

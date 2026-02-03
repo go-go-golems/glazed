@@ -88,7 +88,7 @@ type CsvSettings struct {
 
 func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &CsvSettings{}
-	err := vals.InitializeStruct(schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize csv settings from parameters")
 	}

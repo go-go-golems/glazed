@@ -20,25 +20,25 @@ type SerializableSection struct {
 // SerializableSectionValues represents a parsed section in a format suitable for
 // YAML/JSON serialization.
 type SerializableSectionValues struct {
-	Section    *SerializableSection                 `yaml:"section,omitempty" json:"section,omitempty"`
-	Parameters *fields.SerializableParsedParameters `yaml:"parameters" json:"parameters"`
+	Section *SerializableSection            `yaml:"section,omitempty" json:"section,omitempty"`
+	Fields  *fields.SerializableFieldValues `yaml:"fields" json:"fields"`
 }
 
 // ToSerializableSectionValues converts a SectionValues to its serializable representation.
 func ToSerializableSectionValues(pl *SectionValues) *SerializableSectionValues {
 	var section *SerializableSection
-	if pl.Layer != nil {
+	if pl.Section != nil {
 		section = &SerializableSection{
-			Name:        pl.Layer.GetName(),
-			Slug:        pl.Layer.GetSlug(),
-			Description: pl.Layer.GetDescription(),
-			Prefix:      pl.Layer.GetPrefix(),
-			Fields:      pl.Layer.GetDefinitions(),
+			Name:        pl.Section.GetName(),
+			Slug:        pl.Section.GetSlug(),
+			Description: pl.Section.GetDescription(),
+			Prefix:      pl.Section.GetPrefix(),
+			Fields:      pl.Section.GetDefinitions(),
 		}
 	}
 	return &SerializableSectionValues{
-		Section:    section,
-		Parameters: fields.ToSerializableParsedParameters(pl.Parameters),
+		Section: section,
+		Fields:  fields.ToSerializableFieldValues(pl.Fields),
 	}
 }
 
@@ -46,18 +46,18 @@ func ToSerializableSectionValues(pl *SectionValues) *SerializableSectionValues {
 // for YAML/JSON serialization, maintaining the order of sections.
 type SerializableValues struct {
 	// Using orderedmap to maintain section order while having slug-based access.
-	Layers *orderedmap.OrderedMap[string, *SerializableSectionValues] `yaml:"layers" json:"layers"`
+	Sections *orderedmap.OrderedMap[string, *SerializableSectionValues] `yaml:"sections" json:"sections"`
 }
 
 // ToSerializableValues converts a Values collection to its serializable representation.
 func ToSerializableValues(pl *Values) *SerializableValues {
 	ret := &SerializableValues{
-		Layers: orderedmap.New[string, *SerializableSectionValues](),
+		Sections: orderedmap.New[string, *SerializableSectionValues](),
 	}
 
 	pl.ForEach(func(key string, value *SectionValues) {
 		serialized := ToSerializableSectionValues(value)
-		ret.Layers.Set(key, serialized)
+		ret.Sections.Set(key, serialized)
 	})
 
 	return ret
@@ -67,7 +67,7 @@ func ToSerializableValues(pl *Values) *SerializableValues {
 func (spl *SerializableValues) MarshalYAML() (interface{}, error) {
 	// Convert to a map for YAML serialization
 	m := make(map[string]*SerializableSectionValues)
-	for pair := spl.Layers.Oldest(); pair != nil; pair = pair.Next() {
+	for pair := spl.Sections.Oldest(); pair != nil; pair = pair.Next() {
 		m[pair.Key] = pair.Value
 	}
 	return m, nil
@@ -77,7 +77,7 @@ func (spl *SerializableValues) MarshalYAML() (interface{}, error) {
 func (spl *SerializableValues) MarshalJSON() ([]byte, error) {
 	// Convert to a map for JSON serialization
 	m := make(map[string]*SerializableSectionValues)
-	for pair := spl.Layers.Oldest(); pair != nil; pair = pair.Next() {
+	for pair := spl.Sections.Oldest(); pair != nil; pair = pair.Next() {
 		m[pair.Key] = pair.Value
 	}
 	return json.Marshal(m)

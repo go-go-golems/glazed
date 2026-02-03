@@ -73,13 +73,13 @@ func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer schema.Sect
 	}
 
 	// Parse parameters using the layer's definitions
-	parsedParams, err := layer.GetDefinitions().GatherParametersFromMap(params, true, fields.WithSource("lua"))
+	parsedParams, err := layer.GetDefinitions().GatherFieldsFromMap(params, true, fields.WithSource("lua"))
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a parsed layer
-	return values.NewSectionValues(layer, values.WithParameters(parsedParams))
+	return values.NewSectionValues(layer, values.WithFields(parsedParams))
 }
 
 // Middleware to parse Lua table into a SectionValues
@@ -97,7 +97,7 @@ func ParseLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable, layerName stri
 				return err
 			}
 
-			err = parsedLayers.GetOrCreate(layer).MergeParameters(parsedLayer)
+			err = parsedLayers.GetOrCreate(layer).MergeFields(parsedLayer)
 			if err != nil {
 				return err
 			}
@@ -417,9 +417,9 @@ func InterfaceToLuaValue(L *lua.LState, value interface{}) lua.LValue {
 
 // SectionValuesToLuaTable converts a SectionValues to a Lua table
 func SectionValuesToLuaTable(L *lua.LState, parsedLayer *values.SectionValues) *lua.LTable {
-	luaTable := L.CreateTable(0, len(parsedLayer.Parameters.ToMap()))
+	luaTable := L.CreateTable(0, len(parsedLayer.Fields.ToMap()))
 
-	parsedLayer.Parameters.ForEach(func(name string, param *fields.ParsedParameter) {
+	parsedLayer.Fields.ForEach(func(name string, param *fields.FieldValue) {
 		luaTable.RawSetString(name, InterfaceToLuaValue(L, param.Value))
 	})
 

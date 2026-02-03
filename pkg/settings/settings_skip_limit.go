@@ -18,7 +18,7 @@ type SkipLimitSettings struct {
 
 func NewSkipLimitSettingsFromParameters(glazedLayer *values.SectionValues) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from parameters")
 	}

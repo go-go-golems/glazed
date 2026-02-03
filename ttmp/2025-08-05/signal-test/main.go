@@ -41,7 +41,7 @@ func (c *SignalTestCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &SignalTestSettings{}
-	if err := parsedLayers.InitializeStruct(schema.DefaultSlug, settings); err != nil {
+	if err := parsedLayers.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 

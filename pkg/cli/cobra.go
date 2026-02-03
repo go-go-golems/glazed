@@ -61,7 +61,7 @@ func runCobraCommand(
 		commandSettings := &CommandSettings{}
 		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
 			var printYAML, printParsedParameters_, printSchema bool
-			err = minimalLayer.InitializeStruct(commandSettings)
+			err = minimalLayer.DecodeInto(commandSettings)
 			cobra.CheckErr(err)
 			printYAML = commandSettings.PrintYAML
 			printParsedParameters_ = commandSettings.PrintParsedParameters
@@ -90,7 +90,7 @@ func runCobraCommand(
 		// Create command settings: cliopatra, alias, create
 		if createLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
 			createSettings := &CreateCommandSettings{}
-			err = createLayer.InitializeStruct(createSettings)
+			err = createLayer.DecodeInto(createSettings)
 			cobra.CheckErr(err)
 
 			if createSettings.CreateCliopatra != "" {

@@ -82,7 +82,7 @@ func (pds *Definitions) addArgumentsToCobraCommand(cmd *cobra.Command) error {
 			// already handling unbounded arguments
 			return errors.Errorf("Cannot handle more than one unbounded argument, but found %s", argument.Name)
 		}
-		_, err := argument.CheckParameterDefaultValueValidity()
+		_, err := argument.CheckDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", argument.Name)
 		}
@@ -117,9 +117,9 @@ func (pds *Definitions) addArgumentsToCobraCommand(cmd *cobra.Command) error {
 	return nil
 }
 
-// AddParametersToCobraCommand takes the parameters from a CommandDescription and converts them
+// AddFieldsToCobraCommand takes the parameters from a CommandDescription and converts them
 // to cobra flags, before adding them to the Parameters() of a the passed cobra command.
-func (pds *Definitions) AddParametersToCobraCommand(
+func (pds *Definitions) AddFieldsToCobraCommand(
 	cmd *cobra.Command,
 	prefix string,
 ) error {
@@ -131,7 +131,7 @@ func (pds *Definitions) AddParametersToCobraCommand(
 	}
 
 	err = pds.GetFlags().ForEachE(func(parameter *Definition) error {
-		_, err := parameter.CheckParameterDefaultValueValidity()
+		_, err := parameter.CheckDefaultValueValidity()
 		if err != nil {
 			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
 		}
@@ -410,11 +410,11 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
 	ignoreRequired bool,
 	prefix string,
 	options ...ParseOption,
-) (*ParsedParameters, error) {
-	ps := NewParsedParameters()
+) (*FieldValues, error) {
+	ps := NewFieldValues()
 
 	err := pds.ForEachE(func(pd *Definition) error {
-		p := &ParsedParameter{
+		p := &FieldValue{
 			Definition: pd,
 		}
 
@@ -465,7 +465,7 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			v2, err := pd.ParseParameter([]string{v}, options...)
+			v2, err := pd.ParseField([]string{v}, options...)
 			if err != nil {
 				return err
 			}
@@ -512,7 +512,7 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
 			if err != nil {
 				return err
 			}
-			v2, err := pd.ParseParameter(v, options...)
+			v2, err := pd.ParseField(v, options...)
 			if err != nil {
 				return err
 			}
@@ -549,7 +549,7 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
 				}
 				ps.Set(pd.Name, p)
 			} else {
-				v2, err := pd.ParseParameter(v, options...)
+				v2, err := pd.ParseField(v, options...)
 				if err != nil {
 					return err
 				}

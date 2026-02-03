@@ -121,7 +121,7 @@ import (
 // 				l, ok := parsedLayers.Get(l_.Name)
 // 				require.True(t, ok)
 //
-// 				actual := l.Parameters.ToMap()
+// 				actual := l.Fields.ToMap()
 // 				assert.Equal(t, l_.Values, actual)
 // 			}
 // 		})
@@ -140,8 +140,8 @@ type TestParsedParameter struct {
 }
 
 type TestSectionValues struct {
-	Name       string                `yaml:"name"`
-	Parameters []TestParsedParameter `yaml:"parameters"`
+	Name   string                `yaml:"name"`
+	Fields []TestParsedParameter `yaml:"fields"`
 }
 
 type TestExpectedLayer struct {
@@ -177,12 +177,12 @@ type TestParseOption struct {
 }
 
 type TestMiddleware struct {
-	Name       TestMiddlewareName                 `yaml:"name"`
-	Options    []TestParseOption                  `yaml:"options"`
-	Map        *map[string]map[string]interface{} `yaml:"map"`
-	Prefix     *string                            `yaml:"prefix"`
-	Layers     *[]string                          `yaml:"layers"`
-	Parameters *map[string][]string               `yaml:"parameters"`
+	Name    TestMiddlewareName                 `yaml:"name"`
+	Options []TestParseOption                  `yaml:"options"`
+	Map     *map[string]map[string]interface{} `yaml:"map"`
+	Prefix  *string                            `yaml:"prefix"`
+	Layers  *[]string                          `yaml:"layers"`
+	Fields  *map[string][]string               `yaml:"fields"`
 }
 
 type TestMiddlewares []TestMiddleware
@@ -218,17 +218,17 @@ func (t TestMiddlewares) ToMiddlewares() ([]sources.Middleware, error) {
 		case TestWhitelistLayersFirst:
 			ret = append(ret, sources.WhitelistLayersFirst(*m.Layers))
 		case TestWhitelistLayerParameters:
-			ret = append(ret, sources.WhitelistLayerParameters(*m.Parameters))
+			ret = append(ret, sources.WhitelistLayerParameters(*m.Fields))
 		case TestWhitelistLayerParametersFirst:
-			ret = append(ret, sources.WhitelistLayerParametersFirst(*m.Parameters))
+			ret = append(ret, sources.WhitelistLayerParametersFirst(*m.Fields))
 		case TestBlacklistLayers:
 			ret = append(ret, sources.BlacklistLayers(*m.Layers))
 		case TestBlacklistLayersFirst:
 			ret = append(ret, sources.BlacklistLayersFirst(*m.Layers))
 		case TestBlacklistLayerParameters:
-			ret = append(ret, sources.BlacklistLayerParameters(*m.Parameters))
+			ret = append(ret, sources.BlacklistLayerParameters(*m.Fields))
 		case TestBlacklistLayerParametersFirst:
-			ret = append(ret, sources.BlacklistLayerParametersFirst(*m.Parameters))
+			ret = append(ret, sources.BlacklistLayerParametersFirst(*m.Fields))
 		default:
 			return nil, errors.Newf("unknown middleware name %s", m.Name)
 		}
@@ -260,9 +260,9 @@ func NewTestParameterLayers(ls []TestParameterLayer) *schema.Schema {
 
 // NewTestSectionValues helper function to create a Values from TestParsedParameter
 func NewTestSectionValues(pl schema.Section, l TestSectionValues) *values.SectionValues {
-	params_ := fields.NewParsedParameters()
+	params_ := fields.NewFieldValues()
 	pds := pl.GetDefinitions()
-	for _, p := range l.Parameters {
+	for _, p := range l.Fields {
 		pd, ok := pds.Get(p.Name)
 		if !ok {
 			panic("parameter definition not found")
@@ -273,7 +273,7 @@ func NewTestSectionValues(pl schema.Section, l TestSectionValues) *values.Sectio
 		}
 	}
 
-	ret, err := values.NewSectionValues(pl, values.WithParameters(params_))
+	ret, err := values.NewSectionValues(pl, values.WithFields(params_))
 	if err != nil {
 		panic(err)
 	}
@@ -311,7 +311,7 @@ func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parse
 		l, ok := parsedLayers.Get(l_.Name)
 		require.True(t, ok)
 
-		actual, err := l.Parameters.ToInterfaceMap()
+		actual, err := l.Fields.ToInterfaceMap()
 		require.NoError(t, err)
 
 		// Compare each value using the helper
@@ -320,7 +320,7 @@ func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parse
 		}
 
 		for k, expectedLog := range l_.Logs {
-			actual, ok := l.Parameters.Get(k)
+			actual, ok := l.Fields.Get(k)
 			require.True(t, ok)
 
 			// Compare each log entry using the helper

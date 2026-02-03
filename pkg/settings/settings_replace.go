@@ -64,7 +64,7 @@ func (f *ReplaceParameterLayer) Clone() schema.Section {
 
 func NewReplaceSettingsFromParameters(glazedLayer *values.SectionValues) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
 	}

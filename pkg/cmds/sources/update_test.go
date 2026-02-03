@@ -76,7 +76,7 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 	require.True(t, ok)
 
 	get := func(name string) interface{} {
-		v, ok := layer.Parameters.Get(name)
+		v, ok := layer.Fields.Get(name)
 		require.True(t, ok, "parameter %s should be set", name)
 		return v.Value
 	}
@@ -98,7 +98,7 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 	require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, get("labels"))
 
 	// Check env_key metadata exists on one param (verbose)
-	vp, ok := layer.Parameters.Get("verbose")
+	vp, ok := layer.Fields.Get("verbose")
 	require.True(t, ok)
 	require.NotEmpty(t, vp.Log)
 	found := false

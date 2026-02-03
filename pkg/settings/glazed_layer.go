@@ -136,9 +136,9 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 	options ...fields.ParseOption,
 ) (*values.SectionValues, error) {
 	res := &values.SectionValues{
-		Layer: g,
+		Section: g,
 	}
-	ps := fields.NewParsedParameters()
+	ps := fields.NewFieldValues()
 
 	layers := []schema.CobraSection{
 		g.OutputParameterLayer,
@@ -157,20 +157,20 @@ func (g *GlazedParameterLayers) ParseLayerFromCobraCommand(
 		if err != nil {
 			return nil, err
 		}
-		if _, err = ps.Merge(l.Parameters); err != nil {
+		if _, err = ps.Merge(l.Fields); err != nil {
 			return nil, err
 		}
 	}
 
-	res.Parameters = ps
+	res.Fields = ps
 	return res, nil
 }
 
-func (g *GlazedParameterLayers) GatherParametersFromMap(
+func (g *GlazedParameterLayers) GatherFieldsFromMap(
 	m map[string]interface{}, onlyProvided bool,
 	options ...fields.ParseOption,
-) (*fields.ParsedParameters, error) {
-	ps := fields.NewParsedParameters()
+) (*fields.FieldValues, error) {
+	ps := fields.NewFieldValues()
 
 	layers := []schema.Section{
 		g.OutputParameterLayer,
@@ -185,7 +185,7 @@ func (g *GlazedParameterLayers) GatherParametersFromMap(
 	}
 
 	for _, layer := range layers {
-		ps_, err := layer.GetDefinitions().GatherParametersFromMap(m, onlyProvided, options...)
+		ps_, err := layer.GetDefinitions().GatherFieldsFromMap(m, onlyProvided, options...)
 		if err != nil {
 			return nil, err
 		}

@@ -52,3 +52,15 @@ Store audit/rename scripts under ticket scripts
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/02-symbol-inventory.go — Symbol inventory tool moved from /tmp
 
+
+## 2026-02-03
+
+Rename parsed parameters to field values and update values/schema APIs
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/fields/parsed-parameter.go — ParsedParameter(s) → FieldValue(s)
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/values/parsed-layer.go — SectionValues uses Section/Fields, DecodeSectionInto
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/serialize.go — SerializableSection/Schema with fields/sections tags
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/tests/update-from-map.yaml — fixtures updated to fields
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/05-rename-glazed-api.go — Expanded rename tool

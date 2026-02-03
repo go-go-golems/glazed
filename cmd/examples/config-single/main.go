@@ -59,7 +59,7 @@ var _ cmds.BareCommand = &DemoBareCommand{}
 
 func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := &DemoSettings{}
-	if err := vals.InitializeStruct("demo", s); err != nil {
+	if err := vals.DecodeSectionInto("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security

@@ -19,7 +19,7 @@ import (
 func TestAddZeroArguments(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	definitions := fields.NewDefinitions()
-	err := definitions.AddParametersToCobraCommand(cmd, "")
+	err := definitions.AddFieldsToCobraCommand(cmd, "")
 	// assert that err is nil
 	require.Nil(t, err)
 }
@@ -590,8 +590,8 @@ func testCommandParseHelper(
 ) {
 	var flagsError error
 	var argsError error
-	var flagParameters *fields.ParsedParameters
-	var argumentParameters *fields.ParsedParameters
+	var flagParameters *fields.FieldValues
+	var argumentParameters *fields.FieldValues
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {

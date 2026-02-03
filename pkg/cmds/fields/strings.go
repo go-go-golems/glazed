@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// GatherFlagsFromStringList parses command line arguments into a ParsedParameters
+// GatherFlagsFromStringList parses command line arguments into a FieldValues
 // map. It accepts a slice of string arguments, bools to control required/provided
 // flag handling, and a prefix to prepend to flag names.
 //
@@ -29,7 +29,7 @@ func (pds *Definitions) GatherFlagsFromStringList(
 	ignoreRequired bool,
 	prefix string,
 	parseOptions ...ParseOption,
-) (*ParsedParameters, []string, error) {
+) (*FieldValues, []string, error) {
 	flagMap := NewDefinitions()
 	flagNames := map[string]string{}
 	remainingArgs := []string{}
@@ -116,13 +116,13 @@ func (pds *Definitions) GatherFlagsFromStringList(
 		}
 	}
 
-	result := NewParsedParameters()
+	result := NewFieldValues()
 	for paramName, values := range rawValues {
 		param, ok := flagMap.Get(paramName)
 		if !ok || param == nil {
 			return nil, nil, errors.Errorf("unknown flag: --%s", paramName)
 		}
-		parsedValue, err := param.ParseParameter(values, parseOptions...)
+		parsedValue, err := param.ParseField(values, parseOptions...)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "invalid value for flag --%s", paramName)
 		}
@@ -137,7 +137,7 @@ func (pds *Definitions) GatherFlagsFromStringList(
 		}
 		if !onlyProvided {
 			if _, ok := result.Get(param.Name); !ok && param.Default != nil {
-				p := &ParsedParameter{
+				p := &FieldValue{
 					Definition: param,
 				}
 				// show that this was set out of the default

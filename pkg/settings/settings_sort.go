@@ -19,7 +19,7 @@ type SortFlagsSettings struct {
 
 func NewSortSettingsFromParameters(glazedLayer *values.SectionValues) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize sort settings from parameters")
 	}

@@ -328,7 +328,7 @@ func (p *Program) RunIntoWriter(
 		}
 	}
 
-	ps := parsedLayers.GetAllParsedParameters()
+	ps := parsedLayers.AllFieldValues()
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {
@@ -390,7 +390,7 @@ func (p *Program) RunIntoWriter(
 	return nil
 }
 
-func (p *Program) ComputeArgs(ps *fields.ParsedParameters) ([]string, error) {
+func (p *Program) ComputeArgs(ps *fields.FieldValues) ([]string, error) {
 	var err error
 
 	args := []string{}
@@ -417,12 +417,12 @@ func (p *Program) ComputeArgs(ps *fields.ParsedParameters) ([]string, error) {
 			continue
 		}
 
-		parsedParameter, ok := ps.Get(flag.Name)
+		fieldValue, ok := ps.Get(flag.Name)
 		value_ := ""
 		if !ok {
 			value_ = flag.Raw
 		} else {
-			value_, err = parsedParameter.RenderValue()
+			value_, err = fieldValue.RenderValue()
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}

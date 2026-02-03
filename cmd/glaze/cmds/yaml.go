@@ -79,7 +79,7 @@ type YamlSettings struct {
 
 func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &YamlSettings{}
-	err := vals.InitializeStruct(schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
 	}

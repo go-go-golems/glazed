@@ -168,12 +168,12 @@ func InitializeSectionWithDefaults(
 	pds := v.GetDefinitions()
 
 	err := pds.ForEachE(func(pd *fields.Definition) error {
-		v, err := pd.CheckParameterDefaultValueValidity()
+		v, err := pd.CheckDefaultValueValidity()
 		if err != nil {
 			return err
 		}
 		if v != nil {
-			err := parsedLayer.Parameters.SetAsDefault(pd.Name, pd, v, options...)
+			err := parsedLayer.Fields.SetAsDefault(pd.Name, pd, v, options...)
 			if err != nil {
 				return err
 			}
@@ -199,10 +199,10 @@ func (pl *Schema) UpdateWithDefaults(parsedLayers *values.Values, options ...fie
 
 // MarshalYAML implements yaml.Marshaler interface
 func (pl *Schema) MarshalYAML() (interface{}, error) {
-	return LayersToSerializable(pl), nil
+	return SchemaToSerializable(pl), nil
 }
 
 // MarshalJSON implements json.Marshaler interface
 func (pl *Schema) MarshalJSON() ([]byte, error) {
-	return json.Marshal(LayersToSerializable(pl))
+	return json.Marshal(SchemaToSerializable(pl))
 }

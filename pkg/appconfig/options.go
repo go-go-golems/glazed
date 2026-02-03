@@ -270,7 +270,7 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 					}
 
 					ps := &cli.ProfileSettings{}
-					if err := bootstrapParsed.InitializeStruct(cli.ProfileSettingsSlug, ps); err != nil {
+					if err := bootstrapParsed.DecodeSectionInto(cli.ProfileSettingsSlug, ps); err != nil {
 						return errors.Wrap(err, "failed to initialize bootstrap profile settings")
 					}
 

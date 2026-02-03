@@ -116,7 +116,7 @@ func (p *Parser[T]) Parse() (*T, error) {
 		if v.Kind() != reflect.Ptr || v.IsNil() {
 			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", string(r.slug), dst)
 		}
-		if err := parsedLayers.InitializeStruct(string(r.slug), dst); err != nil {
+		if err := parsedLayers.DecodeSectionInto(string(r.slug), dst); err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", string(r.slug))
 		}
 	}

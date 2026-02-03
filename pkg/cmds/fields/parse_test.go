@@ -208,7 +208,7 @@ func TestParameterDate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Date: %s", tc.Name), func(t *testing.T) {
-			got, err := parameter.ParseParameter(tc.Input)
+			got, err := parameter.ParseField(tc.Input)
 			if tc.WantErr == ErrorExpected {
 				assert.Error(t, err)
 			} else {
@@ -348,7 +348,7 @@ func TestParseParameter(t *testing.T) {
 
 		for _, tc := range tt.Cases {
 			t.Run(fmt.Sprintf("%s: %s", tt.Name, tc.Name), func(t *testing.T) {
-				got, err := parameter.ParseParameter(tc.Input)
+				got, err := parameter.ParseField(tc.Input)
 				if tc.WantErr == ErrorExpected {
 					assert.Error(t, err)
 				} else {
@@ -712,18 +712,18 @@ func TestParseStringFromFileRealFile(t *testing.T) {
 		WithDefault("default"),
 	)
 
-	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
+	v, err := parameter.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\n", v.Value)
 
 	parameter = New("test", TypeStringFromFiles,
 		WithDefault("default"),
 	)
-	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
+	v, err = parameter.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\n", v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
+	v, err = parameter.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\nstring2\n", v.Value)
 }
@@ -733,26 +733,26 @@ func TestParseStringListFromFileRealFile(t *testing.T) {
 		WithDefault([]string{"default"}),
 	)
 
-	v, err := parameter.ParseParameter([]string{"test-data/string.txt"})
+	v, err := parameter.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1"}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv"})
+	v, err = parameter.ParseField([]string{"test-data/stringList.csv"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"stringList1", "stringList2"}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
+	v, err = parameter.ParseField([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"stringList1", "stringList2", "stringList3", "stringList4"}, v.Value)
 
 	parameter = New("test", TypeStringListFromFiles,
 		WithDefault("default"),
 	)
-	v, err = parameter.ParseParameter([]string{"test-data/string.txt"})
+	v, err = parameter.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1"}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/string.txt", "test-data/string2.txt"})
+	v, err = parameter.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1", "string2"}, v.Value)
 }
@@ -762,11 +762,11 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		WithDefault([]map[string]interface{}{}),
 	)
 
-	v, err := parameter.ParseParameter([]string{"test-data/object.json"})
+	v, err := parameter.ParseField([]string{"test-data/object.json"})
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/objectList.json"})
+	v, err = parameter.ParseField([]string{"test-data/objectList.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -780,7 +780,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 			},
 		}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/objectList3.csv"})
+	v, err = parameter.ParseField([]string{"test-data/objectList3.csv"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -798,11 +798,11 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		WithDefault([]interface{}{}),
 	)
 
-	v, err = parameter.ParseParameter([]string{"test-data/object.json"})
+	v, err = parameter.ParseField([]string{"test-data/object.json"})
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
-	v, err = parameter.ParseParameter([]string{"test-data/object.json", "test-data/object2.json"})
+	v, err = parameter.ParseField([]string{"test-data/object.json", "test-data/object2.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -817,7 +817,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		},
 		v.Value)
 
-	v, err = parameter.ParseParameter([]string{
+	v, err = parameter.ParseField([]string{
 		"test-data/objectList.json",
 		"test-data/objectList2.yaml",
 		"test-data/object.json",
@@ -928,7 +928,7 @@ func TestValidDefaultValue(t *testing.T) {
 				Type:    testCase.Type,
 				Choices: testCase.Choices,
 			}
-			_, err := param.CheckParameterDefaultValueValidity()
+			_, err := param.CheckDefaultValueValidity()
 			assert.Nil(t, err)
 		})
 	}
@@ -941,7 +941,7 @@ func TestValidChoiceDefaultValue(t *testing.T) {
 		Type:    TypeChoice,
 		Choices: []string{"foo", "bar"},
 	}
-	_, err := param.CheckParameterDefaultValueValidity()
+	_, err := param.CheckDefaultValueValidity()
 	assert.Nil(t, err)
 }
 
@@ -958,7 +958,7 @@ func TestInvalidChoiceDefaultValue(t *testing.T) {
 			Type:    TypeChoice,
 			Choices: []string{"foo", "bar"},
 		}
-		_, err := param.CheckParameterDefaultValueValidity()
+		_, err := param.CheckDefaultValueValidity()
 		assert.Error(t, err)
 	}
 }

@@ -69,7 +69,7 @@ func printParsedParameters(parsedLayers *values.Values) {
 	layersMap := map[string]map[string]interface{}{}
 	parsedLayers.ForEach(func(layerName string, layer *values.SectionValues) {
 		params := map[string]interface{}{}
-		layer.Parameters.ForEach(func(name string, parameter *fields.ParsedParameter) {
+		layer.Fields.ForEach(func(name string, parameter *fields.FieldValue) {
 			paramMap := map[string]interface{}{
 				"value": parameter.Value,
 			}

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GatherParametersFromMap gathers parameter values from a map.
+// GatherFieldsFromMap gathers parameter values from a map.
 //
 // For each Definition, it checks if a matching value is present in the map:
 //
@@ -18,15 +18,15 @@ import (
 //
 // The returned map contains the gathered parameter values, with defaults filled in
 // for any missing optional fields.
-func (pds *Definitions) GatherParametersFromMap(
+func (pds *Definitions) GatherFieldsFromMap(
 	m map[string]interface{},
 	onlyProvided bool,
 	options ...ParseOption,
-) (*ParsedParameters, error) {
-	ret := NewParsedParameters()
+) (*FieldValues, error) {
+	ret := NewFieldValues()
 
 	err := pds.ForEachE(func(p *Definition) error {
-		parsed := &ParsedParameter{
+		parsed := &FieldValue{
 			Definition: p,
 		}
 
@@ -59,7 +59,7 @@ func (pds *Definitions) GatherParametersFromMap(
 			}))
 
 		if s, ok := v_.(string); ok {
-			v__, err := p.ParseParameter([]string{s})
+			v__, err := p.ParseField([]string{s})
 			if err != nil {
 				return errors.Wrapf(err, "Invalid value for parameter %s", p.Name)
 			}

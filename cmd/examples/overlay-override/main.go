@@ -43,7 +43,7 @@ var _ cmds.BareCommand = &Command{}
 
 func (c *Command) Run(ctx context.Context, vals *values.Values) error {
 	s := &Settings{}
-	if err := vals.InitializeStruct("demo", s); err != nil {
+	if err := vals.DecodeSectionInto("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -69,7 +69,7 @@ func main() {
 	// Config files resolver: start from --config-file if provided, then add sibling <base>.override.yaml
 	resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
 		cs := &cli.CommandSettings{}
-		_ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+		_ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
 		files := []string{}
 		if cs.ConfigFile != "" {
 			files = append(files, cs.ConfigFile)

@@ -14,14 +14,14 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T20:18:56
+LastUpdated: 2026-02-02T20:33:34
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Parameter/Layer Symbol Inventory
 
-Generated: `2026-02-02T20:18:56`
+Generated: `2026-02-02T20:33:34`
 
 ## Scope
 This report lists Go identifiers (symbols) containing `parameter` or `layer` (case-insensitive) across non-`ttmp` Go files, plus an index of all non-`ttmp` files where the words appear in contents.
@@ -29,10 +29,10 @@ This report lists Go identifiers (symbols) containing `parameter` or `layer` (ca
 ## Summary
 - Go files with matching identifiers: **106**
 - Unique identifiers found: **319**
-- All files with parameter/layer mentions (non-ttmp): **0**
-  - Go files: **0**
-  - Markdown files: **0**
-  - Other files: **0**
+- All files with parameter/layer mentions (non-ttmp): **182**
+  - Go files: **117**
+  - Markdown files: **44**
+  - Other files: **21**
 
 ## Top identifiers by file coverage
 - `layer` — 41 file(s)
@@ -1413,8 +1413,190 @@ This report lists Go identifiers (symbols) containing `parameter` or `layer` (ca
 
 ## File index with parameter/layer mentions (non-ttmp)
 ### Go files
+- `cmd/examples/config-single/main.go`
+- `cmd/examples/config-pattern-mapper/main.go`
+- `cmd/examples/new-api-build-first-command/main.go`
+- `cmd/examples/config-overlay/main.go`
+- `cmd/examples/appconfig-profiles/main.go`
+- `cmd/examples/appconfig-parser/main.go`
+- `cmd/examples/refactor-new-packages/main.go`
+- `cmd/examples/sources-example/main.go`
+- `cmd/examples/overlay-override/main.go`
+- `cmd/examples/config-custom-mapper/main.go`
+- `cmd/glaze/main.go`
+- `cmd/glaze/cmds/example.go`
+- `cmd/examples/parameter-types/main.go`
+- `cmd/glaze/cmds/docs.go`
+- `cmd/glaze/cmds/yaml.go`
+- `cmd/examples/middlewares-config-env/main.go`
+- `cmd/glaze/cmds/markdown.go`
+- `cmd/glaze/cmds/html/cmds.go`
+- `cmd/glaze/cmds/json.go`
+- `cmd/glaze/cmds/csv.go`
+- `pkg/codegen/glazed.go`
+- `pkg/settings/settings_jq.go`
+- `pkg/lua/lua.go`
+- `pkg/settings/settings_fields-filters.go`
+- `pkg/lua/cmds.go`
+- `pkg/settings/settings_template.go`
+- `pkg/settings/settings_sort.go`
+- `pkg/settings/settings_replace.go`
+- `pkg/settings/settings_select.go`
+- `pkg/settings/settings_rename.go`
+- `pkg/settings/settings_skip_limit.go`
+- `pkg/settings/settings_output.go`
+- `pkg/settings/glazed_layer.go`
+- `pkg/settings/settings_template_test.go`
+- `pkg/helpers/markdown/markdown.go`
+- `pkg/helpers/maps/maps.go`
+- `pkg/config/editor.go`
+- `pkg/cli/cli.go`
+- `pkg/cli/cliopatra/program.go`
+- `pkg/cli/cliopatra/capture.go`
+- `pkg/cli/cliopatra/capture_test.go`
+- `pkg/cli/helpers.go`
+- `pkg/cli/cobra.go`
+- `pkg/cli/cobra-parser.go`
+- `pkg/appconfig/options.go`
+- `pkg/appconfig/parser_test.go`
+- `pkg/appconfig/parser.go`
+- `pkg/appconfig/doc.go`
+- `pkg/appconfig/profile_test.go`
+- `pkg/helpers/templating/templating.go`
+- `pkg/cmds/json-schema.go`
+- `pkg/cmds/fields/parameters.go`
+- `pkg/cmds/cmds.go`
+- `pkg/cmds/fields/errors.go`
+- `pkg/cmds/fields/parameter-type.go`
+- `pkg/help/cmd/cobra.go`
+- `pkg/cmds/fields/gather-parameters_test.go`
+- `pkg/cmds/fields/gather-arguments.go`
+- `pkg/cmds/fields/parameters_test.go`
+- `pkg/help/help.go`
+- `pkg/cmds/fields/strings.go`
+- `pkg/cmds/fields/initialize-struct_test.go`
+- `pkg/cmds/fields/strings_test.go`
+- `pkg/cmds/fields/initialize-struct.go`
+- `pkg/cmds/logging/init-logging.go`
+- `pkg/cmds/layout/layout.go`
+- `pkg/cmds/fields/serialize.go`
+- `pkg/cmds/logging/init.go`
+- `pkg/cmds/fields/parse.go`
+- `pkg/cmds/logging/layer.go`
+- `pkg/cmds/runner/run.go`
+- `pkg/cmds/fields/parsed-parameter.go`
+- `pkg/cmds/fields/gather-arguments_test.go`
+- `pkg/cmds/logging/init-early.go`
+- `pkg/cmds/template.go`
+- `pkg/cmds/sources/update.go`
+- `pkg/cmds/fields/parameters_from_defaults_test.go`
+- `pkg/cmds/fields/viper.go`
+- `pkg/cmds/sources/profiles.go`
+- `pkg/cmds/sources/middlewares_test.go`
+- `pkg/cmds/fields/cobra.go`
+- `pkg/cmds/sources/update_test.go`
+- `pkg/cmds/sources/load-parameters-from-json.go`
+- `pkg/cmds/fields/parse_test.go`
+- `pkg/cmds/sources/custom-profiles_test.go`
+- `pkg/cmds/sources/layers.go`
+- `pkg/help/store/compat.go`
+- `pkg/cmds/sources/whitelist.go`
+- `pkg/cmds/sources/middlewares.go`
+- `pkg/cmds/values/parsed-layer_test.go`
+- `pkg/cmds/alias/alias.go`
+- `pkg/cmds/sources/cobra.go`
+- `pkg/cmds/values/test_helpers_test.go`
+- `pkg/cmds/cobra_test.go`
+- `pkg/cmds/sources/config-mapper-interface.go`
+- `pkg/cmds/helpers/test-helpers.go`
+- `pkg/cmds/values/parsed-layer.go`
+- `pkg/cmds/schema/cobra_flag_groups.go`
+- `pkg/cmds/fields/gather-parameters.go`
+- `pkg/cmds/schema/layer-impl_test.go`
+- `pkg/cmds/schema/serialize.go`
+- `pkg/cmds/schema/wrappers.go`
+- `pkg/cmds/values/serialize_parsed.go`
+- `pkg/cmds/schema/cobra.go`
+- `pkg/cmds/schema/layer-impl.go`
+- `pkg/cmds/schema/layer_test.go`
+- `pkg/cmds/sources/patternmapper/exports.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_orderedmap_test.go`
+- `pkg/cmds/schema/errors.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_edge_cases_test.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_test.go`
+- `pkg/cmds/sources/patternmapper/loader.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_proposals_test.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper.go`
+- `pkg/cmds/schema/layer.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_loader_test.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_builder.go`
 
 ### Markdown files
+- `cmd/examples/config-pattern-mapper/README.md`
+- `changelog.md`
+- `README.md`
+- `AGENT.md`
+- `cmd/examples/parameter-types/README.md`
+- `prompto/glazed/main.md`
+- `prompto/glazed/command-description.md`
+- `prompto/glazed/create-yaml-command.md`
+- `prompto/glazed/create-application-tutorial.md`
+- `pkg/doc/applications/03-user-store-command.md`
+- `pkg/doc/examples/cliopatra/cliopatra.md`
+- `pkg/doc/topics/how-to-write-good-documentation-pages.md`
+- `pkg/doc/topics/22-command-loaders.md`
+- `pkg/doc/topics/15-profiles.md`
+- `pkg/doc/topics/07-load-parameters-from-json.md`
+- `pkg/doc/topics/12-profiles-use-code.md`
+- `pkg/doc/topics/19-writing-yaml-commands.md`
+- `pkg/doc/topics/logging-layer.md`
+- `pkg/doc/tutorials/migrating-to-facade-packages.md`
+- `pkg/doc/topics/22-templating-helpers.md`
+- `pkg/doc/topics/commands-reference.md`
+- `pkg/doc/topics/using-the-query-api.md`
+- `pkg/doc/topics/06-usage-string.md`
+- `pkg/doc/tutorials/config-files-quickstart.md`
+- `pkg/doc/topics/23-pattern-based-config-mapping.md`
+- `pkg/doc/topics/layers-guide.md`
+- `pkg/doc/topics/24-config-files.md`
+- `pkg/doc/topics/13-layers-and-parsed-layers.md`
+- `pkg/doc/tutorials/custom-layer.md`
+- `pkg/doc/topics/01-help-system.md`
+- `pkg/doc/topics/09-gather-flags-from-string-list.md`
+- `pkg/doc/tutorials/04-lua.md`
+- `pkg/doc/topics/21-cmds-middlewares.md`
+- `pkg/doc/topics/16-adding-parameter-types.md`
+- `pkg/doc/tutorials/05-build-first-command.md`
+- `pkg/doc/topics/03-templates.md`
+- `pkg/doc/topics/18-lua.md`
+- `pkg/doc/topics/16-parsing-parameters.md`
+- `pkg/doc/tutorials/migrating-from-viper-to-config-files.md`
+- `pkg/doc/topics/08-file-parameter-type.md`
+- `pkg/doc/topics/10-template-command.md`
+- `pkg/doc/tutorials/01-a-simple-table-cli.md`
+- `pkg/cmds/logging/README.md`
+- `pkg/help/store/README.md`
 
 ### Other files
+- `cmd/examples/config-pattern-mapper/mappings.yaml`
+- `CHANGELOG`
+- `cmd/examples/config-custom-mapper/config.yaml`
+- `pinocchio/glazed/create-template-command.yaml`
+- `prompto/glazed/parameters-verbose`
+- `cmd/examples/parameter-types/sample-text.txt`
+- `prompto/glazed/parameter-types`
+- `prompto/glazed/parameters`
+- `prompto/glazed/definitions`
+- `pkg/cmds/test-data/cobra/02-key-value.yaml`
+- `pkg/cmds/test-data/cobra/01-test-simple.yaml`
+- `pkg/cmds/test-data/cobra/03-string-from-file.yaml`
+- `pkg/cmds/fields/test-data/parameters_test.yaml`
+- `pkg/cmds/fields/test-data/gather-fields.yaml`
+- `pkg/cmds/sources/tests/middlewares.yaml`
+- `pkg/cmds/sources/tests/update-from-map.yaml`
+- `pkg/cmds/fields/test-data/parameters_validity_test.yaml`
+- `pkg/cmds/sources/tests/set-from-defaults.yaml`
+- `pkg/cmds/sources/tests/update-from-map-as-default.yaml`
+- `pkg/cmds/sources/tests/wrap-with-restricted-layers.yaml`
+- `pkg/cmds/sources/tests/multi-update-from-map.yaml`
 

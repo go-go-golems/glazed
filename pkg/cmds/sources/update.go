@@ -104,11 +104,11 @@ func updateFromMap(
 		}
 
 		parsedLayer := parsedLayers.GetOrCreate(layer)
-		ps, err := layer.GetDefinitions().GatherParametersFromMap(v, true, options...)
+		ps, err := layer.GetDefinitions().GatherFieldsFromMap(v, true, options...)
 		if err != nil {
 			return err
 		}
-		_, err = parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}
@@ -128,11 +128,11 @@ func updateFromMapAsDefault(
 		}
 
 		parsedLayer := parsedLayers.GetOrCreate(layer)
-		ps, err := layer.GetDefinitions().GatherParametersFromMap(v, true, options...)
+		ps, err := layer.GetDefinitions().GatherFieldsFromMap(v, true, options...)
 		if err != nil {
 			return err
 		}
-		_, err = parsedLayer.Parameters.MergeAsDefault(ps)
+		_, err = parsedLayer.Fields.MergeAsDefault(ps)
 		if err != nil {
 			return err
 		}
@@ -190,12 +190,12 @@ func updateFromEnv(
 					inputs = []string{v}
 				}
 
-				pp, err := p.ParseParameter(inputs, opts...)
+				pp, err := p.ParseField(inputs, opts...)
 				if err != nil {
 					return err
 				}
 				// Preserve parse log/metadata when updating parsed fields.
-				if err := parsedLayer.Parameters.UpdateWithLog(p.Name, p, pp.Value, pp.Log...); err != nil {
+				if err := parsedLayer.Fields.UpdateWithLog(p.Name, p, pp.Value, pp.Log...); err != nil {
 					return err
 				}
 			}
@@ -232,7 +232,7 @@ func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, p
 			return err
 		}
 
-		_, err = parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, p
 			return err
 		}
 
-		_, err = parsedLayer.Parameters.Merge(ps)
+		_, err = parsedLayer.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}

@@ -14,16 +14,16 @@ func (pds *Definitions) GatherFlagsFromViper(
 	onlyProvided bool,
 	prefix string,
 	options ...ParseOption,
-) (*ParsedParameters, error) {
+) (*FieldValues, error) {
 	warnGatherViperParamsOnce.Do(func() {
 		log.Warn().Msg("fields.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
 	})
-	ret := NewParsedParameters()
+	ret := NewFieldValues()
 
 	for v := pds.Oldest(); v != nil; v = v.Next() {
 		p := v.Value
 
-		parsed := &ParsedParameter{
+		parsed := &FieldValue{
 			Definition: p,
 		}
 

@@ -92,21 +92,21 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	// TODO(manuel, 2023-12-28) This should be moved to somewhere outside of the cobra parsing, I think
 	// This means we'd have to store if a flag was changed in the parsed layer
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
-		parsedFilter, ok := l.Parameters.Get("filter")
+		parsedFilter, ok := l.Fields.Get("filter")
 		options_ := append(options, fields.WithSource("override-fields-filter"))
 		if !ok {
 			pd, ok := f.Definitions.Get("filter")
 			if !ok {
 				return nil, errors.New("Failed to find default filter parameter definition")
 			}
-			p := &fields.ParsedParameter{
+			p := &fields.FieldValue{
 				Definition: pd,
 			}
 			err := p.Update([]string{}, options_...)
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to update filter parameter")
 			}
-			l.Parameters.Set("filter", p)
+			l.Fields.Set("filter", p)
 		} else {
 			err := parsedFilter.Update([]string{}, options_...)
 			if err != nil {
@@ -120,7 +120,7 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 
 func NewFieldsFilterSettings(glazedLayer *values.SectionValues) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedLayer.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, err
 	}

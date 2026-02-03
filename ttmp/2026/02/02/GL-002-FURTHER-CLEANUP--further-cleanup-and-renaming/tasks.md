@@ -16,10 +16,13 @@
 - [x] Generate symbol inventory for all non-ttmp files mentioning parameter/layer.
 - [x] Rename `AddLayerToCobraCommand` -> `AddSectionToCobraCommand` (definitions + call sites).
 - [x] Store temporary scripts in ticket `scripts/` (inventory + audit tooling).
-- [ ] Expand migration/refactor tool with Layer→Section + Parameter→Field identifier renames (no compat).
-- [ ] Run refactor tool across Go sources and fix compile errors.
-- [ ] Rename files and directories containing `layer`/`parameter` in their names (code + docs + examples).
-- [ ] Update docs/tutorials/examples/prompto/pinocchio content to remove `layer`/`parameter` vocabulary.
-- [ ] Update tests and fixtures that embed `layer`/`parameter`.
+- [x] Expand migration/refactor tooling to rename ParsedParameter(s) → FieldValue(s) and helper APIs.
+- [x] Rename `fields` parsed value types + helpers (FieldValue(s), Decode helpers) and update call sites.
+- [x] Rename `values` API surface to Section/Field naming (fields, options, accessors, errors).
+- [ ] Rename pattern mapper config (TargetParameter → TargetField, YAML/JSON tags, files, tests).
+- [ ] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.
+- [ ] Rename files/dirs containing `layer` or `parameter` in names (code + docs + examples).
+- [ ] Update docs/tutorials/examples/prompto/pinocchio to remove `layer`/`parameter` vocabulary.
+- [ ] Update fixtures/YAML/README/changelogs that embed old naming.
 - [ ] Re-run `go test ./...` (and linters if required by hooks).
 - [ ] Update diary + changelog + index, then commit and push.
