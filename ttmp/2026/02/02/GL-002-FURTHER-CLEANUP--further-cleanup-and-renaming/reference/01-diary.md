@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:39:27-05:00
+LastUpdated: 2026-02-02T19:43:27-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -181,4 +181,40 @@ rg -n "glazed\.parameter"
 rg -n -i "parameter|layer" -g '!ttmp/**' > ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
 mkdir -p ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis
 go run ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/rename_glazed_api.go --root cmd/examples --write --report ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-examples-rename-report.json
+```
+
+## Step 4: Commit tag migration and finalize tasks
+
+I committed the struct tag migration changes, recorded the task completion, and verified hooks passed. This locks the tag rename and the tooling updates into the repo history.
+
+### Prompt Context
+
+**User prompt (verbatim):** "- use \"glazed:\" for struct tags\n\nNow create detailed tasks to complete the migration, be extensive and exhaustive, apply the AST porting tooling to the examples, etc... \n\nAdd tasks, then work on them step by step, keep a detailed diary as you go, check task off, commit to git."
+
+**Assistant interpretation:** Finalize the work by committing changes and marking tasks complete.
+
+**Inferred user intent:** Ensure the migration work is fully checked in and tasks reflect completion.
+
+**Commit (code):**
+- e4cd9f3 — "Refactor: switch struct tags to glazed"
+- 24d7f57 — "Docs: mark GL-002 tasks complete"
+
+### What I did
+- Committed the tag migration and tooling updates.
+- Recorded task completion in the ticket tasks list.
+
+### Why
+- The user explicitly requested a commit and checked-off tasks.
+
+### What worked
+- Pre-commit hooks (tests + lint + govulncheck) completed successfully.
+
+### What didn't work
+- The first commit attempt timed out during hooks; reran with a longer timeout.
+
+### Technical details
+
+```bash
+git commit -m "Refactor: switch struct tags to glazed"
+git commit -m "Docs: mark GL-002 tasks complete"
 ```
