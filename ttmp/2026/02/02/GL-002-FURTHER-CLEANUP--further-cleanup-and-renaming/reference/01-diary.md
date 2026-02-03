@@ -1112,3 +1112,68 @@ The goal was to move from a narrative postmortem to a reusable, evidence-backed 
 git show 6844cbf --stat
 git show 8a9c26e --stat
 ```
+
+## Step 16: Add full appendix and re-upload ticket bundle
+
+I generated a full appendix for the GL-002 postmortem that includes commit lists, file renames, symbol mappings, and script inventories. I used a new ticket script to build the appendix from git metadata and the rename YAML, then re-sanitized the bundle and uploaded a new PDF to reMarkable.
+
+This step focused on making the postmortem fully traceable and ensuring the updated bundle (with the new appendix) was available on the tablet without overwriting the prior upload.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Add the full appendix, then, upload the ticket bundle to remarkable."
+
+**Assistant interpretation:** Expand the postmortem document with a comprehensive appendix of changes and re-upload the ticket bundle to reMarkable.
+
+**Inferred user intent:** Ensure the postmortem is exhaustive and the latest bundle (with appendices) is available for review.
+
+**Commit (code):** e455738 — "Docs: add postmortem appendix + update bundle script"
+
+### What I did
+- Added a new script to generate a postmortem appendix from git history, rename map, and ticket scripts.
+- Fixed repo-root detection in the appendix script and regenerated the appendices.
+- Updated the bundle sanitizer to include the postmortem document.
+- Re-generated sanitized markdown under `/tmp/remarkable-gl-002` and uploaded a new bundle as `GL-002 Further Cleanup v2.pdf`.
+
+### Why
+- The postmortem needed a full appendix with concrete change listings, and the existing bundle required an updated PDF that includes the appendix.
+
+### What worked
+- The appendix script successfully injected a complete Appendix section into the postmortem.
+- The sanitized bundle uploaded successfully to `/ai/2026/02/03/GL-002-FURTHER-CLEANUP`.
+
+### What didn't work
+- Initial appendix script runs failed due to incorrect repo-root calculation, defaulting to `origin/main` and breaking git commands.
+- The first upload attempt was skipped because the original document already existed; a second upload used a new name.
+
+### What I learned
+- A deterministic `repo_root()` function is essential for scripted git introspection.
+
+### What was tricky to build
+- Rebuilding the appendix without duplicating sections required replacing content under the `## Appendices` marker safely.
+
+### What warrants a second pair of eyes
+- Confirm the appendix listings (renames and symbol map) match the intended commit range and mapping file.
+
+### What should be done in the future
+- Consider a single shared utility for all ticket scripts to prevent repeated path mistakes.
+
+### Code review instructions
+- Review `ttmp/.../analysis/04-postmortem-gl-002-refactor-and-tooling.md` for the new appendices.
+- Review `ttmp/.../scripts/26-build-postmortem-appendix.py` and `ttmp/.../scripts/25-sanitize-remarkable-bundle.py`.
+
+### Technical details
+
+```bash
+python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/26-build-postmortem-appendix.py
+python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+remarquee upload bundle /tmp/remarkable-gl-002/README.md \
+  /tmp/remarkable-gl-002/design-doc/01-further-cleanup-and-renaming-plan.md \
+  /tmp/remarkable-gl-002/analysis/01-exhaustive-parameter-layer-audit.md \
+  /tmp/remarkable-gl-002/analysis/02-parameter-layer-symbol-inventory.md \
+  /tmp/remarkable-gl-002/analysis/03-layer-parameter-inventory.md \
+  /tmp/remarkable-gl-002/analysis/04-postmortem-gl-002-refactor-and-tooling.md \
+  /tmp/remarkable-gl-002/sources/01-glazed-cleanup-notes.md \
+  /tmp/remarkable-gl-002/reference/01-diary.md \
+  --name "GL-002 Further Cleanup v2" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
+```
