@@ -140,7 +140,7 @@ func (pl *Schema) GetAllDefinitions() *fields.Definitions {
 func (pl *Schema) AddToCobraCommand(cmd *cobra.Command) error {
 	return pl.ForEachE(func(_ string, v Section) error {
 		if v.(CobraSection) != nil {
-			err := v.(CobraSection).AddLayerToCobraCommand(cmd)
+			err := v.(CobraSection).AddSectionToCobraCommand(cmd)
 			if err != nil {
 				return err
 			}

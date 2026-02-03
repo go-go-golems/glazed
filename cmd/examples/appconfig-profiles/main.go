@@ -150,5 +150,5 @@ func addLayer(cmd *cobra.Command, layer schema.Section) error {
 	if !ok {
 		return errors.Errorf("layer %s is not a CobraSection", layer.GetSlug())
 	}
-	return cobraLayer.AddLayerToCobraCommand(cmd)
+	return cobraLayer.AddSectionToCobraCommand(cmd)
 }

@@ -59,7 +59,7 @@ func NewFieldsFiltersParameterLayer(options ...schema.SectionOption) (*FieldsFil
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command) error {
+func (f *FieldsFiltersParameterLayer) AddSectionToCobraCommand(cmd *cobra.Command) error {
 	defaults := &FieldsFilterFlagsDefaults{}
 	err := f.InitializeStructFromParameterDefaults(defaults)
 	if err != nil {
@@ -76,7 +76,7 @@ func (f *FieldsFiltersParameterLayer) AddLayerToCobraCommand(cmd *cobra.Command)
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
 
-	return f.SectionImpl.AddLayerToCobraCommand(cmd)
+	return f.SectionImpl.AddSectionToCobraCommand(cmd)
 }
 
 func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(

@@ -39,7 +39,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 	desc := CommandDescription{
 		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
 	}
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
@@ -79,7 +79,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -128,7 +128,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	desc := CommandDescription{
 		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
 	}
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -176,7 +176,7 @@ func TestOneOptionalArgument(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -214,7 +214,7 @@ func TestDefaultIntValue(t *testing.T) {
 	desc := CommandDescription{
 		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
 	}
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	defaultArguments := desc.GetDefaultArguments()
@@ -269,7 +269,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 			),
 		)
 		require.Nil(t, err)
-		err = defaultLayer.AddLayerToCobraCommand(cmd)
+		err = defaultLayer.AddSectionToCobraCommand(cmd)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
 		}
@@ -290,7 +290,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "blop"}))
@@ -313,7 +313,7 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
@@ -329,7 +329,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -351,7 +351,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -392,7 +392,7 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
@@ -408,7 +408,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"1", "2"}))
@@ -433,7 +433,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -458,7 +458,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -483,7 +483,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
@@ -507,7 +507,7 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddLayerToCobraCommand(cmd)
+	err = defaultLayer.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
@@ -611,7 +611,7 @@ func testCommandParseHelper(
 	defaultLayer_, ok := defaultLayer.(schema.CobraSection)
 	require.True(t, ok)
 
-	err := defaultLayer_.AddLayerToCobraCommand(cmd)
+	err := defaultLayer_.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	cmd.SetArgs(expected.Args)

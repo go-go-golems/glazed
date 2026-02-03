@@ -81,7 +81,7 @@ func init() {
 		panic("glazed layer is not a CobraSection")
 	}
 
-	err = cobraLayer.AddLayerToCobraCommand(DocsCmd)
+	err = cobraLayer.AddSectionToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

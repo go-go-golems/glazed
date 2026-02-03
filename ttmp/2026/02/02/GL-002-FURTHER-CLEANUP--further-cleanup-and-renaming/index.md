@@ -16,6 +16,8 @@ RelatedFiles:
       Note: Exhaustive repo scan for parameter/layer mentions
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-examples-rename-report.json
       Note: AST migration run report (examples)
+    - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md
+      Note: Go symbol inventory for parameter/layer identifiers
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md
       Note: Primary renaming plan
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/sources/01-glazed-cleanup-notes.md
@@ -24,10 +26,11 @@ RelatedFiles:
       Note: Updated parameter/layer inventory (non-ttmp)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:56:20-05:00
+LastUpdated: 2026-02-02T20:25:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

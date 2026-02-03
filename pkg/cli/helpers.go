@@ -62,7 +62,7 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 		return err
 	}
 
-	return gpl.AddLayerToCobraCommand(cmd)
+	return gpl.AddSectionToCobraCommand(cmd)
 }
 
 func printParsedParameters(parsedLayers *values.Values) {

@@ -110,7 +110,7 @@ func (g *GlazedParameterLayers) GetDefinitions() *fields.Definitions {
 	return ret
 }
 
-func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error {
+func (g *GlazedParameterLayers) AddSectionToCobraCommand(cmd *cobra.Command) error {
 	layers := []schema.CobraSection{
 		g.OutputParameterLayer,
 		g.FieldsFiltersParameterLayer,
@@ -124,7 +124,7 @@ func (g *GlazedParameterLayers) AddLayerToCobraCommand(cmd *cobra.Command) error
 	}
 
 	for _, layer := range layers {
-		if err := layer.AddLayerToCobraCommand(cmd); err != nil {
+		if err := layer.AddSectionToCobraCommand(cmd); err != nil {
 			return err
 		}
 	}

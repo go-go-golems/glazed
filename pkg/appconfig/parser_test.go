@@ -195,7 +195,7 @@ func TestParser_Parse_Precedence_CobraFlagsOverrideEnv(t *testing.T) {
 	// IMPORTANT: appconfig.Parser expects the layer flags to already be on the cobra command.
 	cobraLayer, ok := layer.(schema.CobraSection)
 	require.True(t, ok, "test layer must implement schema.CobraSection")
-	require.NoError(t, cobraLayer.AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, cobraLayer.AddSectionToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--host", "from-flag"})
 	require.NoError(t, rootCmd.Execute())

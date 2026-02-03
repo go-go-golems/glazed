@@ -213,10 +213,10 @@ func (p *SectionImpl) InitializeStructFromParameterDefaults(s interface{}) error
 	return err
 }
 
-// AddLayerToCobraCommand adds all flags of the layer to the given Cobra command.
+// AddSectionToCobraCommand adds all flags of the section to the given Cobra command.
 // It also creates a flag group representing the layer and adds it to the command.
 // If the layer has a prefix, the flags are added with that prefix.
-func (p *SectionImpl) AddLayerToCobraCommand(cmd *cobra.Command) error {
+func (p *SectionImpl) AddSectionToCobraCommand(cmd *cobra.Command) error {
 	err := p.Definitions.AddParametersToCobraCommand(cmd, p.Prefix)
 	if err != nil {
 		return err

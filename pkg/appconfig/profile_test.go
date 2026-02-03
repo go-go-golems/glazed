@@ -160,10 +160,10 @@ prod:
 	// Ensure flags exist so Cobra accepts them.
 	psLayer, err := cli.NewProfileSettingsLayer()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psLayer.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
 	// Also add the redis layer flags (not strictly needed for this test, but keeps the pattern consistent).
-	require.NoError(t, layer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, layer.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--profile", "prod"})
 	require.NoError(t, rootCmd.Execute())
@@ -215,10 +215,10 @@ func TestWithProfile_Precedence_FlagsOverrideEnvConfigProfilesDefaults(t *testin
 	}
 
 	// Ensure flags exist so Cobra accepts them.
-	require.NoError(t, layer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, layer.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 	psLayer, err := cli.NewProfileSettingsLayer()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(schema.CobraSection).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psLayer.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--host", "from-flag"})
 	require.NoError(t, rootCmd.Execute())

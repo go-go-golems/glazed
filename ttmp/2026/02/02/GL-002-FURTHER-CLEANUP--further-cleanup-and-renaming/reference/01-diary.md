@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:57:48-05:00
+LastUpdated: 2026-02-02T20:25:08-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -459,4 +459,154 @@ PY
 docmgr doc relate --ticket GL-002-FURTHER-CLEANUP --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/01-exhaustive-parameter-layer-audit.md:Exhaustive repo scan for parameter/layer mentions"
 docmgr changelog update --ticket GL-002-FURTHER-CLEANUP --entry "Add exhaustive parameter/layer audit report" --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/01-exhaustive-parameter-layer-audit.md:Audit report covering all files"
 go test ./...
+```
+
+## Step 6: Build symbol inventory and start renaming layer terminology
+
+I generated a symbol inventory for all non-ttmp files that still mention `parameter` or `layer`, added a cleanup task list, and began the first public API rename by switching `AddLayerToCobraCommand` to `AddSectionToCobraCommand` across the codebase. The symbol inventory report is linked from the ticket index to guide the rest of the cleanup sweep.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, what are the symbols mentioned in those files? THen yes, make a cleanup list and tackle that. Probably you can make some progress with the refactoring tool."
+
+**User prompt (verbatim):** "Also, keep your frequent diary, and as you start cleaning up, make a detailed lists of tasks so you can go through systematically and check things off and commit them to git as you go."
+
+**Assistant interpretation:** Provide a concrete symbol inventory for remaining `parameter`/`layer` mentions, create an actionable cleanup list, and start removing the old naming from code.
+
+**Inferred user intent:** See exactly what still uses the legacy vocabulary and get a systematic, committed cleanup underway.
+
+**Commit (code):** Pending
+
+### What I did
+- Generated a Go identifier inventory for non-ttmp files into a new analysis report.
+- Added a cleanup task list to `tasks.md` and marked the symbol inventory/first rename as done.
+- Renamed `AddLayerToCobraCommand` to `AddSectionToCobraCommand` (definitions + call sites).
+- Linked the new inventory in the ticket index and updated the changelog entry.
+
+### Why
+- The user asked for a precise list of remaining symbols and to begin removing legacy vocabulary systematically.
+
+### What worked
+- The inventory script produced a per-file identifier list and a global symbol list.
+
+### What didn't work
+- The first attempt to generate the symbol inventory doc failed because `rg` returned a non-zero exit code; reran with a safer subprocess call.
+
+### What I learned
+- Many legacy names are still embedded in public method names and comments, so the next sweep should prioritize exported API renames.
+
+### What was tricky to build
+- Extracting identifiers without pulling in `ttmp` required combining AST parsing for Go symbols with a separate non-ttmp file index.
+
+### What warrants a second pair of eyes
+- The rename map for future steps (Layer→Section, Parameter→Field) should be reviewed to avoid breaking semantically distinct uses.
+
+### What should be done in the future
+- Continue the cleanup pass by expanding the refactor tool and renaming additional exported identifiers.
+
+### Code review instructions
+- Review the inventory report at `glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md`.
+- Verify the rename in `glazed/pkg/cmds/schema/cobra.go` and `glazed/pkg/cmds/schema/layer-impl.go`.
+
+### Technical details
+
+```bash
+docmgr doc add --ticket GL-002-FURTHER-CLEANUP --doc-type analysis --title "Parameter/Layer symbol inventory"
+cat <<'EOF' > /tmp/glazed_symbol_inventory.go
+package main
+
+import (
+    "encoding/json"
+    "flag"
+    "go/ast"
+    "go/parser"
+    "go/token"
+    "io/fs"
+    "os"
+    "path/filepath"
+    "regexp"
+    "sort"
+    "strings"
+)
+
+// ... see /tmp/glazed_symbol_inventory.go in shell history ...
+EOF
+
+go run /tmp/glazed_symbol_inventory.go --root . --out ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.json
+
+python - <<'PY'
+# script that renders the JSON into the analysis markdown file
+PY
+
+python - <<'PY'
+from pathlib import Path
+root = Path('.')
+old = 'AddLayerToCobraCommand'
+new = 'AddSectionToCobraCommand'
+for path in root.rglob('*.go'):
+    if '.git' in path.parts or 'ttmp' in path.parts:
+        continue
+    text = path.read_text()
+    if old in text:
+        path.write_text(text.replace(old, new))
+PY
+
+docmgr doc relate --ticket GL-002-FURTHER-CLEANUP --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md:Go symbol inventory for parameter/layer identifiers"
+docmgr changelog update --ticket GL-002-FURTHER-CLEANUP --entry "Add parameter/layer symbol inventory and begin renames" --file-note "/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/cobra.go:Renamed AddLayerToCobraCommand -> AddSectionToCobraCommand"
+```
+
+## Step 7: Move temporary scripts into ticket scripts folder
+
+I moved the temporary scripts used to generate the audit and symbol inventory into the ticket’s `scripts/` directory, as requested. This makes the cleanup process traceable and ensures future steps reuse the same tooling.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Btw store all temporary scripts and program in the scripts/ folder of the ticket, not /tmp or inline . That way I can trace your steps. Do so retroactively for scripts you already wrote as well."
+
+**Assistant interpretation:** Store all ad-hoc scripts used so far under the GL-002 ticket’s `scripts/` folder and remove the `/tmp` version.
+
+**Inferred user intent:** Preserve a reproducible record of the tooling used for the cleanup.
+
+**Commit (code):** Pending
+
+### What I did
+- Added the audit generator and symbol inventory tooling to `scripts/`.
+- Moved the symbol inventory Go program from `/tmp` into the ticket folder and removed the `/tmp` copy.
+- Added a dedicated script for the initial `AddLayerToCobraCommand` rename.
+
+### Why
+- The user wants to trace and re-run the steps behind the analysis and refactor work.
+
+### What worked
+- Scripts were captured without changing their behavior.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Capturing scripts early makes later audit and rename steps easier to reproduce.
+
+### What was tricky to build
+- Ensuring we preserved the exact logic from the earlier one-off commands while moving them into versioned scripts.
+
+### What warrants a second pair of eyes
+- Verify that the scripts cover all intended inputs and do not inadvertently skip directories that should be included in future passes.
+
+### What should be done in the future
+- Keep all new ad-hoc scripts under `scripts/` and update diary entries with their paths.
+
+### Code review instructions
+- Review scripts under `glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/`.
+
+### Technical details
+
+```bash
+# added scripts
+scripts/01-exhaustive-parameter-layer-audit.py
+scripts/02-symbol-inventory.go
+scripts/03-render-symbol-inventory.py
+scripts/04-rename-add-layer-to-section.py
+
+# cleanup
+rm /tmp/glazed_symbol_inventory.go
 ```

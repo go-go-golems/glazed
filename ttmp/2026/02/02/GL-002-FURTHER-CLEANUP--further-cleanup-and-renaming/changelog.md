@@ -33,3 +33,22 @@ Add exhaustive parameter/layer audit report
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/01-exhaustive-parameter-layer-audit.md — Audit report covering all files
 
+
+## 2026-02-02
+
+Add parameter/layer symbol inventory and begin renames
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/cobra.go — Renamed AddLayerToCobraCommand -> AddSectionToCobraCommand
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md — Symbol inventory report
+
+
+## 2026-02-02
+
+Store audit/rename scripts under ticket scripts
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/02-symbol-inventory.go — Symbol inventory tool moved from /tmp
+

@@ -61,7 +61,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		return nil, fmt.Errorf("glazed layer is not a CobraSection")
 	}
 
-	err = cobraLayer.AddLayerToCobraCommand(parseCmd)
+	err = cobraLayer.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
 	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
 
-	err = cobraLayer.AddLayerToCobraCommand(extractCmd)
+	err = cobraLayer.AddSectionToCobraCommand(extractCmd)
 	if err != nil {
 		return nil, err
 	}

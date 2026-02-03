@@ -254,7 +254,7 @@ func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
 			return errors.Errorf("layer %s is not a CobraSection", layer.GetName())
 		}
 
-		err := cobraLayer.AddLayerToCobraCommand(cmd)
+		err := cobraLayer.AddSectionToCobraCommand(cmd)
 		if err != nil {
 			log.Error().Err(err).Str("layer", layer.GetName()).Msg("Could not add layer to cobra command")
 			return err

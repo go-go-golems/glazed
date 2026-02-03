@@ -434,7 +434,7 @@ func init() {
 		panic("glazed layer is not a CobraSection")
 	}
 
-	err = cobraLayer.AddLayerToCobraCommand(parseCmd)
+	err = cobraLayer.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -444,7 +444,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = cobraLayer.AddLayerToCobraCommand(splitByHeadingCmd)
+	err = cobraLayer.AddSectionToCobraCommand(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}

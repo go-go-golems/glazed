@@ -8,7 +8,7 @@ import (
 
 type CobraSection interface {
 	Section
-	// AddLayerToCobraCommand adds all the flags and arguments defined in this layer to the given cobra command.
-	AddLayerToCobraCommand(cmd *cobra.Command) error
+	// AddSectionToCobraCommand adds all the flags and arguments defined in this section to the given cobra command.
+	AddSectionToCobraCommand(cmd *cobra.Command) error
 	ParseLayerFromCobraCommand(cmd *cobra.Command, options ...fields.ParseOption) (*values.SectionValues, error)
 }
