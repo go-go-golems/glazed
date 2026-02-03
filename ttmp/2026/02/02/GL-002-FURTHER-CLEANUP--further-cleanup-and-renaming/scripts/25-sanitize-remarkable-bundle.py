@@ -16,6 +16,8 @@ INPUTS = [
     TICKET_ROOT / "analysis/03-layer-parameter-inventory.md",
     TICKET_ROOT / "analysis/04-postmortem-gl-002-refactor-and-tooling.md",
     TICKET_ROOT / "analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md",
+    TICKET_ROOT / "analysis/06-gl-002-refactor-tooling-review-python-scripts.md",
+    TICKET_ROOT / "analysis/07-engineering-postmortem-gl-002-refactor-execution.md",
     TICKET_ROOT / "sources/01-glazed-cleanup-notes.md",
     TICKET_ROOT / "reference/01-diary.md",
     REPO_ROOT / "pkg/doc/tutorials/migrating-to-facade-packages.md",

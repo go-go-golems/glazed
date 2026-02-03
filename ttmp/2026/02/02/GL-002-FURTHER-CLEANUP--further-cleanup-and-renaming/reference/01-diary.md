@@ -1414,3 +1414,60 @@ Then upload the dodcument to remarkable."
 # doc creation + bundling
 python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
 ```
+
+## Step 21: Review Python tooling + engineering postmortem
+
+I added two new analysis documents: one reviewing the Python refactor scripts (strengths, weaknesses, and reusability) and another engineering‑oriented postmortem covering the full GL‑002 execution. I also updated the reMarkable bundle inputs to include these new documents.
+
+This step turns the ad‑hoc scripting and the timeline diary into reusable engineering guidance for future refactor efforts.
+
+### Prompt Context
+
+**User prompt (verbatim):** "don't forget to analyze all the python scripts you did so far as well, and what was good / what was bad / what is useful / what should be reused / what is at least interesting to look at. Add this as a new analysis document and upload to remarkable as well. 
+
+Finally, make a very detailed engineering-oriented version of the diary as a postmortem of the entirety of porting and doing this refactor. You'll need to go back in time in the diary and such to really look at what happened, since it was so much and previous colleagues worked on it and all"
+
+**Assistant interpretation:** Create a dedicated analysis of the Python scripts and an engineering postmortem based on the diary, then include them in the reMarkable bundle.
+
+**Inferred user intent:** Capture tooling lessons and execution lessons in durable, reviewable documents.
+
+**Commit (code):** TBD — "Docs: add tooling review + engineering postmortem"
+
+### What I did
+- Authored two analysis documents:
+  - `analysis/06-gl-002-refactor-tooling-review-python-scripts.md`
+  - `analysis/07-engineering-postmortem-gl-002-refactor-execution.md`
+- Related the new documents to key scripts and the diary via docmgr.
+- Updated the bundle sanitizer to include the new analysis docs.
+
+### Why
+- The refactor produced a large set of scripts and a long diary; consolidating them into engineering‑oriented analyses makes the work reusable.
+
+### What worked
+- The new tooling review captures the utility and limitations of each Python script.
+- The engineering postmortem provides a phase‑oriented narrative with key incidents and lessons.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The diary is rich enough to reconstruct an execution timeline, but a dedicated postmortem is much more accessible for engineering review.
+
+### What was tricky to build
+- Balancing completeness with readability required consolidating many diary entries into phase summaries.
+
+### What warrants a second pair of eyes
+- Validate that the script review accurately characterizes which scripts are reusable vs. one‑off.
+
+### What should be done in the future
+- Treat the tooling review as a living document when scripts evolve or are consolidated.
+
+### Code review instructions
+- Review the new analysis docs in `ttmp/.../analysis/06-*.md` and `07-*.md`.
+- Review `ttmp/.../scripts/25-sanitize-remarkable-bundle.py` for new bundle inputs.
+
+### Technical details
+
+```bash
+# no commands executed yet for this step; bundle update is pending upload
+```
