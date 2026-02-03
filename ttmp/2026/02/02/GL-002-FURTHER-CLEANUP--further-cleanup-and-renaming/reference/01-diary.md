@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:43:27-05:00
+LastUpdated: 2026-02-02T19:46:13-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -135,7 +135,7 @@ I updated the codebase and docs to use `glazed:` struct tags, removed any remain
 
 ### Prompt Context
 
-**User prompt (verbatim):** "- use \"glazed:\" for struct tags\n\nNow create detailed tasks to complete the migration, be extensive and exhaustive, apply the AST porting tooling to the examples, etc... \n\nAdd tasks, then work on them step by step, keep a detailed diary as you go, check task off, commit to git."
+**User prompt (verbatim):** (see Step 3)
 
 **Assistant interpretation:** Enforce `glazed:` tags everywhere, update the migration tool to handle tags, apply it to examples, track work in the ticket tasks/diary, and prepare for a commit after validation.
 
