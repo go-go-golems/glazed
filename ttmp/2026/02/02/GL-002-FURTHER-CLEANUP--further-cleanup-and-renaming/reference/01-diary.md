@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T20:25:08-05:00
+LastUpdated: 2026-02-02T20:27:50-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -141,7 +141,7 @@ I updated the codebase and docs to use `glazed:` struct tags, removed any remain
 
 **Inferred user intent:** Remove any lingering tag compatibility and make the migration tooling usable for future sweeps.
 
-**Commit (code):** Pending
+**Commit (code):** 1480995 — "Refactor: inventory symbols and rename AddLayerToCobraCommand"
 
 ### What I did
 - Swapped struct tag usage and tag lookup logic to `glazed:` throughout code and docs.
@@ -231,7 +231,7 @@ I removed the stray `glaze` binary, verified compilation again, and generated a 
 
 **Inferred user intent:** Ensure nothing is missed in the rename cleanup and provide a definitive, shareable audit artifact.
 
-**Commit (code):** Pending
+**Commit (code):** 1480995 — "Refactor: inventory symbols and rename AddLayerToCobraCommand"
 
 ### What I did
 - Removed the stray `glaze` binary from the repo root.
