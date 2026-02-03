@@ -79,3 +79,52 @@ docmgr ticket close --ticket GL-001-ADD-MIGRATION-DOCS
 docmgr ticket create-ticket --ticket GL-002-FURTHER-CLEANUP --title "Further cleanup and renaming" --topics glazed,api-design,renaming,cleanup
 rg -n -i "parameter|layer" . > glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
 ```
+
+## Step 2: Commit and Upload Renaming Plan
+
+I committed the new GL-002 materials and uploaded the design document to the reMarkable tablet as requested. This ensures the plan is versioned and accessible for external review.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Commit the new ticket artifacts and upload the design document after committing.
+
+**Inferred user intent:** Make the plan durable and shareable for review outside the repo.
+
+**Commit (code):** bf850ec — "Docs: add GL-002 renaming plan and notes"
+
+### What I did
+- Committed the GL-002 ticket artifacts.
+- Uploaded the design doc PDF to `/ai/2026/02/02/GL-002-FURTHER-CLEANUP`.
+
+### Why
+- The user requested a committed artifact and a reMarkable upload for review.
+
+### What worked
+- The upload succeeded via `remarquee upload md`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- `remarquee upload md` does not support a `--name` flag; filename derives from the markdown basename.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Confirm `ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md` content.
+
+### Technical details
+
+```bash
+git commit -m "Docs: add GL-002 renaming plan and notes"
+remarquee upload md /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md --remote-dir "/ai/2026/02/02/GL-002-FURTHER-CLEANUP"
+```
