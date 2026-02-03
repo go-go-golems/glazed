@@ -118,3 +118,73 @@ GOWORK=off gopls codelens ttmp/.../scripts/gopls-sandbox/main.go > ttmp/.../sour
 gopls stats -anon > ttmp/.../sources/10-gopls-stats-anon.json
 gopls api-json > ttmp/.../sources/11-gopls-api.json
 ```
+
+## Step 2: Upload report/playbook to reMarkable and close ticket
+
+I uploaded the gopls investigation report and playbook as standalone PDFs to the reMarkable folder for GL‑004. I then closed the ticket using docmgr and committed the ticket status updates.
+
+This step completes the delivery and marks the ticket as done while preserving an audit trail of the upload and closure.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. 2."
+
+**Assistant interpretation:** Perform the two suggested next steps: upload the GL‑004 docs to reMarkable, and close the ticket.
+
+**Inferred user intent:** Get the new gopls documents on the device and close out the ticket cleanly.
+
+**Commit (code):** 3f621f1 — "Docs: close GL-004 ticket"
+
+### What I did
+- Ran a dry‑run upload for the report + playbook.
+- Uploaded the report; the initial multi‑file upload timed out after the first file.
+- Verified remote contents and uploaded the playbook separately.
+- Closed the ticket with `docmgr ticket close`.
+
+### Why
+- The user requested immediate delivery and ticket closure.
+
+### What worked
+- Both PDFs uploaded successfully to `/ai/2026/02/03/GL-004-GO-PLS-INVESTIGATION`.
+- `docmgr ticket close` updated ticket status and index metadata.
+
+### What didn't work
+- The multi‑file `remarquee upload md` timed out after completing the first file:
+  - Output: `command timed out after 10012 milliseconds` (report uploaded, playbook missing)
+
+### What I learned
+- For reliability, uploading multiple files in one `remarquee upload md` call may need increased timeout or individual uploads.
+
+### What was tricky to build
+- The timeout required verifying remote state before retrying to avoid duplicate uploads.
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- If timeouts repeat, switch to single‑file uploads by default or adjust timeout settings.
+
+### Code review instructions
+- N/A (operational upload + ticket metadata only).
+
+### Technical details
+
+```bash
+remarquee upload md --dry-run \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/analysis/01-gopls-cli-investigation-report.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/playbook/01-gopls-refactoring-playbook.md \
+  --remote-dir "/ai/2026/02/03/GL-004-GO-PLS-INVESTIGATION"
+
+remarquee upload md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/analysis/01-gopls-cli-investigation-report.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/playbook/01-gopls-refactoring-playbook.md \
+  --remote-dir "/ai/2026/02/03/GL-004-GO-PLS-INVESTIGATION"
+
+remarquee cloud ls /ai/2026/02/03/GL-004-GO-PLS-INVESTIGATION --long --non-interactive
+
+remarquee upload md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/playbook/01-gopls-refactoring-playbook.md \
+  --remote-dir "/ai/2026/02/03/GL-004-GO-PLS-INVESTIGATION"
+
+docmgr ticket close --ticket GL-004-GO-PLS-INVESTIGATION
+```
