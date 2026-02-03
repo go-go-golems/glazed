@@ -87,7 +87,7 @@ func main() {
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		demo,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			SkipCommandSettingsLayer: true,
+			SkipCommandSettingsSection: true,
 			// Adjust path to your environment if needed
 			ConfigPath: "cmd/examples/config-single/config.yaml",
 		}),

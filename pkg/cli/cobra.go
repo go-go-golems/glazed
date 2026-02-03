@@ -25,7 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type CobraRunFunc func(ctx context.Context, parsedLayers *values.Values) error
+type CobraRunFunc func(ctx context.Context, parsedValues *values.Values) error
 
 func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	var verbs []string
@@ -48,8 +48,8 @@ func runCobraCommand(
 	cfg *commandBuildConfig,
 ) {
 	cmd.Run = func(cmd *cobra.Command, args []string) {
-		// Parse layers
-		parsedLayers, err := parser.Parse(cmd, args)
+		// Parse sections into values
+		parsedValues, err := parser.Parse(cmd, args)
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			_ = cmd.Help()
@@ -59,16 +59,16 @@ func runCobraCommand(
 
 		// Minimal command settings: debug flags
 		commandSettings := &CommandSettings{}
-		if minimalLayer, ok := parsedLayers.Get(CommandSettingsSlug); ok {
-			var printYAML, printParsedParameters_, printSchema bool
-			err = minimalLayer.DecodeInto(commandSettings)
+		if commandSettingsValues, ok := parsedValues.Get(CommandSettingsSlug); ok {
+			var printYAML, shouldPrintParsedFields, printSchema bool
+			err = commandSettingsValues.DecodeInto(commandSettings)
 			cobra.CheckErr(err)
 			printYAML = commandSettings.PrintYAML
-			printParsedParameters_ = commandSettings.PrintParsedParameters
+			shouldPrintParsedFields = commandSettings.PrintParsedFields
 			printSchema = commandSettings.PrintSchema
 
-			if printParsedParameters_ {
-				printParsedParameters(parsedLayers)
+			if shouldPrintParsedFields {
+				printParsedFields(parsedValues)
 				return
 			}
 			if printYAML {
@@ -88,9 +88,9 @@ func runCobraCommand(
 		}
 
 		// Create command settings: cliopatra, alias, create
-		if createLayer, ok := parsedLayers.Get(CreateCommandSettingsSlug); ok {
+		if createSectionValues, ok := parsedValues.Get(CreateCommandSettingsSlug); ok {
 			createSettings := &CreateCommandSettings{}
-			err = createLayer.DecodeInto(createSettings)
+			err = createSectionValues.DecodeInto(createSettings)
 			cobra.CheckErr(err)
 
 			if createSettings.CreateCliopatra != "" {
@@ -100,7 +100,7 @@ func runCobraCommand(
 				}
 				p := cliopatra.NewProgramFromCapture(
 					s.Description(),
-					parsedLayers,
+					parsedValues,
 					cliopatra.WithVerbs(verbs[1:]...),
 					cliopatra.WithName(createSettings.CreateCliopatra),
 					cliopatra.WithPath(verbs[0]),
@@ -146,12 +146,12 @@ func runCobraCommand(
 			}
 
 			if createSettings.CreateCommand != "" {
-				layers_ := s.Description().Layers.Clone()
+				schema_ := s.Description().Layers.Clone()
 				cmdDesc := &cmds.CommandDescription{
 					Name:   createSettings.CreateCommand,
 					Short:  s.Description().Short,
 					Long:   s.Description().Long,
-					Layers: layers_,
+					Layers: schema_,
 				}
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
@@ -184,14 +184,14 @@ func runCobraCommand(
 				cobra.CheckErr(errors.New("Glaze mode requested but command does not implement GlazeCommand"))
 				return
 			}
-			glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+			glazedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
 			if !ok {
-				cobra.CheckErr(errors.New("glazed layer not found"))
+				cobra.CheckErr(errors.New("glazed section not found"))
 				return
 			}
-			gp, err := settings.SetupTableProcessor(glazedLayer)
+			gp, err := settings.SetupTableProcessor(glazedSectionValues)
 			cobra.CheckErr(err)
-			_, err = settings.SetupProcessorOutput(gp, glazedLayer, os.Stdout)
+			_, err = settings.SetupProcessorOutput(gp, glazedSectionValues, os.Stdout)
 			cobra.CheckErr(err)
 
 			// Add signal handling for all command types
@@ -200,7 +200,7 @@ func runCobraCommand(
 			ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 			defer stop()
 
-			err = glazeCmd.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
+			err = glazeCmd.RunIntoGlazeProcessor(ctx, parsedValues, gp)
 			var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
 			if errors.As(err, &exitWithoutGlazeError) {
 				return
@@ -221,7 +221,7 @@ func runCobraCommand(
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 		defer stop()
 
-		err = runFunc(ctx, parsedLayers)
+		err = runFunc(ctx, parsedValues)
 		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
 			os.Exit(0)
 		}
@@ -248,20 +248,20 @@ func BuildCobraCommandFromCommandAndFunc(
 
 	// Start with the original description
 	description := s.Description()
-	// If the command implements GlazeCommand, ensure a glazed parameter layer is present
+	// If the command implements GlazeCommand, ensure a glazed section is present
 	if _, isGlazeCmd := s.(cmds.GlazeCommand); isGlazeCmd {
-		originalLayers := description.Layers
-		glazedLayers := originalLayers.Clone()
-		if _, ok := glazedLayers.Get(settings.GlazedSlug); !ok {
-			glLayer, err := settings.NewGlazedParameterLayers()
+		originalSchema := description.Layers
+		glazedSchema := originalSchema.Clone()
+		if _, ok := glazedSchema.Get(settings.GlazedSlug); !ok {
+			glazedSection, err := settings.NewGlazedParameterLayers()
 			if err != nil {
 				return nil, err
 			}
-			glazedLayers.Set(settings.GlazedSlug, glLayer)
+			glazedSchema.Set(settings.GlazedSlug, glazedSection)
 		}
 		// clone the description so we don't mutate the original
 		newDesc := description.Clone(false)
-		newDesc.Layers = glazedLayers
+		newDesc.Layers = glazedSchema
 		description = newDesc
 	}
 	cmd := NewCobraCommandFromCommandDescription(description)
@@ -274,7 +274,7 @@ func BuildCobraCommandFromCommandAndFunc(
 		}
 	}
 	// Create parser with configured parser settings
-	cobraParser, err := NewCobraParserFromLayers(description.Layers, &cfg.ParserCfg)
+	cobraParser, err := NewCobraParserFromSections(description.Layers, &cfg.ParserCfg)
 	if err != nil {
 		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
 		return nil, err
@@ -381,9 +381,9 @@ func BuildCobraCommandFromCommand(
 	opts ...CobraOption,
 ) (*cobra.Command, error) {
 	// Generic run function for classic mode (WriterCommand or BareCommand)
-	runFunc := func(ctx context.Context, parsedLayers *values.Values) error {
+	runFunc := func(ctx context.Context, parsedValues *values.Values) error {
 		if writerCmd, ok := s.(cmds.WriterCommand); ok {
-			err := writerCmd.RunIntoWriter(ctx, parsedLayers, os.Stdout)
+			err := writerCmd.RunIntoWriter(ctx, parsedValues, os.Stdout)
 			if _, exitWithoutGlaze := err.(*cmds.ExitWithoutGlazeError); exitWithoutGlaze {
 				return err
 			}
@@ -393,7 +393,7 @@ func BuildCobraCommandFromCommand(
 			return nil
 		}
 		if bareCmd, ok := s.(cmds.BareCommand); ok {
-			err := bareCmd.Run(ctx, parsedLayers)
+			err := bareCmd.Run(ctx, parsedValues)
 			if _, exitWithoutGlaze := err.(*cmds.ExitWithoutGlazeError); exitWithoutGlaze {
 				return err
 			}
@@ -499,11 +499,10 @@ func WithDefaultToGlaze() CobraOption {
 	}
 }
 
-// Backwards compatibility helpers for old parser options
-// WithCobraShortHelpLayers sets the layers shown in short help (deprecated)
-func WithCobraShortHelpLayers(layers ...string) CobraOption {
+// WithCobraShortHelpSections sets the sections shown in short help.
+func WithCobraShortHelpSections(sections ...string) CobraOption {
 	return func(c *commandBuildConfig) {
-		c.ParserCfg.ShortHelpLayers = layers
+		c.ParserCfg.ShortHelpSections = sections
 	}
 }
 
@@ -516,48 +515,23 @@ func WithCobraMiddlewaresFunc(fn CobraMiddlewaresFunc) CobraOption {
 	}
 }
 
-// Deprecated: use BuildCobraCommandFromCommand(c, WithDualMode(true)).
-func BuildCobraCommandDualMode(
-	c cmds.Command,
-	_ ...interface{},
-) (*cobra.Command, error) {
-	return BuildCobraCommandFromCommand(c, WithDualMode(true))
-}
-
-// Deprecated wrappers for backwards compatibility with earlier APIs
-// Use BuildCobraCommand or BuildCobraCommand from the unified API instead.
-// Deprecated: use BuildCobraCommand(c, opts...)
-func BuildCobraCommandFromBareCommand(c cmds.BareCommand, opts ...CobraOption) (*cobra.Command, error) {
-	return BuildCobraCommand(c, opts...)
-}
-
-// Deprecated: use BuildCobraCommand(c, opts...)
-func BuildCobraCommandFromWriterCommand(s cmds.WriterCommand, opts ...CobraOption) (*cobra.Command, error) {
-	return BuildCobraCommand(s, opts...)
-}
-
-// Deprecated: use BuildCobraCommand(c, opts...)
-func BuildCobraCommandFromGlazeCommand(cmd_ cmds.GlazeCommand, opts ...CobraOption) (*cobra.Command, error) {
-	return BuildCobraCommand(cmd_, opts...)
-}
-
-// WithSkipCommandSettingsLayer hides the command settings layer flags (deprecated)
-func WithSkipCommandSettingsLayer() CobraOption {
+// WithSkipCommandSettingsSection hides the command settings section flags.
+func WithSkipCommandSettingsSection() CobraOption {
 	return func(c *commandBuildConfig) {
-		c.ParserCfg.SkipCommandSettingsLayer = true
+		c.ParserCfg.SkipCommandSettingsSection = true
 	}
 }
 
-// WithProfileSettingsLayer enables the profile settings layer (deprecated)
-func WithProfileSettingsLayer() CobraOption {
+// WithProfileSettingsSection enables the profile settings section.
+func WithProfileSettingsSection() CobraOption {
 	return func(c *commandBuildConfig) {
-		c.ParserCfg.EnableProfileSettingsLayer = true
+		c.ParserCfg.EnableProfileSettingsSection = true
 	}
 }
 
-// WithCreateCommandSettingsLayer enables the create-command settings layer (deprecated)
-func WithCreateCommandSettingsLayer() CobraOption {
+// WithCreateCommandSettingsSection enables the create-command settings section.
+func WithCreateCommandSettingsSection() CobraOption {
 	return func(c *commandBuildConfig) {
-		c.ParserCfg.EnableCreateCommandSettingsLayer = true
+		c.ParserCfg.EnableCreateCommandSettingsSection = true
 	}
 }

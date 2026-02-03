@@ -10,20 +10,20 @@ import (
 )
 
 type registration[T any] struct {
-	slug  LayerSlug
-	layer schema.Section
-	bind  func(*T) any
+	slug    SectionSlug
+	section schema.Section
+	bind    func(*T) any
 }
 
-// LayerSlug is a distinct type to encourage declaring layer slugs as constants.
+// SectionSlug is a distinct type to encourage declaring section slugs as constants.
 //
 // Example:
 //
-//	const RedisSlug appconfig.LayerSlug = "redis"
-type LayerSlug string
+//	const RedisSlug appconfig.SectionSlug = "redis"
+type SectionSlug string
 
 // Parser is an incremental config boundary:
-// - callers register layers and bind them to sub-struct pointers inside T
+// - callers register sections and bind them to sub-struct pointers inside T
 // - Parse executes a configurable middleware chain and returns a populated T.
 //
 // V1 hydration uses values.DecodeSectionInto, which means fields are only
@@ -49,45 +49,45 @@ func NewParser[T any](options ...ParserOption) (*Parser[T], error) {
 	return p, nil
 }
 
-// Register associates a layer slug and ParameterLayer with a binder that returns
+// Register associates a section slug and schema.Section with a binder that returns
 // a pointer to the corresponding sub-struct inside the grouped settings struct T.
 //
 // Invariants:
 // - slug must be non-empty and unique
-// - layer must be non-nil
+// - section must be non-nil
 // - bind must be non-nil
-// - slug must match layer.GetSlug() (to avoid mismatches between registration keys and parsed layer keys)
-func (p *Parser[T]) Register(slug LayerSlug, layer schema.Section, bind func(*T) any) error {
+// - slug must match section.GetSlug() (to avoid mismatches between registration keys and parsed section keys)
+func (p *Parser[T]) Register(slug SectionSlug, section schema.Section, bind func(*T) any) error {
 	if slug == "" {
 		return errors.New("slug must not be empty")
 	}
-	if layer == nil {
-		return errors.New("layer must not be nil")
+	if section == nil {
+		return errors.New("section must not be nil")
 	}
 	if bind == nil {
 		return errors.New("bind must not be nil")
 	}
-	if layer.GetSlug() != string(slug) {
-		return errors.Errorf("slug %q does not match layer.GetSlug() %q", string(slug), layer.GetSlug())
+	if section.GetSlug() != string(slug) {
+		return errors.Errorf("slug %q does not match section.GetSlug() %q", string(slug), section.GetSlug())
 	}
 	for _, r := range p.regs {
 		if r.slug == slug {
-			return errors.Errorf("layer slug %q already registered", string(slug))
+			return errors.Errorf("section slug %q already registered", string(slug))
 		}
 	}
-	p.regs = append(p.regs, registration[T]{slug: slug, layer: layer, bind: bind})
+	p.regs = append(p.regs, registration[T]{slug: slug, section: section, bind: bind})
 	return nil
 }
 
 // Parse runs the configured middleware chain and returns a populated T.
 func (p *Parser[T]) Parse() (*T, error) {
 	if len(p.regs) == 0 {
-		return nil, errors.New("no layers registered")
+		return nil, errors.New("no sections registered")
 	}
 
-	paramLayers := schema.NewSchema()
+	sectionSchema := schema.NewSchema()
 	for _, r := range p.regs {
-		paramLayers.Set(string(r.slug), r.layer)
+		sectionSchema.Set(string(r.slug), r.section)
 	}
 
 	if len(p.opts.middlewares) == 0 {
@@ -101,23 +101,23 @@ func (p *Parser[T]) Parse() (*T, error) {
 		execMiddlewares = append(execMiddlewares, p.opts.middlewares[i])
 	}
 
-	parsedLayers := values.New()
-	if err := cmd_sources.Execute(paramLayers, parsedLayers, execMiddlewares...); err != nil {
-		return nil, errors.Wrap(err, "failed to parse parameters")
+	parsedValues := values.New()
+	if err := cmd_sources.Execute(sectionSchema, parsedValues, execMiddlewares...); err != nil {
+		return nil, errors.Wrap(err, "failed to parse values")
 	}
 
 	var t T
 	for _, r := range p.regs {
 		dst := r.bind(&t)
 		if dst == nil {
-			return nil, errors.Errorf("bind returned nil for layer %q", string(r.slug))
+			return nil, errors.Errorf("bind returned nil for section %q", string(r.slug))
 		}
 		v := reflect.ValueOf(dst)
 		if v.Kind() != reflect.Ptr || v.IsNil() {
-			return nil, errors.Errorf("bind for layer %q must return a non-nil pointer, got %T", string(r.slug), dst)
+			return nil, errors.Errorf("bind for section %q must return a non-nil pointer, got %T", string(r.slug), dst)
 		}
-		if err := parsedLayers.DecodeSectionInto(string(r.slug), dst); err != nil {
-			return nil, errors.Wrapf(err, "failed to initialize settings for layer %q", string(r.slug))
+		if err := parsedValues.DecodeSectionInto(string(r.slug), dst); err != nil {
+			return nil, errors.Wrapf(err, "failed to initialize settings for section %q", string(r.slug))
 		}
 	}
 

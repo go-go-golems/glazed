@@ -15,10 +15,10 @@ import (
 )
 
 // CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
-// the glazed processing layer.
+// the glazed processing section.
 //
 // If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `fields.Definition`
-// abstraction to define your CLI applications, which allows you to use Layers and other nice features
+// abstraction to define your CLI applications, which allows you to use sections and other nice features
 // of the glazed ecosystem.
 //
 // If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
@@ -29,26 +29,26 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 	}
 
 	layers_ := schema.NewSchema(schema.WithSections(gpl))
-	parser, err := NewCobraParserFromLayers(layers_, &CobraParserConfig{
+	parser, err := NewCobraParserFromSections(layers_, &CobraParserConfig{
 		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	parsedLayers, err := parser.Parse(cmd, nil)
+	parsedValues, err := parser.Parse(cmd, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	parsedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+	parsedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
 	if !ok {
-		return nil, nil, errors.Errorf("layer %s not found", settings.GlazedSlug)
+		return nil, nil, errors.Errorf("section %s not found", settings.GlazedSlug)
 	}
 
-	gp, err := settings.SetupTableProcessor(parsedLayer)
+	gp, err := settings.SetupTableProcessor(parsedSectionValues)
 	cobra.CheckErr(err)
 
-	of, err := settings.SetupProcessorOutput(gp, parsedLayer, os.Stdout)
+	of, err := settings.SetupProcessorOutput(gp, parsedSectionValues, os.Stdout)
 	cobra.CheckErr(err)
 
 	return gp, of, nil
@@ -65,16 +65,16 @@ func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settin
 	return gpl.AddSectionToCobraCommand(cmd)
 }
 
-func printParsedParameters(parsedLayers *values.Values) {
-	layersMap := map[string]map[string]interface{}{}
-	parsedLayers.ForEach(func(layerName string, layer *values.SectionValues) {
-		params := map[string]interface{}{}
-		layer.Fields.ForEach(func(name string, parameter *fields.FieldValue) {
-			paramMap := map[string]interface{}{
-				"value": parameter.Value,
+func printParsedFields(parsedValues *values.Values) {
+	sectionsMap := map[string]map[string]interface{}{}
+	parsedValues.ForEach(func(sectionName string, sectionValues *values.SectionValues) {
+		fieldValues := map[string]interface{}{}
+		sectionValues.Fields.ForEach(func(name string, fieldValue *fields.FieldValue) {
+			fieldMap := map[string]interface{}{
+				"value": fieldValue.Value,
 			}
-			logs := make([]map[string]interface{}, 0, len(parameter.Log))
-			for _, l := range parameter.Log {
+			logs := make([]map[string]interface{}, 0, len(fieldValue.Log))
+			for _, l := range fieldValue.Log {
 				logEntry := map[string]interface{}{
 					"source": l.Source,
 					"value":  l.Value,
@@ -85,15 +85,15 @@ func printParsedParameters(parsedLayers *values.Values) {
 				logs = append(logs, logEntry)
 			}
 			if len(logs) > 0 {
-				paramMap["log"] = logs
+				fieldMap["log"] = logs
 			}
-			params[name] = paramMap
+			fieldValues[name] = fieldMap
 		})
-		layersMap[layerName] = params
+		sectionsMap[sectionName] = fieldValues
 	})
 
 	encoder := yaml.NewEncoder(os.Stdout)
 	encoder.SetIndent(2)
-	err := encoder.Encode(layersMap)
+	err := encoder.Encode(sectionsMap)
 	cobra.CheckErr(err)
 }

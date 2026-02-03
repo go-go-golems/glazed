@@ -151,8 +151,8 @@ func main() {
 
 	cobraCmd, err := cli.BuildCobraCommand(listUsers,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

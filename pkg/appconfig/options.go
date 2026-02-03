@@ -77,8 +77,8 @@ func WithConfigFiles(files ...string) ParserOption {
 	}
 }
 
-// WithValuesForLayers configures programmatic values for layers (optional).
-func WithValuesForLayers(values map[string]map[string]interface{}) ParserOption {
+// WithValuesForSections configures programmatic values for sections (optional).
+func WithValuesForSections(values map[string]map[string]interface{}) ParserOption {
 	return func(o *parserOptions) error {
 		o.middlewares = append(o.middlewares,
 			cmd_sources.FromMap(
@@ -173,7 +173,7 @@ func WithProfileFile(path string) ProfileOption {
 
 // WithProfile enables profiles.yaml loading with circularity-safe bootstrap parsing of profile selection.
 //
-// It does a mini "bootstrap parse" for the `profile-settings` layer to resolve:
+// It does a mini "bootstrap parse" for the `profile-settings` section to resolve:
 // - profile-settings.profile
 // - profile-settings.profile-file
 //
@@ -190,7 +190,7 @@ func WithProfileFile(path string) ProfileOption {
 //	appconfig.WithCobra(cmd, args),
 //
 // Note: For Cobra flags like `--profile` / `--profile-file` to be accepted by Cobra, callers
-// must ensure those flags exist on the command (typically by adding the ProfileSettings layer
+// must ensure those flags exist on the command (typically by adding the ProfileSettings section
 // to the Cobra command elsewhere). WithProfile can still resolve selection from env/config
 // without Cobra flags.
 func WithProfile(appName string, opts ...ProfileOption) ParserOption {
@@ -219,15 +219,15 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 
 		o.middlewares = append(o.middlewares,
 			func(next cmd_sources.HandlerFunc) cmd_sources.HandlerFunc {
-				return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
+				return func(sectionSchema *schema.Schema, parsedValues *values.Values) error {
 					// 1) Bootstrap-parse profile selection.
-					psLayer, err := cli.NewProfileSettingsLayer()
+					psSection, err := cli.NewProfileSettingsSection()
 					if err != nil {
 						return err
 					}
 
-					bootstrapLayers := schema.NewSchema(schema.WithSections(psLayer))
-					bootstrapParsed := values.New()
+					bootstrapSchema := schema.NewSchema(schema.WithSections(psSection))
+					bootstrapValues := values.New()
 
 					// IMPORTANT: Profile selection env vars should default to the profile "appName",
 					// not to any other WithEnv(...) prefix used for the rest of the application's settings.
@@ -265,12 +265,12 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 						cmd_sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 					)
 
-					if err := cmd_sources.Execute(bootstrapLayers, bootstrapParsed, bootstrapMiddlewares...); err != nil {
+					if err := cmd_sources.Execute(bootstrapSchema, bootstrapValues, bootstrapMiddlewares...); err != nil {
 						return errors.Wrap(err, "failed to bootstrap-parse profile-settings")
 					}
 
 					ps := &cli.ProfileSettings{}
-					if err := bootstrapParsed.DecodeSectionInto(cli.ProfileSettingsSlug, ps); err != nil {
+					if err := bootstrapValues.DecodeSectionInto(cli.ProfileSettingsSlug, ps); err != nil {
 						return errors.Wrap(err, "failed to initialize bootstrap profile settings")
 					}
 
@@ -288,11 +288,11 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 					}
 
 					// 2) Run lower-precedence chain (typically defaults + provided-values).
-					if err := next(layers_, parsedLayers); err != nil {
+					if err := next(sectionSchema, parsedValues); err != nil {
 						return err
 					}
 
-					// 3) Apply profiles.yaml at the intended precedence layer.
+					// 3) Apply profiles.yaml at the intended precedence section.
 					mw := cmd_sources.GatherFlagsFromProfiles(
 						defaultProfileFile,
 						profileFile,
@@ -305,7 +305,7 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 						}),
 					)
 					handler := mw(func(_ *schema.Schema, _ *values.Values) error { return nil })
-					return handler(layers_, parsedLayers)
+					return handler(sectionSchema, parsedValues)
 				}
 			},
 		)

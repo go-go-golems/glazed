@@ -36,11 +36,11 @@ func WithGlazeProcessor(p middlewares.Processor) RunOption {
 	}
 }
 
-// RunCommand executes a Glazed command with the given parsed parameters and options
+// RunCommand executes a Glazed command with the given parsed values and options.
 func RunCommand(
 	ctx context.Context,
 	cmd cmds.Command,
-	parsedLayers *values.Values,
+	parsedValues *values.Values,
 	options ...RunOption,
 ) error {
 	// Setup default options
@@ -56,30 +56,30 @@ func RunCommand(
 	// Handle different command types
 	switch c := cmd.(type) {
 	case cmds.BareCommand:
-		return c.Run(ctx, parsedLayers)
+		return c.Run(ctx, parsedValues)
 
 	case cmds.WriterCommand:
-		return c.RunIntoWriter(ctx, parsedLayers, opts.Writer)
+		return c.RunIntoWriter(ctx, parsedValues, opts.Writer)
 
 	case cmds.GlazeCommand:
 		// If no processor is provided, create one from glazed settings
 		if opts.GlazeProcessor == nil {
-			glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+			glazedSection, ok := parsedValues.Get(settings.GlazedSlug)
 			if !ok {
-				return fmt.Errorf("glazed layer not found")
+				return fmt.Errorf("glazed section not found")
 			}
-			gp, err := settings.SetupTableProcessor(glazedLayer)
+			gp, err := settings.SetupTableProcessor(glazedSection)
 			if err != nil {
 				return fmt.Errorf("failed to setup processor: %w", err)
 			}
-			_, err = settings.SetupProcessorOutput(gp, glazedLayer, opts.Writer)
+			_, err = settings.SetupProcessorOutput(gp, glazedSection, opts.Writer)
 			if err != nil {
 				return fmt.Errorf("failed to setup processor output: %w", err)
 			}
 			opts.GlazeProcessor = gp
 		}
 
-		err := c.RunIntoGlazeProcessor(ctx, parsedLayers, opts.GlazeProcessor)
+		err := c.RunIntoGlazeProcessor(ctx, parsedValues, opts.GlazeProcessor)
 		if err != nil {
 			return err
 		}
@@ -91,9 +91,9 @@ func RunCommand(
 	}
 }
 
-// ParseOptions contains configuration for parameter parsing
+// ParseOptions contains configuration for value parsing.
 type ParseOptions struct {
-	ValuesForLayers       map[string]map[string]interface{}
+	ValuesForSections     map[string]map[string]interface{}
 	EnvPrefix             string
 	AdditionalMiddlewares []cmd_sources.Middleware
 	UseViper              bool
@@ -103,10 +103,10 @@ type ParseOptions struct {
 
 type ParseOption func(*ParseOptions)
 
-// WithValuesForLayers sets values for parameters in specified layers
-func WithValuesForLayers(values map[string]map[string]interface{}) ParseOption {
+// WithValuesForSections sets values for fields in specified sections.
+func WithValuesForSections(values map[string]map[string]interface{}) ParseOption {
 	return func(o *ParseOptions) {
-		o.ValuesForLayers = values
+		o.ValuesForSections = values
 	}
 }
 
@@ -124,7 +124,7 @@ func WithAdditionalMiddlewares(middlewares ...cmd_sources.Middleware) ParseOptio
 	}
 }
 
-// WithViper enables loading parameters from Viper configuration
+// WithViper enables loading values from Viper configuration.
 func WithViper() ParseOption {
 	return func(o *ParseOptions) {
 		o.UseViper = true
@@ -146,8 +146,8 @@ func WithEnvMiddleware(prefix string) ParseOption {
 	}
 }
 
-// ParseCommandParameters parses parameters for a command using a configurable middleware chain
-func ParseCommandParameters(
+// ParseCommandValues parses values for a command using a configurable middleware chain.
+func ParseCommandValues(
 	cmd cmds.Command,
 	options ...ParseOption,
 ) (*values.Values, error) {
@@ -184,10 +184,10 @@ func ParseCommandParameters(
 		)
 	}
 
-	// Add values for layers middleware if provided
-	if opts.ValuesForLayers != nil {
+	// Add values for sections middleware if provided
+	if opts.ValuesForSections != nil {
 		middlewares_ = append(middlewares_,
-			cmd_sources.FromMap(opts.ValuesForLayers,
+			cmd_sources.FromMap(opts.ValuesForSections,
 				fields.WithSource("provided-values"),
 			),
 		)
@@ -200,31 +200,31 @@ func ParseCommandParameters(
 		),
 	)
 
-	// Create parsed layers and execute middleware chain
-	parsedLayers := values.New()
+	// Create parsed values and execute middleware chain
+	parsedValues := values.New()
 	err := cmd_sources.Execute(
 		cmd.Description().Layers,
-		parsedLayers,
+		parsedValues,
 		middlewares_...,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse parameters: %w", err)
+		return nil, fmt.Errorf("failed to parse values: %w", err)
 	}
 
-	return parsedLayers, nil
+	return parsedValues, nil
 }
 
-// ParseAndRun combines parameter parsing and command execution into a single function
+// ParseAndRun combines value parsing and command execution into a single function.
 func ParseAndRun(
 	ctx context.Context,
 	cmd cmds.Command,
 	parseOptions []ParseOption,
 	runOptions []RunOption,
 ) error {
-	parsedLayers, err := ParseCommandParameters(cmd, parseOptions...)
+	parsedValues, err := ParseCommandValues(cmd, parseOptions...)
 	if err != nil {
 		return err
 	}
 
-	return RunCommand(ctx, cmd, parsedLayers, runOptions...)
+	return RunCommand(ctx, cmd, parsedValues, runOptions...)
 }

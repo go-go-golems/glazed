@@ -132,7 +132,7 @@ func main() {
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		demo,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			SkipCommandSettingsLayer: true,
+			SkipCommandSettingsSection: true,
 			MiddlewaresFunc: func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]sources.Middleware, error) {
 				return []sources.Middleware{
 					// Highest priority: command-line flags

@@ -7,8 +7,8 @@ import (
 
 const CreateCommandSettingsSlug = "create-command-settings"
 
-func NewCreateCommandSettingsLayer() (schema.Section, error) {
-	createCommandSettingsLayer, err := schema.NewSection(
+func NewCreateCommandSettingsSection() (schema.Section, error) {
+	createCommandSettingsSection, err := schema.NewSection(
 		CreateCommandSettingsSlug,
 		"Create command settings",
 		schema.WithFields(
@@ -33,7 +33,7 @@ func NewCreateCommandSettingsLayer() (schema.Section, error) {
 		return nil, err
 	}
 
-	return createCommandSettingsLayer, nil
+	return createCommandSettingsSection, nil
 }
 
 type CreateCommandSettings struct {
@@ -49,8 +49,8 @@ type ProfileSettings struct {
 
 const ProfileSettingsSlug = "profile-settings"
 
-func NewProfileSettingsLayer() (schema.Section, error) {
-	profileSettingsLayer, err := schema.NewSection(
+func NewProfileSettingsSection() (schema.Section, error) {
+	profileSettingsSection, err := schema.NewSection(
 		ProfileSettingsSlug,
 		"Profile settings",
 		schema.WithFields(
@@ -70,22 +70,21 @@ func NewProfileSettingsLayer() (schema.Section, error) {
 		return nil, err
 	}
 
-	return profileSettingsLayer, nil
+	return profileSettingsSection, nil
 }
 
 // GlazedMinimalCommandSettings contains a subset of the most commonly used settings
 type CommandSettings struct {
-	PrintYAML              bool   `glazed:"print-yaml"`
-	PrintParsedParameters  bool   `glazed:"print-parsed-parameters"`
-	LoadParametersFromFile string `glazed:"load-parameters-from-file"`
-	PrintSchema            bool   `glazed:"print-schema"`
-	ConfigFile             string `glazed:"config-file"`
+	PrintYAML         bool   `glazed:"print-yaml"`
+	PrintParsedFields bool   `glazed:"print-parsed-fields"`
+	PrintSchema       bool   `glazed:"print-schema"`
+	ConfigFile        string `glazed:"config-file"`
 }
 
 const CommandSettingsSlug = "command-settings"
 
-func NewCommandSettingsLayer() (schema.Section, error) {
-	glazedMinimalCommandLayer, err := schema.NewSection(
+func NewCommandSettingsSection() (schema.Section, error) {
+	glazedMinimalCommandSection, err := schema.NewSection(
 		CommandSettingsSlug,
 		"General purpose command options",
 		schema.WithFields(
@@ -95,11 +94,10 @@ func NewCommandSettingsLayer() (schema.Section, error) {
 				fields.WithHelp("Print the command's YAML"),
 			),
 			fields.New(
-				"print-parsed-parameters",
+				"print-parsed-fields",
 				fields.TypeBool,
-				fields.WithHelp("Print the parsed parameters"),
+				fields.WithHelp("Print the parsed fields"),
 			),
-			// Deprecated: legacy per-command parameter file injection (removed from default flow)
 			fields.New(
 				"print-schema",
 				fields.TypeBool,
@@ -116,5 +114,5 @@ func NewCommandSettingsLayer() (schema.Section, error) {
 		return nil, err
 	}
 
-	return glazedMinimalCommandLayer, nil
+	return glazedMinimalCommandSection, nil
 }

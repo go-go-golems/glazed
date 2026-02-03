@@ -179,7 +179,7 @@ func NewSignalTestCommand() (*SignalTestCommand, error) {
 		return nil, err
 	}
 
-	commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+	commandSettingsLayer, err := cli.NewCommandSettingsSection()
 	if err != nil {
 		return nil, err
 	}
@@ -266,8 +266,8 @@ func main() {
 	// Convert to Cobra command
 	cobraSignalTestCmd, err := cli.BuildCobraCommand(signalTestCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

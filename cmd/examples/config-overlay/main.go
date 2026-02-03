@@ -77,8 +77,8 @@ func main() {
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		overlay,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			SkipCommandSettingsLayer: true,
-			ConfigFilesFunc:          filesResolver,
+			SkipCommandSettingsSection: true,
+			ConfigFilesFunc:            filesResolver,
 		}),
 	)
 	if err != nil {
