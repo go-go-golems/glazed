@@ -1,0 +1,53 @@
+--- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/scripts/gopls-sandbox/lib/lib.go.orig
++++ /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-004-GO-PLS-INVESTIGATION--gopls-investigation-for-refactoring-tooling/scripts/gopls-sandbox/lib/lib.go
+@@ -2,7 +2,7 @@
+ 
+ import "fmt"
+ 
+-type Widget struct {
++type Gizmo struct {
+ 	Name string
+ }
+ 
+@@ -10,18 +10,18 @@
+ 	Run() error
+ }
+ 
+-func NewWidget(name string) *Widget {
++func NewWidget(name string) *Gizmo {
+-	return &Widget{Name: name}
++	return &Gizmo{Name: name}
+ }
+ 
+-func (w *Widget) Run() error {
++func (w *Gizmo) Run() error {
+ 	if w.Name == "" {
+ 		return fmt.Errorf("missing name")
+ 	}
+ 	return nil
+ }
+ 
+-func (w *Widget) String() string {
++func (w *Gizmo) String() string {
+ 	return fmt.Sprintf("Widget(%s)", w.Name)
+ }
+ 
+@@ -29,14 +21,14 @@
+ 	return r.Run()
+ }
+ 
+-func WrapWidget(w *Widget) Runner {
++func WrapWidget(w *Gizmo) Runner {
+-	return widgetRunner{Widget: w}
++	return widgetRunner{Gizmo: w}
+ }
+ 
+ type widgetRunner struct {
+-	*Widget
++	*Gizmo
+ }
+ 
+ func (wr widgetRunner) Run() error {
+-	return wr.Widget.Run()
++	return wr.Gizmo.Run()
+ }

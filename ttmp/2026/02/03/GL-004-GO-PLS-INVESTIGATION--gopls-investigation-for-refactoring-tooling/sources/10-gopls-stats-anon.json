@@ -1,0 +1,46 @@
+{
+  "DirStats": {
+    "Files": 717,
+    "TestdataFiles": 0,
+    "GoFiles": 258,
+    "ModFiles": 2,
+    "Dirs": 234
+  },
+  "GOARCH": "amd64",
+  "GOOS": "linux",
+  "GOPACKAGESDRIVER": "",
+  "GOPLSCACHE": "",
+  "GoVersion": "go1.25.3",
+  "GoplsVersion": "v0.20.0",
+  "InitialWorkspaceLoadDuration": "23.890479ms",
+  "MemStats": {
+    "HeapAlloc": 129954856,
+    "HeapInUse": 137519104,
+    "TotalAlloc": 173814016
+  },
+  "WorkspaceStats": {
+    "Files": {
+      "Total": 7,
+      "Largest": 9848,
+      "Errs": 0
+    },
+    "Views": [
+      {
+        "GoCommandVersion": "go1.25.5",
+        "AllPackages": {
+          "Packages": 0,
+          "LargestPackage": 0,
+          "CompiledGoFiles": 0,
+          "Modules": 0
+        },
+        "WorkspacePackages": {
+          "Packages": 0,
+          "LargestPackage": 0,
+          "CompiledGoFiles": 0,
+          "Modules": 0
+        },
+        "Diagnostics": 0
+      }
+    ]
+  }
+}

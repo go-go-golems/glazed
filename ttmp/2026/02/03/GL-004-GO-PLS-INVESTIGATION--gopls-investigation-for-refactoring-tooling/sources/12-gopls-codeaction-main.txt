@@ -1,0 +1,4 @@
+command	"Browse documentation for package main" [source.doc]
+command	"Split package \"main\"" [source.splitPackage]
+command	"Show compiler optimization details for \"gopls-sandbox\"" [source.toggleCompilerOptDetails]
+command	"Browse gopls feature documentation" [gopls.doc.features]

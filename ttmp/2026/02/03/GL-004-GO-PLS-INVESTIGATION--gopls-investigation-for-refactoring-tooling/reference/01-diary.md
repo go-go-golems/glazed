@@ -1,0 +1,120 @@
+---
+Title: Diary
+Ticket: GL-004-GO-PLS-INVESTIGATION
+Status: active
+Topics:
+    - gopls
+    - refactoring
+    - tooling
+    - go
+DocType: reference
+Intent: long-term
+Owners:
+    - manuel
+RelatedFiles: []
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-02-03T18:03:12.590364733-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+# Diary
+
+## Goal
+
+Document the gopls CLI investigation, including experiments, outcomes, and how the findings inform refactoring tooling.
+
+## Step 1: Create ticket, run gopls experiments, and draft docs
+
+I created the GL‑004 ticket workspace, set up a small sandbox module, ran a battery of gopls CLI commands, and captured outputs into the ticket `sources/` directory. I then drafted the investigation report and the refactoring playbook based on those experiments.
+
+This step establishes a concrete baseline for what gopls can provide (symbols, references, rename, code actions) and turns that into a documented workflow we can use in future refactor tooling.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a new ticket GL-004-GO-PLS-INVESTIGATION with docmgr.
+
+Run gopls command line (feel free to look up online) to validate how much information we can gather and potentially refactors we can do (feel free to write little test programs to test things out). we will use that information to flesh out our refactoring tooling. Write a detailed report and playbook on how to use gopls, and also how it works and what you learned. Continue to keep a very detailed (separate though) diary on how this works."
+
+**Assistant interpretation:** Create the ticket, explore gopls CLI capabilities (including via sandbox programs), and record findings in a report and playbook, keeping a separate detailed diary.
+
+**Inferred user intent:** Build a reliable knowledge base for gopls‑assisted refactoring to inform future tooling decisions.
+
+**Commit (code):** N/A
+
+### What I did
+- Created the ticket workspace and a dedicated diary.
+- Added tasks for the investigation workflow.
+- Collected gopls CLI help outputs into `sources/01-*` and `sources/02-*`.
+- Built a sandbox Go module under `scripts/gopls-sandbox`.
+- Ran gopls CLI experiments (symbols, references, definition, implementation, rename, codeaction, stats, api-json) and saved outputs in `sources/`.
+- Drafted:
+  - `analysis/01-gopls-cli-investigation-report.md`
+  - `playbook/01-gopls-refactoring-playbook.md`
+
+### Why
+- We need a concrete, tool‑validated understanding of what gopls can provide for automated refactors.
+
+### What worked
+- gopls CLI commands executed successfully in sandbox and repo contexts.
+- Outputs are parseable and suitable for building a refactor index.
+
+### What didn't work
+- N/A
+
+### What I learned
+- gopls rename is semantically aware but doesn’t touch string literals or docs, so a text pass is still required.
+
+### What was tricky to build
+- Ensuring positions were accurate for CLI commands required careful line/column accounting.
+
+### What warrants a second pair of eyes
+- Confirm the refactor playbook aligns with actual gopls behavior for larger workspaces.
+
+### What should be done in the future
+- Add an automated parser for the `symbols` / `references` outputs and validate against real glazed modules.
+
+### Code review instructions
+- Review `analysis/01-gopls-cli-investigation-report.md` for accuracy and completeness.
+- Review `playbook/01-gopls-refactoring-playbook.md` for usable command flow.
+- Inspect `scripts/gopls-sandbox` and `sources/` outputs for reproducibility.
+
+### Technical details
+
+```bash
+# Ticket creation
+
+docmgr ticket create-ticket --ticket GL-004-GO-PLS-INVESTIGATION --title "gopls investigation for refactoring tooling" --topics gopls,refactoring,tooling,go
+
+docmgr doc add --ticket GL-004-GO-PLS-INVESTIGATION --doc-type reference --title "Diary"
+docmgr doc add --ticket GL-004-GO-PLS-INVESTIGATION --doc-type analysis --title "gopls CLI investigation report"
+docmgr doc add --ticket GL-004-GO-PLS-INVESTIGATION --doc-type playbook --title "gopls refactoring playbook"
+
+# gopls help capture
+
+gopls help > ttmp/.../sources/01-gopls-help.txt
+for cmd in rename prepare_rename references symbols workspace_symbol definition implementation codeaction codelens stats remote api-json mcp check; do
+  gopls help "$cmd" > ttmp/.../sources/02-gopls-help-${cmd}.txt
+ done
+
+# Sandbox creation
+
+mkdir -p ttmp/.../scripts/gopls-sandbox/lib
+# (created go.mod, lib/lib.go, main.go)
+
+# Experiments (GOWORK=off)
+
+GOWORK=off gopls symbols ttmp/.../scripts/gopls-sandbox/lib/lib.go > ttmp/.../sources/03-gopls-symbols-lib.txt
+GOWORK=off gopls references ttmp/.../scripts/gopls-sandbox/lib/lib.go:5:6 > ttmp/.../sources/04-gopls-references-widget.txt
+GOWORK=off gopls prepare_rename ttmp/.../scripts/gopls-sandbox/lib/lib.go:5:6 > ttmp/.../sources/05-gopls-prepare-rename-widget.txt
+GOWORK=off gopls rename -d ttmp/.../scripts/gopls-sandbox/lib/lib.go:5:6 Gizmo > ttmp/.../sources/06-gopls-rename-widget-diff.txt
+GOWORK=off gopls workspace_symbol Widget > ttmp/.../sources/07-gopls-workspace-symbol-widget.txt
+GOWORK=off gopls definition ttmp/.../scripts/gopls-sandbox/main.go:10:16 > ttmp/.../sources/08-gopls-definition-newwidget.txt
+GOWORK=off gopls implementation ttmp/.../scripts/gopls-sandbox/lib/lib.go:9:6 > ttmp/.../sources/09-gopls-implementation-runner.txt
+GOWORK=off gopls codeaction ttmp/.../scripts/gopls-sandbox/main.go > ttmp/.../sources/12-gopls-codeaction-main.txt
+GOWORK=off gopls codelens ttmp/.../scripts/gopls-sandbox/main.go > ttmp/.../sources/13-gopls-codelens-main.txt
+
+gopls stats -anon > ttmp/.../sources/10-gopls-stats-anon.json
+gopls api-json > ttmp/.../sources/11-gopls-api.json
+```
