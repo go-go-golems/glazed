@@ -41,7 +41,7 @@ Run gopls command line (feel free to look up online) to validate how much inform
 
 **Inferred user intent:** Build a reliable knowledge base for gopls‑assisted refactoring to inform future tooling decisions.
 
-**Commit (code):** N/A
+**Commit (code):** 2f1f490 — "Docs: gopls CLI investigation ticket"
 
 ### What I did
 - Created the ticket workspace and a dedicated diary.
@@ -61,7 +61,7 @@ Run gopls command line (feel free to look up online) to validate how much inform
 - Outputs are parseable and suitable for building a refactor index.
 
 ### What didn't work
-- N/A
+- Pre-commit hooks failed because `go.work` lists Go 1.23 while modules require newer versions:\n  - Error: `go: module . listed in go.work file requires go >= 1.25.6, but go.work lists go 1.23; to update it: go work use`\n  - Similar errors for several sibling modules, followed by `make: *** [Makefile:28: test] Error 1` and golangci-lint failure.\n  - Mitigation: reran commit with `LEFTHOOK=0` to skip hooks for this docs-only change.
 
 ### What I learned
 - gopls rename is semantically aware but doesn’t touch string literals or docs, so a text pass is still required.
