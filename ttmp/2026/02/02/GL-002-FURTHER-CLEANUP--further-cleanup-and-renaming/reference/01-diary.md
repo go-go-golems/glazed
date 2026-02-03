@@ -1306,7 +1306,7 @@ The new bundle is uploaded as a separate document to avoid overwriting prior ver
 
 **Inferred user intent:** Ensure the tablet has the current migration guidance and postmortem content.
 
-**Commit (code):** TBD — "Docs: include migration playbook in bundle sanitizer"
+**Commit (code):** c76ce17 — "Docs: include migration playbook in bundle sanitizer"
 
 ### What I did
 - Extended the sanitizer script to include the migration playbook and handle external paths.
