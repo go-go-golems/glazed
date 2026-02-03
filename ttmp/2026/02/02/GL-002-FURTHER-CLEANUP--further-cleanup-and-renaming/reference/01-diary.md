@@ -1376,7 +1376,7 @@ Then upload the dodcument to remarkable."
 
 **Inferred user intent:** Capture the refactor learnings in an actionable technical design and make it available on the tablet.
 
-**Commit (code):** TBD — "Docs: add refactor infrastructure blueprint"
+**Commit (code):** 7ad70d8 — "Docs: add refactor infrastructure blueprint"
 
 ### What I did
 - Added `analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md` with database schema, tooling taxonomy, human oversight matrix, and pseudocode workflows.
