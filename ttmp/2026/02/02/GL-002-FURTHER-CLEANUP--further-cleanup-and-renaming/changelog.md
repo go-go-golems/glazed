@@ -158,3 +158,12 @@ Step 18: update PR description via gh api
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/reference/01-diary.md — Record PR update
 
+
+## 2026-02-03
+
+Step 19: update reMarkable bundle with migration playbook
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py — Include external playbook in bundle
+

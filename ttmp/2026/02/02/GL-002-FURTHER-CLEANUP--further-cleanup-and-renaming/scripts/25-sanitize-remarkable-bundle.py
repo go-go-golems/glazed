@@ -4,7 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 TICKET_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = TICKET_ROOT.parents[4]
 OUTPUT_ROOT = Path("/tmp/remarkable-gl-002")
+EXTRA_DIR = OUTPUT_ROOT / "extras"
 
 INPUTS = [
     TICKET_ROOT / "README.md",
@@ -15,6 +17,7 @@ INPUTS = [
     TICKET_ROOT / "analysis/04-postmortem-gl-002-refactor-and-tooling.md",
     TICKET_ROOT / "sources/01-glazed-cleanup-notes.md",
     TICKET_ROOT / "reference/01-diary.md",
+    REPO_ROOT / "pkg/doc/tutorials/migrating-to-facade-packages.md",
 ]
 
 REPLACEMENTS = [
@@ -36,9 +39,13 @@ def sanitize(text: str) -> str:
 
 def main() -> int:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
     for path in INPUTS:
-        rel = path.relative_to(TICKET_ROOT)
-        out_path = OUTPUT_ROOT / rel
+        try:
+            rel = path.relative_to(TICKET_ROOT)
+            out_path = OUTPUT_ROOT / rel
+        except ValueError:
+            out_path = EXTRA_DIR / path.name
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(sanitize(path.read_text(encoding="utf-8")), encoding="utf-8")
         print(out_path)

@@ -1291,3 +1291,64 @@ gh api -X PATCH repos/go-go-golems/glazed/pulls/524 \
   -f title="Refactor: remove legacy layer/parameter API (no-compat)" \
   -f body="$(cat /tmp/pr_body_glazed.txt)"
 ```
+
+## Step 19: Re-upload ticket bundle with migration playbook
+
+I updated the reMarkable bundle to include the new exhaustive migration playbook and uploaded a fresh PDF so the tablet has the latest guidance. This required extending the sanitizer script to handle files outside the ticket tree and regenerating the sanitized bundle before upload.
+
+The new bundle is uploaded as a separate document to avoid overwriting prior versions.
+
+### Prompt Context
+
+**User prompt (verbatim):** "update to remarkable"
+
+**Assistant interpretation:** Refresh the reMarkable bundle with the latest ticket and playbook updates.
+
+**Inferred user intent:** Ensure the tablet has the current migration guidance and postmortem content.
+
+**Commit (code):** TBD — "Docs: include migration playbook in bundle sanitizer"
+
+### What I did
+- Extended the sanitizer script to include the migration playbook and handle external paths.
+- Re-generated sanitized copies under `/tmp/remarkable-gl-002`.
+- Uploaded a new bundle as `GL-002 Further Cleanup v3.pdf`.
+
+### Why
+- The playbook update lives outside the ticket tree and needed to be included for the tablet review.
+
+### What worked
+- The updated bundle uploaded successfully to `/ai/2026/02/03/GL-002-FURTHER-CLEANUP`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The sanitizer script benefits from an “extras” output path to handle documents outside the ticket root.
+
+### What was tricky to build
+- Ensuring external files preserved a clean output structure without breaking relative paths in the bundle.
+
+### What warrants a second pair of eyes
+- Confirm the bundle’s ToC order and content selection match expectations.
+
+### What should be done in the future
+- If new docs are added outside the ticket tree, add them to the sanitizer list as a standard step.
+
+### Code review instructions
+- Review `ttmp/.../scripts/25-sanitize-remarkable-bundle.py` for the external file handling.
+
+### Technical details
+
+```bash
+python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+remarquee upload bundle /tmp/remarkable-gl-002/README.md \
+  /tmp/remarkable-gl-002/design-doc/01-further-cleanup-and-renaming-plan.md \
+  /tmp/remarkable-gl-002/analysis/01-exhaustive-parameter-layer-audit.md \
+  /tmp/remarkable-gl-002/analysis/02-parameter-layer-symbol-inventory.md \
+  /tmp/remarkable-gl-002/analysis/03-layer-parameter-inventory.md \
+  /tmp/remarkable-gl-002/analysis/04-postmortem-gl-002-refactor-and-tooling.md \
+  /tmp/remarkable-gl-002/sources/01-glazed-cleanup-notes.md \
+  /tmp/remarkable-gl-002/reference/01-diary.md \
+  /tmp/remarkable-gl-002/extras/migrating-to-facade-packages.md \
+  --name "GL-002 Further Cleanup v3" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
+```
