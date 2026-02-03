@@ -475,7 +475,7 @@ I generated a symbol inventory for all non-ttmp files that still mention `parame
 
 **Inferred user intent:** See exactly what still uses the legacy vocabulary and get a systematic, committed cleanup underway.
 
-**Commit (code):** Pending
+**Commit (code):** a5f5e1f
 
 ### What I did
 - Generated a Go identifier inventory for non-ttmp files into a new analysis report.
@@ -694,4 +694,8 @@ python scripts/10-rename-yaml-parameters.py
 
 # tests
 go test ./...
+
+# commit + push
+git commit -m "Refactor: rename parsed values to field values"
+git push
 ```
