@@ -207,7 +207,35 @@ Update any config mapping or pattern rules to refer to sections/fields explicitl
 
 ### Step 8: Struct tags
 
-Only `glazed:"..."` is supported. Remove legacy aliases if present.
+Only `glazed:"..."` is supported. Remove legacy aliases if present (for example, `glazed.parameter:"..."`).
+
+**Example:**
+
+```go
+// Old
+type Settings struct {
+    Host string `glazed.parameter:"host"`
+}
+
+// New
+type Settings struct {
+    Host string `glazed:"host"`
+}
+```
+
+### Step 8b: YAML field keys
+
+If you define fields via YAML, the short flag key is now `shortFlag` (not `shorthand`).
+
+**Example:**
+
+```yaml
+flags:
+  - name: host
+    type: string
+    help: Database host
+    shortFlag: H
+```
 
 ### Step 9: Example and file renames
 
@@ -230,6 +258,8 @@ If you reference example paths or files in docs/scripts:
 | `undefined: layers.ParameterLayer` | Old package removed | Use `schema.Section` |
 | `parsedLayers.InitializeStruct` missing | Method removed | Use `Values.DecodeSectionInto` |
 | `middlewares.ExecuteMiddlewares` missing | Package removed | Use `sources.Execute` |
+| `undefined: cli.BuildCobraCommandFromBareCommand` | Helper removed | Use `cli.BuildCobraCommand` |
+| `undefined: logging.AddLoggingLayerToRootCommand` | Renamed | Use `logging.AddLoggingSectionToRootCommand` |
 
 ## Appendices
 
