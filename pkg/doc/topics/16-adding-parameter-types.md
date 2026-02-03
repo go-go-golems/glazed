@@ -373,7 +373,7 @@ Add a field to the `ParameterTypesSettings` struct:
 ```go
 type ParameterTypesSettings struct {
     // ... existing fields ...
-    CredentialsParam map[string]string `glazed.parameter:"credentials-param"`
+    CredentialsParam map[string]string `glazed:"credentials-param"`
 }
 ```
 

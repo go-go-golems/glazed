@@ -58,7 +58,7 @@ prod:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			type AppSettings struct {
 				Redis struct {
-					Host string `glazed.parameter:"host"`
+					Host string `glazed:"host"`
 				}
 			}
 

@@ -72,7 +72,7 @@ func IsStructPointer(s interface{}) bool {
 }
 
 // GlazedStructToMap converts a struct pointer to a map of parameter names to values.
-// It iterates through the struct fields looking for the "glazed.parameter" tag.
+// It iterates through the struct fields looking for the "glazed" tag.
 // For each field with the tag, it will add an entry to the returned map with the
 // tag value as the key and the field's value as the map value.
 // Returns an error if s is not a pointer to a struct.
@@ -88,7 +88,7 @@ func GlazedStructToMap(s interface{}) (map[string]interface{}, error) {
 
 	for i := 0; i < st.NumField(); i++ {
 		field := st.Field(i)
-		parameterName, ok := field.Tag.Lookup("glazed.parameter")
+		parameterName, ok := field.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}

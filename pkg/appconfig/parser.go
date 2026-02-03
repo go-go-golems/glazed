@@ -27,7 +27,7 @@ type LayerSlug string
 // - Parse executes a configurable middleware chain and returns a populated T.
 //
 // V1 hydration uses values.DecodeSectionInto, which means fields are only
-// populated when the destination structs have explicit `glazed.parameter` tags.
+// populated when the destination structs have explicit `glazed` tags.
 type Parser[T any] struct {
 	opts parserOptions
 	regs []registration[T]

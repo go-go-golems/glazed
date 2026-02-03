@@ -19,9 +19,9 @@ import (
 )
 
 type ListUsersSettings struct {
-	Limit      int    `glazed.parameter:"limit"`
-	NameFilter string `glazed.parameter:"name-filter"`
-	ActiveOnly bool   `glazed.parameter:"active-only"`
+	Limit      int    `glazed:"limit"`
+	NameFilter string `glazed:"name-filter"`
+	ActiveOnly bool   `glazed:"active-only"`
 }
 
 type ListUsersCommand struct {

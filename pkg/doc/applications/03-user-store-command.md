@@ -168,8 +168,8 @@ func NewGenerateCommand(store *UserStore) (*GenerateCommand, error) {
 
 func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
     type GenerateSettings struct {
-        Count   int  `glazed.parameter:"count"`
-        Verbose bool `glazed.parameter:"verbose"`
+        Count   int  `glazed:"count"`
+        Verbose bool `glazed:"verbose"`
     }
 
     settings := &GenerateSettings{}
@@ -294,7 +294,7 @@ func NewDeleteCommand(store *UserStore) (*DeleteCommand, error) {
 
 func (c *DeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
     type DeleteSettings struct {
-        ID int `glazed.parameter:"id"`
+        ID int `glazed:"id"`
     }
 
     settings := &DeleteSettings{}

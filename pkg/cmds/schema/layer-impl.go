@@ -180,7 +180,7 @@ func (p *SectionImpl) GetDefinitions() *fields.Definitions {
 // which are often defined at compile time and loaded from a YAML file, with fresh
 // ones from the struct.
 // This is in some ways the opposite of `InitializeStructFromParameterDefaults`.
-// The struct fields of `defaults` with a struct tag of `glazed.parameter` are used
+// The struct fields of `defaults` with a struct tag of `glazed` are used
 // to initialize the `ParameterDefinition` with a matching name. If no matching
 // `ParameterDefinition` is found, an error is returned.
 func (p *SectionImpl) InitializeDefaultsFromStruct(defaults interface{}) error {

@@ -29,7 +29,7 @@ type tagOptions struct {
 func parsedTagOptions(tag string) (*tagOptions, error) {
 	options := strings.Split(tag, ",")
 	if len(options) == 0 {
-		return nil, errors.Errorf("invalid empty glazed.parameter tag")
+		return nil, errors.Errorf("invalid empty glazed tag")
 	}
 	name := options[0]
 	options = options[1:]
@@ -55,10 +55,10 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 // InitializeStruct initializes a struct from a ParsedParameters map.
 //
 // It iterates through the struct fields looking for those tagged with
-// "glazed.parameter". For each tagged field, it will lookup the corresponding
+// "glazed". For each tagged field, it will lookup the corresponding
 // parameter value in the ParsedParameters map and set the field's value.
 //
-// If the tag open `from_json` is appended to `glazed.parameter` and the parameter
+// If the tag open `from_json` is appended to `glazed` and the parameter
 // value is a string, bytes, rawMessage or FileData, the value is parsed from json.
 //
 // If the tag contains a wildcard, the function will match parameter names against the
@@ -78,12 +78,12 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 // Example struct:
 //
 //	type CreateIndexSettings struct {
-//		Index               string               `glazed.parameter:"index"`
-//		Settings            *IndexSettings       `glazed.parameter:"settings,from_json"`
-//		Mappings            *fields.FileData `glazed.parameter:"mappings"`
-//		Aliases             *map[string]Alias    `glazed.parameter:"aliases,from_json"`
-//		WaitForActiveShards string               `glazed.parameter:"wait_for_active_shards"`
-//		ApiKeys             map[string]string    `glazed.parameter:"*_api_key"`
+//		Index               string               `glazed:"index"`
+//		Settings            *IndexSettings       `glazed:"settings,from_json"`
+//		Mappings            *fields.FileData `glazed:"mappings"`
+//		Aliases             *map[string]Alias    `glazed:"aliases,from_json"`
+//		WaitForActiveShards string               `glazed:"wait_for_active_shards"`
+//		ApiKeys             map[string]string    `glazed:"*_api_key"`
 //	}
 //
 // Corresponding Definitions:
@@ -145,13 +145,13 @@ func (p *ParsedParameters) InitializeStruct(s interface{}) error {
 
 	for i := 0; i < st.NumField(); i++ {
 		field := st.Field(i)
-		tag, ok := field.Tag.Lookup("glazed.parameter")
+		tag, ok := field.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}
 		options, err := parsedTagOptions(tag)
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse glazed.parameter tag for field %s", field.Name)
+			return errors.Wrapf(err, "failed to parse glazed tag for field %s", field.Name)
 		}
 
 		if options.IsWildcard {
@@ -438,14 +438,14 @@ func (p *ParsedParameters) setTargetValue(dst reflect.Value, value interface{}, 
 	return nil
 }
 
-// StructToDataMap transforms a struct into a map[string]interface{} based on the `glazed.parameter` annotations.
+// StructToDataMap transforms a struct into a map[string]interface{} based on the `glazed` annotations.
 //
-// If a struct field is annotated with `glazed.parameter:"<pattern>*"` (contains a wildcard `*`), the field
+// If a struct field is annotated with `glazed:"<pattern>*"` (contains a wildcard `*`), the field
 // is expected to be a map. The function will match the map keys against the wildcard pattern and include
 // the matching key-value pairs in the resulting data map.
 //
 // Returns an error if:
-// - Parsing the `glazed.parameter` tag fails for any field.
+// - Parsing the `glazed` tag fails for any field.
 // - A field annotated with a wildcard is not a map.
 func StructToDataMap(s interface{}) (map[string]interface{}, error) {
 	if s == nil {
@@ -466,14 +466,14 @@ func StructToDataMap(s interface{}) (map[string]interface{}, error) {
 	structType := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := structType.Field(i)
-		tag, ok := field.Tag.Lookup("glazed.parameter")
+		tag, ok := field.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}
 
 		options, err := parsedTagOptions(tag)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse glazed.parameter tag for field %s", field.Name)
+			return nil, errors.Wrapf(err, "failed to parse glazed tag for field %s", field.Name)
 		}
 
 		fieldValue := v.Field(i)

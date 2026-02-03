@@ -10,9 +10,9 @@ import (
 )
 
 type JqSettings struct {
-	JqExpression       string            `glazed.parameter:"jq"`
-	JqFile             string            `glazed.parameter:"jq-file"`
-	JqFieldExpressions map[string]string `glazed.parameter:"field-jq"`
+	JqExpression       string            `glazed:"jq"`
+	JqFile             string            `glazed:"jq-file"`
+	JqFieldExpressions map[string]string `glazed:"field-jq"`
 }
 
 //go:embed "flags/jq.yaml"

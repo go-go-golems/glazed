@@ -162,7 +162,7 @@ This example intentionally mirrors the existing precedence chain in the cobra pa
    This prevents import cycles and avoids destabilizing existing users. The new packages depend on `layers/parameters/middlewares`, never the other way around.
 
 4. **Keep struct tags unchanged**  
-   We keep `glazed.parameter` as-is; this ticket is about package/type vocabulary, not tags.
+   We keep `glazed` as-is; this ticket is about package/type vocabulary, not tags.
 
 5. **Start with a minimal but coherent surface**  
    We focus on the “happy path” constructors and source chain pieces needed by the example program first, then expand coverage as needed.

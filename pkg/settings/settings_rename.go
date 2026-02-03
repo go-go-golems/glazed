@@ -46,9 +46,9 @@ func (rs *RenameSettings) AddMiddlewares(processor *middlewares.TableProcessor) 
 }
 
 type RenameFlagsDefaults struct {
-	Rename       []string          `glazed.parameter:"rename"`
-	RenameRegexp map[string]string `glazed.parameter:"rename-regexp"`
-	RenameYaml   string            `glazed.parameter:"rename-yaml"`
+	Rename       []string          `glazed:"rename"`
+	RenameRegexp map[string]string `glazed:"rename-regexp"`
+	RenameYaml   string            `glazed:"rename-yaml"`
 }
 
 //go:embed "flags/rename.yaml"

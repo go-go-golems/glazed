@@ -17,9 +17,9 @@ import (
 
 // Settings struct for the command
 type ConfigSettings struct {
-	ApiKey  string `glazed.parameter:"api-key"`
-	Timeout int    `glazed.parameter:"timeout"`
-	Debug   bool   `glazed.parameter:"debug"`
+	ApiKey  string `glazed:"api-key"`
+	Timeout int    `glazed:"timeout"`
+	Debug   bool   `glazed:"debug"`
 }
 
 // BareCommand that uses sources package for manual middleware execution

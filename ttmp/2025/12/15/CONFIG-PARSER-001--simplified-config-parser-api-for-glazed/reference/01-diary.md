@@ -41,7 +41,7 @@ This step involved systematically exploring the Glazed codebase to understand ho
    - Searched for "How are parameter layers defined and used in glazed?"
    - Searched for "How are middlewares registered and used in glazed command execution?"
    - Searched for "How does InitializeStruct parse parameters from ParsedLayers into struct fields?"
-   - Searched for "How are struct fields with glazed.parameter tags converted into ParameterDefinitions?"
+   - Searched for "How are struct fields with glazed tags converted into ParameterDefinitions?"
 
 3. **Read key files** to understand implementation details:
    - `glazed/pkg/cmds/parameters/parameters.go` - ParameterDefinition types and creation
@@ -145,7 +145,7 @@ To design this API, I needed to understand:
 
 ### What should be done in the future
 
-- **Implement struct-to-parameter conversion**: Create a function that scans struct fields with `glazed.parameter` tags and automatically creates ParameterDefinitions
+- **Implement struct-to-parameter conversion**: Create a function that scans struct fields with `glazed` tags and automatically creates ParameterDefinitions
 - **Auto-generate layers from structs**: Derive ParameterLayers from struct types (one struct = one layer, or nested structs = nested layers)
 - **Default middleware chain**: Provide a sensible default chain (flags → env → config → defaults) that can be customized
 - **Unified parser API**: Design the `appconfig.ConfigParser[T]` API that hides all the complexity
@@ -194,9 +194,9 @@ To design this API, I needed to understand:
      - `glazed/pkg/cmds/parameters/initialize-struct.go` (lines 1-497): Found `InitializeStruct()` function, `parsedTagOptions()` function, wildcard support, JSON parsing support
      - `glazed/pkg/cmds/layers/parsed-layer.go` (lines 69-212): Found `ParsedLayer.InitializeStruct()` method, `ParsedLayers.InitializeStruct()` method with layer key
      - `glazed/pkg/cmds/parameters/parameters.go` (lines 315-391): Found `InitializeDefaultsFromStruct()` showing reverse direction (struct → ParameterDefinition defaults)
-   - **Key findings**: `InitializeStruct()` reads `glazed.parameter` tags, looks up values in ParsedParameters, sets struct fields via reflection. Supports wildcards for maps, `from_json` option for JSON parsing. Called via `parsedLayers.InitializeStruct(layerKey, struct)`.
+   - **Key findings**: `InitializeStruct()` reads `glazed` tags, looks up values in ParsedParameters, sets struct fields via reflection. Supports wildcards for maps, `from_json` option for JSON parsing. Called via `parsedLayers.InitializeStruct(layerKey, struct)`.
 
-5. **Query**: "How are struct fields with glazed.parameter tags converted into ParameterDefinitions?"
+5. **Query**: "How are struct fields with glazed tags converted into ParameterDefinitions?"
    - **Results**:
      - `glazed/pkg/cmds/parameters/initialize-struct.go` (lines 441-497): Found `StructToDataMap()` function showing struct → map conversion
      - `glazed/pkg/cmds/parameters/parameters.go` (lines 315-391): Found `InitializeDefaultsFromStruct()` which sets ParameterDefinition defaults from structs, but NOT creation
@@ -218,7 +218,7 @@ To design this API, I needed to understand:
 1. **`glazed/pkg/cmds/parameters/parameters.go`** (read lines 1-687):
    - `ParameterDefinition` struct has: Name, Type, Help, Default, Choices, Required, IsArgument
    - `NewParameterDefinition()` uses functional options pattern
-   - `InitializeDefaultsFromStruct()` reads struct fields with `glazed.parameter` tags and sets ParameterDefinition defaults
+   - `InitializeDefaultsFromStruct()` reads struct fields with `glazed` tags and sets ParameterDefinition defaults
    - `InitializeDefaultsFromMap()` sets defaults from a map
    - Parameter types include: String, Integer, Bool, File, Choice, Date, KeyValue, etc.
 
@@ -243,8 +243,8 @@ To design this API, I needed to understand:
 
 5. **`glazed/pkg/cmds/parameters/initialize-struct.go`** (read lines 1-497):
    - `InitializeStruct()` is the main function that populates structs from ParsedParameters
-   - `parsedTagOptions()` parses `glazed.parameter:"name,options"` tag syntax
-   - Supports wildcards: `glazed.parameter:"pattern*"` for map fields
+   - `parsedTagOptions()` parses `glazed:"name,options"` tag syntax
+   - Supports wildcards: `glazed:"pattern*"` for map fields
    - Supports `from_json` option to parse JSON strings
    - Handles pointers, nested structs, type conversion
 
@@ -284,7 +284,7 @@ To design this API, I needed to understand:
 11. **`glazed/pkg/cli/cli.go`** (read lines 1-121):
     - `NewCommandSettingsLayer()` creates layer for debug flags (print-yaml, print-parsed-parameters, etc.)
     - `NewProfileSettingsLayer()` creates layer for profile selection
-    - `CommandSettings` struct shows example of struct with `glazed.parameter` tags
+    - `CommandSettings` struct shows example of struct with `glazed` tags
 
 12. **`pinocchio/cmd/pinocchio/main.go`** (read lines 1-327):
     - Shows complex setup: loading repositories, creating directories, setting up layers

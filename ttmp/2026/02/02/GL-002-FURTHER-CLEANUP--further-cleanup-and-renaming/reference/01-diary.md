@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:10:53.902130977-05:00
+LastUpdated: 2026-02-02T19:39:27-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -127,4 +127,58 @@ I committed the new GL-002 materials and uploaded the design document to the reM
 ```bash
 git commit -m "Docs: add GL-002 renaming plan and notes"
 remarquee upload md /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md --remote-dir "/ai/2026/02/02/GL-002-FURTHER-CLEANUP"
+```
+
+## Step 3: Switch struct tags to `glazed:` and update migration tooling
+
+I updated the codebase and docs to use `glazed:` struct tags, removed any remaining `glazed.parameter` usage, updated the AST migration tool to rewrite tags, and re-ran the parameter/layer inventory with historical docs excluded. I also ran the AST tool against the examples tree and stored the report in the ticket.
+
+### Prompt Context
+
+**User prompt (verbatim):** "- use \"glazed:\" for struct tags\n\nNow create detailed tasks to complete the migration, be extensive and exhaustive, apply the AST porting tooling to the examples, etc... \n\nAdd tasks, then work on them step by step, keep a detailed diary as you go, check task off, commit to git."
+
+**Assistant interpretation:** Enforce `glazed:` tags everywhere, update the migration tool to handle tags, apply it to examples, track work in the ticket tasks/diary, and prepare for a commit after validation.
+
+**Inferred user intent:** Remove any lingering tag compatibility and make the migration tooling usable for future sweeps.
+
+**Commit (code):** Pending
+
+### What I did
+- Swapped struct tag usage and tag lookup logic to `glazed:` throughout code and docs.
+- Updated the AST migration tool to rewrite `glazed.parameter` tags and added tag-change reporting.
+- Ran the AST tool over `cmd/examples` and stored the report in the ticket.
+- Regenerated the parameter/layer inventory excluding historical `ttmp` docs.
+
+### Why
+- The rename migration should not keep compatibility aliases, and the tooling needs to enforce the new canonical tag.
+
+### What worked
+- AST tooling ran cleanly over examples and produced a report.
+
+### What didn't work
+- The report path initially failed because the analysis directory did not exist; reran after creating it.
+
+### What I learned
+- The rename tool needed tag-change tracking to avoid skipping files where only struct tags changed.
+
+### What was tricky to build
+- Preserving struct tag quoting while rewriting `glazed.parameter` → `glazed` required careful AST handling.
+
+### What warrants a second pair of eyes
+- Remaining parameter/layer mentions that are still intentional vs. candidates for rename cleanup.
+
+### What should be done in the future
+- Re-run the AST tool on broader directories as we migrate more call sites.
+
+### Code review instructions
+- Inspect the updated rename tool at `glazed/ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/rename_glazed_api.go`.
+- Review the updated inventory at `glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt`.
+
+### Technical details
+
+```bash
+rg -n "glazed\.parameter"
+rg -n -i "parameter|layer" -g '!ttmp/**' > ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
+mkdir -p ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis
+go run ttmp/2026/02/02/GL-001-ADD-MIGRATION-DOCS--add-migration-docs-for-glazed-api-changes/scripts/rename_glazed_api.go --root cmd/examples --write --report ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-examples-rename-report.json
 ```

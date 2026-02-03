@@ -301,7 +301,7 @@ func (pds *Definitions) ParsedParametersFromDefaults() (*ParsedParameters, error
 
 // InitializeStructFromDefaults initializes a struct from a map of parameter definitions.
 //
-// Each field in the struct annotated with tag `glazed.parameter` will be set to the default value of
+// Each field in the struct annotated with tag `glazed` will be set to the default value of
 // the corresponding `Definition`. If no `Definition` is found for a field, an error
 // is returned.
 func (pds *Definitions) InitializeStructFromDefaults(s interface{}) error {
@@ -313,7 +313,7 @@ func (pds *Definitions) InitializeStructFromDefaults(s interface{}) error {
 }
 
 // InitializeDefaultsFromStruct initializes the parameters definitions from a struct.
-// Each field in the struct annotated with tag `glazed.parameter` will be used to set
+// Each field in the struct annotated with tag `glazed` will be used to set
 // the default value of the corresponding definition in `parameterDefinitions`.
 // If no `Definition` is found for a field, an error is returned.
 // This is the inverse of InitializeStructFromDefaults.
@@ -335,7 +335,7 @@ func (pds *Definitions) InitializeDefaultsFromStruct(
 
 	for i := 0; i < st.NumField(); i++ {
 		field := st.Field(i)
-		tag, ok := field.Tag.Lookup("glazed.parameter")
+		tag, ok := field.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}

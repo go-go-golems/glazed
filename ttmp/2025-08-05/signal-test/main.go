@@ -28,11 +28,11 @@ type SignalTestCommand struct {
 }
 
 type SignalTestSettings struct {
-	TestType        string `glazed.parameter:"test-type"`
-	Duration        int    `glazed.parameter:"duration"`
-	CreateNotifyCtx bool   `glazed.parameter:"create-notify-context"`
-	Host            string `glazed.parameter:"host"`
-	Port            int    `glazed.parameter:"port"`
+	TestType        string `glazed:"test-type"`
+	Duration        int    `glazed:"duration"`
+	CreateNotifyCtx bool   `glazed:"create-notify-context"`
+	Host            string `glazed:"host"`
+	Port            int    `glazed:"port"`
 }
 
 func (c *SignalTestCommand) RunIntoGlazeProcessor(

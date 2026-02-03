@@ -79,8 +79,8 @@ func TestValuesGetDataMap(t *testing.T) {
 
 func TestValuesInitializeStruct(t *testing.T) {
 	type TestStruct struct {
-		Param1 string `glazed.parameter:"param1"`
-		Param2 int    `glazed.parameter:"param2"`
+		Param1 string `glazed:"param1"`
+		Param2 int    `glazed:"param2"`
 	}
 
 	layer := createParameterLayer(t, "test", "Test Layer",
@@ -213,7 +213,7 @@ func TestSectionValuesInitializeStructWithUnexportedFields(t *testing.T) {
 	parsedLayer := createSectionValues(t, layer, map[string]interface{}{"exported": "value"})
 
 	type TestStruct struct {
-		Exported   string `glazed.parameter:"exported"`
+		Exported   string `glazed:"exported"`
 		unexported string
 	}
 
@@ -236,7 +236,7 @@ func TestValuesInitializeStructWithNonPointer(t *testing.T) {
 	parsedLayers.Set("test", parsedLayer)
 
 	type TestStruct struct {
-		Param string `glazed.parameter:"param"`
+		Param string `glazed:"param"`
 	}
 
 	var result TestStruct
@@ -309,12 +309,12 @@ func TestValuesInitializeStructStringTypes(t *testing.T) {
 
 	// Define the test struct
 	type TestStruct struct {
-		StringField            string              `glazed.parameter:"string_field"`
-		StringAliasField       StringAlias         `glazed.parameter:"string_alias_field"`
-		StringDeclarationField StringDeclaration   `glazed.parameter:"string_declaration_field"`
-		StringListField        []string            `glazed.parameter:"string_list_field"`
-		StringAliasListField   []StringAlias       `glazed.parameter:"string_alias_list_field"`
-		StringDeclListField    []StringDeclaration `glazed.parameter:"string_decl_list_field"`
+		StringField            string              `glazed:"string_field"`
+		StringAliasField       StringAlias         `glazed:"string_alias_field"`
+		StringDeclarationField StringDeclaration   `glazed:"string_declaration_field"`
+		StringListField        []string            `glazed:"string_list_field"`
+		StringAliasListField   []StringAlias       `glazed:"string_alias_list_field"`
+		StringDeclListField    []StringDeclaration `glazed:"string_decl_list_field"`
 	}
 
 	// Create a parameter layer with all the necessary definitions
@@ -371,9 +371,9 @@ func TestValuesInitializeStructStringPointerTypes(t *testing.T) {
 
 	// Define the test struct with pointer fields
 	type TestStruct struct {
-		StringPtrField            *string            `glazed.parameter:"string_ptr_field"`
-		StringAliasPtrField       *StringAlias       `glazed.parameter:"string_alias_ptr_field"`
-		StringDeclarationPtrField *StringDeclaration `glazed.parameter:"string_declaration_ptr_field"`
+		StringPtrField            *string            `glazed:"string_ptr_field"`
+		StringAliasPtrField       *StringAlias       `glazed:"string_alias_ptr_field"`
+		StringDeclarationPtrField *StringDeclaration `glazed:"string_declaration_ptr_field"`
 	}
 
 	// Create a parameter layer with all the necessary definitions

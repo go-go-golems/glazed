@@ -14,7 +14,7 @@ import (
 
 type TemplateSettings struct {
 	RenameSeparator string
-	UseRowTemplates bool `glazed.parameter:"use-row-templates"`
+	UseRowTemplates bool `glazed:"use-row-templates"`
 	Templates       map[types.FieldName]string
 }
 
@@ -34,9 +34,9 @@ func (tf *TemplateSettings) AddMiddlewares(p_ *middlewares.TableProcessor) error
 }
 
 type TemplateFlagsDefaults struct {
-	Template        string            `glazed.parameter:"template"`
-	TemplateField   map[string]string `glazed.parameter:"template-field"`
-	UseRowTemplates bool              `glazed.parameter:"use-row-templates"`
+	Template        string            `glazed:"template"`
+	TemplateField   map[string]string `glazed:"template-field"`
+	UseRowTemplates bool              `glazed:"use-row-templates"`
 }
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {

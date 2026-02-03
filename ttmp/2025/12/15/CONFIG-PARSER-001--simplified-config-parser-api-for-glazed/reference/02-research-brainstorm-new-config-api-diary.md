@@ -727,7 +727,7 @@ Key observations:
 
 Design implication:
 
-- If the new API must populate user structs without `glazed.parameter` tags, it can likely reuse this helper for conversion, but it still needs its own field-binding/tag interpretation.
+- If the new API must populate user structs without `glazed` tags, it can likely reuse this helper for conversion, but it still needs its own field-binding/tag interpretation.
 
 ## Step 10: Moments `appconfig` as prior art (and what it teaches us)
 
@@ -792,7 +792,7 @@ I read these files and recorded the key findings:
      - `Parse(parsed *glazedLayers.ParsedLayers) error`
        - hydrates *every registered type*, validates via `Validator`,
        - stores in a global map keyed by reflect.Type.
-   - It contains a **schema-driven hydration path** that does *not* require `glazed.parameter` tags:
+   - It contains a **schema-driven hydration path** that does *not* require `glazed` tags:
      - `initializeStructFromSchema(...)` maps struct fields to schema param names using:
        1) `appcfg:"<param-name>"` tag
        2) fallback: kebab-case of the field name (via `toKebabCase`)
@@ -852,7 +852,7 @@ I read these files and recorded the key findings:
 Moments `appconfig` provides evidence that the following ideas are not hypothetical — they work in a real system:
 
 1) **Schema-first config**: a Glazed-agnostic schema can be converted into Glazed layers and hydrated back into typed structs.
-2) **Typed hydration without glazed tags**: schema + reflection can populate user structs without requiring `glazed.parameter` tags everywhere.
+2) **Typed hydration without glazed tags**: schema + reflection can populate user structs without requiring `glazed` tags everywhere.
 3) **Nested config paths**: it’s feasible to support nested YAML paths per subsystem (`Schema.ConfigPath`), independent of CLI naming.
 4) **Correct prefix semantics**: Moments explicitly encodes the desired semantics:
    - `layer.Prefix` is for flags (external), not for config key names (internal).
@@ -874,7 +874,7 @@ Even if we don’t borrow code directly, we should borrow these patterns:
 
 - `Schema{Slug, Fields, ConfigPath, Prefix}` concept (Slack’s `appconfig.path` is essentially `ConfigPath`).
 - `DeriveSchema` + `NamingStrategy` + `toKebabCase`/`toSnakeCase`.
-- Schema-driven hydration that does not require `glazed.parameter` tags.
+- Schema-driven hydration that does not require `glazed` tags.
 - Explicit handling of “prefix only affects flags/env” (the config path uses unprefixed names).
 
 ### Immediate implication for our earlier “prefix mismatch” issue

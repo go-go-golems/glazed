@@ -434,12 +434,12 @@ For complex layers requiring type safety and structured access:
 ```go
 // 1. Define settings struct
 type DatabaseSettings struct {
-    Host     string `glazed.parameter:"db-host"`
-    Port     int    `glazed.parameter:"db-port"`
-    Name     string `glazed.parameter:"db-name"`
-    Username string `glazed.parameter:"db-username"`
-    Password string `glazed.parameter:"db-password"`
-    SSLMode  string `glazed.parameter:"db-ssl-mode"`
+    Host     string `glazed:"db-host"`
+    Port     int    `glazed:"db-port"`
+    Name     string `glazed:"db-name"`
+    Username string `glazed:"db-username"`
+    Password string `glazed:"db-password"`
+    SSLMode  string `glazed:"db-ssl-mode"`
 }
 
 // 2. Create layer with parameter definitions
@@ -625,24 +625,24 @@ import (
 
 // Settings structs for type safety
 type ServerSettings struct {
-    Host         string `glazed.parameter:"host"`
-    Port         int    `glazed.parameter:"port"`
-    ReadTimeout  string `glazed.parameter:"read-timeout"`
-    WriteTimeout string `glazed.parameter:"write-timeout"`
+    Host         string `glazed:"host"`
+    Port         int    `glazed:"port"`
+    ReadTimeout  string `glazed:"read-timeout"`
+    WriteTimeout string `glazed:"write-timeout"`
 }
 
 type LoggingSettings struct {
-    Level  string `glazed.parameter:"log-level"`
-    Format string `glazed.parameter:"log-format"`
-    File   string `glazed.parameter:"log-file"`
+    Level  string `glazed:"log-level"`
+    Format string `glazed:"log-format"`
+    File   string `glazed:"log-file"`
 }
 
 type DatabaseSettings struct {
-    Host     string `glazed.parameter:"db-host"`
-    Port     int    `glazed.parameter:"db-port"`
-    Name     string `glazed.parameter:"db-name"`
-    Username string `glazed.parameter:"db-username"`
-    Password string `glazed.parameter:"db-password"`
+    Host     string `glazed:"db-host"`
+    Port     int    `glazed:"db-port"`
+    Name     string `glazed:"db-name"`
+    Username string `glazed:"db-username"`
+    Password string `glazed:"db-password"`
 }
 
 // Layer creation functions
@@ -1006,15 +1006,15 @@ func (b *AppCommandBuilder) BuildProcessCommand() (*cmds.CommandDescription, err
 
 // Settings structs for optional features
 type CacheSettings struct {
-    Enabled bool   `glazed.parameter:"cache-enabled"`
-    TTL     string `glazed.parameter:"cache-ttl"`
-    Size    int    `glazed.parameter:"cache-size"`
+    Enabled bool   `glazed:"cache-enabled"`
+    TTL     string `glazed:"cache-ttl"`
+    Size    int    `glazed:"cache-size"`
 }
 
 type MetricsSettings struct {
-    Enabled bool   `glazed.parameter:"metrics-enabled"`
-    Port    int    `glazed.parameter:"metrics-port"`
-    Path    string `glazed.parameter:"metrics-path"`
+    Enabled bool   `glazed:"metrics-enabled"`
+    Port    int    `glazed:"metrics-port"`
+    Path    string `glazed:"metrics-path"`
 }
 
 // Helper functions for optional layer settings

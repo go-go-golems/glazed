@@ -1,0 +1,69 @@
+{
+  "root": "cmd/examples",
+  "files": [
+    {
+      "path": "cmd/examples/appconfig-parser/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/appconfig-profiles/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/config-custom-mapper/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/config-overlay/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/config-pattern-mapper/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/config-single/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/help-system/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/markdown-code-blocks/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/middlewares-config-env/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/new-api-build-first-command/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/new-api-dual-mode/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/overlay-override/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/parameter-types/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/refactor-new-packages/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/register-cobra/main.go",
+      "skipped": false
+    },
+    {
+      "path": "cmd/examples/sources-example/main.go",
+      "skipped": false
+    }
+  ]
+}

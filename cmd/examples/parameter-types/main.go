@@ -24,33 +24,33 @@ import (
 
 type ParameterTypesSettings struct {
 	// Basic types
-	StringParam  string    `glazed.parameter:"string-param"`
-	SecretParam  string    `glazed.parameter:"secret-param"`
-	IntegerParam int       `glazed.parameter:"integer-param"`
-	FloatParam   float64   `glazed.parameter:"float-param"`
-	BoolParam    bool      `glazed.parameter:"bool-param"`
-	DateParam    time.Time `glazed.parameter:"date-param"`
-	ChoiceParam  string    `glazed.parameter:"choice-param"`
+	StringParam  string    `glazed:"string-param"`
+	SecretParam  string    `glazed:"secret-param"`
+	IntegerParam int       `glazed:"integer-param"`
+	FloatParam   float64   `glazed:"float-param"`
+	BoolParam    bool      `glazed:"bool-param"`
+	DateParam    time.Time `glazed:"date-param"`
+	ChoiceParam  string    `glazed:"choice-param"`
 
 	// List types
-	StringListParam  []string  `glazed.parameter:"string-list-param"`
-	IntegerListParam []int     `glazed.parameter:"integer-list-param"`
-	FloatListParam   []float64 `glazed.parameter:"float-list-param"`
-	ChoiceListParam  []string  `glazed.parameter:"choice-list-param"`
+	StringListParam  []string  `glazed:"string-list-param"`
+	IntegerListParam []int     `glazed:"integer-list-param"`
+	FloatListParam   []float64 `glazed:"float-list-param"`
+	ChoiceListParam  []string  `glazed:"choice-list-param"`
 
 	// File types
-	FileParam                *fields.FileData         `glazed.parameter:"file-param"`
-	FileListParam            []*fields.FileData       `glazed.parameter:"file-list-param"`
-	StringFromFileParam      string                   `glazed.parameter:"string-from-file-param"`
-	StringFromFilesParam     string                   `glazed.parameter:"string-from-files-param"`
-	StringListFromFileParam  []string                 `glazed.parameter:"string-list-from-file-param"`
-	StringListFromFilesParam []string                 `glazed.parameter:"string-list-from-files-param"`
-	ObjectFromFileParam      map[string]interface{}   `glazed.parameter:"object-from-file-param"`
-	ObjectListFromFileParam  []map[string]interface{} `glazed.parameter:"object-list-from-file-param"`
-	ObjectListFromFilesParam []map[string]interface{} `glazed.parameter:"object-list-from-files-param"`
+	FileParam                *fields.FileData         `glazed:"file-param"`
+	FileListParam            []*fields.FileData       `glazed:"file-list-param"`
+	StringFromFileParam      string                   `glazed:"string-from-file-param"`
+	StringFromFilesParam     string                   `glazed:"string-from-files-param"`
+	StringListFromFileParam  []string                 `glazed:"string-list-from-file-param"`
+	StringListFromFilesParam []string                 `glazed:"string-list-from-files-param"`
+	ObjectFromFileParam      map[string]interface{}   `glazed:"object-from-file-param"`
+	ObjectListFromFileParam  []map[string]interface{} `glazed:"object-list-from-file-param"`
+	ObjectListFromFilesParam []map[string]interface{} `glazed:"object-list-from-files-param"`
 
 	// Key-value type
-	KeyValueParam map[string]string `glazed.parameter:"key-value-param"`
+	KeyValueParam map[string]string `glazed:"key-value-param"`
 }
 
 type ParameterTypesCommand struct {

@@ -86,7 +86,7 @@ So the transitional API needs a strategy for *method* vocabulary (`InitializeStr
 
 ### Constraint 3: tags are part of the public API
 
-Struct tags like `glazed.parameter:"host"` are “stringly-typed” but extremely sticky.
+Struct tags like `glazed:"host"` are “stringly-typed” but extremely sticky.
 
 Recommendation: **do not rename tags** in the first phase. If we ever do, it should be additive (support both tags) with clear docs.
 

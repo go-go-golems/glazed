@@ -66,7 +66,7 @@ Notable “peripheral” vocabulary that also impacts readability:
 
 - Package names: `cmds/layers`, `cmds/parameters`, `cmds/middlewares`, `cmds/runner`
 - APIs: `NewParameterLayer`, `NewParameterDefinition`, `ExecuteMiddlewares`, `UpdateFromEnv`, `LoadParametersFromFiles`, `ParseFromCobraCommand`, `GatherArguments`
-- Hydration: `InitializeStruct`, struct tags `glazed.parameter:"..."`
+- Hydration: `InitializeStruct`, struct tags `glazed:"..."`
 
 ## Brainstorm naming bundles
 

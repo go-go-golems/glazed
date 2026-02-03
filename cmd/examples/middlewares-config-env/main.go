@@ -17,8 +17,8 @@ import (
 
 // DemoSettings maps to the demo layer parameters
 type DemoSettings struct {
-	ApiKey    string `glazed.parameter:"api-key"`
-	Threshold int    `glazed.parameter:"threshold"`
+	ApiKey    string `glazed:"api-key"`
+	Threshold int    `glazed:"threshold"`
 }
 
 type DemoCommand struct {

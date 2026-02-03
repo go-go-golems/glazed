@@ -16,8 +16,8 @@ import (
 )
 
 type Settings struct {
-	ApiKey    string `glazed.parameter:"api-key"`
-	Threshold int    `glazed.parameter:"threshold"`
+	ApiKey    string `glazed:"api-key"`
+	Threshold int    `glazed:"threshold"`
 }
 
 type Command struct{ *cmds.CommandDescription }

@@ -21,7 +21,7 @@
 - [x] P1: Implement minimal cmds.Command stub (Description().Layers = registered layers) to reuse runner.ParseCommandParameters
 - [x] P1: Implement Parse() to run configured middleware chain (runner.ParseCommandParameters or explicit ExecuteMiddlewares)
 - [x] P1: Implement hydration into grouped T via ParsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t)) with per-layer error context
-- [x] P1: Decide and document v1 contract: requires glazed.parameter tags; missing params are skipped (zero values)
+- [x] P1: Decide and document v1 contract: requires glazed tags; missing params are skipped (zero values)
 - [x] P2: Add unit tests for registration invariants and binder failures (bind returns nil or non-pointer)
 - [x] P2: Add unit tests for precedence (defaults < config files low→high < env) using temporary YAML config files
 - [x] P2: Add unit tests for hydration behavior (tag-required, missing params skipped)

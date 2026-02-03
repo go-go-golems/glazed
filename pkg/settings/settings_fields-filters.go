@@ -15,13 +15,13 @@ import (
 var fieldsFiltersFlagsYaml []byte
 
 type FieldsFilterFlagsDefaults struct {
-	Fields           []string `glazed.parameter:"fields"`
-	Filter           []string `glazed.parameter:"filter"`
-	RegexFields      []string `glazed.parameter:"regex-fields"`
-	RegexFilters     []string `glazed.parameter:"regex-filters"`
-	SortColumns      bool     `glazed.parameter:"sort-columns"`
-	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
-	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
+	Fields           []string `glazed:"fields"`
+	Filter           []string `glazed:"filter"`
+	RegexFields      []string `glazed:"regex-fields"`
+	RegexFilters     []string `glazed:"regex-filters"`
+	SortColumns      bool     `glazed:"sort-columns"`
+	RemoveNulls      bool     `glazed:"remove-nulls"`
+	RemoveDuplicates []string `glazed:"remove-duplicates"`
 }
 
 type FieldsFiltersParameterLayer struct {
@@ -38,14 +38,14 @@ func (f *FieldsFiltersParameterLayer) Clone() schema.Section {
 }
 
 type FieldsFilterSettings struct {
-	Filters          []string `glazed.parameter:"filter"`
-	Fields           []string `glazed.parameter:"fields"`
-	RegexFields      []string `glazed.parameter:"regex-fields"`
-	RegexFilters     []string `glazed.parameter:"regex-filters"`
-	SortColumns      bool     `glazed.parameter:"sort-columns"`
-	RemoveNulls      bool     `glazed.parameter:"remove-nulls"`
-	RemoveDuplicates []string `glazed.parameter:"remove-duplicates"`
-	ReorderColumns   []string `glazed.parameter:"reorder-columns"`
+	Filters          []string `glazed:"filter"`
+	Fields           []string `glazed:"fields"`
+	RegexFields      []string `glazed:"regex-fields"`
+	RegexFilters     []string `glazed:"regex-filters"`
+	SortColumns      bool     `glazed:"sort-columns"`
+	RemoveNulls      bool     `glazed:"remove-nulls"`
+	RemoveDuplicates []string `glazed:"remove-duplicates"`
+	ReorderColumns   []string `glazed:"reorder-columns"`
 }
 
 func NewFieldsFiltersParameterLayer(options ...schema.SectionOption) (*FieldsFiltersParameterLayer, error) {

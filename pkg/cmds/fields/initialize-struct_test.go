@@ -10,8 +10,8 @@ import (
 
 // Define a struct that matches the expected structure for InitializeStruct
 type TestStruct struct {
-	Name string `glazed.parameter:"name"`
-	Age  int    `glazed.parameter:"age"`
+	Name string `glazed:"name"`
+	Age  int    `glazed:"age"`
 }
 
 // TestInitializeStructWithValidStruct tests initializing a struct with valid parameters
@@ -94,7 +94,7 @@ func TestInitializeStructWithMissingParameters(t *testing.T) {
 // TestInitializeStructWithJSONTagOnNonPointerField tests initializing a struct with a `from_json` tag on a non-pointer field
 func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
 	type TestStructWithJSONTag struct {
-		Config string `glazed.parameter:"config,from_json"`
+		Config string `glazed:"config,from_json"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -117,7 +117,7 @@ func TestInitializeStructWithJSONTagOnNonPointerField(t *testing.T) {
 // TestParseStringListSuccessfully tests parsing a string list successfully
 func TestParseStringListSuccessfully(t *testing.T) {
 	type TestStruct struct {
-		Tags []string `glazed.parameter:"tags"`
+		Tags []string `glazed:"tags"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -140,7 +140,7 @@ func TestParseStringListSuccessfully(t *testing.T) {
 // TestParseIntListSuccessfully tests parsing an integer list successfully
 func TestParseIntListSuccessfully(t *testing.T) {
 	type TestStruct struct {
-		Numbers []int `glazed.parameter:"numbers"`
+		Numbers []int `glazed:"numbers"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -163,7 +163,7 @@ func TestParseIntListSuccessfully(t *testing.T) {
 // TestParseObjectFromFileSuccessfully tests parsing an object from file successfully
 func TestParseObjectFromFileSuccessfully(t *testing.T) {
 	type TestStruct struct {
-		Config map[string]interface{} `glazed.parameter:"config"`
+		Config map[string]interface{} `glazed:"config"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -193,7 +193,7 @@ func TestParseObjectFromFileSuccessfully(t *testing.T) {
 // TestInitializeStructWithInvalidJSON tests initializing a struct with an invalid JSON string
 func TestInitializeStructWithInvalidJSON(t *testing.T) {
 	type TestStruct struct {
-		Config *map[string]interface{} `glazed.parameter:"config,from_json"`
+		Config *map[string]interface{} `glazed:"config,from_json"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -216,7 +216,7 @@ func TestInitializeStructWithInvalidJSON(t *testing.T) {
 // TestInitializeStructWithUnsupportedTypeForJSON tests initializing a struct with an unsupported type for JSON
 func TestInitializeStructWithUnsupportedTypeForJSON(t *testing.T) {
 	type TestStruct struct {
-		Active bool `glazed.parameter:"active,from_json"` // Unsupported type for JSON unmarshaling
+		Active bool `glazed:"active,from_json"` // Unsupported type for JSON unmarshaling
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -238,7 +238,7 @@ func TestInitializeStructWithUnsupportedTypeForJSON(t *testing.T) {
 
 // TestStruct for wildcard functionality
 type TestStructWithWildcard struct {
-	ApiKeys map[string]string `glazed.parameter:"*_api_key"`
+	ApiKeys map[string]string `glazed:"*_api_key"`
 }
 
 // TestInitializeStructWithWildcardMultipleMatches tests wildcard pattern matching multiple parameters
@@ -282,7 +282,7 @@ func TestInitializeStructWithWildcardNoMatches(t *testing.T) {
 // TestInitializeStructWithWildcardOnNonMapField tests wildcard pattern used on a non-map field
 func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
 	type TestStructNonMapWildcard struct {
-		ApiKeys string `glazed.parameter:"*_api_key"`
+		ApiKeys string `glazed:"*_api_key"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -304,7 +304,7 @@ func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
 // TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes tests wildcard pattern on a map with incorrect value types
 func TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes(t *testing.T) {
 	type TestStructMapWildcardIncorrectTypes struct {
-		ApiKeys map[string]int `glazed.parameter:"*_api_key"`
+		ApiKeys map[string]int `glazed:"*_api_key"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -352,7 +352,7 @@ func TestInitializeStructWithWildcardOnMapWithCorrectValueTypes(t *testing.T) {
 // TestInitializeStructWithWildcardComplexPatterns tests wildcard pattern with complex patterns
 func TestInitializeStructWithWildcardComplexPatterns(t *testing.T) {
 	type TestStructComplexWildcard struct {
-		ApiKeys map[string]string `glazed.parameter:"*api_key"`
+		ApiKeys map[string]string `glazed:"*api_key"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -389,7 +389,7 @@ func TestInitializeStructWithWildcardComplexPatterns(t *testing.T) {
 // TestInitializeStructNormalBehavior tests the normal behavior without wildcards
 func TestInitializeStructNormalBehavior(t *testing.T) {
 	type TestStructNormal struct {
-		Name string `glazed.parameter:"name"`
+		Name string `glazed:"name"`
 	}
 
 	parsedParams := fields.NewParsedParameters(
@@ -438,7 +438,7 @@ func TestStructToDataMapWithWildcardNoMatches(t *testing.T) {
 
 func TestStructToDataMapWithWildcardOnNonMapField(t *testing.T) {
 	type TestStructNonMapWildcard struct {
-		ApiKeys string `glazed.parameter:"*_api_key"`
+		ApiKeys string `glazed:"*_api_key"`
 	}
 
 	testStruct := &TestStructNonMapWildcard{
@@ -452,12 +452,12 @@ func TestStructToDataMapWithWildcardOnNonMapField(t *testing.T) {
 }
 
 type TestStructWithJSON struct {
-	Data map[string]interface{} `glazed.parameter:"data,from_json"`
+	Data map[string]interface{} `glazed:"data,from_json"`
 }
 
 type TestStructWithTags struct {
-	Name string `glazed.parameter:"name"`
-	Age  int    `glazed.parameter:"age"`
+	Name string `glazed:"name"`
+	Age  int    `glazed:"age"`
 }
 
 func TestStructToDataMapWithJSON(t *testing.T) {
@@ -517,7 +517,7 @@ func TestInitializeStructWithJSONFromStruct(t *testing.T) {
 	}
 
 	type TestStructWithJSONPtr struct {
-		Config *Config `glazed.parameter:"config,from_json"`
+		Config *Config `glazed:"config,from_json"`
 	}
 
 	inputConfig := Config{
@@ -550,7 +550,7 @@ func TestInitializeStructWithJSONFromMap(t *testing.T) {
 	}
 
 	type TestStructWithJSONPtr struct {
-		Config *Config `glazed.parameter:"config,from_json"`
+		Config *Config `glazed:"config,from_json"`
 	}
 
 	inputMap := map[string]interface{}{
@@ -582,7 +582,7 @@ func TestInitializeStructWithJSONFromMap(t *testing.T) {
 // TestInitializeStructWithJSONFromUnmarshallable tests initializing a struct field from an unmarshallable value
 func TestInitializeStructWithJSONFromUnmarshallable(t *testing.T) {
 	type TestStructWithJSONPtr struct {
-		Config *struct{} `glazed.parameter:"config,from_json"`
+		Config *struct{} `glazed:"config,from_json"`
 	}
 
 	// Create a channel which cannot be marshaled to JSON
@@ -607,7 +607,7 @@ func TestInitializeStructWithJSONFromUnmarshallable(t *testing.T) {
 // TestInitializeStructWithFileDataToString tests initializing a string field from FileData
 func TestInitializeStructWithFileDataToString(t *testing.T) {
 	type TestStruct struct {
-		Content string `glazed.parameter:"content"`
+		Content string `glazed:"content"`
 	}
 
 	fileData := &fields.FileData{
@@ -633,7 +633,7 @@ func TestInitializeStructWithFileDataToString(t *testing.T) {
 // TestInitializeStructWithFileDataToBytes tests initializing a []byte field from FileData
 func TestInitializeStructWithFileDataToBytes(t *testing.T) {
 	type TestStruct struct {
-		RawContent []byte `glazed.parameter:"raw_content"`
+		RawContent []byte `glazed:"raw_content"`
 	}
 
 	fileData := &fields.FileData{
@@ -664,7 +664,7 @@ func TestInitializeStructWithFileDataToParsedContent(t *testing.T) {
 	}
 
 	type TestStruct struct {
-		Config Config `glazed.parameter:"config"`
+		Config Config `glazed:"config"`
 	}
 
 	parsedConfig := Config{
@@ -696,7 +696,7 @@ func TestInitializeStructWithFileDataToParsedContent(t *testing.T) {
 // TestInitializeStructWithFileDataToIncompatibleType tests initializing an incompatible field type from FileData
 func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
 	type TestStruct struct {
-		Content []int `glazed.parameter:"content"` // incompatible with FileData.RawContent
+		Content []int `glazed:"content"` // incompatible with FileData.RawContent
 	}
 
 	fileData := &fields.FileData{
@@ -722,7 +722,7 @@ func TestInitializeStructWithFileDataToIncompatibleType(t *testing.T) {
 // TestInitializeStructWithFileDataContainingInterfaceMap tests handling FileData with map[interface{}]interface{}
 func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
 	type TestStruct struct {
-		Config map[string]interface{} `glazed.parameter:"config"`
+		Config map[string]interface{} `glazed:"config"`
 	}
 
 	// Create a map[interface{}]interface{} with nested maps and slices

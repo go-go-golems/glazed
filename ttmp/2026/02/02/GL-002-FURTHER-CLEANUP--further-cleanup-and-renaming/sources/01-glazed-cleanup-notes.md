@@ -251,7 +251,7 @@ If you want, I can also propose a very short package‑doc blurb for `schema`, `
 
 Yeah — **“field” is the better public term here** *if* you’re willing to commit to it consistently.
 
-Right now the API is already half‑telling users “these are fields” (package `fields`, `schema.WithFields(...)`, etc.) but then you surface “parameter” in the most important types (`ParsedParameter(s)`, `glazed.parameter` tags, error messages). That mismatch is exactly the kind of “wait… are these different?” confusion you’re trying to eliminate. 
+Right now the API is already half‑telling users “these are fields” (package `fields`, `schema.WithFields(...)`, etc.) but then you surface “parameter” in the most important types (`ParsedParameter(s)`, `glazed` tags, error messages). That mismatch is exactly the kind of “wait… are these different?” confusion you’re trying to eliminate. 
 
 ## Why “field” beats “parameter” for *this* API
 
@@ -289,13 +289,13 @@ Here’s the rename set I’d recommend (adjusting my earlier “ParameterValue(
 
 ### Tag naming (this matters more than it seems)
 
-Your decode tags currently use `glazed.parameter:"..."`. If “field” is the term, I’d change the tag to one of:
+Your decode tags currently use `glazed:"..."`. If “field” is the term, I’d change the tag to one of:
 
 * **Best ergonomics:** `glazed:"name,from_json"`
   (short, matches common Go patterns like `mapstructure:"..."`)
 * Or explicit: `glazed.field:"name,from_json"`
 
-Keeping `glazed.parameter` while everything else becomes “field” will reintroduce the “two vocabularies” problem in docs/examples. 
+Keeping `glazed` while everything else becomes “field” will reintroduce the “two vocabularies” problem in docs/examples. 
 
 ### `pkg/cmds/values`
 

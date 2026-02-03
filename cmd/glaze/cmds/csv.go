@@ -78,12 +78,12 @@ func NewCsvCommand() (*CsvCommand, error) {
 }
 
 type CsvSettings struct {
-	InputFiles       []string `glazed.parameter:"input-files"`
-	Delimiter        string   `glazed.parameter:"delimiter"`
-	Comment          string   `glazed.parameter:"comment"`
-	FieldsPerRecord  int      `glazed.parameter:"fields-per-record"`
-	TrimLeadingSpace bool     `glazed.parameter:"trim-leading-space"`
-	LazyQuotes       bool     `glazed.parameter:"lazy-quotes"`
+	InputFiles       []string `glazed:"input-files"`
+	Delimiter        string   `glazed:"delimiter"`
+	Comment          string   `glazed:"comment"`
+	FieldsPerRecord  int      `glazed:"fields-per-record"`
+	TrimLeadingSpace bool     `glazed:"trim-leading-space"`
+	LazyQuotes       bool     `glazed:"lazy-quotes"`
 }
 
 func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {

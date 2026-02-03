@@ -71,10 +71,10 @@ func NewYamlCommand() (*YamlCommand, error) {
 }
 
 type YamlSettings struct {
-	InputIsArray bool     `glazed.parameter:"input-is-array"`
-	Sanitize     bool     `glazed.parameter:"sanitize"`
-	FromMarkdown bool     `glazed.parameter:"from-markdown"`
-	InputFiles   []string `glazed.parameter:"input-files"`
+	InputIsArray bool     `glazed:"input-is-array"`
+	Sanitize     bool     `glazed:"sanitize"`
+	FromMarkdown bool     `glazed:"from-markdown"`
+	InputFiles   []string `glazed:"input-files"`
 }
 
 func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {

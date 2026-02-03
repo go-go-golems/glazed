@@ -126,7 +126,7 @@ We’re trying to understand what “prefix” is supposed to mean across the st
    - help text, required, choices, default values, secret/credential marking, etc.
 4. **Is “schema-first” (derive schema from struct)** acceptable, or do we need explicit schemas?
 5. **Migration strategy**:
-   - How do we support existing `glazed.parameter` tags during migration?
+   - How do we support existing `glazed` tags during migration?
    - Do we need both directions (struct→defaults and parsed→struct)?
 6. **What’s the minimum viable set of Go types** we must support on day 1?
    - (string/bool/int/float, slices, durations, time, maps, custom types?)

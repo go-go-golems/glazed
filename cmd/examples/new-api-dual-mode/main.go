@@ -18,7 +18,7 @@ import (
 )
 
 type StatusSettings struct {
-	Verbose bool `glazed.parameter:"verbose"`
+	Verbose bool `glazed:"verbose"`
 }
 
 type StatusCommand struct {

@@ -144,7 +144,7 @@ values.WithFieldValue("name", "demo")
 ```
 
 #### tags
-- `glazed.parameter:"..."` → `glazed:"..."` or `glazed.field:"..."`
+- `glazed:"..."` → `glazed:"..."` or `glazed.field:"..."`
 
 Example:
 ```go

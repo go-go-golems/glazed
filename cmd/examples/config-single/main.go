@@ -15,8 +15,8 @@ import (
 )
 
 type DemoSettings struct {
-	ApiKey    string `glazed.parameter:"api-key"`
-	Threshold int    `glazed.parameter:"threshold"`
+	ApiKey    string `glazed:"api-key"`
+	Threshold int    `glazed:"threshold"`
 }
 
 type DemoBareCommand struct {

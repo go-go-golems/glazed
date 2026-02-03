@@ -369,7 +369,7 @@ var _ cmds.GlazeCommand = &StatusCommand{}
 
 ## Command Implementation
 
-A well-structured Glazed command separates its identity and logic. The recommended pattern involves a `Command` struct embedding a `CommandDescription` for metadata, a separate `Settings` struct for type-safe parameter access via `glazed.parameter` tags, and a `Run` method containing the business logic. This separation is bridged at runtime by `InitializeStruct`, which populates the `Settings` struct from parsed command-line values.
+A well-structured Glazed command separates its identity and logic. The recommended pattern involves a `Command` struct embedding a `CommandDescription` for metadata, a separate `Settings` struct for type-safe parameter access via `glazed` tags, and a `Run` method containing the business logic. This separation is bridged at runtime by `InitializeStruct`, which populates the `Settings` struct from parsed command-line values.
 
 Glazed commands follow a consistent structure with four key components:
 
@@ -377,7 +377,7 @@ Glazed commands follow a consistent structure with four key components:
 
 **Command Struct**: Contains the command's identity and embeds `CommandDescription` which holds metadata (name, flags, help text) separately from business logic.
 
-**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields through `glazed.parameter` tags.
+**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields through `glazed` tags.
 
 **Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings using `InitializeStruct`, execute logic, return results.
 
@@ -385,15 +385,15 @@ Glazed commands follow a consistent structure with four key components:
 
 ### Settings Structs and InitializeStruct Pattern
 
-Settings structs provide type-safe access to parsed command parameters. Each field uses a `glazed.parameter` tag that must match the parameter name defined in the command description:
+Settings structs provide type-safe access to parsed command parameters. Each field uses a `glazed` tag that must match the parameter name defined in the command description:
 
 ```go
-// Settings struct with glazed.parameter tags
+// Settings struct with glazed tags
 type MyCommandSettings struct {
-    Count   int    `glazed.parameter:"count"`     // Maps to "count" parameter
-    Format  string `glazed.parameter:"format"`   // Maps to "format" parameter  
-    Verbose bool   `glazed.parameter:"verbose"`  // Maps to "verbose" parameter
-    DryRun  bool   `glazed.parameter:"dry-run"`  // Maps to "dry-run" parameter
+    Count   int    `glazed:"count"`     // Maps to "count" parameter
+    Format  string `glazed:"format"`   // Maps to "format" parameter  
+    Verbose bool   `glazed:"verbose"`  // Maps to "verbose" parameter
+    DryRun  bool   `glazed:"dry-run"`  // Maps to "dry-run" parameter
 }
 ```
 
@@ -443,14 +443,14 @@ Commands often use multiple parameter layers. Extract settings from each layer s
 
 ```go
 type DatabaseSettings struct {
-    Host     string `glazed.parameter:"db-host"`
-    Port     int    `glazed.parameter:"db-port"`
-    Database string `glazed.parameter:"db-name"`
+    Host     string `glazed:"db-host"`
+    Port     int    `glazed:"db-port"`
+    Database string `glazed:"db-name"`
 }
 
 type LoggingSettings struct {
-    Level string `glazed.parameter:"log-level"`
-    File  string `glazed.parameter:"log-file"`
+    Level string `glazed:"log-level"`
+    File  string `glazed:"log-file"`
 }
 
 func (c *MyCommand) RunIntoGlazeProcessor(
@@ -491,8 +491,8 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 ```go
 func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     s := struct {
-        Message string `glazed.parameter:"message"`
-        Count   int    `glazed.parameter:"count"`
+        Message string `glazed:"message"`
+        Count   int    `glazed:"count"`
     }{}
 
     if err := parsedLayers.InitializeStruct(schema.DefaultSlug, &s); err != nil {
@@ -507,8 +507,8 @@ func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *values.Values) e
 **Pattern 2: Named settings struct (recommended for complex commands)**
 ```go
 type ExampleSettings struct {
-    Message string `glazed.parameter:"message"`
-    Count   int    `glazed.parameter:"count"`
+    Message string `glazed:"message"`
+    Count   int    `glazed:"count"`
 }
 
 func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
@@ -928,15 +928,15 @@ Example: A backup command might start as BareCommand for user feedback (`Backing
 
 ### Type Safety
 
-Use settings structs with `glazed.parameter` tags to prevent type conversion errors:
+Use settings structs with `glazed` tags to prevent type conversion errors:
 
 ```go
 // Good: Type-safe and clear
 type BackupSettings struct {
-    Source      string        `glazed.parameter:"source"`
-    Destination string        `glazed.parameter:"destination"`
-    MaxAge      time.Duration `glazed.parameter:"max-age"`
-    DryRun      bool          `glazed.parameter:"dry-run"`
+    Source      string        `glazed:"source"`
+    Destination string        `glazed:"destination"`
+    MaxAge      time.Duration `glazed:"max-age"`
+    DryRun      bool          `glazed:"dry-run"`
 }
 
 // Avoid: Manual parameter extraction

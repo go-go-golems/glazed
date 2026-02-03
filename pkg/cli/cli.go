@@ -37,14 +37,14 @@ func NewCreateCommandSettingsLayer() (schema.Section, error) {
 }
 
 type CreateCommandSettings struct {
-	CreateCommand   string `glazed.parameter:"create-command"`
-	CreateAlias     string `glazed.parameter:"create-alias"`
-	CreateCliopatra string `glazed.parameter:"create-cliopatra"`
+	CreateCommand   string `glazed:"create-command"`
+	CreateAlias     string `glazed:"create-alias"`
+	CreateCliopatra string `glazed:"create-cliopatra"`
 }
 
 type ProfileSettings struct {
-	Profile     string `glazed.parameter:"profile"`
-	ProfileFile string `glazed.parameter:"profile-file"`
+	Profile     string `glazed:"profile"`
+	ProfileFile string `glazed:"profile-file"`
 }
 
 const ProfileSettingsSlug = "profile-settings"
@@ -75,11 +75,11 @@ func NewProfileSettingsLayer() (schema.Section, error) {
 
 // GlazedMinimalCommandSettings contains a subset of the most commonly used settings
 type CommandSettings struct {
-	PrintYAML              bool   `glazed.parameter:"print-yaml"`
-	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
-	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
-	PrintSchema            bool   `glazed.parameter:"print-schema"`
-	ConfigFile             string `glazed.parameter:"config-file"`
+	PrintYAML              bool   `glazed:"print-yaml"`
+	PrintParsedParameters  bool   `glazed:"print-parsed-parameters"`
+	LoadParametersFromFile string `glazed:"load-parameters-from-file"`
+	PrintSchema            bool   `glazed:"print-schema"`
+	ConfigFile             string `glazed:"config-file"`
 }
 
 const CommandSettingsSlug = "command-settings"

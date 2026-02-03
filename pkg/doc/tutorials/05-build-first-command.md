@@ -86,9 +86,9 @@ type ListUsersCommand struct {
 
 // Step 2.2: Define settings for type-safe parameter access
 type ListUsersSettings struct {
-    Limit      int    `glazed.parameter:"limit"`      // Maps to --limit flag
-    NameFilter string `glazed.parameter:"name-filter"` // Maps to --name-filter flag
-    Active     bool   `glazed.parameter:"active-only"` // Maps to --active-only flag
+    Limit      int    `glazed:"limit"`      // Maps to --limit flag
+    NameFilter string `glazed:"name-filter"` // Maps to --name-filter flag
+    Active     bool   `glazed:"active-only"` // Maps to --active-only flag
 }
 ```
 
@@ -96,7 +96,7 @@ type ListUsersSettings struct {
 
 1. **Command Struct**: `ListUsersCommand` embeds `*cmds.CommandDescription`, which contains command metadata (name, help text, parameters)
 
-2. **Settings Struct**: `ListUsersSettings` maps command-line flags to Go fields using struct tags. The `glazed.parameter` tags provide automatic type conversion and validation.
+2. **Settings Struct**: `ListUsersSettings` maps command-line flags to Go fields using struct tags. The `glazed` tags provide automatic type conversion and validation.
 
 ### Core Command Logic
 
@@ -517,7 +517,7 @@ type StatusCommand struct {
 
 // Settings for status command
 type StatusSettings struct {
-    Verbose bool `glazed.parameter:"verbose"`
+    Verbose bool `glazed:"verbose"`
 }
 
 // Classic mode - simple text output
@@ -697,7 +697,7 @@ This tutorial demonstrates several architectural patterns that form the foundati
 - `GlazeCommand` for structured data
 - Both interfaces for dual-mode commands
 
-**Type Safety**: Use settings structs with `glazed.parameter` tags for automatic parameter parsing and validation.
+**Type Safety**: Use settings structs with `glazed` tags for automatic parameter parsing and validation.
 
 ### Error Handling and Validation
 
@@ -804,7 +804,7 @@ Create domain-specific parameter layers for your application's needs.
 
 Study the patterns demonstrated in this tutorial:
 - **Command Structure**: Embed `CommandDescription` and use settings structs
-- **Type Safety**: Leverage `glazed.parameter` tags for automatic parsing
+- **Type Safety**: Leverage `glazed` tags for automatic parsing
 - **Output Flexibility**: Use `types.Row` objects for multi-format support
 - **Interface Design**: Choose appropriate command interfaces for your use case
 

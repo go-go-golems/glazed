@@ -103,7 +103,7 @@ So we need to ensure those hooks exist cleanly and can be re-used without copyin
 ### What should be done in the future
 
 - Lock down the precise v1 contract for hydration:
-  - do we require `glazed.parameter` tags on settings structs, or do we add an alternate hydration path?
+  - do we require `glazed` tags on settings structs, or do we add an alternate hydration path?
 - Decide whether `appconfig.Parser` should live in `glazed/pkg/config` (importable as `appconfig`) or in a new `glazed/pkg/appconfig` package.
 
 ### Code review instructions
@@ -142,7 +142,7 @@ This step turned the reframed requirements into a concrete design doc and valida
   - `design-doc/02-design-appconfig-module-register-layers-and-parse.md`
 - Verified the current semantics of struct hydration:
   - Read: `glazed/pkg/cmds/parameters/initialize-struct.go`
-  - Confirmed that fields are only considered if they have a `glazed.parameter` tag, and missing parameters are skipped.
+  - Confirmed that fields are only considered if they have a `glazed` tag, and missing parameters are skipped.
 
 ### Why
 
@@ -156,7 +156,7 @@ We need to document the exact contract so adopters don’t expect “field-name-
 ### What worked
 
 - Confirmed the v1 requirement precisely:
-  - without `glazed.parameter` tags, fields are ignored by `InitializeStruct`.
+  - without `glazed` tags, fields are ignored by `InitializeStruct`.
 - The design doc now states this explicitly, so code + docs won’t drift.
 
 ### What didn’t work
@@ -192,14 +192,14 @@ We need to document the exact contract so adopters don’t expect “field-name-
 
 - Read `design-doc/02-design-appconfig-module-register-layers-and-parse.md`.
 - Validate hydration semantics in:
-  - `glazed/pkg/cmds/parameters/initialize-struct.go` (look for `field.Tag.Lookup("glazed.parameter")` and the “continue” behavior on missing params).
+  - `glazed/pkg/cmds/parameters/initialize-struct.go` (look for `field.Tag.Lookup("glazed")` and the “continue” behavior on missing params).
 
 ### Technical details
 
 **Hydration semantics evidence**:
 
 - In `ParsedParameters.InitializeStruct(...)`, the code checks for:
-  - `tag, ok := field.Tag.Lookup("glazed.parameter")`
+  - `tag, ok := field.Tag.Lookup("glazed")`
   - `if !ok { continue }` (no tag → ignored)
   - `parameter, ok := p.Get(options.Name)`
   - `if !ok { continue }` (missing param → ignored)

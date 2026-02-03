@@ -12,17 +12,17 @@ import (
 
 // LoggingSettings holds the logging configuration parameters
 type LoggingSettings struct {
-	WithCaller          bool   `glazed.parameter:"with-caller"`
-	LogLevel            string `glazed.parameter:"log-level"`
-	LogFormat           string `glazed.parameter:"log-format"`
-	LogFile             string `glazed.parameter:"log-file"`
-	LogToStdout         bool   `glazed.parameter:"log-to-stdout"`
-	LogstashEnabled     bool   `glazed.parameter:"logstash-enabled"`
-	LogstashHost        string `glazed.parameter:"logstash-host"`
-	LogstashPort        int    `glazed.parameter:"logstash-port"`
-	LogstashProtocol    string `glazed.parameter:"logstash-protocol"`
-	LogstashAppName     string `glazed.parameter:"logstash-app-name"`
-	LogstashEnvironment string `glazed.parameter:"logstash-environment"`
+	WithCaller          bool   `glazed:"with-caller"`
+	LogLevel            string `glazed:"log-level"`
+	LogFormat           string `glazed:"log-format"`
+	LogFile             string `glazed:"log-file"`
+	LogToStdout         bool   `glazed:"log-to-stdout"`
+	LogstashEnabled     bool   `glazed:"logstash-enabled"`
+	LogstashHost        string `glazed:"logstash-host"`
+	LogstashPort        int    `glazed:"logstash-port"`
+	LogstashProtocol    string `glazed:"logstash-protocol"`
+	LogstashAppName     string `glazed:"logstash-app-name"`
+	LogstashEnvironment string `glazed:"logstash-environment"`
 }
 
 const LoggingLayerSlug = "logging"

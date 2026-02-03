@@ -12,8 +12,8 @@ import (
 )
 
 type ReplaceSettings struct {
-	ReplaceFile string            `glazed.parameter:"replace-file"`
-	AddFields   map[string]string `glazed.parameter:"add-fields"`
+	ReplaceFile string            `glazed:"replace-file"`
+	AddFields   map[string]string `glazed:"add-fields"`
 }
 
 func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error {

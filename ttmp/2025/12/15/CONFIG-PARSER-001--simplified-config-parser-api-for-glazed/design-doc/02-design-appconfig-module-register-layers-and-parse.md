@@ -17,7 +17,7 @@ RelatedFiles:
     - Path: glazed/pkg/cmds/middlewares/middlewares.go
       Note: ExecuteMiddlewares ordering/precedence mechanics
     - Path: glazed/pkg/cmds/parameters/initialize-struct.go
-      Note: ParsedLayers.InitializeStruct hydration path used by v1 (glazed.parameter tags)
+      Note: ParsedLayers.InitializeStruct hydration path used by v1 (glazed tags)
     - Path: glazed/pkg/cli/cobra-parser.go
       Note: CobraParserConfig provides a similar “configure middlewares” seam (future CLI integration)
 ExternalSources: []
@@ -97,7 +97,7 @@ ac.Register(
 Notes:
 
 - `any` is used so we can support pointers to different struct types under a single generic `T`.
-- In v1, the pointed-to struct is expected to use `glazed.parameter` tags (or whatever `ParsedLayers.InitializeStruct` requires today).
+- In v1, the pointed-to struct is expected to use `glazed` tags (or whatever `ParsedLayers.InitializeStruct` requires today).
 
 Alternative registration variants (optional, later):
 
@@ -168,7 +168,7 @@ Hydration uses existing Glazed mechanics:
 This implies (based on how `ParsedParameters.InitializeStruct` is implemented today):
 
 - the registered settings structs must be compatible with `InitializeStruct`,
-- **fields are only populated if they have an explicit `glazed.parameter:"name"` tag**,
+- **fields are only populated if they have an explicit `glazed:"name"` tag**,
 - and missing parameters are currently **skipped** (no error; field stays at zero value).
 
 Future evolution:

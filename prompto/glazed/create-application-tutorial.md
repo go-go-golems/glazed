@@ -135,7 +135,7 @@ cmd/
    ```go
    // Define focused, single-purpose layers
    type AuthSettings struct {
-       Token string `glazed.parameter:"token"`
+       Token string `glazed:"token"`
    }
 
    func NewAuthLayer() (schema.Section, error) {

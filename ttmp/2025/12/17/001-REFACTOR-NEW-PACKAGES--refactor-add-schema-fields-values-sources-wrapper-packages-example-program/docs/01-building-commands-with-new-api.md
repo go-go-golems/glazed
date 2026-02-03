@@ -74,21 +74,21 @@ type AppCommand struct {
 
 // Settings structs map to schema sections
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 ```
 
 **Key components:**
 
 1. **Command Struct**: `AppCommand` embeds `*cmds.CommandDefinition`, which contains command metadata and schema configuration
-2. **Settings Structs**: Each struct corresponds to a schema section, with fields tagged using `glazed.parameter:"field-name"` for automatic mapping
+2. **Settings Structs**: Each struct corresponds to a schema section, with fields tagged using `glazed:"field-name"` for automatic mapping
 3. **Type Safety**: Struct fields provide compile-time type checking and automatic conversion from string inputs
 
 ## Step 2: Create Schema Sections
@@ -389,7 +389,7 @@ schema := schema.NewSchema(
 
 ```go
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 func (c *AppCommand) RunIntoGlazeProcessor(
@@ -434,18 +434,18 @@ import (
 
 // Settings structs
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 // Command struct
@@ -709,7 +709,7 @@ APP_CONFIG_API_KEY=env-key go run ./cmd/examples/sources-example --config-file=c
 
 **Handle Errors Gracefully**: Always check `DecodeSectionInto()` errors and provide context about which section failed.
 
-**Use Type-Safe Structs**: Avoid accessing values as `map[string]interface{}`. Use structs with `glazed.parameter` tags for type safety and better IDE support.
+**Use Type-Safe Structs**: Avoid accessing values as `map[string]interface{}`. Use structs with `glazed` tags for type safety and better IDE support.
 
 ## Migration from Old API
 

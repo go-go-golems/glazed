@@ -12,8 +12,8 @@ import (
 var skipLimitFlagsYaml []byte
 
 type SkipLimitSettings struct {
-	Skip  int `glazed.parameter:"glazed-skip"`
-	Limit int `glazed.parameter:"glazed-limit"`
+	Skip  int `glazed:"glazed-skip"`
+	Limit int `glazed:"glazed-limit"`
 }
 
 func NewSkipLimitSettingsFromParameters(glazedLayer *values.SectionValues) (*SkipLimitSettings, error) {

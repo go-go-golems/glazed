@@ -14,7 +14,7 @@ import (
 var sortFlagsYaml []byte
 
 type SortFlagsSettings struct {
-	SortBy []string `glazed.parameter:"sort-by"`
+	SortBy []string `glazed:"sort-by"`
 }
 
 func NewSortSettingsFromParameters(glazedLayer *values.SectionValues) (*SortFlagsSettings, error) {

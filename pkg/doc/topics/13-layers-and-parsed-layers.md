@@ -72,10 +72,10 @@ You can initialize the default values of parameters in a layer using a struct:
 
 ```go
 type Config struct {
-    Verbose bool   `glazed.parameter:"verbose"`
-    Output  string `glazed.parameter:"output"`
-    LogLevel string `glazed.parameter:"log-level"`
-    MaxRetries int `glazed.parameter:"max-retries"`
+    Verbose bool   `glazed:"verbose"`
+    Output  string `glazed:"output"`
+    LogLevel string `glazed:"log-level"`
+    MaxRetries int `glazed:"max-retries"`
 }
 
 defaultConfig := Config{
@@ -307,8 +307,8 @@ if !ok {
 
 ```go
 type Config struct {
-    Verbose bool   `glazed.parameter:"verbose"`
-    Output  string `glazed.parameter:"output"`
+    Verbose bool   `glazed:"verbose"`
+    Output  string `glazed:"output"`
 }
 
 var config Config

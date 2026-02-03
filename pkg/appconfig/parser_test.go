@@ -16,7 +16,7 @@ type testAppSettings struct {
 }
 
 type testRedisSettings struct {
-	Host string `glazed.parameter:"host"`
+	Host string `glazed:"host"`
 }
 
 type testRedisSettingsNoTags struct {
@@ -140,7 +140,7 @@ func TestParser_Parse_Hydration_TagRequired(t *testing.T) {
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
-	// No glazed.parameter tags -> field is ignored by InitializeStruct -> zero value.
+	// No glazed tags -> field is ignored by InitializeStruct -> zero value.
 	require.Equal(t, "", cfg.Redis.Host)
 }
 

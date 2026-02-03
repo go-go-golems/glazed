@@ -18,20 +18,20 @@ import (
 
 // AppSettings maps to the app section parameters
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
 // OutputSettings maps to the output section parameters
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 
 // DefaultSettings maps to the default section (positional args)
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 type RefactorDemoCommand struct {

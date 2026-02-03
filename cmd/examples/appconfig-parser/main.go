@@ -20,12 +20,12 @@ type AppSettings struct {
 }
 
 type RedisSettings struct {
-	Host string `glazed.parameter:"host"`
-	Port int    `glazed.parameter:"port"`
+	Host string `glazed:"host"`
+	Port int    `glazed:"port"`
 }
 
 type DBSettings struct {
-	DSN string `glazed.parameter:"dsn"`
+	DSN string `glazed:"dsn"`
 }
 
 func mustSection(section *schema.SectionImpl, err error) schema.Section {

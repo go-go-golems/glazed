@@ -23,8 +23,8 @@ type ExampleCommand struct {
 var _ cmds.GlazeCommand = (*ExampleCommand)(nil)
 
 type ExampleSettings struct {
-	Count int  `glazed.parameter:"count"`
-	Test  bool `glazed.parameter:"test"`
+	Count int  `glazed:"count"`
+	Test  bool `glazed:"test"`
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {

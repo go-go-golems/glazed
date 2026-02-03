@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -25,6 +26,7 @@ type fileReport struct {
 	Path           string            `json:"path"`
 	ImportsChanged map[string]string `json:"importsChanged,omitempty"`
 	IdentsChanged  map[string]string `json:"identsChanged,omitempty"`
+	TagsChanged    int               `json:"tagsChanged,omitempty"`
 	Warnings       []string          `json:"warnings,omitempty"`
 	Errors         []string          `json:"errors,omitempty"`
 	Skipped        bool              `json:"skipped"`
@@ -157,6 +159,7 @@ func processFile(path string) fileReport {
 
 	importsChanged := map[string]string{}
 	identsChanged := map[string]string{}
+	tagsChanged := 0
 
 	// Map current import aliases to paths
 	aliasToPath := map[string]string{}
@@ -192,6 +195,12 @@ func processFile(path string) fileReport {
 	neededAliases := map[string]string{} // alias -> path
 
 	ast.Inspect(file, func(n ast.Node) bool {
+		if field, ok := n.(*ast.Field); ok {
+			if rewriteStructTag(field.Tag) {
+				tagsChanged++
+			}
+			return true
+		}
 		se, ok := n.(*ast.SelectorExpr)
 		if !ok {
 			return true
@@ -264,12 +273,13 @@ func processFile(path string) fileReport {
 	}
 	file.Imports = newImports
 
-	if len(importsChanged) == 0 && len(identsChanged) == 0 {
+	if len(importsChanged) == 0 && len(identsChanged) == 0 && tagsChanged == 0 {
 		return fr
 	}
 
 	fr.ImportsChanged = importsChanged
 	fr.IdentsChanged = identsChanged
+	fr.TagsChanged = tagsChanged
 
 	var buf bytes.Buffer
 	if err := format.Node(&buf, fset, file); err != nil {
@@ -308,4 +318,24 @@ func importName(imp *ast.ImportSpec, pathValue string) string {
 func pathBase(path string) string {
 	parts := strings.Split(path, "/")
 	return parts[len(parts)-1]
+}
+
+func rewriteStructTag(tag *ast.BasicLit) bool {
+	if tag == nil || tag.Kind != token.STRING {
+		return false
+	}
+	raw, err := strconv.Unquote(tag.Value)
+	if err != nil {
+		return false
+	}
+	updated := strings.ReplaceAll(raw, "glazed.parameter", "glazed")
+	if updated == raw {
+		return false
+	}
+	if strings.HasPrefix(tag.Value, "`") {
+		tag.Value = "`" + updated + "`"
+	} else {
+		tag.Value = strconv.Quote(updated)
+	}
+	return true
 }

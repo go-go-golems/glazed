@@ -122,17 +122,17 @@ import (
 // configuration container for logger initialization.
 type LoggingSettings struct {
     // Core logging settings - the 80% use case
-    Level      string `glazed.parameter:"log-level"`
-    Format     string `glazed.parameter:"log-format"`
-    File       string `glazed.parameter:"log-file"`
+    Level      string `glazed:"log-level"`
+    Format     string `glazed:"log-format"`
+    File       string `glazed:"log-file"`
     
     // Developer convenience settings
-    WithCaller bool   `glazed.parameter:"with-caller"`
-    Verbose    bool   `glazed.parameter:"verbose"`
+    WithCaller bool   `glazed:"with-caller"`
+    Verbose    bool   `glazed:"verbose"`
     
     // Production/enterprise features
-    LogstashHost string `glazed.parameter:"logstash-host"`
-    LogstashPort int    `glazed.parameter:"logstash-port"`
+    LogstashHost string `glazed:"logstash-host"`
+    LogstashPort int    `glazed:"logstash-port"`
 }
 
 // Validate checks if the logging settings are valid.
@@ -505,10 +505,10 @@ type ProcessDataCommand struct {
 }
 
 type ProcessDataSettings struct {
-    InputFile  string `glazed.parameter:"input-file"`
-    OutputPath string `glazed.parameter:"output-path"`
-    Workers    int    `glazed.parameter:"workers"`
-    DryRun     bool   `glazed.parameter:"dry-run"`
+    InputFile  string `glazed:"input-file"`
+    OutputPath string `glazed:"output-path"`
+    Workers    int    `glazed:"workers"`
+    DryRun     bool   `glazed:"dry-run"`
 }
 
 func (c *ProcessDataCommand) RunIntoGlazeProcessor(
@@ -649,9 +649,9 @@ type AnalyzeDataCommand struct {
 }
 
 type AnalyzeDataSettings struct {
-    DataFile   string `glazed.parameter:"data-file"`
-    Algorithm  string `glazed.parameter:"algorithm"`
-    Iterations int    `glazed.parameter:"iterations"`
+    DataFile   string `glazed:"data-file"`
+    Algorithm  string `glazed:"algorithm"`
+    Iterations int    `glazed:"iterations"`
 }
 
 func (c *AnalyzeDataCommand) RunIntoGlazeProcessor(
@@ -971,41 +971,41 @@ Enterprise layer implementations must address:
 ### Database Layer
 ```go
 type DatabaseSettings struct {
-    Host        string `glazed.parameter:"db-host"`
-    Port        int    `glazed.parameter:"db-port"`
-    Name        string `glazed.parameter:"db-name"`
-    Username    string `glazed.parameter:"db-username"`
-    Password    string `glazed.parameter:"db-password"`
-    SSLMode     string `glazed.parameter:"db-ssl-mode"`
-    MaxConns    int    `glazed.parameter:"db-max-connections"`
-    MaxIdleTime string `glazed.parameter:"db-max-idle-time"`
+    Host        string `glazed:"db-host"`
+    Port        int    `glazed:"db-port"`
+    Name        string `glazed:"db-name"`
+    Username    string `glazed:"db-username"`
+    Password    string `glazed:"db-password"`
+    SSLMode     string `glazed:"db-ssl-mode"`
+    MaxConns    int    `glazed:"db-max-connections"`
+    MaxIdleTime string `glazed:"db-max-idle-time"`
 }
 ```
 
 ### HTTP Client Layer
 ```go
 type HTTPSettings struct {
-    BaseURL       string        `glazed.parameter:"base-url"`
-    Timeout       time.Duration `glazed.parameter:"timeout"`
-    RetryCount    int           `glazed.parameter:"retry-count"`
-    RetryBackoff  time.Duration `glazed.parameter:"retry-backoff"`
-    UserAgent     string        `glazed.parameter:"user-agent"`
-    APIKey        string        `glazed.parameter:"api-key"`
-    RateLimitRPS  int           `glazed.parameter:"rate-limit-rps"`
+    BaseURL       string        `glazed:"base-url"`
+    Timeout       time.Duration `glazed:"timeout"`
+    RetryCount    int           `glazed:"retry-count"`
+    RetryBackoff  time.Duration `glazed:"retry-backoff"`
+    UserAgent     string        `glazed:"user-agent"`
+    APIKey        string        `glazed:"api-key"`
+    RateLimitRPS  int           `glazed:"rate-limit-rps"`
 }
 ```
 
 ### File Processing Layer
 ```go
 type FileSettings struct {
-    InputDir      string   `glazed.parameter:"input-dir"`
-    OutputDir     string   `glazed.parameter:"output-dir"`
-    FilePattern   string   `glazed.parameter:"file-pattern"`
-    Extensions    []string `glazed.parameter:"extensions"`
-    Recursive     bool     `glazed.parameter:"recursive"`
-    OverwriteOK   bool     `glazed.parameter:"overwrite"`
-    BackupOld     bool     `glazed.parameter:"backup-existing"`
-    DryRun        bool     `glazed.parameter:"dry-run"`
+    InputDir      string   `glazed:"input-dir"`
+    OutputDir     string   `glazed:"output-dir"`
+    FilePattern   string   `glazed:"file-pattern"`
+    Extensions    []string `glazed:"extensions"`
+    Recursive     bool     `glazed:"recursive"`
+    OverwriteOK   bool     `glazed:"overwrite"`
+    BackupOld     bool     `glazed:"backup-existing"`
+    DryRun        bool     `glazed:"dry-run"`
 }
 ```
 

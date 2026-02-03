@@ -13,9 +13,9 @@ import (
 var selectFlagsYaml []byte
 
 type SelectSettings struct {
-	SelectField     string `glazed.parameter:"select"`
-	SelectSeparator string `glazed.parameter:"select-separator"`
-	SelectTemplate  string `glazed.parameter:"select-template"`
+	SelectField     string `glazed:"select"`
+	SelectSeparator string `glazed:"select-separator"`
+	SelectTemplate  string `glazed:"select-template"`
 }
 
 func NewSelectSettingsFromParameters(glazedLayer *values.SectionValues) (*SelectSettings, error) {

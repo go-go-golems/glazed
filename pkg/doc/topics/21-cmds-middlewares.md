@@ -885,8 +885,8 @@ func accessParsedValues(parsedLayers *values.Values) {
 
     // 3. Initialize a struct
     type Config struct {
-        Host string `glazed.parameter:"host"`
-        Port int    `glazed.parameter:"port"`
+        Host string `glazed:"host"`
+        Port int    `glazed:"port"`
     }
     
     var config Config

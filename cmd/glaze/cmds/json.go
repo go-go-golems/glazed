@@ -27,11 +27,11 @@ type JsonCommand struct {
 var _ cmds.GlazeCommand = (*JsonCommand)(nil)
 
 type JsonSettings struct {
-	InputIsArray bool     `glazed.parameter:"input-is-array"`
-	Sanitize     bool     `glazed.parameter:"sanitize"`
-	FromMarkdown bool     `glazed.parameter:"from-markdown"`
-	TailMode     bool     `glazed.parameter:"tail"`
-	InputFiles   []string `glazed.parameter:"input-files"`
+	InputIsArray bool     `glazed:"input-is-array"`
+	Sanitize     bool     `glazed:"sanitize"`
+	FromMarkdown bool     `glazed:"from-markdown"`
+	TailMode     bool     `glazed:"tail"`
+	InputFiles   []string `glazed:"input-files"`
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
