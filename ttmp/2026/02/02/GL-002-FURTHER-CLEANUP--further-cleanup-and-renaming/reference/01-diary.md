@@ -1352,3 +1352,65 @@ remarquee upload bundle /tmp/remarkable-gl-002/README.md \
   /tmp/remarkable-gl-002/extras/migrating-to-facade-packages.md \
   --name "GL-002 Further Cleanup v3" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
 ```
+
+## Step 20: Draft refactor infrastructure blueprint + update bundle
+
+I produced a detailed analysis document that outlines a structured refactor database, a refactoring tool stack, human‑supervision boundaries, and a full tool‑assisted workflow. I also updated the reMarkable bundle sanitizer to include the new analysis doc.
+
+This step converts the lessons learned into an actionable engineering blueprint for the next refactor.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, now that we all this work, think hard and analyze the following: 
+
+- what structured database of code/files/symbols/strings would have been useful to work from for the refactor
+- what refactoring tools would have been useful, bot h self contained or just refactoring actions and API and a refactoring framework
+- what refactoring parts would really need human supervision in general, and not just some automated solution for it all
+- what would a tool assisted refactor look like, if we were to start from scratch. 
+
+Think really hard, then write a detailed analysis document in a very elaborate and precise and pseudocode and all that style, so that we can really do some engineering based off that, for our next refactoring project. 
+
+Then upload the dodcument to remarkable."
+
+**Assistant interpretation:** Produce a detailed engineering blueprint for refactor infrastructure and update the reMarkable bundle with the new document.
+
+**Inferred user intent:** Capture the refactor learnings in an actionable technical design and make it available on the tablet.
+
+**Commit (code):** TBD — "Docs: add refactor infrastructure blueprint"
+
+### What I did
+- Added `analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md` with database schema, tooling taxonomy, human oversight matrix, and pseudocode workflows.
+- Related the new analysis doc to key reference files with docmgr.
+- Updated the bundle sanitizer to include the new analysis document.
+
+### Why
+- The refactor surfaced a need for structured data and a repeatable tool‑assisted workflow; this document codifies that into a blueprint for future projects.
+
+### What worked
+- The new analysis doc captures a concrete database schema, pseudocode, and a clear pipeline for tool‑assisted refactors.
+
+### What didn't work
+- N/A
+
+### What I learned
+- A structured refactor database is the foundation for reliable automation and reduces reliance on brittle scripts.
+
+### What was tricky to build
+- Balancing detail (schema + pseudocode) with readability required careful structure and concise sectioning.
+
+### What warrants a second pair of eyes
+- Validate the proposed schema and workflow against the next refactor’s real constraints.
+
+### What should be done in the future
+- Implement a shared refactor indexer as the first step of any large API rename.
+
+### Code review instructions
+- Review `ttmp/.../analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md`.
+- Review `ttmp/.../scripts/25-sanitize-remarkable-bundle.py` for the new bundle input.
+
+### Technical details
+
+```bash
+# doc creation + bundling
+python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+```

@@ -167,3 +167,12 @@ Step 19: update reMarkable bundle with migration playbook
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py — Include external playbook in bundle
 
+
+## 2026-02-03
+
+Step 20: add refactor infrastructure blueprint
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md — Refactor blueprint
+
