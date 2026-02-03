@@ -8,7 +8,7 @@
 - [x] Update examples (cmd/examples + cmd/glaze) to section/field naming and rename files/dirs that mention parameter/layer.
 - [x] Update docs/tutorials/prompto/pinocchio/README/changelog to remove `layer`/`parameter` vocabulary and adjust filenames/links.
 - [x] Run gofmt + `go test ./...` to confirm build.
-- [ ] Update diary + changelog + index, then commit (no push).
+- [x] Update diary + changelog + index, then commit (no push).
 
 ## DONE
 

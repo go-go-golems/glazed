@@ -1,7 +1,7 @@
 ---
 Title: Further cleanup and renaming
 Ticket: GL-002-FURTHER-CLEANUP
-Status: active
+Status: complete
 Topics:
     - glazed
     - api-design
@@ -27,11 +27,12 @@ RelatedFiles:
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
       Note: Updated parameter/layer inventory (non-ttmp)
 ExternalSources: []
-Summary: "Renamed Lua conversion helpers to section/field naming and updated Lua command bridge globals."
-LastUpdated: 2026-02-03T22:28:00-05:00
+Summary: Renamed Lua conversion helpers to section/field naming and updated Lua command bridge globals.
+LastUpdated: 2026-02-02T23:55:52.662191676-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

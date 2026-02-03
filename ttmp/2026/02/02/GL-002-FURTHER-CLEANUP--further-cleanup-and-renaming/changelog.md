@@ -109,3 +109,8 @@ Step 13: finalize section/field doc cleanup and example fix (commit 6844cbf)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/sources-example/main.go — Remove NewCommandDefinition alias usage
 
+
+## 2026-02-02
+
+Ticket closed
+
