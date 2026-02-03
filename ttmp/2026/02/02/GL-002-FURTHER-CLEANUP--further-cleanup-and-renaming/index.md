@@ -18,6 +18,8 @@ RelatedFiles:
       Note: AST migration run report (examples)
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md
       Note: Go symbol inventory for parameter/layer identifiers
+    - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/03-layer-parameter-inventory.md
+      Note: Inventory report for layer/parameter mentions with identifiers/snippets
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md
       Note: Primary renaming plan
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/sources/01-glazed-cleanup-notes.md
@@ -25,8 +27,8 @@ RelatedFiles:
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
       Note: Updated parameter/layer inventory (non-ttmp)
 ExternalSources: []
-Summary: "Renamed parsed parameters to field values and updated values/schema serialization."
-LastUpdated: 2026-02-02T21:01:07-05:00
+Summary: "Renamed pattern mapper targets to section/field naming and refreshed inventory report."
+LastUpdated: 2026-02-03T00:32:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---

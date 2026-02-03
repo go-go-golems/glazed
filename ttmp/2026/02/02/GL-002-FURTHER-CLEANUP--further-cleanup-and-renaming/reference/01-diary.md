@@ -699,3 +699,38 @@ go test ./...
 git commit -m "Refactor: rename parsed values to field values"
 git push
 ```
+
+## Step 9: Rename pattern mapper fields + update example mappings
+
+### What I did
+- Generated a fresh inventory report for remaining layer/parameter mentions.
+- Renamed pattern mapper API from TargetLayer/TargetParameter to TargetSection/TargetField.
+- Updated pattern mapper package comments, error messages, and tests to section/field vocabulary.
+- Updated config-pattern-mapper example code + README + mappings.yaml to new names and removed layer/parameter wording.
+- Ran gofmt on updated Go files and re-ran the test suite.
+
+### Commands and queries
+
+```bash
+# inventory script
+scripts/11-layer-parameter-inventory.py --root glazed --output analysis/03-layer-parameter-inventory.md
+
+# search for old field names
+rg -n "TargetLayer|TargetParameter|target_layer|target_parameter" glazed -g '!ttmp/**'
+rg -n "\\blayer(s)?\\b|\\bparameter(s)?\\b" pkg/cmds/sources/patternmapper
+
+# formatting + tests
+gofmt -w pkg/cmds/sources/patternmapper/*.go cmd/examples/config-pattern-mapper/main.go
+go test ./...
+```
+
+### Files touched
+- `pkg/cmds/sources/patternmapper/pattern_mapper.go`
+- `pkg/cmds/sources/patternmapper/pattern_mapper_builder.go`
+- `pkg/cmds/sources/patternmapper/loader.go`
+- `pkg/cmds/sources/patternmapper/exports.go`
+- `pkg/cmds/sources/patternmapper/*_test.go`
+- `cmd/examples/config-pattern-mapper/main.go`
+- `cmd/examples/config-pattern-mapper/README.md`
+- `cmd/examples/config-pattern-mapper/mappings.yaml`
+- `analysis/03-layer-parameter-inventory.md`

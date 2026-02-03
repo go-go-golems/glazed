@@ -14,24 +14,24 @@ import (
 // over map keys is deterministic due to ordered map traversal, and when values
 // are identical across matches, the resulting value is stable.
 func TestDeterministicWildcardOrder_SortedKeys(t *testing.T) {
-	// Create a simple layer
-	layer, err := schema.NewSection(
+	// Create a simple section
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
 
-	pls := schema.NewSchema(schema.WithSections(layer))
+	pls := schema.NewSchema(schema.WithSections(section))
 
 	// Rule uses wildcard: multiple environment keys under app
 	rules := []pm.MappingRule{
 		{
-			Source:          "app.*.api_key",
-			TargetLayer:     "demo",
-			TargetParameter: "api-key",
+			Source:        "app.*.api_key",
+			TargetSection: "demo",
+			TargetField:   "api-key",
 		},
 	}
 

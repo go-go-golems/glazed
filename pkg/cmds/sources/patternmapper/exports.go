@@ -9,11 +9,11 @@ func ValidatePatternSyntax(pattern string) error { return validatePatternSyntax(
 func ExtractCaptureNames(pattern string) []string { return extractCaptureNames(pattern) }
 
 // ExtractCaptureReferences exposes internal extractCaptureReferences for testing and tooling.
-func ExtractCaptureReferences(targetParameter string) map[string]bool {
-	return extractCaptureReferences(targetParameter)
+func ExtractCaptureReferences(targetField string) map[string]bool {
+	return extractCaptureReferences(targetField)
 }
 
-// ResolveTargetParameter exposes internal resolveTargetParameter for testing and tooling.
-func ResolveTargetParameter(targetParameter string, captures map[string]string) (string, error) {
-	return resolveTargetParameter(targetParameter, captures)
+// ResolveTargetField exposes internal resolveTargetField for testing and tooling.
+func ResolveTargetField(targetField string, captures map[string]string) (string, error) {
+	return resolveTargetField(targetField, captures)
 }

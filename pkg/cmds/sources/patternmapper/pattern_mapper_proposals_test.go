@@ -13,16 +13,16 @@ import (
 
 // TestMultiMatchPolicy tests proposal 2: Multi-match policy for wildcards
 func TestMultiMatchPolicy(t *testing.T) {
-	// Create test layers
-	layer, err := schema.NewSection(
+	// Create test sections
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
-	testLayers := schema.NewSchema(schema.WithSections(layer))
+	testSections := schema.NewSchema(schema.WithSections(section))
 
 	config := map[string]interface{}{
 		"app": map[string]interface{}{
@@ -37,14 +37,14 @@ func TestMultiMatchPolicy(t *testing.T) {
 
 	rules := []pm.MappingRule{
 		{
-			Source:          "app.*.api_key",
-			TargetLayer:     "demo",
-			TargetParameter: "api-key",
+			Source:        "app.*.api_key",
+			TargetSection: "demo",
+			TargetField:   "api-key",
 		},
 	}
 
 	t.Run("default policy - should error on multiple distinct values", func(t *testing.T) {
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 
 		result, err := mapper.Map(config)
@@ -68,7 +68,7 @@ func TestMultiMatchPolicy(t *testing.T) {
 			},
 		}
 
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 
 		result, err := mapper.Map(configSame)
@@ -82,16 +82,16 @@ func TestMultiMatchPolicy(t *testing.T) {
 
 // TestCollisionDetection tests proposal 3: Collision detection across rules
 func TestCollisionDetection(t *testing.T) {
-	// Create test layers
-	layer, err := schema.NewSection(
+	// Create test sections
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("api-key", fields.TypeString),
 		),
 	)
 	require.NoError(t, err)
-	testLayers := schema.NewSchema(schema.WithSections(layer))
+	testSections := schema.NewSchema(schema.WithSections(section))
 
 	config := map[string]interface{}{
 		"app": map[string]interface{}{
@@ -106,19 +106,19 @@ func TestCollisionDetection(t *testing.T) {
 
 	rules := []pm.MappingRule{
 		{
-			Source:          "app.settings.api_key",
-			TargetLayer:     "demo",
-			TargetParameter: "api-key",
+			Source:        "app.settings.api_key",
+			TargetSection: "demo",
+			TargetField:   "api-key",
 		},
 		{
-			Source:          "config.api_key",
-			TargetLayer:     "demo",
-			TargetParameter: "api-key",
+			Source:        "config.api_key",
+			TargetSection: "demo",
+			TargetField:   "api-key",
 		},
 	}
 
 	t.Run("default policy - should error on collision", func(t *testing.T) {
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 
 		result, err := mapper.Map(config)
@@ -131,28 +131,28 @@ func TestCollisionDetection(t *testing.T) {
 		assert.Contains(t, err.Error(), "config.api_key")
 	})
 
-	t.Run("no collision - different parameters", func(t *testing.T) {
-		layerMulti, err := schema.NewSection(
+	t.Run("no collision - different fields", func(t *testing.T) {
+		sectionMulti, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithFields(
 				fields.New("api-key", fields.TypeString),
 				fields.New("threshold", fields.TypeInteger),
 			),
 		)
 		require.NoError(t, err)
-		testLayersMulti := schema.NewSchema(schema.WithSections(layerMulti))
+		testSectionsMulti := schema.NewSchema(schema.WithSections(sectionMulti))
 
 		rulesMulti := []pm.MappingRule{
 			{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 			{
-				Source:          "config.threshold",
-				TargetLayer:     "demo",
-				TargetParameter: "threshold",
+				Source:        "config.threshold",
+				TargetSection: "demo",
+				TargetField:   "threshold",
 			},
 		}
 
@@ -167,12 +167,12 @@ func TestCollisionDetection(t *testing.T) {
 			},
 		}
 
-		mapper, err := pm.NewConfigMapper(testLayersMulti, rulesMulti...)
+		mapper, err := pm.NewConfigMapper(testSectionsMulti, rulesMulti...)
 		require.NoError(t, err)
 
 		result, err := mapper.Map(configMulti)
 
-		// Should not error because different parameters
+		// Should not error because different fields
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, "secret", result["demo"]["api-key"])
@@ -183,23 +183,23 @@ func TestCollisionDetection(t *testing.T) {
 // TestPrefixAwareErrorMessages tests proposal 4: Prefix-aware error messages
 func TestPrefixAwareErrorMessages(t *testing.T) {
 	t.Run("error message includes prefix-adjusted name", func(t *testing.T) {
-		// Create a layer with a prefix
-		layer, err := schema.NewSection(
+		// Create a section with a prefix
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithPrefix("demo-"),
 			schema.WithFields(
 				fields.New("demo-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		rules := []pm.MappingRule{
 			{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key", // Without prefix
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key", // Without prefix
 			},
 		}
 
@@ -211,7 +211,7 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 				},
 			},
 		}
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 		result, err := mapper.Map(config)
 		require.NoError(t, err)
@@ -220,10 +220,10 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 	})
 
 	t.Run("error message shows both unprefixed and prefixed names (compile-time)", func(t *testing.T) {
-		// Create a layer with a prefix
-		layer, err := schema.NewSection(
+		// Create a section with a prefix
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithPrefix("demo-"),
 			schema.WithFields(
 				fields.New("demo-threshold", fields.TypeInteger),
@@ -231,19 +231,19 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		rules := []pm.MappingRule{
 			{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key", // This will resolve to demo-api-key which doesn't exist
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key", // This will resolve to demo-api-key which doesn't exist
 			},
 		}
 
 		// No need to build a config; compile-time validation triggers
 
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		assert.Error(t, err)
 		assert.Nil(t, mapper)
 		// Error should mention both the user-provided name and the checked name
@@ -252,28 +252,28 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 		assert.Contains(t, err.Error(), "checked as")
 	})
 
-	t.Run("error message for parameter with prefix already included (compile-time)", func(t *testing.T) {
-		// Create a layer with a prefix
-		layer, err := schema.NewSection(
+	t.Run("error message for field with prefix already included (compile-time)", func(t *testing.T) {
+		// Create a section with a prefix
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithPrefix("demo-"),
 			schema.WithFields(
 				fields.New("demo-threshold", fields.TypeInteger),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		rules := []pm.MappingRule{
 			{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "demo-api-key", // With prefix already
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "demo-api-key", // With prefix already
 			},
 		}
 
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		assert.Error(t, err)
 		assert.Nil(t, mapper)
 		// Error should only mention demo-api-key once (not duplicated)
@@ -286,23 +286,23 @@ func TestPrefixAwareErrorMessages(t *testing.T) {
 // TestCombinedScenarios tests combinations of the proposals
 func TestCombinedScenarios(t *testing.T) {
 	t.Run("capture shadowing warning on nested rules", func(t *testing.T) {
-		layer, err := schema.NewSection(
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithFields(
 				fields.New("dev-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		// Parent captures {env}, child also captures {env} -> shadowing warning
 		rules := []pm.MappingRule{
 			{
-				Source:      "app.{env}",
-				TargetLayer: "demo",
+				Source:        "app.{env}",
+				TargetSection: "demo",
 				Rules: []pm.MappingRule{
-					{Source: "{env}.api_key", TargetParameter: "{env}-api-key"},
+					{Source: "{env}.api_key", TargetField: "{env}-api-key"},
 				},
 			},
 		}
@@ -312,7 +312,7 @@ func TestCombinedScenarios(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stderr = w
 
-		_, _ = pm.NewConfigMapper(testLayers, rules...)
+		_, _ = pm.NewConfigMapper(testSections, rules...)
 
 		_ = w.Close()
 		os.Stderr = old
@@ -323,15 +323,15 @@ func TestCombinedScenarios(t *testing.T) {
 		assert.Contains(t, out, "{env}")
 	})
 	t.Run("multi-match with collision detection", func(t *testing.T) {
-		layer, err := schema.NewSection(
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithFields(
 				fields.New("api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		config := map[string]interface{}{
 			"app": map[string]interface{}{
@@ -349,18 +349,18 @@ func TestCombinedScenarios(t *testing.T) {
 
 		rules := []pm.MappingRule{
 			{
-				Source:          "app.*.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "app.*.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 			{
-				Source:          "config.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "config.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 		}
 
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 
 		// Should error on multi-match before collision
@@ -371,16 +371,16 @@ func TestCombinedScenarios(t *testing.T) {
 	})
 
 	t.Run("prefix-aware error with collision", func(t *testing.T) {
-		layer, err := schema.NewSection(
+		section, err := schema.NewSection(
 			"demo",
-			"Demo Layer",
+			"Demo Section",
 			schema.WithPrefix("demo-"),
 			schema.WithFields(
 				fields.New("demo-api-key", fields.TypeString),
 			),
 		)
 		require.NoError(t, err)
-		testLayers := schema.NewSchema(schema.WithSections(layer))
+		testSections := schema.NewSchema(schema.WithSections(section))
 
 		config := map[string]interface{}{
 			"app": map[string]interface{}{
@@ -395,25 +395,25 @@ func TestCombinedScenarios(t *testing.T) {
 
 		rules := []pm.MappingRule{
 			{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 			{
-				Source:          "config.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "config.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 		}
 
-		mapper, err := pm.NewConfigMapper(testLayers, rules...)
+		mapper, err := pm.NewConfigMapper(testSections, rules...)
 		require.NoError(t, err)
 
 		result, err := mapper.Map(config)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		// Error should mention the resolved parameter name (with prefix)
+		// Error should mention the resolved field name (with prefix)
 		assert.Contains(t, err.Error(), "demo-api-key")
 		assert.Contains(t, err.Error(), "collision")
 	})

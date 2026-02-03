@@ -64,3 +64,19 @@ Rename parsed parameters to field values and update values/schema APIs
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/schema/serialize.go — SerializableSection/Schema with fields/sections tags
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/tests/update-from-map.yaml — fixtures updated to fields
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/05-rename-glazed-api.go — Expanded rename tool
+
+
+## 2026-02-03
+
+Rename pattern mapper fields to sections/fields and refresh inventory
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper.go — TargetSection/TargetField rename and error/message updates
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/pattern_mapper_builder.go — Builder API updated to section/field naming
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/loader.go — target_section/target_field tags
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cmds/sources/patternmapper/*_test.go — Tests updated to section/field naming
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/main.go — Example mappings updated
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/README.md — Docs updated to TargetSection/TargetField
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-pattern-mapper/mappings.yaml — YAML keys updated
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/03-layer-parameter-inventory.md — Inventory report

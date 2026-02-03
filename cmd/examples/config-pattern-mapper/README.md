@@ -4,12 +4,12 @@ This example demonstrates the new pattern-based config mapping system in Glazed.
 
 ## Overview
 
-The pattern mapper allows you to declaratively map config file structures to layer parameters using pattern matching rules, without writing custom Go functions.
+The pattern mapper allows you to declaratively map config file structures to section fields using pattern matching rules, without writing custom Go functions.
 
 ## Key Features
 
 1. **Exact Match**: Simple one-to-one mappings
-2. **Named Captures**: Extract values from config paths and use them in parameter names
+2. **Named Captures**: Extract values from config paths and use them in field names
 3. **Wildcards**: Match multiple paths with a single pattern
 4. **Nested Rules**: Group related mappings together with clean syntax
 5. **Capture Inheritance**: Child rules inherit captures from parent rules
@@ -28,8 +28,8 @@ go run main.go
 ```go
 {
     Source: "app.settings.api_key",
-    TargetLayer: "demo",
-    TargetParameter: "api-key",
+    TargetSection: "demo",
+    TargetField: "api-key",
 }
 ```
 
@@ -37,8 +37,8 @@ go run main.go
 ```go
 {
     Source: "app.{env}.api_key",  // Captures "env"
-    TargetLayer: "demo",
-    TargetParameter: "{env}-api-key",  // Uses captured value
+    TargetSection: "demo",
+    TargetField: "{env}-api-key",  // Uses captured value
 }
 ```
 
@@ -46,8 +46,8 @@ go run main.go
 ```go
 {
     Source: "app.*.api_key",  // Matches any environment
-    TargetLayer: "demo",
-    TargetParameter: "api-key",
+    TargetSection: "demo",
+    TargetField: "api-key",
 }
 ```
 
@@ -55,10 +55,10 @@ go run main.go
 ```go
 {
     Source: "app.settings",
-    TargetLayer: "demo",
+    TargetSection: "demo",
     Rules: []MappingRule{
-        {Source: "api_key", TargetParameter: "api-key"},
-        {Source: "threshold", TargetParameter: "threshold"},
+        {Source: "api_key", TargetField: "api-key"},
+        {Source: "threshold", TargetField: "threshold"},
     },
 }
 ```
@@ -88,18 +88,18 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
 
 ### New Way (Pattern Mapper - Rules Array):
 ```go
-mapper, err := patternmapper.NewConfigMapper(layers,
+mapper, err := patternmapper.NewConfigMapper(sections,
     patternmapper.MappingRule{
         Source:          "app.settings.api_key",
-        TargetLayer:     "demo",
-        TargetParameter: "api-key",
+        TargetSection:     "demo",
+        TargetField: "api-key",
     },
 )
 ```
 
 ### New Way (Pattern Mapper - Builder API):
 ```go
-b := patternmapper.NewConfigMapperBuilder(layers).
+b := patternmapper.NewConfigMapperBuilder(sections).
     Map("app.settings.api_key", "demo", "api-key").
     MapObject("environments.{env}.settings", "demo", []patternmapper.MappingRule{
         patternmapper.Child("api_key", "{env}-api-key"),
@@ -113,17 +113,17 @@ mapper, err := b.Build() // Validates via NewConfigMapper
 // mappings.yaml
 mappings:
   - source: "environments.{env}.settings"
-    target_layer: "demo"
+    target_section: "demo"
     rules:
       - source: "api_key"
-        target_parameter: "{env}-api-key"
+        target_field: "{env}-api-key"
 
 // Go
-mapper, err := patternmapper.LoadMapperFromFile(layers, "mappings.yaml")
+mapper, err := patternmapper.LoadMapperFromFile(sections, "mappings.yaml")
 if err != nil { /* handle */ }
 middleware := sources.FromFile(
     "config.yaml",
-    middlewares.WithConfigMapper(mapper),
+    sources.WithConfigMapper(mapper),
 )
 ```
 
@@ -133,4 +133,3 @@ middleware := sources.FromFile(
 - **ConfigFileMapper**: For complex logic, arrays, conditionals, or transformations
 
 Both approaches are fully supported and can be used interchangeably.
-

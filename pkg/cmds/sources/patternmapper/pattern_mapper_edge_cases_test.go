@@ -13,22 +13,22 @@ import (
 // TestEdgeCases tests various edge cases and boundary conditions
 func TestEdgeCases(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupLayers func(t *testing.T) *schema.Schema
-		rules       []pm.MappingRule
-		config      map[string]interface{}
-		expected    map[string]map[string]interface{}
-		expectError bool
-		errorMsg    string
+		name          string
+		setupSections func(t *testing.T) *schema.Schema
+		rules         []pm.MappingRule
+		config        map[string]interface{}
+		expected      map[string]map[string]interface{}
+		expectError   bool
+		errorMsg      string
 	}{
 		{
-			name:        "empty config",
-			setupLayers: createTestLayers,
+			name:          "empty config",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config:      map[string]interface{}{},
@@ -36,13 +36,13 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "config with nil values",
-			setupLayers: createTestLayers,
+			name:          "config with nil values",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -60,13 +60,13 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "deeply nested config",
-			setupLayers: createTestLayers,
+			name:          "deeply nested config",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "a.b.c.d.e.f.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "a.b.c.d.e.f.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -92,13 +92,13 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "special characters in config keys",
-			setupLayers: createTestLayers,
+			name:          "special characters in config keys",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -118,13 +118,13 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "numeric values",
-			setupLayers: createTestLayers,
+			name:          "numeric values",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.threshold",
-					TargetLayer:     "demo",
-					TargetParameter: "threshold",
+					Source:        "app.settings.threshold",
+					TargetSection: "demo",
+					TargetField:   "threshold",
 				},
 			},
 			config: map[string]interface{}{
@@ -143,22 +143,22 @@ func TestEdgeCases(t *testing.T) {
 		},
 		{
 			name: "boolean values",
-			setupLayers: func(t *testing.T) *schema.Schema {
-				layer, err := schema.NewSection(
+			setupSections: func(t *testing.T) *schema.Schema {
+				section, err := schema.NewSection(
 					"demo",
-					"Demo Layer",
+					"Demo Section",
 					schema.WithFields(
 						fields.New("enabled", fields.TypeBool),
 					),
 				)
 				require.NoError(t, err)
-				return schema.NewSchema(schema.WithSections(layer))
+				return schema.NewSchema(schema.WithSections(section))
 			},
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.enabled",
-					TargetLayer:     "demo",
-					TargetParameter: "enabled",
+					Source:        "app.settings.enabled",
+					TargetSection: "demo",
+					TargetField:   "enabled",
 				},
 			},
 			config: map[string]interface{}{
@@ -177,22 +177,22 @@ func TestEdgeCases(t *testing.T) {
 		},
 		{
 			name: "capture with special characters in matched value",
-			setupLayers: func(t *testing.T) *schema.Schema {
-				layer, err := schema.NewSection(
+			setupSections: func(t *testing.T) *schema.Schema {
+				section, err := schema.NewSection(
 					"demo",
-					"Demo Layer",
+					"Demo Section",
 					schema.WithFields(
 						fields.New("dev-us-east-1-api-key", fields.TypeString),
 					),
 				)
 				require.NoError(t, err)
-				return schema.NewSchema(schema.WithSections(layer))
+				return schema.NewSchema(schema.WithSections(section))
 			},
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.{env}.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "{env}-api-key",
+					Source:        "app.{env}.api_key",
+					TargetSection: "demo",
+					TargetField:   "{env}-api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -210,13 +210,13 @@ func TestEdgeCases(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "multiple wildcards in path (same values avoids ambiguity)",
-			setupLayers: createTestLayers,
+			name:          "multiple wildcards in path (same values avoids ambiguity)",
+			setupSections: createTestSections,
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.*.settings.*.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.*.settings.*.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -244,8 +244,8 @@ func TestEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testLayers := tt.setupLayers(t)
-			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
+			testSections := tt.setupSections(t)
+			mapper, err := pm.NewConfigMapper(testSections, tt.rules...)
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, mapper)
@@ -272,7 +272,7 @@ func TestEdgeCases(t *testing.T) {
 
 // TestErrorMessages verifies that error messages are clear and helpful
 func TestErrorMessages(t *testing.T) {
-	testLayers := createTestLayers(t)
+	testSections := createTestSections(t)
 
 	tests := []struct {
 		name          string
@@ -285,10 +285,10 @@ func TestErrorMessages(t *testing.T) {
 			name: "required pattern not found - clear message",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
-					Required:        true,
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
+					Required:      true,
 				},
 			},
 			config: map[string]interface{}{
@@ -306,12 +306,12 @@ func TestErrorMessages(t *testing.T) {
 			},
 		},
 		{
-			name: "parameter does not exist - shows pattern and layer",
+			name: "field does not exist - shows pattern and section",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "nonexistent-param",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "nonexistent-param",
 				},
 			},
 			config: map[string]interface{}{
@@ -323,7 +323,7 @@ func TestErrorMessages(t *testing.T) {
 			},
 			expectError: true,
 			errorContains: []string{
-				"target parameter",
+				"target field",
 				"nonexistent-param",
 				"does not exist",
 				"demo",
@@ -334,7 +334,7 @@ func TestErrorMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testSections, tt.rules...)
 			if err != nil {
 				// Validation error
 				for _, substr := range tt.errorContains {
@@ -357,12 +357,12 @@ func TestErrorMessages(t *testing.T) {
 	}
 }
 
-// TestLayerPrefix tests handling of layer prefixes
-func TestLayerPrefix(t *testing.T) {
-	// Create a layer with a prefix
-	layer, err := schema.NewSection(
+// TestSectionPrefix tests handling of section prefixes
+func TestSectionPrefix(t *testing.T) {
+	// Create a section with a prefix
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithPrefix("demo-"),
 		schema.WithFields(
 			fields.New("demo-api-key", fields.TypeString),
@@ -371,7 +371,7 @@ func TestLayerPrefix(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	testLayers := schema.NewSchema(schema.WithSections(layer))
+	testSections := schema.NewSchema(schema.WithSections(section))
 
 	tests := []struct {
 		name        string
@@ -381,12 +381,12 @@ func TestLayerPrefix(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "parameter name without prefix - should add prefix",
+			name: "field name without prefix - should add prefix",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -404,12 +404,12 @@ func TestLayerPrefix(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "parameter name with prefix - should not double prefix",
+			name: "field name with prefix - should not double prefix",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "demo-api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "demo-api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -430,7 +430,7 @@ func TestLayerPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testSections, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -447,10 +447,10 @@ func TestLayerPrefix(t *testing.T) {
 
 // TestComplexCaptureScenarios tests complex capture patterns
 func TestComplexCaptureScenarios(t *testing.T) {
-	// Create test layers with environment-region parameters
-	layer, err := schema.NewSection(
+	// Create test sections with environment-region fields
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("us-east-dev-api-key", fields.TypeString),
 			fields.New("us-west-prod-api-key", fields.TypeString),
@@ -459,7 +459,7 @@ func TestComplexCaptureScenarios(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	testLayers := schema.NewSchema(schema.WithSections(layer))
+	testSections := schema.NewSchema(schema.WithSections(section))
 
 	tests := []struct {
 		name        string
@@ -472,9 +472,9 @@ func TestComplexCaptureScenarios(t *testing.T) {
 			name: "multiple captures in single pattern",
 			rules: []pm.MappingRule{
 				{
-					Source:          "regions.{region}.{env}.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "{region}-{env}-api-key",
+					Source:        "regions.{region}.{env}.api_key",
+					TargetSection: "demo",
+					TargetField:   "{region}-{env}-api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -503,10 +503,10 @@ func TestComplexCaptureScenarios(t *testing.T) {
 			name: "nested rules with multiple captures from parent",
 			rules: []pm.MappingRule{
 				{
-					Source:      "regions.{region}.environments.{env}.settings",
-					TargetLayer: "demo",
+					Source:        "regions.{region}.environments.{env}.settings",
+					TargetSection: "demo",
 					Rules: []pm.MappingRule{
-						{Source: "api_key", TargetParameter: "{region}-{env}-api-key"},
+						{Source: "api_key", TargetField: "{region}-{env}-api-key"},
 					},
 				},
 			},
@@ -534,7 +534,7 @@ func TestComplexCaptureScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
+			mapper, err := pm.NewConfigMapper(testSections, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -551,9 +551,9 @@ func TestComplexCaptureScenarios(t *testing.T) {
 
 // TestConfigTypes tests handling of different value types
 func TestConfigTypes(t *testing.T) {
-	layer, err := schema.NewSection(
+	section, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("string-param", fields.TypeString),
 			fields.New("int-param", fields.TypeInteger),
@@ -564,33 +564,33 @@ func TestConfigTypes(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	testLayers := schema.NewSchema(schema.WithSections(layer))
+	testSections := schema.NewSchema(schema.WithSections(section))
 
-	mapper, err := pm.NewConfigMapper(testLayers,
+	mapper, err := pm.NewConfigMapper(testSections,
 		pm.MappingRule{
-			Source:          "config.string_val",
-			TargetLayer:     "demo",
-			TargetParameter: "string-param",
+			Source:        "config.string_val",
+			TargetSection: "demo",
+			TargetField:   "string-param",
 		},
 		pm.MappingRule{
-			Source:          "config.int_val",
-			TargetLayer:     "demo",
-			TargetParameter: "int-param",
+			Source:        "config.int_val",
+			TargetSection: "demo",
+			TargetField:   "int-param",
 		},
 		pm.MappingRule{
-			Source:          "config.float_val",
-			TargetLayer:     "demo",
-			TargetParameter: "float-param",
+			Source:        "config.float_val",
+			TargetSection: "demo",
+			TargetField:   "float-param",
 		},
 		pm.MappingRule{
-			Source:          "config.bool_val",
-			TargetLayer:     "demo",
-			TargetParameter: "bool-param",
+			Source:        "config.bool_val",
+			TargetSection: "demo",
+			TargetField:   "bool-param",
 		},
 		pm.MappingRule{
-			Source:          "config.list_val",
-			TargetLayer:     "demo",
-			TargetParameter: "list-param",
+			Source:        "config.list_val",
+			TargetSection: "demo",
+			TargetField:   "list-param",
 		},
 	)
 	require.NoError(t, err)

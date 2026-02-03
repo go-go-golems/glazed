@@ -11,13 +11,13 @@ import (
 	pm "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
 )
 
-func buildTestLayers(t *testing.T, defs ...*fields.Definition) *schema.Schema {
+func buildTestSections(t *testing.T, defs ...*fields.Definition) *schema.Schema {
 	t.Helper()
 	l, err := schema.NewSection("demo", "Demo",
 		schema.WithFields(defs...),
 	)
 	if err != nil {
-		t.Fatalf("failed to create layer: %v", err)
+		t.Fatalf("failed to create section: %v", err)
 	}
 	return schema.NewSchema(schema.WithSections(l))
 }
@@ -26,12 +26,12 @@ func TestLoadRulesFromYAML_Object(t *testing.T) {
 	data := []byte(`
 mappings:
   - source: "app.settings"
-    target_layer: "demo"
+    target_section: "demo"
     rules:
       - source: "api_key"
-        target_parameter: "api-key"
+        target_field: "api-key"
       - source: "threshold"
-        target_parameter: "threshold"
+        target_field: "threshold"
 `)
 
 	rules, err := pm.LoadRulesFromReader(bytes.NewReader(data))
@@ -41,7 +41,7 @@ mappings:
 	if len(rules) != 1 {
 		t.Fatalf("expected 1 top-level rule, got %d", len(rules))
 	}
-	if rules[0].Source != "app.settings" || rules[0].TargetLayer != "demo" {
+	if rules[0].Source != "app.settings" || rules[0].TargetSection != "demo" {
 		t.Fatalf("unexpected top-level rule: %+v", rules[0])
 	}
 	if len(rules[0].Rules) != 2 {
@@ -52,11 +52,11 @@ mappings:
 func TestLoadRulesFromYAML_Array(t *testing.T) {
 	data := []byte(`
 - source: "app.settings.api_key"
-  target_layer: "demo"
-  target_parameter: "api-key"
+  target_section: "demo"
+  target_field: "api-key"
 - source: "app.settings.threshold"
-  target_layer: "demo"
-  target_parameter: "threshold"
+  target_section: "demo"
+  target_field: "threshold"
 `)
 
 	rules, err := pm.LoadRulesFromReader(bytes.NewReader(data))
@@ -73,10 +73,10 @@ func TestLoadMapperFromFile_E2E(t *testing.T) {
 	content := []byte(`
 mappings:
   - source: "app.{env}.settings"
-    target_layer: "demo"
+    target_section: "demo"
     rules:
       - source: "api_key"
-        target_parameter: "{env}-api-key"
+        target_field: "{env}-api-key"
 `)
 	dir := t.TempDir()
 	f := filepath.Join(dir, "mappings.yaml")
@@ -84,12 +84,12 @@ mappings:
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
-	// Layers with expected params
+	// Sections with expected params
 	defs := []*fields.Definition{
 		fields.New("dev-api-key", fields.TypeString),
 		fields.New("prod-api-key", fields.TypeString),
 	}
-	pls := buildTestLayers(t, defs...)
+	pls := buildTestSections(t, defs...)
 
 	mapper, err := pm.LoadMapperFromFile(pls, f)
 	if err != nil {

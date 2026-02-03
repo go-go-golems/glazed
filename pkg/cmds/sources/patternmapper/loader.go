@@ -18,19 +18,19 @@ type mappingFile struct {
 // mappingRule is an unmarshalling helper for YAML/JSON that mirrors MappingRule but
 // uses snake_case keys as typically found in config files.
 type mappingRule struct {
-	Source          string        `yaml:"source" json:"source"`
-	TargetLayer     string        `yaml:"target_layer" json:"target_layer"`
-	TargetParameter string        `yaml:"target_parameter" json:"target_parameter"`
-	Required        bool          `yaml:"required" json:"required"`
-	Rules           []mappingRule `yaml:"rules" json:"rules"`
+	Source        string        `yaml:"source" json:"source"`
+	TargetSection string        `yaml:"target_section" json:"target_section"`
+	TargetField   string        `yaml:"target_field" json:"target_field"`
+	Required      bool          `yaml:"required" json:"required"`
+	Rules         []mappingRule `yaml:"rules" json:"rules"`
 }
 
 func (mr mappingRule) toMappingRule() MappingRule {
 	r := MappingRule{
-		Source:          mr.Source,
-		TargetLayer:     mr.TargetLayer,
-		TargetParameter: mr.TargetParameter,
-		Required:        mr.Required,
+		Source:        mr.Source,
+		TargetSection: mr.TargetSection,
+		TargetField:   mr.TargetField,
+		Required:      mr.Required,
 	}
 	if len(mr.Rules) > 0 {
 		r.Rules = make([]MappingRule, 0, len(mr.Rules))
@@ -93,11 +93,11 @@ func LoadRulesFromFile(filename string) ([]MappingRule, error) {
 	return LoadRulesFromReader(f)
 }
 
-// LoadMapperFromFile loads a ConfigMapper from a YAML/JSON mapping file using the provided layers.
-func LoadMapperFromFile(layers_ *schema.Schema, filename string) (sources.ConfigMapper, error) {
+// LoadMapperFromFile loads a ConfigMapper from a YAML/JSON mapping file using the provided schema.
+func LoadMapperFromFile(sectionSchema *schema.Schema, filename string) (sources.ConfigMapper, error) {
 	rules, err := LoadRulesFromFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	return NewConfigMapper(layers_, rules...)
+	return NewConfigMapper(sectionSchema, rules...)
 }

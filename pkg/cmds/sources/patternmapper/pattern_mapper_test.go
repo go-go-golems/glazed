@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// createTestLayers creates a test parameter layer structure
-func createTestLayers(t *testing.T) *schema.Schema {
-	demoLayer, err := schema.NewSection(
+// createTestSections creates a test field section structure
+func createTestSections(t *testing.T) *schema.Schema {
+	demoSection, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("api-key", fields.TypeString),
 			fields.New("threshold", fields.TypeInteger),
@@ -29,7 +29,7 @@ func createTestLayers(t *testing.T) *schema.Schema {
 	require.NoError(t, err)
 
 	return schema.NewSchema(
-		schema.WithSections(demoLayer),
+		schema.WithSections(demoSection),
 	)
 }
 
@@ -44,9 +44,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "valid exact match pattern",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: false,
@@ -55,9 +55,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "valid named capture pattern",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.{env}.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "{env}-api-key",
+					Source:        "app.{env}.api_key",
+					TargetSection: "demo",
+					TargetField:   "{env}-api-key",
 				},
 			},
 			expectError: false,
@@ -66,9 +66,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "valid wildcard pattern",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.*.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.*.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: false,
@@ -77,9 +77,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "invalid pattern - empty",
 			rules: []pm.MappingRule{
 				{
-					Source:          "",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: true,
@@ -89,9 +89,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "invalid pattern - empty segment",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app..api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app..api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: true,
@@ -101,9 +101,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "invalid capture - unclosed",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.{env.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.{env.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: true,
@@ -113,9 +113,9 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "invalid capture - empty name",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.{}.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.{}.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: true,
@@ -125,35 +125,35 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "invalid capture reference - not in source",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "{env}-api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "{env}-api-key",
 				},
 			},
 			expectError: true,
-			errorMsg:    "capture reference {env} in target parameter not found in source pattern",
+			errorMsg:    "capture reference {env} in target field not found in source pattern",
 		},
 		{
-			name: "invalid target layer - does not exist",
+			name: "invalid target section - does not exist",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "nonexistent",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "nonexistent",
+					TargetField:   "api-key",
 				},
 			},
 			expectError: true,
-			errorMsg:    "target layer \"nonexistent\" does not exist",
+			errorMsg:    "target section \"nonexistent\" does not exist",
 		},
 		{
 			name: "valid nested rules",
 			rules: []pm.MappingRule{
 				{
-					Source:      "app.settings",
-					TargetLayer: "demo",
+					Source:        "app.settings",
+					TargetSection: "demo",
 					Rules: []pm.MappingRule{
-						{Source: "api_key", TargetParameter: "api-key"},
-						{Source: "threshold", TargetParameter: "threshold"},
+						{Source: "api_key", TargetField: "api-key"},
+						{Source: "threshold", TargetField: "threshold"},
 					},
 				},
 			},
@@ -163,33 +163,33 @@ func TestNewConfigMapper_Validation(t *testing.T) {
 			name: "valid nested rules with capture inheritance",
 			rules: []pm.MappingRule{
 				{
-					Source:      "app.{env}.settings",
-					TargetLayer: "demo",
+					Source:        "app.{env}.settings",
+					TargetSection: "demo",
 					Rules: []pm.MappingRule{
-						{Source: "api_key", TargetParameter: "{env}-api-key"},
+						{Source: "api_key", TargetField: "{env}-api-key"},
 					},
 				},
 			},
 			expectError: false,
 		},
 		{
-			name: "invalid static target parameter at compile time",
+			name: "invalid static target field at compile time",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "nonexistent", // Should fail at compile time
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "nonexistent", // Should fail at compile time
 				},
 			},
 			expectError: true,
-			errorMsg:    "target parameter \"nonexistent\" does not exist in layer \"demo\"",
+			errorMsg:    "target field \"nonexistent\" does not exist in section \"demo\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			layers_ := createTestLayers(t)
-			_, err := pm.NewConfigMapper(layers_, tt.rules...)
+			sections_ := createTestSections(t)
+			_, err := pm.NewConfigMapper(sections_, tt.rules...)
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
@@ -215,9 +215,9 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "exact match - simple",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -238,14 +238,14 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "exact match - multiple rules",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 				{
-					Source:          "app.settings.threshold",
-					TargetLayer:     "demo",
-					TargetParameter: "threshold",
+					Source:        "app.settings.threshold",
+					TargetSection: "demo",
+					TargetField:   "threshold",
 				},
 			},
 			config: map[string]interface{}{
@@ -268,9 +268,9 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "named capture - single",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.{env}.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "{env}-api-key",
+					Source:        "app.{env}.api_key",
+					TargetSection: "demo",
+					TargetField:   "{env}-api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -295,9 +295,9 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "wildcard - matches all (same values avoids ambiguity)",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.*.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
+					Source:        "app.*.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
 				},
 			},
 			config: map[string]interface{}{
@@ -321,11 +321,11 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "nested rules - simple",
 			rules: []pm.MappingRule{
 				{
-					Source:      "app.settings",
-					TargetLayer: "demo",
+					Source:        "app.settings",
+					TargetSection: "demo",
 					Rules: []pm.MappingRule{
-						{Source: "api_key", TargetParameter: "api-key"},
-						{Source: "threshold", TargetParameter: "threshold"},
+						{Source: "api_key", TargetField: "api-key"},
+						{Source: "threshold", TargetField: "threshold"},
 					},
 				},
 			},
@@ -349,11 +349,11 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "nested rules - with capture inheritance",
 			rules: []pm.MappingRule{
 				{
-					Source:      "app.{env}.settings",
-					TargetLayer: "demo",
+					Source:        "app.{env}.settings",
+					TargetSection: "demo",
 					Rules: []pm.MappingRule{
-						{Source: "api_key", TargetParameter: "{env}-api-key"},
-						{Source: "threshold", TargetParameter: "{env}-threshold"},
+						{Source: "api_key", TargetField: "{env}-api-key"},
+						{Source: "threshold", TargetField: "{env}-threshold"},
 					},
 				},
 			},
@@ -387,10 +387,10 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "required pattern - missing",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
-					Required:        true,
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
+					Required:      true,
 				},
 			},
 			config: map[string]interface{}{
@@ -407,10 +407,10 @@ func TestPatternMapper_Map(t *testing.T) {
 			name: "optional pattern - missing (no error)",
 			rules: []pm.MappingRule{
 				{
-					Source:          "app.settings.api_key",
-					TargetLayer:     "demo",
-					TargetParameter: "api-key",
-					Required:        false,
+					Source:        "app.settings.api_key",
+					TargetSection: "demo",
+					TargetField:   "api-key",
+					Required:      false,
 				},
 			},
 			config: map[string]interface{}{
@@ -427,8 +427,8 @@ func TestPatternMapper_Map(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testLayers := createTestLayers(t)
-			mapper, err := pm.NewConfigMapper(testLayers, tt.rules...)
+			testSections := createTestSections(t)
+			mapper, err := pm.NewConfigMapper(testSections, tt.rules...)
 			require.NoError(t, err)
 
 			result, err := mapper.Map(tt.config)
@@ -606,7 +606,7 @@ func TestExtractCaptureReferences(t *testing.T) {
 	}
 }
 
-func TestResolveTargetParameter(t *testing.T) {
+func TestResolveTargetField(t *testing.T) {
 	tests := []struct {
 		name        string
 		target      string
@@ -657,7 +657,7 @@ func TestResolveTargetParameter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := pm.ResolveTargetParameter(tt.target, tt.captures)
+			result, err := pm.ResolveTargetField(tt.target, tt.captures)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -669,15 +669,15 @@ func TestResolveTargetParameter(t *testing.T) {
 	}
 }
 
-func TestIntegrationWithLoadParametersFromFile(t *testing.T) {
+func TestIntegrationWithLoadFieldsFromFile(t *testing.T) {
 	// This test validates the integration pattern but doesn't actually load files
-	testLayers := createTestLayers(t)
+	testSections := createTestSections(t)
 
 	// Create a pattern mapper
-	mapper, err := pm.NewConfigMapper(testLayers, pm.MappingRule{
-		Source:          "app.settings.api_key",
-		TargetLayer:     "demo",
-		TargetParameter: "api-key",
+	mapper, err := pm.NewConfigMapper(testSections, pm.MappingRule{
+		Source:        "app.settings.api_key",
+		TargetSection: "demo",
+		TargetField:   "api-key",
 	})
 	require.NoError(t, err)
 

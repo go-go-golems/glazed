@@ -19,7 +19,11 @@
 - [x] Expand migration/refactor tooling to rename ParsedParameter(s) → FieldValue(s) and helper APIs.
 - [x] Rename `fields` parsed value types + helpers (FieldValue(s), Decode helpers) and update call sites.
 - [x] Rename `values` API surface to Section/Field naming (fields, options, accessors, errors).
-- [ ] Rename pattern mapper config (TargetParameter → TargetField, YAML/JSON tags, files, tests).
+- [x] Publish inventory report from scripts (analysis/03-layer-parameter-inventory.md).
+- [x] Pattern mapper rename (TargetParameter → TargetField) including config tags, error strings, and tests.
+- [ ] Appconfig layer vocabulary cleanup (LayerSlug → SectionSlug, WithValuesForLayers → WithValuesForSections, error strings, tests, examples).
+- [ ] Lua conversion naming cleanup (ParseLuaTableToSection, ParseFieldFromLua, error strings).
+- [ ] CLI flag + help text cleanup (parsed-parameters → parsed-fields, parameters-from-file → fields-from-file).
 - [ ] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.
 - [ ] Rename files/dirs containing `layer` or `parameter` in names (code + docs + examples).
 - [ ] Update docs/tutorials/examples/prompto/pinocchio to remove `layer`/`parameter` vocabulary.

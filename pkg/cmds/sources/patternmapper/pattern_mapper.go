@@ -12,11 +12,11 @@ import (
 	"strings"
 )
 
-// MappingRule defines a pattern-based mapping from config file structure to layer fields.
+// MappingRule defines a pattern-based mapping from config file structure to section fields.
 // A mapping rule specifies:
 //   - Source: Pattern to match in the config file (e.g., "app.settings.api_key", "app.{env}.api_key")
-//   - TargetLayer: Which layer to place the value in
-//   - TargetParameter: Which parameter name to use (supports capture references like "{env}-api-key")
+//   - TargetSection: Which section to place the value in
+//   - TargetField: Which field name to use (supports capture references like "{env}-api-key")
 //   - Required: Whether the pattern must match (default: false)
 //   - Rules: Optional nested rules for mapping child objects
 type MappingRule struct {
@@ -27,13 +27,13 @@ type MappingRule struct {
 	//   - Named capture: "app.{env}.api_key" (captures "env")
 	Source string
 
-	// Target layer slug (e.g., "demo")
+	// Target section slug (e.g., "demo")
 	// If not set in child rules, inherits from parent rule
-	TargetLayer string
+	TargetSection string
 
-	// Target parameter name (supports captures like "{env}-api-key")
+	// Target field name (supports captures like "{env}-api-key")
 	// Capture references use the format "{name}" where name is a capture group from Source
-	TargetParameter string
+	TargetField string
 
 	// Optional: nested rules for mapping child objects
 	// If provided, Source should point to an object, and Rules maps its children
@@ -47,7 +47,7 @@ type MappingRule struct {
 // patternMapper implements ConfigMapper using pattern matching rules
 type patternMapper struct {
 	rules            []MappingRule
-	layers           *schema.Schema
+	sectionSchema    *schema.Schema
 	compiledPatterns []compiledPattern
 }
 
@@ -63,16 +63,16 @@ type compiledPattern struct {
 // NewConfigMapper creates a new pattern-based config mapper from the given rules.
 // The mapper validates that:
 //   - All patterns are valid syntax
-//   - All target parameters exist in their respective layers
-//   - Capture references in target parameters match captures in source patterns
-func NewConfigMapper(layers *schema.Schema, rules ...MappingRule) (sources.ConfigMapper, error) {
-	if layers == nil {
-		return nil, errors.New("layers cannot be nil")
+//   - All target fields exist in their respective sections
+//   - Capture references in target fields match captures in source patterns
+func NewConfigMapper(sectionSchema *schema.Schema, rules ...MappingRule) (sources.ConfigMapper, error) {
+	if sectionSchema == nil {
+		return nil, errors.New("section schema cannot be nil")
 	}
 
 	mapper := &patternMapper{
-		rules:  rules,
-		layers: layers,
+		rules:         rules,
+		sectionSchema: sectionSchema,
 	}
 
 	// Compile and validate all patterns
@@ -136,34 +136,34 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 		}
 	}
 
-	// Validate target parameter if this is a leaf rule (no nested rules)
+	// Validate target field if this is a leaf rule (no nested rules)
 	if len(rule.Rules) == 0 {
-		// Validate target layer exists
-		if rule.TargetLayer == "" {
-			return nil, errors.New("target layer is required for leaf rules")
+		// Validate target section exists
+		if rule.TargetSection == "" {
+			return nil, errors.New("target section is required for leaf rules")
 		}
 
-		_, ok := m.layers.Get(rule.TargetLayer)
+		_, ok := m.sectionSchema.Get(rule.TargetSection)
 		if !ok {
-			return nil, errors.Errorf("target layer %q does not exist", rule.TargetLayer)
+			return nil, errors.Errorf("target section %q does not exist", rule.TargetSection)
 		}
 
-		// Validate capture references in target parameter
+		// Validate capture references in target field
 		// Check against all captures (parent + current)
-		if err := validateCaptureReferences(allCaptures, rule.TargetParameter); err != nil {
-			return nil, errors.Wrapf(err, "invalid capture reference in target parameter")
+		if err := validateCaptureReferences(allCaptures, rule.TargetField); err != nil {
+			return nil, errors.Wrapf(err, "invalid capture reference in target field")
 		}
 
-		// Proposal 5: Early validation for static target parameters (no capture refs)
-		if len(extractCaptureReferences(rule.TargetParameter)) == 0 {
-			layer, _ := m.layers.Get(rule.TargetLayer)
-			if layer != nil {
-				canonical := resolveCanonicalParameterName(layer, rule.TargetParameter)
-				if pd, ok := layer.GetDefinitions().Get(canonical); !ok || pd == nil {
-					if canonical != rule.TargetParameter {
-						return nil, errors.Errorf("target parameter %q (checked as %q) does not exist in layer %q", rule.TargetParameter, canonical, rule.TargetLayer)
+		// Proposal 5: Early validation for static target fields (no capture refs)
+		if len(extractCaptureReferences(rule.TargetField)) == 0 {
+			section, _ := m.sectionSchema.Get(rule.TargetSection)
+			if section != nil {
+				canonical := resolveCanonicalFieldName(section, rule.TargetField)
+				if fd, ok := section.GetDefinitions().Get(canonical); !ok || fd == nil {
+					if canonical != rule.TargetField {
+						return nil, errors.Errorf("target field %q (checked as %q) does not exist in section %q", rule.TargetField, canonical, rule.TargetSection)
 					}
-					return nil, errors.Errorf("target parameter %q does not exist in layer %q", rule.TargetParameter, rule.TargetLayer)
+					return nil, errors.Errorf("target field %q does not exist in section %q", rule.TargetField, rule.TargetSection)
 				}
 			}
 		}
@@ -186,9 +186,9 @@ func (m *patternMapper) compileRule(rule MappingRule, parentPath string, parentC
 	} else {
 		// Nested rules: compile each child rule
 		for i, childRule := range rule.Rules {
-			// Inherit target layer if not set
-			if childRule.TargetLayer == "" {
-				childRule.TargetLayer = rule.TargetLayer
+			// Inherit target section if not set
+			if childRule.TargetSection == "" {
+				childRule.TargetSection = rule.TargetSection
 			}
 
 			childCompiled, err := m.compileRule(childRule, fullPath, allCaptures)
@@ -216,7 +216,7 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 	orderedRoot := toOrderedMap(configMap)
 
 	// Track collisions across rules (proposal 3)
-	// Key: layer+"."+paramName, Value: pattern source that last wrote to it
+	// Key: section+"."+fieldName, Value: pattern source that last wrote to it
 	collisionTracker := make(map[string]string)
 
 	// Match each pattern against the config
@@ -227,44 +227,44 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 		}
 
 		// Proposal 2: Track multi-matches per rule
-		// Key: resolved target parameter name, Value: list of distinct values
+		// Key: resolved target field name, Value: list of distinct values
 		multiMatchTracker := make(map[string][]interface{})
 
 		// Process each match
 		for _, match := range matches {
-			// Resolve target parameter name (replace captures)
-			targetParam, err := resolveTargetParameter(compiled.rule.TargetParameter, match.captures)
+			// Resolve target field name (replace captures)
+			targetField, err := resolveTargetField(compiled.rule.TargetField, match.captures)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to resolve target parameter")
+				return nil, errors.Wrapf(err, "failed to resolve target field")
 			}
 
-			// Validate parameter exists
-			layer, ok := m.layers.Get(match.layer)
+			// Validate field exists
+			section, ok := m.sectionSchema.Get(match.section)
 			if !ok {
-				return nil, errors.Errorf("target layer %q does not exist", match.layer)
+				return nil, errors.Errorf("target section %q does not exist", match.section)
 			}
 
-			// Resolve canonical parameter name (using helper from proposal 9)
-			paramName := resolveCanonicalParameterName(layer, targetParam)
+			// Resolve canonical field name (using helper from proposal 9)
+			fieldName := resolveCanonicalFieldName(section, targetField)
 
-			paramDef, ok := layer.GetDefinitions().Get(paramName)
-			if !ok || paramDef == nil {
+			fieldDef, ok := section.GetDefinitions().Get(fieldName)
+			if !ok || fieldDef == nil {
 				// Proposal 4: Prefix-aware error messages
-				// Include both the user-provided targetParam and the resolved paramName
-				errorMsg := fmt.Sprintf("target parameter %q", targetParam)
-				if paramName != targetParam {
-					errorMsg += fmt.Sprintf(" (checked as %q)", paramName)
+				// Include both the user-provided targetField and the resolved fieldName
+				errorMsg := fmt.Sprintf("target field %q", targetField)
+				if fieldName != targetField {
+					errorMsg += fmt.Sprintf(" (checked as %q)", fieldName)
 				}
-				errorMsg += fmt.Sprintf(" does not exist in layer %q (pattern: %q)", match.layer, compiled.rule.Source)
+				errorMsg += fmt.Sprintf(" does not exist in section %q (pattern: %q)", match.section, compiled.rule.Source)
 				return nil, errors.New(errorMsg)
 			}
 
 			// Track multi-matches for this rule
-			multiMatchTracker[paramName] = append(multiMatchTracker[paramName], match.value)
+			multiMatchTracker[fieldName] = append(multiMatchTracker[fieldName], match.value)
 		}
 
 		// Check for multi-matches (proposal 2)
-		for paramName, values := range multiMatchTracker {
+		for fieldName, values := range multiMatchTracker {
 			if len(values) > 1 {
 				// Check if values are distinct
 				distinctValues := make(map[interface{}]bool)
@@ -275,9 +275,9 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 				if len(distinctValues) > 1 {
 					// Multiple distinct values found: error
 					return nil, errors.Errorf(
-						"pattern %q matched multiple distinct values for parameter %q: found %d distinct values",
+						"pattern %q matched multiple distinct values for field %q: found %d distinct values",
 						compiled.rule.Source,
-						paramName,
+						fieldName,
 						len(distinctValues),
 					)
 				}
@@ -285,28 +285,28 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 		}
 
 		// Process matches and set values
-		// Track which parameters were written by this rule to avoid false collision detection
+		// Track which fields were written by this rule to avoid false collision detection
 		writtenByThisRule := make(map[string]bool)
 		for _, match := range matches {
-			// Resolve target parameter name (replace captures)
-			targetParam, err := resolveTargetParameter(compiled.rule.TargetParameter, match.captures)
+			// Resolve target field name (replace captures)
+			targetField, err := resolveTargetField(compiled.rule.TargetField, match.captures)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to resolve target parameter")
+				return nil, errors.Wrapf(err, "failed to resolve target field")
 			}
 
-			layer, _ := m.layers.Get(match.layer)
-			paramName := resolveCanonicalParameterName(layer, targetParam)
+			section, _ := m.sectionSchema.Get(match.section)
+			fieldName := resolveCanonicalFieldName(section, targetField)
 
 			// Proposal 3: Collision detection across rules
-			// Only check for collisions if this parameter wasn't already written by this rule
-			collisionKey := match.layer + "." + paramName
+			// Only check for collisions if this field wasn't already written by this rule
+			collisionKey := match.section + "." + fieldName
 			if !writtenByThisRule[collisionKey] {
 				if previousPattern, exists := collisionTracker[collisionKey]; exists {
-					// Collision detected (different rule writing to same parameter): error
+					// Collision detected (different rule writing to same field): error
 					return nil, errors.Errorf(
-						"collision: parameter %q in layer %q is written by multiple patterns: %q and %q",
-						paramName,
-						match.layer,
+						"collision: field %q in section %q is written by multiple patterns: %q and %q",
+						fieldName,
+						match.section,
 						previousPattern,
 						compiled.rule.Source,
 					)
@@ -315,13 +315,13 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 				writtenByThisRule[collisionKey] = true
 			}
 
-			// Initialize layer map if needed
-			if result[match.layer] == nil {
-				result[match.layer] = make(map[string]interface{})
+			// Initialize section map if needed
+			if result[match.section] == nil {
+				result[match.section] = make(map[string]interface{})
 			}
 
 			// Set the value
-			result[match.layer][paramName] = match.value
+			result[match.section][fieldName] = match.value
 		}
 	}
 
@@ -330,7 +330,7 @@ func (m *patternMapper) Map(rawConfig interface{}) (map[string]map[string]interf
 
 // patternMatch represents a single pattern match result
 type patternMatch struct {
-	layer    string
+	section  string
 	value    interface{}
 	captures map[string]string
 }
@@ -476,7 +476,7 @@ func (m *patternMapper) matchSegmentsRecursive(
 	if len(remaining) == 0 {
 		// No more segments - this is the value we're looking for
 		*matches = append(*matches, patternMatch{
-			layer:    compiled.rule.TargetLayer,
+			section:  compiled.rule.TargetSection,
 			value:    value,
 			captures: captures,
 		})
@@ -518,10 +518,10 @@ func validatePatternSyntax(pattern string) error {
 	return nil
 }
 
-// validateCaptureReferences validates that all capture references in target parameter
+// validateCaptureReferences validates that all capture references in target field
 // correspond to captures in the available captures list
 func validateCaptureReferences(availableCaptures []string, targetParameter string) error {
-	// Extract capture references from target parameter
+	// Extract capture references from target field
 	targetRefs := extractCaptureReferences(targetParameter)
 
 	// Check all target references exist in available captures
@@ -534,7 +534,7 @@ func validateCaptureReferences(availableCaptures []string, targetParameter strin
 			}
 		}
 		if !found {
-			return errors.Errorf("capture reference {%s} in target parameter not found in source pattern", ref)
+			return errors.Errorf("capture reference {%s} in target field not found in source pattern", ref)
 		}
 	}
 
@@ -554,7 +554,7 @@ func extractCaptureNames(pattern string) []string {
 	return captures
 }
 
-// extractCaptureReferences extracts all capture references from a target parameter string
+// extractCaptureReferences extracts all capture references from a target field string
 func extractCaptureReferences(targetParameter string) map[string]bool {
 	refs := make(map[string]bool)
 	// Find all {name} patterns
@@ -600,23 +600,23 @@ func compilePatternToRegex(pattern string) (*regexp.Regexp, []string, error) {
 	return re, captureNames, nil
 }
 
-// resolveCanonicalParameterName resolves the canonical parameter name including prefix
-// This is proposal 9: explicit helper for canonical parameter name resolution
-func resolveCanonicalParameterName(layer schema.Section, targetParam string) string {
-	if layer.GetPrefix() != "" {
-		// If layer has prefix, check if targetParam already includes it
-		if !strings.HasPrefix(targetParam, layer.GetPrefix()) {
-			return layer.GetPrefix() + targetParam
+// resolveCanonicalFieldName resolves the canonical field name including prefix
+// This is proposal 9: explicit helper for canonical field name resolution
+func resolveCanonicalFieldName(section schema.Section, targetField string) string {
+	if section.GetPrefix() != "" {
+		// If section has prefix, check if targetField already includes it
+		if !strings.HasPrefix(targetField, section.GetPrefix()) {
+			return section.GetPrefix() + targetField
 		}
 	}
-	return targetParam
+	return targetField
 }
 
-// resolveTargetParameter resolves capture references in target parameter name
-func resolveTargetParameter(targetParameter string, captures map[string]string) (string, error) {
-	result := targetParameter
+// resolveTargetField resolves capture references in target field name
+func resolveTargetField(targetField string, captures map[string]string) (string, error) {
+	result := targetField
 	re := regexp.MustCompile(`\{([a-zA-Z_][a-zA-Z0-9_]*)\}`)
-	matches := re.FindAllStringSubmatch(targetParameter, -1)
+	matches := re.FindAllStringSubmatch(targetField, -1)
 
 	for _, match := range matches {
 		if len(match) < 2 {
