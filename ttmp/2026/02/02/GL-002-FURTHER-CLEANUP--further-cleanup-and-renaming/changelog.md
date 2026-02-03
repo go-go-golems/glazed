@@ -114,3 +114,12 @@ Step 13: finalize section/field doc cleanup and example fix (commit 6844cbf)
 
 Ticket closed
 
+
+## 2026-02-03
+
+Step 14: sanitize bundle for PDF upload + reMarkable upload (commit 8a9c26e)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py — Sanitize markdown for PDF upload
+

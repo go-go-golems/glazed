@@ -22,12 +22,15 @@ RelatedFiles:
       Note: AddFields renaming in migration list
     - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/24-update-docs-addfields-credentials.py
       Note: Doc replacement tooling
+    - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+      Note: Sanitize markdown for PDF upload
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-03T22:27:30-05:00
 WhatFor: Implementation diary for GL-002
 WhenToUse: When reviewing the rename cleanup work
 ---
+
 
 
 # Diary
@@ -982,4 +985,79 @@ gofmt -w pkg/cmds/fields/definitions_from_defaults_test.go \
 
 git add -A
 git commit -m "Refactor: finish section/field cleanup"
+```
+
+## Step 14: Sanitize bundle and upload GL-002 docs to reMarkable
+
+I closed the ticket and prepared the reMarkable upload bundle, but pandoc failed due to backslash sequences in the markdown. I added a small sanitization script to generate cleaned copies for PDF generation and reran the bundle upload successfully.
+
+This step records the upload workflow, the workaround for pandoc’s LaTeX error, and the final upload location under the `/ai/2026/02/03/GL-002-FURTHER-CLEANUP` folder.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 13)
+
+**Assistant interpretation:** Finish the ticket by uploading the requested docs to the reMarkable tablet, even if the PDF conversion needs fixes.
+
+**Inferred user intent:** Get the full GL-002 report package onto the tablet for review.
+
+**Commit (code):** 8a9c26e — "Docs: add remarkable bundle sanitizer"
+
+### What I did
+- Attempted a bundle upload to reMarkable and captured the pandoc failure.
+- Added a sanitization script to escape `\n`/`\t` sequences and normalize smart quotes for PDF generation.
+- Generated sanitized copies under `/tmp/remarkable-gl-002` and re-ran the bundle upload successfully.
+- Closed the GL-002 ticket after all tasks were marked complete.
+
+### Why
+- Pandoc’s LaTeX pipeline choked on literal backslash sequences in inline code, so a sanitized PDF input was required to finish the upload.
+
+### What worked
+- The sanitized bundle uploaded successfully to `/ai/2026/02/03/GL-002-FURTHER-CLEANUP`.
+
+### What didn't work
+- The initial upload attempt timed out at the default 10s limit.
+- The second upload attempt failed with pandoc LaTeX errors:
+  - `Error: pandoc failed: Error producing PDF. ! Undefined control sequence. l.48779   fmt.Printf(“Parameters: \%v\n`
+- The first run of the sanitizer script failed due to a bad ticket root path:
+  - `FileNotFoundError: [Errno 2] No such file or directory: '/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/README.md'`
+
+### What I learned
+- Pandoc’s LaTeX pipeline is sensitive to unescaped backslashes in inline code; a lightweight sanitizer is enough to make the bundle renderable.
+
+### What was tricky to build
+- Ensuring the sanitizer preserved directory structure while escaping only the problematic sequences took a couple of iterations to get the ticket root right.
+
+### What warrants a second pair of eyes
+- Confirm the sanitizer’s replacements (`\n`, `\t`, smart quotes) don’t meaningfully change the intended semantics of the uploaded report.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review the sanitizer script in `ttmp/.../scripts/25-sanitize-remarkable-bundle.py`.
+- Verify the upload target with `remarquee cloud ls /ai/2026/02/03/GL-002-FURTHER-CLEANUP --long` if needed.
+
+### Technical details
+
+```bash
+remarquee status
+remarquee upload bundle --dry-run /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/README.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/design-doc/01-further-cleanup-and-renaming-plan.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/01-exhaustive-parameter-layer-audit.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/02-parameter-layer-symbol-inventory.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/03-layer-parameter-inventory.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/sources/01-glazed-cleanup-notes.md \
+  /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/reference/01-diary.md \
+  --name "GL-002 Further Cleanup" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
+
+python3 glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+remarquee upload bundle /tmp/remarkable-gl-002/README.md \
+  /tmp/remarkable-gl-002/design-doc/01-further-cleanup-and-renaming-plan.md \
+  /tmp/remarkable-gl-002/analysis/01-exhaustive-parameter-layer-audit.md \
+  /tmp/remarkable-gl-002/analysis/02-parameter-layer-symbol-inventory.md \
+  /tmp/remarkable-gl-002/analysis/03-layer-parameter-inventory.md \
+  /tmp/remarkable-gl-002/sources/01-glazed-cleanup-notes.md \
+  /tmp/remarkable-gl-002/reference/01-diary.md \
+  --name "GL-002 Further Cleanup" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
 ```
