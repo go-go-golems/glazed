@@ -1469,5 +1469,18 @@ Finally, make a very detailed engineering-oriented version of the diary as a pos
 ### Technical details
 
 ```bash
-# no commands executed yet for this step; bundle update is pending upload
+python3 ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
+remarquee upload bundle /tmp/remarkable-gl-002/README.md \
+  /tmp/remarkable-gl-002/design-doc/01-further-cleanup-and-renaming-plan.md \
+  /tmp/remarkable-gl-002/analysis/01-exhaustive-parameter-layer-audit.md \
+  /tmp/remarkable-gl-002/analysis/02-parameter-layer-symbol-inventory.md \
+  /tmp/remarkable-gl-002/analysis/03-layer-parameter-inventory.md \
+  /tmp/remarkable-gl-002/analysis/04-postmortem-gl-002-refactor-and-tooling.md \
+  /tmp/remarkable-gl-002/analysis/05-refactor-infrastructure-blueprint-data-tools-human-oversight.md \
+  /tmp/remarkable-gl-002/analysis/06-gl-002-refactor-tooling-review-python-scripts.md \
+  /tmp/remarkable-gl-002/analysis/07-engineering-postmortem-gl-002-refactor-execution.md \
+  /tmp/remarkable-gl-002/sources/01-glazed-cleanup-notes.md \
+  /tmp/remarkable-gl-002/reference/01-diary.md \
+  /tmp/remarkable-gl-002/extras/migrating-to-facade-packages.md \
+  --name "GL-002 Further Cleanup v5" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
 ```
