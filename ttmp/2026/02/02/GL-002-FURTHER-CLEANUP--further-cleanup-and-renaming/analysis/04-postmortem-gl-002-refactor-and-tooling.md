@@ -1,16 +1,23 @@
 ---
-title: "Postmortem: GL-002 refactor and tooling"
-doc_type: analysis
-status: complete
-intent: long-term
-topics:
-  - glazed
-  - api-design
-  - renaming
-  - cleanup
-owners:
-  - manuel
+Title: ""
+Ticket: ""
+Status: ""
+Topics: []
+DocType: ""
+Intent: ""
+Owners: []
+RelatedFiles:
+    - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/12-rename-symbols.yaml
+      Note: Symbol rename mapping referenced in appendix
+    - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/26-build-postmortem-appendix.py
+      Note: Generate appendices from git and rename map
+ExternalSources: []
+Summary: ""
+LastUpdated: 0001-01-01T00:00:00Z
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 # Postmortem: GL-002 refactor and tooling
 
@@ -294,3 +301,210 @@ This postmortem aims to: (1) document the specific workflow used, (2) identify w
 ## Final assessment
 
 The refactor successfully achieved the no-compat, single-vocabulary API goal with a high degree of code correctness and documentation alignment. The remaining friction was primarily operational (script fragility, doc semantics, and PDF tooling). The strongest improvement area is in building a unified refactor playbook and shared tooling utilities so future renames are faster, safer, and less error-prone.
+
+## Appendices
+
+### Appendix A: Commit list (this branch vs upstream)
+
+- 7874112 Refactor: rename Lua section/field conversion
+- 50db9f3 Diary: record Lua rename step
+- 6844cbf Refactor: finish section/field cleanup
+- 46aa4e7 Diary: record step 13
+- 215ef84 Ticket: close GL-002-FURTHER-CLEANUP
+- 8a9c26e Docs: add remarkable bundle sanitizer
+- 88d5a39 Diary: record step 14
+- 37b787d Docs: expand GL-002 postmortem examples
+- c474ac5 Diary: record step 15
+
+### Appendix B: File renames (git diff --name-status --find-renames)
+
+- Format: R<score> <old> <new>
+- R100	cmd/examples/parameter-types/config.yaml	cmd/examples/field-types/config.yaml
+- R100	cmd/examples/parameter-types/sample-lines.txt	cmd/examples/field-types/sample-lines.txt
+- R100	cmd/examples/parameter-types/sample-list.json	cmd/examples/field-types/sample-list.json
+- R067	cmd/examples/parameter-types/sample-text.txt	cmd/examples/field-types/sample-text.txt
+- R100	cmd/examples/parameter-types/sample.json	cmd/examples/field-types/sample.json
+- R100	cmd/examples/parameter-types/sample.yaml	cmd/examples/field-types/sample.yaml
+- R100	cmd/examples/parameter-types/simple-config.yaml	cmd/examples/field-types/simple-config.yaml
+- R100	misc/json-parameters-from-json.json	misc/json-fields-from-json.json
+- R073	pkg/cmds/fields/parameters.go	pkg/cmds/fields/definitions.go
+- R076	pkg/cmds/fields/parameters_from_defaults_test.go	pkg/cmds/fields/definitions_from_defaults_test.go
+- R078	pkg/cmds/fields/parameters_test.go	pkg/cmds/fields/definitions_test.go
+- R091	pkg/cmds/fields/parameter-type.go	pkg/cmds/fields/field-type.go
+- R093	pkg/cmds/fields/parsed-parameter.go	pkg/cmds/fields/field-value.go
+- R076	pkg/cmds/fields/gather-parameters.go	pkg/cmds/fields/gather-fields.go
+- R064	pkg/cmds/fields/gather-parameters_test.go	pkg/cmds/fields/gather-fields_test.go
+- R084	pkg/cmds/fields/test-data/parameters_test.yaml	pkg/cmds/fields/test-data/definitions_test.yaml
+- R084	pkg/cmds/fields/test-data/parameters_validity_test.yaml	pkg/cmds/fields/test-data/definitions_validity_test.yaml
+- R081	pkg/cmds/logging/layer.go	pkg/cmds/logging/section.go
+- R082	pkg/cmds/schema/layer.go	pkg/cmds/schema/schema.go
+- R079	pkg/cmds/schema/layer-impl.go	pkg/cmds/schema/section-impl.go
+- R073	pkg/cmds/schema/layer-impl_test.go	pkg/cmds/schema/section-impl_test.go
+- R074	pkg/cmds/sources/load-parameters-from-json.go	pkg/cmds/sources/load-fields-from-config.go
+- R064	pkg/cmds/sources/tests/wrap-with-restricted-layers.yaml	pkg/cmds/sources/tests/wrap-with-restricted-sections.yaml
+- R097	pkg/cmds/values/parsed-layer.go	pkg/cmds/values/section-values.go
+- R057	pkg/cmds/values/parsed-layer_test.go	pkg/cmds/values/section-values_test.go
+- R078	pkg/doc/topics/08-file-parameter-type.md	pkg/doc/topics/08-file-field-type.md
+- R060	pkg/doc/topics/16-adding-parameter-types.md	pkg/doc/topics/16-adding-field-types.md
+- R084	pkg/doc/topics/logging-layer.md	pkg/doc/topics/logging-section.md
+- R058	pkg/doc/topics/layers-guide.md	pkg/doc/topics/sections-guide.md
+- R073	pkg/doc/tutorials/custom-layer.md	pkg/doc/tutorials/custom-section.md
+
+### Appendix C: Symbol rename map (AST tool YAML)
+
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayersHandler -> WhitelistSectionsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParametersHandler -> WhitelistSectionFieldsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayers -> WhitelistSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayersFirst -> WhitelistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParameters -> WhitelistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParametersFirst -> WhitelistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayersHandler -> BlacklistSectionsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParametersHandler -> BlacklistSectionFieldsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayers -> BlacklistSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayersFirst -> BlacklistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParameters -> BlacklistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParametersFirst -> BlacklistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithLayerModifyingHandler -> WrapWithSectionModifyingHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithWhitelistedLayers -> WrapWithWhitelistedSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithWhitelistedParameterLayers -> WrapWithWhitelistedSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithBlacklistedLayers -> WrapWithBlacklistedSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithBlacklistedParameterLayers -> WrapWithBlacklistedSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: LoadParametersFromResolvedFilesForCobra -> LoadFieldsFromResolvedFilesForCobra
+- github.com/go-go-golems/glazed/pkg/cmds/sources: readConfigFileToLayerMap -> readConfigFileToSectionMap
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layers_ -> schema_
+- github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayers -> parsedValues
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layer -> section
+- github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayer -> sectionValues
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layerPrefix -> sectionPrefix
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestParameterLayer -> TestSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestParsedParameter -> TestParsedField
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestExpectedLayer -> TestExpectedSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayers -> TestWhitelistSections
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayersFirst -> TestWhitelistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayerParameters -> TestWhitelistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayerParametersFirst -> TestWhitelistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayers -> TestBlacklistSections
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayersFirst -> TestBlacklistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayerParameters -> TestBlacklistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayerParametersFirst -> TestBlacklistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: NewTestParameterLayer -> NewTestSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: NewTestParameterLayers -> NewTestSchema
+- github.com/go-go-golems/glazed/pkg/cmds/schema: AppendLayers -> AppendSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: PrependLayers -> PrependSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: ParseLayerFromCobraCommand -> ParseSectionFromCobraCommand
+- github.com/go-go-golems/glazed/pkg/cmds/schema: InitializeDefaultsFromParameters -> InitializeDefaultsFromFields
+- github.com/go-go-golems/glazed/pkg/cmds/schema: InitializeStructFromParameterDefaults -> InitializeStructFromFieldDefaults
+- github.com/go-go-golems/glazed/pkg/cmds/schema: createParameterLayer -> createSection
+- github.com/go-go-golems/glazed/pkg/cmds/schema: createSimpleParameterLayer -> createSimpleSection
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestNewParameterLayers -> TestNewSchema
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersSubset -> TestSchemaSubset
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersForEach -> TestSchemaForEach
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersForEachE -> TestSchemaForEachE
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersAppendLayers -> TestSchemaAppendSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersPrependLayers -> TestSchemaPrependSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersMerge -> TestSchemaMerge
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersAsList -> TestSchemaAsList
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersClone -> TestSchemaClone
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersGetAllDefinitions -> TestSchemaGetAllDefinitions
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithLayers -> TestSchemaWithSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithDuplicateSlugs -> TestSchemaWithDuplicateSlugs
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersSubsetWithNonExistentLayers -> TestSchemaSubsetWithMissingSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersMergeWithOverlappingLayers -> TestSchemaMergeWithOverlappingSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithLargeNumberOfLayers -> TestSchemaWithLargeNumberOfSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithUnicodeLayerNames -> TestSchemaWithUnicodeSectionNames
+- github.com/go-go-golems/glazed/pkg/cmds/schema: ChildLayers -> ChildSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTestsYAML -> wrapWithRestrictedSectionsTestsYAML
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTest -> wrapWithRestrictedSectionsTest
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: TestWrapWithRestrictedLayers -> TestWrapWithRestrictedSections
+- github.com/go-go-golems/glazed/pkg/settings: GlazedParameterLayers -> GlazedSection
+- github.com/go-go-golems/glazed/pkg/settings: GlazeParameterLayerOption -> GlazeSectionOption
+- github.com/go-go-golems/glazed/pkg/settings: NewGlazedParameterLayers -> NewGlazedSection
+- github.com/go-go-golems/glazed/pkg/settings: FieldsFiltersParameterLayer -> FieldsFiltersSection
+- github.com/go-go-golems/glazed/pkg/settings: OutputParameterLayer -> OutputSection
+- github.com/go-go-golems/glazed/pkg/settings: RenameParameterLayer -> RenameSection
+- github.com/go-go-golems/glazed/pkg/settings: ReplaceParameterLayer -> ReplaceSection
+- github.com/go-go-golems/glazed/pkg/settings: SelectParameterLayer -> SelectSection
+- github.com/go-go-golems/glazed/pkg/settings: TemplateParameterLayer -> TemplateSection
+- github.com/go-go-golems/glazed/pkg/settings: JqParameterLayer -> JqSection
+- github.com/go-go-golems/glazed/pkg/settings: SortParameterLayer -> SortSection
+- github.com/go-go-golems/glazed/pkg/settings: SkipLimitParameterLayer -> SkipLimitSection
+- github.com/go-go-golems/glazed/pkg/settings: NewFieldsFiltersParameterLayer -> NewFieldsFiltersSection
+- github.com/go-go-golems/glazed/pkg/settings: NewOutputParameterLayer -> NewOutputSection
+- github.com/go-go-golems/glazed/pkg/settings: NewRenameParameterLayer -> NewRenameSection
+- github.com/go-go-golems/glazed/pkg/settings: NewReplaceParameterLayer -> NewReplaceSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSelectParameterLayer -> NewSelectSection
+- github.com/go-go-golems/glazed/pkg/settings: NewTemplateParameterLayer -> NewTemplateSection
+- github.com/go-go-golems/glazed/pkg/settings: NewJqParameterLayer -> NewJqSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSortParameterLayer -> NewSortSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitParameterLayer -> NewSkipLimitSection
+- github.com/go-go-golems/glazed/pkg/settings: WithOutputParameterLayerOptions -> WithOutputSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSelectParameterLayerOptions -> WithSelectSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithTemplateParameterLayerOptions -> WithTemplateSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithRenameParameterLayerOptions -> WithRenameSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithReplaceParameterLayerOptions -> WithReplaceSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithFieldsFiltersParameterLayerOptions -> WithFieldsFiltersSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithJqParameterLayerOptions -> WithJqSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSortParameterLayerOptions -> WithSortSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSkipLimitParameterLayerOptions -> WithSkipLimitSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: GlazedTemplateLayerSlug -> GlazedTemplateSectionSlug
+- github.com/go-go-golems/glazed/pkg/settings: NewSelectSettingsFromParameters -> NewSelectSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewRenameSettingsFromParameters -> NewRenameSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewReplaceSettingsFromParameters -> NewReplaceSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewJqSettingsFromParameters -> NewJqSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewSortSettingsFromParameters -> NewSortSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitSettingsFromParameters -> NewSkipLimitSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: glazedLayer -> glazedValues
+- github.com/go-go-golems/glazed/pkg/cmds: Layers -> Schema
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayersList -> WithSections
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayers -> WithSchema
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayersMap -> WithSectionsMap
+- github.com/go-go-golems/glazed/pkg/cmds: WithReplaceLayers -> WithReplaceSections
+- github.com/go-go-golems/glazed/pkg/cmds: GetDefaultLayer -> GetDefaultSection
+- github.com/go-go-golems/glazed/pkg/cmds: GetLayer -> GetSection
+- github.com/go-go-golems/glazed/pkg/cmds: SetLayers -> SetSections
+- github.com/go-go-golems/glazed/pkg/cmds/logging: LoggingLayerSlug -> LoggingSectionSlug
+- github.com/go-go-golems/glazed/pkg/cmds/logging: NewLoggingLayer -> NewLoggingSection
+- github.com/go-go-golems/glazed/pkg/cmds/logging: AddLoggingLayerToCommand -> AddLoggingSectionToCommand
+- github.com/go-go-golems/glazed/pkg/cmds/logging: AddLoggingLayerToRootCommand -> AddLoggingSectionToRootCommand
+- github.com/go-go-golems/glazed/pkg/codegen: ParameterDefinitionToDict -> FieldDefinitionToDict
+- github.com/go-go-golems/glazed/pkg/helpers/templating: toUrlParameter -> toUrlField
+- github.com/go-go-golems/glazed/pkg/cli/cliopatra: Parameter -> Field
+- github.com/go-go-golems/glazed/pkg/cli/cliopatra: getCliopatraParameters -> getCliopatraFields
+
+### Appendix D: Ticket scripts inventory
+
+- 01-exhaustive-parameter-layer-audit.py
+- 02-symbol-inventory.go
+- 03-render-symbol-inventory.py
+- 04-rename-add-layer-to-section.py
+- 05-rename-glazed-api.go
+- 06-rename-parsed-fields.py
+- 07-rename-decode-into.py
+- 08-rename-dot-parameters.py
+- 09-rename-values-decode.py
+- 10-rename-yaml-parameters.py
+- 11-layer-parameter-inventory.py
+- 12-rename-symbols.go
+- 12-rename-symbols.yaml
+- 13-rename-schema-tests.py
+- 14-rename-sources-test-yaml.py
+- 15-rename-custom-profiles-test.py
+- 16-rename-schema-tests.py
+- 17-rename-settings-language.py
+- 18-rename-fields-files.sh
+- 19-rename-fields-language.py
+- 20-rename-values-tests.py
+- 21-rename-field-types-example.py
+- 22-rename-doc-terms.py
+- 23-rename-initialize-struct-docs.py
+- 24-update-docs-addfields-credentials.py
+- 25-sanitize-remarkable-bundle.py
+- 26-build-postmortem-appendix.py
+
+### Appendix E: Validation commands (as executed)
+
+- `rg -n -i "layer|parameter" glazed -g '!**/ttmp/**'`
+- `go test ./...`
+- `golangci-lint run -v --max-same-issues=100`
+- `gosec -exclude=G101,G304,G301,G306,G204 -exclude-dir=ttmp -exclude-dir=.history ./...`
+- `govulncheck ./...`

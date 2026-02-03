@@ -12,6 +12,7 @@ INPUTS = [
     TICKET_ROOT / "analysis/01-exhaustive-parameter-layer-audit.md",
     TICKET_ROOT / "analysis/02-parameter-layer-symbol-inventory.md",
     TICKET_ROOT / "analysis/03-layer-parameter-inventory.md",
+    TICKET_ROOT / "analysis/04-postmortem-gl-002-refactor-and-tooling.md",
     TICKET_ROOT / "sources/01-glazed-cleanup-notes.md",
     TICKET_ROOT / "reference/01-diary.md",
 ]
