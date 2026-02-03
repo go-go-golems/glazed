@@ -184,3 +184,12 @@ Step 21: add Python tooling review + engineering postmortem (commit 3685cc5)
 ### Related Files
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/06-gl-002-refactor-tooling-review-python-scripts.md — Tooling analysis
+
+## 2026-02-03
+
+Step 22: upload single-file tooling review to reMarkable
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/reference/01-diary.md — Record single-file upload
+

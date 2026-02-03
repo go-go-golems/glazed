@@ -1484,3 +1484,58 @@ remarquee upload bundle /tmp/remarkable-gl-002/README.md \
   /tmp/remarkable-gl-002/extras/migrating-to-facade-packages.md \
   --name "GL-002 Further Cleanup v5" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
 ```
+
+## Step 22: Upload tooling review as single PDF
+
+I uploaded the Python tooling review analysis as a standalone PDF to reMarkable, instead of bundling it with the rest of the ticket documents. This keeps the file available as a one-off review artifact.
+
+This step satisfies the request to upload just the file by itself while preserving the same ticket destination on the device.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload just the file by itself."
+
+**Assistant interpretation:** Upload the requested document to reMarkable as a single file, not as part of the bundle.
+
+**Inferred user intent:** Get a standalone PDF for quick review without navigating the full bundle.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran a dry run of `remarquee upload md` with the tooling review document and ticket remote directory.
+- Uploaded the single markdown file to `/ai/2026/02/03/GL-002-FURTHER-CLEANUP`.
+
+### Why
+- The request explicitly asked for a single-file upload, separate from the bundle.
+
+### What worked
+- The single-file upload completed successfully with the expected filename.
+
+### What didn't work
+- `remarquee upload md` does not support `--name`:
+  - Command: `remarquee upload md --dry-run /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/06-gl-002-refactor-tooling-review-python-scripts.md --name "GL-002 Refactor Tooling Review (Python Scripts)" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP"`
+  - Error: `unknown flag: --name`
+
+### What I learned
+- The `md` uploader uses the source filename for the resulting PDF and does not accept a custom name.
+
+### What was tricky to build
+- Remembering the flag differences between `upload bundle` and `upload md` required a quick dry-run to validate the CLI behavior.
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- If a custom PDF name is required, rename the source file or use the bundle uploader.
+
+### Code review instructions
+- N/A (no code changes).
+
+### Technical details
+
+```bash
+remarquee upload md --dry-run /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/06-gl-002-refactor-tooling-review-python-scripts.md \
+  --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP"
+remarquee upload md /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/06-gl-002-refactor-tooling-review-python-scripts.md \
+  --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP"
+```
