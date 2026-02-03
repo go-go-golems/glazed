@@ -19,7 +19,9 @@ RelatedFiles:
     - Path: glazed/pkg/doc/topics/sections-guide.md
       Note: Replace AddFlags examples with AddFields
     - Path: glazed/pkg/doc/tutorials/migrating-to-facade-packages.md
-      Note: AddFields renaming in migration list
+      Note: |-
+        AddFields renaming in migration list
+        Expanded migration playbook
     - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/24-update-docs-addfields-credentials.py
       Note: Doc replacement tooling
     - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/25-sanitize-remarkable-bundle.py
@@ -30,6 +32,7 @@ LastUpdated: 2026-02-03T22:27:30-05:00
 WhatFor: Implementation diary for GL-002
 WhenToUse: When reviewing the rename cleanup work
 ---
+
 
 
 
@@ -1176,4 +1179,55 @@ remarquee upload bundle /tmp/remarkable-gl-002/README.md \
   /tmp/remarkable-gl-002/sources/01-glazed-cleanup-notes.md \
   /tmp/remarkable-gl-002/reference/01-diary.md \
   --name "GL-002 Further Cleanup v2" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
+```
+
+## Step 17: Expand migration playbook with full no-compat guidance
+
+I replaced the existing facade migration tutorial with an exhaustive, no-backwards-compat playbook that reflects the current API surface. The new guide includes step-by-step refactor instructions, common error fixes, and appendices derived from the rename map and git rename list so teams can follow a deterministic checklist.
+
+This step ensures the documentation matches the fully de-aliased API and provides a direct porting path for legacy codebases.
+
+### Prompt Context
+
+**User prompt (verbatim):** "write a playbook on porting from the old PAI to the new API (in fact, update the one in glazed/pkg/doc to be exhaustive, now that we have the full appendix)."
+
+**Assistant interpretation:** Replace the existing migration tutorial with a detailed, exhaustive playbook that reflects the no-compat API and includes appendix data.
+
+**Inferred user intent:** Provide a definitive, authoritative migration guide for downstream users.
+
+**Commit (code):** cebc160 — "Docs: expand migration playbook"
+
+### What I did
+- Rewrote `pkg/doc/tutorials/migrating-to-facade-packages.md` as a full migration playbook.
+- Added step-by-step refactor instructions, common compile error fixes, and validation guidance.
+- Injected appendices for symbol renames and file renames using current branch metadata.
+
+### Why
+- The previous tutorial still referenced additive alias behavior and was not exhaustive enough for a no-compat migration.
+
+### What worked
+- The new playbook reads as a deterministic checklist and reflects the final API vocabulary.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Keeping the playbook in sync with the rename map avoids drift and reduces ambiguity.
+
+### What was tricky to build
+- Avoiding legacy alias language while keeping the guide concise required reorganizing the content into clear steps and an appendix.
+
+### What warrants a second pair of eyes
+- Confirm the appendices (rename map + file renames) reflect the intended migration scope.
+
+### What should be done in the future
+- Regenerate the playbook appendices if the rename map changes.
+
+### Code review instructions
+- Review `pkg/doc/tutorials/migrating-to-facade-packages.md` for completeness and accuracy.
+
+### Technical details
+
+```bash
+rg -n "migrating-to-facade-packages" pkg/doc/tutorials/migrating-to-facade-packages.md
 ```

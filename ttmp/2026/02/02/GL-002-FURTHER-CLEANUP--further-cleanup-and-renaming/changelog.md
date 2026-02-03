@@ -140,3 +140,12 @@ Step 16: add postmortem appendix + update bundle script (commit e455738)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/04-postmortem-gl-002-refactor-and-tooling.md — Add appendices
 
+
+## 2026-02-03
+
+Step 17: expand migration playbook (commit cebc160)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-to-facade-packages.md — Exhaustive migration guide
+
