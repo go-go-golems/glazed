@@ -50,7 +50,7 @@ RelatedFiles:
       Note: Ported flags section to schema for clay dependency (commit 42eb5cc)
 ExternalSources: []
 Summary: Diary of porting clay to the new glazed facade packages and unblocking dependent flags.
-LastUpdated: 2026-02-03T18:01:18-05:00
+LastUpdated: 2026-02-03T18:08:11.163776-05:00
 WhatFor: Track the clay migration work, decisions, and validation steps.
 WhenToUse: Use while reviewing or continuing the GL-003-PORTING-CLAY migration.
 ---
@@ -236,3 +236,56 @@ FAIL	github.com/go-go-golems/sqleton/cmd/sqleton [setup failed]
 
 ### Technical details
 - Commit used `LEFTHOOK=0` to bypass failing sqleton hooks in the unported module.
+
+## Step 4: Upload Bundle to reMarkable
+
+I bundled the GL-003 ticket documents (diary, postmortem, index, tasks, changelog, README) into a single PDF using `remarquee upload bundle` with a ToC so they’re easy to read on reMarkable. The initial upload attempt timed out at the default 10s, so I re-ran the upload with a longer timeout and confirmed the file exists on the device.
+
+The bundle is now available on reMarkable under `/ai/2026/02/03/GL-003-PORTING-CLAY` as “GL-003-PORTING-CLAY bundle”.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload the bundle to remarkable, so i can read the diary and postmortem and all."
+
+**Assistant interpretation:** Bundle the ticket docs into a single PDF and upload it to reMarkable.
+
+**Inferred user intent:** Read the diary and postmortem on a reMarkable device without hunting across multiple files.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran `remarquee status` to confirm tooling readiness.
+- Dry-ran `remarquee upload bundle --dry-run ...` to confirm the inputs and remote path.
+- Uploaded the bundle to `/ai/2026/02/03/GL-003-PORTING-CLAY` with `remarquee upload bundle ... --toc-depth 2`.
+- Verified the upload with `remarquee cloud ls /ai/2026/02/03/GL-003-PORTING-CLAY --long --non-interactive`.
+
+### Why
+- A single bundled PDF is easier to read on reMarkable than multiple files.
+
+### What worked
+- The bundle upload succeeded and the document appears in the expected remote directory.
+
+### What didn't work
+- The first upload attempt timed out after 10 seconds:
+```
+command timed out after 10009 milliseconds
+```
+
+### What I learned
+- `remarquee upload bundle` can exceed the default 10s timeout; use a longer timeout for uploads.
+
+### What was tricky to build
+- Automating a long-running CLI upload requires handling timeouts explicitly in the execution environment.
+
+### What warrants a second pair of eyes
+- Confirm the document renders correctly on-device (ToC, headings, and ordering).
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A
+
+### Technical details
+- Upload command: `remarquee upload bundle <ticket-dir> --name "GL-003-PORTING-CLAY bundle" --remote-dir "/ai/2026/02/03/GL-003-PORTING-CLAY" --toc-depth 2`.
+- Verification: `remarquee cloud ls /ai/2026/02/03/GL-003-PORTING-CLAY --long --non-interactive`.
