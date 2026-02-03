@@ -1,7 +1,7 @@
 ---
-Title: Migrating to the New Facade Packages (schema/fields/values/sources)
+Title: Migration Playbook: Legacy Layers/Parameters API to Schema/Fields/Values/Sources
 Slug: migrating-to-facade-packages
-Short: Step-by-step guide to migrate Glazed code from sections/fields/middlewares vocabulary to the new facade packages (schema/fields/values/sources)
+Short: Exhaustive, no-compat playbook for migrating Glazed code from the legacy layers/parameters API to the schema/fields/values/sources API.
 Topics:
 - tutorial
 - migration
@@ -22,183 +22,156 @@ SectionType: Tutorial
 
 ## Overview
 
-Glazed introduced **additive** facade packages under `github.com/go-go-golems/glazed/pkg/cmds/`:
+This is a **breaking** migration. The legacy packages (`layers`, `parameters`, `middlewares`, `parsed layers`) and their alias shims have been removed. You **must** update imports, type names, and call sites to the new API (`schema`, `fields`, `values`, `sources`).
 
-- `schema` — schema sections (previously “sections”)
-- `fields` — field definitions and field types (previously “fields”)
-- `values` — resolved values + decoding helpers (previously “parsed sections”)
-- `sources` — value sources / resolver chain helpers (previously “cmds/middlewares”)
+This playbook is intentionally exhaustive. It is designed to be a systematic, error-resistant checklist that you can follow in large codebases.
 
-These packages are implemented using **type aliases** plus small wrapper functions. That means:
+## Terminology map (conceptual)
 
-- There is no behavioral change in the underlying engine.
-- Existing code keeps working.
-- You can migrate incrementally and mix old/new imports where needed.
+- **Layer** -> **Section**
+- **Parameter** -> **Field**
+- **ParsedLayer** -> **SectionValues**
+- **ParsedLayers** -> **Values**
+- **Middlewares** -> **Sources** (resolver chain)
 
-## Quick mapping (old → new)
+## Quick triage (first pass)
 
-### Schema and fields
+1) Update imports (see mapping below).
+2) Fix compile errors in this order:
+   - Command description types
+   - Schema/Section constructors
+   - Field definition constructors
+   - Values decoding
+   - Sources (middleware chain)
+3) Run `go test ./...` and fix remaining errors.
 
-- `pkg/cmds/schema.Section` → `pkg/cmds/schema.Section`
-- `pkg/cmds/schema.Schema` → `pkg/cmds/schema.Schema`
-- `pkg/cmds/fields.Definition` → `pkg/cmds/fields.Definition`
-- `pkg/cmds/fields.Definitions` → `pkg/cmds/fields.Definitions`
-- `pkg/cmds/fields.Type*` → `pkg/cmds/fields.Type*`
+## Package and import mapping
 
-### Resolved values
+**Old -> New**
 
-- `pkg/cmds/schema.Values` → `pkg/cmds/values.Values`
-- `pkg/cmds/schema.SectionValues` → `pkg/cmds/values.SectionValues`
-- `sections.NewValues()` → `values.New()`
-- `sections.NewSectionValues(section, ...)` → `values.NewSectionValues(section, ...)`
-- `sections.WithFieldValues(...)` → `values.WithFields(...)`
-- `sections.WithFieldValueValue(...)` → `values.WithFieldValue(...)`
-- `parsedSections.DecodeSectionInto(slug, &dst)` → `values.DecodeSectionInto(parsedSections, slug, &dst)`
+- `github.com/go-go-golems/glazed/pkg/cmds/layers` -> `github.com/go-go-golems/glazed/pkg/cmds/schema`
+- `github.com/go-go-golems/glazed/pkg/cmds/parameters` -> `github.com/go-go-golems/glazed/pkg/cmds/fields`
+- `github.com/go-go-golems/glazed/pkg/cmds/middlewares` -> `github.com/go-go-golems/glazed/pkg/cmds/sources`
+- `github.com/go-go-golems/glazed/pkg/cmds/parsedlayers` (or `layers` parsed types) -> `github.com/go-go-golems/glazed/pkg/cmds/values`
 
-### Sources / middleware chain
+## Step-by-step migration
 
-- `middlewares.ParseFromCobraCommand` → `sources.FromCobra`
-- `middlewares.GatherArguments` → `sources.FromArgs`
-- `middlewares.UpdateFromEnv` → `sources.FromEnv`
-- `middlewares.SetFromDefaults` → `sources.FromDefaults`
-- `middlewares.LoadFieldsFromFile(s)` → `sources.FromFile` / `sources.FromFiles`
-- `middlewares.UpdateFromMap` → `sources.FromMap` / `sources.FromMapFirst`
-- `middlewares.ExecuteMiddlewares` → `sources.Execute`
-- `fields.WithParseStepSource(...)` → `sources.WithSource(...)`
+### Step 1: Command description API
 
-## Important: aliases and interface signatures
+**Old:**
 
-The facade types are **aliases** of the original types. In practice this means you can write:
+- `cmds.CommandDefinition`, `cmds.NewCommandDefinition`
+- `cmds.CommandDefinitionOption`
+- `cmds.CommandDescription.Layers` / `WithLayers...`
 
-```go
-func (c *MyCmd) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
-    // ...
-}
-```
+**New:**
 
-…and it still satisfies interfaces that mention `*values.Values`, because `values.Values` is an alias for `values.Values`.
+- `cmds.CommandDescription`, `cmds.NewCommandDescription`
+- `cmds.CommandDescriptionOption`
+- `CommandDescription.Schema` and `WithSchema`, `WithSections`, `WithSectionsMap`, `SetSections`
 
-That said, most public interfaces now use the new names (`*values.Values`, `schema.Section`, `fields.Definition`). Update your method signatures to match for clarity and to reduce confusion.
-
-## Recent API updates to account for
-
-These changes landed alongside the facade packages. If you compile against `origin/main` vs `HEAD`, expect to update the following:
-
-- `cmds.CommandDefinition` and `cmds.CommandDefinitionOption` were removed. Use `cmds.CommandDescription` and `cmds.CommandDescriptionOption` instead.
-- `cmds.CommandDescription.Sections` is now `*schema.Schema` (was `*schema.Schema`).
-- `schema.Section` interface methods now use `*fields.Definition` / `*fields.Definitions`:
-  - `AddFields(...*fields.Definition)`
-  - `GetDefinitions() *fields.Definitions`
-- Command execution interfaces now accept `*values.Values`:
-  - `cmds.BareCommand`, `cmds.WriterCommand`, `cmds.GlazeCommand`, `cmds.CommandWithMetadata`
-  - `cli.CobraRunFunc`, `cli.CobraParser.Parse`, `cli.ParseCommandSettingsSection`
-  - `middlewares.HandlerFunc` / `middlewares.ExecuteMiddlewares` (now `sources.Execute`)
-- `settings.NewGlazedSchema` moved to `pkg/settings`. `schema.NewGlazedSchema` was removed.
-- `sources` additions: `FromMapFirst`, `FromMapAsDefault`, `FromMapAsDefaultFirst`, and `SourceDefaults`.
-- `schema` additions: `NewSectionFromYAML`, `ComputeCommandFlagGroupUsage`, `FlagGroupUsage`, `CommandFlagGroupUsage`.
-- `values` additions: `NewSectionValues`, `SectionValuesOption`, `WithFields`, `WithFieldValue`.
-
-## Step-by-step migration recipe
-
-### Step 1: Switch imports
-
-Replace:
-
-- `github.com/go-go-golems/glazed/pkg/cmds/schema`
-- `github.com/go-go-golems/glazed/pkg/cmds/fields`
-- `github.com/go-go-golems/glazed/pkg/cmds/middlewares`
-
-With (where applicable):
-
-- `github.com/go-go-golems/glazed/pkg/cmds/schema`
-- `github.com/go-go-golems/glazed/pkg/cmds/fields`
-- `github.com/go-go-golems/glazed/pkg/cmds/values`
-- `github.com/go-go-golems/glazed/pkg/cmds/sources`
-
-You can keep old imports for advanced/legacy types (for example `fields.FileData`) until you’re ready to refactor them.
-
-### Step 2: Replace field definitions
-
-Before:
+**Example:**
 
 ```go
-fields.NewDefinition("limit", fields.TypeInteger, fields.WithDefault(10))
-```
+// Old
+cmd := cmds.NewCommandDefinition("demo",
+    cmds.WithShort("Demo"),
+    cmds.WithLayersList(demoLayer),
+)
 
-After:
-
-```go
-fields.New("limit", fields.TypeInteger, fields.WithDefault(10))
-```
-
-### Step 3: Replace schema construction (optional)
-
-If you currently build explicit sections:
-
-Before:
-
-```go
-demoSection, _ := sections.NewSection("demo", "Demo",
-    sections.WithPrefix("demo-"),
-    sections.WithDefinitions(
-        fields.NewDefinition("api-key", fields.TypeString),
-    ),
+// New
+cmd := cmds.NewCommandDescription("demo",
+    cmds.WithShort("Demo"),
+    cmds.WithSections(demoSection),
 )
 ```
 
-After:
+### Step 2: Schema and section construction
+
+**Old (`layers`):**
+
+- `layers.ParameterLayer` -> `schema.Section`
+- `layers.ParameterLayerImpl` -> `schema.SectionImpl`
+- `layers.ParameterLayers` -> `schema.Schema`
+- `layers.NewParameterLayer` -> `schema.NewSection`
+- `layers.NewParameterLayers` -> `schema.NewSchema`
+- `AddLayerToCobraCommand` -> `AddSectionToCobraCommand`
+
+**New (`schema`):**
 
 ```go
-demoSection, _ := schema.NewSection("demo", "Demo",
+section, _ := schema.NewSection("demo", "Demo",
     schema.WithPrefix("demo-"),
     schema.WithFields(
         fields.New("api-key", fields.TypeString),
     ),
 )
+
+schema_ := schema.NewSchema(schema.WithSections(section))
 ```
 
-### Step 4: Update command interfaces to accept `*values.Values`
+**Section interface highlights:**
 
-Before:
+- `AddFields(...*fields.Definition)`
+- `GetDefinitions() *fields.Definitions`
+- `InitializeDefaultsFromStruct(s any)`
+- `InitializeDefaultsFromFields(map[string]any)`
+- `InitializeStructFromFieldDefaults(s any)`
+- `AddSectionToCobraCommand(cmd *cobra.Command)`
+
+### Step 3: Field definitions and types
+
+**Old (`parameters`):**
+
+- `ParameterDefinition` -> `fields.Definition`
+- `ParameterDefinitions` -> `fields.Definitions`
+- `ParameterType` -> `fields.Type`
+- `ParsedParameter` -> `fields.FieldValue`
+- `ParsedParameters` -> `fields.FieldValues`
+- `parameters.NewParameterDefinition` -> `fields.New`
+
+**New (`fields`):**
 
 ```go
-func (c *MyCmd) Run(ctx context.Context, parsedSections *values.Values) error {
-    // ...
-}
+field := fields.New("limit", fields.TypeInteger, fields.WithDefault(10))
 ```
 
-After:
+### Step 4: Values (parsed results)
 
-```go
-func (c *MyCmd) Run(ctx context.Context, parsedSections *values.Values) error {
-    // ...
-}
-```
+**Old:**
 
-### Step 5: Decode values into settings structs
+- `layers.ParsedLayer` -> `values.SectionValues`
+- `layers.ParsedLayers` -> `values.Values`
+- `parsedLayers.InitializeStruct(...)` -> `values.Values.DecodeSectionInto(...)`
 
-Before:
-
-```go
-settings := &MySettings{}
-_ = parsedSections.DecodeSectionInto(schema.DefaultSlug, settings)
-```
-
-After:
-
-```go
-settings := &MySettings{}
-_ = values.DecodeSectionInto(vals, schema.DefaultSlug, settings)
-```
-
-### Step 6: Use `sources` for explicit precedence chains
-
-If you manually build a resolver chain, prefer the `sources` wrappers:
+**New:**
 
 ```go
 vals := values.New()
-schema_ := schema.NewSchema(schema.WithSections(demoSection))
+// ... populate with sources
+settings := &MySettings{}
+if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
+    return err
+}
+```
 
+### Step 5: Sources (middleware chain)
+
+**Old (`middlewares`):**
+
+- `middlewares.ParseFromCobraCommand` -> `sources.FromCobra`
+- `middlewares.GatherArguments` -> `sources.FromArgs`
+- `middlewares.UpdateFromEnv` -> `sources.FromEnv`
+- `middlewares.SetFromDefaults` -> `sources.FromDefaults`
+- `middlewares.LoadParametersFromFile(s)` -> `sources.FromFile` / `sources.FromFiles`
+- `middlewares.UpdateFromMap` -> `sources.FromMap` / `sources.FromMapFirst`
+- `middlewares.ExecuteMiddlewares` -> `sources.Execute`
+- `fields.WithParseStepSource` -> `sources.WithSource`
+
+**New:**
+
+```go
+vals := values.New()
 err := sources.Execute(schema_, vals,
     sources.FromCobra(cmd, sources.WithSource("flags")),
     sources.FromEnv("MYAPP", sources.WithSource("env")),
@@ -207,26 +180,218 @@ err := sources.Execute(schema_, vals,
 )
 ```
 
-## Glazed “output flags” section: what to do now
+### Step 6: Settings sections
 
-- If your command implements `cmds.GlazeCommand`, `cli.BuildCobraCommand(...)` will ensure the glazed output section exists, so you usually don’t need to add it manually.
-- If you do want to add it explicitly (e.g. when building a schema yourself), prefer `settings.NewGlazedSchema()` (wrapper around `settings.NewGlazedSchema()`).
+**Old:**
 
-## When you still need the old packages
+- `settings.NewGlazedLayer` -> `settings.NewGlazedSection`
+- `logging.LoggingLayer` -> `logging.LoggingSection`
+- `AddLoggingLayerToRootCommand` -> `AddLoggingSectionToRootCommand`
 
-The goal is “new vocabulary at the API edges”, not “eliminate old packages everywhere”.
+**New:**
 
-Common reasons to keep old imports:
+```go
+glazedSection, _ := settings.NewGlazedSection()
+loggingSection, _ := logging.NewLoggingSection("myapp")
+```
 
-- Cobra-only plumbing: attaching sections to Cobra uses `sections.CobraSection`.
-- Some helper types/functions still live in `fields` (e.g. `fields.FileData`, `fields.RenderValue`).
-- Some config mapping utilities still live under `cmds/middlewares/*`.
+### Step 7: Config mapping and pattern mappers
 
-Migrating piecemeal is fine; because facade types are aliases, interoperability is zero-friction.
+**Old:**
 
-## Validation checklist
+- `TargetLayer` -> `TargetSection`
+- `TargetParameter` -> `TargetField`
+- `WithValuesForLayers` -> `WithValuesForSections`
 
+Update any config mapping or pattern rules to refer to sections/fields explicitly.
+
+### Step 8: Struct tags
+
+Only `glazed:"..."` is supported. Remove legacy aliases if present.
+
+### Step 9: Example and file renames
+
+If you reference example paths or files in docs/scripts:
+
+- `cmd/examples/parameter-types` -> `cmd/examples/field-types`
+- `misc/json-parameters-from-json.json` -> `misc/json-fields-from-json.json`
+
+### Step 10: Validation
+
+- `rg -n -i "layer|parameter" .` (exclude `ttmp/` if you keep historical notes)
 - `gofmt -w <changed files>`
 - `go test ./...`
-- Run one of the examples with env + flags and confirm precedence:
-  - defaults < config files < env < flags
+
+## Common compile errors and fixes
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `undefined: cmds.NewCommandDefinition` | Alias removed | Use `cmds.NewCommandDescription` |
+| `undefined: layers.ParameterLayer` | Old package removed | Use `schema.Section` |
+| `parsedLayers.InitializeStruct` missing | Method removed | Use `Values.DecodeSectionInto` |
+| `middlewares.ExecuteMiddlewares` missing | Package removed | Use `sources.Execute` |
+
+## Appendices
+
+### Appendix A: Symbol rename map (AST tool YAML)
+
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayersHandler -> WhitelistSectionsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParametersHandler -> WhitelistSectionFieldsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayers -> WhitelistSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayersFirst -> WhitelistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParameters -> WhitelistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WhitelistLayerParametersFirst -> WhitelistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayersHandler -> BlacklistSectionsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParametersHandler -> BlacklistSectionFieldsHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayers -> BlacklistSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayersFirst -> BlacklistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParameters -> BlacklistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: BlacklistLayerParametersFirst -> BlacklistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithLayerModifyingHandler -> WrapWithSectionModifyingHandler
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithWhitelistedLayers -> WrapWithWhitelistedSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithWhitelistedParameterLayers -> WrapWithWhitelistedSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithBlacklistedLayers -> WrapWithBlacklistedSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithBlacklistedParameterLayers -> WrapWithBlacklistedSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/sources: LoadParametersFromResolvedFilesForCobra -> LoadFieldsFromResolvedFilesForCobra
+- github.com/go-go-golems/glazed/pkg/cmds/sources: readConfigFileToLayerMap -> readConfigFileToSectionMap
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layers_ -> schema_
+- github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayers -> parsedValues
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layer -> section
+- github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayer -> sectionValues
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layerPrefix -> sectionPrefix
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestParameterLayer -> TestSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestParsedParameter -> TestParsedField
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestExpectedLayer -> TestExpectedSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayers -> TestWhitelistSections
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayersFirst -> TestWhitelistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayerParameters -> TestWhitelistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestWhitelistLayerParametersFirst -> TestWhitelistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayers -> TestBlacklistSections
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayersFirst -> TestBlacklistSectionsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayerParameters -> TestBlacklistSectionFields
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: TestBlacklistLayerParametersFirst -> TestBlacklistSectionFieldsFirst
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: NewTestParameterLayer -> NewTestSection
+- github.com/go-go-golems/glazed/pkg/cmds/helpers: NewTestParameterLayers -> NewTestSchema
+- github.com/go-go-golems/glazed/pkg/cmds/schema: AppendLayers -> AppendSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: PrependLayers -> PrependSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: ParseLayerFromCobraCommand -> ParseSectionFromCobraCommand
+- github.com/go-go-golems/glazed/pkg/cmds/schema: InitializeDefaultsFromParameters -> InitializeDefaultsFromFields
+- github.com/go-go-golems/glazed/pkg/cmds/schema: InitializeStructFromParameterDefaults -> InitializeStructFromFieldDefaults
+- github.com/go-go-golems/glazed/pkg/cmds/schema: createParameterLayer -> createSection
+- github.com/go-go-golems/glazed/pkg/cmds/schema: createSimpleParameterLayer -> createSimpleSection
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestNewParameterLayers -> TestNewSchema
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersSubset -> TestSchemaSubset
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersForEach -> TestSchemaForEach
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersForEachE -> TestSchemaForEachE
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersAppendLayers -> TestSchemaAppendSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersPrependLayers -> TestSchemaPrependSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersMerge -> TestSchemaMerge
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersAsList -> TestSchemaAsList
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersClone -> TestSchemaClone
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersGetAllDefinitions -> TestSchemaGetAllDefinitions
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithLayers -> TestSchemaWithSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithDuplicateSlugs -> TestSchemaWithDuplicateSlugs
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersSubsetWithNonExistentLayers -> TestSchemaSubsetWithMissingSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersMergeWithOverlappingLayers -> TestSchemaMergeWithOverlappingSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithLargeNumberOfLayers -> TestSchemaWithLargeNumberOfSections
+- github.com/go-go-golems/glazed/pkg/cmds/schema: TestParameterLayersWithUnicodeLayerNames -> TestSchemaWithUnicodeSectionNames
+- github.com/go-go-golems/glazed/pkg/cmds/schema: ChildLayers -> ChildSections
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTestsYAML -> wrapWithRestrictedSectionsTestsYAML
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTest -> wrapWithRestrictedSectionsTest
+- github.com/go-go-golems/glazed/pkg/cmds/sources_test: TestWrapWithRestrictedLayers -> TestWrapWithRestrictedSections
+- github.com/go-go-golems/glazed/pkg/settings: GlazedParameterLayers -> GlazedSection
+- github.com/go-go-golems/glazed/pkg/settings: GlazeParameterLayerOption -> GlazeSectionOption
+- github.com/go-go-golems/glazed/pkg/settings: NewGlazedParameterLayers -> NewGlazedSection
+- github.com/go-go-golems/glazed/pkg/settings: FieldsFiltersParameterLayer -> FieldsFiltersSection
+- github.com/go-go-golems/glazed/pkg/settings: OutputParameterLayer -> OutputSection
+- github.com/go-go-golems/glazed/pkg/settings: RenameParameterLayer -> RenameSection
+- github.com/go-go-golems/glazed/pkg/settings: ReplaceParameterLayer -> ReplaceSection
+- github.com/go-go-golems/glazed/pkg/settings: SelectParameterLayer -> SelectSection
+- github.com/go-go-golems/glazed/pkg/settings: TemplateParameterLayer -> TemplateSection
+- github.com/go-go-golems/glazed/pkg/settings: JqParameterLayer -> JqSection
+- github.com/go-go-golems/glazed/pkg/settings: SortParameterLayer -> SortSection
+- github.com/go-go-golems/glazed/pkg/settings: SkipLimitParameterLayer -> SkipLimitSection
+- github.com/go-go-golems/glazed/pkg/settings: NewFieldsFiltersParameterLayer -> NewFieldsFiltersSection
+- github.com/go-go-golems/glazed/pkg/settings: NewOutputParameterLayer -> NewOutputSection
+- github.com/go-go-golems/glazed/pkg/settings: NewRenameParameterLayer -> NewRenameSection
+- github.com/go-go-golems/glazed/pkg/settings: NewReplaceParameterLayer -> NewReplaceSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSelectParameterLayer -> NewSelectSection
+- github.com/go-go-golems/glazed/pkg/settings: NewTemplateParameterLayer -> NewTemplateSection
+- github.com/go-go-golems/glazed/pkg/settings: NewJqParameterLayer -> NewJqSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSortParameterLayer -> NewSortSection
+- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitParameterLayer -> NewSkipLimitSection
+- github.com/go-go-golems/glazed/pkg/settings: WithOutputParameterLayerOptions -> WithOutputSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSelectParameterLayerOptions -> WithSelectSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithTemplateParameterLayerOptions -> WithTemplateSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithRenameParameterLayerOptions -> WithRenameSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithReplaceParameterLayerOptions -> WithReplaceSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithFieldsFiltersParameterLayerOptions -> WithFieldsFiltersSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithJqParameterLayerOptions -> WithJqSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSortParameterLayerOptions -> WithSortSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: WithSkipLimitParameterLayerOptions -> WithSkipLimitSectionOptions
+- github.com/go-go-golems/glazed/pkg/settings: GlazedTemplateLayerSlug -> GlazedTemplateSectionSlug
+- github.com/go-go-golems/glazed/pkg/settings: NewSelectSettingsFromParameters -> NewSelectSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewRenameSettingsFromParameters -> NewRenameSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewReplaceSettingsFromParameters -> NewReplaceSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewJqSettingsFromParameters -> NewJqSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewSortSettingsFromParameters -> NewSortSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitSettingsFromParameters -> NewSkipLimitSettingsFromValues
+- github.com/go-go-golems/glazed/pkg/settings: glazedLayer -> glazedValues
+- github.com/go-go-golems/glazed/pkg/cmds: Layers -> Schema
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayersList -> WithSections
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayers -> WithSchema
+- github.com/go-go-golems/glazed/pkg/cmds: WithLayersMap -> WithSectionsMap
+- github.com/go-go-golems/glazed/pkg/cmds: WithReplaceLayers -> WithReplaceSections
+- github.com/go-go-golems/glazed/pkg/cmds: GetDefaultLayer -> GetDefaultSection
+- github.com/go-go-golems/glazed/pkg/cmds: GetLayer -> GetSection
+- github.com/go-go-golems/glazed/pkg/cmds: SetLayers -> SetSections
+- github.com/go-go-golems/glazed/pkg/cmds/logging: LoggingLayerSlug -> LoggingSectionSlug
+- github.com/go-go-golems/glazed/pkg/cmds/logging: NewLoggingLayer -> NewLoggingSection
+- github.com/go-go-golems/glazed/pkg/cmds/logging: AddLoggingLayerToCommand -> AddLoggingSectionToCommand
+- github.com/go-go-golems/glazed/pkg/cmds/logging: AddLoggingLayerToRootCommand -> AddLoggingSectionToRootCommand
+- github.com/go-go-golems/glazed/pkg/codegen: ParameterDefinitionToDict -> FieldDefinitionToDict
+- github.com/go-go-golems/glazed/pkg/helpers/templating: toUrlParameter -> toUrlField
+- github.com/go-go-golems/glazed/pkg/cli/cliopatra: Parameter -> Field
+- github.com/go-go-golems/glazed/pkg/cli/cliopatra: getCliopatraParameters -> getCliopatraFields
+
+### Appendix B: File renames (git diff --name-status --find-renames)
+
+- Format: `R<score> <old> <new>`
+- R100	cmd/examples/parameter-types/config.yaml	cmd/examples/field-types/config.yaml
+- R100	cmd/examples/parameter-types/sample-lines.txt	cmd/examples/field-types/sample-lines.txt
+- R100	cmd/examples/parameter-types/sample-list.json	cmd/examples/field-types/sample-list.json
+- R067	cmd/examples/parameter-types/sample-text.txt	cmd/examples/field-types/sample-text.txt
+- R100	cmd/examples/parameter-types/sample.json	cmd/examples/field-types/sample.json
+- R100	cmd/examples/parameter-types/sample.yaml	cmd/examples/field-types/sample.yaml
+- R100	cmd/examples/parameter-types/simple-config.yaml	cmd/examples/field-types/simple-config.yaml
+- R100	misc/json-parameters-from-json.json	misc/json-fields-from-json.json
+- R073	pkg/cmds/fields/parameters.go	pkg/cmds/fields/definitions.go
+- R076	pkg/cmds/fields/parameters_from_defaults_test.go	pkg/cmds/fields/definitions_from_defaults_test.go
+- R078	pkg/cmds/fields/parameters_test.go	pkg/cmds/fields/definitions_test.go
+- R091	pkg/cmds/fields/parameter-type.go	pkg/cmds/fields/field-type.go
+- R093	pkg/cmds/fields/parsed-parameter.go	pkg/cmds/fields/field-value.go
+- R076	pkg/cmds/fields/gather-parameters.go	pkg/cmds/fields/gather-fields.go
+- R064	pkg/cmds/fields/gather-parameters_test.go	pkg/cmds/fields/gather-fields_test.go
+- R084	pkg/cmds/fields/test-data/parameters_test.yaml	pkg/cmds/fields/test-data/definitions_test.yaml
+- R084	pkg/cmds/fields/test-data/parameters_validity_test.yaml	pkg/cmds/fields/test-data/definitions_validity_test.yaml
+- R081	pkg/cmds/logging/layer.go	pkg/cmds/logging/section.go
+- R082	pkg/cmds/schema/layer.go	pkg/cmds/schema/schema.go
+- R079	pkg/cmds/schema/layer-impl.go	pkg/cmds/schema/section-impl.go
+- R073	pkg/cmds/schema/layer-impl_test.go	pkg/cmds/schema/section-impl_test.go
+- R074	pkg/cmds/sources/load-parameters-from-json.go	pkg/cmds/sources/load-fields-from-config.go
+- R064	pkg/cmds/sources/tests/wrap-with-restricted-layers.yaml	pkg/cmds/sources/tests/wrap-with-restricted-sections.yaml
+- R097	pkg/cmds/values/parsed-layer.go	pkg/cmds/values/section-values.go
+- R057	pkg/cmds/values/parsed-layer_test.go	pkg/cmds/values/section-values_test.go
+- R078	pkg/doc/topics/08-file-parameter-type.md	pkg/doc/topics/08-file-field-type.md
+- R060	pkg/doc/topics/16-adding-parameter-types.md	pkg/doc/topics/16-adding-field-types.md
+- R084	pkg/doc/topics/logging-layer.md	pkg/doc/topics/logging-section.md
+- R058	pkg/doc/topics/layers-guide.md	pkg/doc/topics/sections-guide.md
+- R073	pkg/doc/tutorials/custom-layer.md	pkg/doc/tutorials/custom-section.md
+
+### Appendix C: Validation commands
+
+- `rg -n -i "layer|parameter" glazed -g '!**/ttmp/**'`
+- `go test ./...`
+- `golangci-lint run -v --max-same-issues=100`
+- `gosec -exclude=G101,G304,G301,G306,G204 -exclude-dir=ttmp -exclude-dir=.history ./...`
+- `govulncheck ./...`
