@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T22:20:00-05:00
+LastUpdated: 2026-02-03T22:27:30-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -845,4 +845,55 @@ gofmt -w cmd/examples/config-custom-mapper/main.go cmd/examples/config-overlay/m
 
 go test ./...
 git commit -m "Refactor: update appconfig and CLI section naming"
+```
+
+## Step 12: Rename Lua conversion APIs to section/field naming
+
+I updated the Lua conversion helpers to use section/field terminology throughout the API surface and error messages. This removes layer/parameter vocabulary from the Lua bridge and keeps the names aligned with the rest of the refactor.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue the cleanup pass by addressing the next unchecked task (Lua conversion naming).
+
+**Inferred user intent:** Eliminate remaining layer/parameter vocabulary in code, including Lua integration helpers.
+
+**Commit (code):** 7874112 — "Refactor: rename Lua section/field conversion"
+
+### What I did
+- Renamed Lua conversion APIs to `ParseLuaTableToSection` and `ParseFieldFromLua`.
+- Updated middleware helpers to use section/value terminology and adjusted error strings.
+- Reworked Lua command helpers to use parsed values/sections and renamed exported globals to `_fields`.
+
+### Why
+- Keep the Lua integration consistent with the section/field naming and remove residual layer/parameter vocabulary.
+
+### What worked
+- `rg -n "parameter|layer" pkg/lua -g'*.go'` returned no matches after the cleanup.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The Lua bridge had a concentrated cluster of layer/parameter naming, so focused renames were straightforward once localized.
+
+### What was tricky to build
+- Renaming both API functions and local variables required careful cleanup of error messages and callback variable names to avoid leaving stray terminology.
+
+### What warrants a second pair of eyes
+- Confirm the `_fields` global naming in Lua consumers is acceptable for downstream scripts.
+
+### What should be done in the future
+- Continue clearing layer/parameter vocabulary in sources/middlewares and YAML fixtures.
+
+### Code review instructions
+- Review `pkg/lua/lua.go` and `pkg/lua/cmds.go` for naming consistency and error strings.
+- Validate Lua middleware behavior by running `go test ./...`.
+
+### Technical details
+
+```bash
+rg -n "parameter|layer" pkg/lua -g'*.go'
+gofmt -w pkg/lua/lua.go pkg/lua/cmds.go
 ```

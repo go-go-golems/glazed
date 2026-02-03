@@ -91,3 +91,12 @@ Align CLI command settings with parsed-fields naming and remove legacy cobra bui
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/cli/cobra.go — Cleaned cobra builder wrappers and section/values naming
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/config-overlay/main.go — Updated parser config field names
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2025-08-05/signal-test/main.go — Updated parser config field names in ttmp app
+
+## 2026-02-03
+
+Rename Lua conversion helpers to section/field naming (commit 7874112)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/lua.go — Renamed Lua parsing helpers and error strings
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/cmds.go — Updated Lua command bridge to parsed values and fields globals

@@ -22,7 +22,7 @@
 - [x] Publish inventory report from scripts (analysis/03-layer-parameter-inventory.md).
 - [x] Pattern mapper rename (TargetParameter → TargetField) including config tags, error strings, and tests.
 - [x] Appconfig layer vocabulary cleanup (LayerSlug → SectionSlug, WithValuesForLayers → WithValuesForSections, error strings, tests, examples).
-- [ ] Lua conversion naming cleanup (ParseLuaTableToSection, ParseFieldFromLua, error strings).
+- [x] Lua conversion naming cleanup (ParseLuaTableToSection, ParseFieldFromLua, error strings).
 - [x] CLI flag + help text cleanup (parsed-parameters → parsed-fields; dropped legacy load-from-file flag).
 - [x] Remove legacy cobra builder wrappers + update parser config fields in examples/ttmp.
 - [ ] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.

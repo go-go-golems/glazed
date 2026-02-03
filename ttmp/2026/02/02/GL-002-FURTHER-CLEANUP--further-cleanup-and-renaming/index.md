@@ -27,8 +27,8 @@ RelatedFiles:
     - Path: ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/various/01-parameter-layer-mentions.txt
       Note: Updated parameter/layer inventory (non-ttmp)
 ExternalSources: []
-Summary: "Updated appconfig/CLI section naming, renamed parsed-fields flag, and removed legacy cobra builder wrappers."
-LastUpdated: 2026-02-03T22:20:00-05:00
+Summary: "Renamed Lua conversion helpers to section/field naming and updated Lua command bridge globals."
+LastUpdated: 2026-02-03T22:28:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
