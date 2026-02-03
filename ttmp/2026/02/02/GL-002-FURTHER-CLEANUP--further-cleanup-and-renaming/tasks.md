@@ -9,4 +9,4 @@
 - [x] Replace remaining `glazed` tag mentions in docs/tutorials.
 - [x] Re-run `rg -n -i "parameter|layer"` to validate removal scope (exclude non-API historical docs).
 - [x] Run `go test ./...` to confirm build.
-- [ ] Update diary + changelog, check off tasks, and commit.
+- [x] Update diary + changelog, check off tasks, and commit.
