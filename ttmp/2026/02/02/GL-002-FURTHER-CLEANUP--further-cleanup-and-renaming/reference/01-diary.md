@@ -1231,3 +1231,63 @@ This step ensures the documentation matches the fully de-aliased API and provide
 ```bash
 rg -n "migrating-to-facade-packages" pkg/doc/tutorials/migrating-to-facade-packages.md
 ```
+
+## Step 18: Update PR description and push branch
+
+I pushed the branch and updated the existing PR (524) with a multi‑paragraph description using the GitHub API. The standard `gh pr edit` failed because of a deprecated GraphQL Projects classic field, so I used a REST patch via `gh api` as a workaround.
+
+This step ensures the PR reflects the no‑compat refactor scope and documents the testing run.
+
+### Prompt Context
+
+**User prompt (verbatim):** "OPen a pull request using gh, use LEFTHOOK=0, make a great multi paragraph pull request description."
+
+**Assistant interpretation:** Push the branch, open/update the PR, and supply a high‑quality multi‑paragraph PR description.
+
+**Inferred user intent:** Have a polished, informative PR ready for review without running hooks on push.
+
+**Commit (code):** N/A
+
+### What I did
+- Pushed the branch with `LEFTHOOK=0 git push origin HEAD`.
+- Prepared a multi‑paragraph PR description in `/tmp/pr_body_glazed.txt`.
+- Attempted `gh pr create` and `gh pr edit`, found the PR already existed and hit a GraphQL error.
+- Updated PR 524 using `gh api -X PATCH` with the new title and body.
+
+### Why
+- The PR already existed, and the GraphQL mutation failed due to Projects classic deprecation.
+
+### What worked
+- The REST API patch successfully updated the PR title and description.
+
+### What didn't work
+- `gh pr edit` failed with: `GraphQL: Projects (classic) is being deprecated ... (repository.pullRequest.projectCards)`.
+
+### What I learned
+- For repos with classic Projects enabled, `gh pr edit` can fail; `gh api` provides a reliable fallback.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Verify PR 524’s description and ensure it references the correct migration playbook path.
+
+### What should be done in the future
+- Prefer `gh api` for PR edits if GraphQL continues to error on this repo.
+
+### Code review instructions
+- Open PR 524 and read the updated description for accuracy.
+
+### Technical details
+
+```bash
+LEFTHOOK=0 git push origin HEAD
+
+gh pr create --title "Refactor: remove legacy layer/parameter API (no-compat)" --body-file /tmp/pr_body_glazed.txt --base main
+
+gh pr edit 524 --body-file /tmp/pr_body_glazed.txt
+
+gh api -X PATCH repos/go-go-golems/glazed/pulls/524 \
+  -f title="Refactor: remove legacy layer/parameter API (no-compat)" \
+  -f body="$(cat /tmp/pr_body_glazed.txt)"
+```

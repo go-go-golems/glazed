@@ -149,3 +149,12 @@ Step 17: expand migration playbook (commit cebc160)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/doc/tutorials/migrating-to-facade-packages.md — Exhaustive migration guide
 
+
+## 2026-02-03
+
+Step 18: update PR description via gh api
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/reference/01-diary.md — Record PR update
+
