@@ -179,9 +179,8 @@ Step 20: add refactor infrastructure blueprint
 
 ## 2026-02-03
 
-Step 21: add Python tooling review + engineering postmortem
+Step 21: add Python tooling review + engineering postmortem (commit 3685cc5)
 
 ### Related Files
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/analysis/06-gl-002-refactor-tooling-review-python-scripts.md — Tooling analysis
-

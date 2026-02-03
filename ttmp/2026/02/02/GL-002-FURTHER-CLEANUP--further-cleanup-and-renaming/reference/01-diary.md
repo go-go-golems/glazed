@@ -1431,7 +1431,7 @@ Finally, make a very detailed engineering-oriented version of the diary as a pos
 
 **Inferred user intent:** Capture tooling lessons and execution lessons in durable, reviewable documents.
 
-**Commit (code):** TBD — "Docs: add tooling review + engineering postmortem"
+**Commit (code):** 3685cc5 — "Docs: add tooling review and engineering postmortem"
 
 ### What I did
 - Authored two analysis documents:
