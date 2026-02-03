@@ -14,7 +14,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-02T19:55:22-05:00
+LastUpdated: 2026-02-02T19:57:48-05:00
 WhatFor: "Implementation diary for GL-002"
 WhenToUse: "When reviewing the rename cleanup work"
 ---
@@ -38,7 +38,7 @@ Store the design document in the new ticket, keep a detailed frequent diary as y
 
 **Inferred user intent:** Build a structured, shareable plan for the next rename wave and capture enough detail for external review.
 
-**Commit (code):** Pending
+**Commit (code):** 2425fdd — "Docs: add exhaustive parameter/layer audit"
 
 ### What I did
 - Closed GL-001 ticket to satisfy the request.
@@ -238,6 +238,7 @@ I removed the stray `glaze` binary, verified compilation again, and generated a 
 - Re-ran `go test ./...` to confirm compilation.
 - Created a new analysis doc with a full-repo scan and line-level matches for `parameter`/`layer` occurrences.
 - Linked the report in the ticket index and updated the changelog via docmgr.
+- Uploaded the report to the reMarkable tablet.
 
 ### Why
 - The user asked for a no-stone-unturned audit that includes filenames and all remaining mentions.
@@ -247,7 +248,7 @@ I removed the stray `glaze` binary, verified compilation again, and generated a 
 - Compilation succeeded.
 
 ### What didn't work
-- N/A
+- The first `remarquee upload` attempt timed out; reran with a longer timeout.
 
 ### What I learned
 - The scan confirmed that remaining mentions are primarily in docs, comments, and existing conceptual references rather than struct tags.
