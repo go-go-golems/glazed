@@ -1,7 +1,7 @@
 ---
 Title: gopls investigation for refactoring tooling
 Ticket: GL-004-GO-PLS-INVESTIGATION
-Status: active
+Status: complete
 Topics:
     - gopls
     - refactoring
@@ -14,10 +14,11 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T18:03:09.47147828-05:00
+LastUpdated: 2026-02-03T18:13:56.949541696-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # gopls investigation for refactoring tooling
 
