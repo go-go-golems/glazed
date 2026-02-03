@@ -1061,3 +1061,54 @@ remarquee upload bundle /tmp/remarkable-gl-002/README.md \
   /tmp/remarkable-gl-002/reference/01-diary.md \
   --name "GL-002 Further Cleanup" --remote-dir "/ai/2026/02/03/GL-002-FURTHER-CLEANUP" --toc-depth 2
 ```
+
+## Step 15: Expand postmortem with concrete examples and commits
+
+I expanded the GL-002 postmortem to include concrete file paths, error messages, and commit references so future readers can quickly trace the refactor decisions to specific changes. This added explicit examples of alias removal, doc snippet updates, gofmt failures, and the reMarkable upload sanitization workflow.
+
+The goal was to move from a narrative postmortem to a reusable, evidence-backed reference document that can guide similar refactors without rediscovering the same pitfalls.
+
+### Prompt Context
+
+**User prompt (verbatim):** "also add examples of concrete code and locations and potentially git commits"
+
+**Assistant interpretation:** Update the postmortem document to include specific file locations, code examples, and commit hashes for key incidents.
+
+**Inferred user intent:** Make the postmortem more actionable and traceable by anchoring it in concrete artifacts.
+
+**Commit (code):** TBD — "Docs: expand GL-002 postmortem examples"
+
+### What I did
+- Added a new “Concrete examples” section to `analysis/04-postmortem-gl-002-refactor-and-tooling.md` with specific paths, errors, scripts, and commits.
+- Included explicit references to alias removal, AddFlags → AddFields doc changes, and reMarkable sanitization.
+
+### Why
+- The original postmortem was descriptive but not sufficiently anchored to actual files or commits.
+
+### What worked
+- The updated section now provides a quick map from symptoms to fixes and commits.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Tying postmortems to concrete artifacts makes them significantly more useful for future refactors.
+
+### What was tricky to build
+- Ensuring the examples were precise without bloating the document required careful selection of the most representative incidents.
+
+### What warrants a second pair of eyes
+- Validate that the cited paths and commit hashes still match the intended changes.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review the new section in `ttmp/.../analysis/04-postmortem-gl-002-refactor-and-tooling.md`.
+
+### Technical details
+
+```bash
+git show 6844cbf --stat
+git show 8a9c26e --stat
+```
