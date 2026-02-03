@@ -11,13 +11,24 @@ DocType: reference
 Intent: long-term
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: glazed/cmd/examples/sources-example/main.go
+      Note: Replace NewCommandDefinition alias usage
+    - Path: glazed/pkg/doc/topics/16-adding-field-types.md
+      Note: Update credentials-field example and lua snippet naming
+    - Path: glazed/pkg/doc/topics/sections-guide.md
+      Note: Replace AddFlags examples with AddFields
+    - Path: glazed/pkg/doc/tutorials/migrating-to-facade-packages.md
+      Note: AddFields renaming in migration list
+    - Path: glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/24-update-docs-addfields-credentials.py
+      Note: Doc replacement tooling
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-03T22:27:30-05:00
-WhatFor: "Implementation diary for GL-002"
-WhenToUse: "When reviewing the rename cleanup work"
+WhatFor: Implementation diary for GL-002
+WhenToUse: When reviewing the rename cleanup work
 ---
+
 
 # Diary
 
@@ -896,4 +907,79 @@ I updated the Lua conversion helpers to use section/field terminology throughout
 ```bash
 rg -n "parameter|layer" pkg/lua -g'*.go'
 gofmt -w pkg/lua/lua.go pkg/lua/cmds.go
+```
+
+## Step 13: Finish doc cleanup + example fix for section/field naming
+
+I finished the last doc and example cleanups triggered by the removal of `NewCommandDefinition` and the AddFlags naming remnants in documentation. I also ran the full test and lint pipeline (including the pre-commit hook stack) to ensure the refactor still compiles cleanly after the final edits.
+
+This step adds one more doc update script into the ticket’s `scripts/` folder, fixes a build break in the sources example, and tightens naming in schema tests and docs so the AddFields terminology is consistent.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue the refactor cleanup, use tooling for replacements, and validate that the code and docs compile without legacy aliases.
+
+**Inferred user intent:** Finish the remaining cleanup work with a tool-driven approach and leave the repo in a buildable, no-compat state.
+
+**Commit (code):** 6844cbf — "Refactor: finish section/field cleanup"
+
+### What I did
+- Added a new ticket script to replace `AddFlags` docs and the `credentials-param` example values in field-type docs.
+- Fixed `cmd/examples/sources-example/main.go` to use `cmds.NewCommandDescription` after removing the alias.
+- Renamed schema test functions away from `AddFlags` naming and updated doc snippets to use `AddFields`.
+- Re-ran `go test ./...` and then completed the pre-commit hook tests/lint/security checks during commit.
+
+### Why
+- The removed alias surfaced in the sources example at build time, and the docs still referenced `AddFlags`/`credentials-param` in a few examples.
+
+### What worked
+- The doc replacement script updated `sections-guide` and `migrating-to-facade-packages` without manual edits.
+- After updating the sources example, `go test ./...` completed successfully.
+- The pre-commit hook ran the full lint/gosec/govulncheck pipeline cleanly after gofmt fixes.
+
+### What didn't work
+- The first run of the doc replacement script failed due to a bad repo root calculation:
+  - `FileNotFoundError: [Errno 2] No such file or directory: '/home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/pkg/doc/topics/sections-guide.md'`
+- The initial test pass failed because the alias removal left a call site behind:
+  - `cmd/examples/sources-example/main.go:62:15: undefined: cmds.NewCommandDefinition`
+- The first commit attempt failed pre-commit lint with gofmt errors in renamed files and a script:
+  - `File is not properly formatted (gofmt)` in `pkg/cmds/fields/definitions_from_defaults_test.go`, `pkg/cmds/fields/definitions_test.go`, `pkg/cmds/fields/gather-fields_test.go`, `pkg/cmds/schema/section-impl.go`, and `ttmp/.../scripts/12-rename-symbols.go`.
+
+### What I learned
+- The sources example is the last consumer of the removed `NewCommandDefinition` alias; go test is the fastest way to surface that kind of break.
+
+### What was tricky to build
+- Making the doc replacement script robust required correctly walking up from the ticket scripts folder to the repo root; the wrong parent index silently pointed into `ttmp`, causing a file-not-found error.
+
+### What warrants a second pair of eyes
+- Sanity-check the doc snippets updated by the replacement script in `sections-guide` and `16-adding-field-types` to ensure the examples still match current APIs.
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Start with `cmd/examples/sources-example/main.go` to confirm the alias removal fix.
+- Review `pkg/doc/topics/16-adding-field-types.md` and `pkg/doc/topics/sections-guide.md` for the AddFields/credentials-field updates.
+- Validate the replacement script in `ttmp/.../scripts/24-update-docs-addfields-credentials.py`.
+
+### Technical details
+
+```bash
+rg -n -i "layer|parameter" glazed -g '!**/ttmp/**'
+rg -n "AddFlags" glazed/pkg/doc
+python3 glazed/ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/24-update-docs-addfields-credentials.py
+rg -n "NewCommandDefinition" glazed -g '!**/ttmp/**'
+gofmt -w glazed/pkg/cmds/schema/section-impl_test.go
+go test ./...
+
+gofmt -w pkg/cmds/fields/definitions_from_defaults_test.go \
+  pkg/cmds/fields/definitions_test.go \
+  pkg/cmds/fields/gather-fields_test.go \
+  pkg/cmds/schema/section-impl.go \
+  ttmp/2026/02/02/GL-002-FURTHER-CLEANUP--further-cleanup-and-renaming/scripts/12-rename-symbols.go
+
+git add -A
+git commit -m "Refactor: finish section/field cleanup"
 ```

@@ -100,3 +100,12 @@ Rename Lua conversion helpers to section/field naming (commit 7874112)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/lua.go — Renamed Lua parsing helpers and error strings
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/pkg/lua/cmds.go — Updated Lua command bridge to parsed values and fields globals
+
+## 2026-02-02
+
+Step 13: finalize section/field doc cleanup and example fix (commit 6844cbf)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/cmd/examples/sources-example/main.go — Remove NewCommandDefinition alias usage
+
