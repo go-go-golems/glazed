@@ -55,7 +55,7 @@ If me or you the LLM agent seem to go down too deep in a debugging/fixing rabbit
 </debuggingGuidelines>
 
 <generalGuidelines>
-Don't add backwards compatibility layers unless explicitly asked.
+Don't add backwards compatibility sections unless explicitly asked.
 
 If it looks like your edits aren't applied, stop immediately and say "STOPPING BECAUSE EDITING ISN'T WORKING".
 

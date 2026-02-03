@@ -35,9 +35,9 @@ type JsonSettings struct {
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 	return &JsonCommand{
 		CommandDescription: cmds.NewCommandDescription(
@@ -76,8 +76,8 @@ func NewJsonCommand() (*JsonCommand, error) {
 					fields.WithRequired(true),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -87,7 +87,7 @@ func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Va
 	s := &JsonSettings{}
 	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "Failed to initialize json settings from parameters")
+		return errors.Wrap(err, "Failed to initialize json settings from fields")
 	}
 
 	for _, arg := range s.InputFiles {

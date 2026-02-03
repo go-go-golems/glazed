@@ -14,7 +14,7 @@ type TestStruct struct {
 	Age  int    `glazed:"age"`
 }
 
-// TestInitializeStructWithValidStruct tests initializing a struct with valid parameters
+// TestInitializeStructWithValidStruct tests initializing a struct with valid fields
 func TestInitializeStructWithValidStruct(t *testing.T) {
 	parsedParams := fields.NewFieldValues(
 		fields.WithFieldValue(
@@ -71,8 +71,8 @@ func TestInitializeStructWithNonStructPointer(t *testing.T) {
 	assert.Equal(t, "s is not a pointer to a struct", err.Error())
 }
 
-// TestInitializeStructWithMissingParameters tests initializing a struct with missing parameters
-func TestInitializeStructWithMissingParameters(t *testing.T) {
+// TestInitializeStructWithMissingFields tests initializing a struct with missing fields
+func TestInitializeStructWithMissingFields(t *testing.T) {
 	parsedParams := fields.NewFieldValues(
 		fields.WithFieldValue(
 			fields.New(
@@ -241,7 +241,7 @@ type TestStructWithWildcard struct {
 	ApiKeys map[string]string `glazed:"*_api_key"`
 }
 
-// TestInitializeStructWithWildcardMultipleMatches tests wildcard pattern matching multiple parameters
+// TestInitializeStructWithWildcardMultipleMatches tests wildcard pattern matching multiple fields
 func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
 	parsedParams := fields.NewFieldValues(
 		fields.WithFieldValue(
@@ -268,7 +268,7 @@ func TestInitializeStructWithWildcardMultipleMatches(t *testing.T) {
 	}, testStruct.ApiKeys)
 }
 
-// TestInitializeStructWithWildcardNoMatches tests wildcard pattern matching no parameters
+// TestInitializeStructWithWildcardNoMatches tests wildcard pattern matching no fields
 func TestInitializeStructWithWildcardNoMatches(t *testing.T) {
 	parsedParams := fields.NewFieldValues()
 
@@ -298,7 +298,7 @@ func TestInitializeStructWithWildcardOnNonMapField(t *testing.T) {
 	err := parsedParams.DecodeInto(testStruct)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "wildcard parameters require a map field")
+	assert.Contains(t, err.Error(), "wildcard fields require a map field")
 }
 
 // TestInitializeStructWithWildcardOnMapWithIncorrectValueTypes tests wildcard pattern on a map with incorrect value types
@@ -448,7 +448,7 @@ func TestStructToDataMapWithWildcardOnNonMapField(t *testing.T) {
 	_, err := fields.StructToDataMap(testStruct)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "wildcard parameters require a map field")
+	assert.Contains(t, err.Error(), "wildcard fields require a map field")
 }
 
 type TestStructWithJSON struct {

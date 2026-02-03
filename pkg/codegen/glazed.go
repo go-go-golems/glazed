@@ -13,7 +13,7 @@ const GlazedFieldsPath = "github.com/go-go-golems/glazed/pkg/cmds/fields"
 const ClaySqlPath = "github.com/go-go-golems/clay/pkg/sql"
 const MapsHelpersPath = "github.com/go-go-golems/glazed/pkg/helpers/maps"
 
-func ParameterDefinitionToDict(p *fields.Definition) (jen.Code, error) {
+func FieldDefinitionToDict(p *fields.Definition) (jen.Code, error) {
 	ret := jen.Dict{
 		jen.Id("Name"): jen.Lit(p.Name),
 		jen.Id("Type"): jen.Lit(string(p.Type)),
@@ -48,8 +48,8 @@ func FlagValueToJen(p *fields.Definition) (jen.Code, error) {
 	return LiteralToJen(reflect.ValueOf(d))
 }
 
-func FlagTypeToGoType(s *jen.Statement, parameterType fields.Type) *jen.Statement {
-	switch parameterType {
+func FlagTypeToGoType(s *jen.Statement, fieldType fields.Type) *jen.Statement {
+	switch fieldType {
 	case fields.TypeFloat:
 		return s.Id("float64")
 	case fields.TypeFloatList:
@@ -84,6 +84,6 @@ func FlagTypeToGoType(s *jen.Statement, parameterType fields.Type) *jen.Statemen
 	case fields.TypeKeyValue:
 		return s.Map(jen.Id("string")).Id("string")
 	default:
-		return s.Id(string(parameterType))
+		return s.Id(string(fieldType))
 	}
 }

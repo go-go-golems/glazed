@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+echo "---"
+glaze help sections-and-values 2>&1
+
+echo 
+echo "---"
+glaze help parsing-fields 2>&1
+
+echo
+echo "---"
+
+prompto get glazed/fields
+
+echo
+echo "---"
+
+prompto get glazed/sources

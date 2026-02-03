@@ -10,7 +10,7 @@ import (
 // and a boolean indicating whether to only include explicitly provided arguments,
 // not the default values of missing arguments.
 //
-// Only the last parameter definitions can be a list parameter type.
+// Only the last field definitions can be a list field type.
 //
 // Required arguments missing from the input will result in an error.
 // Arguments with default values can be included based on the onlyProvided flag.

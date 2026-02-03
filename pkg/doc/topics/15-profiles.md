@@ -2,7 +2,7 @@
 Title: Profiles (profiles.yaml)
 Slug: profiles
 Short: |
-  Use profiles.yaml to apply named configuration bundles across parameter layers, with predictable precedence and debugging.
+  Use profiles.yaml to apply named configuration bundles across field sections, with predictable precedence and debugging.
 Topics:
 - configuration
 - middleware
@@ -18,7 +18,7 @@ SectionType: GeneralTopic
 
 # Profiles (profiles.yaml)
 
-Profiles are a **named bundle of parameter overrides** stored in a YAML file (typically `profiles.yaml`).
+Profiles are a **named bundle of field overrides** stored in a YAML file (typically `profiles.yaml`).
 They are applied via Glazed middleware and are designed to be **mid-precedence defaults**:
 
 - Profiles override **defaults**
@@ -31,8 +31,8 @@ This makes profiles ideal for “environment presets” (dev/staging/prod), mode
 The profile file is a YAML map:
 
 - **Top level**: profile name
-- **Second level**: layer slug
-- **Third level**: parameter name/value pairs for that layer
+- **Second level**: section slug
+- **Third level**: field name/value pairs for that section
 
 Example:
 
@@ -62,7 +62,7 @@ Recommended convention for apps:
 
 ## Selecting a profile
 
-In a Cobra CLI built with Glazed, profile selection typically comes from the **ProfileSettings layer**:
+In a Cobra CLI built with Glazed, profile selection typically comes from the **ProfileSettings section**:
 
 - `--profile <name>`
 - `--profile-file <path>`
@@ -74,15 +74,15 @@ and the matching environment variables (for app `PINOCCHIO`):
 
 ### Enable the flags (important)
 
-These flags only exist if you enable the ProfileSettings layer when building your Cobra command:
+These flags only exist if you enable the ProfileSettings section when building your Cobra command:
 
 ```go
 command, err := cli.BuildCobraCommand(myCmd,
-  cli.WithProfileSettingsLayer(),
+  cli.WithProfileSettingsSection(),
 )
 ```
 
-Without that layer:
+Without that section:
 
 - Cobra won’t accept `--profile/--profile-file`
 - Glazed won’t parse `*_PROFILE/_PROFILE_FILE` into `profile-settings`
@@ -90,14 +90,14 @@ Without that layer:
 
 ## Setting profile selection in config.yaml
 
-Glazed config files are parsed in **layer-slug form**:
+Glazed config files are parsed in **section-slug form**:
 
 ```yaml
-<layer-slug>:
+<section-slug>:
   <param-name>: <value>
 ```
 
-So profile selection in a config file must be expressed under the `profile-settings` layer:
+So profile selection in a config file must be expressed under the `profile-settings` section:
 
 ```yaml
 profile-settings:
@@ -144,13 +144,13 @@ The common fix is a **bootstrap parse**:
 
 1. Parse `profile-settings` (and usually `command-settings`) from defaults + config + env + flags.
 2. Instantiate `GatherFlagsFromProfiles(...)` using the resolved values.
-3. Run the main middleware chain for all layers, with the profiles middleware inserted between defaults and higher-precedence sources.
+3. Run the main middleware chain for all sections, with the profiles middleware inserted between defaults and higher-precedence sources.
 
 If you need a concrete example, see `topics/12-profiles-use-code.md` and the Geppetto reference implementation.
 
 ## Debugging
 
-Use `--print-parsed-parameters` to inspect parse provenance per parameter, including which values came from:
+Use `--print-parsed-fields` to inspect parse provenance per field, including which values came from:
 
 - `defaults`
 - `profiles` (with metadata like `{ profile, profileFile }`)

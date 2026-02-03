@@ -17,7 +17,7 @@ type ExpectError string
 const ErrorExpected ExpectError = "ErrorExpected"
 const ErrorNotExpected ExpectError = "ErrorNotExpected"
 
-type ParameterTestCase struct {
+type FieldTestCase struct {
 	Name     string
 	Input    []string
 	Expected interface{}
@@ -63,16 +63,16 @@ func todayWithTime(hour, minute, second, nanosecond int) time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, nanosecond, now.Location())
 }
 
-type ParameterTest struct {
+type FieldTest struct {
 	Name         string
 	Type         Type
 	DefaultValue interface{}
 	Choices      []string
-	Cases        []ParameterTestCase
+	Cases        []FieldTestCase
 }
 
-func TestParameterDate(t *testing.T) {
-	cases := []ParameterTestCase{
+func TestFieldDate(t *testing.T) {
+	cases := []FieldTestCase{
 		{
 			Name:     "Natural language input for past date, no error expected",
 			Input:    []string{"last year"},
@@ -200,7 +200,7 @@ func TestParameterDate(t *testing.T) {
 		},
 	}
 
-	parameter := New(
+	field := New(
 		"test",
 		TypeDate,
 		WithDefault(*refTime),
@@ -208,7 +208,7 @@ func TestParameterDate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("Date: %s", tc.Name), func(t *testing.T) {
-			got, err := parameter.ParseField(tc.Input)
+			got, err := field.ParseField(tc.Input)
 			if tc.WantErr == ErrorExpected {
 				assert.Error(t, err)
 			} else {
@@ -222,33 +222,33 @@ func TestParameterDate(t *testing.T) {
 	}
 }
 
-func TestParseParameter(t *testing.T) {
-	tests := []ParameterTest{
+func TestParseField(t *testing.T) {
+	tests := []FieldTest{
 		{
-			Name:         "ParameterString",
+			Name:         "FieldString",
 			Type:         TypeString,
 			DefaultValue: "default",
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single string, no error expected", Input: []string{"test"}, Expected: "test", WantErr: ErrorNotExpected},
 				{Name: "Multiple strings for non-list, error expected", Input: []string{"test", "test2"}, WantErr: ErrorExpected},
 				{Name: "No input uses default, no error expected", Input: []string{}, Expected: "default", WantErr: ErrorNotExpected},
 			},
 		},
 		{
-			Name:         "ParameterStringList",
+			Name:         "FieldStringList",
 			Type:         TypeStringList,
 			DefaultValue: []string{"default"},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single string in list, no error expected", Input: []string{"test"}, Expected: []string{"test"}, WantErr: ErrorNotExpected},
 				{Name: "Valid multiple strings in list, no error expected", Input: []string{"test", "test2"}, Expected: []string{"test", "test2"}, WantErr: ErrorNotExpected},
 				{Name: "No input uses default list, no error expected", Input: []string{}, Expected: []string{"default"}, WantErr: ErrorNotExpected},
 			},
 		},
 		{
-			Name:         "ParameterInt",
+			Name:         "FieldInt",
 			Type:         TypeInteger,
 			DefaultValue: 1,
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid integer string, no error expected", Input: []string{"1"}, Expected: 1, WantErr: ErrorNotExpected},
 				{Name: "Invalid non-integer string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
 				{Name: "Multiple integers for non-list, error expected", Input: []string{"1", "2"}, WantErr: ErrorExpected},
@@ -256,10 +256,10 @@ func TestParseParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:         "ParameterIntegerList",
+			Name:         "FieldIntegerList",
 			Type:         TypeIntegerList,
 			DefaultValue: []int{1},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single integer in list, no error expected", Input: []string{"1"}, Expected: []int{1}, WantErr: ErrorNotExpected},
 				{Name: "Valid multiple integers in list, no error expected", Input: []string{"1", "2"}, Expected: []int{1, 2}, WantErr: ErrorNotExpected},
 				{Name: "Invalid non-integer string in list, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
@@ -268,10 +268,10 @@ func TestParseParameter(t *testing.T) {
 		},
 
 		{
-			Name:         "ParameterBool",
+			Name:         "FieldBool",
 			Type:         TypeBool,
 			DefaultValue: true,
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid 'true' input, no error expected", Input: []string{"true"}, Expected: true, WantErr: ErrorNotExpected},
 				{Name: "Valid 'false' input, no error expected", Input: []string{"false"}, Expected: false, WantErr: ErrorNotExpected},
 				{Name: "Invalid non-boolean string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
@@ -280,10 +280,10 @@ func TestParseParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:         "ParameterFloat",
+			Name:         "FieldFloat",
 			Type:         TypeFloat,
 			DefaultValue: 1.0,
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid float input, no error expected", Input: []string{"1.0"}, Expected: 1.0, WantErr: ErrorNotExpected},
 				{Name: "Invalid non-float string, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
 				{Name: "Multiple floats for non-list, error expected", Input: []string{"1.0", "2.0"}, WantErr: ErrorExpected},
@@ -291,10 +291,10 @@ func TestParseParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:         "ParameterFloatList",
+			Name:         "FieldFloatList",
 			Type:         TypeFloatList,
 			DefaultValue: []float64{1.0},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single float in list, no error expected", Input: []string{"1.0"}, Expected: []float64{1.0}, WantErr: ErrorNotExpected},
 				{Name: "Valid multiple floats in list, no error expected", Input: []string{"1.0", "2.0"}, Expected: []float64{1.0, 2.0}, WantErr: ErrorNotExpected},
 				{Name: "Invalid non-float string in list, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
@@ -302,11 +302,11 @@ func TestParseParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:         "ParameterChoice",
+			Name:         "FieldChoice",
 			Type:         TypeChoice,
 			DefaultValue: "default",
 			Choices:      []string{"default", "test"},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid choice from list, no error expected", Input: []string{"test"}, Expected: "test", WantErr: ErrorNotExpected},
 				{Name: "Invalid choice not in list, error expected", Input: []string{"test2"}, WantErr: ErrorExpected},
 				{Name: "Multiple choices for non-list, error expected", Input: []string{"test", "test2"}, WantErr: ErrorExpected},
@@ -314,11 +314,11 @@ func TestParseParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:         "ParameterChoiceList",
+			Name:         "FieldChoiceList",
 			Type:         TypeChoiceList,
 			DefaultValue: []string{"default"},
 			Choices:      []string{"default", "test", "option1", "option2"},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single choice in list, no error expected", Input: []string{"test"}, Expected: []string{"test"}, WantErr: ErrorNotExpected},
 				{Name: "Valid multiple choices in list, no error expected", Input: []string{"test", "option1"}, Expected: []string{"test", "option1"}, WantErr: ErrorNotExpected},
 				{Name: "Invalid single choice not in list, error expected", Input: []string{"test2"}, WantErr: ErrorExpected},
@@ -330,7 +330,7 @@ func TestParseParameter(t *testing.T) {
 			Name:         "TypeKeyValue",
 			Type:         TypeKeyValue,
 			DefaultValue: map[string]interface{}{"default": "default"},
-			Cases: []ParameterTestCase{
+			Cases: []FieldTestCase{
 				{Name: "Valid single key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
 				{Name: "Valid multiple key-value pairs, no error expected", Input: []string{"test:test", "test2:test2"}, Expected: map[string]string{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
 				{Name: "Invalid input without colon separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
@@ -340,7 +340,7 @@ func TestParseParameter(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		parameter := New(
+		field := New(
 			"test",
 			tt.Type,
 			WithChoices(tt.Choices...),
@@ -348,7 +348,7 @@ func TestParseParameter(t *testing.T) {
 
 		for _, tc := range tt.Cases {
 			t.Run(fmt.Sprintf("%s: %s", tt.Name, tc.Name), func(t *testing.T) {
-				got, err := parameter.ParseField(tc.Input)
+				got, err := field.ParseField(tc.Input)
 				if tc.WantErr == ErrorExpected {
 					assert.Error(t, err)
 				} else {
@@ -361,152 +361,152 @@ func TestParseParameter(t *testing.T) {
 }
 
 func TestParseStringListFromReader(t *testing.T) {
-	parameter := New("test", TypeStringListFromFile,
+	field := New("test", TypeStringListFromFile,
 		WithDefault([]string{"default"}),
 	)
 
 	reader := strings.NewReader("test\ntest2")
-	i, err := parameter.ParseFromReader(reader, "test.txt")
+	i, err := field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	reader = strings.NewReader("test")
-	i, err = parameter.ParseFromReader(reader, "test.txt")
+	i, err = field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"test"}, i.Value)
 
 	reader = strings.NewReader("")
-	i, err = parameter.ParseFromReader(reader, "test.txt")
+	i, err = field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, i.Value)
 
 	// try single column CSV with header
 	reader = strings.NewReader("test\ntest2\ntest3\ntest4")
-	i, err = parameter.ParseFromReader(reader, "test.csv")
+	i, err = field.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"test2", "test3", "test4"}, i.Value)
 
 	// test single string list json
 	reader = strings.NewReader(`["test","test2"]`)
-	i, err = parameter.ParseFromReader(reader, "test.json")
+	i, err = field.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	// fail single string
 	reader = strings.NewReader(`"test"`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// test fail int
 	reader = strings.NewReader(`1`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// test fail int list
 	reader = strings.NewReader(`[1,2]`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// test fail mixed list
 	reader = strings.NewReader(`["test",1]`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// test fail empty json
 	reader = strings.NewReader(`{}`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// test succeed empty list
 	reader = strings.NewReader(`[]`)
-	i, err = parameter.ParseFromReader(reader, "test.json")
+	i, err = field.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, i.Value)
 
 	// test yaml
 	reader = strings.NewReader(`- test
 - test2`)
-	i, err = parameter.ParseFromReader(reader, "test.yaml")
+	i, err = field.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"test", "test2"}, i.Value)
 
 	// test empty csv (just headers)
 	reader = strings.NewReader(`test`)
-	i, err = parameter.ParseFromReader(reader, "test.csv")
+	i, err = field.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, i.Value)
 
 }
 
 func TestParseObjectFromFile(t *testing.T) {
-	parameter := New("test", TypeObjectFromFile,
+	field := New("test", TypeObjectFromFile,
 		WithDefault(map[string]string{"default": "default"}),
 	)
 
 	reader := strings.NewReader(`{"test":"test"}`)
-	i, err := parameter.ParseFromReader(reader, "test.json")
+	i, err := field.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	reader = strings.NewReader(`{"test":"test"`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	reader = strings.NewReader(`{"test":{"test":"test"}}`)
-	i, err = parameter.ParseFromReader(reader, "test.json")
+	i, err = field.ParseFromReader(reader, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i.Value)
 
 	reader = strings.NewReader(``)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// toplevel list
 	reader = strings.NewReader(`["test"]`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// toplevel string
 	reader = strings.NewReader(`"test"`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// toplevel int
 	reader = strings.NewReader(`1`)
-	_, err = parameter.ParseFromReader(reader, "test.json")
+	_, err = field.ParseFromReader(reader, "test.json")
 	assert.Error(t, err)
 
 	// now yaml
 	reader = strings.NewReader(`test: test`)
-	i, err = parameter.ParseFromReader(reader, "test.yaml")
+	i, err = field.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	reader = strings.NewReader(`test: test`)
-	i, err = parameter.ParseFromReader(reader, "test.yml")
+	i, err = field.ParseFromReader(reader, "test.yml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test"}, i.Value)
 
 	// nested object
 	reader = strings.NewReader(`test: {test: test}`)
-	i, err = parameter.ParseFromReader(reader, "test.yaml")
+	i, err = field.ParseFromReader(reader, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": map[string]interface{}{"test": "test"}}, i.Value)
 
 	// toplevel list
 	reader = strings.NewReader("- test\n- test2")
-	_, err = parameter.ParseFromReader(reader, "test.yaml")
+	_, err = field.ParseFromReader(reader, "test.yaml")
 	assert.Error(t, err)
 
 	// toplevel string
 	reader = strings.NewReader(`test`)
-	_, err = parameter.ParseFromReader(reader, "test.yaml")
+	_, err = field.ParseFromReader(reader, "test.yaml")
 	assert.Error(t, err)
 
 	// now, one-line CSV with headers
 	reader = strings.NewReader(`test,test2
 test,test2`)
-	i, err = parameter.ParseFromReader(reader, "test.csv")
+	i, err = field.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i.Value)
 
@@ -514,167 +514,167 @@ test,test2`)
 	reader = strings.NewReader(`test,test2
 test,test2
 test,test2`)
-	_, err = parameter.ParseFromReader(reader, "test.csv")
+	_, err = field.ParseFromReader(reader, "test.csv")
 	assert.Error(t, err)
 
 	// fail on CSV without headers
 	reader = strings.NewReader(`test,test2`)
-	_, err = parameter.ParseFromReader(reader, "test.csv")
+	_, err = field.ParseFromReader(reader, "test.csv")
 	assert.Error(t, err)
 
 	// fail on empty CSV
 	reader = strings.NewReader(``)
-	_, err = parameter.ParseFromReader(reader, "test.csv")
+	_, err = field.ParseFromReader(reader, "test.csv")
 	assert.Error(t, err)
 
 	// test TSV
 	reader = strings.NewReader(`test	test2
 test	test2`)
-	i, err = parameter.ParseFromReader(reader, "test.tsv")
+	i, err = field.ParseFromReader(reader, "test.tsv")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "test", "test2": "test2"}, i.Value)
 
 	// try numbers
 	reader = strings.NewReader(`test,test2
 1,2`)
-	i, err = parameter.ParseFromReader(reader, "test.csv")
+	i, err = field.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i.Value)
 
 	// try quoted numbers as strings
 	reader = strings.NewReader(`test,test2
 "1","2"`)
-	i, err = parameter.ParseFromReader(reader, "test.csv")
+	i, err = field.ParseFromReader(reader, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"test": "1", "test2": "2"}, i.Value)
 }
 
 func TestParseObjectListFromFile(t *testing.T) {
-	parameter := New("test", TypeObjectListFromFile,
+	field := New("test", TypeObjectListFromFile,
 		WithDefault([]map[string]interface{}{{"default": "default"}}),
 	)
 
-	v, err := parseObjectListFromString(parameter, `[{"test":"test"}]`, "test.json")
+	v, err := parseObjectListFromString(field, `[{"test":"test"}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// two elements
-	v, err = parseObjectListFromString(parameter, `[{"test":"test"},{"test2":"test2"}]`, "test.json")
+	v, err = parseObjectListFromString(field, `[{"test":"test"},{"test2":"test2"}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
 
-	_, err = parseObjectListFromString(parameter, `{"test":"test"`, "test.json")
+	_, err = parseObjectListFromString(field, `{"test":"test"`, "test.json")
 	assert.Error(t, err)
 
-	v, err = parseObjectListFromString(parameter, `[{"test":{"test":"test"}}]`, "test.json")
+	v, err = parseObjectListFromString(field, `[{"test":{"test":"test"}}]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": map[string]interface{}{"test": "test"}}}, v)
 
 	// succeed on empty list
-	v, err = parseObjectListFromString(parameter, `[]`, "test.json")
+	v, err = parseObjectListFromString(field, `[]`, "test.json")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectListFromString(parameter, ``, "test.json")
+	_, err = parseObjectListFromString(field, ``, "test.json")
 	assert.Error(t, err)
 
 	// fail on toplevel list of string
-	_, err = parseObjectListFromString(parameter, `["test"]`, "test.json")
+	_, err = parseObjectListFromString(field, `["test"]`, "test.json")
 	assert.Error(t, err)
 
 	// now ndjson
-	v, err = parseObjectListFromString(parameter, `{"test":"test"}
+	v, err = parseObjectListFromString(field, `{"test":"test"}
 {"test2":"test2"}`, "test.ndjson")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
 
 	// fail on ndjson with no newline
-	_, err = parseObjectListFromString(parameter, `{"test":"test"}{"test2":"test2"}`, "test.ndjson")
+	_, err = parseObjectListFromString(field, `{"test":"test"}{"test2":"test2"}`, "test.ndjson")
 	assert.Error(t, err)
 
 	// ndjson with a single object
-	v, err = parseObjectListFromString(parameter, `{"test":"test"}`, "test.ndjson")
+	v, err = parseObjectListFromString(field, `{"test":"test"}`, "test.ndjson")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// fail on non object line
-	_, err = parseObjectListFromString(parameter, `{"test":"test"}
+	_, err = parseObjectListFromString(field, `{"test":"test"}
 "test"`, "test.ndjson")
 	assert.Error(t, err)
 
 	// now yaml
-	v, err = parseObjectListFromString(parameter, `- test: test`, "test.yaml")
+	v, err = parseObjectListFromString(field, `- test: test`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
-	v, err = parseObjectListFromString(parameter, `- test: test`, "test.yml")
+	v, err = parseObjectListFromString(field, `- test: test`, "test.yml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// two elements
-	v, err = parseObjectListFromString(parameter, `- test: test
+	v, err = parseObjectListFromString(field, `- test: test
 - test2: test2`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}, {"test2": "test2"}}, v)
 
 	// nested object
-	v, err = parseObjectListFromString(parameter, `- test: {test: test}`, "test.yaml")
+	v, err = parseObjectListFromString(field, `- test: {test: test}`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": map[string]interface{}{"test": "test"}}}, v)
 
 	// fail on toplevel list of strings
-	_, err = parseObjectListFromString(parameter, `- test
+	_, err = parseObjectListFromString(field, `- test
 - test2`, "test.yaml")
 	assert.Error(t, err)
 
 	// fail on toplevel object
-	v, err = parseObjectListFromString(parameter, `test: test`, "test.yaml")
+	v, err = parseObjectListFromString(field, `test: test`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test"}}, v)
 
 	// succeed on empty list
-	v, err = parseObjectListFromString(parameter, `[]`, "test.yaml")
+	v, err = parseObjectListFromString(field, `[]`, "test.yaml")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// fail on empty file
-	_, err = parseObjectListFromString(parameter, ``, "test.yaml")
+	_, err = parseObjectListFromString(field, ``, "test.yaml")
 	assert.Error(t, err)
 
 	// test csv
-	v, err = parseObjectListFromString(parameter, `test,test2
+	v, err = parseObjectListFromString(field, `test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}}, v)
 
 	// test csv with 2 lines
-	v, err = parseObjectListFromString(parameter, `test,test2
+	v, err = parseObjectListFromString(field, `test,test2
 test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
 
 	// fail on CSV with no headers
-	_, err = parseObjectListFromString(parameter, `test,test2`, "test.csv")
+	_, err = parseObjectListFromString(field, `test,test2`, "test.csv")
 	assert.Error(t, err)
 
 	// empty list on empty CSV
-	v, err = parseObjectListFromString(parameter, ``, "test.csv")
+	v, err = parseObjectListFromString(field, ``, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{}, v)
 
 	// succeed on multiline CSV
-	v, err = parseObjectListFromString(parameter, `test,test2
+	v, err = parseObjectListFromString(field, `test,test2
 test,test2
 test,test2`, "test.csv")
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"test": "test", "test2": "test2"}, {"test": "test", "test2": "test2"}}, v)
 }
 
-func parseObjectListFromString(parameter *Definition, input string, fileName string) ([]map[string]interface{}, error) {
+func parseObjectListFromString(field *Definition, input string, fileName string) ([]map[string]interface{}, error) {
 	reader := strings.NewReader(input)
-	i, err := parameter.ParseFromReader(reader, fileName)
+	i, err := field.ParseFromReader(reader, fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -686,87 +686,87 @@ func parseObjectListFromString(parameter *Definition, input string, fileName str
 }
 
 func TestParseStringFromFile(t *testing.T) {
-	parameter := New("test", TypeStringFromFile,
+	field := New("test", TypeStringFromFile,
 		WithDefault("default"),
 	)
 
 	reader := strings.NewReader("test")
-	i, err := parameter.ParseFromReader(reader, "test.txt")
+	i, err := field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "test", i.Value)
 
 	// multiline
 	reader = strings.NewReader("test\ntest2")
-	i, err = parameter.ParseFromReader(reader, "test.txt")
+	i, err = field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "test\ntest2", i.Value)
 
 	reader = strings.NewReader("")
-	i, err = parameter.ParseFromReader(reader, "test.txt")
+	i, err = field.ParseFromReader(reader, "test.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "", i.Value)
 }
 
 func TestParseStringFromFileRealFile(t *testing.T) {
-	parameter := New("test", TypeStringFromFile,
+	field := New("test", TypeStringFromFile,
 		WithDefault("default"),
 	)
 
-	v, err := parameter.ParseField([]string{"test-data/string.txt"})
+	v, err := field.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\n", v.Value)
 
-	parameter = New("test", TypeStringFromFiles,
+	field = New("test", TypeStringFromFiles,
 		WithDefault("default"),
 	)
-	v, err = parameter.ParseField([]string{"test-data/string.txt"})
+	v, err = field.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\n", v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
+	v, err = field.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, "string1\nstring2\n", v.Value)
 }
 
 func TestParseStringListFromFileRealFile(t *testing.T) {
-	parameter := New("test", TypeStringListFromFile,
+	field := New("test", TypeStringListFromFile,
 		WithDefault([]string{"default"}),
 	)
 
-	v, err := parameter.ParseField([]string{"test-data/string.txt"})
+	v, err := field.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1"}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/stringList.csv"})
+	v, err = field.ParseField([]string{"test-data/stringList.csv"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"stringList1", "stringList2"}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
+	v, err = field.ParseField([]string{"test-data/stringList.csv", "test-data/stringList2.csv"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"stringList1", "stringList2", "stringList3", "stringList4"}, v.Value)
 
-	parameter = New("test", TypeStringListFromFiles,
+	field = New("test", TypeStringListFromFiles,
 		WithDefault("default"),
 	)
-	v, err = parameter.ParseField([]string{"test-data/string.txt"})
+	v, err = field.ParseField([]string{"test-data/string.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1"}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
+	v, err = field.ParseField([]string{"test-data/string.txt", "test-data/string2.txt"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"string1", "string2"}, v.Value)
 }
 
 func TestParseObjectListFromFileRealFile(t *testing.T) {
-	parameter := New("test", TypeObjectListFromFile,
+	field := New("test", TypeObjectListFromFile,
 		WithDefault([]map[string]interface{}{}),
 	)
 
-	v, err := parameter.ParseField([]string{"test-data/object.json"})
+	v, err := field.ParseField([]string{"test-data/object.json"})
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/objectList.json"})
+	v, err = field.ParseField([]string{"test-data/objectList.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -780,7 +780,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 			},
 		}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/objectList3.csv"})
+	v, err = field.ParseField([]string{"test-data/objectList3.csv"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -794,15 +794,15 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 			},
 		}, v.Value)
 
-	parameter = New("test", TypeObjectListFromFiles,
+	field = New("test", TypeObjectListFromFiles,
 		WithDefault([]interface{}{}),
 	)
 
-	v, err = parameter.ParseField([]string{"test-data/object.json"})
+	v, err = field.ParseField([]string{"test-data/object.json"})
 	require.NoError(t, err)
 	assert.Equal(t, []map[string]interface{}{{"name": "object1", "type": "object"}}, v.Value)
 
-	v, err = parameter.ParseField([]string{"test-data/object.json", "test-data/object2.json"})
+	v, err = field.ParseField([]string{"test-data/object.json", "test-data/object2.json"})
 	require.NoError(t, err)
 	assert.Equal(t,
 		[]map[string]interface{}{
@@ -817,7 +817,7 @@ func TestParseObjectListFromFileRealFile(t *testing.T) {
 		},
 		v.Value)
 
-	v, err = parameter.ParseField([]string{
+	v, err = field.ParseField([]string{
 		"test-data/objectList.json",
 		"test-data/objectList2.yaml",
 		"test-data/object.json",

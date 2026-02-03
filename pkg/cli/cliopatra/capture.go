@@ -7,12 +7,12 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
-func getCliopatraParameters(
+func getCliopatraFields(
 	definitions *fields.Definitions,
 	ps *fields.FieldValues,
 	prefix string,
-) []*Parameter {
-	ret := []*Parameter{}
+) []*Field {
+	ret := []*Field{}
 
 	definitions.ForEach(func(p *fields.Definition) {
 		name := prefix + p.Name
@@ -29,7 +29,7 @@ func getCliopatraParameters(
 		}
 
 		// NOTE(manuel, 2023-03-21) do we need to check for FromFile types? or is that covered by the value representation?
-		param := &Parameter{
+		param := &Field{
 			Name:  name,
 			Short: p.Help,
 			Type:  p.Type,
@@ -62,18 +62,18 @@ func getCliopatraParameters(
 }
 
 // NewProgramFromCapture is a helper function to help capture a cliopatra Program from
-// the description and the parsed layers a glazed command.
+// the description and the resolved values for a glazed command.
 //
-// It will go over all the ParameterDefinition (from all layers, which now also include the default layers).
+// It will go over all the field definitions (from all sections, which now also include the default section),
 // and will try to create the best cliopatra map it can. It tries to resolve the prefixes
-// of layered fields.
+// of sectioned fields.
 //
-// Values in the parameter map that are not present under the form of a ParameterDefinition
+// Values in the field map that are not present under the form of a field definition
 // will not be added to the command, and should be added separately using the WithRawFlags
 // option.
 func NewProgramFromCapture(
 	description *cmds.CommandDescription,
-	parsedLayers *values.Values,
+	parsedValues *values.Values,
 	opts ...ProgramOption,
 ) *Program {
 	ret := &Program{
@@ -81,29 +81,29 @@ func NewProgramFromCapture(
 		Description: description.Short,
 	}
 
-	description.Layers.ForEach(func(_ string, layer schema.Section) {
-		if layer.GetSlug() == "glazed-command" {
+	description.Schema.ForEach(func(_ string, section schema.Section) {
+		if section.GetSlug() == "glazed-command" {
 			// skip the meta glazed command flags, which also contain the create-cliopatra flag
 			return
 		}
-		parsedLayer, ok := parsedLayers.Get(layer.GetSlug())
+		sectionValues, ok := parsedValues.Get(section.GetSlug())
 		if !ok {
 			return
 		}
 
 		// TODO(manuel, 2023-03-21) This is broken I think, there's no need to use the prefix here
-		parameters_ := getCliopatraParameters(
-			layer.GetDefinitions(),
-			parsedLayer.Fields,
-			layer.GetPrefix())
-		flags := []*Parameter{}
-		arguments := []*Parameter{}
+		fields_ := getCliopatraFields(
+			section.GetDefinitions(),
+			sectionValues.Fields,
+			section.GetPrefix())
+		flags := []*Field{}
+		arguments := []*Field{}
 
-		for _, p := range parameters_ {
-			if p.IsArgument {
-				arguments = append(arguments, p)
+		for _, field := range fields_ {
+			if field.IsArgument {
+				arguments = append(arguments, field)
 			} else {
-				flags = append(flags, p)
+				flags = append(flags, field)
 			}
 		}
 		ret.Flags = append(ret.Flags, flags...)

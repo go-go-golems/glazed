@@ -10,16 +10,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// GenerateUseString creates a string representation of the 'Use' field for a given cobra command and a list of parameter definitions. The first word of the existing 'Use' field is treated as the verb for the command.
+// GenerateUseString creates a string representation of the 'Use' field for a given cobra command and a list of field definitions. The first word of the existing 'Use' field is treated as the verb for the command.
 // The resulting string briefly describes how to use the command respecting the following conventions:
-//   - Required parameters are enclosed in '<>'.
-//   - Optional parameters are enclosed in '[]'.
-//   - Optional parameters that accept multiple input (TypeStringList or TypeIntegerList) are followed by '...'.
-//   - If a parameter has a default value, it is specified after parameter name like 'parameter (default: value)'.
+//   - Required fields are enclosed in '<>'.
+//   - Optional fields are enclosed in '[]'.
+//   - Optional fields that accept multiple input (TypeStringList or TypeIntegerList) are followed by '...'.
+//   - If a field has a default value, it is specified after field name like 'field (default: value)'.
 //
 // For example:
-//   - If there is a required parameter 'name', and an optional parameter 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
-//   - If there is a required parameter 'name', and an optional parameter 'colors' of type TypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
+//   - If there is a required field 'name', and an optional field 'age' with a default value of '30', the resulting string will be: 'verb <name> [age (default: 30)]'.
+//   - If there is a required field 'name', and an optional field 'colors' of type TypeStringList, the resulting Use string will be: 'verb <name> [colors...]'
 func GenerateUseString(cmdName string, pds *Definitions) string {
 	fields := strings.Fields(cmdName)
 	if len(fields) == 0 {
@@ -117,8 +117,8 @@ func (pds *Definitions) addArgumentsToCobraCommand(cmd *cobra.Command) error {
 	return nil
 }
 
-// AddFieldsToCobraCommand takes the parameters from a CommandDescription and converts them
-// to cobra flags, before adding them to the Parameters() of a the passed cobra command.
+// AddFieldsToCobraCommand takes the fields from a CommandDescription and converts them
+// to cobra flags, before adding them to the Fields() of a the passed cobra command.
 func (pds *Definitions) AddFieldsToCobraCommand(
 	cmd *cobra.Command,
 	prefix string,
@@ -130,16 +130,16 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		return err
 	}
 
-	err = pds.GetFlags().ForEachE(func(parameter *Definition) error {
-		_, err := parameter.CheckDefaultValueValidity()
+	err = pds.GetFlags().ForEachE(func(field *Definition) error {
+		_, err := field.CheckDefaultValueValidity()
 		if err != nil {
-			return errors.Wrapf(err, "Invalid default value for argument %s", parameter.Name)
+			return errors.Wrapf(err, "Invalid default value for argument %s", field.Name)
 		}
 
-		flagName := prefix + parameter.Name
+		flagName := prefix + field.Name
 		// replace _ with -
 		flagName = strings.ReplaceAll(flagName, "_", "-")
-		shortFlag := parameter.ShortFlag
+		shortFlag := field.ShortFlag
 		if prefix != "" {
 			// we don't allow shortflags if a prefix was given
 			shortFlag = ""
@@ -151,10 +151,10 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 			return errors.Errorf("Flag '%s' (usage: %s) already exists", flagName, f.Usage)
 		}
 
-		helpText := parameter.Help
-		helpText = fmt.Sprintf("%s - <%s>", helpText, parameter.Type)
+		helpText := field.Help
+		helpText = fmt.Sprintf("%s - <%s>", helpText, field.Type)
 
-		switch parameter.Type {
+		switch field.Type {
 		case TypeStringListFromFile,
 			TypeStringFromFile,
 			TypeObjectFromFile,
@@ -162,7 +162,7 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 			TypeFile:
 			defaultValue := ""
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.String(flagName, defaultValue, helpText)
@@ -174,7 +174,7 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 			TypeFileList:
 			defaultValue := []string{}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.StringSlice(flagName, defaultValue, helpText)
@@ -183,14 +183,14 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeString, TypeSecret:
 			defaultValue := ""
 
-			if parameter.Default != nil {
-				defaultValue, err = cast.ToString(*parameter.Default)
+			if field.Default != nil {
+				defaultValue, err = cast.ToString(*field.Default)
 				if err != nil {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a string: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.String(flagName, defaultValue, helpText)
@@ -198,14 +198,14 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeInteger:
 			defaultValue := 0
 
-			if parameter.Default != nil {
-				defaultValue, ok = cast.CastNumberInterfaceToInt[int](*parameter.Default)
+			if field.Default != nil {
+				defaultValue, ok = cast.CastNumberInterfaceToInt[int](*field.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not an integer: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.IntP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.Int(flagName, defaultValue, helpText)
@@ -214,14 +214,14 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeFloat:
 			defaultValue := 0.0
 
-			if parameter.Default != nil {
-				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](*parameter.Default)
+			if field.Default != nil {
+				defaultValue, ok = cast.CastFloatInterfaceToFloat[float64](*field.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a float: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.Float64P(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.Float64(flagName, defaultValue, helpText)
@@ -230,14 +230,14 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeBool:
 			defaultValue := false
 
-			if parameter.Default != nil {
-				defaultValue, ok = (*parameter.Default).(bool)
+			if field.Default != nil {
+				defaultValue, ok = (*field.Default).(bool)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a bool: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a bool: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.BoolP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.Bool(flagName, defaultValue, helpText)
@@ -246,8 +246,8 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeDate:
 			defaultValue := ""
 
-			if parameter.Default != nil {
-				switch v_ := (*parameter.Default).(type) {
+			if field.Default != nil {
+				switch v_ := (*field.Default).(type) {
 				case string:
 					_, err2 := ParseDate(v_)
 					if err2 != nil {
@@ -258,11 +258,11 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 					// nothing to do
 					defaultValue = v_.Format("2006-01-02")
 				default:
-					return errors.Errorf("Default value for parameter %s is not a valid date: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a valid date: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.String(flagName, defaultValue, helpText)
@@ -271,25 +271,25 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeStringList, TypeChoiceList:
 			var defaultValue []string
 
-			if parameter.Default != nil {
-				stringList, ok := (*parameter.Default).([]string)
+			if field.Default != nil {
+				stringList, ok := (*field.Default).([]string)
 				if !ok {
-					defaultValue, ok := (*parameter.Default).([]interface{})
+					defaultValue, ok := (*field.Default).([]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
+						return errors.Errorf("Default value for field %s is not a string list: %v", field.Name, *field.Default)
 					}
 
 					// convert to string list
 					stringList, ok = cast.CastList[string, interface{}](defaultValue)
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
+						return errors.Errorf("Default value for field %s is not a string list: %v", field.Name, *field.Default)
 					}
 				}
 
 				defaultValue = stringList
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.StringSlice(flagName, defaultValue, helpText)
@@ -298,12 +298,12 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeKeyValue:
 			var defaultValue []string
 
-			if parameter.Default != nil {
-				stringMap, ok := (*parameter.Default).(map[string]string)
+			if field.Default != nil {
+				stringMap, ok := (*field.Default).(map[string]string)
 				if !ok {
-					defaultValue, ok := (*parameter.Default).(map[string]interface{})
+					defaultValue, ok := (*field.Default).(map[string]interface{})
 					if !ok {
-						return errors.Errorf("Default value for parameter %s is not a string list: %v", parameter.Name, *parameter.Default)
+						return errors.Errorf("Default value for field %s is not a string list: %v", field.Name, *field.Default)
 					}
 
 					stringMap = make(map[string]string)
@@ -322,10 +322,10 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 				defaultValue = stringList
 			}
 			if err != nil {
-				return errors.Wrapf(err, "Could not convert default value for parameter %s to string list: %v", parameter.Name, *parameter.Default)
+				return errors.Wrapf(err, "Could not convert default value for field %s to string list: %v", field.Name, *field.Default)
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.StringSlice(flagName, defaultValue, helpText)
@@ -333,14 +333,14 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 
 		case TypeIntegerList:
 			var defaultValue []int
-			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToIntList[int](*parameter.Default)
+			if field.Default != nil {
+				defaultValue, ok = cast.CastInterfaceToIntList[int](*field.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not an integer list: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not an integer list: %v", field.Name, *field.Default)
 				}
 			}
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.IntSliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.IntSlice(flagName, defaultValue, helpText)
@@ -348,13 +348,13 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 
 		case TypeFloatList:
 			var defaultValue []float64
-			if parameter.Default != nil {
-				defaultValue, ok = cast.CastInterfaceToFloatList[float64](*parameter.Default)
+			if field.Default != nil {
+				defaultValue, ok = cast.CastInterfaceToFloatList[float64](*field.Default)
 				if !ok {
-					return errors.Errorf("Default value for parameter %s is not a float list: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a float list: %v", field.Name, *field.Default)
 				}
 			}
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.Float64SliceP(flagName, shortFlag, defaultValue, helpText)
 			} else {
 				flagSet.Float64Slice(flagName, defaultValue, helpText)
@@ -363,23 +363,23 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 		case TypeChoice:
 			defaultValue := ""
 
-			if parameter.Default != nil {
-				defaultValue, err = cast.ToString(*parameter.Default)
+			if field.Default != nil {
+				defaultValue, err = cast.ToString(*field.Default)
 				if err != nil {
-					return errors.Errorf("Default value for parameter %s is not a string: %v", parameter.Name, *parameter.Default)
+					return errors.Errorf("Default value for field %s is not a string: %v", field.Name, *field.Default)
 				}
 			}
 
-			choiceString := strings.Join(parameter.Choices, ",")
+			choiceString := strings.Join(field.Choices, ",")
 
-			if parameter.ShortFlag != "" {
+			if field.ShortFlag != "" {
 				flagSet.StringP(flagName, shortFlag, defaultValue, fmt.Sprintf("%s (%s)", helpText, choiceString))
 			} else {
 				flagSet.String(flagName, defaultValue, fmt.Sprintf("%s (%s)", helpText, choiceString))
 			}
 
 		default:
-			return errors.Errorf("Unknown parameter type for parameter %s: %s", parameter.Name, parameter.Type)
+			return errors.Errorf("Unknown field type for field %s: %s", field.Name, field.Type)
 		}
 
 		return nil
@@ -392,16 +392,16 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 }
 
 // GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
-// to the parameter description passed in params. The result is a map of parameter
+// to the field description passed in params. The result is a map of field
 // names to parsed values.
 //
-// If onlyProvided is true, only parameters that are provided
+// If onlyProvided is true, only fields that are provided
 // by the user are returned (i.e. not the default values).
 //
-// If a parameter cannot be parsed correctly, or is missing even though it is not optional,
+// If a field cannot be parsed correctly, or is missing even though it is not optional,
 // an error is returned.
 //
-// The required argument checks that all the required parameter definitions are present.
+// The required argument checks that all the required field definitions are present.
 // The provided argument only checks that the provided flags are passed.
 // Prefix is prepended to all flag names.
 func (pds *Definitions) GatherFlagsFromCobraCommand(
@@ -432,7 +432,7 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
 					return nil
 				}
 
-				return errors.Errorf("Parameter %s is required", pd.Name)
+				return errors.Errorf("Field %s is required", pd.Name)
 			}
 
 			if pd.Default == nil {

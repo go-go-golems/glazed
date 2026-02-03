@@ -16,7 +16,7 @@ func (pds *Definitions) GatherFlagsFromViper(
 	options ...ParseOption,
 ) (*FieldValues, error) {
 	warnGatherViperParamsOnce.Do(func() {
-		log.Warn().Msg("fields.GatherFlagsFromViper is deprecated; use LoadParametersFromFiles + UpdateFromEnv")
+		log.Warn().Msg("fields.GatherFlagsFromViper is deprecated; use LoadFieldsFromFiles + UpdateFromEnv")
 	})
 	ret := NewFieldValues()
 
@@ -115,7 +115,7 @@ func (pds *Definitions) GatherFlagsFromViper(
 			}
 			// TODO(manuel, 2023-09-19) Add more of the newer types here too
 		default:
-			return nil, errors.Errorf("Unknown parameter type %s for flag %s", p.Type, p.Name)
+			return nil, errors.Errorf("Unknown field type %s for flag %s", p.Type, p.Name)
 		}
 
 		ret.Set(p.Name, parsed)

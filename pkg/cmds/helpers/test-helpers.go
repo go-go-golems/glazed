@@ -14,7 +14,7 @@ import (
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// Package parameters provides structures and helper functions required for
+// Package helpers provides structures and helper functions required for
 // conducting table-driven tests in Golang using external YAML files.
 //
 // The YAML file typically includes test cases with input, expected output,
@@ -29,7 +29,7 @@ import (
 //    The YAML can use the Test* structs defined here for specific fields.
 // 2. Load the YAML file using the LoadTestFromYAML function into your table-driven test struct.
 //
-// 3. Use the New* functions to convert the data loaded from YAML into appropriate form for the glazed library (typically, Values, ParsedDefinitions, ParameterLayers)
+// 3. Use the New* functions to convert the data loaded from YAML into appropriate form for the glazed library (typically Values and schema sections)
 //
 // 4. Write a standard table-driven test loop.
 //
@@ -39,30 +39,30 @@ import (
 // ===============
 // // fill with your test cases
 
-// - name: "Empty layers and parsedLayers"
-//  parameterLayers: []
-//  parsedLayers: []
-//  expectedLayers: []
+// - name: "Empty sections and values"
+//  sections: []
+//  values: []
+//  expectedSections: []
 //  expectedError: false
 //
-//- name: "Single layer with default"
-//  parameterLayers:
-//    - name: "layer1"
+//- name: "Single section with default"
+//  sections:
+//    - name: "section1"
 //      definitions:
 //        - name: "param1"
 //          type: "string"
 //          default: "defaultVal"
-//  parsedLayers:
-//    - name: "layer1"
-//  expectedLayers:
-//    - name: "layer1"
+//  values:
+//    - name: "section1"
+//  expectedSections:
+//    - name: "section1"
 //      values:
 //        param1: "defaultVal"
 //  ... # potentially additional fields
 //
-//- name: "Multiple layers with defaults"
-//  parameterLayers:
-//    - name: "layer1"
+//- name: "Multiple sections with defaults"
+//  sections:
+//    - name: "section1"
 //      definitions:
 //        - name: "param1"
 //          type: "string"
@@ -70,23 +70,23 @@ import (
 //        - name: "param2"
 //          type: "integer"
 //          default: 42
-//    - name: "layer2"
+//    - name: "section2"
 //      definitions:
 //        - name: "param3"
 //          type: "bool"
 //          default: true
-//  parsedLayers:
-//    - name: "layer1"
-//		parameters:
+//  values:
+//    - name: "section1"
+//		fields:
 //		  - name: "param1"
 //          value: "existingValue"
-//    - name: "layer2"
-//  expectedLayers:
-//    - name: "layer1"
+//    - name: "section2"
+//  expectedSections:
+//    - name: "section1"
 //      values:
 //        param1: "default1"
 //        param2: 42
-//    - name: "layer2"
+//    - name: "section2"
 //      values:
 //        param3: true
 //  expectedError: false
@@ -96,9 +96,9 @@ import (
 //
 // type test struct {
 // 	name            string
-// 	parameterLayers []fields.TestParameterLayer
-// 	parsedLayers    []fields.TestSectionValues
-// 	expectedLayers  []fields.TestExpectedLayer
+// 	sections        []helpers.TestSection
+// 	values          []helpers.TestSectionValues
+// 	expectedSections []helpers.TestExpectedSection
 // 	expectedError   bool
 // }
 //
@@ -107,8 +107,8 @@ import (
 //
 // 	for _, tt := range tests {
 // 		t.Run(tt.name, func(t *testing.T) {
-// 			layers_ := fields.NewTestParameterLayers(tt.parameterLayers)
-// 			parsedLayers := fields.NewTestValues(layers_, tt.parsedLayers)
+// 			schema_ := helpers.NewTestSchema(tt.sections)
+// 			parsedValues := helpers.NewTestValues(schema_, tt.values)
 //
 //          YourTest()
 //
@@ -117,8 +117,8 @@ import (
 // 				return
 // 			}
 //
-// 			for _, l_ := range tt.expectedLayers {
-// 				l, ok := parsedLayers.Get(l_.Name)
+// 			for _, l_ := range tt.expectedSections {
+// 				l, ok := parsedValues.Get(l_.Name)
 // 				require.True(t, ok)
 //
 // 				actual := l.Fields.ToMap()
@@ -128,23 +128,23 @@ import (
 // 	}
 // }
 
-type TestParameterLayer struct {
+type TestSection struct {
 	Name        string               `yaml:"name"`
 	Definitions []*fields.Definition `yaml:"definitions,omitempty"`
 	Prefix      string               `yaml:"prefix"`
 }
 
-type TestParsedParameter struct {
+type TestParsedField struct {
 	Name  string      `yaml:"name"`
 	Value interface{} `yaml:"value"`
 }
 
 type TestSectionValues struct {
-	Name   string                `yaml:"name"`
-	Fields []TestParsedParameter `yaml:"fields"`
+	Name   string            `yaml:"name"`
+	Fields []TestParsedField `yaml:"fields"`
 }
 
-type TestExpectedLayer struct {
+type TestExpectedSection struct {
 	Name   string                        `yaml:"name"`
 	Values map[string]interface{}        `yaml:"values"`
 	Logs   map[string][]fields.ParseStep `yaml:"logs"`
@@ -156,14 +156,14 @@ const TestMiddlewareSetFromDefaults = "setFromDefaults"
 const TestMiddlewareUpdateFromMap = "updateFromMap"
 const TestMiddlewareUpdateFromMapAsDefault = "updateFromMapAsDefault"
 const TestMiddlewareUpdateFromEnv = "updateFromEnv"
-const TestWhitelistLayers = "whitelistLayers"
-const TestWhitelistLayersFirst = "whitelistLayersFirst"
-const TestWhitelistLayerParameters = "whitelistLayerParameters"
-const TestWhitelistLayerParametersFirst = "whitelistLayerParametersFirst"
-const TestBlacklistLayers = "blacklistLayers"
-const TestBlacklistLayersFirst = "blacklistLayersFirst"
-const TestBlacklistLayerParameters = "blacklistLayerParameters"
-const TestBlacklistLayerParametersFirst = "blacklistLayerParametersFirst"
+const TestWhitelistSections = "whitelistSections"
+const TestWhitelistSectionsFirst = "whitelistSectionsFirst"
+const TestWhitelistSectionFields = "whitelistSectionFields"
+const TestWhitelistSectionFieldsFirst = "whitelistSectionFieldsFirst"
+const TestBlacklistSections = "blacklistSections"
+const TestBlacklistSectionsFirst = "blacklistSectionsFirst"
+const TestBlacklistSectionFields = "blacklistSectionFields"
+const TestBlacklistSectionFieldsFirst = "blacklistSectionFieldsFirst"
 
 type TestParseOptionName string
 
@@ -177,12 +177,12 @@ type TestParseOption struct {
 }
 
 type TestMiddleware struct {
-	Name    TestMiddlewareName                 `yaml:"name"`
-	Options []TestParseOption                  `yaml:"options"`
-	Map     *map[string]map[string]interface{} `yaml:"map"`
-	Prefix  *string                            `yaml:"prefix"`
-	Layers  *[]string                          `yaml:"layers"`
-	Fields  *map[string][]string               `yaml:"fields"`
+	Name     TestMiddlewareName                 `yaml:"name"`
+	Options  []TestParseOption                  `yaml:"options"`
+	Map      *map[string]map[string]interface{} `yaml:"map"`
+	Prefix   *string                            `yaml:"prefix"`
+	Sections *[]string                          `yaml:"sections"`
+	Fields   *map[string][]string               `yaml:"fields"`
 }
 
 type TestMiddlewares []TestMiddleware
@@ -213,22 +213,22 @@ func (t TestMiddlewares) ToMiddlewares() ([]sources.Middleware, error) {
 			ret = append(ret, sources.FromMapAsDefault(*m.Map, options...))
 		case TestMiddlewareUpdateFromEnv:
 			ret = append(ret, sources.FromEnv(*m.Prefix, options...))
-		case TestWhitelistLayers:
-			ret = append(ret, sources.WhitelistLayers(*m.Layers))
-		case TestWhitelistLayersFirst:
-			ret = append(ret, sources.WhitelistLayersFirst(*m.Layers))
-		case TestWhitelistLayerParameters:
-			ret = append(ret, sources.WhitelistLayerParameters(*m.Fields))
-		case TestWhitelistLayerParametersFirst:
-			ret = append(ret, sources.WhitelistLayerParametersFirst(*m.Fields))
-		case TestBlacklistLayers:
-			ret = append(ret, sources.BlacklistLayers(*m.Layers))
-		case TestBlacklistLayersFirst:
-			ret = append(ret, sources.BlacklistLayersFirst(*m.Layers))
-		case TestBlacklistLayerParameters:
-			ret = append(ret, sources.BlacklistLayerParameters(*m.Fields))
-		case TestBlacklistLayerParametersFirst:
-			ret = append(ret, sources.BlacklistLayerParametersFirst(*m.Fields))
+		case TestWhitelistSections:
+			ret = append(ret, sources.WhitelistSections(*m.Sections))
+		case TestWhitelistSectionsFirst:
+			ret = append(ret, sources.WhitelistSectionsFirst(*m.Sections))
+		case TestWhitelistSectionFields:
+			ret = append(ret, sources.WhitelistSectionFields(*m.Fields))
+		case TestWhitelistSectionFieldsFirst:
+			ret = append(ret, sources.WhitelistSectionFieldsFirst(*m.Fields))
+		case TestBlacklistSections:
+			ret = append(ret, sources.BlacklistSections(*m.Sections))
+		case TestBlacklistSectionsFirst:
+			ret = append(ret, sources.BlacklistSectionsFirst(*m.Sections))
+		case TestBlacklistSectionFields:
+			ret = append(ret, sources.BlacklistSectionFields(*m.Fields))
+		case TestBlacklistSectionFieldsFirst:
+			ret = append(ret, sources.BlacklistSectionFieldsFirst(*m.Fields))
 		default:
 			return nil, errors.Newf("unknown middleware name %s", m.Name)
 		}
@@ -237,8 +237,8 @@ func (t TestMiddlewares) ToMiddlewares() ([]sources.Middleware, error) {
 	return ret, nil
 }
 
-// NewTestParameterLayer is a helper function to create a ParameterLayer from parameterDefinition
-func NewTestParameterLayer(l TestParameterLayer) schema.Section {
+// NewTestSection is a helper function to create a Section from a definition bundle.
+func NewTestSection(l TestSection) schema.Section {
 	definitions_ := []*fields.Definition{}
 	definitions_ = append(definitions_, l.Definitions...)
 	ret, err := schema.NewSection(l.Name, l.Name,
@@ -250,22 +250,22 @@ func NewTestParameterLayer(l TestParameterLayer) schema.Section {
 	return ret
 }
 
-func NewTestParameterLayers(ls []TestParameterLayer) *schema.Schema {
+func NewTestSchema(ls []TestSection) *schema.Schema {
 	ret := schema.NewSchema()
 	for _, l := range ls {
-		ret.Set(l.Name, NewTestParameterLayer(l))
+		ret.Set(l.Name, NewTestSection(l))
 	}
 	return ret
 }
 
-// NewTestSectionValues helper function to create a Values from TestParsedParameter
+// NewTestSectionValues helper function to create Values from TestParsedField.
 func NewTestSectionValues(pl schema.Section, l TestSectionValues) *values.SectionValues {
 	params_ := fields.NewFieldValues()
 	pds := pl.GetDefinitions()
 	for _, p := range l.Fields {
 		pd, ok := pds.Get(p.Name)
 		if !ok {
-			panic("parameter definition not found")
+			panic("field definition not found")
 		}
 		err := params_.UpdateValue(p.Name, pd, p.Value)
 		if err != nil {
@@ -286,7 +286,7 @@ func NewTestValues(pls *schema.Schema, ls ...TestSectionValues) *values.Values {
 	for _, l := range ls {
 		pl, ok := pls.Get(l.Name)
 		if !ok {
-			panic("parameter layer not found")
+			panic("section not found")
 		}
 		ret.Set(l.Name, NewTestSectionValues(pl, l))
 	}
@@ -304,22 +304,22 @@ func compareValues(t *testing.T, expected, actual interface{}, key string) {
 	assert.Equal(t, normalizedExpected, normalizedActual, "mismatch for key %s", key)
 }
 
-func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parsedLayers *values.Values) {
-	expectedLayers_ := map[string]TestExpectedLayer{}
-	for _, l_ := range expectedLayers {
-		expectedLayers_[l_.Name] = l_
-		l, ok := parsedLayers.Get(l_.Name)
+func TestExpectedOutputs(t *testing.T, expectedSections []TestExpectedSection, parsedValues *values.Values) {
+	expectedSections_ := map[string]TestExpectedSection{}
+	for _, section := range expectedSections {
+		expectedSections_[section.Name] = section
+		l, ok := parsedValues.Get(section.Name)
 		require.True(t, ok)
 
 		actual, err := l.Fields.ToInterfaceMap()
 		require.NoError(t, err)
 
 		// Compare each value using the helper
-		for k, expectedValue := range l_.Values {
+		for k, expectedValue := range section.Values {
 			compareValues(t, expectedValue, actual[k], k)
 		}
 
-		for k, expectedLog := range l_.Logs {
+		for k, expectedLog := range section.Logs {
 			actual, ok := l.Fields.Get(k)
 			require.True(t, ok)
 
@@ -333,9 +333,9 @@ func TestExpectedOutputs(t *testing.T, expectedLayers []TestExpectedLayer, parse
 		}
 	}
 
-	parsedLayers.ForEach(func(key string, l *values.SectionValues) {
-		if _, ok := expectedLayers_[key]; !ok {
-			t.Errorf("did not expect layer %s to be present", key)
+	parsedValues.ForEach(func(key string, l *values.SectionValues) {
+		if _, ok := expectedSections_[key]; !ok {
+			t.Errorf("did not expect section %s to be present", key)
 		}
 	})
 }

@@ -22,7 +22,7 @@ type CsvCommand struct {
 var _ cmds.GlazeCommand = (*CsvCommand)(nil)
 
 func NewCsvCommand() (*CsvCommand, error) {
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func NewCsvCommand() (*CsvCommand, error) {
 					fields.WithDefault(false),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -90,7 +90,7 @@ func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Val
 	s := &CsvSettings{}
 	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize csv settings from parameters")
+		return errors.Wrap(err, "failed to initialize csv settings from fields")
 	}
 
 	commaRune := rune(s.Delimiter[0])

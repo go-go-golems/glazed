@@ -1,6 +1,16 @@
 # Tasks
 
-## TODO
+## TODO (active)
+
+- [x] Rename command description API: `Layers` → `Schema`, `WithLayers*` → `WithSections*`/`WithSchema`, `GetLayer*` → `GetSection*`, `SetLayers` → `SetSections`, remove `NewCommandDefinition`, update YAML tags.
+- [x] Update callers in cmd/pkg (cli, help, lua, runner, template/json-schema, logging, alias) to new schema/section API and remove `layer`/`parameter` identifiers in Go code.
+- [x] Rename logging layer surface (`LoggingLayer*`, `AddLoggingLayer*`) to section naming and update docs/tests.
+- [x] Update examples (cmd/examples + cmd/glaze) to section/field naming and rename files/dirs that mention parameter/layer.
+- [x] Update docs/tutorials/prompto/pinocchio/README/changelog to remove `layer`/`parameter` vocabulary and adjust filenames/links.
+- [x] Run gofmt + `go test ./...` to confirm build.
+- [ ] Update diary + changelog + index, then commit (no push).
+
+## DONE
 
 - [x] Define canonical struct tag (`glazed:`) and identify all existing `glazed` tag usage (code + docs).
 - [x] Update tag parsing/decoding code paths to accept only `glazed:` (no backwards compatibility).
@@ -8,11 +18,6 @@
 - [x] Run AST tool on `cmd/examples` + `pkg/doc` code snippets as needed; review & fix any misses.
 - [x] Replace remaining `glazed` tag mentions in docs/tutorials.
 - [x] Re-run `rg -n -i "parameter|layer"` to validate removal scope (exclude non-API historical docs).
-- [x] Run `go test ./...` to confirm build.
-- [x] Update diary + changelog, check off tasks, and commit.
-
-## TODO (cleanup pass)
-
 - [x] Generate symbol inventory for all non-ttmp files mentioning parameter/layer.
 - [x] Rename `AddLayerToCobraCommand` -> `AddSectionToCobraCommand` (definitions + call sites).
 - [x] Store temporary scripts in ticket `scripts/` (inventory + audit tooling).
@@ -25,9 +30,6 @@
 - [x] Lua conversion naming cleanup (ParseLuaTableToSection, ParseFieldFromLua, error strings).
 - [x] CLI flag + help text cleanup (parsed-parameters → parsed-fields; dropped legacy load-from-file flag).
 - [x] Remove legacy cobra builder wrappers + update parser config fields in examples/ttmp.
-- [ ] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.
-- [ ] Rename files/dirs containing `layer` or `parameter` in names (code + docs + examples).
-- [ ] Update docs/tutorials/examples/prompto/pinocchio to remove `layer`/`parameter` vocabulary.
-- [ ] Update fixtures/YAML/README/changelogs that embed old naming.
-- [ ] Re-run `go test ./...` (and linters if required by hooks).
-- [ ] Update diary + changelog + index, then commit and push.
+- [x] Rename settings/helpers/tests using Parameter/Layer names in identifiers + strings.
+- [x] Rename sources layer helpers to section naming and update YAML fixtures.
+- [x] Rename field type naming (ParameterType → FieldType) across code/examples/docs.

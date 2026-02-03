@@ -32,7 +32,7 @@ func CallGlazedCommandFromLua(L *lua2.LState, cmd cmds.GlazeCommand, luaTable *l
 	}
 
 	// Execute middlewares
-	err := sources.Execute(cmd.Description().Layers, parsedValues, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return nil, fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -97,7 +97,7 @@ func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable
 		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
-	err := sources.Execute(cmd.Description().Layers, parsedValues, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -122,7 +122,7 @@ func CallGlazedWriterCommandFromLua(L *lua2.LState, cmd cmds.WriterCommand, luaT
 		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
-	err := sources.Execute(cmd.Description().Layers, parsedValues, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return "", fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -248,10 +248,10 @@ func RegisterGlazedCommand(L *lua2.LState, cmd interface{}) {
 	desc := cmd.(cmds.Command).Description()
 
 	// Create a table to hold all sections and their fields.
-	sectionsTable := L.CreateTable(0, desc.Layers.Len())
+	sectionsTable := L.CreateTable(0, desc.Schema.Len())
 
 	// Iterate through all sections.
-	desc.Layers.ForEach(func(sectionName string, section schema.Section) {
+	desc.Schema.ForEach(func(sectionName string, section schema.Section) {
 		sectionTable := L.CreateTable(0, section.GetDefinitions().Len())
 
 		// Add fields for this section.

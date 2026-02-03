@@ -14,11 +14,11 @@ SectionType: GeneralTopic
 
 # TemplateCommand
 
-A TemplateCommand allows you to define commands that render Go template text using command-line parameters as template variables. This enables rapid prototyping of text generation tools without writing Go code—simply define parameters in YAML and write a template that uses those parameters.
+A TemplateCommand allows you to define commands that render Go template text using command-line fields as template variables. This enables rapid prototyping of text generation tools without writing Go code—simply define fields in YAML and write a template that uses those fields.
 
 ## Creating Template Commands
 
-Template commands are defined in YAML files with a `template` field containing Go template syntax. The template receives all parsed parameters as variables accessible through the standard `{{.variable}}` syntax.
+Template commands are defined in YAML files with a `template` field containing Go template syntax. The template receives all parsed fields as variables accessible through the standard `{{.variable}}` syntax.
 
 **Example YAML definition:**
 
@@ -94,7 +94,7 @@ template: "Hello, {{.name}}!"`
 	err = runner.RunCommand(
 		context.Background(),
 		cmd,
-		// Provide parameter values for the "default" layer
+		// Provide field values for the "default" section
 		runner.WithValues(map[string]interface{}{
 			"name": "Alice",
 		}),
@@ -111,7 +111,7 @@ template: "Hello, {{.name}}!"`
 
 ## Template Syntax and Variables
 
-Template commands use Go's `text/template` package syntax. All parsed parameters are available as variables in the template context.
+Template commands use Go's `text/template` package syntax. All parsed fields are available as variables in the template context.
 
 **Common template patterns:**
 
@@ -132,15 +132,15 @@ template: |
   Development configuration
   {{end}}
   
-  # Using defaults for optional parameters
+  # Using defaults for optional fields
   Name: {{.name | default "unnamed"}}
 ```
 
-## Parameter Types
+## Field Types
 
-Template commands can leverage the full range of Glazed parameter types, allowing for rich and validated inputs. This means you can create templates that accept everything from simple strings and booleans to lists, choices, and even content from files.
+Template commands can leverage the full range of Glazed field types, allowing for rich and validated inputs. This means you can create templates that accept everything from simple strings and booleans to lists, choices, and even content from files.
 
-Template commands support all standard Glazed parameter types:
+Template commands support all standard Glazed field types:
 
 - `string`, `stringList` - Text values
 - `int`, `intList`, `float`, `floatList` - Numeric values  
@@ -148,9 +148,9 @@ Template commands support all standard Glazed parameter types:
 - `choice`, `choiceList` - Constrained selections
 - `stringFromFile`, `objectFromFile` - File-based inputs
 
-For more details on parameter types, see:
+For more details on field types, see:
 ```
-glaze help parameter-types
+glaze help field-types
 ```
 
 ## Integration with Command Loaders

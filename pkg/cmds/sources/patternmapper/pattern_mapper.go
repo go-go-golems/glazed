@@ -520,9 +520,9 @@ func validatePatternSyntax(pattern string) error {
 
 // validateCaptureReferences validates that all capture references in target field
 // correspond to captures in the available captures list
-func validateCaptureReferences(availableCaptures []string, targetParameter string) error {
+func validateCaptureReferences(availableCaptures []string, targetField string) error {
 	// Extract capture references from target field
-	targetRefs := extractCaptureReferences(targetParameter)
+	targetRefs := extractCaptureReferences(targetField)
 
 	// Check all target references exist in available captures
 	for ref := range targetRefs {
@@ -555,11 +555,11 @@ func extractCaptureNames(pattern string) []string {
 }
 
 // extractCaptureReferences extracts all capture references from a target field string
-func extractCaptureReferences(targetParameter string) map[string]bool {
+func extractCaptureReferences(targetField string) map[string]bool {
 	refs := make(map[string]bool)
 	// Find all {name} patterns
 	re := regexp.MustCompile(`\{([a-zA-Z_][a-zA-Z0-9_]*)\}`)
-	matches := re.FindAllStringSubmatch(targetParameter, -1)
+	matches := re.FindAllStringSubmatch(targetField, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
 			refs[match[1]] = true

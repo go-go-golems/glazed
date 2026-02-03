@@ -18,11 +18,11 @@ type SelectSettings struct {
 	SelectTemplate  string `glazed:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(glazedLayer *values.SectionValues) (*SelectSettings, error) {
+func NewSelectSettingsFromValues(glazedValues *values.SectionValues) (*SelectSettings, error) {
 	s := &SelectSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize select settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize select settings from fields")
 	}
 
 	return s, nil
@@ -36,23 +36,23 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 	}
 }
 
-type SelectParameterLayer struct {
+type SelectSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSelectParameterLayer(options ...schema.SectionOption) (*SelectParameterLayer, error) {
-	ret := &SelectParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(selectFlagsYaml, options...)
+func NewSelectSection(options ...schema.SectionOption) (*SelectSection, error) {
+	ret := &SelectSection{}
+	section, err := schema.NewSectionFromYAML(selectFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create select parameter layer")
+		return nil, errors.Wrap(err, "Failed to create select field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *SelectParameterLayer) Clone() schema.Section {
-	return &SelectParameterLayer{
+func (f *SelectSection) Clone() schema.Section {
+	return &SelectSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

@@ -16,12 +16,12 @@ import (
 )
 
 type test struct {
-	Name            string                       `yaml:"name"`
-	Description     string                       `yaml:"description"`
-	ParameterLayers []helpers.TestParameterLayer `yaml:"parameterLayers"`
-	Values          []helpers.TestSectionValues  `yaml:"parsedLayers"`
-	ExpectedLayers  []helpers.TestExpectedLayer  `yaml:"expectedLayers"`
-	ExpectedError   bool                         `yaml:"expectedError"`
+	Name             string                        `yaml:"name"`
+	Description      string                        `yaml:"description"`
+	Sections         []helpers.TestSection         `yaml:"sections"`
+	Values           []helpers.TestSectionValues   `yaml:"values"`
+	ExpectedSections []helpers.TestExpectedSection `yaml:"expectedSections"`
+	ExpectedError    bool                          `yaml:"expectedError"`
 }
 
 //go:embed tests/set-from-defaults.yaml
@@ -37,20 +37,20 @@ func TestSetFromDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestValues(layers_, tt.Values...)
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := helpers.NewTestValues(schema_, tt.Values...)
 
 			middleware := sources.FromDefaults(fields.WithSource(fields.SourceDefaults))
-			err := middleware(func(layers *schema.Schema, parsedLayers *values.Values) error {
+			err := middleware(func(schema_ *schema.Schema, parsedValues *values.Values) error {
 				return nil
-			})(layers_, parsedLayers)
+			})(schema_, parsedValues)
 
 			if tt.ExpectedError {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
 
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}
@@ -70,11 +70,11 @@ func TestUpdateFromMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestValues(layers_, tt.Values...)
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := helpers.NewTestValues(schema_, tt.Values...)
 
 			err = sources.Execute(
-				layers_, parsedLayers,
+				schema_, parsedValues,
 				sources.FromMap(tt.UpdateMaps),
 			)
 
@@ -82,7 +82,7 @@ func TestUpdateFromMap(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}
@@ -97,11 +97,11 @@ func TestUpdateFromMapAsDefault(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestValues(layers_, tt.Values...)
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := helpers.NewTestValues(schema_, tt.Values...)
 
 			err = sources.Execute(
-				layers_, parsedLayers,
+				schema_, parsedValues,
 				sources.FromMapAsDefault(tt.UpdateMaps),
 			)
 
@@ -109,7 +109,7 @@ func TestUpdateFromMapAsDefault(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}
@@ -129,8 +129,8 @@ func TestMultiUpdateFromMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestValues(layers_, tt.Values...)
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := helpers.NewTestValues(schema_, tt.Values...)
 
 			middlewares_ := []sources.Middleware{}
 			// we want the first updates to be handled as the last middlewares, since middlewares
@@ -139,7 +139,7 @@ func TestMultiUpdateFromMap(t *testing.T) {
 				middlewares_ = list.Prepend(middlewares_, sources.FromMap(m))
 			}
 			err = sources.Execute(
-				layers_, parsedLayers,
+				schema_, parsedValues,
 				middlewares_...,
 			)
 
@@ -152,16 +152,16 @@ func TestMultiUpdateFromMap(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}
 }
 
-//go:embed tests/wrap-with-restricted-layers.yaml
-var wrapWithRestrictedLayersTestsYAML string
+//go:embed tests/wrap-with-restricted-sections.yaml
+var wrapWithRestrictedSectionsTestsYAML string
 
-type wrapWithRestrictedLayersTest struct {
+type wrapWithRestrictedSectionsTest struct {
 	test                  `yaml:",inline"`
 	BlacklistedUpdateMaps map[string]map[string]interface{} `yaml:"blacklistedUpdateMaps"`
 	WhitelistedUpdateMaps map[string]map[string]interface{} `yaml:"whitelistedUpdateMaps"`
@@ -171,14 +171,14 @@ type wrapWithRestrictedLayersTest struct {
 	WhitelistedSlugs      []string                          `yaml:"whitelistedSlugs"`
 }
 
-func TestWrapWithRestrictedLayers(t *testing.T) {
-	tests, err := yaml.LoadTestFromYAML[[]wrapWithRestrictedLayersTest](wrapWithRestrictedLayersTestsYAML)
+func TestWrapWithRestrictedSections(t *testing.T) {
+	tests, err := yaml.LoadTestFromYAML[[]wrapWithRestrictedSectionsTest](wrapWithRestrictedSectionsTestsYAML)
 	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := values.New()
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := values.New()
 
 			ms_ := []sources.Middleware{}
 
@@ -186,11 +186,11 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 				ms_ = append(ms_, sources.FromMap(tt.AfterUpdateMaps))
 			}
 			if tt.BlacklistedUpdateMaps != nil {
-				ms_ = append(ms_, sources.WrapWithBlacklistedLayers(tt.BlacklistedSlugs,
+				ms_ = append(ms_, sources.WrapWithBlacklistedSections(tt.BlacklistedSlugs,
 					sources.FromMap(tt.BlacklistedUpdateMaps)))
 			}
 			if tt.WhitelistedUpdateMaps != nil {
-				ms_ = append(ms_, sources.WrapWithWhitelistedLayers(tt.WhitelistedSlugs,
+				ms_ = append(ms_, sources.WrapWithWhitelistedSections(tt.WhitelistedSlugs,
 					sources.FromMap(tt.WhitelistedUpdateMaps)))
 			}
 			if tt.BeforeUpdateMaps != nil {
@@ -198,7 +198,7 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 			}
 
 			err = sources.Execute(
-				layers_, parsedLayers,
+				schema_, parsedValues,
 				ms_...)
 			require.NoError(t, err)
 
@@ -207,7 +207,7 @@ func TestWrapWithRestrictedLayers(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}
@@ -227,13 +227,13 @@ func TestMiddlewares(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			layers_ := helpers.NewTestParameterLayers(tt.ParameterLayers)
-			parsedLayers := helpers.NewTestValues(layers_, tt.Values...)
+			schema_ := helpers.NewTestSchema(tt.Sections)
+			parsedValues := helpers.NewTestValues(schema_, tt.Values...)
 
 			middlewares_, err := helpers.TestMiddlewares(tt.Middlewares).ToMiddlewares()
 			require.NoError(t, err)
 
-			err = sources.Execute(layers_, parsedLayers, middlewares_...)
+			err = sources.Execute(schema_, parsedValues, middlewares_...)
 			require.NoError(t, err)
 
 			if tt.ExpectedError {
@@ -241,7 +241,7 @@ func TestMiddlewares(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 
-				helpers.TestExpectedOutputs(t, tt.ExpectedLayers, parsedLayers)
+				helpers.TestExpectedOutputs(t, tt.ExpectedSections, parsedValues)
 			}
 		})
 	}

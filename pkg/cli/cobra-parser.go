@@ -25,12 +25,12 @@ type CobraMiddlewaresFunc func(
 ) ([]cmd_sources.Middleware, error)
 
 // CobraCommandDefaultMiddlewares is the default implementation for creating
-// the middlewares used in a Cobra command. It handles parsing parameters
+// the middlewares used in a Cobra command. It handles parsing fields
 // from Cobra flags, command line arguments, environment variables, and
-// default values. The middlewares gather all these parameters into a
+// default values. The middlewares gather all these fields into a
 // FieldValues object.
 //
-// If the commandSettings specify parameters to be loaded from a file, this gets added as a middleware.
+// If the commandSettings specify fields to be loaded from a file, this gets added as a middleware.
 func CobraCommandDefaultMiddlewares(
 	parsedCommandSections *values.Values,
 	cmd *cobra.Command,
@@ -74,8 +74,8 @@ type CobraParser struct {
 	// of CLI flags and arguments, but these haven't yet been parsed into Values
 	// by the glazed framework.
 	//
-	// This hooks allows the implementor to specify additional ways of loading parameters
-	// (for example, sqleton loads the dbt and sql connection parameters from env as well).
+	// This hooks allows the implementor to specify additional ways of loading fields
+	// (for example, sqleton loads the dbt and sql connection fields from env as well).
 	middlewaresFunc CobraMiddlewaresFunc
 	// List of sections to be shown in short help, empty: always show all
 	shortHelpSections []string
@@ -114,14 +114,14 @@ func NewCobraCommandFromCommandDescription(
 
 // NewCobraParserFromSections creates a new CobraParser instance from a
 // CommandDescription, initializes the underlying cobra.Command, and adds all the
-// parameters specified in the Sections CommandDescription to the cobra command.
+// fields specified in the Sections CommandDescription to the cobra command.
 func NewCobraParserFromSections(
-	paramSections *schema.Schema,
+	sections *schema.Schema,
 	cfg *CobraParserConfig,
 ) (*CobraParser, error) {
 	// Initialize parser with defaults
 	ret := &CobraParser{
-		Sections:                           paramSections,
+		Sections:                           sections,
 		middlewaresFunc:                    CobraCommandDefaultMiddlewares,
 		shortHelpSections:                  []string{},
 		skipCommandSettingsSection:         false,
@@ -194,7 +194,7 @@ func NewCobraParserFromSections(
 					return resolver(parsedCommandSections, cmd_, args_)
 				}
 				middlewares_ = append(middlewares_,
-					cmd_sources.LoadParametersFromResolvedFilesForCobra(
+					cmd_sources.LoadFieldsFromResolvedFilesForCobra(
 						cmd,
 						args,
 						wrapped,
@@ -243,8 +243,8 @@ func NewCobraParserFromSections(
 }
 
 func (c *CobraParser) AddToCobraCommand(cmd *cobra.Command) error {
-	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the Sections/parameters that get added to the CLI
-	// If we want to remove some parameters from the CLI args (for example some output settings or so)
+	// NOTE(manuel, 2024-01-03) Maybe add some middleware functionality to whitelist/blacklist the Sections/fields that get added to the CLI
+	// If we want to remove some fields from the CLI args (for example some output settings or so)
 	err := c.Sections.ForEachE(func(_ string, section schema.Section) error {
 		// check that section is a CobraSection
 		// if not, return an error

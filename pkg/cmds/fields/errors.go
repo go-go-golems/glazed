@@ -9,5 +9,5 @@ type ErrInvalidValue struct {
 }
 
 func (e ErrInvalidValue) Error() string {
-	return fmt.Sprintf("invalid value %v for parameter %s of type %s", e.Value, e.Name, e.Type)
+	return fmt.Sprintf("invalid value %v for field %s of type %s", e.Value, e.Name, e.Type)
 }

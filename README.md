@@ -5,7 +5,7 @@
 
 > Add the icing to your structured data!
 
-Glazed is a comprehensive Go framework for building command-line applications that handle structured data elegantly. It provides a rich command system, flexible parameter management, multiple output formats, and an integrated help system.
+Glazed is a comprehensive Go framework for building command-line applications that handle structured data elegantly. It provides a rich command system, flexible field management, multiple output formats, and an integrated help system.
 
 The framework implements ideas from [14 great tips to make amazing command line applications](https://dev.to/wesen/14-great-tips-to-make-amazing-cli-applications-3gp3) and focuses on making CLI development both powerful and developer-friendly.
 
@@ -73,12 +73,12 @@ Build CLI applications with multiple command types and output modes:
 - **GlazeCommand**: Commands producing structured data
 - **Dual Commands**: Support both classic and structured output modes
 
-### Parameter Layer System
-Organize command parameters into reusable, composable layers:
+### Field Section System
+Organize command fields into reusable, composable sections:
 
 - Logical grouping (database, logging, output, etc.)
 - Multiple configuration sources (CLI, files, environment)
-- Type-safe parameter extraction
+- Type-safe field extraction
 - Built-in validation and help generation
 
 ### Integrated Help System
@@ -100,7 +100,7 @@ type MyCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
+func (c *MyCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     fmt.Println("Hello, World!")
     return nil
 }
@@ -111,7 +111,7 @@ Commands that produce structured data output:
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *values.Values,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     row := types.NewRow(
@@ -132,13 +132,13 @@ cobraCmd, err := cli.BuildCobraCommandDualMode(
 )
 ```
 
-## Parameter Layers
+## Field Sections
 
-Organize command parameters into logical, reusable groups:
+Organize command fields into logical, reusable groups:
 
 ```go
-// Define layers for different concerns
-func NewDatabaseLayer() *schema.Section {
+// Define sections for different concerns
+func NewDatabaseSection() *schema.Section {
     return schema.NewSection("database", "Database configuration",
         fields.New("host", fields.TypeString,
             fields.WithDefault("localhost")),
@@ -147,20 +147,20 @@ func NewDatabaseLayer() *schema.Section {
     )
 }
 
-// Use layers in command definitions
+// Use sections in command definitions
 cmd := cmds.NewCommandDescription("mycommand",
-    cmds.WithLayersList(
-        databaseLayer,
-        loggingLayer, 
-        glazedLayer,
+    cmds.WithSectionsList(
+        databaseSection,
+        loggingSection, 
+        glazedSection,
     ),
 )
 ```
 
 **Benefits:**
-- Reuse common parameter sets across commands
-- Avoid parameter naming conflicts with prefixes
-- Type-safe parameter extraction with structs
+- Reuse common field sets across commands
+- Avoid field naming conflicts with prefixes
+- Type-safe field extraction with structs
 - Built-in validation and help generation
 
 ## Help System
@@ -262,7 +262,7 @@ myapp command --output csv > data.csv
 
 For comprehensive guides and API references, see:
 - [Commands Reference](pkg/doc/topics/commands-reference.md) - Complete command system guide
-- [Parameter Layers Guide](pkg/doc/topics/layers-guide.md) - Layer system with examples
+- [Field Sections Guide](pkg/doc/topics/sections-guide.md) - Section system with examples
 - [Writing Help Entries](pkg/doc/topics/14-writing-help-entries.md) - Help system documentation
 
 ## Examples
@@ -270,6 +270,6 @@ For comprehensive guides and API references, see:
 See the [`cmd/examples`](cmd/examples/) directory for working examples including:
 - Basic command types
 - Dual command implementations  
-- Parameter layer usage
+- Field section usage
 - Help system integration
 

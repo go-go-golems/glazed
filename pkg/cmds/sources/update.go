@@ -9,17 +9,17 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
-// FromDefaults is a middleware that sets default values from parameter definitions.
-// It calls the next handler, and then iterates through each layer and parameter definition.
-// If a default is defined, it sets that as the parameter value in the parsed layer.
+// FromDefaults is a middleware that sets default values from field definitions.
+// It calls the next handler, and then iterates through each section and field definition.
+// If a default is defined, it sets that as the field value in the parsed values.
 func FromDefaults(options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
-			err = layers_.UpdateWithDefaults(parsedLayers, options...)
+			err = schema_.UpdateWithDefaults(parsedValues, options...)
 			if err != nil {
 				return err
 			}
@@ -28,87 +28,87 @@ func FromDefaults(options ...fields.ParseOption) Middleware {
 	}
 }
 
-// FromMap takes a map where the keys are layer slugs and the values are
-// maps of parameter name -> value. It calls next, and then merges the provided
-// values into the parsed layers, skipping any layers not present in layers_.
+// FromMap takes a map where the keys are section slugs and the values are
+// maps of field name -> value. It calls next, and then merges the provided
+// values into the parsed values, skipping any sections not present in the schema.
 func FromMap(m map[string]map[string]interface{}, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return updateFromMap(layers_, parsedLayers, m, options...)
+			return updateFromMap(schema_, parsedValues, m, options...)
 		}
 	}
 }
 
-// FromMapFirst takes a map where the keys are layer slugs and the values are
-// maps of parameter name -> value. It calls next, and then merges the provided
-// values into the parsed layers, skipping any layers not present in layers_.
+// FromMapFirst takes a map where the keys are section slugs and the values are
+// maps of field name -> value. It calls next, and then merges the provided
+// values into the parsed values, skipping any sections not present in the schema.
 func FromMapFirst(m map[string]map[string]interface{}, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := updateFromMap(layers_, parsedLayers, m, options...)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := updateFromMap(schema_, parsedValues, m, options...)
 			if err != nil {
 				return err
 			}
 
-			return next(layers_, parsedLayers)
+			return next(schema_, parsedValues)
 		}
 	}
 }
 
-// FromMapAsDefault takes a map where the keys are layer slugs and the values are
-// maps of parameter name -> value. It calls next, and then merges the provided
-// values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
+// FromMapAsDefault takes a map where the keys are section slugs and the values are
+// maps of field name -> value. It calls next, and then merges the provided
+// values into the parsed values if the field hasn't already been set, skipping any sections not present in the schema.
 func FromMapAsDefault(m map[string]map[string]interface{}, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return updateFromMapAsDefault(layers_, parsedLayers, m, options...)
+			return updateFromMapAsDefault(schema_, parsedValues, m, options...)
 		}
 	}
 }
 
-// FromMapAsDefaultFirst takes a map where the keys are layer slugs and the values are
-// maps of parameter name -> value. It calls next, and then merges the provided
-// values into the parsed layers if the parameter hasn't already been set, skipping any layers not present in layers_.
+// FromMapAsDefaultFirst takes a map where the keys are section slugs and the values are
+// maps of field name -> value. It calls next, and then merges the provided
+// values into the parsed values if the field hasn't already been set, skipping any sections not present in the schema.
 func FromMapAsDefaultFirst(m map[string]map[string]interface{}, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := updateFromMapAsDefault(layers_, parsedLayers, m, options...)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := updateFromMapAsDefault(schema_, parsedValues, m, options...)
 			if err != nil {
 				return err
 			}
 
-			return next(layers_, parsedLayers)
+			return next(schema_, parsedValues)
 		}
 	}
 }
 
 func updateFromMap(
-	layers_ *schema.Schema,
-	parsedLayers *values.Values,
+	schema_ *schema.Schema,
+	parsedValues *values.Values,
 	m map[string]map[string]interface{},
 	options ...fields.ParseOption) error {
 	for k, v := range m {
-		layer, ok := layers_.Get(k)
+		section, ok := schema_.Get(k)
 		if !ok {
 			continue
 		}
 
-		parsedLayer := parsedLayers.GetOrCreate(layer)
-		ps, err := layer.GetDefinitions().GatherFieldsFromMap(v, true, options...)
+		sectionValues := parsedValues.GetOrCreate(section)
+		ps, err := section.GetDefinitions().GatherFieldsFromMap(v, true, options...)
 		if err != nil {
 			return err
 		}
-		_, err = parsedLayer.Fields.Merge(ps)
+		_, err = sectionValues.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}
@@ -117,22 +117,22 @@ func updateFromMap(
 }
 
 func updateFromMapAsDefault(
-	layers_ *schema.Schema,
-	parsedLayers *values.Values,
+	schema_ *schema.Schema,
+	parsedValues *values.Values,
 	m map[string]map[string]interface{},
 	options ...fields.ParseOption) error {
 	for k, v := range m {
-		layer, ok := layers_.Get(k)
+		section, ok := schema_.Get(k)
 		if !ok {
 			continue
 		}
 
-		parsedLayer := parsedLayers.GetOrCreate(layer)
-		ps, err := layer.GetDefinitions().GatherFieldsFromMap(v, true, options...)
+		sectionValues := parsedValues.GetOrCreate(section)
+		ps, err := section.GetDefinitions().GatherFieldsFromMap(v, true, options...)
 		if err != nil {
 			return err
 		}
-		_, err = parsedLayer.Fields.MergeAsDefault(ps)
+		_, err = sectionValues.Fields.MergeAsDefault(ps)
 		if err != nil {
 			return err
 		}
@@ -141,19 +141,19 @@ func updateFromMapAsDefault(
 }
 
 func updateFromEnv(
-	layers_ *schema.Schema,
-	parsedLayers *values.Values,
+	schema_ *schema.Schema,
+	parsedValues *values.Values,
 	prefix string,
 	options ...fields.ParseOption,
 ) error {
-	err := layers_.ForEachE(func(key string, l schema.Section) error {
-		parsedLayer := parsedLayers.GetOrCreate(l)
+	err := schema_.ForEachE(func(key string, l schema.Section) error {
+		sectionValues := parsedValues.GetOrCreate(l)
 		pds := l.GetDefinitions()
-		layerPrefix := l.GetPrefix()
+		sectionPrefix := l.GetPrefix()
 		err := pds.ForEachE(func(p *fields.Definition) error {
-			// Compute env key based on layer prefix + param name, hyphen->underscore, uppercase,
+			// Compute env key based on section prefix + field name, hyphen->underscore, uppercase,
 			// and optional global prefix (app name) separated by underscore.
-			base := layerPrefix + p.Name
+			base := sectionPrefix + p.Name
 			envKey := strings.ToUpper(strings.ReplaceAll(base, "-", "_"))
 			if prefix != "" {
 				envKey = strings.ToUpper(prefix) + "_" + envKey
@@ -167,7 +167,7 @@ func updateFromEnv(
 					fields.WithSource("env"),
 				}, options...)
 
-				// Parse env string into the appropriate typed value using the parameter's parser.
+				// Parse env string into the appropriate typed value using the field's parser.
 				// For list-like types, split on commas (trim brackets and whitespace).
 				var inputs []string
 				if p.Type.IsList() {
@@ -195,7 +195,7 @@ func updateFromEnv(
 					return err
 				}
 				// Preserve parse log/metadata when updating parsed fields.
-				if err := parsedLayer.Fields.UpdateWithLog(p.Name, p, pp.Value, pp.Log...); err != nil {
+				if err := sectionValues.Fields.UpdateWithLog(p.Name, p, pp.Value, pp.Log...); err != nil {
 					return err
 				}
 			}
@@ -212,27 +212,27 @@ func updateFromEnv(
 
 func FromEnv(prefix string, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return updateFromEnv(layers_, parsedLayers, prefix, options...)
+			return updateFromEnv(schema_, parsedValues, prefix, options...)
 		}
 	}
 }
 
-func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, prefix string, args []string, options ...fields.ParseOption) error {
-	err := layers_.ForEachE(func(key string, l schema.Section) error {
-		parsedLayer := parsedLayers.GetOrCreate(l)
+func updateFromStringList(schema_ *schema.Schema, parsedValues *values.Values, prefix string, args []string, options ...fields.ParseOption) error {
+	err := schema_.ForEachE(func(key string, l schema.Section) error {
+		sectionValues := parsedValues.GetOrCreate(l)
 		pds := l.GetDefinitions()
 		ps, remainingArgs, err := pds.GatherFlagsFromStringList(args, true, true, prefix, options...)
 		if err != nil {
 			return err
 		}
 
-		_, err = parsedLayer.Fields.Merge(ps)
+		_, err = sectionValues.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, p
 			return err
 		}
 
-		_, err = parsedLayer.Fields.Merge(ps)
+		_, err = sectionValues.Fields.Merge(ps)
 		if err != nil {
 			return err
 		}
@@ -259,13 +259,13 @@ func updateFromStringList(layers_ *schema.Schema, parsedLayers *values.Values, p
 
 func UpdateFromStringList(prefix string, args []string, options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return updateFromStringList(layers_, parsedLayers, prefix, args, options...)
+			return updateFromStringList(schema_, parsedValues, prefix, args, options...)
 		}
 	}
 }

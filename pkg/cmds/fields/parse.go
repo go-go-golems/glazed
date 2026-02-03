@@ -27,14 +27,14 @@ type ParseStep struct {
 const SourceDefaults = "defaults"
 
 // ParseField parses command line arguments according to the given Definition.
-// It returns the parsed parameter value and a non-nil error if parsing failed.
+// It returns the parsed field value and a non-nil error if parsing failed.
 //
 // The function takes a list of strings that can be gathered from the command line arguments.
 // This is because cobra for example allows slice flags to be passed by reusing the same flag multiple times
 // (or by parsing comma-separated values).
 //
-// If the parameter is required and not provided, an error is returned.
-// If the parameter is optional and not provided, the default value is returned.
+// If the field is required and not provided, an error is returned.
+// If the field is optional and not provided, the default value is returned.
 //
 // ## Expected type parsing
 //
@@ -313,7 +313,7 @@ func (p *Definition) ParseField(v []string, options ...ParseOption) (*FieldValue
 		default:
 			ret_ := map[string]interface{}{}
 			for _, arg := range v {
-				// TODO(2023-02-11): The separator could be stored in the parameter itself?
+				// TODO(2023-02-11): The separator could be stored in the field itself?
 				// It was configurable before.
 				//
 				// See https://github.com/go-go-golems/glazed/issues/129
@@ -339,7 +339,7 @@ func (p *Definition) ParseField(v []string, options ...ParseOption) (*FieldValue
 		v_ = floats
 
 	default:
-		return nil, errors.Errorf("Unknown parameter type %s", p.Type)
+		return nil, errors.Errorf("Unknown field type %s", p.Type)
 	}
 
 	options_ := append(options, WithMetadata(map[string]interface{}{
@@ -437,7 +437,7 @@ func parseObjectListFromCSV(f io.Reader, filename string) ([]interface{}, error)
 }
 
 // ParseFromReader parses a single element for the type from the reader.
-// In the case of parameters taking multiple files, this needs to be called for each file
+// In the case of fields taking multiple files, this needs to be called for each file
 // and merged at the caller level.
 func (p *Definition) ParseFromReader(
 	f io.Reader, filename string,
@@ -604,7 +604,7 @@ func (p *Definition) ParseFromReader(
 		return ret, nil
 
 	default:
-		return nil, errors.New("Cannot parse from file for this parameter type")
+		return nil, errors.New("Cannot parse from file for this field type")
 	}
 }
 

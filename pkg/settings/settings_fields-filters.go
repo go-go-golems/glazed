@@ -24,15 +24,15 @@ type FieldsFilterFlagsDefaults struct {
 	RemoveDuplicates []string `glazed:"remove-duplicates"`
 }
 
-type FieldsFiltersParameterLayer struct {
+type FieldsFiltersSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-var _ schema.CobraSection = &FieldsFiltersParameterLayer{}
-var _ schema.Section = &FieldsFiltersParameterLayer{}
+var _ schema.CobraSection = &FieldsFiltersSection{}
+var _ schema.Section = &FieldsFiltersSection{}
 
-func (f *FieldsFiltersParameterLayer) Clone() schema.Section {
-	return &FieldsFiltersParameterLayer{
+func (f *FieldsFiltersSection) Clone() schema.Section {
+	return &FieldsFiltersSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
@@ -48,20 +48,20 @@ type FieldsFilterSettings struct {
 	ReorderColumns   []string `glazed:"reorder-columns"`
 }
 
-func NewFieldsFiltersParameterLayer(options ...schema.SectionOption) (*FieldsFiltersParameterLayer, error) {
-	ret := &FieldsFiltersParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(fieldsFiltersFlagsYaml, options...)
+func NewFieldsFiltersSection(options ...schema.SectionOption) (*FieldsFiltersSection, error) {
+	ret := &FieldsFiltersSection{}
+	section, err := schema.NewSectionFromYAML(fieldsFiltersFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create fields and filters parameter layer")
+		return nil, errors.Wrap(err, "Failed to create fields and filters field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *FieldsFiltersParameterLayer) AddSectionToCobraCommand(cmd *cobra.Command) error {
+func (f *FieldsFiltersSection) AddSectionToCobraCommand(cmd *cobra.Command) error {
 	defaults := &FieldsFilterFlagsDefaults{}
-	err := f.InitializeStructFromParameterDefaults(defaults)
+	err := f.InitializeStructFromFieldDefaults(defaults)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initialize fields and filters flags defaults")
 	}
@@ -79,38 +79,38 @@ func (f *FieldsFiltersParameterLayer) AddSectionToCobraCommand(cmd *cobra.Comman
 	return f.SectionImpl.AddSectionToCobraCommand(cmd)
 }
 
-func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
+func (f *FieldsFiltersSection) ParseSectionFromCobraCommand(
 	cmd *cobra.Command,
 	options ...fields.ParseOption,
 ) (*values.SectionValues, error) {
-	l, err := f.SectionImpl.ParseLayerFromCobraCommand(cmd, options...)
+	l, err := f.SectionImpl.ParseSectionFromCobraCommand(cmd, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to gather fields and filters flags from cobra command")
 	}
 
 	// if fields were manually specified, clear whatever default filters we might have set
 	// TODO(manuel, 2023-12-28) This should be moved to somewhere outside of the cobra parsing, I think
-	// This means we'd have to store if a flag was changed in the parsed layer
+	// This means we'd have to store if a flag was changed in the parsed section
 	if cmd.Flag("fields").Changed && !cmd.Flag("filter").Changed {
 		parsedFilter, ok := l.Fields.Get("filter")
 		options_ := append(options, fields.WithSource("override-fields-filter"))
 		if !ok {
 			pd, ok := f.Definitions.Get("filter")
 			if !ok {
-				return nil, errors.New("Failed to find default filter parameter definition")
+				return nil, errors.New("Failed to find default filter field definition")
 			}
 			p := &fields.FieldValue{
 				Definition: pd,
 			}
 			err := p.Update([]string{}, options_...)
 			if err != nil {
-				return nil, errors.Wrap(err, "Failed to update filter parameter")
+				return nil, errors.Wrap(err, "Failed to update filter field")
 			}
 			l.Fields.Set("filter", p)
 		} else {
 			err := parsedFilter.Update([]string{}, options_...)
 			if err != nil {
-				return nil, errors.Wrap(err, "Failed to update filter parameter")
+				return nil, errors.Wrap(err, "Failed to update filter field")
 			}
 		}
 	}
@@ -118,9 +118,9 @@ func (f *FieldsFiltersParameterLayer) ParseLayerFromCobraCommand(
 	return l, nil
 }
 
-func NewFieldsFilterSettings(glazedLayer *values.SectionValues) (*FieldsFilterSettings, error) {
+func NewFieldsFilterSettings(glazedValues *values.SectionValues) (*FieldsFilterSettings, error) {
 	s := &FieldsFilterSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, err
 	}

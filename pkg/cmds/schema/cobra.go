@@ -10,5 +10,5 @@ type CobraSection interface {
 	Section
 	// AddSectionToCobraCommand adds all the flags and arguments defined in this section to the given cobra command.
 	AddSectionToCobraCommand(cmd *cobra.Command) error
-	ParseLayerFromCobraCommand(cmd *cobra.Command, options ...fields.ParseOption) (*values.SectionValues, error)
+	ParseSectionFromCobraCommand(cmd *cobra.Command, options ...fields.ParseOption) (*values.SectionValues, error)
 }

@@ -1,4 +1,0 @@
-This is a sample text file.
-It contains multiple lines.
-Each line will be part of the string content.
-Perfect for testing string-from-file parameters.

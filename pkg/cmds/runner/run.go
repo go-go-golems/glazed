@@ -203,7 +203,7 @@ func ParseCommandValues(
 	// Create parsed values and execute middleware chain
 	parsedValues := values.New()
 	err := cmd_sources.Execute(
-		cmd.Description().Layers,
+		cmd.Description().Schema,
 		parsedValues,
 		middlewares_...,
 	)

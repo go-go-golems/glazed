@@ -153,7 +153,7 @@ func subQuery(name string, subQueries map[string]string) (string, error) { /* ..
 func CreateSQLTemplate(
 	ctx context.Context,
 	subQueries map[string]string,
-	ps map[string]interface{}, // Parameters for the template
+	ps map[string]interface{}, // Fields for the template
 	db *sqlx.DB, // Database connection (used by some functions like sqlColumn)
 ) *template.Template {
 	// Start with the Glazed base template

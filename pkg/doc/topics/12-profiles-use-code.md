@@ -27,7 +27,7 @@ This document focuses on the implementation pattern: where to insert the middlew
 
 ## Profile Middleware Overview
 
-Profile middleware in Pinocchio is responsible for loading and applying configuration parameters from a specified
+Profile middleware in Pinocchio is responsible for loading and applying configuration fields from a specified
 profile. This middleware allows developers to define different configurations for various environments or use cases,
 which can be dynamically selected at runtime.
 
@@ -43,7 +43,7 @@ instantiate the profile middleware with the resolved values.
 
 ```go
 func GetCommandMiddlewares(
-	parsedCommandLayers *values.Values,
+	parsedCommandSections *values.Values,
 	cmd *cobra.Command,
 	args []string,
 ) ([]middlewares.Middleware, error) {
@@ -68,7 +68,7 @@ Operationally, this usually means inserting `GatherFlagsFromProfiles(...)` *abov
 
 ## Profile-Specific Overrides
 
-For advanced use cases, combine profile middleware with additional config files using `LoadParametersFromFile` or `LoadParametersFromFiles`:
+For advanced use cases, combine profile middleware with additional config files using `LoadFieldsFromFile` or `LoadFieldsFromFiles`:
 
 ```go
 func GetCobraCommandGeppettoMiddlewares(
@@ -119,7 +119,7 @@ export YOUR_PROGRAM_PROFILE=development
 YOUR_PROGRAM [command]
 ```
 
-The middleware will then load the configuration parameters from the `development` profile and apply them to the command.
+The middleware will then load the configuration fields from the `development` profile and apply them to the command.
 
 ## Advanced Profile Scenarios
 

@@ -425,16 +425,16 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		panic(err)
 	}
-	cobraLayer, ok := glazedLayer.(schema.CobraSection)
+	cobraSection, ok := glazedSection.(schema.CobraSection)
 	if !ok {
-		panic("glazed layer is not a CobraSection")
+		panic("glazed section is not a CobraSection")
 	}
 
-	err = cobraLayer.AddSectionToCobraCommand(parseCmd)
+	err = cobraSection.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -444,7 +444,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = cobraLayer.AddSectionToCobraCommand(splitByHeadingCmd)
+	err = cobraSection.AddSectionToCobraCommand(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}

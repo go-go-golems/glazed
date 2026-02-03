@@ -58,8 +58,8 @@ func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
 		schema.WithSections(configSection),
 	)
 
-	// Create command definition
-	desc := cmds.NewCommandDefinition(
+	// Create command description
+	desc := cmds.NewCommandDescription(
 		"sources-example",
 		cmds.WithShort("Example demonstrating sources package for manual middleware execution"),
 		cmds.WithLong(`This example shows how to use the sources package to manually
@@ -114,9 +114,7 @@ func main() {
 	}
 
 	// Get the schema from the command
-	// cmd.Layers is *schema.Schema, but we convert to schema.Schema (type alias)
-	// to use the new API vocabulary
-	cmdSchema := (*schema.Schema)(cmd.Layers)
+	cmdSchema := cmd.Schema
 
 	// Register flags manually
 	root.Flags().String("config-file", "", "Config file path")

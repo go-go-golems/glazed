@@ -7,28 +7,28 @@ This tutorial explains how to build a complete application using the glazed fram
 
 ## 1. Best Practices
 
-### 1.1 Layer Design
+### 1.1 Section Design
 
 1. **Single Responsibility**
-   - Each layer should handle one aspect of configuration (e.g., authentication, database, output formatting)
-   - Keep parameter definitions focused and cohesive
-   - Avoid mixing unrelated parameters in the same layer
+   - Each section should handle one aspect of configuration (e.g., authentication, database, output formatting)
+   - Keep field definitions focused and cohesive
+   - Avoid mixing unrelated fields in the same section
 
 2. **Clear Naming**
-   - Use descriptive slugs that indicate the layer's purpose (e.g., "auth", "db", "output")
-   - Follow consistent naming patterns across layers
-   - Document the purpose of each layer
+   - Use descriptive slugs that indicate the section's purpose (e.g., "auth", "db", "output")
+   - Follow consistent naming patterns across sections
+   - Document the purpose of each section
 
-3. **Parameter Organization**
-   - Group related parameters together
-   - Use clear, descriptive parameter names
+3. **Field Organization**
+   - Group related fields together
+   - Use clear, descriptive field names
    - Provide helpful descriptions and defaults
    - Consider validation requirements
 
 4. **Reusability**
-   - Design layers to be reusable across commands
-   - Extract common parameters into shared layers
-   - Use composition to combine layers
+   - Design sections to be reusable across commands
+   - Extract common fields into shared sections
+   - Use composition to combine sections
 
 ### 1.2 Middleware Organization
 
@@ -51,7 +51,7 @@ This tutorial explains how to build a complete application using the glazed fram
    - Profile and optimize hot paths
 
 4. **Configuration**
-   - Use whitelisting to control layer access
+   - Use whitelisting to control section access
    - Support multiple configuration sources
    - Handle defaults appropriately
    - Validate configuration early
@@ -117,12 +117,12 @@ cmd/
         command1.go      # Individual command
         command2.go      # Individual command
     pkg/
-      layers/            # Custom parameter layers
-        auth.go         # Authentication layer
-        db.go          # Database layer
-        output.go      # Output formatting layer
+      sections/            # Custom field sections
+        auth.go         # Authentication section
+        db.go          # Database section
+        output.go      # Output formatting section
       middlewares/       # Custom middleware
-        parse.go       # Parameter parsing
+        parse.go       # Field parsing
         validate.go    # Validation logic
         transform.go   # Data transformation
       domain/           # Application-specific code
@@ -131,18 +131,18 @@ cmd/
 
 ## 3. Common Patterns
 
-1. **Layer Definition**
+1. **Section Definition**
    ```go
-   // Define focused, single-purpose layers
+   // Define focused, single-purpose sections
    type AuthSettings struct {
        Token string `glazed:"token"`
    }
 
-   func NewAuthLayer() (schema.Section, error) {
+   func NewAuthSection() (schema.Section, error) {
        return schema.NewSection(
            "auth",
            "Authentication settings",
-           // ... focused parameter definitions
+           // ... focused field definitions
        )
    }
    ```
@@ -296,11 +296,11 @@ import (
 
     "github.com/go-go-golems/glazed/pkg/cli"
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/settings"
     "github.com/spf13/cobra"
-    "myapp/pkg/layers"
+    "myapp/pkg/sections"
 )
 
 type ListCommand struct {
@@ -308,7 +308,7 @@ type ListCommand struct {
 }
 
 type ListSettings struct {
-    layers.AppSettings
+    sections.AppSettings
 }
 
 func NewListCmd() (*cobra.Command, error) {
@@ -318,7 +318,7 @@ func NewListCmd() (*cobra.Command, error) {
     }
 
     cmd, err := cli.BuildCobraCommandFromCommand(glazedCmd,
-        cli.WithCobraShortHelpLayers(layers.AppSlug),
+        cli.WithCobraShortHelpSections(sections.AppSlug),
         cli.WithCobraMiddlewaresFunc(middlewares.GetCobraCommandMiddlewares),
     )
     if err != nil {
@@ -329,22 +329,22 @@ func NewListCmd() (*cobra.Command, error) {
 }
 
 func NewListGlazedCmd() (*ListCommand, error) {
-    // 1. Create glazed parameter layer
-    glazedParameterLayer, err := settings.NewGlazedParameterLayers()
+    // 1. Create glazed field section
+    glazedSection, err := settings.NewGlazedSchema()
     if err != nil {
-        return nil, fmt.Errorf("could not create Glazed parameter layer: %w", err)
+        return nil, fmt.Errorf("could not create Glazed field section: %w", err)
     }
 
-    // 2. Create app layer
-    appLayer, err := layers.NewAppParameterLayer()
+    // 2. Create app section
+    appSection, err := sections.NewAppSection()
     if err != nil {
-        return nil, fmt.Errorf("could not create App parameter layer: %w", err)
+        return nil, fmt.Errorf("could not create App field section: %w", err)
     }
 
-    // 3. Combine layers
-    layers_ := schema.NewSchema(layers.WithLayers(
-        glazedParameterLayer,
-        appLayer,
+    // 3. Combine sections
+    schema_ := schema.NewSchema(sections.WithSections(
+        glazedSection,
+        appSection,
     ))
 
     // 4. Create command
@@ -353,19 +353,19 @@ func NewListGlazedCmd() (*ListCommand, error) {
             "list",
             cmds.WithShort("List resources"),
             cmds.WithLong("List all resources in the system"),
-            cmds.WithLayers(layers_),
+            cmds.WithSchema(schema_),
         ),
     }, nil
 }
 
 func (c *ListCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *values.Values,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     // 1. Parse settings
     s := &ListSettings{}
-    if err := parsedLayers.InitializeStruct(layers.AppSlug, &s.AppSettings); err != nil {
+    if err := parsedSections.DecodeSectionInto(sections.AppSlug, &s.AppSettings); err != nil {
         return err
     }
 

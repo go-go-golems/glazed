@@ -15,21 +15,21 @@ description:
 tests:
   - args: [ "--baz", "blip", "foo", "bar", "baz" ]
     name: "test a single flag and multiple arguments"
-    argumentParameters:
+    argumentFields:
       foo: "foo"
       bar:
         - "bar"
         - "baz"
-    flagParameters:
+    flagFields:
       baz: "blip"
 
   - args: [ "foo", "bar" ]
     name: "test multiple arguments and a default flag"
-    argumentParameters:
+    argumentFields:
       foo: "foo"
       bar:
         - "bar"
-    flagParameters:
+    flagFields:
       baz: "blop"
   - args: [ "foo"]
     name: "test a single argument and a default flag, which should fail, since we need at least two arguments"

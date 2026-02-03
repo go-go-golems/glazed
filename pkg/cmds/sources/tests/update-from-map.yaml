@@ -1,141 +1,141 @@
-- name: "Update single layer with valid map"
-  description: "Updating a single layer with valid values should correctly merge these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Update single section with valid map"
+  description: "Updating a single section with valid values should correctly merge these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
         - name: "param2"
           type: "int"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields:
         - name: param1
           value: "initial"
   updateMaps:
-    layer1:
+    section1:
       param1: "updated"
       param2: 42
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "updated"
         param2: 42
   expectedError: false
 
-- name: "Update non-existent layer"
-  description: "Updating a non-existent layer should be ignored and no error should be thrown"
-  parameterLayers:
-    - name: "layer1"
+- name: "Update non-existent section"
+  description: "Updating a non-existent section should be ignored and no error should be thrown"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
   updateMaps:
-    layer2:
+    section2:
       param1: "updated"
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values: { }
   expectedError: false
 
-- name: "Invalid parameter type in update map"
-  description: "An invalid parameter type in the update map should result in an error"
-  parameterLayers:
-    - name: "layer1"
+- name: "Invalid field type in update map"
+  description: "An invalid field type in the update map should result in an error"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "int"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
   updateMaps:
-    layer1:
+    section1:
       param1: "not an int"
-  expectedLayers: null
+  expectedSections: null
   expectedError: true
 
 - name: "Update with empty map"
-  description: "Updating with an empty map should leave the layers unchanged"
-  parameterLayers:
-    - name: "layer1"
+  description: "Updating with an empty map should leave the sections unchanged"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields:
         - name: "param1"
           value: "initial"
   updateMaps:
-    layer1: {}
-  expectedLayers:
-    - name: "layer1"
+    section1: {}
+  expectedSections:
+    - name: "section1"
       values:
         param1: "initial"
   expectedError: false
 
 - name: "TestUpdateFromMapWithExtraData"
-  description: "Extra keys in the map that are not defined in the ParameterLayer are ignored"
-  parameterLayers:
-    - name: "layer1"
+  description: "Extra keys in the map that are not defined in the Section are ignored"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
   updateMaps:
-    layer1:
+    section1:
       param1: "value1"
       extraParam: "ignored"
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "value1"
   expectedError: false
 
 - name: "TestUpdateFromMapWithChoicesValidation"
   description: "An error is returned if the map provides a value outside of valid choices"
-  parameterLayers:
-    - name: "layer1"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "choice"
           choices:
             - "choice1"
             - "choice2"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
   updateMaps:
-    layer1:
+    section1:
       param1: "invalidChoice"
-  expectedLayers: null
+  expectedSections: null
   expectedError: true
 
-- name: "TestUpdateFromMapWithMultipleLayers"
-  description: "Correctly updates parsedLayers for multiple layers"
-  parameterLayers:
-    - name: "layer1"
+- name: "TestUpdateFromMapWithMultipleSections"
+  description: "Correctly updates values for multiple sections"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
-    - name: "layer2"
+    - name: "section2"
       definitions:
         - name: "param2"
           type: "int"
-  parsedLayers:
-    - name: "layer1"
-    - name: "layer2"
+  values:
+    - name: "section1"
+    - name: "section2"
   updateMaps:
-    layer1:
+    section1:
       param1: "value1"
-    layer2:
+    section2:
       param2: 42
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "value1"
-    - name: "layer2"
+    - name: "section2"
       values:
         param2: 42
   expectedError: false

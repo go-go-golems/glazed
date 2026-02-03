@@ -97,7 +97,7 @@ func ExtractAllBlocks(input string) []MarkdownBlock {
 // **Inner Workings**:
 // This function leverages the `ExtractAllBlocks` function to first get all blocks
 // from the markdown content. It then filters out only the code blocks and processes
-// them based on the `withQuotes` parameter to decide on the inclusion of the enclosing ``` marks.
+// them based on the `withQuotes` argument to decide on the inclusion of the enclosing ``` marks.
 func ExtractQuotedBlocks(input string, withQuotes bool) []string {
 	blocks := ExtractAllBlocks(input)
 	var result []string

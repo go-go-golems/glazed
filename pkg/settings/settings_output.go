@@ -52,30 +52,30 @@ type OutputFormatterSettings struct {
 //go:embed "flags/output.yaml"
 var outputFlagsYaml []byte
 
-type OutputParameterLayer struct {
+type OutputSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewOutputParameterLayer(options ...schema.SectionOption) (*OutputParameterLayer, error) {
-	ret := &OutputParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(outputFlagsYaml, options...)
+func NewOutputSection(options ...schema.SectionOption) (*OutputSection, error) {
+	ret := &OutputSection{}
+	section, err := schema.NewSectionFromYAML(outputFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *OutputParameterLayer) Clone() schema.Section {
-	return &OutputParameterLayer{
+func (f *OutputSection) Clone() schema.Section {
+	return &OutputSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewOutputFormatterSettings(glazedLayer *values.SectionValues) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(glazedValues *values.SectionValues) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}

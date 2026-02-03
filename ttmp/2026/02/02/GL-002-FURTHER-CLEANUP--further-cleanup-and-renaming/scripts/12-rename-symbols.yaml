@@ -1,0 +1,355 @@
+mappings:
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayersHandler
+    new: WhitelistSectionsHandler
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayerParametersHandler
+    new: WhitelistSectionFieldsHandler
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayers
+    new: WhitelistSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayersFirst
+    new: WhitelistSectionsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayerParameters
+    new: WhitelistSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WhitelistLayerParametersFirst
+    new: WhitelistSectionFieldsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayersHandler
+    new: BlacklistSectionsHandler
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayerParametersHandler
+    new: BlacklistSectionFieldsHandler
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayers
+    new: BlacklistSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayersFirst
+    new: BlacklistSectionsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayerParameters
+    new: BlacklistSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: BlacklistLayerParametersFirst
+    new: BlacklistSectionFieldsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WrapWithLayerModifyingHandler
+    new: WrapWithSectionModifyingHandler
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WrapWithWhitelistedLayers
+    new: WrapWithWhitelistedSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WrapWithWhitelistedParameterLayers
+    new: WrapWithWhitelistedSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WrapWithBlacklistedLayers
+    new: WrapWithBlacklistedSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: WrapWithBlacklistedParameterLayers
+    new: WrapWithBlacklistedSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: LoadParametersFromResolvedFilesForCobra
+    new: LoadFieldsFromResolvedFilesForCobra
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: readConfigFileToLayerMap
+    new: readConfigFileToSectionMap
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: layers_
+    new: schema_
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: parsedLayers
+    new: parsedValues
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: layer
+    new: section
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: parsedLayer
+    new: sectionValues
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources
+    old: layerPrefix
+    new: sectionPrefix
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestParameterLayer
+    new: TestSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestParsedParameter
+    new: TestParsedField
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestExpectedLayer
+    new: TestExpectedSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestWhitelistLayers
+    new: TestWhitelistSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestWhitelistLayersFirst
+    new: TestWhitelistSectionsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestWhitelistLayerParameters
+    new: TestWhitelistSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestWhitelistLayerParametersFirst
+    new: TestWhitelistSectionFieldsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestBlacklistLayers
+    new: TestBlacklistSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestBlacklistLayersFirst
+    new: TestBlacklistSectionsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestBlacklistLayerParameters
+    new: TestBlacklistSectionFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: TestBlacklistLayerParametersFirst
+    new: TestBlacklistSectionFieldsFirst
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: NewTestParameterLayer
+    new: NewTestSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/helpers
+    old: NewTestParameterLayers
+    new: NewTestSchema
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: AppendLayers
+    new: AppendSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: PrependLayers
+    new: PrependSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: ParseLayerFromCobraCommand
+    new: ParseSectionFromCobraCommand
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: InitializeDefaultsFromParameters
+    new: InitializeDefaultsFromFields
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: InitializeStructFromParameterDefaults
+    new: InitializeStructFromFieldDefaults
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: createParameterLayer
+    new: createSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: createSimpleParameterLayer
+    new: createSimpleSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestNewParameterLayers
+    new: TestNewSchema
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersSubset
+    new: TestSchemaSubset
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersForEach
+    new: TestSchemaForEach
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersForEachE
+    new: TestSchemaForEachE
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersAppendLayers
+    new: TestSchemaAppendSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersPrependLayers
+    new: TestSchemaPrependSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersMerge
+    new: TestSchemaMerge
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersAsList
+    new: TestSchemaAsList
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersClone
+    new: TestSchemaClone
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersGetAllDefinitions
+    new: TestSchemaGetAllDefinitions
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersWithLayers
+    new: TestSchemaWithSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersWithDuplicateSlugs
+    new: TestSchemaWithDuplicateSlugs
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersSubsetWithNonExistentLayers
+    new: TestSchemaSubsetWithMissingSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersMergeWithOverlappingLayers
+    new: TestSchemaMergeWithOverlappingSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersWithLargeNumberOfLayers
+    new: TestSchemaWithLargeNumberOfSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: TestParameterLayersWithUnicodeLayerNames
+    new: TestSchemaWithUnicodeSectionNames
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/schema
+    old: ChildLayers
+    new: ChildSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources_test
+    old: wrapWithRestrictedLayersTestsYAML
+    new: wrapWithRestrictedSectionsTestsYAML
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources_test
+    old: wrapWithRestrictedLayersTest
+    new: wrapWithRestrictedSectionsTest
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/sources_test
+    old: TestWrapWithRestrictedLayers
+    new: TestWrapWithRestrictedSections
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: GlazedParameterLayers
+    new: GlazedSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: GlazeParameterLayerOption
+    new: GlazeSectionOption
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewGlazedParameterLayers
+    new: NewGlazedSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: FieldsFiltersParameterLayer
+    new: FieldsFiltersSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: OutputParameterLayer
+    new: OutputSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: RenameParameterLayer
+    new: RenameSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: ReplaceParameterLayer
+    new: ReplaceSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: SelectParameterLayer
+    new: SelectSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: TemplateParameterLayer
+    new: TemplateSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: JqParameterLayer
+    new: JqSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: SortParameterLayer
+    new: SortSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: SkipLimitParameterLayer
+    new: SkipLimitSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewFieldsFiltersParameterLayer
+    new: NewFieldsFiltersSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewOutputParameterLayer
+    new: NewOutputSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewRenameParameterLayer
+    new: NewRenameSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewReplaceParameterLayer
+    new: NewReplaceSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSelectParameterLayer
+    new: NewSelectSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewTemplateParameterLayer
+    new: NewTemplateSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewJqParameterLayer
+    new: NewJqSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSortParameterLayer
+    new: NewSortSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSkipLimitParameterLayer
+    new: NewSkipLimitSection
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithOutputParameterLayerOptions
+    new: WithOutputSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithSelectParameterLayerOptions
+    new: WithSelectSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithTemplateParameterLayerOptions
+    new: WithTemplateSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithRenameParameterLayerOptions
+    new: WithRenameSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithReplaceParameterLayerOptions
+    new: WithReplaceSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithFieldsFiltersParameterLayerOptions
+    new: WithFieldsFiltersSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithJqParameterLayerOptions
+    new: WithJqSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithSortParameterLayerOptions
+    new: WithSortSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: WithSkipLimitParameterLayerOptions
+    new: WithSkipLimitSectionOptions
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: GlazedTemplateLayerSlug
+    new: GlazedTemplateSectionSlug
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSelectSettingsFromParameters
+    new: NewSelectSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewRenameSettingsFromParameters
+    new: NewRenameSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewReplaceSettingsFromParameters
+    new: NewReplaceSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewJqSettingsFromParameters
+    new: NewJqSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSortSettingsFromParameters
+    new: NewSortSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: NewSkipLimitSettingsFromParameters
+    new: NewSkipLimitSettingsFromValues
+  - pkg: github.com/go-go-golems/glazed/pkg/settings
+    old: glazedLayer
+    new: glazedValues
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: Layers
+    new: Schema
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: WithLayersList
+    new: WithSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: WithLayers
+    new: WithSchema
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: WithLayersMap
+    new: WithSectionsMap
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: WithReplaceLayers
+    new: WithReplaceSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: GetDefaultLayer
+    new: GetDefaultSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: GetLayer
+    new: GetSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds
+    old: SetLayers
+    new: SetSections
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/logging
+    old: LoggingLayerSlug
+    new: LoggingSectionSlug
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/logging
+    old: NewLoggingLayer
+    new: NewLoggingSection
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/logging
+    old: AddLoggingLayerToCommand
+    new: AddLoggingSectionToCommand
+  - pkg: github.com/go-go-golems/glazed/pkg/cmds/logging
+    old: AddLoggingLayerToRootCommand
+    new: AddLoggingSectionToRootCommand
+  - pkg: github.com/go-go-golems/glazed/pkg/codegen
+    old: ParameterDefinitionToDict
+    new: FieldDefinitionToDict
+  - pkg: github.com/go-go-golems/glazed/pkg/helpers/templating
+    old: toUrlParameter
+    new: toUrlField
+  - pkg: github.com/go-go-golems/glazed/pkg/cli/cliopatra
+    old: Parameter
+    new: Field
+  - pkg: github.com/go-go-golems/glazed/pkg/cli/cliopatra
+    old: getCliopatraParameters
+    new: getCliopatraFields

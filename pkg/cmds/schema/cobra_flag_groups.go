@@ -15,7 +15,7 @@ import (
 // While we mostly deal with Definitions, this uses strings
 // because it can be applied to any cobra flag in general.
 //
-// It limits us in the sense that we can't just get the full ParameterDefinition
+// It limits us in the sense that we can't just get the full FieldDefinition
 // here, but at least we can format our help a little bit more nicely.
 //
 // NOTE(manuel, 2023-02-20) This doesn't allow for hierarchical flag groups yet.
@@ -67,7 +67,7 @@ func (f *FlagGroupUsage) AddFlagUsage(flag *FlagUsage) {
 
 // CommandFlagGroupUsage is used to render the flags for an entire command.
 // This gets parsed at rendering time, and passed along the command to the usage or help
-// template. Parameters that are not assigned to any group are passed as the "" group, with the
+// template. Fields that are not assigned to any group are passed as the "" group, with the
 // name "Other flags".
 type CommandFlagGroupUsage struct {
 	LocalGroupUsages     []*FlagGroupUsage
@@ -86,7 +86,7 @@ const GlobalDefaultSlug = "global-default"
 //
 // It is a fairly complex function that gathers all LocalFlags() and InheritedFlags()
 // from the cobra backend. It then iterated over the FlagGroups that have been added
-// through layers usually.
+// through sections usually.
 func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	ret := &CommandFlagGroupUsage{}
 
@@ -140,7 +140,7 @@ func ComputeCommandFlagGroupUsage(c *cobra.Command) *CommandFlagGroupUsage {
 	}
 
 	// Now visit all cobra flags, get their usage as defined when added to cobra
-	// (usually through the ParameterDefinition), and add them to the correct
+	// (usually through the FieldDefinition), and add them to the correct
 	// group.
 	localFlags.VisitAll(func(f *flag.Flag) {
 		flagUsage := getFlagUsage(f)

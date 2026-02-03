@@ -45,40 +45,40 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 	}
 }
 
-type TemplateParameterLayer struct {
+type TemplateSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-const GlazedTemplateLayerSlug = "glazed-template"
+const GlazedTemplateSectionSlug = "glazed-template"
 
-func NewTemplateParameterLayer(options ...schema.SectionOption) (*TemplateParameterLayer, error) {
-	ret := &TemplateParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(templateFlagsYaml, options...)
+func NewTemplateSection(options ...schema.SectionOption) (*TemplateSection, error) {
+	ret := &TemplateSection{}
+	section, err := schema.NewSectionFromYAML(templateFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create template parameter layer")
+		return nil, errors.Wrap(err, "Failed to create template field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *TemplateParameterLayer) Clone() schema.Section {
-	return &TemplateParameterLayer{
+func (f *TemplateSection) Clone() schema.Section {
+	return &TemplateSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewTemplateSettings(layer *values.SectionValues) (*TemplateSettings, error) {
+func NewTemplateSettings(section *values.SectionValues) (*TemplateSettings, error) {
 	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStruct I think
 
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 
-	templateArgument, ok := layer.Fields.GetValue("template").(string)
+	templateArgument, ok := section.Fields.GetValue("template").(string)
 	if ok && templateArgument != "" {
 		templates["_0"] = templateArgument
 	} else {
-		v := layer.Fields.GetValue("template-field")
+		v := section.Fields.GetValue("template-field")
 		templateFields, err := cast.ConvertMapToInterfaceMap(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to convert template-field to map[string]interface{}")
@@ -92,7 +92,7 @@ func NewTemplateSettings(layer *values.SectionValues) (*TemplateSettings, error)
 		}
 	}
 
-	useRowTemplates, ok := layer.Fields.GetValue("use-row-templates").(bool)
+	useRowTemplates, ok := section.Fields.GetValue("use-row-templates").(bool)
 	if !ok {
 		useRowTemplates = false
 	}

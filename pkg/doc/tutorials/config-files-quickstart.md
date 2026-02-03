@@ -14,34 +14,34 @@ SectionType: Tutorial
 
 # Config Files Quickstart
 
-This tutorial shows how to load configuration from one or more files using Glazed middlewares. You’ll see a simple single-file setup and a multi-file overlay with deterministic precedence. We’ll also show how to inspect parse steps using `--print-parsed-parameters`.
+This tutorial shows how to load configuration from one or more files using Glazed middlewares. You’ll see a simple single-file setup and a multi-file overlay with deterministic precedence. We’ll also show how to inspect parse steps using `--print-parsed-fields`.
 
 ## Prerequisites
 
 - Go 1.19+
-- Familiarity with Cobra commands and Glazed layers
+- Familiarity with Cobra commands and Glazed sections
 
 ## 1. Single File
 
-Create a minimal command with a single custom layer and an explicit config file path:
+Create a minimal command with a single custom section and an explicit config file path:
 
 ```go
-demoLayer, _ := schema.NewSection(
+demoSection, _ := schema.NewSection(
     "demo", "Demo settings",
-    layers.WithPrefix("demo-"),
+    sections.WithPrefix("demo-"),
     schema.WithFields(
         fields.New("api-key", fields.TypeString),
         fields.New("threshold", fields.TypeInteger, fields.WithDefault(10)),
     ),
 )
 
-desc := cmds.NewCommandDescription("demo", cmds.WithLayersList(demoLayer))
+desc := cmds.NewCommandDescription("demo", cmds.WithSectionsList(demoSection))
 
 cmd := &DemoBareCommand{CommandDescription: desc}
 
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
-        SkipCommandSettingsLayer: true,
+        SkipCommandSettingsSection: true,
         ConfigPath:               "./config.yaml",
     }),
 )
@@ -78,7 +78,7 @@ resolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, erro
 
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
-        SkipCommandSettingsLayer: true,
+        SkipCommandSettingsSection: true,
         ConfigFilesFunc:          resolver,
     }),
 )
@@ -121,10 +121,10 @@ api_key=local threshold=20
 
 ## 3. Inspect Parse Steps
 
-Add `--print-parsed-parameters` to see each config file applied in sequence:
+Add `--print-parsed-fields` to see each config file applied in sequence:
 
 ```bash
-go run ./cmd/examples/config-overlay overlay --print-parsed-parameters
+go run ./cmd/examples/config-overlay overlay --print-parsed-fields
 ```
 
 Excerpt:
@@ -159,12 +159,12 @@ go run ./cmd/examples/config-overlay overlay --demo-threshold 77
 
 ## 5. Pattern: base + .override.yaml
 
-To layer `<base>.override.yaml` automatically on top of `--config-file`:
+To section `<base>.override.yaml` automatically on top of `--config-file`:
 
 ```go
 resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     cs := &cli.CommandSettings{}
-    _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+    _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
     files := []string{}
     if cs.ConfigFile != "" {
         files = append(files, cs.ConfigFile)
@@ -189,26 +189,26 @@ go run ./cmd/examples/overlay-override overlay-override --config-file ./base.yam
 
 ## 6. Pattern-Based Mapping (Optional)
 
-Map arbitrary config structures to parameters without custom Go by using the pattern-based config mapper. Works with YAML or JSON files.
+Map arbitrary config structures to fields without custom Go by using the pattern-based config mapper. Works with YAML or JSON files.
 
 ```go
-// Define a layer
-demoLayer, _ := schema.NewSection("demo", "Demo",
+// Define a section
+demoSection, _ := schema.NewSection("demo", "Demo",
     schema.WithFields(
         fields.New("api-key", fields.TypeString),
         fields.New("dev-api-key", fields.TypeString),
         fields.New("prod-api-key", fields.TypeString),
     ),
 )
-paramLayers := schema.NewSchema(layers.WithLayers(demoLayer))
+paramSections := schema.NewSchema(sections.WithSections(demoSection))
 
 // Create a mapper using a named capture {env}
-mapper, _ := patternmapper.NewConfigMapper(paramLayers,
+mapper, _ := patternmapper.NewConfigMapper(paramSections,
     patternmapper.MappingRule{
         Source:      "app.{env}.settings",
-        TargetLayer: "demo",
+        TargetSection: "demo",
         Rules: []patternmapper.MappingRule{
-            {Source: "api_key", TargetParameter: "{env}-api-key"},
+            {Source: "api_key", TargetField: "{env}-api-key"},
         },
     },
 )
@@ -217,13 +217,13 @@ mapper, _ := patternmapper.NewConfigMapper(paramLayers,
 mw := sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
-_ = sources.Execute(paramLayers, values.New(), mw)
+_ = sources.Execute(paramSections, values.New(), mw)
 ```
 
 Builder API (fluent):
 
 ```go
-b := patternmapper.NewConfigMapperBuilder(paramLayers).
+b := patternmapper.NewConfigMapperBuilder(paramSections).
     MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
         patternmapper.Child("api_key", "{env}-api-key"),
     })
@@ -235,7 +235,7 @@ mapper, _ := b.Build()
 You can execute middlewares directly without relying on the Cobra parser config:
 
 ```go
-err := sources.Execute(layers_, parsed,
+err := sources.Execute(schema_, parsed,
     sources.FromDefaults(),
     sources.FromFiles([]string{"base.yaml", "local.yaml"}),
     sources.FromEnv("APP"),
@@ -250,22 +250,22 @@ err := sources.Execute(layers_, parsed,
   ```go
   patternmapper.MappingRule{
       Source:          "app.settings.api_key",
-      TargetLayer:     "demo",
-      TargetParameter: "api-key",
+      TargetSection:     "demo",
+      TargetField: "api-key",
       Required:        true,
   }
   ```
 
-- Ambiguity: wildcard patterns that match multiple different values or rules that resolve to the same target parameter cause errors. Prefer named captures (e.g., `app.{env}.api_key`) when collecting multiple values.
+- Ambiguity: wildcard patterns that match multiple different values or rules that resolve to the same target field cause errors. Prefer named captures (e.g., `app.{env}.api_key`) when collecting multiple values.
 
-- Missing parameters: mapping to a non-existent parameter errors (prefix-aware), helping catch typos early.
+- Missing fields: mapping to a non-existent field errors (prefix-aware), helping catch typos early.
 
 ## 9. Deprecated: Viper Integration
 
 Legacy Viper-based config parsing (e.g., `GatherFlagsFromViper`) is deprecated. Prefer config file middlewares plus env and flags:
 
 ```go
-err := sources.Execute(layers_, parsed,
+err := sources.Execute(schema_, parsed,
     sources.FromDefaults(),
     sources.FromFiles([]string{"base.yaml", "env.yaml", "local.yaml"}),
     sources.FromEnv("APP"),

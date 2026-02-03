@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DemoSettings maps to the demo layer parameters
+// DemoSettings maps to the demo section fields
 type DemoSettings struct {
 	ApiKey    string `glazed:"api-key"`
 	Threshold int    `glazed:"threshold"`
@@ -56,7 +56,7 @@ func NewDemoCommand() (*DemoCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"demo",
 		cmds.WithShort("Demonstrate config/env/flags middlewares"),
-		cmds.WithLayersList(glazedSection, demoSection),
+		cmds.WithSections(glazedSection, demoSection),
 	)
 
 	return &DemoCommand{CommandDescription: desc}, nil
@@ -97,7 +97,7 @@ func main() {
 	cobraDemoCmd, err := cli.BuildCobraCommandFromCommand(
 		demoCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			// AppName enables env prefix APP_<LAYER_PREFIX+FLAG>
+			// AppName enables env prefix APP_<SECTION_PREFIX+FLAG>
 			AppName: "glazed-mw-demo",
 			// Explicit config file for demo
 			ConfigPath: "cmd/examples/middlewares-config-env/config.yaml",

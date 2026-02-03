@@ -27,7 +27,7 @@ func TestAddZeroArguments(t *testing.T) {
 func TestAddSingleRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
 
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -37,9 +37,9 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 		))
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
+		Schema: schema.NewSchema(schema.WithSections(defaultSection)),
 	}
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"bar"}))
@@ -63,7 +63,7 @@ func TestAddSingleRequiredArgument(t *testing.T) {
 
 func TestAddTwoRequiredArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -78,8 +78,8 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	desc := NewCommandDescription("test", WithSections(defaultSection))
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -110,7 +110,7 @@ func TestAddTwoRequiredArguments(t *testing.T) {
 
 func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -126,9 +126,9 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
+		Schema: schema.NewSchema(schema.WithSections(defaultSection)),
 	}
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -165,7 +165,7 @@ func TestOneRequiredOneOptionalArgument(t *testing.T) {
 
 func TestOneOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:    "foo",
@@ -175,8 +175,8 @@ func TestOneOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	desc := NewCommandDescription("test", WithSections(defaultSection))
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -201,7 +201,7 @@ func TestOneOptionalArgument(t *testing.T) {
 
 func TestDefaultIntValue(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:    "foo",
@@ -212,9 +212,9 @@ func TestDefaultIntValue(t *testing.T) {
 	)
 	require.Nil(t, err)
 	desc := CommandDescription{
-		Layers: schema.NewSchema(schema.WithSections(defaultLayer)),
+		Schema: schema.NewSchema(schema.WithSections(defaultSection)),
 	}
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	defaultArguments := desc.GetDefaultArguments()
@@ -259,7 +259,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 		{Type: fields.TypeIntegerList, Value: []string{}},
 	}
 	for _, failingType := range failingTypes {
-		defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+		defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 			schema.WithArguments(
 				&fields.Definition{
 					Name:    "foo",
@@ -269,7 +269,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 			),
 		)
 		require.Nil(t, err)
-		err = defaultLayer.AddSectionToCobraCommand(cmd)
+		err = defaultSection.AddSectionToCobraCommand(cmd)
 		if err == nil {
 			t.Errorf("Expected error for type %s and value %v\n", failingType.Type, failingType.Value)
 		}
@@ -279,7 +279,7 @@ func TestInvalidDefaultValue(t *testing.T) {
 
 func TestTwoOptionalArguments(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name: "foo",
@@ -290,7 +290,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Error(t, cmd.Args(cmd, []string{"bar", "foo", "blop"}))
@@ -301,7 +301,7 @@ func TestTwoOptionalArguments(t *testing.T) {
 
 func TestFailAddingRequiredAfterOptional(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name: "foo",
@@ -313,13 +313,13 @@ func TestFailAddingRequiredAfterOptional(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
 func TestAddStringListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -329,7 +329,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -340,7 +340,7 @@ func TestAddStringListRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:    "foo",
@@ -350,8 +350,8 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	desc := NewCommandDescription("test", WithLayersList(defaultLayer))
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	desc := NewCommandDescription("test", WithSections(defaultSection))
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"bar", "foo"}))
@@ -380,7 +380,7 @@ func TestAddStringListOptionalArgument(t *testing.T) {
 
 func TestFailAddingArgumentAfterStringList(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name: "foo",
@@ -392,13 +392,13 @@ func TestFailAddingArgumentAfterStringList(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
 func TestAddIntegerListRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -408,7 +408,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"1", "2"}))
@@ -419,7 +419,7 @@ func TestAddIntegerListRequiredArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -433,7 +433,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -444,7 +444,7 @@ func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:     "foo",
@@ -458,7 +458,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar"}))
@@ -468,7 +468,7 @@ func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
 
 func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name:    "foo",
@@ -483,7 +483,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	assert.Nil(t, cmd.Args(cmd, []string{"foo", "bar", "baz"}))
@@ -494,7 +494,7 @@ func TestAddStringListOptionalAfterOptionalArgument(t *testing.T) {
 
 func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 	cmd := &cobra.Command{}
-	defaultLayer, err := schema.NewSection(schema.DefaultSlug, "Default",
+	defaultSection, err := schema.NewSection(schema.DefaultSlug, "Default",
 		schema.WithArguments(
 			&fields.Definition{
 				Name: "foo",
@@ -507,22 +507,22 @@ func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
 		),
 	)
 	require.Nil(t, err)
-	err = defaultLayer.AddSectionToCobraCommand(cmd)
+	err = defaultSection.AddSectionToCobraCommand(cmd)
 	assert.Error(t, err)
 }
 
 // expectedCommandResults is a struct that contains the expected results of a command,
-// which is a list of parsed flag parameters, a list of parsed arguments parameters,
+// which is a list of parsed flag fields, a list of parsed argument fields,
 // as well as potential errors.
 //
 // This is used to quickly check the result of passing a set of arguments to a command.
 type expectedCommandResults struct {
-	Name                       string                 `yaml:"name"`
-	ExpectedArgumentParameters map[string]interface{} `yaml:"argumentParameters"`
-	ExpectedFlagParameters     map[string]interface{} `yaml:"flagParameters"`
-	ExpectedFlagError          bool                   `yaml:"flagError"`
-	ExpectedArgumentError      bool                   `yaml:"argumentError"`
-	Args                       []string               `yaml:"args"`
+	Name                   string                 `yaml:"name"`
+	ExpectedArgumentFields map[string]interface{} `yaml:"argumentFields"`
+	ExpectedFlagFields     map[string]interface{} `yaml:"flagFields"`
+	ExpectedFlagError      bool                   `yaml:"flagError"`
+	ExpectedArgumentError  bool                   `yaml:"argumentError"`
+	Args                   []string               `yaml:"args"`
 }
 
 type commandDescription struct {
@@ -553,12 +553,12 @@ func TestCommandArgumentsParsing(t *testing.T) {
 		err = yaml.Unmarshal(fileData, testSuite)
 		require.NoError(t, err)
 
-		layer, err := schema.NewSection(schema.DefaultSlug, "Default",
+		section, err := schema.NewSection(schema.DefaultSlug, "Default",
 			schema.WithArguments(testSuite.Description.Arguments...),
 			schema.WithFields(testSuite.Description.Flags...),
 		)
 		require.NoError(t, err)
-		testSuite.Description.Layers = schema.NewSchema(schema.WithSections(layer))
+		testSuite.Description.Schema = schema.NewSchema(schema.WithSections(section))
 
 		if testSuite.Description.Name != "string-from-file" {
 			// XXX hack to debug
@@ -567,11 +567,11 @@ func TestCommandArgumentsParsing(t *testing.T) {
 
 		for _, test := range testSuite.Tests {
 			test2 := test
-			if test2.ExpectedArgumentParameters == nil {
-				test2.ExpectedArgumentParameters = map[string]interface{}{}
+			if test2.ExpectedArgumentFields == nil {
+				test2.ExpectedArgumentFields = map[string]interface{}{}
 			}
-			if test2.ExpectedFlagParameters == nil {
-				test2.ExpectedFlagParameters = map[string]interface{}{}
+			if test2.ExpectedFlagFields == nil {
+				test2.ExpectedFlagFields = map[string]interface{}{}
 			}
 
 			t.Run(
@@ -590,28 +590,28 @@ func testCommandParseHelper(
 ) {
 	var flagsError error
 	var argsError error
-	var flagParameters *fields.FieldValues
-	var argumentParameters *fields.FieldValues
+	var flagFields *fields.FieldValues
+	var argumentFields *fields.FieldValues
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			flagParameters, flagsError = desc.GetDefaultFlags().GatherFlagsFromCobraCommand(cmd, false, false, "")
+			flagFields, flagsError = desc.GetDefaultFlags().GatherFlagsFromCobraCommand(cmd, false, false, "")
 			if flagsError != nil {
 				return
 			}
-			argumentParameters, argsError = desc.GetDefaultArguments().GatherArguments(args, false, false)
+			argumentFields, argsError = desc.GetDefaultArguments().GatherArguments(args, false, false)
 			if argsError != nil {
 				return
 			}
 		},
 	}
 
-	defaultLayer, ok := desc.GetDefaultLayer()
+	defaultSection, ok := desc.GetDefaultSection()
 	require.True(t, ok)
-	defaultLayer_, ok := defaultLayer.(schema.CobraSection)
+	defaultSection_, ok := defaultSection.(schema.CobraSection)
 	require.True(t, ok)
 
-	err := defaultLayer_.AddSectionToCobraCommand(cmd)
+	err := defaultSection_.AddSectionToCobraCommand(cmd)
 	require.Nil(t, err)
 
 	cmd.SetArgs(expected.Args)
@@ -643,8 +643,8 @@ func testCommandParseHelper(
 		assert.NoErrorf(t, argsError, "expected no error for %v", expected.Args)
 	}
 
-	assertJsonEquivalent(t, expected.ExpectedArgumentParameters, argumentParameters)
-	assertJsonEquivalent(t, expected.ExpectedFlagParameters, flagParameters)
+	assertJsonEquivalent(t, expected.ExpectedArgumentFields, argumentFields)
+	assertJsonEquivalent(t, expected.ExpectedFlagFields, flagFields)
 }
 
 func assertJsonEquivalent(t *testing.T, expected interface{}, actual interface{}) {

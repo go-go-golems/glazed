@@ -12,8 +12,8 @@ import (
 )
 
 func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
-	// Define a layer with a prefix so env keys are: PREFIX + "_" + UPPER(prefix+name)
-	cfgLayer, err := schema.NewSection("cfg", "Config",
+	// Define a section with a prefix so env keys are: PREFIX + "_" + UPPER(prefix+name)
+	cfgSection, err := schema.NewSection("cfg", "Config",
 		schema.WithPrefix("cfg-"),
 		schema.WithFields(
 			fields.New("verbose", fields.TypeBool),
@@ -30,7 +30,7 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	pl := schema.NewSchema(schema.WithSections(cfgLayer))
+	schema_ := schema.NewSchema(schema.WithSections(cfgSection))
 	parsed := values.New()
 
 	// Set env vars
@@ -67,17 +67,17 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 		}
 	})
 
-	err = Execute(pl, parsed,
+	err = Execute(schema_, parsed,
 		FromEnv("APP", fields.WithSource("env")),
 	)
 	require.NoError(t, err)
 
-	layer, ok := parsed.Get("cfg")
+	sectionValues, ok := parsed.Get("cfg")
 	require.True(t, ok)
 
 	get := func(name string) interface{} {
-		v, ok := layer.Fields.Get(name)
-		require.True(t, ok, "parameter %s should be set", name)
+		v, ok := sectionValues.Fields.Get(name)
+		require.True(t, ok, "field %s should be set", name)
 		return v.Value
 	}
 
@@ -98,7 +98,7 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 	require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, get("labels"))
 
 	// Check env_key metadata exists on one param (verbose)
-	vp, ok := layer.Fields.Get("verbose")
+	vp, ok := sectionValues.Fields.Get("verbose")
 	require.True(t, ok)
 	require.NotEmpty(t, vp.Log)
 	found := false
@@ -114,7 +114,7 @@ func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
 }
 
 func TestUpdateFromEnvInvalidChoice(t *testing.T) {
-	cfgLayer, err := schema.NewSection("cfg", "Config",
+	cfgSection, err := schema.NewSection("cfg", "Config",
 		schema.WithPrefix("cfg-"),
 		schema.WithFields(
 			fields.New("mode", fields.TypeChoice, fields.WithChoices("a", "b")),
@@ -122,7 +122,7 @@ func TestUpdateFromEnvInvalidChoice(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	pl := schema.NewSchema(schema.WithSections(cfgLayer))
+	schema_ := schema.NewSchema(schema.WithSections(cfgSection))
 	parsed := values.New()
 
 	prev, had := os.LookupEnv("APP_CFG_MODE")
@@ -135,6 +135,6 @@ func TestUpdateFromEnvInvalidChoice(t *testing.T) {
 		}
 	})
 
-	err = Execute(pl, parsed, FromEnv("APP"))
+	err = Execute(schema_, parsed, FromEnv("APP"))
 	require.Error(t, err, "should error on invalid choice")
 }

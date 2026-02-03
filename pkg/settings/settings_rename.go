@@ -54,28 +54,28 @@ type RenameFlagsDefaults struct {
 //go:embed "flags/rename.yaml"
 var renameFlagsYaml []byte
 
-type RenameParameterLayer struct {
+type RenameSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewRenameParameterLayer(options ...schema.SectionOption) (*RenameParameterLayer, error) {
-	ret := &RenameParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(renameFlagsYaml, options...)
+func NewRenameSection(options ...schema.SectionOption) (*RenameSection, error) {
+	ret := &RenameSection{}
+	section, err := schema.NewSectionFromYAML(renameFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create rename parameter layer")
+		return nil, errors.Wrap(err, "Failed to create rename field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 	return ret, nil
 }
 
-func (f *RenameParameterLayer) Clone() schema.Section {
-	return &RenameParameterLayer{
+func (f *RenameSection) Clone() schema.Section {
+	return &RenameSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewRenameSettingsFromParameters(glazedLayer *values.SectionValues) (*RenameSettings, error) {
-	ps := glazedLayer.Fields
+func NewRenameSettingsFromValues(glazedValues *values.SectionValues) (*RenameSettings, error) {
+	ps := glazedValues.Fields
 	rename := ps.GetValue("rename")
 	if rename == nil {
 		return &RenameSettings{

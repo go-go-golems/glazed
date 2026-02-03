@@ -22,33 +22,33 @@ does not require the use of cobra bindings, but instead just requires a list of 
 ```go
 func GatherFlagsFromStringList(
 	args []string,
-	params []*ParameterDefinition,
+	params []*Definition,
 	onlyProvided bool,
 	ignoreRequired bool,
 	prefix string,
 ) (map[string]interface{}, []string, error)
 ```
 
-## Parameters
+## Fields
 
 - `args`: a slice of strings representing the command line arguments.
-- `params`: a slice of `*ParameterDefinition` representing the parameter definitions.
+- `params`: a slice of `*Definition` representing the field definitions.
 - `onlyProvided`: a boolean indicating whether to only include flags that were provided in the command line arguments.
 - `ignoreRequired`: a boolean indicating whether to ignore required flags that were not provided in the command line arguments.
 - `prefix`: a string to be added as a prefix to all flag names.
 
 ## Return Values
 
-The function returns a map where the keys are the parameter names and the values are the parsed values. If a flag is not recognized or its value cannot be parsed, an error is returned.
+The function returns a map where the keys are the field names and the values are the parsed values. If a flag is not recognized or its value cannot be parsed, an error is returned.
 
 ## Usage
 
 Here is an example of how to use the function:
 
 ```go
-params := []*ParameterDefinition{
-   {Name: "verbose", ShortFlag: "v", Type: ParameterTypeBool},
-   {Name: "output", ShortFlag: "o", Type: ParameterTypeString},
+params := []*Definition{
+   {Name: "verbose", ShortFlag: "v", Type: TypeBool},
+   {Name: "output", ShortFlag: "o", Type: TypeString},
 }
 
 args := []string{"--verbose", "-o", "file.txt"}
@@ -61,7 +61,7 @@ if err != nil {
 fmt.Println(result) // prints: map[verbose:true output:file.txt]
 ```
 
-In this example, the function parses the `--verbose` and `-o` flags according to the provided parameter definitions. The `--verbose` flag is a boolean flag and is set to "true". The `-o` flag is a string flag and its value is "file.txt".
+In this example, the function parses the `--verbose` and `-o` flags according to the provided field definitions. The `--verbose` flag is a boolean flag and is set to "true". The `-o` flag is a string flag and its value is "file.txt".
 
 ## Examples
 

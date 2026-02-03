@@ -174,7 +174,7 @@ func (c *SignalTestCommand) testRawSocket(ctx context.Context, settings *SignalT
 }
 
 func NewSignalTestCommand() (*SignalTestCommand, error) {
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ Examples:
 				fields.WithShortFlag("p"),
 			),
 		),
-		cmds.WithLayersList(glazedLayer, commandSettingsLayer),
+		cmds.WithSections(glazedLayer, commandSettingsLayer),
 	)
 
 	return &SignalTestCommand{

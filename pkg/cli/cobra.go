@@ -146,12 +146,12 @@ func runCobraCommand(
 			}
 
 			if createSettings.CreateCommand != "" {
-				schema_ := s.Description().Layers.Clone()
+				schema_ := s.Description().Schema.Clone()
 				cmdDesc := &cmds.CommandDescription{
 					Name:   createSettings.CreateCommand,
 					Short:  s.Description().Short,
 					Long:   s.Description().Long,
-					Layers: schema_,
+					Schema: schema_,
 				}
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
@@ -250,10 +250,10 @@ func BuildCobraCommandFromCommandAndFunc(
 	description := s.Description()
 	// If the command implements GlazeCommand, ensure a glazed section is present
 	if _, isGlazeCmd := s.(cmds.GlazeCommand); isGlazeCmd {
-		originalSchema := description.Layers
+		originalSchema := description.Schema
 		glazedSchema := originalSchema.Clone()
 		if _, ok := glazedSchema.Get(settings.GlazedSlug); !ok {
-			glazedSection, err := settings.NewGlazedParameterLayers()
+			glazedSection, err := settings.NewGlazedSection()
 			if err != nil {
 				return nil, err
 			}
@@ -261,7 +261,7 @@ func BuildCobraCommandFromCommandAndFunc(
 		}
 		// clone the description so we don't mutate the original
 		newDesc := description.Clone(false)
-		newDesc.Layers = glazedSchema
+		newDesc.Schema = glazedSchema
 		description = newDesc
 	}
 	cmd := NewCobraCommandFromCommandDescription(description)
@@ -274,7 +274,7 @@ func BuildCobraCommandFromCommandAndFunc(
 		}
 	}
 	// Create parser with configured parser settings
-	cobraParser, err := NewCobraParserFromSections(description.Layers, &cfg.ParserCfg)
+	cobraParser, err := NewCobraParserFromSections(description.Schema, &cfg.ParserCfg)
 	if err != nil {
 		log.Error().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not create cobra parser")
 		return nil, err

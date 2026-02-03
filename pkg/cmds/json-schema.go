@@ -26,8 +26,8 @@ type CommandJsonSchema struct {
 	Required    []string                       `json:"required,omitempty"`
 }
 
-// parameterTypeToJsonSchema converts a parameter definition to a JSON schema property
-func parameterTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, error) {
+// fieldTypeToJsonSchema converts a field definition to a JSON schema property
+func fieldTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, error) {
 	prop := &JsonSchemaProperty{
 		Description: param.Help,
 		Required:    param.Required,
@@ -107,7 +107,7 @@ func parameterTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, e
 			"value": {Type: "string"},
 		}
 
-	// File-based parameter types
+	// File-based field types
 	case fields.TypeStringFromFile:
 		prop.Type = "string"
 
@@ -142,7 +142,7 @@ func parameterTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, e
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 
 	default:
-		return nil, fmt.Errorf("unsupported parameter type: %s", param.Type)
+		return nil, fmt.Errorf("unsupported field type: %s", param.Type)
 	}
 
 	return prop, nil
@@ -159,7 +159,7 @@ func (c *CommandDescription) ToJsonSchema() (*CommandJsonSchema, error) {
 
 	// Process flags
 	err := c.GetDefaultFlags().ForEachE(func(flag *fields.Definition) error {
-		prop, err := parameterTypeToJsonSchema(flag)
+		prop, err := fieldTypeToJsonSchema(flag)
 		if err != nil {
 			return fmt.Errorf("error processing flag %s: %w", flag.Name, err)
 		}
@@ -175,7 +175,7 @@ func (c *CommandDescription) ToJsonSchema() (*CommandJsonSchema, error) {
 
 	// Process arguments
 	err = c.GetDefaultArguments().ForEachE(func(arg *fields.Definition) error {
-		prop, err := parameterTypeToJsonSchema(arg)
+		prop, err := fieldTypeToJsonSchema(arg)
 		if err != nil {
 			return fmt.Errorf("error processing argument %s: %w", arg.Name, err)
 		}

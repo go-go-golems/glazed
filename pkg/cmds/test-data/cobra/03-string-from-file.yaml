@@ -8,10 +8,10 @@ description:
 tests:
   - args: []
     name: default
-    flagParameters:
+    flagFields:
       s: foobarfoobar
 
   - args: [ "--s", "test-data/inputs/01-string-from-file.txt" ]
     name: file
-    flagParameters:
+    flagFields:
       s: blopblop

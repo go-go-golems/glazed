@@ -227,7 +227,7 @@ The following functions are available to manipulate strings:
 - `padLeft(s string, n int) string` - Pad with spaces on the left
 - `padRight(s string, n int) string` - Pad with spaces on the right
 - `padCenter(s string, n int) string` - Center text with spaces
-- `toUrlParameter(v interface{}) string` - Convert value to URL parameter format
+- `toUrlField(v interface{}) string` - Convert value to URL field format
 - `toYaml(v interface{}) string` - Convert value to YAML format
 - `indentBlock(indent int, value string) string` - Indent text block
 

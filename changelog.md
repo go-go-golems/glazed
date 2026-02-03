@@ -1,33 +1,33 @@
-# Parameter Layer Serialization
+# Field Section Serialization
 
-Added ability to serialize parameter layers to YAML/JSON format for better interoperability and configuration management.
+Added ability to serialize field sections to YAML/JSON format for better interoperability and configuration management.
 
-- Added SerializableParameterLayer struct for YAML/JSON serialization
-- Added SerializableLayers struct for serializing collections of layers as a map keyed by slug
-- Added conversion functions ToSerializable and LayersToSerializable
-- Implemented YAML and JSON marshaling for ParameterLayers
-- Updated serialization to maintain layer order while providing slug-based access
-- Added custom YAML and JSON marshalers for SerializableLayers
+- Added SerializableSection struct for YAML/JSON serialization
+- Added SerializableSections struct for serializing collections of sections as a map keyed by slug
+- Added conversion functions ToSerializable and SectionsToSerializable
+- Implemented YAML and JSON marshaling for Schema
+- Updated serialization to maintain section order while providing slug-based access
+- Added custom YAML and JSON marshalers for SerializableSections
 
-# Parsed Parameters Serialization
+# Parsed Fields Serialization
 
-Added ability to serialize parsed parameters to YAML/JSON format for better debugging and state persistence.
+Added ability to serialize parsed fields to YAML/JSON format for better debugging and state persistence.
 
-- Added SerializableParsedParameter struct for YAML/JSON serialization
-- Added SerializableParsedParameters struct for serializing collections of parsed parameters
-- Added conversion functions for ParsedParameter and ParsedParameters
-- Implemented YAML and JSON marshaling for ParsedParameters
-- Maintained parameter order while providing name-based access in serialized format
+- Added SerializableFieldValue struct for YAML/JSON serialization
+- Added SerializableFieldValues struct for serializing collections of parsed fields
+- Added conversion functions for FieldValue and FieldValues
+- Implemented YAML and JSON marshaling for FieldValues
+- Maintained field order while providing name-based access in serialized format
 
-# Parsed Layer Serialization
+# Parsed Section Serialization
 
-Added ability to serialize parsed layers to YAML/JSON format, combining layer definitions and parsed parameters.
+Added ability to serialize parsed sections to YAML/JSON format, combining section definitions and parsed fields.
 
-- Added SerializableParsedLayer struct for YAML/JSON serialization
-- Added SerializableParsedLayers struct for serializing collections of parsed layers
-- Added conversion functions for ParsedLayer and ParsedLayers
-- Implemented YAML and JSON marshaling for ParsedLayer and ParsedLayers
-- Included both layer definitions and parsed parameters in serialized output
+- Added SerializableSectionValues struct for YAML/JSON serialization
+- Added SerializableValues struct for serializing collections of parsed sections
+- Added conversion functions for SectionValues and Values
+- Implemented YAML and JSON marshaling for SectionValues and Values
+- Included both section definitions and parsed fields in serialized output
 
 ## Documentation Clarification for Help System Implementation
 
@@ -36,20 +36,20 @@ Clarified the documentation about implementing AddDocToHelpSystem, explaining th
 - Updated help entry to show how to properly implement AddDocToHelpSystem in user's own package
 - Added example of doc.go implementation with embed functionality
 
-# Optional GlazedCommandLayer in CobraParser
+# Optional GlazedCommandSection in CobraParser
 
-Added ability to skip adding the GlazedCommandLayer when creating a new CobraParser.
+Added ability to skip adding the GlazedCommandSection when creating a new CobraParser.
 
-- Added skipGlazedCommandLayer flag to CobraParser struct
-- Added WithSkipGlazedCommandLayer option function
-- Modified NewCobraParserFromLayers to respect the skip flag
+- Added skipGlazedCommandSection flag to CobraParser struct
+- Added WithSkipGlazedCommandSection option function
+- Modified NewCobraParserFromSections to respect the skip flag
 
-# Optional Profile and Create Command Settings Layers in CobraParser
+# Optional Profile and Create Command Settings Sections in CobraParser
 
-Added ability to enable ProfileSettingsLayer and CreateCommandSettingsLayer when creating a new CobraParser. These layers are disabled by default and must be explicitly enabled.
+Added ability to enable ProfileSettingsSection and CreateCommandSettingsSection when creating a new CobraParser. These sections are disabled by default and must be explicitly enabled.
 
-- Added enableProfileSettingsLayer flag to CobraParser struct
-- Added enableCreateCommandSettingsLayer flag to CobraParser struct
-- Added WithProfileSettingsLayer option function to enable profile settings
-- Added WithCreateCommandSettingsLayer option function to enable create command settings
-- Modified NewCobraParserFromLayers to only add these layers when explicitly enabled 
+- Added enableProfileSettingsSection flag to CobraParser struct
+- Added enableCreateCommandSettingsSection flag to CobraParser struct
+- Added WithProfileSettingsSection option function to enable profile settings
+- Added WithCreateCommandSettingsSection option function to enable create command settings
+- Modified NewCobraParserFromSections to only add these sections when explicitly enabled 

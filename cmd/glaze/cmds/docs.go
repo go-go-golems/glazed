@@ -49,12 +49,12 @@ var DocsCmd = &cobra.Command{
 
 func init() {
 	DocsCmd.Flags().SortFlags = false
-	// This is an example of selective use of glazed parameter schema.
+	// This is an example of selective use of glazed schema.
 	// If we extracted out the docs command into a cmd.GlazeCommand, which we should
 	// in order to expose it as a REST API, all of this would not even be necessary,
 	// I think.
-	glazedLayer, err := settings.NewGlazedSchema(
-		settings.WithFieldsFiltersParameterLayerOptions(
+	glazedSection, err := settings.NewGlazedSchema(
+		settings.WithFieldsFiltersSectionOptions(
 			schema.WithDefaults(
 				&settings.FieldsFilterFlagsDefaults{
 					Fields: []string{
@@ -76,12 +76,12 @@ func init() {
 		panic(err)
 	}
 
-	cobraLayer, ok := glazedLayer.(schema.CobraSection)
+	cobraSection, ok := glazedSection.(schema.CobraSection)
 	if !ok {
-		panic("glazed layer is not a CobraSection")
+		panic("glazed section is not a CobraSection")
 	}
 
-	err = cobraLayer.AddSectionToCobraCommand(DocsCmd)
+	err = cobraSection.AddSectionToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

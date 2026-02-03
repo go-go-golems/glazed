@@ -33,7 +33,7 @@ production:
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
-	// Create parameter definitions
+	// Create field definitions
 	hostParam := &fields.Definition{
 		Name: "host",
 		Type: fields.TypeString,
@@ -47,16 +47,16 @@ production:
 		Type: fields.TypeBool,
 	}
 
-	// Create layers
-	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
+	// Create sections
+	section, err := schema.NewSection("config", "Config section", schema.WithFields(
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := schema.NewSchema()
-	parameterLayers.Set("config", layer)
+	schema_ := schema.NewSchema()
+	schema_.Set("config", section)
 
-	parsedLayers := values.New()
+	parsedValues := values.New()
 
 	// Test middleware with custom profile file - development profile
 	middleware := GatherFlagsFromCustomProfiles(
@@ -66,25 +66,25 @@ production:
 	)
 
 	handler := middleware(Identity)
-	err = handler(parameterLayers, parsedLayers)
+	err = handler(schema_, parsedValues)
 	require.NoError(t, err)
 
 	// Check that development values were loaded
-	parsedLayer, ok := parsedLayers.Get("config")
+	sectionValues, ok := parsedValues.Get("config")
 	require.True(t, ok)
-	require.NotNil(t, parsedLayer)
+	require.NotNil(t, sectionValues)
 
-	hostParamParsed, ok := parsedLayer.Fields.Get("host")
+	hostParamParsed, ok := sectionValues.Fields.Get("host")
 	require.True(t, ok)
 	require.NotNil(t, hostParamParsed)
 	assert.Equal(t, "dev.example.com", hostParamParsed.Value)
 
-	portParamParsed, ok := parsedLayer.Fields.Get("port")
+	portParamParsed, ok := sectionValues.Fields.Get("port")
 	require.True(t, ok)
 	require.NotNil(t, portParamParsed)
 	assert.Equal(t, 3000, portParamParsed.Value)
 
-	debugParamParsed, ok := parsedLayer.Fields.Get("debug")
+	debugParamParsed, ok := sectionValues.Fields.Get("debug")
 	require.True(t, ok)
 	require.NotNil(t, debugParamParsed)
 	assert.Equal(t, true, debugParamParsed.Value)
@@ -111,7 +111,7 @@ production:
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
-	// Create parameter definitions
+	// Create field definitions
 	hostParam := &fields.Definition{
 		Name: "host",
 		Type: fields.TypeString,
@@ -125,16 +125,16 @@ production:
 		Type: fields.TypeBool,
 	}
 
-	// Create layers
-	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
+	// Create sections
+	section, err := schema.NewSection("config", "Config section", schema.WithFields(
 		hostParam, portParam, debugParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := schema.NewSchema()
-	parameterLayers.Set("config", layer)
+	schema_ := schema.NewSchema()
+	schema_.Set("config", section)
 
-	parsedLayers := values.New()
+	parsedValues := values.New()
 
 	// Test middleware with custom profile file - production profile
 	middleware := GatherFlagsFromCustomProfiles(
@@ -144,47 +144,47 @@ production:
 	)
 
 	handler := middleware(Identity)
-	err = handler(parameterLayers, parsedLayers)
+	err = handler(schema_, parsedValues)
 	require.NoError(t, err)
 
 	// Check that production values were loaded
-	parsedLayer, ok := parsedLayers.Get("config")
+	sectionValues, ok := parsedValues.Get("config")
 	require.True(t, ok)
-	require.NotNil(t, parsedLayer)
+	require.NotNil(t, sectionValues)
 
-	hostParamParsed, ok := parsedLayer.Fields.Get("host")
+	hostParamParsed, ok := sectionValues.Fields.Get("host")
 	require.True(t, ok)
 	require.NotNil(t, hostParamParsed)
 	assert.Equal(t, "prod.example.com", hostParamParsed.Value)
 
-	portParamParsed, ok := parsedLayer.Fields.Get("port")
+	portParamParsed, ok := sectionValues.Fields.Get("port")
 	require.True(t, ok)
 	require.NotNil(t, portParamParsed)
 	assert.Equal(t, 8080, portParamParsed.Value)
 
-	debugParamParsed, ok := parsedLayer.Fields.Get("debug")
+	debugParamParsed, ok := sectionValues.Fields.Get("debug")
 	require.True(t, ok)
 	require.NotNil(t, debugParamParsed)
 	assert.Equal(t, false, debugParamParsed.Value)
 }
 
 func TestGatherFlagsFromCustomProfilesWithAppName(t *testing.T) {
-	// Create parameter definitions
+	// Create field definitions
 	testParam := &fields.Definition{
 		Name: "test-param",
 		Type: fields.TypeString,
 	}
 
-	// Create layers
-	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
+	// Create sections
+	section, err := schema.NewSection("config", "Config section", schema.WithFields(
 		testParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := schema.NewSchema()
-	parameterLayers.Set("config", layer)
+	schema_ := schema.NewSchema()
+	schema_.Set("config", section)
 
-	parsedLayers := values.New()
+	parsedValues := values.New()
 
 	// Test middleware with app name (should not fail even if config doesn't exist)
 	middleware := GatherFlagsFromCustomProfiles(
@@ -194,7 +194,7 @@ func TestGatherFlagsFromCustomProfilesWithAppName(t *testing.T) {
 	)
 
 	handler := middleware(Identity)
-	err = handler(parameterLayers, parsedLayers)
+	err = handler(schema_, parsedValues)
 	// Should not error even if profile file doesn't exist
 	require.NoError(t, err)
 }
@@ -213,22 +213,22 @@ development:
 	err := os.WriteFile(profileFile, []byte(profileContent), 0644)
 	require.NoError(t, err)
 
-	// Create parameter definitions
+	// Create field definitions
 	testParam := &fields.Definition{
 		Name: "test-param",
 		Type: fields.TypeString,
 	}
 
-	// Create layers
-	layer, err := schema.NewSection("config", "Config layer", schema.WithFields(
+	// Create sections
+	section, err := schema.NewSection("config", "Config section", schema.WithFields(
 		testParam,
 	))
 	require.NoError(t, err)
 
-	parameterLayers := schema.NewSchema()
-	parameterLayers.Set("config", layer)
+	schema_ := schema.NewSchema()
+	schema_.Set("config", section)
 
-	parsedLayers := values.New()
+	parsedValues := values.New()
 
 	// Test middleware with non-existent profile but required
 	middleware := GatherFlagsFromCustomProfiles(
@@ -239,7 +239,7 @@ development:
 	)
 
 	handler := middleware(Identity)
-	err = handler(parameterLayers, parsedLayers)
+	err = handler(schema_, parsedValues)
 	// Should error because profile is required but not found
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "profile staging not found")

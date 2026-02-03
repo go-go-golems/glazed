@@ -52,16 +52,16 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
-	cobraLayer, ok := glazedLayer.(schema.CobraSection)
+	cobraSection, ok := glazedSection.(schema.CobraSection)
 	if !ok {
-		return nil, fmt.Errorf("glazed layer is not a CobraSection")
+		return nil, fmt.Errorf("glazed section is not a CobraSection")
 	}
 
-	err = cobraLayer.AddSectionToCobraCommand(parseCmd)
+	err = cobraSection.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
 	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
 
-	err = cobraLayer.AddSectionToCobraCommand(extractCmd)
+	err = cobraSection.AddSectionToCobraCommand(extractCmd)
 	if err != nil {
 		return nil, err
 	}

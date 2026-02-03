@@ -5,21 +5,21 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
-type HandlerFunc func(layers *schema.Schema, parsedLayers *values.Values) error
+type HandlerFunc func(schema_ *schema.Schema, parsedValues *values.Values) error
 
 type Middleware func(HandlerFunc) HandlerFunc
 
-// layer middlewares:
-// - [x] whitelist (layers, parameters)
-// - [x] blacklist (layers, parameters)
+// section middlewares:
+// - [x] whitelist (sections, fields)
+// - [x] blacklist (sections, fields)
 // - [x] override (updateFromMap)
 // - [ ] set defaults explicitly
 // - [x] fill from json (updateFromMap)
-// - [x] from parameter definition defaults
+// - [x] from field definition defaults
 // - [x] fill from cobra (flags, arguments)
 // - [x] fill from viper
 
-func Identity(layers_ *schema.Schema, parsedLayers *values.Values) error {
+func Identity(schema_ *schema.Schema, parsedValues *values.Values) error {
 	return nil
 }
 
@@ -34,26 +34,26 @@ func Chain(ms ...Middleware) Middleware {
 	}
 }
 
-// Execute executes a chain of middlewares with the given fields.
+// Execute executes a chain of middlewares with the given schema.
 // It starts with an initial empty handler, then iteratively wraps it with each middleware.
-// Finally, it calls the resulting handler with the provided layers and parsedLayers.
+// Finally, it calls the resulting handler with the provided schema and parsed values.
 //
 // Middlewares basically get executed in the reverse order they are provided,
 // which means the first given middleware's handler will be called first.
 //
-// [f1, f2, f3] will be executed as f1(f2(f3(handler)))(layers_, parsedLayers).
+// [f1, f2, f3] will be executed as f1(f2(f3(handler)))(schema_, parsedValues).
 //
 // How they call the next handler is up to them, but they should always call it.
 //
 // Usually, the following rules of thumbs work well
-//   - if all you do is modify the parsedLayers, call `next` first.
-//     This means that parsedLayers will be modified in the order of the middlewares.
+//   - if all you do is modify parsed values, call `next` first.
+//     This means parsed values will be modified in the order of the middlewares.
 //     For example, executeMiddlewares(SetFromArgs(), SetFromEnv(), FromDefaults())
 //     will first set the defaults, then the environment value, and finally the command line arguments.
-//   - if you want to modify the layers before parsing, use the
+//   - if you want to modify the schema before parsing,
 //     call `next` last. This means that the middlewares further down the list will
-//     get the newly updated ParameterLayers and thus potentially restrict which parameters they parse.
-func Execute(layers_ *schema.Schema, parsedLayers *values.Values, middlewares ...Middleware) error {
+//     get the newly updated schema and thus potentially restrict which fields they parse.
+func Execute(schema_ *schema.Schema, parsedValues *values.Values, middlewares ...Middleware) error {
 	handler := Identity
 	reversedMiddlewares := make([]Middleware, len(middlewares))
 	for i, m_ := range middlewares {
@@ -63,6 +63,6 @@ func Execute(layers_ *schema.Schema, parsedLayers *values.Values, middlewares ..
 		handler = m_(handler)
 	}
 
-	clonedLayers := layers_.Clone()
-	return handler(clonedLayers, parsedLayers)
+	clonedSchema := schema_.Clone()
+	return handler(clonedSchema, parsedValues)
 }

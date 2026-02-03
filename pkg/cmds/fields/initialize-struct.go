@@ -56,12 +56,12 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 //
 // It iterates through the struct fields looking for those tagged with
 // "glazed". For each tagged field, it will lookup the corresponding
-// parameter value in the FieldValues map and set the field's value.
+// field value in the FieldValues map and set the field's value.
 //
-// If the tag open `from_json` is appended to `glazed` and the parameter
+// If the tag open `from_json` is appended to `glazed` and the field
 // value is a string, bytes, rawMessage or FileData, the value is parsed from json.
 //
-// If the tag contains a wildcard, the function will match parameter names against the
+// If the tag contains a wildcard, the function will match field names against the
 // wildcard pattern and store the matches in a map in the destination field. The map can
 // be of any type, as long as it is a map of strings. The same logic as for normal fields
 // will be applied to the map entries.
@@ -73,7 +73,7 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 //
 // s should be a pointer to the struct to initialize.
 //
-// ps is the FieldValues map to lookup parameter values from.
+// ps is the FieldValues map to lookup field values from.
 //
 // Example struct:
 //
@@ -127,7 +127,7 @@ func parsedTagOptions(tag string) (*tagOptions, error) {
 //
 // Returns an error if:
 // - s is not a pointer to a struct
-// - A tagged field does not have a matching parameter value in ps
+// - A tagged field does not have a matching field value in ps
 // - Failed to set the value of a field
 func (p *FieldValues) DecodeInto(s interface{}) error {
 	if s == nil {
@@ -144,31 +144,31 @@ func (p *FieldValues) DecodeInto(s interface{}) error {
 	v := reflect.ValueOf(s).Elem()
 
 	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		tag, ok := field.Tag.Lookup("glazed")
+		structField := st.Field(i)
+		tag, ok := structField.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}
 		options, err := parsedTagOptions(tag)
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse glazed tag for field %s", field.Name)
+			return errors.Wrapf(err, "failed to parse glazed tag for field %s", structField.Name)
 		}
 
 		if options.IsWildcard {
-			dst := v.FieldByName(field.Name)
+			dst := v.FieldByName(structField.Name)
 			if dst.Kind() != reflect.Map {
-				return errors.Errorf("wildcard parameters require a map field, field %s is not a map", field.Name)
+				return errors.Errorf("wildcard fields require a map field, field %s is not a map", structField.Name)
 			}
 			if err := p.setWildcardValues(dst, options.Name, options.FromJson); err != nil {
 				return errors.Wrapf(err, "failed to set wildcard values for %s", options.Name)
 			}
 		} else {
-			parameter, ok := p.Get(options.Name)
+			fieldValue, ok := p.Get(options.Name)
 			if !ok {
 				continue
 			}
-			dst := v.FieldByName(field.Name)
-			if err := p.setTargetValue(dst, parameter.Value, options.FromJson); err != nil {
+			dst := v.FieldByName(structField.Name)
+			if err := p.setTargetValue(dst, fieldValue.Value, options.FromJson); err != nil {
 				return errors.Wrapf(err, "failed to set value for %s", options.Name)
 			}
 		}
@@ -188,7 +188,7 @@ func (p *FieldValues) DecodeInto(s interface{}) error {
 //
 // This way, you can match multiple flags at once and stored them in a map.
 //
-// Parameters:
+// Fields:
 //   - dst: A reflect.Value acting as the container for storing the matched keys and their field values.
 //   - pattern: String pattern used for matching field names. It can include literal characters,
 //     character ranges enclosed in brackets and wildcards.
@@ -205,18 +205,18 @@ func (p *FieldValues) setWildcardValues(dst reflect.Value, pattern string, fromJ
 		dst.Set(reflect.MakeMapWithSize(reflect.MapOf(keyType, elemType), 0))
 	}
 
-	err := p.ForEachE(func(paramName string, parameter *FieldValue) error {
+	err := p.ForEachE(func(paramName string, field *FieldValue) error {
 		if matched, _ := filepath.Match(pattern, paramName); matched {
-			// Check if the type of parameter.Value is compatible with the map's value type
-			if reflect.TypeOf(parameter.Value) != elemType {
-				return errors.Errorf("type mismatch: expected type %s, got %s", elemType, reflect.TypeOf(parameter.Value))
+			// Check if the type of field.Value is compatible with the map's value type
+			if reflect.TypeOf(field.Value) != elemType {
+				return errors.Errorf("type mismatch: expected type %s, got %s", elemType, reflect.TypeOf(field.Value))
 			}
 
-			paramValue := reflect.ValueOf(parameter.Value)
+			paramValue := reflect.ValueOf(field.Value)
 
-			// Check if the type of parameter.Value is directly assignable to the map's value type
+			// Check if the type of field.Value is directly assignable to the map's value type
 			if !paramValue.Type().AssignableTo(elemType) {
-				// Check if the type of parameter.Value can be converted to the map's value type
+				// Check if the type of field.Value can be converted to the map's value type
 				if paramValue.Type().ConvertibleTo(elemType) {
 					paramValue = paramValue.Convert(elemType)
 				} else {
@@ -479,7 +479,7 @@ func StructToDataMap(s interface{}) (map[string]interface{}, error) {
 		fieldValue := v.Field(i)
 		if options.IsWildcard {
 			if fieldValue.Kind() != reflect.Map {
-				return nil, errors.Errorf("wildcard parameters require a map field, field %s is not a map", field.Name)
+				return nil, errors.Errorf("wildcard fields require a map field, field %s is not a map", field.Name)
 			}
 			if err := setWildcardDataMapValues(dataMap, fieldValue, options.Name); err != nil {
 				return nil, errors.Wrapf(err, "failed to set wildcard values for %s", options.Name)

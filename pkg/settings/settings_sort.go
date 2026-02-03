@@ -17,33 +17,33 @@ type SortFlagsSettings struct {
 	SortBy []string `glazed:"sort-by"`
 }
 
-func NewSortSettingsFromParameters(glazedLayer *values.SectionValues) (*SortFlagsSettings, error) {
+func NewSortSettingsFromValues(glazedValues *values.SectionValues) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize sort settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize sort settings from fields")
 	}
 
 	return s, nil
 }
 
-type SortParameterLayer struct {
+type SortSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSortParameterLayer(options ...schema.SectionOption) (*SortParameterLayer, error) {
-	ret := &SortParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(sortFlagsYaml, options...)
+func NewSortSection(options ...schema.SectionOption) (*SortSection, error) {
+	ret := &SortSection{}
+	section, err := schema.NewSectionFromYAML(sortFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create sort parameter layer")
+		return nil, errors.Wrap(err, "Failed to create sort field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *SortParameterLayer) Clone() schema.Section {
-	return &SortParameterLayer{
+func (f *SortSection) Clone() schema.Section {
+	return &SortSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

@@ -18,31 +18,31 @@ type JqSettings struct {
 //go:embed "flags/jq.yaml"
 var jqFlagsYaml []byte
 
-type JqParameterLayer struct {
+type JqSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewJqParameterLayer(options ...schema.SectionOption) (*JqParameterLayer, error) {
-	ret := &JqParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(jqFlagsYaml, options...)
+func NewJqSection(options ...schema.SectionOption) (*JqSection, error) {
+	ret := &JqSection{}
+	section, err := schema.NewSectionFromYAML(jqFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create jq parameter layer")
+		return nil, errors.Wrap(err, "Failed to create jq field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *JqParameterLayer) Clone() schema.Section {
-	return &JqParameterLayer{
+func (f *JqSection) Clone() schema.Section {
+	return &JqSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewJqSettingsFromParameters(glazedLayer *values.SectionValues) (*JqSettings, error) {
+func NewJqSettingsFromValues(glazedValues *values.SectionValues) (*JqSettings, error) {
 	s := &JqSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize jq settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize jq settings from fields")
 	}
 
 	return s, nil

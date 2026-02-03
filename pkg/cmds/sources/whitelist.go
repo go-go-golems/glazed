@@ -5,234 +5,240 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 )
 
-// WhitelistLayersHandler only leaves the specified layers from the given ParameterLayers.
-// It takes a slice of layer slugs, and deletes any layers in the ParameterLayers
+// WhitelistSectionsHandler only leaves the specified sections from the given schema.
+// It takes a slice of section slugs, and deletes any sections in the schema
 // that don't match those slugs.
-func WhitelistLayersHandler(slugs []string) HandlerFunc {
+func WhitelistSectionsHandler(slugs []string) HandlerFunc {
 	slugsToKeep := map[string]interface{}{}
 	for _, s := range slugs {
 		slugsToKeep[s] = nil
 	}
-	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
+	return func(schema_ *schema.Schema, parsedValues *values.Values) error {
 		toDelete := []string{}
-		layers_.ForEach(func(key string, l schema.Section) {
+		schema_.ForEach(func(key string, l schema.Section) {
 			if _, ok := slugsToKeep[key]; !ok {
 				toDelete = append(toDelete, key)
 			}
 		})
 		for _, key := range toDelete {
-			layers_.Delete(key)
+			schema_.Delete(key)
 		}
 		return nil
 	}
 }
 
-func WhitelistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
-	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-		layersToDelete := []string{}
-		layersToUpdate := map[string]schema.Section{}
-		layers_.ForEach(func(key string, l schema.Section) {
-			if _, ok := parameters_[key]; !ok {
-				layersToDelete = append(layersToDelete, key)
+// WhitelistSectionFieldsHandler restricts each section to the specified field names.
+func WhitelistSectionFieldsHandler(fieldsBySection map[string][]string) HandlerFunc {
+	return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+		sectionsToDelete := []string{}
+		sectionsToUpdate := map[string]schema.Section{}
+		schema_.ForEach(func(key string, l schema.Section) {
+			if _, ok := fieldsBySection[key]; !ok {
+				sectionsToDelete = append(sectionsToDelete, key)
 				return
 			}
 
-			parametersToKeep := map[string]interface{}{}
-			for _, p := range parameters_[key] {
-				parametersToKeep[p] = nil
+			fieldsToKeep := map[string]interface{}{}
+			for _, fieldName := range fieldsBySection[key] {
+				fieldsToKeep[fieldName] = nil
 			}
-			layersToUpdate[key] = schema.NewWhitelistSection(l, parametersToKeep)
+			sectionsToUpdate[key] = schema.NewWhitelistSection(l, fieldsToKeep)
 		})
-		for _, key := range layersToDelete {
-			layers_.Delete(key)
+		for _, key := range sectionsToDelete {
+			schema_.Delete(key)
 		}
-		for key, l := range layersToUpdate {
-			layers_.Set(key, l)
+		for key, l := range sectionsToUpdate {
+			schema_.Set(key, l)
 		}
 		return nil
 	}
 }
 
-func WhitelistLayers(slugs []string) Middleware {
+// WhitelistSections applies a section whitelist after running next.
+func WhitelistSections(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return WhitelistLayersHandler(slugs)(layers_, parsedLayers)
+			return WhitelistSectionsHandler(slugs)(schema_, parsedValues)
 		}
 	}
 }
 
-func WhitelistLayersFirst(slugs []string) Middleware {
+// WhitelistSectionsFirst applies a section whitelist before running next.
+func WhitelistSectionsFirst(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := WhitelistLayersHandler(slugs)(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := WhitelistSectionsHandler(slugs)(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return next(layers_, parsedLayers)
+			return next(schema_, parsedValues)
 		}
 	}
 }
 
-func WhitelistLayerParameters(parameters_ map[string][]string) Middleware {
+// WhitelistSectionFields applies a field whitelist per section after running next.
+func WhitelistSectionFields(fieldsBySection map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return WhitelistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+			return WhitelistSectionFieldsHandler(fieldsBySection)(schema_, parsedValues)
 		}
 	}
 }
 
-func WhitelistLayerParametersFirst(parameters_ map[string][]string) Middleware {
+// WhitelistSectionFieldsFirst applies a field whitelist per section before running next.
+func WhitelistSectionFieldsFirst(fieldsBySection map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := WhitelistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := WhitelistSectionFieldsHandler(fieldsBySection)(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return next(layers_, parsedLayers)
+			return next(schema_, parsedValues)
 		}
 	}
 }
 
-// BlacklistLayersHandler removes the specified layers from the given ParameterLayers.
-// It takes a slice of layer slugs, and deletes any layers in the ParameterLayers
+// BlacklistSectionsHandler removes the specified sections from the given schema.
+// It takes a slice of section slugs, and deletes any sections in the schema
 // that match those slugs.
-func BlacklistLayersHandler(slugs []string) HandlerFunc {
+func BlacklistSectionsHandler(slugs []string) HandlerFunc {
 	slugsToDelete := map[string]interface{}{}
 	for _, s := range slugs {
 		slugsToDelete[s] = nil
 	}
-	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
+	return func(schema_ *schema.Schema, parsedValues *values.Values) error {
 		toDelete := []string{}
-		layers_.ForEach(func(key string, l schema.Section) {
+		schema_.ForEach(func(key string, l schema.Section) {
 			if _, ok := slugsToDelete[key]; ok {
 				toDelete = append(toDelete, key)
 			}
 		})
 		for _, key := range toDelete {
-			layers_.Delete(key)
+			schema_.Delete(key)
 		}
 		return nil
 	}
 }
 
-func BlacklistLayerParametersHandler(parameters_ map[string][]string) HandlerFunc {
-	return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-		layersToDelete := []string{}
-		layersToUpdate := map[string]schema.Section{}
-		layers_.ForEach(func(key string, l schema.Section) {
-			if _, ok := parameters_[key]; !ok {
+// BlacklistSectionFieldsHandler removes the specified fields per section.
+func BlacklistSectionFieldsHandler(fieldsBySection map[string][]string) HandlerFunc {
+	return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+		sectionsToDelete := []string{}
+		sectionsToUpdate := map[string]schema.Section{}
+		schema_.ForEach(func(key string, l schema.Section) {
+			if _, ok := fieldsBySection[key]; !ok {
 				return
 			}
 
-			parametersToKeep := map[string]interface{}{}
-			for _, p := range parameters_[key] {
-				parametersToKeep[p] = nil
+			fieldsToKeep := map[string]interface{}{}
+			for _, fieldName := range fieldsBySection[key] {
+				fieldsToKeep[fieldName] = nil
 			}
-			layersToUpdate[key] = schema.NewBlacklistSection(l, parametersToKeep)
+			sectionsToUpdate[key] = schema.NewBlacklistSection(l, fieldsToKeep)
 		})
-		for _, key := range layersToDelete {
-			layers_.Delete(key)
+		for _, key := range sectionsToDelete {
+			schema_.Delete(key)
 		}
-		for key, l := range layersToUpdate {
-			layers_.Set(key, l)
+		for key, l := range sectionsToUpdate {
+			schema_.Set(key, l)
 		}
 		return nil
 	}
 }
 
-// BlacklistLayers is a middleware that removes the given layers from ParameterLayers after running `next`.
-func BlacklistLayers(slugs []string) Middleware {
+// BlacklistSections removes the given sections after running next.
+func BlacklistSections(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return BlacklistLayersHandler(slugs)(layers_, parsedLayers)
+			return BlacklistSectionsHandler(slugs)(schema_, parsedValues)
 		}
 	}
 }
 
-// BlacklistLayersFirst is a middleware that removes the given layers from ParameterLayers before running `next`.
-func BlacklistLayersFirst(slugs []string) Middleware {
+// BlacklistSectionsFirst removes the given sections before running next.
+func BlacklistSectionsFirst(slugs []string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return BlacklistLayersHandler(slugs)(layers_, parsedLayers)
+			return BlacklistSectionsHandler(slugs)(schema_, parsedValues)
 		}
 	}
 }
 
-// BlacklistLayerParameters is a middleware that removes the given parameters from ParameterLayers after running `next`.
-func BlacklistLayerParameters(parameters_ map[string][]string) Middleware {
+// BlacklistSectionFields removes the given fields after running next.
+func BlacklistSectionFields(fieldsBySection map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return BlacklistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+			return BlacklistSectionFieldsHandler(fieldsBySection)(schema_, parsedValues)
 		}
 	}
 }
 
-// BlacklistLayerParametersFirst is a middleware that removes the given parameters from ParameterLayers before running `next`.
-func BlacklistLayerParametersFirst(parameters_ map[string][]string) Middleware {
+// BlacklistSectionFieldsFirst removes the given fields before running next.
+func BlacklistSectionFieldsFirst(fieldsBySection map[string][]string) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := BlacklistLayerParametersHandler(parameters_)(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := BlacklistSectionFieldsHandler(fieldsBySection)(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			return next(layers_, parsedLayers)
+			return next(schema_, parsedValues)
 		}
 	}
 }
 
-// WrapWithLayerModifyingHandler wraps a middleware that modifies the layers
-// with additional middlewares. It clones the original layers, calls the
-// layer modifying middleware, chains any additional middlewares, calls
-// next with the original layers, and returns any errors.
+// WrapWithSectionModifyingHandler wraps a middleware that modifies the schema
+// with additional middlewares. It clones the original schema, calls the
+// section-modifying middleware, chains any additional middlewares, calls
+// next with the original schema, and returns any errors.
 //
 // This makes it possible to restrict a set of middlewares to only apply to a
-// restricted subset of layers. However, the normal set of middlewares is allowed
+// restricted subset of sections. However, the normal set of middlewares is allowed
 // to continue as normal.
-func WrapWithLayerModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware) Middleware {
+func WrapWithSectionModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
 
 			chain := Chain(nextMiddlewares...)
 
-			clonedLayers := layers_.Clone()
-			err = m(clonedLayers, parsedLayers)
+			clonedSchema := schema_.Clone()
+			err = m(clonedSchema, parsedValues)
 			if err != nil {
 				return err
 			}
 
-			err = chain(Identity)(clonedLayers, parsedLayers)
+			err = chain(Identity)(clonedSchema, parsedValues)
 			if err != nil {
 				return err
 			}
@@ -242,26 +248,28 @@ func WrapWithLayerModifyingHandler(m HandlerFunc, nextMiddlewares ...Middleware)
 	}
 }
 
-// WrapWithWhitelistedLayers wraps a middleware that restricts layers
+// WrapWithWhitelistedSections wraps a middleware that restricts sections
 // to a specified set of slugs, with any additional middlewares.
 // It makes it possible to apply a subset of middlewares to only
-// certain restricted layers.
-func WrapWithWhitelistedLayers(slugs []string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(WhitelistLayersHandler(slugs), nextMiddlewares...)
+// certain restricted sections.
+func WrapWithWhitelistedSections(slugs []string, nextMiddlewares ...Middleware) Middleware {
+	return WrapWithSectionModifyingHandler(WhitelistSectionsHandler(slugs), nextMiddlewares...)
 }
 
-func WrapWithWhitelistedParameterLayers(parameters_ map[string][]string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(WhitelistLayerParametersHandler(parameters_), nextMiddlewares...)
+// WrapWithWhitelistedSectionFields restricts fields within a subset of sections.
+func WrapWithWhitelistedSectionFields(fieldsBySection map[string][]string, nextMiddlewares ...Middleware) Middleware {
+	return WrapWithSectionModifyingHandler(WhitelistSectionFieldsHandler(fieldsBySection), nextMiddlewares...)
 }
 
-// WrapWithBlacklistedLayers wraps a middleware that restricts layers
+// WrapWithBlacklistedSections wraps a middleware that restricts sections
 // to a specified set of slugs, with any additional middlewares.
 // It makes it possible to apply a subset of middlewares to only
-// certain restricted layers.
-func WrapWithBlacklistedLayers(slugs []string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(BlacklistLayersHandler(slugs), nextMiddlewares...)
+// certain restricted sections.
+func WrapWithBlacklistedSections(slugs []string, nextMiddlewares ...Middleware) Middleware {
+	return WrapWithSectionModifyingHandler(BlacklistSectionsHandler(slugs), nextMiddlewares...)
 }
 
-func WrapWithBlacklistedParameterLayers(parameters_ map[string][]string, nextMiddlewares ...Middleware) Middleware {
-	return WrapWithLayerModifyingHandler(BlacklistLayerParametersHandler(parameters_), nextMiddlewares...)
+// WrapWithBlacklistedSectionFields removes fields within a subset of sections.
+func WrapWithBlacklistedSectionFields(fieldsBySection map[string][]string, nextMiddlewares ...Middleware) Middleware {
+	return WrapWithSectionModifyingHandler(BlacklistSectionFieldsHandler(fieldsBySection), nextMiddlewares...)
 }

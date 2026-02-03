@@ -1,16 +1,16 @@
 ---
 Title: Glazed Middlewares Guide
 Slug: middlewares-guide
-Short: Learn how to use Glazed's middleware system to load parameter values from various sources
+Short: Learn how to use Glazed's middleware system to load field values from various sources
 Topics:
 - middlewares
-- parameters
+- fields
 - configuration
 Commands:
 - ExecuteMiddlewares
 - SetFromDefaults
 - UpdateFromEnv
-- LoadParametersFromFile
+- LoadFieldsFromFile
 - ParseFromCobraCommand
 Flags:
 - none
@@ -20,11 +20,11 @@ ShowPerDefault: true
 SectionType: GeneralTopic
 ---
 
-# Glazed Middlewares Guide: Loading Parameter Values
+# Glazed Middlewares Guide: Loading Field Values
 
 ## Overview
 
-Glazed provides a flexible middleware system for loading parameter values from various sources. This guide explains how to use these middlewares effectively to populate your command parameters from different locations like environment variables, config files, and command line arguments.
+Glazed provides a flexible middleware system for loading field values from various sources. This guide explains how to use these middlewares effectively to populate your command fields from different locations like environment variables, config files, and command line arguments.
 
 ## Key Concepts
 
@@ -33,57 +33,57 @@ Glazed provides a flexible middleware system for loading parameter values from v
 A middleware function in the Glazed framework has the following signature:
 
 ```go
-type HandlerFunc func(layers *schema.Schema, parsedLayers *values.Values) error
+type HandlerFunc func(sections *schema.Schema, parsedSections *values.Values) error
 type Middleware func(next HandlerFunc) HandlerFunc
 ```
 
-### Relationship between ParameterLayers and ParsedLayers
+### Relationship between Schema and Values
 
-- **ParameterLayers**: These are collections of parameter definitions. They define the structure and metadata of parameters, such as their names, types, and default values.
+- **Schema**: These are collections of field definitions. They define the structure and metadata of fields, such as their names, types, and default values.
 
-- **ParsedLayers**: These are collections of parsed parameter values. They store the actual values obtained from various sources like command-line arguments, environment variables, or configuration files.
+- **Values**: These are collections of parsed field values. They store the actual values obtained from various sources like command-line arguments, environment variables, or configuration files.
 
-Middlewares operate on these two structures to manage and transform parameter values.
+Middlewares operate on these two structures to manage and transform field values.
 
 ### Purpose of Middlewares
 
 Middlewares in the Glazed framework serve several purposes:
 
-1. **Modular Parameter Handling**: They allow for modular and reusable parameter processing logic. Each middleware can focus on a specific source or transformation of parameter values.
+1. **Modular Field Handling**: They allow for modular and reusable field processing logic. Each middleware can focus on a specific source or transformation of field values.
 
-2. **Logging and Tracking**: Each middleware can log its actions, providing a trace of how parameter values were derived.
+2. **Logging and Tracking**: Each middleware can log its actions, providing a trace of how field values were derived.
 
-### Adding Information to Parsed Parameters
+### Adding Information to Parsed Fields
 
-Each middleware can add information to the parsed parameters by:
+Each middleware can add information to the parsed fields by:
 
 - Setting default values if no value exists.
 - Overriding existing values with those from a more specific source.
-- Logging the source and transformation steps for each parameter value.
+- Logging the source and transformation steps for each field value.
 
 ### Middleware Structure
 
 Each middleware follows a consistent pattern:
 - It receives a `next` handler function
-- It can process parameters before and/or after calling `next`
+- It can process fields before and/or after calling `next`
 - It works with two main structures:
-    - `ParameterLayers`: Contains parameter definitions
-    - `ParsedLayers`: Stores the actual parameter values
+    - `Schema`: Contains field definitions
+    - `Values`: Stores the actual field values
 
 ### Order of Execution
 
 Middlewares are executed in reverse order of how they're provided to `ExecuteMiddlewares`. For example:
 
 ```go
-ExecuteMiddlewares(layers, parsedLayers,
+ExecuteMiddlewares(sections, parsedSections,
     SetFromDefaults(),
     UpdateFromEnv("APP"),
-    LoadParametersFromFile("config.yaml"),
+    LoadFieldsFromFile("config.yaml"),
 )
 ```
 
 Will execute in this order:
-1. LoadParametersFromFile
+1. LoadFieldsFromFile
 2. UpdateFromEnv
 3. SetFromDefaults
 
@@ -91,7 +91,7 @@ Will execute in this order:
 
 ### 1. Setting Default Values
 
-Use `SetFromDefaults` to populate parameters with their default values:
+Use `SetFromDefaults` to populate fields with their default values:
 
 ```go
 middleware := sources.FromDefaults(
@@ -99,7 +99,7 @@ middleware := sources.FromDefaults(
 )
 ```
 
-This middleware reads the default values specified in parameter definitions and sets them if no value exists.
+This middleware reads the default values specified in field definitions and sets them if no value exists.
 
 ### 2. Environment Variables
 
@@ -112,12 +112,12 @@ middleware := sources.FromEnv("APP",
 ```
 
 This will look for environment variables with the specified prefix. For example:
-- Parameter `port` becomes `APP_PORT`
-- Parameter `db_host` becomes `APP_DB_HOST`
+- Field `port` becomes `APP_PORT`
+- Field `db_host` becomes `APP_DB_HOST`
 
 ### 3. Configuration Files
 
-Load parameters from JSON or YAML files using `LoadParametersFromFile`:
+Load fields from JSON or YAML files using `LoadFieldsFromFile`:
 
 ```go
 middleware := sources.FromFile("config.yaml",
@@ -127,11 +127,11 @@ middleware := sources.FromFile("config.yaml",
 )
 ```
 
-By default, `LoadParametersFromFile` expects the config file to have this structure:
+By default, `LoadFieldsFromFile` expects the config file to have this structure:
 ```yaml
-layerName:
-  parameterName: value
-  anotherParameter: value
+sectionName:
+  fieldName: value
+  anotherField: value
 ```
 
 #### Custom Config File Structures
@@ -146,7 +146,7 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
         "demo": make(map[string]interface{}),
     }
     
-    // Map flat keys to layer parameters
+    // Map flat keys to section fields
     if apiKey, ok := configMap["api_key"]; ok {
         result["demo"]["api-key"] = apiKey
     }
@@ -188,10 +188,10 @@ app:
       key: "secret-from-triple-nested"
 ```
 
-The mapper handles both structures and maps them to the standard layer format. This allows you to:
+The mapper handles both structures and maps them to the standard section format. This allows you to:
 - Support legacy config file formats
 - Adapt to existing configuration structures
-- Transform nested JSON/YAML hierarchies into layer parameters
+- Transform nested JSON/YAML hierarchies into section fields
 - Implement custom key mapping logic
 
 ### 4. Command Line Arguments
@@ -233,7 +233,7 @@ sources.FromFiles([]string{
 
 ### 6. Custom Configuration Files
 
-Load parameters from specific config files using built-in file middlewares:
+Load fields from specific config files using built-in file middlewares:
 
 ```go
 // Load from a specific config file (standard format)
@@ -254,7 +254,7 @@ middleware := sources.FromFiles(
 
 // Load with custom config structure mapper
 mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error) {
-    // Transform your custom config structure to layer map format
+    // Transform your custom config structure to section map format
     // ...
 }
 middleware := sources.FromFile(
@@ -282,85 +282,85 @@ middleware := sources.FromMapAsDefault(values,
 )
 ```
 
-### 8. Layer Manipulation
+### 8. Section Manipulation
 
-Glazed provides several middlewares for manipulating parsed layers directly:
+Glazed provides several middlewares for manipulating parsed sections directly:
 
-#### Replacing Layers
+#### Replacing Sections
 
-Replace a single layer:
+Replace a single section:
 ```go
-// Replace the "config" layer with a new one
-middleware := middlewares.ReplaceParsedLayer("config", newLayer)
+// Replace the "config" section with a new one
+middleware := middlewares.ReplaceSectionValues("config", newSection)
 ```
 
-Replace multiple layers at once:
+Replace multiple sections at once:
 ```go
-// Replace multiple layers with new ones
-middleware := middlewares.ReplaceParsedLayers(newLayers)
+// Replace multiple sections with new ones
+middleware := middlewares.ReplaceValues(newSections)
 ```
 
-#### Merging Layers
+#### Merging Sections
 
-Merge a single layer:
+Merge a single section:
 ```go
-// Merge a layer into the "config" layer
-middleware := middlewares.MergeParsedLayer("config", layerToMerge)
+// Merge a section into the "config" section
+middleware := middlewares.MergeSectionValues("config", sectionToMerge)
 ```
 
-Merge multiple layers:
+Merge multiple sections:
 ```go
-// Merge multiple layers into existing ones
-middleware := middlewares.MergeParsedLayers(layersToMerge)
+// Merge multiple sections into existing ones
+middleware := middlewares.MergeValues(sectionsToMerge)
 ```
 
-#### Selective Layer Operations
+#### Selective Section Operations
 
-For more fine-grained control, you can use selective middlewares that only operate on specific layers:
+For more fine-grained control, you can use selective middlewares that only operate on specific sections:
 
 ```go
-// Replace only specific layers
-middleware := middlewares.ReplaceParsedLayersSelective(newLayers, []string{"config", "env"})
+// Replace only specific sections
+middleware := middlewares.ReplaceValuesSelective(newSections, []string{"config", "env"})
 
-// Merge only specific layers
-middleware := middlewares.MergeParsedLayersSelective(layersToMerge, []string{"user", "profile"})
+// Merge only specific sections
+middleware := middlewares.MergeValuesSelective(sectionsToMerge, []string{"user", "profile"})
 ```
 
 These selective middlewares are useful when you want to:
-- Update only certain configuration layers while preserving others
+- Update only certain configuration sections while preserving others
 - Merge specific profiles while keeping others untouched
 - Apply partial configuration updates
 - Handle targeted configuration overrides
 
 Example using selective operations:
 ```go
-sources.Execute(layers, parsedLayers,
-    // Replace only the base configuration layers
-    middlewares.ReplaceParsedLayersSelective(baseConfig, []string{"system", "defaults"}),
+sources.Execute(sections, parsedSections,
+    // Replace only the base configuration sections
+    middlewares.ReplaceValuesSelective(baseConfig, []string{"system", "defaults"}),
     
     // Merge only user-specific settings
-    middlewares.MergeParsedLayersSelective(userConfig, []string{"preferences", "history"}),
+    middlewares.MergeValuesSelective(userConfig, []string{"preferences", "history"}),
     
     // Apply full environment config
-    middlewares.ReplaceParsedLayers(envConfig),
+    middlewares.ReplaceValues(envConfig),
 )
 ```
 
-These layer manipulation middlewares are useful when you need to:
+These section manipulation middlewares are useful when you need to:
 - Override configuration from different sources
 - Combine multiple configuration profiles
-- Apply temporary parameter changes
+- Apply temporary field changes
 - Handle dynamic configuration updates
 
 Example combining multiple operations:
 ```go
-sources.Execute(layers, parsedLayers,
+sources.Execute(sections, parsedSections,
     // Replace base configuration
-    middlewares.ReplaceParsedLayer("base", baseConfig),
+    middlewares.ReplaceSectionValues("base", baseConfig),
     // Merge environment-specific settings
-    middlewares.MergeParsedLayer("env", envSettings),
+    middlewares.MergeSectionValues("env", envSettings),
     // Apply user preferences
-    middlewares.MergeParsedLayer("user", userPrefs),
+    middlewares.MergeSectionValues("user", userPrefs),
 )
 ```
 
@@ -399,19 +399,19 @@ middlewares := []middlewares.Middleware{
 }
 ```
 
-### 2. Layer Filtering
+### 2. Section Filtering
 
-Restrict middleware operation to specific layers:
+Restrict middleware operation to specific sections:
 
 ```go
-// Only apply to specified layers
-middleware := middlewares.WrapWithWhitelistedLayers(
+// Only apply to specified sections
+middleware := middlewares.WrapWithWhitelistedSections(
     []string{"config", "api"},
     sources.FromEnv("APP"),
 )
 
-// Exclude specific layers
-middleware := middlewares.WrapWithBlacklistedLayers(
+// Exclude specific sections
+middleware := middlewares.WrapWithBlacklistedSections(
     []string{"internal"},
     sources.FromEnv("APP"),
 )
@@ -423,9 +423,9 @@ Update values directly from a map:
 
 ```go
 values := map[string]map[string]interface{}{
-    "layer1": {
-        "param1": "value1",
-        "param2": 42,
+    "section1": {
+        "field1": "value1",
+        "field2": 42,
     },
 }
 
@@ -440,17 +440,17 @@ middleware := sources.FromMap(values,
 
 2. **Order Matters**: Arrange middlewares so that more specific sources override more general ones:
    ```go
-   ExecuteMiddlewares(layers, parsedLayers,
+   ExecuteMiddlewares(sections, parsedSections,
        SetFromDefaults(),           // Most general
        UpdateFromEnv("APP"),        // More specific
-       LoadParametersFromFile(),    // More specific
+       LoadFieldsFromFile(),    // More specific
        ParseFromCobraCommand(),     // Most specific
    )
    ```
 
 3. **Error Handling**: Always check for errors returned by `ExecuteMiddlewares`:
    ```go
-   err := sources.Execute(layers, parsedLayers, 
+   err := sources.Execute(sections, parsedSections, 
        // ... middlewares ...
    )
    if err != nil {
@@ -458,7 +458,7 @@ middleware := sources.FromMap(values,
    }
    ```
 
-4. **Layer Organization**: Group related parameters into logical layers for easier management and filtering.
+4. **Section Organization**: Group related fields into logical sections for easier management and filtering.
 
 ## Common Patterns
 
@@ -467,7 +467,7 @@ middleware := sources.FromMap(values,
 A typical configuration loading pattern:
 
 ```go
-sources.Execute(layers, parsedLayers,
+sources.Execute(sections, parsedSections,
     // Base defaults
     sources.FromDefaults(),
     
@@ -489,7 +489,7 @@ sources.Execute(layers, parsedLayers,
 Load different configurations based on profiles:
 
 ```go
-sources.Execute(layers, parsedLayers,
+sources.Execute(sections, parsedSections,
     sources.FromDefaults(),
     middlewares.GatherFlagsFromProfiles(
         defaultProfileFile, // default profile file (commonly ~/.config/<app>/profiles.yaml)
@@ -545,16 +545,16 @@ This is useful for:
 
 ```go
 func TestSetFromDefaults(t *testing.T) {
-    layers := createTestLayers()
-    parsedLayers := values.New()
+    sections := createTestSections()
+    parsedSections := values.New()
 
     middleware := sources.FromDefaults()
 
-    err := sources.Execute(layers, parsedLayers, middleware)
+    err := sources.Execute(sections, parsedSections, middleware)
     require.NoError(t, err)
 
     // Verify default values were set
-    value, exists := parsedLayers.GetParameter("default", "param1")
+    value, exists := parsedSections.GetField("default", "param1")
     assert.True(t, exists)
     assert.Equal(t, "default-value", value)
 }
@@ -564,8 +564,8 @@ func TestSetFromDefaults(t *testing.T) {
 
 ```go
 func TestMiddlewareChain(t *testing.T) {
-    layers := createTestLayers()
-    parsedLayers := values.New()
+    sections := createTestSections()
+    parsedSections := values.New()
 
     // Set up test environment
     os.Setenv("APP_PARAM1", "env-value")
@@ -576,11 +576,11 @@ func TestMiddlewareChain(t *testing.T) {
         sources.FromDefaults(),
     }
 
-    err := sources.Execute(layers, parsedLayers, mws...)
+    err := sources.Execute(sections, parsedSections, mws...)
     require.NoError(t, err)
 
     // Environment should override defaults
-    value, _ := parsedLayers.GetParameter("default", "param1")
+    value, _ := parsedSections.GetField("default", "param1")
     assert.Equal(t, "env-value", value)
 }
 ```
@@ -589,15 +589,15 @@ func TestMiddlewareChain(t *testing.T) {
 
 ```go
 func TestCustomValidationMiddleware(t *testing.T) {
-    layers := createTestLayers()
-    parsedLayers := values.New()
+    sections := createTestSections()
+    parsedSections := values.New()
 
     // Add a value that should fail validation
-    parsedLayers.SetParameter("default", "email", "invalid-email")
+    parsedSections.SetField("default", "email", "invalid-email")
 
     middleware := ValidateEmailMiddleware()
 
-    err := sources.Execute(layers, parsedLayers, middleware)
+    err := sources.Execute(sections, parsedSections, middleware)
     assert.Error(t, err)
     assert.Contains(t, err.Error(), "invalid email format")
 }
@@ -605,7 +605,7 @@ func TestCustomValidationMiddleware(t *testing.T) {
 
 ## Debugging Tips
 
-1. Use logging middleware to track parameter changes:
+1. Use logging middleware to track field changes:
 ```go
 middleware := func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
     return func(l *schema.Schema, pl *values.Values) error {
@@ -619,14 +619,14 @@ middleware := func(next middlewares.HandlerFunc) middlewares.HandlerFunc {
 
 2. Inspect parsed values:
 ```go
-parsedLayers.ForEach(func(layer string, params *parameters.ParsedParameters) {
+parsedSections.ForEach(func(section string, params *fields.FieldValues) {
     params.ForEach(func(name string, value interface{}) {
-        fmt.Printf("%s.%s = %v\n", layer, name, value)
+        fmt.Printf("%s.%s = %v\n", section, name, value)
     })
 })
 ```
 
-Remember that middlewares are a powerful tool for managing parameter values, but with that power comes the need for careful organization and consideration of precedence rules.
+Remember that middlewares are a powerful tool for managing field values, but with that power comes the need for careful organization and consideration of precedence rules.
 
 # Integrating Middlewares with Glazed Commands
 
@@ -667,7 +667,7 @@ func BuildCobraCommandWithMiddlewares(
     opts_ := append([]cli.CobraOption{
         cli.WithParserConfig(cli.CobraParserConfig{
             MiddlewaresFunc: GetCommandMiddlewares,
-            ShortHelpLayers: []string{"default", "helpers"},
+            ShortHelpSections: []string{"default", "helpers"},
         }),
     }, opts...)
     return cli.BuildCobraCommand(cmd, opts_...)
@@ -685,9 +685,9 @@ func GetCommandMiddlewares(
     }
 
     // Optional config file
-    if commandSettings.LoadParametersFromFile != "" {
+    if commandSettings.LoadFieldsFromFile != "" {
         middlewares_ = append(middlewares_,
-            sources.FromFile(commandSettings.LoadParametersFromFile))
+            sources.FromFile(commandSettings.LoadFieldsFromFile))
     }
 
     // Profile support
@@ -706,8 +706,8 @@ func GetCommandMiddlewares(
 			commandSettings.Profile,
 			commandSettings.DefaultProfileName,
 		),
-    // Env config for specific layers (if needed)
-    middlewares.WrapWithWhitelistedLayers(
+    // Env config for specific sections (if needed)
+    middlewares.WrapWithWhitelistedSections(
         []string{"api", "client"},
         sources.FromEnv("APP"),
     ),
@@ -730,12 +730,12 @@ func GetCommandMiddlewares(
    - Command-line flags (highest)
    - Defaults (lowest)
 
-## Layer-Specific Configuration
+## Section-Specific Configuration
 
-Restrict middleware to specific layers:
+Restrict middleware to specific sections:
 
 ```go
-middlewares.WrapWithWhitelistedLayers(
+middlewares.WrapWithWhitelistedSections(
     []string{"api", "client"},
         sources.FromEnv("APP_"),
 )
@@ -747,20 +747,20 @@ This section provides concrete examples of implementing and using the middleware
 
 ### 1. Basic Setup
 
-The foundation of Glazed's parameter system is the `ParameterLayer`. Before we can use middlewares, we need to define our parameter structure. This example shows how to create a layer that matches the architectural concepts discussed earlier:
+The foundation of Glazed's field system is the `Section`. Before we can use middlewares, we need to define our field structure. This example shows how to create a section that matches the architectural concepts discussed earlier:
 
 ```go
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
 )
 
 func main() {
-    // Create a new parameter layer
-    layer, err := schema.NewSection(
+    // Create a new field section
+    section, err := schema.NewSection(
         "config",
         "Configuration Options",
         schema.WithFields(
@@ -782,31 +782,31 @@ func main() {
         panic(err)
     }
 
-    // Create parameter layers container
-    parameterLayers := schema.NewSchema(
-        layers.WithLayers(layer),
+    // Create field sections container
+    schema_ := schema.NewSchema(
+        sections.WithSections(section),
     )
 }
 ```
 
 This setup demonstrates several key concepts:
-- Parameter definitions with types, defaults, and help text
-- Layer organization with meaningful names and descriptions
-- Error handling for layer creation
-- Container structure for managing multiple layers
+- Field definitions with types, defaults, and help text
+- Section organization with meaningful names and descriptions
+- Error handling for section creation
+- Container structure for managing multiple sections
 
 ### 2. Using Individual Middlewares
 
-Now that we understand the middleware signature and execution order, let's see how to implement specific middlewares. These examples show how the middleware chain processes parameters in practice.
+Now that we understand the middleware signature and execution order, let's see how to implement specific middlewares. These examples show how the middleware chain processes fields in practice.
 
 #### SetFromDefaults Middleware
 
-The `SetFromDefaults` middleware demonstrates the basic middleware pattern of processing parameters after the next handler:
+The `SetFromDefaults` middleware demonstrates the basic middleware pattern of processing fields after the next handler:
 
 ```go
 func useDefaultsMiddleware() {
-    // Create empty parsed layers
-    parsedLayers := values.New()
+    // Create empty parsed sections
+    parsedSections := values.New()
 
     // Create and execute the middleware
     middleware := sources.FromDefaults(
@@ -814,8 +814,8 @@ func useDefaultsMiddleware() {
     )
 
     err := sources.Execute(
-        parameterLayers,
-        parsedLayers,
+        schema_,
+        parsedSections,
         middleware,
     )
     if err != nil {
@@ -823,14 +823,14 @@ func useDefaultsMiddleware() {
     }
 
     // Access the parsed values
-    configLayer, _ := parsedLayers.Get("config")
-    hostValue, _ := configLayer.GetParameter("host")
+    configSection, _ := parsedSections.Get("config")
+    hostValue, _ := configSection.GetField("host")
     // hostValue will be "localhost"
 }
 ```
 
 This example shows:
-- Creation of empty ParsedLayers to store results
+- Creation of empty Values to store results
 - Source tracking using ParseStepSource
 - Middleware execution order
 - Access to parsed values
@@ -842,7 +842,7 @@ The `UpdateFromMap` middleware shows how to override values from an external sou
 
 ```go
 func useMapMiddleware() {
-    parsedLayers := values.New()
+    parsedSections := values.New()
 
     // Define the update map
     updateMap := map[string]map[string]interface{}{
@@ -853,8 +853,8 @@ func useMapMiddleware() {
     }
 
     err := sources.Execute(
-        parameterLayers,
-        parsedLayers,
+        schema_,
+        parsedSections,
         sources.FromMap(updateMap),
     )
     if err != nil {
@@ -865,22 +865,22 @@ func useMapMiddleware() {
 
 This demonstrates:
 - Structured data input through maps
-- Layer-specific updates
+- Section-specific updates
 - Value override patterns
 - Integration with the middleware chain
 
 ### 3. Accessing Parsed Values
 
-After middlewares process the parameters, there are several ways to access the results. These patterns align with different use cases in the architecture:
+After middlewares process the fields, there are several ways to access the results. These patterns align with different use cases in the architecture:
 
 ```go
-func accessParsedValues(parsedLayers *values.Values) {
-    // 1. Direct access through layer
-    configLayer, _ := parsedLayers.Get("config")
-    hostValue, _ := configLayer.GetParameter("host")
+func accessParsedValues(parsedSections *values.Values) {
+    // 1. Direct access through section
+    configSection, _ := parsedSections.Get("config")
+    hostValue, _ := configSection.GetField("host")
 
-    // 2. Get all parameters as a map
-    dataMap := parsedLayers.GetDataMap()
+    // 2. Get all fields as a map
+    dataMap := parsedSections.GetDataMap()
     host := dataMap["host"]
 
     // 3. Initialize a struct
@@ -890,7 +890,7 @@ func accessParsedValues(parsedLayers *values.Values) {
     }
     
     var config Config
-    err := parsedLayers.InitializeStruct("config", &config)
+    err := parsedSections.DecodeSectionInto("config", &config)
     if err != nil {
         panic(err)
     }
@@ -898,19 +898,19 @@ func accessParsedValues(parsedLayers *values.Values) {
 ```
 
 These access patterns support:
-- Direct layer access for fine-grained control
-- Map-based access for dynamic parameter handling
-- Struct initialization for type-safe parameter usage
+- Direct section access for fine-grained control
+- Map-based access for dynamic field handling
+- Struct initialization for type-safe field usage
 - Integration with Go's type system through struct tags
 
-### 4. Tracking Parameter History
+### 4. Tracking Field History
 
-One of the key features of Glazed's middleware system is its ability to track parameter changes. This helps debug parameter processing and understand value origins:
+One of the key features of Glazed's middleware system is its ability to track field changes. This helps debug field processing and understand value origins:
 
 ```go
-func checkParameterHistory(parsedLayers *values.Values) {
-    configLayer, _ := parsedLayers.Get("config")
-    hostParam, _ := configLayer.Parameters.Get("host")
+func checkFieldHistory(parsedSections *values.Values) {
+    configSection, _ := parsedSections.Get("config")
+    hostParam, _ := configSection.Fields.Get("host")
 
     // View the parsing history
     for _, step := range hostParam.Log {
@@ -923,7 +923,7 @@ The history tracking shows:
 - Source identification for each update
 - Value transformation tracking
 - Middleware execution order verification
-- Debugging support for parameter processing
+- Debugging support for field processing
 
 ### 5. Complex Middleware Chaining
 
@@ -931,9 +931,9 @@ This example demonstrates how multiple middlewares work together in the chain, f
 
 ```go
 func chainMiddlewares() {
-    parsedLayers := values.New()
+    parsedSections := values.New()
 
-    // Define different parameter sources
+    // Define different field sources
     configMap := map[string]map[string]interface{}{
         "config": {
             "host": "config.com",
@@ -950,8 +950,8 @@ func chainMiddlewares() {
 
     // Execute middlewares in order (last middleware has highest precedence)
     err := sources.Execute(
-        parameterLayers,
-        parsedLayers,
+        schema_,
+        parsedSections,
         sources.FromMapAsDefault(defaultMap),  // Lowest precedence
         sources.FromDefaults(
             sources.WithSource(sources.SourceDefaults),
@@ -971,13 +971,13 @@ This complex example illustrates:
 - Value override patterns
 - Error propagation through the chain
 
-### 6. Working with Restricted Layers
+### 6. Working with Restricted Sections
 
-Layer restriction is a powerful feature that implements the modular parameter handling concept discussed in the architecture:
+Section restriction is a powerful feature that implements the modular field handling concept discussed in the architecture:
 
 ```go
-func useRestrictedLayers() {
-    parsedLayers := values.New()
+func useRestrictedSections() {
+    parsedSections := values.New()
 
     updateMap := map[string]map[string]interface{}{
         "config": {
@@ -985,21 +985,21 @@ func useRestrictedLayers() {
         },
     }
 
-    // Only apply to whitelisted layers
-    whitelistedMiddleware := middlewares.WrapWithWhitelistedLayers(
+    // Only apply to whitelisted sections
+    whitelistedMiddleware := middlewares.WrapWithWhitelistedSections(
         []string{"config"},
         sources.FromMap(updateMap),
     )
 
-    // Or blacklist specific layers
-    blacklistedMiddleware := middlewares.WrapWithBlacklistedLayers(
-        []string{"other-layer"},
+    // Or blacklist specific sections
+    blacklistedMiddleware := middlewares.WrapWithBlacklistedSections(
+        []string{"other-section"},
         sources.FromMap(updateMap),
     )
 
     err := sources.Execute(
-        parameterLayers,
-        parsedLayers,
+        schema_,
+        parsedSections,
         whitelistedMiddleware,
         blacklistedMiddleware,
     )
@@ -1011,17 +1011,17 @@ func useRestrictedLayers() {
 
 This demonstrates advanced concepts:
 - Selective middleware application
-- Layer isolation
-- Parameter scope control
+- Section isolation
+- Field scope control
 - Middleware composition
 - Complex configuration scenarios
 
 ### Integration with Larger Systems
 
-These examples can be combined to create sophisticated parameter handling systems. For instance, a typical application might:
+These examples can be combined to create sophisticated field handling systems. For instance, a typical application might:
 
-1. Define multiple parameter layers for different concerns
+1. Define multiple field sections for different concerns
 2. Set up a chain of middlewares to handle various input sources
-3. Use layer restrictions to manage parameter scope
-4. Track parameter history for debugging
+3. Use section restrictions to manage field scope
+4. Track field history for debugging
 5. Access parsed values through the most appropriate pattern

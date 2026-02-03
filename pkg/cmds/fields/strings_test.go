@@ -7,8 +7,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 )
 
-// TestGatherFlagsFromStringList_ValidArgumentsAndParameters tests the function with valid arguments and fields.
-func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
+// TestGatherFlagsFromStringList_ValidArgumentsAndFields tests the function with valid arguments and fields.
+func TestGatherFlagsFromStringList_ValidArgumentsAndFields(t *testing.T) {
 	tests := []struct {
 		name           string
 		args           []string
@@ -363,16 +363,16 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			want:    map[string]interface{}{},
 			wantErr: false,
 		},
-		// "--flag value" (empty parameters)
+		// "--flag value" (empty fields)
 		{
-			name:    "EmptyParameters",
+			name:    "EmptyFields",
 			args:    []string{"--flag", "value"},
 			params:  NewDefinitions(),
 			wantErr: true,
 		},
-		// "--flag value" (parameters with empty ShortFlag)
+		// "--flag value" (fields with empty ShortFlag)
 		{
-			name: "ParametersWithEmptyShortFlag",
+			name: "FieldsWithEmptyShortFlag",
 			args: []string{"--flag", "value"},
 			params: NewDefinitions(WithDefinitionList([]*Definition{
 				{Name: "flag", ShortFlag: "", Type: TypeString},
@@ -382,10 +382,10 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// "--flag value -f value" (parameters with the same Name and ShortFlag)
-		// "--flag1 value1 -f value2" (parameters with different Name but the same ShortFlag)
+		// "--flag value -f value" (fields with the same Name and ShortFlag)
+		// "--flag1 value1 -f value2" (fields with different Name but the same ShortFlag)
 		{
-			name: "ParametersWithDifferentNameSameShortFlag",
+			name: "FieldsWithDifferentNameSameShortFlag",
 			args: []string{"-f", "value1", "-f", "value2"},
 			params: NewDefinitions(WithDefinitionList([]*Definition{
 				{Name: "flag1", ShortFlag: "f", Type: TypeString},
@@ -393,13 +393,13 @@ func TestGatherFlagsFromStringList_ValidArgumentsAndParameters(t *testing.T) {
 			})),
 			wantErr: true,
 		},
-		// "--flag1 value1 --flag2 value2" (mix of valid and invalid parameters)
+		// "--flag1 value1 --flag2 value2" (mix of valid and invalid fields)
 		{
-			name: "MixOfValidAndInvalidParameters",
+			name: "MixOfValidAndInvalidFields",
 			args: []string{"--flag1", "value1", "--flag2", "value2"},
 			params: NewDefinitions(WithDefinitionList([]*Definition{
 				{Name: "flag1", ShortFlag: "f", Type: TypeString},
-				// Assuming invalid parameter doesn't have a type
+				// Assuming invalid field doesn't have a type
 				{Name: "flag2", ShortFlag: "g"},
 			})),
 			wantErr: true,

@@ -5,7 +5,7 @@ A **`CommandDescription`** is the primary metadata container for a command in th
 - **Name** (short identifier, e.g., `"my-command"`)
 - **Short** (a single-line description)
 - **Long** (an optional, more-detailed description)
-- **Layers** (contains parameter definitions, i.e. your command’s flags/arguments)
+- **Sections** (contains field definitions, i.e. your command’s flags/arguments)
 - **Parents** (if you have a hierarchy like `parent sub-command this-command`, you list `"parent", "sub-command"` as parents)
 - **Source** (where the command definition was loaded from; optional)
 
@@ -45,14 +45,14 @@ cd := cmds.NewCommandDescription("my-command",
 
 ## 3. Adding Flags and Arguments
 
-Your command’s parameters (both flags and positional arguments) are grouped in a default “layer.” You typically add them via the convenience functions:
+Your command’s fields (both flags and positional arguments) are grouped in a default “section.” You typically add them via the convenience functions:
 
 - **`WithFlags(...)`**  
 - **`WithArguments(...)`**
 
-### 3.1 Defining Parameter Definitions
+### 3.1 Defining Field Definitions
 
-Parameters themselves are described by `fields.Definition` from the `glazed/pkg/cmds/parameters` package. For example:
+Fields themselves are described by `fields.Definition` from the `glazed/pkg/cmds/fields` package. For example:
 
 ```go
 paramHost := fields.New(
@@ -64,9 +64,9 @@ paramHost := fields.New(
 )
 ```
 
-**Common parameter definition functions**:
+**Common field definition functions**:
 
-- `fields.New(name string, paramType ParameterType, opts ...ParameterDefinitionOption)`
+- `fields.New(name string, paramType Type, opts ...DefinitionOption)`
 - `fields.WithHelp("...")`
 - `fields.WithDefault(...)`
 - `fields.WithRequired(true|false)`
@@ -74,7 +74,7 @@ paramHost := fields.New(
 
 ### 3.2 Adding Flags
 
-Flags are typically optional or named parameters. You call `WithFlags(...)` with one or more `ParameterDefinition`s:
+Flags are typically optional or named fields. You call `WithFlags(...)` with one or more `Definition`s:
 
 ```go
 cd := cmds.NewCommandDescription("my-command",
@@ -98,7 +98,7 @@ cd := cmds.NewCommandDescription("my-command",
 
 ### 3.3 Adding Arguments
 
-Positional arguments (like `my-command [ARGS ...]`) are also stored as parameters but with `IsArgument = true`. You can use `WithArguments(...)`:
+Positional arguments (like `my-command [ARGS ...]`) are also stored as fields but with `IsArgument = true`. You can use `WithArguments(...)`:
 
 ```go
 cd := cmds.NewCommandDescription("my-command",
@@ -131,17 +131,17 @@ You can pass various function options into `NewCommandDescription(...)`. The mai
 3. **`WithLong(s string)`**  
    Sets the longer help text.
 
-4. **`WithFlags(flags ...*ParameterDefinition)`**  
-   Adds parameter definitions as **flags** to the default layer.
+4. **`WithFlags(flags ...*Definition)`**  
+   Adds field definitions as **flags** to the default section.
 
-5. **`WithArguments(arguments ...*ParameterDefinition)`**  
-   Adds parameter definitions as **positional arguments** to the default layer.
+5. **`WithArguments(arguments ...*Definition)`**  
+   Adds field definitions as **positional arguments** to the default section.
 
-6. **`WithLayers(ls *schema.Schema)`** or **`WithLayersList(ls ...ParameterLayer)`**  
-   Used if you already have a custom `ParameterLayers` object or multiple parameter layers. Typically more advanced usage.
+6. **`WithSchema(schema *schema.Schema)`** or **`WithSections(sections ...schema.Section)`**  
+   Used if you already have a custom `Schema` object or multiple field sections. Typically more advanced usage.
 
-7. **`WithReplaceLayers(layers_ ...ParameterLayer)`**  
-   Replaces any existing layers with the ones you provide.
+7. **`WithReplaceSections(sections ...schema.Section)`**  
+   Replaces any existing sections with the ones you provide.
 
 8. **`WithParents(p ...string)`**  
    If you want a hierarchical CLI structure, specify the chain of parent commands. Example:
@@ -161,13 +161,13 @@ You can pass various function options into `NewCommandDescription(...)`. The mai
 
 ---
 
-## 5. Inspecting Parameters at Runtime
+## 5. Inspecting Fields at Runtime
 
-Once your `CommandDescription` is built, you can retrieve parameter definitions in code:
+Once your `CommandDescription` is built, you can retrieve field definitions in code:
 
-- **`GetDefaultFlags()`**: Returns a `ParameterDefinitions` object of all flags in the default layer.  
-- **`GetDefaultArguments()`**: Returns all arguments (where `IsArgument = true`) from the default layer.  
-- **`Layers`**: The entire `ParameterLayers` object if you need advanced usage.
+- **`GetDefaultFlags()`**: Returns a `Definitions` object of all flags in the default section.  
+- **`GetDefaultArguments()`**: Returns all arguments (where `IsArgument = true`) from the default section.  
+- **`Sections`**: The entire `Schema` object if you need advanced usage.
 
 ---
 
@@ -180,7 +180,7 @@ package main
 
 import (
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
     // ... other imports
 )
 
@@ -200,7 +200,7 @@ func makeMyCommand() *cmds.CommandDescription {
             ),
             fields.New(
                 "port",
-                fields.TypeInt,
+                fields.TypeInteger,
                 fields.WithHelp("Port to use"),
                 fields.WithDefault(8080),
             ),
@@ -236,4 +236,4 @@ func makeMyCommand() *cmds.CommandDescription {
 2. **Give it short/long descriptions** via `WithShort(...)`, `WithLong(...)`.  
 3. **Attach flags** with `WithFlags(...)` and **arguments** with `WithArguments(...)`.  
 4. **Organize parents** if needed (`WithParents(...)`).  
-5. **Optionally** set the source string or manipulate the advanced parameter layering.  
+5. **Optionally** set the source string or manipulate advanced schema composition.  

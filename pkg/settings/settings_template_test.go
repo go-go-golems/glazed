@@ -12,20 +12,20 @@ import (
 )
 
 func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string) *TemplateSettings {
-	layer, err := NewTemplateParameterLayer()
+	section, err := NewTemplateSection()
 	require.NoError(t, err)
-	err = layer.InitializeDefaultsFromStruct(defaults)
+	err = section.InitializeDefaultsFromStruct(defaults)
 	require.NoError(t, err)
 
-	layers_ := schema.NewSchema(schema.WithSections(layer))
-	parsedLayers := values.New()
-	err = sources.Execute(layers_, parsedLayers,
+	schema_ := schema.NewSchema(schema.WithSections(section))
+	parsedValues := values.New()
+	err = sources.Execute(schema_, parsedValues,
 		sources.UpdateFromStringList("", args, fields.WithSource("string-list")),
 		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	)
 	require.NoError(t, err)
 
-	ps, ok := parsedLayers.Get(GlazedTemplateLayerSlug)
+	ps, ok := parsedValues.Get(GlazedTemplateSectionSlug)
 	require.True(t, ok)
 
 	settings, err := NewTemplateSettings(ps)

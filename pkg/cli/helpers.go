@@ -23,13 +23,13 @@ import (
 //
 // If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
 func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, formatters.OutputFormatter, error) {
-	gpl, err := settings.NewGlazedParameterLayers()
+	gpl, err := settings.NewGlazedSection()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	layers_ := schema.NewSchema(schema.WithSections(gpl))
-	parser, err := NewCobraParserFromSections(layers_, &CobraParserConfig{
+	schema_ := schema.NewSchema(schema.WithSections(gpl))
+	parser, err := NewCobraParserFromSections(schema_, &CobraParserConfig{
 		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
 	})
 	if err != nil {
@@ -55,9 +55,9 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 }
 
 // AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
-// the glazed processing layer to their CLI flags.
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeParameterLayerOption) error {
-	gpl, err := settings.NewGlazedParameterLayers(options...)
+// the glazed processing section to their CLI flags.
+func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeSectionOption) error {
+	gpl, err := settings.NewGlazedSection(options...)
 	if err != nil {
 		return err
 	}

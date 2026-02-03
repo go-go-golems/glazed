@@ -1,6 +1,6 @@
 - title: "Test with valid arguments and default values included"
   description: "All arguments are provided, including those with default values."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       default: "default_input"
@@ -20,7 +20,7 @@
 
 - title: "Test with valid arguments and default values excluded"
   description: "Only explicitly provided arguments are included, excluding defaults."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       default: "default_input"
@@ -37,7 +37,7 @@
   expectedError: ""
 - title: "Test with all arguments provided including defaults"
   description: "All arguments are provided explicitly, including those with default values."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -57,7 +57,7 @@
 
 - title: "Test with some arguments missing, defaults included"
   description: "Some arguments are not provided and should be filled with default values."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -76,7 +76,7 @@
 
 - title: "Test with all arguments provided, defaults excluded"
   description: "All arguments are provided explicitly, but default values should not be included."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -96,7 +96,7 @@
 
 - title: "Test with some arguments missing, defaults excluded"
   description: "Some arguments are not provided and default values should not be included."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -114,7 +114,7 @@
 
 - title: "Test with no arguments provided, defaults included"
   description: "No arguments are provided, all values should be default."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -132,7 +132,7 @@
 
 - title: "Test with no arguments provided, defaults excluded"
   description: "No arguments are provided, and no default values should be included."
-  parameterDefs:
+  fieldDefs:
     - name: "host"
       type: "string"
       default: "localhost"
@@ -148,7 +148,7 @@
 
 - title: "Test Missing Required Arguments"
   description: "Ensure that an error is returned when required arguments are missing."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       required: true
@@ -165,7 +165,7 @@
 # Test with missing required arguments - single missing
 - title: "Test Single Missing Required Argument"
   description: "Ensure that an error is returned when a single required argument is missing."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       required: true
@@ -181,7 +181,7 @@
 # Test with missing required arguments - all missing
 - title: "Test All Missing Required Arguments"
   description: "Ensure that an error is returned when all required arguments are missing."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       required: true
@@ -195,7 +195,7 @@
 
 - title: "Test Multiple Missing Required Arguments with Defaults"
   description: "Ensure that an error is returned when multiple required arguments are missing, even if defaults are provided."
-  parameterDefs:
+  fieldDefs:
     - name: "input"
       type: "string"
       required: true
@@ -214,7 +214,7 @@
 
 - title: "Test with invalid type"
   description: "Ensure that passing a string where an int is expected results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "age"
       type: "foobar"
       required: true
@@ -222,11 +222,11 @@
     age: "twenty-five"
   onlyProvided: false
   expectedResult: {}
-  expectedError: "unknown parameter type foobar"
+  expectedError: "unknown field type foobar"
 
 - title: "Test with invalid argument types"
   description: "Ensure that passing a string where an int is expected results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "age"
       type: "int"
       required: true
@@ -238,7 +238,7 @@
 
 - title: "Test with invalid boolean argument type"
   description: "Ensure that passing a non-boolean string for a boolean argument results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "isActive"
       type: "bool"
       required: true
@@ -250,7 +250,7 @@
 
 - title: "Test with invalid float argument type"
   description: "Ensure that passing a string for a float argument results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "temperature"
       type: "float"
       required: true
@@ -260,9 +260,9 @@
   expectedResult: {}
   expectedError: "Invalid type for argument 'temperature', expected float."
 
-- title: "Test with choice parameters"
+- title: "Test with choice fields"
   description: "Ensure that providing a value outside of the valid choices results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "color"
       type: "choice"
       choices:
@@ -276,9 +276,9 @@
   expectedResult: {}
   expectedError: "Invalid choice for argument 'color', valid options are: red, green, blue."
 
-- title: "Test with valid choice parameter"
+- title: "Test with valid choice field"
   description: "Ensure that providing a valid choice does not result in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "size"
       type: "choice"
       choices:
@@ -293,9 +293,9 @@
     size: "medium"
   expectedError: ""
 
-- title: "Test with empty choice parameter"
-  description: "Ensure that providing an empty string for a choice parameter results in an error."
-  parameterDefs:
+- title: "Test with empty choice field"
+  description: "Ensure that providing an empty string for a choice field results in an error."
+  fieldDefs:
     - name: "size"
       type: "choice"
       choices:
@@ -310,9 +310,9 @@
   expectedError: "Invalid choice for argument 'size', cannot be empty."
 
 # Hard to test because the yaml gives us []interface{} but we parse to intList
-# - title: "Test list-type parameter"
-#   description: "Ensure that the list-type parameter is correctly parsed"
-#   parameterDefs:
+# - title: "Test list-type field"
+#   description: "Ensure that the list-type field is correctly parsed"
+#   fieldDefs:
 #     - name: "item"
 #       type: "string"
 #       required: true
@@ -327,9 +327,9 @@
 #     quantities: [1, 2, 3]
 #   expectedError: ""
 
-# - title: "Test with empty list-type parameter"
-#   description: "Ensure that an empty list is handled correctly for list-type parameters."
-#   parameterDefs:
+# - title: "Test with empty list-type field"
+#   description: "Ensure that an empty list is handled correctly for list-type fields."
+#   fieldDefs:
 #     - name: "tags"
 #       type: "stringList"
 #   data:
@@ -339,20 +339,20 @@
 #     tags: []
 #   expectedError: ""
 
-- title: "Test with mixed types in list-type parameter"
+- title: "Test with mixed types in list-type field"
   description: "Ensure that a list with mixed types results in an error."
-  parameterDefs:
+  fieldDefs:
     - name: "scores"
       type: "floatList"
   data:
     scores: [95.5, "high", 88.0]
   onlyProvided: false
   expectedResult: {}
-  expectedError: "List-type parameter 'scores' contains invalid types, expected float list."
+  expectedError: "List-type field 'scores' contains invalid types, expected float list."
 
-- title: "Test with single value for list-type parameter"
-  description: "Ensure that a single value is handled correctly for list-type parameters."
-  parameterDefs:
+- title: "Test with single value for list-type field"
+  description: "Ensure that a single value is handled correctly for list-type fields."
+  fieldDefs:
     - name: "ids"
       type: "intList"
   data:

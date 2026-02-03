@@ -96,7 +96,7 @@ var TemplateFuncs = template.FuncMap{
 	"toYaml":      toYaml,
 	"indentBlock": indentBlock,
 
-	"toUrlParameter": toUrlParameter,
+	"toUrlField": toUrlField,
 
 	"styleBold": styleBold,
 
@@ -124,8 +124,8 @@ func toDate(s interface{}) (string, error) {
 	}
 }
 
-// toUrlParameter encodes the value as a string that can be passed for url parameter decoding
-func toUrlParameter(s interface{}) (string, error) {
+// toUrlField encodes the value as a string that can be passed for url field decoding
+func toUrlField(s interface{}) (string, error) {
 	switch v := s.(type) {
 	case string:
 		return v, nil
@@ -644,7 +644,7 @@ func ParseFS(t *template.Template, f fs.FS, patterns ...string) error {
 //
 // The globs use bmatcuk/doublestar and support ** notation for recursive globbing.
 //
-// NOTE(manuel, 2023-04-18) Interestingly, we have a baseDir parameter here but only one pattern
+// NOTE(manuel, 2023-04-18) Interestingly, we have a baseDir argument here but only one pattern
 // However, the text.template version supports multiple patterns, but has no basedir. Maybe unify?
 func ParseHTMLFS(t *html.Template, f fs.FS, patterns []string, baseDir string) error {
 	list := []string{}

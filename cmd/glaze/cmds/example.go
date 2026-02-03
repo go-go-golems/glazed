@@ -28,9 +28,9 @@ type ExampleSettings struct {
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 
 	return &ExampleCommand{
@@ -53,8 +53,8 @@ func NewExampleCommand() (*ExampleCommand, error) {
 					fields.WithDefault(false),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -62,9 +62,9 @@ func NewExampleCommand() (*ExampleCommand, error) {
 
 // RunIntoGlazeProcessor is called to actually execute the command.
 //
-// parsedLayers contains the result of parsing each layer that has been
-// registered with the command description. These layers can be glazed structured data
-// flags, database connection parameters, application specification fields.
+// parsedValues contains the result of resolving each section that has been
+// registered with the command description. These sections can be glazed structured data
+// flags, database connection fields, application specification fields.
 //
 // ps is a convenience map containing *all* parsed flags.
 //
@@ -73,7 +73,7 @@ func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values
 	s := &ExampleSettings{}
 	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize example settings from parameters")
+		return errors.Wrap(err, "failed to initialize example settings from fields")
 	}
 
 	for i := 0; i < s.Count; i++ {

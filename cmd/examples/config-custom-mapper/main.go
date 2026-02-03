@@ -26,7 +26,7 @@ type DemoBareCommand struct {
 }
 
 func NewDemoBareCommand() (*DemoBareCommand, error) {
-	demoLayer, err := schema.NewSection(
+	demoSection, err := schema.NewSection(
 		"demo",
 		"Demo settings",
 		schema.WithPrefix("demo-"),
@@ -51,7 +51,7 @@ func NewDemoBareCommand() (*DemoBareCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"demo",
 		cmds.WithShort("Custom config file mapper example"),
-		cmds.WithLayersList(demoLayer),
+		cmds.WithSections(demoSection),
 	)
 
 	return &DemoBareCommand{CommandDescription: desc}, nil
@@ -77,7 +77,7 @@ func (c *DemoBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	return nil
 }
 
-// flatConfigMapper transforms a flat config structure to the layer map format.
+// flatConfigMapper transforms a flat config structure to the section map format.
 // Example input: {"api_key": "secret", "threshold": 5}
 // Example output: {"demo": {"api-key": "secret", "threshold": 5}}
 //
@@ -93,7 +93,7 @@ func flatConfigMapper(rawConfig interface{}) (map[string]map[string]interface{},
 		"demo": make(map[string]interface{}),
 	}
 
-	// Map flat keys to layer parameters
+	// Map flat keys to section fields
 	for key, value := range configMap {
 		switch key {
 		case "api_key":
@@ -133,7 +133,7 @@ func main() {
 		demo,
 		cli.WithParserConfig(cli.CobraParserConfig{
 			SkipCommandSettingsSection: true,
-			MiddlewaresFunc: func(parsedCommandLayers *values.Values, cmd *cobra.Command, args []string) ([]sources.Middleware, error) {
+			MiddlewaresFunc: func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]sources.Middleware, error) {
 				return []sources.Middleware{
 					// Highest priority: command-line flags
 					sources.FromCobra(cmd, fields.WithSource("flags")),
@@ -154,7 +154,7 @@ func main() {
 	}
 	root.AddCommand(cobraCmd)
 
-	// validate command: validate config.yaml using the custom mapper and layer definitions
+	// validate command: validate config.yaml using the custom mapper and section definitions
 	validateCmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate the custom-mapped config file",
@@ -180,25 +180,25 @@ func main() {
 				return err
 			}
 			issues := []string{}
-			// Validate mapped structure against known layers and params
-			for layerSlug, kv := range mapped {
-				layer, ok := demo.Description().Layers.Get(layerSlug)
+			// Validate mapped structure against known sections and fields
+			for sectionSlug, kv := range mapped {
+				section, ok := demo.Description().Schema.Get(sectionSlug)
 				if !ok {
-					issues = append(issues, fmt.Sprintf("unknown layer: %s", layerSlug))
+					issues = append(issues, fmt.Sprintf("unknown section: %s", sectionSlug))
 					continue
 				}
 				pmap := kv
-				pds := layer.GetDefinitions()
+				pds := section.GetDefinitions()
 				known := map[string]bool{}
 				pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 				for key, val := range pmap {
 					if !known[key] {
-						issues = append(issues, fmt.Sprintf("unknown parameter in layer %s: %s", layerSlug, key))
+						issues = append(issues, fmt.Sprintf("unknown field in section %s: %s", sectionSlug, key))
 						continue
 					}
 					pd, _ := pds.Get(key)
 					if _, err := pd.CheckValueValidity(val); err != nil {
-						issues = append(issues, fmt.Sprintf("invalid value for %s.%s: %v", layerSlug, key, err))
+						issues = append(issues, fmt.Sprintf("invalid value for %s.%s: %v", sectionSlug, key, err))
 					}
 				}
 			}

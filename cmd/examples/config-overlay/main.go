@@ -34,7 +34,7 @@ func NewOverlayCommand() (*OverlayCommand, error) {
 	if err != nil {
 		return nil, err
 	}
-	desc := cmds.NewCommandDescription("overlay", cmds.WithShort("Multiple config overlays"), cmds.WithLayersList(demo))
+	desc := cmds.NewCommandDescription("overlay", cmds.WithShort("Multiple config overlays"), cmds.WithSections(demo))
 	return &OverlayCommand{desc}, nil
 }
 
@@ -114,28 +114,28 @@ func main() {
 					issues = append(issues, fmt.Sprintf("%s: %v", f, err))
 					continue
 				}
-				for layerSlug, v := range raw {
-					layer, ok := overlayCmd.Description().Layers.Get(layerSlug)
+				for sectionSlug, v := range raw {
+					section, ok := overlayCmd.Description().Schema.Get(sectionSlug)
 					if !ok {
-						issues = append(issues, fmt.Sprintf("%s: unknown layer %s", f, layerSlug))
+						issues = append(issues, fmt.Sprintf("%s: unknown section %s", f, sectionSlug))
 						continue
 					}
 					m, ok := v.(map[string]interface{})
 					if !ok {
-						issues = append(issues, fmt.Sprintf("%s: layer %s must be an object", f, layerSlug))
+						issues = append(issues, fmt.Sprintf("%s: section %s must be an object", f, sectionSlug))
 						continue
 					}
-					pds := layer.GetDefinitions()
+					pds := section.GetDefinitions()
 					known := map[string]bool{}
 					pds.ForEach(func(pd *fields.Definition) { known[pd.Name] = true })
 					for key, val := range m {
 						if !known[key] {
-							issues = append(issues, fmt.Sprintf("%s: unknown parameter %s.%s", f, layerSlug, key))
+							issues = append(issues, fmt.Sprintf("%s: unknown field %s.%s", f, sectionSlug, key))
 							continue
 						}
 						pd, _ := pds.Get(key)
 						if _, err := pd.CheckValueValidity(val); err != nil {
-							issues = append(issues, fmt.Sprintf("%s: invalid value for %s.%s: %v", f, layerSlug, key, err))
+							issues = append(issues, fmt.Sprintf("%s: invalid value for %s.%s: %v", f, sectionSlug, key, err))
 						}
 					}
 				}

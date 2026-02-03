@@ -24,7 +24,7 @@ In this application example, we'll build a user management CLI tool using the `g
 - **Generate Users**: Create a specified number of user records with customizable fields.
 - **List Users**: Display all existing user records in a structured format.
 - **Delete Users**: Remove user records by ID.
-- **Configuration via YAML**: Define commands and their parameters using YAML files for easy customization.
+- **Configuration via YAML**: Define commands and their fields using YAML files for easy customization.
 
 ## Project Structure
 
@@ -131,8 +131,8 @@ import (
     "strconv"
 
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/types"
 )
@@ -166,14 +166,14 @@ func NewGenerateCommand(store *UserStore) (*GenerateCommand, error) {
     }, nil
 }
 
-func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
+func (c *GenerateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedSections *values.Values, gp middlewares.Processor) error {
     type GenerateSettings struct {
         Count   int  `glazed:"count"`
         Verbose bool `glazed:"verbose"`
     }
 
     settings := &GenerateSettings{}
-    if err := parsedLayers.InitializeStruct("default", settings); err != nil {
+    if err := parsedSections.DecodeSectionInto("default", settings); err != nil {
         return err
     }
 
@@ -210,8 +210,8 @@ import (
     "context"
 
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/types"
 )
@@ -233,7 +233,7 @@ func NewListCommand(store *UserStore) (*ListCommand, error) {
     }, nil
 }
 
-func (c *ListCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
+func (c *ListCommand) RunIntoGlazeProcessor(ctx context.Context, parsedSections *values.Values, gp middlewares.Processor) error {
     users := c.store.ListUsers()
     for _, user := range users {
         row := types.NewRow(
@@ -262,8 +262,8 @@ import (
     "strconv"
 
     "github.com/go-go-golems/glazed/pkg/cmds"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
     "github.com/go-go-golems/glazed/pkg/middlewares"
     "github.com/go-go-golems/glazed/pkg/types"
 )
@@ -292,13 +292,13 @@ func NewDeleteCommand(store *UserStore) (*DeleteCommand, error) {
     }, nil
 }
 
-func (c *DeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
+func (c *DeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedSections *values.Values, gp middlewares.Processor) error {
     type DeleteSettings struct {
         ID int `glazed:"id"`
     }
 
     settings := &DeleteSettings{}
-    if err := parsedLayers.InitializeStruct("default", settings); err != nil {
+    if err := parsedSections.DecodeSectionInto("default", settings); err != nil {
         return err
     }
 

@@ -16,14 +16,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Parameter describes a cliopatra parameter, which can be either a flag or an argument.
+// Field describes a cliopatra field, which can be either a flag or an argument.
 // It does mirror the definition of fields.Definition, but here we only
 // have a Value, and a Short description (which should actually describe which value we chose).
 //
 // The Flag makes it possible to override the flag used on the CLI, if necessary.
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
-type Parameter struct {
+type Field struct {
 	Name       string             `yaml:"name"`
 	Flag       string             `yaml:"flag,omitempty"`
 	Short      string             `yaml:"short"`
@@ -39,7 +39,7 @@ type Parameter struct {
 // NOTE(manuel, 2023-03-16) It would be interesting to provide some more tests on the output (say, as shell scripts)
 // NOTE(manuel, 2023-03-16) What about measuring profiling regression
 
-func (p *Parameter) Clone() *Parameter {
+func (p *Field) Clone() *Field {
 	p_ := *p
 	return &p_
 }
@@ -63,9 +63,9 @@ type Program struct {
 
 	// These Flags will be passed to the CLI tool. This allows us to register
 	// flags with a type to cobra itself, when exposing this command again.
-	Flags []*Parameter `yaml:"flags,omitempty"`
-	// Args is an ordered list of Parameters. The Flag field is ignored.
-	Args []*Parameter `yaml:"args,omitempty"`
+	Flags []*Field `yaml:"flags,omitempty"`
+	// Args is an ordered list of fields. The Flag field is ignored.
+	Args []*Field `yaml:"args,omitempty"`
 	// Stdin makes it possible to pass data into stdin. If empty, no data is passed.
 	Stdin string `yaml:"stdin,omitempty"`
 
@@ -131,19 +131,19 @@ func WithAddRawFlags(flags ...string) ProgramOption {
 	}
 }
 
-func WithFlags(flags ...*Parameter) ProgramOption {
+func WithFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Flags = flags
 	}
 }
 
-func WithAddFlags(flags ...*Parameter) ProgramOption {
+func WithAddFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Flags = append(p.Flags, flags...)
 	}
 }
 
-func WithReplaceFlags(flags ...*Parameter) ProgramOption {
+func WithReplaceFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		for _, flag := range flags {
 			found := false
@@ -161,19 +161,19 @@ func WithReplaceFlags(flags ...*Parameter) ProgramOption {
 	}
 }
 
-func WithArgs(args ...*Parameter) ProgramOption {
+func WithArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Args = args
 	}
 }
 
-func WithAddArgs(args ...*Parameter) ProgramOption {
+func WithAddArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Args = append(p.Args, args...)
 	}
 }
 
-func WithReplaceArgs(args ...*Parameter) ProgramOption {
+func WithReplaceArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		for _, arg := range args {
 			found := false
@@ -245,11 +245,11 @@ func (p *Program) Clone() *Program {
 
 	clone.RawFlags = make([]string, len(p.RawFlags))
 	copy(clone.RawFlags, p.RawFlags)
-	clone.Flags = make([]*Parameter, len(p.Flags))
+	clone.Flags = make([]*Field, len(p.Flags))
 	for i, f := range p.Flags {
 		clone.Flags[i] = f.Clone()
 	}
-	clone.Args = make([]*Parameter, len(p.Args))
+	clone.Args = make([]*Field, len(p.Args))
 	for i, a := range p.Args {
 		clone.Args[i] = a.Clone()
 	}
@@ -316,7 +316,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers *values.Values,
+	parsedValues *values.Values,
 	w io.Writer,
 ) error {
 	var err error
@@ -328,7 +328,7 @@ func (p *Program) RunIntoWriter(
 		}
 	}
 
-	ps := parsedLayers.AllFieldValues()
+	ps := parsedValues.AllFieldValues()
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {

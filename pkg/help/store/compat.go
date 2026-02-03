@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HelpSystem provides a compatibility layer with the existing help system interface
+// HelpSystem provides a compatibility shim with the existing help system interface
 type HelpSystem struct {
 	store  *Store
 	loader *Loader

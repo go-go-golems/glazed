@@ -34,7 +34,7 @@ This guide provides comprehensive documentation for developers who want to integ
 
 ### System Components
 
-The query system consists of several layered components:
+The query system consists of several composed components:
 
 ```
 User Query DSL → Parser → AST → Compiler → Predicates → Execution
@@ -54,7 +54,7 @@ pkg/help/
 ├── store/                  # Storage backend (optional)
 │   ├── query.go           # Store-specific predicates
 │   └── store.go           # SQLite implementation
-├── dsl_bridge.go          # Integration layer
+├── dsl_bridge.go          # Integration section
 ├── help.go                # Core help system
 └── cobra.go               # CLI integration
 ```
@@ -203,7 +203,7 @@ if err != nil {
 fmt.Printf("Query: %s\n", debugInfo.Query)
 fmt.Printf("AST: %s\n", debugInfo.AST)
 fmt.Printf("SQL: %s\n", debugInfo.SQL)
-fmt.Printf("Parameters: %v\n", debugInfo.Parameters)
+fmt.Printf("Fields: %v\n", debugInfo.Fields)
 ```
 
 ## Predicate System
@@ -566,7 +566,7 @@ func setupQueryAPI(router *mux.Router, hs *help.HelpSystem) {
     router.HandleFunc("/api/help/search", func(w http.ResponseWriter, r *http.Request) {
         query := r.URL.Query().Get("q")
         if query == "" {
-            http.Error(w, "Missing query parameter", http.StatusBadRequest)
+            http.Error(w, "Missing query field", http.StatusBadRequest)
             return
         }
         

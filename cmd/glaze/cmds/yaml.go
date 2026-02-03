@@ -27,9 +27,9 @@ type YamlCommand struct {
 var _ cmds.GlazeCommand = (*YamlCommand)(nil)
 
 func NewYamlCommand() (*YamlCommand, error) {
-	glazedLayer, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 
 	return &YamlCommand{
@@ -63,8 +63,8 @@ func NewYamlCommand() (*YamlCommand, error) {
 					fields.WithRequired(true),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -81,7 +81,7 @@ func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Va
 	s := &YamlSettings{}
 	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
+		return errors.Wrap(err, "Failed to initialize yaml settings from fields")
 	}
 
 	for _, arg := range s.InputFiles {

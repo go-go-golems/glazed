@@ -9,7 +9,7 @@ import (
 // map. It accepts a slice of string arguments, bools to control required/provided
 // flag handling, and a prefix to prepend to flag names.
 //
-// It returns the parsed parameters map, any non-flag arguments, and any error
+// It returns the parsed fields map, any non-flag arguments, and any error
 // encountered during parsing.
 //
 // onlyProvided controls whether to only include flags that were explicitly
@@ -34,7 +34,7 @@ func (pds *Definitions) GatherFlagsFromStringList(
 	flagNames := map[string]string{}
 	remainingArgs := []string{}
 
-	// build a map of flag names to parameter definitions, including through shortflags
+	// build a map of flag names to field definitions, including through shortflags
 	err := pds.ForEachE(func(param *Definition) error {
 		if param.IsArgument {
 			return nil

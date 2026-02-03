@@ -35,7 +35,7 @@ func NewCommand() (*Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	desc := cmds.NewCommandDescription("overlay-override", cmds.WithShort("--config-file + <base>.override.yaml pattern"), cmds.WithLayersList(demo))
+	desc := cmds.NewCommandDescription("overlay-override", cmds.WithShort("--config-file + <base>.override.yaml pattern"), cmds.WithSections(demo))
 	return &Command{desc}, nil
 }
 

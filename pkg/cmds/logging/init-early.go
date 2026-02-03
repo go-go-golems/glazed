@@ -74,7 +74,7 @@ func filterEarlyLoggingArgs(args []string) []string {
 // - Parses flags using a standalone pflag.FlagSet
 // - Initializes the global logger with parsed settings
 //
-// Defaults match AddLoggingLayerToRootCommand in layer.go.
+// Defaults match AddLoggingSectionToRootCommand in section.go.
 func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	// We want to initialize logging before we load/register commands, so that any
 	// logging during command discovery respects --log-level etc.
@@ -89,7 +89,7 @@ func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	fs.SetOutput(io.Discard)
 	fs.SetInterspersed(true)
 
-	// Defaults must match glazed/pkg/cmds/logging/layer.go:AddLoggingLayerToRootCommand
+	// Defaults must match glazed/pkg/cmds/logging/section.go:AddLoggingSectionToRootCommand
 	logLevel := fs.String("log-level", "info", "Log level (trace, debug, info, warn, error, fatal)")
 	logFile := fs.String("log-file", "", "Log file (default: stderr)")
 	logFormat := fs.String("log-format", "text", "Log format (json, text)")

@@ -36,9 +36,9 @@ arguments:
     help: Description of the argument
 ```
 
-## Parameter Types
+## Field Types
 
-Glazed supports these parameter types for both flags and arguments:
+Glazed supports these field types for both flags and arguments:
 
 ### Basic Types
 - `string`: Text values
@@ -72,7 +72,7 @@ Glazed supports these parameter types for both flags and arguments:
 
 ## Defining Flags
 
-Flags are optional parameters that modify command behavior. Here's a comprehensive example:
+Flags are optional fields that modify command behavior. Here's a comprehensive example:
 
 ```yaml
 flags:
@@ -99,7 +99,7 @@ flags:
 
 - `name`: The flag name (required)
 - `shortFlag`: Optional single-character alias
-- `type`: Parameter type (required)
+- `type`: Field type (required)
 - `default`: Default value if flag is not specified
 - `help`: Help text describing the flag
 - `choices`: List of valid values
@@ -107,7 +107,7 @@ flags:
 
 ## Defining Arguments
 
-Arguments are positional parameters. They're defined similarly to flags:
+Arguments are positional fields. They're defined similarly to flags:
 
 ```yaml
 arguments:
@@ -126,12 +126,12 @@ arguments:
 
 Arguments support the same properties as flags, except for `shortFlag`.
 
-## Using Layers
+## Using Sections
 
-Layers help organize related parameters. Define layers in your YAML:
+Sections help organize related fields. Define sections in your YAML:
 
 ```yaml
-layers:
+sections:
   - name: Output Configuration
     slug: output
     description: "Configure output formatting"
@@ -161,14 +161,14 @@ layers:
    - Use consistent prefixes for related flags
 
 3. **Organization**
-   - Group related parameters using layers
-   - Use consistent parameter ordering
+   - Group related fields using sections
+   - Use consistent field ordering
    - Keep command files focused and single-purpose
 
 4. **Validation**
    - Use `choices` to restrict valid values
    - Set appropriate default values
-   - Mark parameters as required when necessary
+   - Mark fields as required when necessary
 
 ## Examples
 
@@ -195,7 +195,7 @@ flags:
 ```yaml
 name: process-data
 short: Process data files with multiple options
-layers:
+sections:
   - name: Input Options
     slug: input
     flags:

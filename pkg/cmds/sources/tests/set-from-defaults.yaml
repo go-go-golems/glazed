@@ -1,22 +1,22 @@
-- name: "Empty layers and parsedLayers"
-  description: "Empty layers should result in empty parsed layers"
-  parameterLayers: [ ]
-  parsedLayers: [ ]
-  expectedLayers: [ ]
+- name: "Empty sections and values"
+  description: "Empty sections should result in empty parsed sections"
+  sections: [ ]
+  values: [ ]
+  expectedSections: [ ]
   expectedError: false
 
-- name: "Single layer with default"
-  description: "Single layer with default values should result in a single layer with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Single section with default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
           default: "defaultVal"
-  parsedLayers:
-    - name: "layer1"
-  expectedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "defaultVal"
       logs:
@@ -24,18 +24,18 @@
           - source: "defaults"
             value: "defaultVal"
 
-- name: "Single layer with list type default"
-  description: "Single layer with default values should result in a single layer with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Single section with list type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "stringList"
           default: ["defaultVal1", "defaultVal2"]
-  parsedLayers:
-    - name: "layer1"
-  expectedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: ["defaultVal1", "defaultVal2"]
       logs:
@@ -43,29 +43,29 @@
           - source: "defaults"
             value: ["defaultVal1", "defaultVal2"]
 
-- name: "Single layer with objectFromFile type default"
-  description: "Single layer with default values should result in a single layer with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Single section with objectFromFile type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "objectFromFile"
           default:
             file: "test.json"
             key: "key1"
-  parsedLayers:
-    - name: "layer1"
-  expectedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
       values:
         param1:
           file: "test.json"
           key: "key1"
 
-- name: "Single layer with objectListFromFile type default"
-  description: "Single layer with default values should result in a single layer with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Single section with objectListFromFile type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "objectListFromFile"
@@ -74,10 +74,10 @@
               key: "key1"
             - file: "test2.json"
               key: "key2"
-  parsedLayers:
-    - name: "layer1"
-  expectedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
       values:
         param1:
           - file: "test.json"
@@ -93,9 +93,9 @@
               - file: "test2.json"
                 key: "key2"
 
-- name: "Layer with existing values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with existing values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
@@ -103,22 +103,22 @@
         - name: "param2"
           type: "int"
           default: 42
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields:
         - name: "param1"
           value: "existingValue"
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "existingValue"
         param2: 42
   expectedError: false
 
-- name: "Multiple layers with defaults"
-  description: "Multiple layers with defaults should result in multiple layers with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Multiple sections with defaults"
+  description: "Multiple sections with defaults should result in multiple sections with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
@@ -126,30 +126,30 @@
         - name: "param2"
           type: "int"
           default: 42
-    - name: "layer2"
+    - name: "section2"
       definitions:
         - name: "param3"
           type: "bool"
           default: true
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields: [ ]
-    - name: "layer2"
+    - name: "section2"
       fields: [ ]
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "default1"
         param2: 42
-    - name: "layer2"
+    - name: "section2"
       values:
         param3: true
   expectedError: false
 
-- name: "Multiple layers with defaults (no defined target layers, should be created)"
-  description: "Multiple layers with defaults should result in multiple layers with these values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Multiple sections with defaults (no defined target sections, should be created)"
+  description: "Multiple sections with defaults should result in multiple sections with these values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
@@ -157,41 +157,41 @@
         - name: "param2"
           type: "int"
           default: 42
-    - name: "layer2"
+    - name: "section2"
       definitions:
         - name: "param3"
           type: "bool"
           default: true
-  parsedLayers: [ ]
-  expectedLayers:
-    - name: "layer1"
+  values: [ ]
+  expectedSections:
+    - name: "section1"
       values:
         param1: "default1"
         param2: 42
-    - name: "layer2"
+    - name: "section2"
       values:
         param3: true
   expectedError: false
 
-- name: "Layer with no default values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with no default values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
         - name: "param2"
           type: "int"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields: [ ]
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values: { }
   expectedError: false
 
-- name: "Layer with partially set values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with partially set values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
@@ -199,64 +199,64 @@
         - name: "param2"
           type: "int"
           default: 42
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields:
         - name: "param1"
           value: "existingValue"
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values:
         param1: "existingValue"
         param2: 42
   expectedError: false
 
-- name: "Layer with invalid default values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with invalid default values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "int"
           default: "notAnInt"
-  expectedLayers: [ ]
+  expectedSections: [ ]
   expectedError: true
 
-- name: "Layer with invalid default values"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with invalid default values"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "choice"
           choices: [ "choice1", "choice2" ]
           default: "none"
-  expectedLayers: [ ]
+  expectedSections: [ ]
   expectedError: true
 
-- name: "Layer with required parameters without defaults"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with required fields without defaults"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
           required: true
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields: [ ]
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values: { }
   expectedError: false
 
-- name: "Layer with optional parameters without defaults"
-  parameterLayers:
-    - name: "layer1"
+- name: "Section with optional fields without defaults"
+  sections:
+    - name: "section1"
       definitions:
         - name: "param1"
           type: "string"
-  parsedLayers:
-    - name: "layer1"
+  values:
+    - name: "section1"
       fields: [ ]
-  expectedLayers:
-    - name: "layer1"
+  expectedSections:
+    - name: "section1"
       values: { }
   expectedError: false

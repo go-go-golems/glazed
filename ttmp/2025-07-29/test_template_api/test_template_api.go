@@ -65,7 +65,7 @@ template: |
 
 func runTemplateCommand(cmd *cmds.TemplateCommand, inputValues map[string]interface{}) {
 	// Get the default layer
-	defaultLayer, ok := cmd.Description().Layers.Get(schema.DefaultSlug)
+	defaultLayer, ok := cmd.Description().Schema.Get(schema.DefaultSlug)
 	if !ok {
 		fmt.Printf("Default layer not found\n")
 		return

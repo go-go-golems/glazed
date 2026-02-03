@@ -39,34 +39,34 @@ func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error 
 	return nil
 }
 
-type ReplaceParameterLayer struct {
+type ReplaceSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
 //go:embed "flags/replace.yaml"
 var replaceFlagsYaml []byte
 
-func NewReplaceParameterLayer(options ...schema.SectionOption) (*ReplaceParameterLayer, error) {
-	ret := &ReplaceParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(replaceFlagsYaml, options...)
+func NewReplaceSection(options ...schema.SectionOption) (*ReplaceSection, error) {
+	ret := &ReplaceSection{}
+	section, err := schema.NewSectionFromYAML(replaceFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *ReplaceParameterLayer) Clone() schema.Section {
-	return &ReplaceParameterLayer{
+func (f *ReplaceSection) Clone() schema.Section {
+	return &ReplaceSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewReplaceSettingsFromParameters(glazedLayer *values.SectionValues) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromValues(glazedValues *values.SectionValues) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
+		return nil, errors.Wrap(err, "failed to initialize replace settings from fields")
 	}
 	return s, nil
 }

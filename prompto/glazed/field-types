@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+echo "// Here are the types that can be used to define fields in glazed:"
+echo
+echo "package github.com/go-go-golems/glazed/pkg/cmds/fields"
+echo 
+oak go consts pkg/cmds/fields/field-type.go
+echo
+oak go definitions pkg/cmds/fields/file.go --name "FileData" --definition-type struct,interface

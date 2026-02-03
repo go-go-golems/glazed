@@ -1,7 +1,7 @@
 ---
 Title: Pattern-Based Config Mapping
 Slug: pattern-based-config-mapping
-Short: Declarative mapping of config files to parameter layers using pattern matching rules
+Short: Declarative mapping of config files to field sections using pattern matching rules
 Topics:
 - configuration
 - middlewares
@@ -15,7 +15,7 @@ SectionType: GeneralTopic
 
 # Pattern-Based Config Mapping
 
-The pattern-based config mapping system provides a declarative way to map arbitrary config file structures to Glazed's layer-based parameter system without writing custom Go functions. Instead of implementing `ConfigFileMapper` functions with manual config traversal, you define mapping rules that specify patterns to match in config files and how to map matched values to parameters. This keeps configuration logic concise, testable, and consistent across commands.
+The pattern-based config mapping system provides a declarative way to map arbitrary config file structures to Glazed's section-based field system without writing custom Go functions. Instead of implementing `ConfigFileMapper` functions with manual config traversal, you define mapping rules that specify patterns to match in config files and how to map matched values to fields. This keeps configuration logic concise, testable, and consistent across commands.
 
 ## How it works (mental model)
 -## Sections at a glance
@@ -23,7 +23,7 @@ The pattern-based config mapping system provides a declarative way to map arbitr
 - Quick Start: Minimal code to get started
 - Mapping rules from YAML/JSON files: Define and load rules from files
 - Pattern Syntax: Exact, captures, wildcards, nested rules, inheritance
-- Using the Mapper: Wire into `LoadParametersFromFile`
+- Using the Mapper: Wire into `LoadFieldsFromFile`
 - Validation: Build-time vs runtime checks, validate-only pass
 - Matching, ambiguity, and errors: Deterministic traversal and fail-fast rules
 - When to Use: Choose pattern mappers vs custom mappers
@@ -36,13 +36,13 @@ Pattern mapping runs in two stages:
 
 1) Build-time (rule compilation)
 - Parse and validate rule syntax (segments, wildcards, named captures)
-- Verify target layers exist and static target parameters are valid (prefix-aware)
-- Check that any `{name}` referenced in `TargetParameter` is captured in `Source`
+- Verify target sections exist and static target fields are valid (prefix-aware)
+- Check that any `{name}` referenced in `TargetField` is captured in `Source`
 
 2) Runtime (matching and writes)
 - Traverse the config in deterministic (lexicographic) order
-- For each pattern, collect matches; resolve `{captures}` into parameter names
-- Write values to the target layer/parameter; error on ambiguity or collisions
+- For each pattern, collect matches; resolve `{captures}` into field names
+- Write values to the target section/field; error on ambiguity or collisions
 - Respect `Required: true` by failing if no match is found (with path hints)
 
 ## Quick Start
@@ -53,21 +53,21 @@ A minimal example shows how to map a simple config structure:
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
     pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 )
 
 // Create a pattern mapper
-mapper, err := pm.NewConfigMapper(layers_,
+mapper, err := pm.NewConfigMapper(schema_,
     pm.MappingRule{
         Source:          "app.settings.api_key",
-        TargetLayer:     "demo",
-        TargetParameter: "api-key",
+        TargetSection:     "demo",
+        TargetField: "api-key",
     },
 )
 
-// Use with LoadParametersFromFile
+// Use with LoadFieldsFromFile
 mw := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
@@ -82,12 +82,12 @@ Prefer a fluent API? Use the builder to assemble rules, then build a mapper with
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
     pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 )
 
-b := pm.NewConfigMapperBuilder(layers_).
+b := pm.NewConfigMapperBuilder(schema_).
     Map("app.settings.api_key", "demo", "api-key")
 
 mapper, err := b.Build()
@@ -95,7 +95,7 @@ if err != nil {
     panic(err)
 }
 
-// Use with LoadParametersFromFile
+// Use with LoadFieldsFromFile
 mw := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
@@ -113,19 +113,19 @@ Top-level `mappings`:
 ```yaml
 mappings:
   - source: "app.settings.api_key"
-    target_layer: "demo"
-    target_parameter: "api-key"
+    target_section: "demo"
+    target_field: "api-key"
   - source: "app.{env}.api_key"
-    target_layer: "demo"
-    target_parameter: "{env}-api-key"
+    target_section: "demo"
+    target_field: "{env}-api-key"
 ```
 
 Bare array:
 
 ```yaml
 - source: "app.settings.threshold"
-  target_layer: "demo"
-  target_parameter: "threshold"
+  target_section: "demo"
+  target_field: "threshold"
 ```
 
 ### Loading rules (and mapper)
@@ -134,7 +134,7 @@ Bare array:
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
     pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 )
@@ -143,11 +143,11 @@ rules, err := pm.LoadRulesFromFile("mappings.yaml")
 if err != nil { panic(err) }
 
 // Option 1: build explicitly
-mapper, err := pm.NewConfigMapper(layers_, rules...)
+mapper, err := pm.NewConfigMapper(schema_, rules...)
 if err != nil { panic(err) }
 
 // Option 2: convenience
-mapper2, err := pm.LoadMapperFromFile(layers_, "mappings.yaml")
+mapper2, err := pm.LoadMapperFromFile(schema_, "mappings.yaml")
 if err != nil { panic(err) }
 
 mw := sources.FromFile(
@@ -162,13 +162,13 @@ Pattern matching enables flexible config file mapping through several mechanisms
 
 ### Exact Match
 
-Exact match patterns map specific config paths to parameters with no variation:
+Exact match patterns map specific config paths to fields with no variation:
 
 ```go
 patternmapper.MappingRule{
     Source:          "app.settings.api_key",
-    TargetLayer:     "demo",
-    TargetParameter: "api-key",
+    TargetSection:     "demo",
+    TargetField: "api-key",
 }
 ```
 
@@ -183,13 +183,13 @@ app:
 
 ### Named Captures
 
-Named captures extract segments from config paths and use them in parameter names, enabling environment-specific or multi-tenant configurations:
+Named captures extract segments from config paths and use them in field names, enabling environment-specific or multi-tenant configurations:
 
 ```go
 patternmapper.MappingRule{
     Source:          "app.{env}.api_key",
-    TargetLayer:     "demo",
-    TargetParameter: "{env}-api-key",
+    TargetSection:     "demo",
+    TargetField: "{env}-api-key",
 }
 ```
 
@@ -206,7 +206,7 @@ app:
 - `demo.dev-api-key = "dev-secret"`
 - `demo.prod-api-key = "prod-secret"`
 
-The `{env}` capture extracts whatever value appears at that position in the config (here, "dev" or "prod") and makes it available for use in the target parameter name.
+The `{env}` capture extracts whatever value appears at that position in the config (here, "dev" or "prod") and makes it available for use in the target field name.
 
 ### Wildcards
 
@@ -215,8 +215,8 @@ Wildcards match any value at a specific level without capturing it, useful when 
 ```go
 patternmapper.MappingRule{
     Source:          "app.*.api_key",
-    TargetLayer:     "demo",
-    TargetParameter: "api-key",
+    TargetSection:     "demo",
+    TargetField: "api-key",
 }
 ```
 
@@ -231,7 +231,7 @@ app:
 
 Note: Wildcards (`*`) match but don't capture. To use the matched value, use named captures `{name}` instead.
 
-Important: When a wildcard pattern matches multiple keys with different values, the mapper treats this as an ambiguity and returns an error by default. Use named captures (e.g., `app.{env}.api_key`) if you need to collect multiple values, or ensure matched values are identical if a single target parameter is intended. This prevents accidental aggregation of unrelated values.
+Important: When a wildcard pattern matches multiple keys with different values, the mapper treats this as an ambiguity and returns an error by default. Use named captures (e.g., `app.{env}.api_key`) if you need to collect multiple values, or ensure matched values are identical if a single target field is intended. This prevents accidental aggregation of unrelated values.
 
 ### Nested Rules
 
@@ -240,11 +240,11 @@ Nested rules group related mappings together for cleaner syntax and avoid repeat
 ```go
 patternmapper.MappingRule{
     Source:      "app.settings",
-    TargetLayer: "demo",
+    TargetSection: "demo",
     Rules: []patternmapper.MappingRule{
-        {Source: "api_key", TargetParameter: "api-key"},
-        {Source: "threshold", TargetParameter: "threshold"},
-        {Source: "timeout", TargetParameter: "timeout"},
+        {Source: "api_key", TargetField: "api-key"},
+        {Source: "threshold", TargetField: "threshold"},
+        {Source: "timeout", TargetField: "timeout"},
     },
 }
 ```
@@ -252,7 +252,7 @@ patternmapper.MappingRule{
 Builder equivalent:
 
 ```go
-b := patternmapper.NewConfigMapperBuilder(layers).
+b := patternmapper.NewConfigMapperBuilder(sections).
     MapObject("app.settings", "demo", []patternmapper.MappingRule{
         patternmapper.Child("api_key", "api-key"),
         patternmapper.Child("threshold", "threshold"),
@@ -284,10 +284,10 @@ Nested rules inherit captures from parent patterns, enabling complex multi-level
 ```go
 patternmapper.MappingRule{
     Source:      "app.{env}.settings",
-    TargetLayer: "demo",
+    TargetSection: "demo",
     Rules: []patternmapper.MappingRule{
-        {Source: "api_key", TargetParameter: "{env}-api-key"},
-        {Source: "threshold", TargetParameter: "threshold"},
+        {Source: "api_key", TargetField: "{env}-api-key"},
+        {Source: "threshold", TargetField: "threshold"},
     },
 }
 ```
@@ -311,7 +311,7 @@ app:
 - `demo.threshold = 10` *(from dev)*
 - `demo.threshold = 100` *(from prod, overwrites)*
 
-The `{env}` capture from the parent pattern is available in all child rules, allowing them to construct environment-specific parameter names.
+The `{env}` capture from the parent pattern is available in all child rules, allowing them to construct environment-specific field names.
 
 ## MappingRule Structure
 
@@ -323,13 +323,13 @@ type MappingRule struct {
     // Supports: exact match, wildcard (*), named capture ({name})
     Source string
 
-    // Target layer slug (required for leaf rules)
+    // Target section slug (required for leaf rules)
     // Inherited by child rules if not set
-    TargetLayer string
+    TargetSection string
 
-    // Target parameter name (required for leaf rules)
+    // Target field name (required for leaf rules)
     // Supports capture references: "{env}-api-key"
-    TargetParameter string
+    TargetField string
 
     // Optional: nested rules for mapping child objects
     Rules []MappingRule
@@ -344,7 +344,7 @@ type MappingRule struct {
 Use the builder for a fluent way to assemble rules while keeping the same strict behavior and validation. Builders are useful when you want to co-locate mapping intent with code or construct rules conditionally based on application state.
 
 ```go
-b := patternmapper.NewConfigMapperBuilder(layers).
+b := patternmapper.NewConfigMapperBuilder(sections).
     Map("app.settings.api_key", "demo", "api-key", true).
     MapObject("app.{env}.settings", "demo", []patternmapper.MappingRule{
         patternmapper.Child("api_key", "{env}-api-key"),
@@ -356,7 +356,7 @@ mapper, err := b.Build() // Validates via NewConfigMapper
 
 Notes:
 - Same strict semantics: multi-match ambiguity and cross-rule collisions error by default.
-- Prefix-aware parameter resolution and compile-time validation of static targets apply at Build().
+- Prefix-aware field resolution and compile-time validation of static targets apply at Build().
 - One level of nested rules is supported.
 - Positional captures are not supported (use named captures).
 
@@ -367,8 +367,8 @@ Pattern mappers validate at creation time to catch errors early and provide clea
 **Validation checks**:
 1. **Pattern syntax**: Valid segments, capture groups, wildcards
 2. **Capture references**: All `{name}` in target must exist in source
-3. **Target layer**: Must exist in parameter layers
-4. **Target parameter**: Must exist in target layer *(validated at runtime per match)*
+3. **Target section**: Must exist in field sections
+4. **Target field**: Must exist in target section *(validated at runtime per match)*
 
 **Common validation errors**:
 
@@ -376,17 +376,17 @@ Pattern mappers validate at creation time to catch errors early and provide clea
 // Error: capture reference not in source
 {
     Source: "app.settings.api_key",
-    TargetParameter: "{env}-api-key",  // {env} not captured in source
+    TargetField: "{env}-api-key",  // {env} not captured in source
 }
-// Error: "capture reference {env} in target parameter not found in source pattern"
+// Error: "capture reference {env} in target field not found in source pattern"
 
-// Error: target layer doesn't exist
+// Error: target section doesn't exist
 {
     Source: "app.settings.api_key",
-    TargetLayer: "nonexistent",
-    TargetParameter: "api-key",
+    TargetSection: "nonexistent",
+    TargetField: "api-key",
 }
-// Error: "target layer \"nonexistent\" does not exist"
+// Error: "target section \"nonexistent\" does not exist"
 ```
 
 ## Required Patterns
@@ -396,8 +396,8 @@ Mark patterns as required to enforce that specific config values must be present
 ```go
 patternmapper.MappingRule{
     Source:          "app.settings.api_key",
-    TargetLayer:     "demo",
-    TargetParameter: "api-key",
+    TargetSection:     "demo",
+    TargetField: "api-key",
     Required:        true,  // Error if not found
 }
 ```
@@ -408,16 +408,16 @@ Without `Required: true`, patterns that don't match are silently skipped, allowi
 
 The mapper fails fast on ambiguous situations to prevent unpredictable writes and hard-to-debug behavior:
 
-- Multi-match: If a single pattern matches multiple paths that would resolve to the same target parameter with different values (e.g., `app.*.api_key` for `dev` and `prod`), an error is returned.
-- Collisions: If different patterns resolve to the same target parameter (e.g., `app.settings.api_key` and `config.api_key` both mapping to `demo.api-key`), an error is returned.
+- Multi-match: If a single pattern matches multiple paths that would resolve to the same target field with different values (e.g., `app.*.api_key` for `dev` and `prod`), an error is returned.
+- Collisions: If different patterns resolve to the same target field (e.g., `app.settings.api_key` and `config.api_key` both mapping to `demo.api-key`), an error is returned.
 
 ## Error Handling
 
-Runtime errors occur when config files don't match expectations or reference nonexistent parameters. The system provides detailed error messages to aid debugging. Error messages include both the user-provided target name and the canonical (prefix-aware) parameter name where relevant.
+Runtime errors occur when config files don't match expectations or reference nonexistent fields. The system provides detailed error messages to aid debugging. Error messages include both the user-provided target name and the canonical (prefix-aware) field name where relevant.
 
 **Error conditions**:
 - Required pattern doesn't match
-- Target parameter doesn't exist in layer
+- Target field doesn't exist in section
 - Invalid pattern syntax *(caught at creation)*
 - Invalid capture references *(caught at creation)*
 
@@ -426,23 +426,23 @@ Runtime errors occur when config files don't match expectations or reference non
 required pattern "app.settings.api_key" did not match any paths in config
 ```
 
-**Example error for missing parameter**:
+**Example error for missing field**:
 ```
-target parameter "api-key" does not exist in layer "demo" (pattern: "app.settings.api_key")
-```
-
-**Example error for missing parameter with prefix**:
-```
-target parameter "api-key" (checked as "demo-api-key") does not exist in layer "demo" (pattern: "app.settings.api_key")
+target field "api-key" does not exist in section "demo" (pattern: "app.settings.api_key")
 ```
 
-When a layer has a prefix and the target parameter name doesn't include it, the error message shows both the provided name and the resolved canonical name (with prefix). This helps debug parameter name mismatches.
+**Example error for missing field with prefix**:
+```
+target field "api-key" (checked as "demo-api-key") does not exist in section "demo" (pattern: "app.settings.api_key")
+```
+
+When a section has a prefix and the target field name doesn't include it, the error message shows both the provided name and the resolved canonical name (with prefix). This helps debug field name mismatches.
 
 ## Matching Order and Overwrites
 
 - Deterministic traversal: The mapper traverses config objects in lexicographic key order to ensure stable behavior across runs.
 - Prefer captures over wildcards: When collecting multiple values (e.g., per-environment), named captures make intent explicit and avoid ambiguity.
-- Overwrites: Overwrites across different rules to the same parameter are considered collisions and will error.
+- Overwrites: Overwrites across different rules to the same field are considered collisions and will error.
 
 ## When to Use
 
@@ -452,7 +452,7 @@ Choose between pattern mappers and `ConfigFileMapper` functions based on complex
 - Simple mappings (3-5 rules or less)
 - Flat or nested config structures
 - Environment-specific mappings with captures
-- Grouped parameters (nested rules)
+- Grouped fields (nested rules)
 - Standard config transformations
 
 **Use ConfigFileMapper For:**
@@ -467,36 +467,36 @@ Both approaches are fully supported and can be used interchangeably in the same 
 
 ## Complete Example
 
-A real-world example showing pattern mapper integration. This example highlights capture inheritance, prefix-aware parameters, and minimal application wiring.
+A real-world example showing pattern mapper integration. This example highlights capture inheritance, prefix-aware fields, and minimal application wiring.
 
 ```go
 package main
 
 import (
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 func main() {
-    // Define parameter layers
-    layer, _ := schema.NewSection("demo", "Demo",
+    // Define field sections
+    section, _ := schema.NewSection("demo", "Demo",
         schema.WithFields(
             fields.New("api-key", fields.TypeString),
             fields.New("dev-api-key", fields.TypeString),
             fields.New("prod-api-key", fields.TypeString),
         ),
     )
-    paramLayers := schema.NewSchema(layers.WithLayers(layer))
+    paramSections := schema.NewSchema(sections.WithSections(section))
 
     // Create pattern mapper with capture inheritance
-    mapper, err := patternmapper.NewConfigMapper(paramLayers,
+    mapper, err := patternmapper.NewConfigMapper(paramSections,
         patternmapper.MappingRule{
             Source:      "app.{env}.settings",
-            TargetLayer: "demo",
+            TargetSection: "demo",
             Rules: []patternmapper.MappingRule{
-                {Source: "api_key", TargetParameter: "{env}-api-key"},
+                {Source: "api_key", TargetField: "{env}-api-key"},
             },
         },
     )
@@ -511,8 +511,8 @@ func main() {
     )
 
     // Execute middleware chain
-    parsedLayers := values.New()
-    err = sources.Execute(paramLayers, parsedLayers, middleware)
+    parsedSections := values.New()
+    err = sources.Execute(paramSections, parsedSections, middleware)
     if err != nil {
         panic(err)
     }
@@ -533,7 +533,7 @@ middleware1 := sources.FromFile("config.yaml",
     middlewares.WithConfigFileMapper(funcMapper))
 
 // New way (pattern-based)
-patternMapper, _ := patternmapper.NewConfigMapper(layers, rules...)
+patternMapper, _ := patternmapper.NewConfigMapper(sections, rules...)
 middleware2 := sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(patternMapper))
 ```
@@ -558,7 +558,7 @@ For more information on related topics:
 
 ```
 glaze help middlewares-guide
-glaze help parameter-layers-and-parsed-layers
+glaze help field-sections-and-parsed-sections
 ```
 
 **Example code**: See `cmd/examples/config-pattern-mapper/` for working examples.

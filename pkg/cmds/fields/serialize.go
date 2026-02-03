@@ -6,7 +6,7 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-// SerializableFieldValue represents a parsed parameter in a format suitable for
+// SerializableFieldValue represents a parsed field in a format suitable for
 // YAML/JSON serialization, excluding the Definition
 type SerializableFieldValue struct {
 	Value interface{} `yaml:"value" json:"value"`
@@ -21,8 +21,8 @@ func ToSerializableFieldValue(pp *FieldValue) *SerializableFieldValue {
 	}
 }
 
-// SerializableFieldValues represents a collection of parsed parameters in a format suitable
-// for YAML/JSON serialization, maintaining the order of parameters
+// SerializableFieldValues represents a collection of parsed fields in a format suitable
+// for YAML/JSON serialization, maintaining the order of fields
 type SerializableFieldValues struct {
 	// Using orderedmap to maintain field order while having name-based access
 	Fields *orderedmap.OrderedMap[string, *SerializableFieldValue] `yaml:"fields" json:"fields"`

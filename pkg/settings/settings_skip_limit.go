@@ -16,32 +16,32 @@ type SkipLimitSettings struct {
 	Limit int `glazed:"glazed-limit"`
 }
 
-func NewSkipLimitSettingsFromParameters(glazedLayer *values.SectionValues) (*SkipLimitSettings, error) {
+func NewSkipLimitSettingsFromValues(glazedValues *values.SectionValues) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
-	err := glazedLayer.Fields.DecodeInto(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from fields")
 	}
 
 	return s, nil
 }
 
-type SkipLimitParameterLayer struct {
+type SkipLimitSection struct {
 	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSkipLimitParameterLayer(options ...schema.SectionOption) (*SkipLimitParameterLayer, error) {
-	ret := &SkipLimitParameterLayer{}
-	layer, err := schema.NewSectionFromYAML(skipLimitFlagsYaml, options...)
+func NewSkipLimitSection(options ...schema.SectionOption) (*SkipLimitSection, error) {
+	ret := &SkipLimitSection{}
+	section, err := schema.NewSectionFromYAML(skipLimitFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create skipLimit parameter layer")
+		return nil, errors.Wrap(err, "Failed to create skipLimit field section")
 	}
-	ret.SectionImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *SkipLimitParameterLayer) Clone() schema.Section {
-	return &SkipLimitParameterLayer{
+func (f *SkipLimitSection) Clone() schema.Section {
+	return &SkipLimitSection{
 		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

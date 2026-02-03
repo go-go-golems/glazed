@@ -133,7 +133,7 @@ func (a *CommandAlias) ToYAML(w io.Writer) error {
 	return enc.Encode(a)
 }
 
-func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *values.Values, gp middlewares.Processor) error {
+func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedValues *values.Values, gp middlewares.Processor) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
@@ -141,10 +141,10 @@ func (a *CommandAlias) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *
 	if !ok {
 		return errors.New("aliased command is not a GlazeCommand")
 	}
-	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
+	return glazeCommand.RunIntoGlazeProcessor(ctx, parsedValues, gp)
 }
 
-func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *values.Values, w io.Writer) error {
+func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedValues *values.Values, w io.Writer) error {
 	if a.AliasedCommand == nil {
 		return errors.New("no aliased command")
 	}
@@ -152,7 +152,7 @@ func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedLayers *values.V
 	if !ok {
 		return errors.New("aliased command is not a GlazeCommand")
 	}
-	return writerCommand.RunIntoWriter(ctx, parsedLayers, w)
+	return writerCommand.RunIntoWriter(ctx, parsedValues, w)
 }
 
 func (a *CommandAlias) IsValid() bool {
@@ -174,14 +174,14 @@ func (a *CommandAlias) Description() *cmds.CommandDescription {
 		layout_ = s.Layout
 	}
 
-	newLayers := s.Layers.Clone()
+	newSchema := s.Schema.Clone()
 
 	ret := &cmds.CommandDescription{
 		Name:           a.Name,
 		Short:          s.Short,
 		Long:           s.Long,
 		Layout:         layout_,
-		Layers:         newLayers,
+		Schema:         newSchema,
 		Parents:        a.Parents,
 		Source:         a.Source,
 		Type:           s.Type,

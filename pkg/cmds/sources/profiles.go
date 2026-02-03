@@ -17,8 +17,8 @@ func GatherFlagsFromProfiles(
 	defaultProfileName string,
 	options ...fields.ParseOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
@@ -54,10 +54,10 @@ func GatherFlagsFromProfiles(
 			}(f)
 
 			// profile1:
-			//   layer1:
-			//     parameterName: parameterValue
-			//   layer2:
-			//     parameterName: parameterValue
+			//   section1:
+			//     fieldName: fieldValue
+			//   section2:
+			//     fieldName: fieldValue
 			// etc...
 			v := map[string]map[string]map[string]interface{}{}
 			decoder := yaml.NewDecoder(f)
@@ -67,7 +67,7 @@ func GatherFlagsFromProfiles(
 			}
 
 			if profileMap, ok := v[profile]; ok {
-				return updateFromMap(layers_, parsedLayers, profileMap, options...)
+				return updateFromMap(schema_, parsedValues, profileMap, options...)
 			} else {
 				if profile != defaultProfileName {
 					return errors.Errorf("profile %s not found in %s", profile, profileFile)
@@ -104,8 +104,8 @@ func GatherFlagsFromProfiles(
 //	)
 func GatherFlagsFromCustomProfiles(profileName string, options ...ProfileOption) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
-			err := next(layers_, parsedLayers)
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			err := next(schema_, parsedValues)
 			if err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ func GatherFlagsFromCustomProfiles(profileName string, options ...ProfileOption)
 				return nil
 			}
 
-			return updateFromMap(layers_, parsedLayers, profileMap, config.ParseOptions...)
+			return updateFromMap(schema_, parsedValues, profileMap, config.ParseOptions...)
 		}
 	}
 }
@@ -220,10 +220,10 @@ func loadProfileFromFile(profileFile, profileName string) (map[string]map[string
 
 	// Profile file structure:
 	// profile1:
-	//   layer1:
-	//     parameterName: parameterValue
-	//   layer2:
-	//     parameterName: parameterValue
+	//   section1:
+	//     fieldName: fieldValue
+	//   section2:
+	//     fieldName: fieldValue
 	// profile2:
 	//   ...
 	v := map[string]map[string]map[string]interface{}{}

@@ -16,14 +16,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AppSettings maps to the app section parameters
+// AppSettings maps to the app section fields
 type AppSettings struct {
 	Verbose bool   `glazed:"verbose"`
 	Port    int    `glazed:"port"`
 	Host    string `glazed:"host"`
 }
 
-// OutputSettings maps to the output section parameters
+// OutputSettings maps to the output section fields
 type OutputSettings struct {
 	Format string `glazed:"format"`
 	Pretty bool   `glazed:"pretty"`
@@ -96,7 +96,7 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	defaultSection, err := schema.NewSection(
 		schema.DefaultSlug,
 		"Default",
-		schema.WithDescription("Default parameters"),
+		schema.WithDescription("Default fields"),
 		schema.WithArguments(
 			fields.New("input-file", fields.TypeString,
 				fields.WithHelp("Input file to process"),
@@ -109,11 +109,11 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	}
 
 	// Create schema collection
-	schema := schema.NewSchema(
+	commandSchema := schema.NewSchema(
 		schema.WithSections(glazedSection, appSection, outputSection, defaultSection),
 	)
 
-	desc := cmds.NewCommandDefinition(
+	desc := cmds.NewCommandDescription(
 		"refactor-demo",
 		cmds.WithShort("Demonstrate new wrapper packages (schema/fields/values/sources)"),
 		cmds.WithLong(`This example demonstrates the new wrapper packages:
@@ -131,7 +131,7 @@ Example usage:
   DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo input.txt
   DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo --app-verbose=false input.txt
 `),
-		cmds.WithSchema(schema),
+		cmds.WithSchema(commandSchema),
 	)
 
 	return &RefactorDemoCommand{CommandDescription: desc}, nil
@@ -195,7 +195,7 @@ func main() {
 	cobraDemoCmd, err := cli.BuildCobraCommandFromCommand(
 		demoCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			// AppName enables env prefix DEMO_<LAYER_PREFIX+FLAG>
+			// AppName enables env prefix DEMO_<SECTION_PREFIX+FLAG>
 			// Example: DEMO_APP_VERBOSE=true sets app.verbose
 			AppName: "demo",
 		}),

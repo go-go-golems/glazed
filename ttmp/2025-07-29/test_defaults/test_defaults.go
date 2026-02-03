@@ -12,7 +12,7 @@ import (
 
 func runTemplateCommand(cmd *cmds.TemplateCommand, inputValues map[string]interface{}) {
 	// Get default parameter layer
-	defaultLayer, ok := cmd.Description().Layers.Get(schema.DefaultSlug)
+	defaultLayer, ok := cmd.Description().Schema.Get(schema.DefaultSlug)
 	if !ok {
 		panic("default layer not found")
 	}

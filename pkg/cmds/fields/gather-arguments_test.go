@@ -28,8 +28,8 @@ func TestGatherArguments_RequiredMissing(t *testing.T) {
 	assert.EqualError(t, err, "Argument Test not found")
 }
 
-// Test the parsing of every kind of parameter type for provided args
-// This should be broken down into individual tests for each parameter types.
+// Test the parsing of every kind of field type for provided args
+// This should be broken down into individual tests for each field types.
 // However a generic example of such test might look like:
 func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 	arg := NewDefinitions(WithDefinitionList([]*Definition{
@@ -46,8 +46,8 @@ func TestGatherArguments_ParsingProvidedArguments(t *testing.T) {
 	assert.Equal(t, "value", v.Value)
 }
 
-// Test parsing of list-type parameter with multiple arguments
-func TestGatherArguments_ListParameterParsing(t *testing.T) {
+// Test parsing of list-type field with multiple arguments
+func TestGatherArguments_ListFieldParsing(t *testing.T) {
 	arg := NewDefinitions(WithDefinitionList([]*Definition{
 		{
 			Name:       "Test",
@@ -258,7 +258,7 @@ func TestParsingErrorInvalidInt(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSingleParametersFollowedByListDefaults(t *testing.T) {
+func TestSingleFieldsFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3"}
 	arguments := NewDefinitions(WithDefinitionList([]*Definition{
 		{
@@ -283,7 +283,7 @@ func TestSingleParametersFollowedByListDefaults(t *testing.T) {
 	assert.Equal(t, []int{2, 3}, v2.Value)
 }
 
-func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
+func TestThreeSingleFieldsFollowedByListDefaults(t *testing.T) {
 	args := []string{"1", "2", "3", "4"}
 	arguments := NewDefinitions(WithDefinitionList([]*Definition{
 		{
@@ -324,7 +324,7 @@ func TestThreeSingleParametersFollowedByListDefaults(t *testing.T) {
 	assert.Equal(t, []int{4}, v4.Value)
 }
 
-func TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues(t *testing.T) {
+func TestThreeSingleFieldsFollowedByListDefaultsOnlyTwoValues(t *testing.T) {
 	args := []string{"1", "2", "3"}
 	arguments := NewDefinitions(WithDefinitionList([]*Definition{
 		{

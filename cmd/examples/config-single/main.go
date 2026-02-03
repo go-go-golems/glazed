@@ -48,8 +48,8 @@ func NewDemoBareCommand() (*DemoBareCommand, error) {
 
 	desc := cmds.NewCommandDescription(
 		"demo",
-		cmds.WithShort("Minimal custom layer with single config file"),
-		cmds.WithLayersList(demoSection),
+		cmds.WithShort("Minimal custom section with single config file"),
+		cmds.WithSections(demoSection),
 	)
 
 	return &DemoBareCommand{CommandDescription: desc}, nil
@@ -97,15 +97,15 @@ func main() {
 	}
 	root.AddCommand(cobraCmd)
 
-	// validate command: checks the config file against layer definitions
+	// validate command: checks the config file against section definitions
 	validateCmd := &cobra.Command{
 		Use:   "validate",
-		Short: "Validate the config file for known layers, parameters, and types",
+		Short: "Validate the config file for known sections, fields, and types",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Do not print usage or cobra-managed error prefix on failure
 			cmd.SilenceUsage = true
 			cmd.SilenceErrors = true
-			// Recreate layers like the main command
+			// Recreate sections like the main command
 			demoCmd, err := NewDemoBareCommand()
 			if err != nil {
 				return err
@@ -122,32 +122,32 @@ func main() {
 			}
 
 			issues := []string{}
-			// Validate top-level layers and parameters
-			for layerSlug, v := range raw {
-				layer, ok := demoCmd.Description().Layers.Get(layerSlug)
+			// Validate top-level sections and fields
+			for sectionSlug, v := range raw {
+				section, ok := demoCmd.Description().Schema.Get(sectionSlug)
 				if !ok {
-					issues = append(issues, fmt.Sprintf("unknown layer: %s", layerSlug))
+					issues = append(issues, fmt.Sprintf("unknown section: %s", sectionSlug))
 					continue
 				}
 				m, ok := v.(map[string]interface{})
 				if !ok {
-					issues = append(issues, fmt.Sprintf("layer %s must be an object", layerSlug))
+					issues = append(issues, fmt.Sprintf("section %s must be an object", sectionSlug))
 					continue
 				}
-				pds := layer.GetDefinitions()
-				// Build set of known parameter names
+				pds := section.GetDefinitions()
+				// Build set of known field names
 				known := map[string]bool{}
 				pds.ForEach(func(pd *fields.Definition) {
 					known[pd.Name] = true
 				})
 				for key, val := range m {
 					if !known[key] {
-						issues = append(issues, fmt.Sprintf("unknown parameter in layer %s: %s", layerSlug, key))
+						issues = append(issues, fmt.Sprintf("unknown field in section %s: %s", sectionSlug, key))
 						continue
 					}
 					pd, _ := pds.Get(key)
 					if _, err := pd.CheckValueValidity(val); err != nil {
-						issues = append(issues, fmt.Sprintf("invalid value for %s.%s: %v", layerSlug, key, err))
+						issues = append(issues, fmt.Sprintf("invalid value for %s.%s: %v", sectionSlug, key, err))
 					}
 				}
 			}
