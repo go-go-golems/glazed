@@ -23,12 +23,20 @@ RelatedFiles:
       Note: commit range CLI orchestration
     - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_tree_sitter.go
       Note: tree-sitter CLI
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/list_symbols.go
+      Note: list symbols CLI
     - Path: ../../../../../../../refactorio/cmd/refactor-index/root.go
-      Note: wire new ingest commands
+      Note: |-
+        wire new ingest commands
+        wire list symbols
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go
       Note: commit lineage + range smoke tests
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_gopls_refs_smoke_test.go
       Note: gopls references smoke test
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
+      Note: inventory smoke assertion
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/query.go
+      Note: symbol inventory query
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -81,6 +89,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -970,3 +979,51 @@ I added new tasks to GL-006 to capture missing commit linkage for symbol/code-un
 
 ### Technical details
 - Tasks added: commit_id linkage, FTS indexes, AST caching evaluation.
+
+## Step 19: Implement symbol inventory listing
+
+I added a symbol inventory listing that joins symbol definitions to occurrences and files, and exposed it as a `list symbols` CLI command. The output includes a ready-to-use `target_spec` for feeding gopls reference ingestion, and the smoke tests now validate that the inventory can be queried for known symbols.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, add tasks for the symbol inventory. then build that"
+
+**Assistant interpretation:** Add a symbol inventory task to the ticket and implement the symbol inventory listing now.
+
+**Inferred user intent:** Make it easy to surface symbol locations and feed reference tooling without manual target construction.
+
+**Commit (code):** 094ff98 — "Add symbol inventory listing and targets"
+
+### What I did
+- Added a symbol inventory query (`ListSymbolInventory`) joining symbol defs, occurrences, and files.
+- Implemented `refactor-index list symbols` with filters and `target_spec` output.
+- Extended the symbols/code-units smoke test to assert inventory rows.
+- Ran `go test ./... -count=1`.
+
+### Why
+- We need a concrete symbol inventory for inspection and as input to gopls reference ingestion.
+
+### What worked
+- CLI command compiles and the smoke test verifies inventory data is present.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Reusing the existing symbol tables is sufficient for a practical inventory output (no new schema required).
+
+### What was tricky to build
+- Ensuring the inventory query supports optional filters and still performs well required careful SQL predicates.
+
+### What warrants a second pair of eyes
+- Confirm the `target_spec` format is the preferred long-term input shape for `gopls-refs`.
+
+### What should be done in the future
+- Add optional fuzzy/name-like filters if needed for larger inventories.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/query.go` and `refactorio/cmd/refactor-index/list_symbols.go`.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- The inventory query joins `symbol_occurrences`, `symbol_defs`, and `files` and can be filtered by run, kind, name, package, path, and exported-only.
