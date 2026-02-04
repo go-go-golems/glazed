@@ -12,16 +12,19 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/changelog.md
+      Note: Step 1 changelog entry
     - Path: glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/design-doc/01-sqlite-refactor-index-tool.md
       Note: Design doc used to scope MVP
     - Path: glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/tasks.md
       Note: Task breakdown for GL-005
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T18:58:48-05:00
+LastUpdated: 2026-02-03T19:00:38-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -50,7 +53,7 @@ Then, task by task, implement, check off task, commit to git, update diary."
 
 **Inferred user intent:** Establish a disciplined, auditable implementation loop with Glazed patterns and docmgr bookkeeping.
 
-**Commit (code):** N/A
+**Commit (code):** 24cea6d — "docmgr: add GL-005 tasks and diary"
 
 ### What I did
 - Reviewed the GL-005 design doc to select an MVP subset (init + diff ingest + diff list).
