@@ -25,6 +25,10 @@ RelatedFiles:
       Note: tree-sitter CLI
     - Path: ../../../../../../../refactorio/cmd/refactor-index/root.go
       Note: wire new ingest commands
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go
+      Note: commit lineage + range smoke tests
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_gopls_refs_smoke_test.go
+      Note: gopls references smoke test
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -77,6 +81,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -816,3 +821,50 @@ I added Glazed CLI commands for commit lineage, doc hits, tree-sitter, gopls ref
 
 ### Technical details
 - New ingest commands: `commits`, `doc-hits`, `tree-sitter`, `gopls-refs`, `range`.
+
+## Step 16: Extend smoke tests for commit lineage, range, and gopls refs
+
+I added golden smoke tests for commit lineage ingestion, range orchestration, and gopls references (skipping if gopls is unavailable). The tests now create real git repos, run the ingest flows, and assert database counts for commits, diffs, and symbol refs.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 15)
+
+**Assistant interpretation:** Add smoke tests for the new ingest passes and validate they run end-to-end.
+
+**Inferred user intent:** Ensure the new commands and ingestion logic are covered by golden tests.
+
+**Commit (code):** 74b2b8c — "Add smoke tests for commits, range, and gopls refs"
+
+### What I did
+- Added `TestIngestCommitsGolden` and `TestIngestCommitRangeDiffAndSymbols` with git repo fixtures.
+- Added `TestIngestGoplsReferences` gated on `gopls` availability.
+- Ran `go test ./... -count=1` and updated expectations based on `git diff-tree` rename behavior.
+
+### Why
+- We need coverage for commit lineage and range orchestration plus a gopls references smoke test.
+
+### What worked
+- Tests pass and assert DB row counts for commits, blobs, and symbol refs.
+
+### What didn't work
+- Initial commit ingestion test expected 4 commit files but `git diff-tree` produced 5; updated the expectation.
+
+### What I learned
+- `git diff-tree --name-status` does not detect renames unless explicitly requested, so rename shows as add/delete.
+
+### What was tricky to build
+- Ensuring the gopls test isolates symbol definition locations required joining symbol_defs, symbol_occurrences, and files.
+
+### What warrants a second pair of eyes
+- Validate the gopls smoke test structure for stability on environments with different gopls versions.
+
+### What should be done in the future
+- Consider adding an explicit rename-detection flag in commit ingestion if we want rename semantics.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go`.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- Commit ingestion test uses a multi-change commit to validate file/blob counts.
