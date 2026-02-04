@@ -152,3 +152,24 @@ Each should output a glazed row with counts (`run_id`, `symbols`, `occurrences`,
 - Should code unit snapshots include import blocks or package comments?
 - Do we need a separate `symbol_occurrences` table for fields vs methods?
 - Is `run_id` sufficient for versioning, or should we add explicit commit hashes early?
+
+## AST caching by blob SHA (evaluation)
+
+**Summary:** Useful for large commit ranges; moderate complexity. It reduces repeated parsing by reusing symbol/snapshot output for identical file blobs across commits.
+
+**Benefits**
+- Avoids re-running `go/packages` / AST parsing when file content is unchanged across commits.
+- Makes commit-range indexing scale better for long histories with small diffs.
+
+**Costs / complexity**
+- Requires reading file content by blob SHA (or git show) per changed file to parse in isolation.
+- Needs a cache keyed by blob SHA and per-file path (for receiver/position normalization).
+- Must ensure cached symbol occurrences still map to the correct file path (renames) and commit.
+
+**Recommendation**
+- **Defer** unless we see ranges >100 commits or large monorepos.
+- If implemented, scope to changed Go files only and cache only the extracted symbol/code-unit payloads, not `go/packages` metadata.
+
+**Open questions**
+- Is reuse safe when file path changes (renames) but blob identical? (likely yes; update file_id + positions only)
+- Do we need a persistent cache table, or is in-memory per range run enough?

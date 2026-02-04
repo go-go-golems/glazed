@@ -110,12 +110,15 @@ RelatedFiles:
         doc_hits table
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Symbol insert helpers
+    - Path: ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
+      Note: AST caching evaluation
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1203,3 +1206,47 @@ I added FTS5-backed indexes for diff line text and doc hit match text, with trig
 
 ### Technical details
 - New virtual tables: `doc_hits_fts`, `diff_lines_fts` with triggers for insert/update/delete.
+
+## Step 23: Evaluate AST caching by blob SHA
+
+I added an evaluation section to the analysis doc that weighs the cost/benefit of AST caching by blob SHA and recommends deferring it unless we see large commit ranges. This closes the remaining evaluation task.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 20)
+
+**Assistant interpretation:** Complete the AST caching evaluation task.
+
+**Inferred user intent:** Decide whether AST caching is worth implementing now.
+
+**Commit (code):** N/A (analysis doc update only)
+
+### What I did
+- Added an “AST caching by blob SHA” evaluation section to the analysis doc with benefits, costs, and a recommendation.
+
+### Why
+- We needed a documented decision on whether to implement blob-level caching.
+
+### What worked
+- The analysis now captures the tradeoffs and a clear recommendation to defer.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Confirm the recommendation aligns with expected repo sizes and range lengths.
+
+### What should be done in the future
+- Revisit if commit-range ingest becomes a performance bottleneck.
+
+### Code review instructions
+- Review `glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md`.
+
+### Technical details
+- Added a short decision record covering benefits, costs, and scope for blob SHA caching.
