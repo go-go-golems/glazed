@@ -42,6 +42,8 @@ RelatedFiles:
       Note: Name-status and unified diff parsing
     - Path: refactorio/pkg/refactorindex/ingest_diff.go
       Note: Diff ingestion orchestration
+    - Path: refactorio/pkg/refactorindex/ingest_diff_smoke_test.go
+      Note: Golden smoke test for diff ingestion
     - Path: refactorio/pkg/refactorindex/query.go
       Note: Diff-files query helper
     - Path: refactorio/pkg/refactorindex/schema.go
@@ -50,10 +52,11 @@ RelatedFiles:
       Note: Store helpers for runs and diff inserts
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:13:33-05:00
+LastUpdated: 2026-02-03T19:16:38-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -369,3 +372,53 @@ I replaced the `XXX` placeholder module name and related paths with `refactorio`
 
 ### Technical details
 - Module path updated to `github.com/go-go-golems/refactorio`.
+
+## Step 7: Add golden smoke test for diff ingestion
+
+I added a golden smoke test that creates a temporary git repository, generates commits with add/modify/rename/delete changes, runs the diff ingestion pipeline, and asserts the resulting SQLite rows and raw outputs. The test also checks that diff hunks and lines are populated, providing an end-to-end validation of the ingestion path.
+
+While implementing the test, two failures surfaced: SQLite rejected the `exists` column name as a reserved word, and the diff-files query was not handling nullable old/new path columns. I fixed both issues as part of this step.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Build a thorough smoke test that stands up a temporary git repo, runs the tool, and validates expected SQLite rows.
+
+**Inferred user intent:** Ensure the tool works end-to-end and provides a stable golden regression test.
+
+**Commit (code):** f2595cd — "Add golden diff ingestion smoke test"
+
+### What I did
+- Added `ingest_diff_smoke_test.go` to create a git repo, run `IngestDiff`, and assert expected rows and raw outputs.
+- Renamed the `files.exists` column to `files.file_exists` to avoid SQLite keyword conflicts.
+- Updated the diff-files query to handle nullable old/new paths safely.
+
+### Why
+- The smoke test validates the real ingestion behavior and guards against regressions.
+
+### What worked
+- The test now exercises add/modify/rename/delete paths and verifies SQLite output.
+
+### What didn't work
+- `go test ./pkg/refactorindex -count=1` initially failed with: `apply schema: SQL logic error: near "exists": syntax error (1)`.
+- After fixing that, the same test failed with: `scan diff file: sql: Scan error on column index 4, name "new_path": converting NULL to string is unsupported`.
+
+### What I learned
+- SQLite treats `exists` as a keyword, so table schemas need to avoid it or quote it.
+
+### What was tricky to build
+- Making the test robust required validating both the output rows and the raw source files written by ingestion.
+
+### What warrants a second pair of eyes
+- Review the test data setup to ensure the rename status consistently yields `R*` on all git versions.
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- Start with `refactorio/pkg/refactorindex/ingest_diff_smoke_test.go` to see the full golden test.
+- Review `refactorio/pkg/refactorindex/schema.go` and `refactorio/pkg/refactorindex/query.go` for the fixes.
+
+### Technical details
+- The test uses `git mv` to generate a rename entry and validates the `R*` status prefix.
