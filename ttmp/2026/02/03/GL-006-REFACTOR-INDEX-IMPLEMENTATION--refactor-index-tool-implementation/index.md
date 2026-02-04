@@ -17,10 +17,11 @@ ExternalSources:
     - local:gopls_deep_dive_analysis.md
     - local:gopls CLI Complete Guide.md
 Summary: ""
-LastUpdated: 2026-02-03T21:06:09.646733482-05:00
+LastUpdated: 2026-02-03T21:15:49.231893988-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
