@@ -74,3 +74,21 @@ Step 4: implement diff ingestion pipeline (commit b036396)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_diff.go — Ingest orchestration
 
+
+## 2026-02-03
+
+Step 5: add diff-files query command (commit f569064)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/query.go — Query helper
+
+
+## 2026-02-03
+
+Step 6: rename module placeholder to refactorio (commit 6f0562d)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/go.mod — Module rename
+

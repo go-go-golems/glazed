@@ -18,6 +18,10 @@ RelatedFiles:
       Note: Design doc used to scope MVP
     - Path: glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/tasks.md
       Note: Task breakdown for GL-005
+    - Path: refactorio/AGENT.md
+      Note: Updated placeholder paths
+    - Path: refactorio/Makefile
+      Note: Binary/module rename
     - Path: refactorio/cmd/refactor-index/ingest_diff.go
       Note: |-
         Ingest diff GlazeCommand scaffold
@@ -28,22 +32,30 @@ RelatedFiles:
       Note: List diff-files GlazeCommand scaffold
     - Path: refactorio/cmd/refactor-index/root.go
       Note: Cobra root command wiring for refactor-index
+    - Path: refactorio/cmd/refactorio/main.go
+      Note: Renamed placeholder command
     - Path: refactorio/go.mod
-      Note: CLI dependencies
+      Note: |-
+        CLI dependencies
+        Module path renamed
     - Path: refactorio/pkg/refactorindex/diff_parse.go
       Note: Name-status and unified diff parsing
     - Path: refactorio/pkg/refactorindex/ingest_diff.go
       Note: Diff ingestion orchestration
+    - Path: refactorio/pkg/refactorindex/query.go
+      Note: Diff-files query helper
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: MVP SQLite schema
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Store helpers for runs and diff inserts
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:10:29-05:00
+LastUpdated: 2026-02-03T19:13:33-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
 
 
 
@@ -262,3 +274,98 @@ This step turns the scaffolding into a working ingest path that writes normalize
 ### Technical details
 - Raw outputs are written under `sources/<run_id>/` with name-status and unified patch files.
 - Diff lines store optional old/new line numbers using nullable integers.
+
+## Step 5: Add diff-files query command
+
+I added a query helper to list diff files from SQLite and wired the `list diff-files` command to emit those rows via the Glaze processor. This closes the loop for reading back the diff ingestion results through structured output, which the smoke tests will exercise.
+
+This step is intentionally minimal: it exposes the diff file metadata without extra filters beyond `run-id`, keeping the output deterministic for golden tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement a simple query path so users can inspect ingested diff files.
+
+**Inferred user intent:** Provide a basic report command suitable for tests and manual inspection.
+
+**Commit (code):** f569064 — "Add diff-files query command"
+
+### What I did
+- Added `ListDiffFiles` query helper in `pkg/refactorindex`.
+- Wired the `list diff-files` GlazeCommand to open the DB, query, and emit rows.
+
+### Why
+- Tests and users need a quick way to validate ingestion results without writing ad-hoc SQL.
+
+### What worked
+- The command now emits structured rows for all diff files, filtered by optional run id.
+
+### What didn't work
+- N/A (no runtime tests yet).
+
+### What I learned
+- Keeping query logic in the store layer keeps CLI commands thin and reusable.
+
+### What was tricky to build
+- N/A (straightforward SQL query).
+
+### What warrants a second pair of eyes
+- Confirm the ordering and run-id filter behavior matches expectations for the golden tests.
+
+### What should be done in the future
+- Implement golden smoke tests against the query output and raw DB rows.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/query.go` for the SQL query.
+- Check `refactorio/cmd/refactor-index/list_diff_files.go` for CLI wiring.
+
+### Technical details
+- SQL uses a `LEFT JOIN` to resolve file paths, ordering by `run_id` and `path`.
+
+## Step 6: Rename module placeholder to refactorio
+
+I replaced the `XXX` placeholder module name and related paths with `refactorio`, including the module path, Makefile targets, and the placeholder command directory. This aligns the new refactor-index work with the correct module identity and avoids confusing import paths.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Rename the XXX in the package to refactorio, btw. You can probably just use a sed regexp"
+
+**Assistant interpretation:** Replace the placeholder `XXX` module name and related strings with `refactorio` in the refactorio module.
+
+**Inferred user intent:** Normalize the module/package naming so new code uses the correct import path.
+
+**Commit (code):** 6f0562d — "Rename module to refactorio"
+
+### What I did
+- Renamed the module path in `go.mod` and updated related imports.
+- Updated `Makefile`/`AGENT.md` references to use `refactorio`.
+- Renamed `cmd/XXX` to `cmd/refactorio`.
+
+### Why
+- Keeping the placeholder name causes incorrect imports and confusing build targets.
+
+### What worked
+- A simple replace plus directory rename updated all occurrences cleanly.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Keeping module naming consistent early avoids later refactors across all imports.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Verify no remaining `XXX` placeholders exist in the refactorio module.
+
+### What should be done in the future
+- None for this step.
+
+### Code review instructions
+- Check `refactorio/go.mod` and `refactorio/Makefile` for module name updates.
+- Verify imports in `refactorio/cmd/refactor-index/*.go` reference the new module path.
+
+### Technical details
+- Module path updated to `github.com/go-go-golems/refactorio`.
