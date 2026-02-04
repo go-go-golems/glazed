@@ -57,3 +57,12 @@ Step 5: add CLI commands for symbols/code-units (commit 99bd539)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/ingest_symbols.go — CLI wiring
 
+
+## 2026-02-03
+
+Step 6: add golden tests for symbols/code-units (commit e4fc92e)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go — Golden test
+
