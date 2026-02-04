@@ -172,3 +172,50 @@ I drafted a design that defines the refactor runner, planning/apply/audit stages
 
 ### Technical details
 - Includes pipeline pseudocode and data structure definitions for rename targets.
+
+## Step 4: Upload analysis/design bundle to reMarkable
+
+I bundled the analysis and design documents into a single PDF with a ToC and uploaded it to the reMarkable cloud. This provides a portable, review-friendly artifact for manual reading.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Upload the GL-008 analysis/design output to reMarkable.
+
+**Inferred user intent:** Access the design materials in a device-friendly format.
+
+**Commit (code):** N/A (upload only; no code changes)
+
+### What I did
+- Ran `remarquee upload bundle` on the analysis + design docs with `--toc-depth 2`.
+- Verified the upload under `/ai/2026/02/04/GL-008-CREATE-REFACTORING-TOOL`.
+
+### Why
+- The user requested a reMarkable-friendly copy of the detailed analysis/design.
+
+### What worked
+- Upload succeeded and the PDF is present in the target directory.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Bundling both docs simplifies review and reduces doc sprawl on-device.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Confirm the ToC depth and section formatting meet your preference.
+
+### What should be done in the future
+- If more docs are added, regenerate the bundle to keep a single reference artifact.
+
+### Code review instructions
+- Review the uploaded sources:
+  - `glazed/ttmp/2026/02/03/GL-008-CREATE-REFACTORING-TOOL--create-refactoring-tool/analysis/01-refactoring-tool-analysis.md`
+  - `glazed/ttmp/2026/02/03/GL-008-CREATE-REFACTORING-TOOL--create-refactoring-tool/design-doc/01-refactoring-tool-design.md`
+
+### Technical details
+- Remote path: `/ai/2026/02/04/GL-008-CREATE-REFACTORING-TOOL/GL-008 Refactoring Tool Analysis+Design.pdf`.
