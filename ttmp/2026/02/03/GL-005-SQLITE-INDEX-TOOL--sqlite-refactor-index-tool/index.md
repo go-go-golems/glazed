@@ -1,7 +1,7 @@
 ---
 Title: sqlite refactor index tool
 Ticket: GL-005-SQLITE-INDEX-TOOL
-Status: active
+Status: complete
 Topics:
     - refactoring
     - tooling
@@ -14,10 +14,11 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T18:17:37.876230102-05:00
+LastUpdated: 2026-02-03T19:22:32.323170873-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # sqlite refactor index tool
 
