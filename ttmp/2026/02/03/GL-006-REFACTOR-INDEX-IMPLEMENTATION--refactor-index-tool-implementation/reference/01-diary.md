@@ -1299,3 +1299,48 @@ I wrote a detailed validation playbook covering end-to-end CLI runs, DB checks, 
 
 ### Technical details
 - Remote path: `/ai/2026/02/04/GL-006-REFACTOR-INDEX-IMPLEMENTATION/02-validation-playbook.pdf`.
+
+## Step 25: Close GL-006 ticket
+
+I closed the GL-006 ticket after uploading the validation playbook, which updates the ticket index and changelog status. This marks the work as complete.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 24)
+
+**Assistant interpretation:** Close the GL-006 ticket after the playbook upload.
+
+**Inferred user intent:** Finish the ticket lifecycle once validation materials are in place.
+
+**Commit (code):** 6a830d4 — "Close GL-006 ticket"
+
+### What I did
+- Ran `docmgr ticket close --ticket GL-006-REFACTOR-INDEX-IMPLEMENTATION` to set status to complete.
+- Committed the resulting index/changelog updates.
+
+### Why
+- The user asked to close the ticket after the playbook upload.
+
+### What worked
+- Ticket status updated successfully and changelog reflects completion.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/index.md`.
+
+### Technical details
+- Ticket status: active → complete.
