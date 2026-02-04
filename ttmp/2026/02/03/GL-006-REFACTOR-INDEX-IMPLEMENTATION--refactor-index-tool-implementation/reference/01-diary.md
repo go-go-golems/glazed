@@ -19,14 +19,19 @@ RelatedFiles:
       Note: GL-006 design doc
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md
       Note: GL-006 task breakdown
+    - Path: refactorio/pkg/refactorindex/ingest_symbols.go
+      Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: Pass 2 schema additions
+    - Path: refactorio/pkg/refactorindex/store.go
+      Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:27:06-05:00
+LastUpdated: 2026-02-03T19:30:27-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -132,3 +137,52 @@ I extended the SQLite schema to include symbol definitions/occurrences and code 
 
 ### Technical details
 - New tables include hash columns (`symbol_hash`, `unit_hash`, `body_hash`) for stable identity and diffing.
+
+## Step 3: Implement AST symbol ingestion
+
+I implemented the pass 2 AST symbol ingestion pipeline using `go/packages` and added store helpers for symbol definitions and occurrences. This includes stable hashing for symbol definitions, path normalization, and run tracking, with schema updates to enforce unique symbol hashes.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Build the AST symbol inventory ingestion logic after the schema is in place.
+
+**Inferred user intent:** Begin real pass 2 ingestion work with deterministic symbol data in SQLite.
+
+**Commit (code):** 9d5238b — "Implement AST symbol ingestion"
+
+### What I did
+- Added `IngestSymbols` to load packages and extract top-level symbols.
+- Added store helpers for `symbol_defs` and `symbol_occurrences`.
+- Enforced uniqueness on `symbol_hash` and bumped schema version to 3.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Symbol ingestion is the core of pass 2 and a prerequisite for code unit snapshots and reports.
+
+### What worked
+- The ingestion function compiles and integrates with the existing store/run pipeline.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- `go/packages` can supply enough type info for stable signatures when paired with `types.RelativeTo`.
+
+### What was tricky to build
+- Ensuring deterministic symbol hashing required consistent qualifier usage and path normalization.
+
+### What warrants a second pair of eyes
+- Review symbol coverage (currently top-level declarations + methods) and ensure it matches expectations.
+
+### What should be done in the future
+- Add code unit snapshot extraction and CLI wiring for `ingest symbols`.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_symbols.go`.
+- Review `refactorio/pkg/refactorindex/store.go` for symbol insert helpers.
+- Check `refactorio/pkg/refactorindex/schema.go` for unique hash constraints.
+
+### Technical details
+- Symbol hashes are SHA-256 of `pkg|name|kind|recv|signature`.
