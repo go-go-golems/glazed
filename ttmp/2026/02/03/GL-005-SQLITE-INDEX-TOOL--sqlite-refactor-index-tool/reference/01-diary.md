@@ -28,12 +28,17 @@ RelatedFiles:
       Note: Cobra root command wiring for refactor-index
     - Path: refactorio/go.mod
       Note: CLI dependencies
+    - Path: refactorio/pkg/refactorindex/schema.go
+      Note: MVP SQLite schema
+    - Path: refactorio/pkg/refactorindex/store.go
+      Note: Store helpers for runs and diff inserts
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:03:47-05:00
+LastUpdated: 2026-02-03T19:06:31-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -149,3 +154,53 @@ This step creates the structural shell we will plug the ingestion/query logic in
 ### Technical details
 - Subcommands are GlazeCommands with settings decoded via `values.DecodeSectionInto(..., schema.DefaultSlug, &Settings{})`.
 - Root Cobra command uses `cli.BuildCobraCommand` to auto-wire glazed output flags.
+
+## Step 3: Implement SQLite schema and store helpers
+
+I implemented the initial SQLite schema and a `Store` helper package that encapsulates schema initialization, run tracking, file/diff inserts, and raw output persistence. This provides the shared data-access layer that the ingest and query commands will call in subsequent steps.
+
+The schema matches the MVP slice from the design doc (meta runs, files, diff files/hunks/lines, raw outputs, schema versioning) and is ready for diff ingestion to populate.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Build the database schema and the Go helpers needed to write diff ingestion data into SQLite.
+
+**Inferred user intent:** Establish a solid persistence layer before implementing ingestion logic or tests.
+
+**Commit (code):** c50d9bf — "Add refactor index schema and store helpers"
+
+### What I did
+- Added `pkg/refactorindex/schema.go` with the MVP SQLite schema and indexes.
+- Added `pkg/refactorindex/store.go` with DB open/init helpers, run tracking, and insert helpers for files/diffs.
+- Added the `modernc.org/sqlite` driver dependency.
+
+### Why
+- Centralizing schema and insert logic avoids duplication and keeps ingestion code focused on parsing and orchestration.
+
+### What worked
+- Schema initialization and insert helpers compile and are ready to be called by the CLI commands.
+
+### What didn't work
+- N/A (no runtime tests yet).
+
+### What I learned
+- Using `INSERT OR IGNORE` + `SELECT` keeps file lookups deterministic without relying on SQLite `RETURNING` support.
+
+### What was tricky to build
+- Ensuring nullable columns are handled consistently required small helpers for optional ints and empty strings.
+
+### What warrants a second pair of eyes
+- Confirm the MVP schema columns match the intended GL-005 queries (especially `diff_lines` and `raw_outputs`).
+
+### What should be done in the future
+- Wire the store helpers into the `init` and `ingest diff` commands.
+
+### Code review instructions
+- Start with `refactorio/pkg/refactorindex/schema.go` for table layout.
+- Review `refactorio/pkg/refactorindex/store.go` for run creation and insert helpers.
+
+### Technical details
+- Schema version tracking uses a single `schema_versions` row with version 1.
+- Raw output persistence stores tool outputs under a per-run sources directory.

@@ -56,3 +56,12 @@ Step 2: scaffold refactor-index CLI (commit a1730a2)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/root.go — CLI wiring
 
+
+## 2026-02-03
+
+Step 3: add schema + store helpers (commit c50d9bf)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — Initial schema
+
