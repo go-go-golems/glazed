@@ -66,3 +66,12 @@ Step 6: add golden tests for symbols/code-units (commit e4fc92e)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go — Golden test
 
+
+## 2026-02-03
+
+Step 7: add remaining pipeline tasks from GL-005 design
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md — Backlog expansion
+
