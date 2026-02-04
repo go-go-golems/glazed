@@ -111,3 +111,12 @@ Step 11: add doc hits ingestion (commit f824ea0)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_doc_hits.go — Doc scan ingestion
 
+
+## 2026-02-03
+
+Step 12: add report generation + CLI (commit e37404b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/report.go — Report generation
+
