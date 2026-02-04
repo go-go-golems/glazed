@@ -25,6 +25,8 @@ RelatedFiles:
       Note: CLI command for symbols ingestion
     - Path: refactorio/cmd/refactor-index/root.go
       Note: Wired new ingest subcommands
+    - Path: refactorio/go.mod
+      Note: Local oak replace
     - Path: refactorio/pkg/refactorindex/ingest_code_units.go
       Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_commits.go
@@ -35,6 +37,8 @@ RelatedFiles:
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
       Note: Golden tests for symbols and code units
+    - Path: refactorio/pkg/refactorindex/ingest_tree_sitter.go
+      Note: Tree-sitter ingestion
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: |-
         Pass 2 schema additions
@@ -44,10 +48,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:56:44-05:00
+LastUpdated: 2026-02-03T20:01:35-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -491,3 +496,53 @@ I added gopls reference ingestion with raw output capture and parsing into `symb
 
 ### Technical details
 - Raw outputs are stored under `sources/<run_id>/gopls/`.
+
+## Step 10: Implement tree-sitter ingestion via Oak
+
+I added a tree-sitter ingestion pipeline using Oak’s query builder, along with schema support for `ts_captures`. The new pass runs YAML-defined queries against a directory/glob and stores capture positions and snippets in SQLite.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement the tree-sitter ingestion pass using Oak APIs.
+
+**Inferred user intent:** Index non-Go structures via tree-sitter queries for refactor tooling.
+
+**Commit (code):** 43be56f — "Add tree-sitter ingestion via Oak"
+
+### What I did
+- Added `ts_captures` table and indexes (schema version 6).
+- Implemented `IngestTreeSitter` using Oak’s `QueryBuilder` + YAML query files.
+- Added store helper to insert tree-sitter captures.
+- Added a local replace for `github.com/go-go-golems/oak` to use the workspace module.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Tree-sitter captures are needed to index non-Go files (YAML/JSON/Markdown/TS).
+
+### What worked
+- Oak query execution integrates cleanly and writes capture rows.
+
+### What didn't work
+- `go mod tidy` initially failed because the released oak module lacks `pkg/api`; fixed by adding a local replace.
+
+### What I learned
+- Workspace modules can still require a replace when `go mod tidy` resolves to a published version lacking new packages.
+
+### What was tricky to build
+- Normalizing file paths for capture records requires consistent root-relative paths.
+
+### What warrants a second pair of eyes
+- Confirm that using `capture.Type` (currently empty) is acceptable for `node_type`.
+
+### What should be done in the future
+- Add fixtures/tests for tree-sitter capture parsing (Task 13).
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_tree_sitter.go`.
+- Review `refactorio/pkg/refactorindex/schema.go` and `refactorio/pkg/refactorindex/store.go` for `ts_captures`.
+- Check `refactorio/go.mod` for the oak replace.
+
+### Technical details
+- Tree-sitter capture positions are stored as 1-based line/column from `StartPoint`/`EndPoint`.
