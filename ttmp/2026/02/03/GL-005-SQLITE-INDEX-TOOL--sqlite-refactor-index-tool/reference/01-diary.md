@@ -52,7 +52,7 @@ RelatedFiles:
       Note: Store helpers for runs and diff inserts
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:16:38-05:00
+LastUpdated: 2026-02-03T19:22:08-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -422,3 +422,53 @@ While implementing the test, two failures surfaced: SQLite rejected the `exists`
 
 ### Technical details
 - The test uses `git mv` to generate a rename entry and validates the `R*` status prefix.
+
+## Step 8: Run full test suite and perform CLI sanity check
+
+I ran the refactorio test suite and performed manual CLI sanity checks against the refactorio repo itself. During the test run, the `refactor-index` commands failed to compile due to outdated `values.DecodeSectionInto` usage and incorrect `types.Row` pointer handling, so I updated the commands to use `vals.DecodeSectionInto` and to return the correct `types.Row` type. After those fixes, the full test suite passed, and the manual CLI runs produced expected output.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, then run the test suite, do some manual CLI sanity in the refactorio repo itself, then assuming there are no issues, close the ticket and move on to GL-006, doing a deep analysis and creating the necessary tasks, then continuing in the same way with task, build, check off, commit, diary, etc..."
+
+**Assistant interpretation:** Run `go test ./...`, perform CLI sanity on refactorio, fix any issues, close GL-005, then begin GL-006 analysis and tasking.
+
+**Inferred user intent:** Confirm GL-005 is stable before transitioning to the next implementation phase.
+
+**Commit (code):** b46de85 — "Fix glazed value decoding and row types"
+
+### What I did
+- Ran `go test ./... -count=1` in `refactorio`.
+- Fixed Glazed command decoding to use `vals.DecodeSectionInto`.
+- Corrected row helper return types to use `types.Row` rather than `*types.Row`.
+- Ran manual CLI sanity checks: `init`, `ingest diff`, and `list diff-files` against the refactorio repo.
+
+### Why
+- The user requested a full test run and a real CLI sanity check before closing GL-005.
+
+### What worked
+- After fixes, the test suite passed and CLI output showed expected rows.
+
+### What didn't work
+- Initial test run failed with compile errors:
+  - `undefined: values.DecodeSectionInto`
+  - `cannot use *types.Row as types.Row`
+
+### What I learned
+- Glazed `Values` decoding is now provided as a method on `*values.Values` rather than a package function.
+
+### What was tricky to build
+- N/A (straightforward fix once the compile errors were identified).
+
+### What warrants a second pair of eyes
+- N/A (mechanical change across three command files).
+
+### What should be done in the future
+- N/A.
+
+### Code review instructions
+- Review `refactorio/cmd/refactor-index/init.go`, `refactorio/cmd/refactor-index/ingest_diff.go`, and `refactorio/cmd/refactor-index/list_diff_files.go` for the decode + row changes.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- Manual CLI outputs showed a run with 3 diff files and populated diff rows from the latest commit in the refactorio repo.

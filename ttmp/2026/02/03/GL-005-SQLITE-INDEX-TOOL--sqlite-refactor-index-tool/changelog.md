@@ -101,3 +101,12 @@ Step 7: add golden smoke test (commit f2595cd)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_diff_smoke_test.go — Golden test
 
+
+## 2026-02-03
+
+Step 8: run tests + fix glazed decode/row types (commit b46de85)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/init.go — Decode and row fixes
+
