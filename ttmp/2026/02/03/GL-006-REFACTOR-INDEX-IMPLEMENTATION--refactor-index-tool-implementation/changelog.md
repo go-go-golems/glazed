@@ -210,3 +210,12 @@ Step 22: add FTS indexes for diff lines and doc hits (commit 4c03aa7)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/store.go — FTS setup
 
+
+## 2026-02-03
+
+Step 23: evaluate AST caching by blob SHA (analysis update)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md — added caching evaluation
+
