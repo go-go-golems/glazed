@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Add tasks here
+- [x] Add tasks here
 
 - [x] Deep analysis of AST symbol + code unit snapshot pass; update analysis doc
 - [x] Extend SQLite schema/migrations for symbol_defs, symbol_occurrences, code_units, code_unit_snapshots
