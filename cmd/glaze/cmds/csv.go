@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/go-go-golems/glazed/pkg/settings"
 )
 
 type CsvCommand struct {
@@ -21,7 +22,7 @@ type CsvCommand struct {
 var _ cmds.GlazeCommand = (*CsvCommand)(nil)
 
 func NewCsvCommand() (*CsvCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -69,27 +70,27 @@ func NewCsvCommand() (*CsvCommand, error) {
 					fields.WithDefault(false),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
 }
 
 type CsvSettings struct {
-	InputFiles       []string `glazed.parameter:"input-files"`
-	Delimiter        string   `glazed.parameter:"delimiter"`
-	Comment          string   `glazed.parameter:"comment"`
-	FieldsPerRecord  int      `glazed.parameter:"fields-per-record"`
-	TrimLeadingSpace bool     `glazed.parameter:"trim-leading-space"`
-	LazyQuotes       bool     `glazed.parameter:"lazy-quotes"`
+	InputFiles       []string `glazed:"input-files"`
+	Delimiter        string   `glazed:"delimiter"`
+	Comment          string   `glazed:"comment"`
+	FieldsPerRecord  int      `glazed:"fields-per-record"`
+	TrimLeadingSpace bool     `glazed:"trim-leading-space"`
+	LazyQuotes       bool     `glazed:"lazy-quotes"`
 }
 
 func (c *CsvCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &CsvSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize csv settings from parameters")
+		return errors.Wrap(err, "failed to initialize csv settings from fields")
 	}
 
 	commaRune := rune(s.Delimiter[0])

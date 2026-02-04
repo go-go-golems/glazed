@@ -23,7 +23,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	err := logging.AddLoggingLayerToRootCommand(rootCmd, "glaze")
+	err := logging.AddLoggingSectionToRootCommand(rootCmd, "glaze")
 	cobra.CheckErr(err)
 
 	helpSystem := help.NewHelpSystem()

@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -12,7 +14,7 @@ import (
 
 type TemplateSettings struct {
 	RenameSeparator string
-	UseRowTemplates bool `glazed.parameter:"use-row-templates"`
+	UseRowTemplates bool `glazed:"use-row-templates"`
 	Templates       map[types.FieldName]string
 }
 
@@ -32,9 +34,9 @@ func (tf *TemplateSettings) AddMiddlewares(p_ *middlewares.TableProcessor) error
 }
 
 type TemplateFlagsDefaults struct {
-	Template        string            `glazed.parameter:"template"`
-	TemplateField   map[string]string `glazed.parameter:"template-field"`
-	UseRowTemplates bool              `glazed.parameter:"use-row-templates"`
+	Template        string            `glazed:"template"`
+	TemplateField   map[string]string `glazed:"template-field"`
+	UseRowTemplates bool              `glazed:"use-row-templates"`
 }
 
 func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
@@ -43,40 +45,40 @@ func NewTemplateFlagsDefaults() *TemplateFlagsDefaults {
 	}
 }
 
-type TemplateParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type TemplateSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-const GlazedTemplateLayerSlug = "glazed-template"
+const GlazedTemplateSectionSlug = "glazed-template"
 
-func NewTemplateParameterLayer(options ...layers.ParameterLayerOptions) (*TemplateParameterLayer, error) {
-	ret := &TemplateParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(templateFlagsYaml, options...)
+func NewTemplateSection(options ...schema.SectionOption) (*TemplateSection, error) {
+	ret := &TemplateSection{}
+	section, err := schema.NewSectionFromYAML(templateFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create template parameter layer")
+		return nil, errors.Wrap(err, "Failed to create template field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *TemplateParameterLayer) Clone() layers.ParameterLayer {
-	return &TemplateParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *TemplateSection) Clone() schema.Section {
+	return &TemplateSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
+func NewTemplateSettings(section *values.SectionValues) (*TemplateSettings, error) {
 	//TODO(manuel, 2024-01-05) This could better be done with a InitializeStruct I think
 
 	// templates get applied before flattening
 	templates := map[types.FieldName]string{}
 
-	templateArgument, ok := layer.Parameters.GetValue("template").(string)
+	templateArgument, ok := section.Fields.GetValue("template").(string)
 	if ok && templateArgument != "" {
 		templates["_0"] = templateArgument
 	} else {
-		v := layer.Parameters.GetValue("template-field")
+		v := section.Fields.GetValue("template-field")
 		templateFields, err := cast.ConvertMapToInterfaceMap(v)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to convert template-field to map[string]interface{}")
@@ -90,7 +92,7 @@ func NewTemplateSettings(layer *layers.ParsedLayer) (*TemplateSettings, error) {
 		}
 	}
 
-	useRowTemplates, ok := layer.Parameters.GetValue("use-row-templates").(bool)
+	useRowTemplates, ok := section.Fields.GetValue("use-row-templates").(bool)
 	if !ok {
 		useRowTemplates = false
 	}

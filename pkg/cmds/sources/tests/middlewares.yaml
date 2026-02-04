@@ -1,0 +1,78 @@
+- name: "Empty middlewares and values"
+  description: "Empty middlewares should result in empty parsed sections"
+  sections: [ ]
+  values: [ ]
+  expectedSections: [ ]
+  expectedError: false
+  middlewares: []
+
+- name: "Empty values, set from defaults"
+  description: "Only set from defaults middlewares, with empty parsed sections"
+  sections: [ ]
+  values: [ ]
+  expectedSections: [ ]
+  expectedError: false
+  middlewares:
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"
+
+- name: "Single field, set from defaults"
+  description: "Only set from defaults middlewares, with single field"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  values: [ ]
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "defaultVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
+  expectedError: false
+  middlewares:
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"
+
+- name: "Single field, set from defaults and then update from map"
+  description: "Set from defaults then map middlewares, with single field"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  values: [ ]
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "mapVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
+          - source: "map"
+            value: "mapVal"
+            metadata:
+              "map-value": "mapVal"
+  expectedError: false
+  middlewares:
+    - name: "updateFromMap"
+      options:
+        - name: "source"
+          value: "map"
+      map:
+        section1:
+          param1: "mapVal"
+    - name: "setFromDefaults"
+      options:
+        - name: "source"
+          value: "defaults"

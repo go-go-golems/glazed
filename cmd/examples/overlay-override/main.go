@@ -16,8 +16,8 @@ import (
 )
 
 type Settings struct {
-	ApiKey    string `glazed.parameter:"api-key"`
-	Threshold int    `glazed.parameter:"threshold"`
+	ApiKey    string `glazed:"api-key"`
+	Threshold int    `glazed:"threshold"`
 }
 
 type Command struct{ *cmds.CommandDescription }
@@ -35,7 +35,7 @@ func NewCommand() (*Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	desc := cmds.NewCommandDescription("overlay-override", cmds.WithShort("--config-file + <base>.override.yaml pattern"), cmds.WithLayersList(demo))
+	desc := cmds.NewCommandDescription("overlay-override", cmds.WithShort("--config-file + <base>.override.yaml pattern"), cmds.WithSections(demo))
 	return &Command{desc}, nil
 }
 
@@ -43,7 +43,7 @@ var _ cmds.BareCommand = &Command{}
 
 func (c *Command) Run(ctx context.Context, vals *values.Values) error {
 	s := &Settings{}
-	if err := values.DecodeSectionInto(vals, "demo", s); err != nil {
+	if err := vals.DecodeSectionInto("demo", s); err != nil {
 		return err
 	}
 	// Censor API key for security
@@ -69,7 +69,7 @@ func main() {
 	// Config files resolver: start from --config-file if provided, then add sibling <base>.override.yaml
 	resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
 		cs := &cli.CommandSettings{}
-		_ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+		_ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
 		files := []string{}
 		if cs.ConfigFile != "" {
 			files = append(files, cs.ConfigFile)

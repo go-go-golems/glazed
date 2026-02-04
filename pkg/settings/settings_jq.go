@@ -2,45 +2,47 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/pkg/errors"
 )
 
 type JqSettings struct {
-	JqExpression       string            `glazed.parameter:"jq"`
-	JqFile             string            `glazed.parameter:"jq-file"`
-	JqFieldExpressions map[string]string `glazed.parameter:"field-jq"`
+	JqExpression       string            `glazed:"jq"`
+	JqFile             string            `glazed:"jq-file"`
+	JqFieldExpressions map[string]string `glazed:"field-jq"`
 }
 
 //go:embed "flags/jq.yaml"
 var jqFlagsYaml []byte
 
-type JqParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type JqSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewJqParameterLayer(options ...layers.ParameterLayerOptions) (*JqParameterLayer, error) {
-	ret := &JqParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(jqFlagsYaml, options...)
+func NewJqSection(options ...schema.SectionOption) (*JqSection, error) {
+	ret := &JqSection{}
+	section, err := schema.NewSectionFromYAML(jqFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create jq parameter layer")
+		return nil, errors.Wrap(err, "Failed to create jq field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *JqParameterLayer) Clone() layers.ParameterLayer {
-	return &JqParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *JqSection) Clone() schema.Section {
+	return &JqSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewJqSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*JqSettings, error) {
+func NewJqSettingsFromValues(glazedValues *values.SectionValues) (*JqSettings, error) {
 	s := &JqSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize jq settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize jq settings from fields")
 	}
 
 	return s, nil

@@ -7,7 +7,7 @@ Topics:
 - interfaces
 - flags
 - arguments
-- layers
+- sections
 - dual-commands
 IsTemplate: false
 IsTopLevel: true
@@ -19,11 +19,11 @@ SectionType: GeneralTopic
 
 ## Overview
 
-The Glazed command system provides a structured approach to building CLI applications that handle multiple output formats, complex parameter validation, and reusable components. This reference covers the complete command system architecture, interfaces, and implementation patterns.
+The Glazed command system provides a structured approach to building CLI applications that handle multiple output formats, complex field validation, and reusable components. This reference covers the complete command system architecture, interfaces, and implementation patterns.
 
-Building CLI tools typically involves handling parameter parsing, validation, output formatting, and configuration management. Glazed addresses these concerns through a layered architecture that separates command logic from presentation and parameter management.
+Building CLI tools typically involves handling field parsing, validation, output formatting, and configuration management. Glazed addresses these concerns through a composed architecture that separates command logic from presentation and field management.
 
-The core principle is separation of concerns: commands focus on business logic while Glazed handles parameter parsing, validation, and output formatting. This approach enables automatic support for multiple output formats, consistent parameter handling across commands, and reusable parameter groups.
+The core principle is separation of concerns: commands focus on business logic while Glazed handles field parsing, validation, and output formatting. This approach enables automatic support for multiple output formats, consistent field handling across commands, and reusable field groups.
 
 ## Architecture of Glazed Commands
 
@@ -38,12 +38,12 @@ The core principle is separation of concerns: commands focus on business logic w
             ▼         ▼         ▼
 ┌─────────────────────────────────────────────┐
 │          CommandDescription                  │
-│  (name, flags, arguments, layers, etc.)     │
+│  (name, flags, arguments, sections, etc.)     │
 └─────────────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────┐
-│               Parameter Layers               │
+│               Field Sections               │
 │     ┌───────────┬────────────┬────────┐     │
 │     │Default    │Glazed      │Custom  │     │
 │     │(flags/args)│(output fmt)│(any)   │     │
@@ -53,7 +53,7 @@ The core principle is separation of concerns: commands focus on business logic w
       ┌─────────┘        └────────┐
       ▼                           ▼
 ┌──────────────┐          ┌─────────────────┐
-│  Parameters  │          │ ParsedLayers    │
+│  Fields  │          │ Values    │
 │ (definitions)│─────────▶│(runtime values) │
 └──────────────┘          └─────────────────┘
                                    │
@@ -81,24 +81,24 @@ The core principle is separation of concerns: commands focus on business logic w
 Key components:
 
 1. **Command Interfaces**: Define how commands produce output - direct output (BareCommand), text streams (WriterCommand), or structured data (GlazeCommand)
-2. **CommandDescription**: Contains metadata about a command (name, description, parameters, etc.)
-3. **Parameter Layers**: Organize parameters into logical groups (database, logging, output, etc.)
-4. **Parameters**: Define command inputs with type information, validation, and help text
-5. **ParsedLayers**: Runtime values after collecting from CLI flags, environment, config files, and defaults
+2. **CommandDescription**: Contains metadata about a command (name, description, fields, etc.)
+3. **Field Sections**: Organize fields into logical groups (database, logging, output, etc.)
+4. **Fields**: Define command inputs with type information, validation, and help text
+5. **Values**: Runtime values after collecting from CLI flags, environment, config files, and defaults
 6. **Execution Methods**: Different approaches for running commands - CLI integration, programmatic execution, etc.
 
 ## Core Packages
 
-The Glazed framework is organized into distinct packages to separate concerns like command definition, parameter handling, and output processing. This modular design makes the system extensible and easier to maintain. Key packages handle command interfaces (`cmds`), parameter definitions (`parameters`), and integration with CLI libraries like Cobra (`cli`).
+The Glazed framework is organized into distinct packages to separate concerns like command definition, field handling, and output processing. This modular design makes the system extensible and easier to maintain. Key packages handle command interfaces (`cmds`), field definitions (`fields`), and integration with CLI libraries like Cobra (`cli`).
 
 - `github.com/go-go-golems/glazed/pkg/cmds`: Core command interfaces and descriptions
-- `github.com/go-go-golems/glazed/pkg/cmds/parameters`: Parameter types and definitions
-- `github.com/go-go-golems/glazed/pkg/cmds/layers`: Parameter layering system
+- `github.com/go-go-golems/glazed/pkg/cmds/fields`: Field types and definitions
+- `github.com/go-go-golems/glazed/pkg/cmds/schema`: Field schema system
 - `github.com/go-go-golems/glazed/pkg/cmds/runner`: Programmatic command execution
 - `github.com/go-go-golems/glazed/pkg/middlewares`: Output processing
 - `github.com/go-go-golems/glazed/pkg/types`: Structured data types
 - `github.com/go-go-golems/glazed/pkg/cli`: Helpers for integrating with Cobra
-- `github.com/go-go-golems/glazed/pkg/settings`: Standard Glazed parameter layers
+- `github.com/go-go-golems/glazed/pkg/settings`: Standard Glazed field sections
 
 ## Command Interfaces
 
@@ -120,7 +120,7 @@ BareCommand provides direct control over output. Commands implementing this inte
 // BareCommand interface definition
 type BareCommand interface {
     Command
-    Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
+    Run(ctx context.Context, parsedSections *values.Values) error
 }
 ```
 
@@ -136,9 +136,9 @@ type CleanupCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *CleanupCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     s := &CleanupSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -184,7 +184,7 @@ WriterCommand allows commands to write text output to any destination (files, st
 // WriterCommand interface definition
 type WriterCommand interface {
     Command
-    RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
+    RunIntoWriter(ctx context.Context, parsedSections *values.Values, w io.Writer) error
 }
 ```
 
@@ -202,9 +202,9 @@ type HealthReportCommand struct {
     *cmds.CommandDescription
 }
 
-func (c *HealthReportCommand) RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error {
+func (c *HealthReportCommand) RunIntoWriter(ctx context.Context, parsedSections *values.Values, w io.Writer) error {
     s := &HealthReportSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -245,7 +245,7 @@ GlazeCommand produces structured data that Glazed processes into various output 
 // GlazeCommand interface definition
 type GlazeCommand interface {
     Command
-    RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
+    RunIntoGlazeProcessor(ctx context.Context, parsedSections *values.Values, gp middlewares.Processor) error
 }
 ```
 
@@ -265,11 +265,11 @@ type MonitorServersCommand struct {
 
 func (c *MonitorServersCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     s := &MonitorSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -329,9 +329,9 @@ type StatusCommand struct {
 }
 
 // Implement BareCommand for classic mode
-func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *StatusCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -345,11 +345,11 @@ func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLaye
 // Implement GlazeCommand for structured output mode
 func (c *StatusCommand) RunIntoGlazeProcessor(
     ctx context.Context, 
-    parsedLayers *layers.ParsedLayers, 
+    parsedSections *values.Values, 
     gp middlewares.Processor,
 ) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     
@@ -369,7 +369,7 @@ var _ cmds.GlazeCommand = &StatusCommand{}
 
 ## Command Implementation
 
-A well-structured Glazed command separates its identity and logic. The recommended pattern involves a `Command` struct embedding a `CommandDescription` for metadata, a separate `Settings` struct for type-safe parameter access via `glazed.parameter` tags, and a `Run` method containing the business logic. This separation is bridged at runtime by `InitializeStruct`, which populates the `Settings` struct from parsed command-line values.
+A well-structured Glazed command separates its identity and logic. The recommended pattern involves a `Command` struct embedding a `CommandDescription` for metadata, a separate `Settings` struct for type-safe field access via `glazed` tags, and a `Run` method containing the business logic. This separation is bridged at runtime by `DecodeSectionInto`, which populates the `Settings` struct from parsed command-line values.
 
 Glazed commands follow a consistent structure with four key components:
 
@@ -377,39 +377,39 @@ Glazed commands follow a consistent structure with four key components:
 
 **Command Struct**: Contains the command's identity and embeds `CommandDescription` which holds metadata (name, flags, help text) separately from business logic.
 
-**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps parameters to struct fields through `glazed.parameter` tags.
+**Settings Struct**: Provides type safety by defining a struct that mirrors command inputs. Glazed automatically maps fields to struct fields through `glazed` tags.
 
-**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings using `InitializeStruct`, execute logic, return results.
+**Run Method**: Contains business logic. The method signature depends on the implemented interface, but the pattern is consistent: extract settings using `DecodeSectionInto`, execute logic, return results.
 
-**Constructor Function**: Creates the command description with its parameters and layers.
+**Constructor Function**: Creates the command description with its fields and sections.
 
-### Settings Structs and InitializeStruct Pattern
+### Settings Structs and DecodeSectionInto Pattern
 
-Settings structs provide type-safe access to parsed command parameters. Each field uses a `glazed.parameter` tag that must match the parameter name defined in the command description:
+Settings structs provide type-safe access to parsed command fields. Each field uses a `glazed` tag that must match the field name defined in the command description:
 
 ```go
-// Settings struct with glazed.parameter tags
+// Settings struct with glazed tags
 type MyCommandSettings struct {
-    Count   int    `glazed.parameter:"count"`     // Maps to "count" parameter
-    Format  string `glazed.parameter:"format"`   // Maps to "format" parameter  
-    Verbose bool   `glazed.parameter:"verbose"`  // Maps to "verbose" parameter
-    DryRun  bool   `glazed.parameter:"dry-run"`  // Maps to "dry-run" parameter
+    Count   int    `glazed:"count"`     // Maps to "count" field
+    Format  string `glazed:"format"`   // Maps to "format" field  
+    Verbose bool   `glazed:"verbose"`  // Maps to "verbose" field
+    DryRun  bool   `glazed:"dry-run"`  // Maps to "dry-run" field
 }
 ```
 
-The `InitializeStruct` method populates the settings struct from parsed layers. Always specify the correct layer slug (use `layers.DefaultSlug` for command-specific parameters):
+The `DecodeSectionInto` method populates the settings struct from parsed sections. Always specify the correct section slug (use `schema.DefaultSlug` for command-specific fields):
 
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     // Create settings struct instance
     s := &MyCommandSettings{}
     
-    // Extract values from the "default" layer into the struct
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    // Extract values from the "default" section into the struct
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
@@ -437,42 +437,42 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 }
 ```
 
-### Working with Multiple Layers
+### Working with Multiple Sections
 
-Commands often use multiple parameter layers. Extract settings from each layer separately:
+Commands often use multiple field sections. Extract settings from each section separately:
 
 ```go
 type DatabaseSettings struct {
-    Host     string `glazed.parameter:"db-host"`
-    Port     int    `glazed.parameter:"db-port"`
-    Database string `glazed.parameter:"db-name"`
+    Host     string `glazed:"db-host"`
+    Port     int    `glazed:"db-port"`
+    Database string `glazed:"db-name"`
 }
 
 type LoggingSettings struct {
-    Level string `glazed.parameter:"log-level"`
-    File  string `glazed.parameter:"log-file"`
+    Level string `glazed:"log-level"`
+    File  string `glazed:"log-file"`
 }
 
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     // Extract command-specific settings
     cmdSettings := &MyCommandSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, cmdSettings); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, cmdSettings); err != nil {
         return err
     }
     
-    // Extract database layer settings
+    // Extract database section settings
     dbSettings := &DatabaseSettings{}
-    if err := parsedLayers.InitializeStruct("database", dbSettings); err != nil {
+    if err := parsedSections.DecodeSectionInto("database", dbSettings); err != nil {
         return err
     }
     
-    // Extract logging layer settings
+    // Extract logging section settings
     logSettings := &LoggingSettings{}
-    if err := parsedLayers.InitializeStruct("logging", logSettings); err != nil {
+    if err := parsedSections.DecodeSectionInto("logging", logSettings); err != nil {
         return err
     }
     
@@ -485,17 +485,17 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 }
 ```
 
-### Common InitializeStruct Patterns
+### Common DecodeSectionInto Patterns
 
 **Pattern 1: Inline struct definition (for simple cases)**
 ```go
-func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     s := struct {
-        Message string `glazed.parameter:"message"`
-        Count   int    `glazed.parameter:"count"`
+        Message string `glazed:"message"`
+        Count   int    `glazed:"count"`
     }{}
 
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, &s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, &s); err != nil {
         return err
     }
 
@@ -507,13 +507,13 @@ func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 **Pattern 2: Named settings struct (recommended for complex commands)**
 ```go
 type ExampleSettings struct {
-    Message string `glazed.parameter:"message"`
-    Count   int    `glazed.parameter:"count"`
+    Message string `glazed:"message"`
+    Count   int    `glazed:"count"`
 }
 
-func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *ExampleCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     s := &ExampleSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
 
@@ -524,14 +524,14 @@ func (c *ExampleCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLay
 
 **Pattern 3: Helper function for reusable settings**
 ```go
-func GetDatabaseSettings(parsedLayers *layers.ParsedLayers) (*DatabaseSettings, error) {
+func GetDatabaseSettings(parsedSections *values.Values) (*DatabaseSettings, error) {
     settings := &DatabaseSettings{}
-    err := parsedLayers.InitializeStruct("database", settings)
+    err := parsedSections.DecodeSectionInto("database", settings)
     return settings, err
 }
 
 func (c *MyCommand) RunIntoGlazeProcessor(...) error {
-    dbSettings, err := GetDatabaseSettings(parsedLayers)
+    dbSettings, err := GetDatabaseSettings(parsedSections)
     if err != nil {
         return err
     }
@@ -542,7 +542,7 @@ func (c *MyCommand) RunIntoGlazeProcessor(...) error {
 
 ## Advanced Patterns
 
-While Glazed excels at building standard CLI tools, its architecture also supports more advanced use cases. Commands can be executed programmatically for testing or integration into other Go applications, and the parameter system can load values from multiple sources like environment variables and config files, not just CLI flags. These patterns allow you to build commands that are not just standalone tools, but reusable components in a larger software ecosystem.
+While Glazed excels at building standard CLI tools, its architecture also supports more advanced use cases. Commands can be executed programmatically for testing or integration into other Go applications, and the field system can load values from multiple sources like environment variables and config files, not just CLI flags. These patterns allow you to build commands that are not just standalone tools, but reusable components in a larger software ecosystem.
 
 ### Programmatic Execution
 
@@ -558,9 +558,9 @@ if err != nil {
 // Set up execution context
 ctx := context.Background()
 
-// Define parameter values
+// Define field values
 parseOptions := []runner.ParseOption{
-    runner.WithValuesForLayers(map[string]map[string]interface{}{
+    runner.WithValuesForSections(map[string]map[string]interface{}{
         "default": {
             "count": 20,
             "format": "json",
@@ -581,9 +581,9 @@ if err != nil {
 }
 ```
 
-### Parameter Loading Sources
+### Field Loading Sources
 
-Parameters can be loaded from multiple sources (in priority order):
+Fields can be loaded from multiple sources (in priority order):
 
 1. **Command line arguments** (highest priority)
 2. **Environment variables** 
@@ -599,7 +599,7 @@ parseOptions := []runner.ParseOption{
     runner.WithViper(),
     
     // Set explicit values
-    runner.WithValuesForLayers(map[string]map[string]interface{}{
+    runner.WithValuesForSections(map[string]map[string]interface{}{
         "default": {"count": 10},
     }),
     
@@ -653,7 +653,7 @@ row := types.NewRowFromStruct(&user, true) // true = lowercase field names
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     // Process data and create rows
@@ -679,11 +679,11 @@ func (c *MyCommand) RunIntoGlazeProcessor(
 ```go
 func (c *MyCommand) RunIntoGlazeProcessor(
     ctx context.Context,
-    parsedLayers *layers.ParsedLayers,
+    parsedSections *values.Values,
     gp middlewares.Processor,
 ) error {
     s := &MyCommandSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return fmt.Errorf("failed to initialize settings: %w", err)
     }
     
@@ -724,7 +724,7 @@ func (c *MyCommand) validateSettings(s *MyCommandSettings) error {
 Commands can control application exit behavior:
 
 ```go
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MyCommand) Run(ctx context.Context, parsedSections *values.Values) error {
     // For early exit without error
     if shouldExit {
         return &cmds.ExitWithoutGlazeError{}
@@ -779,80 +779,80 @@ for _, item := range allData {
 }
 ```
 
-## Parameters
+## Fields
 
-Glazed treats command-line parameters as more than just strings. They are typed objects with built-in validation, default values, and help text. This approach shifts the burden of parsing and validation from the command's business logic to the framework itself. By defining a parameter's type (e.g., `ParameterTypeInteger`, `ParameterTypeDate`, `ParameterTypeFile`), you get automatic error handling and a more robust and user-friendly CLI.
+Glazed treats command-line fields as more than just strings. They are typed objects with built-in validation, default values, and help text. This approach shifts the burden of parsing and validation from the command's business logic to the framework itself. By defining a field's type (e.g., `TypeInteger`, `TypeDate`, `TypeFile`), you get automatic error handling and a more robust and user-friendly CLI.
 
-Glazed parameters are typed objects with validation rules and behavior, unlike traditional CLI libraries that treat parameters as simple strings requiring manual parsing and validation. This enables automatic validation, help generation, and multi-source value loading.
+Glazed fields are typed objects with validation rules and behavior, unlike traditional CLI libraries that treat fields as simple strings requiring manual parsing and validation. This enables automatic validation, help generation, and multi-source value loading.
 
-### Parameter Type System
+### Field Type System
 
-Parameter types define data structure, parsing behavior, and validation rules. Each type handles string parsing, validation, and help text generation.
+Field types define data structure, parsing behavior, and validation rules. Each type handles string parsing, validation, and help text generation.
 
 #### Basic Types
-**`ParameterTypeString`**: The workhorse for text inputs - names, descriptions, URLs
-**`ParameterTypeSecret`**: Like strings, but values are masked in help and logs (perfect for passwords, API keys)
-**`ParameterTypeInteger`**: Whole numbers with automatic range validation
-**`ParameterTypeFloat`**: Decimal numbers for measurements, percentages, ratios
-**`ParameterTypeBool`**: True/false flags that work with `--flag` and `--no-flag` patterns
-**`ParameterTypeDate`**: Intelligent date parsing that handles multiple formats
+**`TypeString`**: The workhorse for text inputs - names, descriptions, URLs
+**`TypeSecret`**: Like strings, but values are masked in help and logs (perfect for passwords, API keys)
+**`TypeInteger`**: Whole numbers with automatic range validation
+**`TypeFloat`**: Decimal numbers for measurements, percentages, ratios
+**`TypeBool`**: True/false flags that work with `--flag` and `--no-flag` patterns
+**`TypeDate`**: Intelligent date parsing that handles multiple formats
 
 #### Collection Types
-**`ParameterTypeStringList`**: Multiple values like `--tag web --tag api --tag production`
-**`ParameterTypeIntegerList`**: Lists of numbers for ports, IDs, quantities
-**`ParameterTypeFloatList`**: Multiple decimal values for coordinates, measurements
+**`TypeStringList`**: Multiple values like `--tag web --tag api --tag production`
+**`TypeIntegerList`**: Lists of numbers for ports, IDs, quantities
+**`TypeFloatList`**: Multiple decimal values for coordinates, measurements
 
 #### Choice Types  
-**`ParameterTypeChoice`**: Single selection from predefined options (with tab completion!)
-**`ParameterTypeChoiceList`**: Multiple selections from predefined options
+**`TypeChoice`**: Single selection from predefined options (with tab completion!)
+**`TypeChoiceList`**: Multiple selections from predefined options
 
 #### File Types
-**`ParameterTypeFile`**: File paths with existence validation and tab completion
-**`ParameterTypeFileList`**: Multiple file paths
-**`ParameterTypeStringFromFile`**: Read text content from a file (useful for large inputs)
-**`ParameterTypeStringListFromFile`**: Read line-separated lists from files
+**`TypeFile`**: File paths with existence validation and tab completion
+**`TypeFileList`**: Multiple file paths
+**`TypeStringFromFile`**: Read text content from a file (useful for large inputs)
+**`TypeStringListFromFile`**: Read line-separated lists from files
 
 #### Special Types
-**`ParameterTypeKeyValue`**: Map-like inputs: `--env DATABASE_URL=postgres://... --env DEBUG=true`
+**`TypeKeyValue`**: Map-like inputs: `--env DATABASE_URL=postgres://... --env DEBUG=true`
 
-### Parameter Definition Options
+### Field Definition Options
 
 ```go
-parameters.NewParameterDefinition(
-    "parameter-name",                    // Required: parameter name
-    parameters.ParameterTypeString,      // Required: parameter type
+fields.New(
+    "field-name",                    // Required: field name
+    fields.TypeString,      // Required: field type
     
     // Optional configuration
-    parameters.WithDefault("default"),   // Default value
-    parameters.WithHelp("Description"),  // Help text
-    parameters.WithRequired(true),       // Mark as required
-    parameters.WithShortFlag("n"),       // Short flag (-n)
+    fields.WithDefault("default"),   // Default value
+    fields.WithHelp("Description"),  // Help text
+    fields.WithRequired(true),       // Mark as required
+    fields.WithShortFlag("n"),       // Short flag (-n)
     
     // For choice types
-    parameters.WithChoices("opt1", "opt2", "opt3"),
+    fields.WithChoices("opt1", "opt2", "opt3"),
     
     // For file types
-    parameters.WithFileExtensions(".txt", ".md"),
+    fields.WithFileExtensions(".txt", ".md"),
 )
 ```
 
 ### Working with Arguments
 
-Arguments are positional parameters that don't use flags:
+Arguments are positional fields that don't use flags:
 
 ```go
 cmds.WithArguments(
-    parameters.NewParameterDefinition(
+    fields.New(
         "input-file",
-        parameters.ParameterTypeFile,
-        parameters.WithHelp("Input file to process"),
-        parameters.WithRequired(true),
+        fields.TypeFile,
+        fields.WithHelp("Input file to process"),
+        fields.WithRequired(true),
     ),
-    parameters.NewParameterDefinition(
+    fields.New(
         "output-file",
-        parameters.ParameterTypeString,
-        parameters.WithHelp("Output file path"),
-        parameters.WithRequired(false),
+        fields.TypeString,
+        fields.WithHelp("Output file path"),
+        fields.WithRequired(false),
     ),
 )
 ```
@@ -928,33 +928,33 @@ Example: A backup command might start as BareCommand for user feedback (`Backing
 
 ### Type Safety
 
-Use settings structs with `glazed.parameter` tags to prevent type conversion errors:
+Use settings structs with `glazed` tags to prevent type conversion errors:
 
 ```go
 // Good: Type-safe and clear
 type BackupSettings struct {
-    Source      string        `glazed.parameter:"source"`
-    Destination string        `glazed.parameter:"destination"`
-    MaxAge      time.Duration `glazed.parameter:"max-age"`
-    DryRun      bool          `glazed.parameter:"dry-run"`
+    Source      string        `glazed:"source"`
+    Destination string        `glazed:"destination"`
+    MaxAge      time.Duration `glazed:"max-age"`
+    DryRun      bool          `glazed:"dry-run"`
 }
 
-// Avoid: Manual parameter extraction
-source, _ := parsedLayers.GetString("source")
-maxAge, _ := parsedLayers.GetString("max-age") // Bug waiting to happen!
+// Avoid: Manual field extraction
+source, _ := parsedSections.GetString("source")
+maxAge, _ := parsedSections.GetString("max-age") // Bug waiting to happen!
 ```
 
 ### Defaults and Help
 
 Provide sensible defaults so commands work with minimal flags. If your command requires multiple flags to be useful, reconsider the design.
 
-Write clear help text with examples for complex parameters:
+Write clear help text with examples for complex fields:
 
 ```go
-parameters.NewParameterDefinition(
+fields.New(
     "filter",
-    parameters.ParameterTypeString,
-    parameters.WithHelp("Filter results using SQL-like syntax. Examples: 'status = \"active\"', 'created_at > \"2023-01-01\"'"),
+    fields.TypeString,
+    fields.WithHelp("Filter results using SQL-like syntax. Examples: 'status = \"active\"', 'created_at > \"2023-01-01\"'"),
 )
 ```
 
@@ -974,7 +974,7 @@ if !isValidPort(s.Port) {
 }
 ```
 
-Validate parameters before expensive operations. Always check context cancellation in loops and long operations.
+Validate fields before expensive operations. Always check context cancellation in loops and long operations.
 
 ### Performance
 
@@ -1014,9 +1014,9 @@ For GlazeCommands, document the output schema. Users building scripts need to kn
    ```
    glaze help build-first-command
    ```
-2. Study the layer guide to understand parameter organization:
+2. Study the section guide to understand field organization:
    ```
-   glaze help layers-guide
+   glaze help sections-guide
    ```
 3. Explore real-world examples in the applications section.
 4. Build iteratively—start with something that works, then improve based on actual usage.

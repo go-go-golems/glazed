@@ -1,0 +1,71 @@
+package schema
+
+import (
+	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
+)
+
+func createSimpleSection(t *testing.T, options ...SectionOption) *SectionImpl {
+	options_ := append([]SectionOption{
+		WithFields(
+			fields.New("flag1", fields.TypeString),
+		),
+	}, options...)
+	section, err := NewSection("simple", "Simple", options_...)
+
+	require.NoError(t, err)
+	return section
+}
+
+func TestAddSectionToCobraCommandSimple(t *testing.T) {
+	section := createSimpleSection(t)
+
+	cmd := &cobra.Command{
+		Use: "test",
+	}
+
+	err := section.AddSectionToCobraCommand(cmd)
+	require.NoError(t, err)
+
+	flagGroupUsage := ComputeCommandFlagGroupUsage(cmd)
+	localGroupUsage := flagGroupUsage.LocalGroupUsages
+	require.Len(t, localGroupUsage, 2)
+
+	usage := localGroupUsage[0]
+	require.Equal(t, "Flags", usage.Name)
+
+	usage = localGroupUsage[1]
+	require.Equal(t, "Simple", usage.Name)
+	flagUsages := usage.FlagUsages
+	require.Len(t, flagUsages, 1)
+	flagUsage := flagUsages[0]
+	require.Equal(t, "flag1", flagUsage.Long)
+}
+
+func TestAddSectionToCobraCommandPrefix(t *testing.T) {
+	section := createSimpleSection(t, WithPrefix("test-"))
+
+	cmd := &cobra.Command{
+		Use: "test",
+	}
+
+	err := section.AddSectionToCobraCommand(cmd)
+	require.NoError(t, err)
+
+	flagGroupUsage := ComputeCommandFlagGroupUsage(cmd)
+	localGroupUsage := flagGroupUsage.LocalGroupUsages
+	require.Len(t, localGroupUsage, 2)
+
+	usage := localGroupUsage[0]
+	require.Equal(t, "Flags", usage.Name)
+
+	usage = localGroupUsage[1]
+	require.Equal(t, "Simple", usage.Name)
+	flagUsages := usage.FlagUsages
+	require.Len(t, flagUsages, 1)
+	flagUsage := flagUsages[0]
+	require.Equal(t, "test-flag1", flagUsage.Long)
+}

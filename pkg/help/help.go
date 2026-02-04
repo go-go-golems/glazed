@@ -471,7 +471,7 @@ func (hs *HelpSystem) printQuerySQL(queryDSL string) error {
 	fmt.Printf("%s\n", sqlQuery)
 
 	if len(args) > 0 {
-		fmt.Printf("Parameters: %v\n", args)
+		fmt.Printf("Arguments: %v\n", args)
 	}
 
 	return nil

@@ -1,0 +1,224 @@
+- name: "Test with empty input maps"
+  description: "Verify that calling UpdateFromMapAsDefault with an empty map does not alter parsedFields."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+        - name: "param2"
+          type: "int"
+          default: 42
+        - name: "param3"
+          type: "bool"
+          default: true
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "userString"
+        - name: "param2"
+          value: 24
+        - name: "param3"
+          value: false
+  updateMaps: {}
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "userString"
+        param2: 24
+        param3: false
+  expectedError: false
+
+- name: "Test with non-empty input maps but empty parsedFields"
+  description: "Ensure that all default values from the input map are set in parsedFields."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  values: []
+  updateMaps:
+    section1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "defaultValue1"
+        param2: 10
+  expectedError: false
+
+- name: "Test with existing values in parsedFields"
+  description: "Confirm that existing values in parsedFields are not overwritten by the defaults in the input map."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingValue"
+  updateMaps:
+    section1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingValue"
+        param2: 10
+  expectedError: false
+
+- name: "Test with partial overlap of keys"
+  description: "Check that only the non-existing keys in parsedFields are updated with the default values from the input map."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingValue"
+  updateMaps:
+    section1:
+      param2: 10
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingValue"
+        param2: 10
+  expectedError: false
+
+- name: "Test with all keys overlapping but different values"
+  description: "Ensure that none of the values in parsedFields are changed when the input map contains all the same keys but with different values."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultValue1"
+        - name: "param2"
+          type: "int"
+          default: 10
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingValue1"
+        - name: "param2"
+          value: 20
+  updateMaps:
+    section1:
+      param1: "defaultValue1"
+      param2: 10
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingValue1"
+        param2: 20
+  expectedError: false
+
+- name: "Test with invalid data types"
+  description: "Attempt to update parsedFields with defaults of incorrect types and verify that it results in an error."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+        - name: "param2"
+          type: "int"
+          default: 42
+  values:
+    - name: "section1"
+      fields: []
+  updateMaps:
+    section1:
+      param1: 123  # Invalid type: expecting a string, got an integer
+      param2: "NaN"  # Invalid type: expecting an integer, got a string
+  expectedSections: []
+  expectedError: true
+
+- name: "Test with Section not present in schema_"
+  description: "Confirm that the middleware skips any sections not present in schema_ and does not throw an error."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString"
+  values: []
+  updateMaps:
+    section2:  # This section is not defined in sections
+      param1: "defaultValue"
+  expectedSections: []
+  expectedError: false
+
+- name: "Test with Definition choices"
+  description: "When a field has specific choices, verify that defaults not in the choices do not get set and result in an error."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "choice"
+          choices: ["option1", "option2"]
+          default: "option1"
+  values:
+    - name: "section1"
+      fields: []
+  updateMaps:
+    section1:
+      param1: "invalidOption"  # Invalid choice: not in the list of valid choices
+  expectedSections: []
+  expectedError: true
+
+- name: "Test with multiple sections"
+  description: "Verify that the middleware correctly updates defaults across multiple sections without affecting already set fields in any section."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultString1"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 42
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingString1"
+    - name: "section2"
+      fields: []
+  updateMaps:
+    section1:
+      param1: "defaultString1"  # Should not update because it's already set
+    section2:
+      param2: 42  # Should update because it's not set
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingString1"
+    - name: "section2"
+      values:
+        param2: 42
+  expectedError: false

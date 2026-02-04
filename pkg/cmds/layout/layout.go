@@ -21,7 +21,7 @@ type Row struct {
 type Input struct {
 	Name string `yaml:"name"`
 
-	// These can be specified to override the values read from the flag / layer parameter definition
+	// These can be specified to override the values read from the flag / section field definition
 	Label string `yaml:"label,omitempty"`
 
 	// when a select type

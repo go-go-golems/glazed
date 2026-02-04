@@ -73,14 +73,14 @@ Each entry that exists is added to a list; the final list is passed to `LoadPara
 ```go
 func LoadParametersFromFiles(files []string, options ...parameters.ParseStepOption) Middleware {
     return func(next HandlerFunc) HandlerFunc {
-        return func(layers_ *layers.ParameterLayers, pl *layers.ParsedLayers) error {
+        return func(layers_ *schema.Schema, pl *values.Values) error {
             if err := next(layers_, pl); err != nil { return err }
             for i, f := range files {
                 m, err := readConfigFileToLayerMap(f) // map[string]map[string]interface{}
                 if err != nil { return err }
                 opts := append(options,
-                    parameters.WithParseStepSource("config"),
-                    parameters.WithParseStepMetadata(map[string]interface{}{
+                    sources.WithSource("config"),
+                    sources.WithMetadata(map[string]interface{}{
                         "config_file": f,
                         "index":       i,
                     }),

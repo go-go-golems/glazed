@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	pm "github.com/go-go-golems/glazed/pkg/cmds/middlewares/patternmapper"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	pm "github.com/go-go-golems/glazed/pkg/cmds/sources/patternmapper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,9 +46,9 @@ var configEx8 []byte
 
 func main() {
 	// Create schema section
-	demoLayer, err := schema.NewSection(
+	demoSection, err := schema.NewSection(
 		"demo",
-		"Demo Layer",
+		"Demo Section",
 		schema.WithFields(
 			fields.New("api-key", fields.TypeString, fields.WithHelp("API key for authentication")),
 			fields.New("threshold", fields.TypeInteger, fields.WithHelp("Threshold value")),
@@ -61,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	paramLayers := schema.NewSchema(schema.WithSections(demoLayer))
+	sectionSchema := schema.NewSchema(schema.WithSections(demoSection))
 
 	// Simple CLI switch: `validate [config.yaml]` validates the config against mappings.yaml
 	if len(os.Args) > 1 && os.Args[1] == "validate" {
@@ -75,7 +75,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		mapper, err := pm.NewConfigMapper(paramLayers, rules...)
+		mapper, err := pm.NewConfigMapper(sectionSchema, rules...)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -97,16 +97,16 @@ func main() {
 	// Example 1: Simple exact match mapping
 	fmt.Println("=== Example 1: Simple Exact Match ===")
 	{
-		mapper, err := pm.NewConfigMapper(paramLayers,
+		mapper, err := pm.NewConfigMapper(sectionSchema,
 			pm.MappingRule{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 			pm.MappingRule{
-				Source:          "app.settings.threshold",
-				TargetLayer:     "demo",
-				TargetParameter: "threshold",
+				Source:        "app.settings.threshold",
+				TargetSection: "demo",
+				TargetField:   "threshold",
 			},
 		)
 		if err != nil {
@@ -130,11 +130,11 @@ func main() {
 	// Example 2: Named capture - environment-specific mappings
 	fmt.Println("=== Example 2: Named Captures ===")
 	{
-		mapper, err := pm.NewConfigMapper(paramLayers,
+		mapper, err := pm.NewConfigMapper(sectionSchema,
 			pm.MappingRule{
-				Source:          "app.{env}.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "{env}-api-key",
+				Source:        "app.{env}.api_key",
+				TargetSection: "demo",
+				TargetField:   "{env}-api-key",
 			},
 		)
 		if err != nil {
@@ -158,14 +158,14 @@ func main() {
 	// Example 3: Nested rules - cleaner syntax for grouped mappings
 	fmt.Println("=== Example 3: Nested Rules ===")
 	{
-		mapper, err := pm.NewConfigMapper(paramLayers,
+		mapper, err := pm.NewConfigMapper(sectionSchema,
 			pm.MappingRule{
-				Source:      "app.settings",
-				TargetLayer: "demo",
+				Source:        "app.settings",
+				TargetSection: "demo",
 				Rules: []pm.MappingRule{
-					{Source: "api_key", TargetParameter: "api-key"},
-					{Source: "threshold", TargetParameter: "threshold"},
-					{Source: "timeout", TargetParameter: "timeout"},
+					{Source: "api_key", TargetField: "api-key"},
+					{Source: "threshold", TargetField: "threshold"},
+					{Source: "timeout", TargetField: "timeout"},
 				},
 			},
 		)
@@ -190,13 +190,13 @@ func main() {
 	// Example 4: Nested rules with capture inheritance
 	fmt.Println("=== Example 4: Nested Rules with Capture Inheritance ===")
 	{
-		mapper, err := pm.NewConfigMapper(paramLayers,
+		mapper, err := pm.NewConfigMapper(sectionSchema,
 			pm.MappingRule{
-				Source:      "environments.{env}.settings",
-				TargetLayer: "demo",
+				Source:        "environments.{env}.settings",
+				TargetSection: "demo",
 				Rules: []pm.MappingRule{
 					// Child rules can use {env} from parent pattern
-					{Source: "api_key", TargetParameter: "{env}-api-key"},
+					{Source: "api_key", TargetField: "{env}-api-key"},
 				},
 			},
 		)
@@ -218,35 +218,35 @@ func main() {
 		fmt.Printf("Mapped: %v\n\n", result)
 	}
 
-	// Example 5: Using with LoadParametersFromFile middleware
-	fmt.Println("=== Example 5: Integration with LoadParametersFromFile ===")
+	// Example 5: Using with FromFile source helper
+	fmt.Println("=== Example 5: Integration with FromFile ===")
 	{
-		mapper, err := pm.NewConfigMapper(paramLayers,
+		mapper, err := pm.NewConfigMapper(sectionSchema,
 			pm.MappingRule{
-				Source:          "app.settings.api_key",
-				TargetLayer:     "demo",
-				TargetParameter: "api-key",
+				Source:        "app.settings.api_key",
+				TargetSection: "demo",
+				TargetField:   "api-key",
 			},
 		)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Use the pattern mapper with sources.FromFile (wraps LoadParametersFromFile)
+		// Use the pattern mapper with sources.FromFile
 		_ = sources.FromFile(
 			"config.yaml",
 			sources.WithConfigMapper(mapper),
-			sources.WithParseOptions(sources.WithSource("config")),
+			sources.WithParseOptions(fields.WithSource("config")),
 		)
 
-		fmt.Println("Pattern mapper can be used with LoadParametersFromFile middleware")
+		fmt.Println("Pattern mapper can be used with sources.FromFile")
 		fmt.Println("This allows pattern-based mapping without writing custom Go functions")
 	}
 
 	// Example 6: Builder API - Simple Exact Match
 	fmt.Println("=== Example 6: Builder API - Simple Exact Match ===")
 	{
-		b := pm.NewConfigMapperBuilder(paramLayers).
+		b := pm.NewConfigMapperBuilder(sectionSchema).
 			Map("app.settings.api_key", "demo", "api-key")
 
 		mapper, err := b.Build()
@@ -271,7 +271,7 @@ func main() {
 	// Example 7: Builder API - Nested Rules with Capture Inheritance
 	fmt.Println("=== Example 7: Builder API - Nested Rules with Capture Inheritance ===")
 	{
-		b := pm.NewConfigMapperBuilder(paramLayers).
+		b := pm.NewConfigMapperBuilder(sectionSchema).
 			MapObject("environments.{env}.settings", "demo", []pm.MappingRule{
 				pm.Child("api_key", "{env}-api-key"),
 			})
@@ -298,7 +298,7 @@ func main() {
 	// Example 8: Builder API - Required Flag
 	fmt.Println("=== Example 8: Builder API - Required Flag ===")
 	{
-		b := pm.NewConfigMapperBuilder(paramLayers).
+		b := pm.NewConfigMapperBuilder(sectionSchema).
 			Map("app.settings.api_key", "demo", "api-key", true)
 
 		mapper, err := b.Build()
@@ -327,7 +327,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		mapper, err := pm.NewConfigMapper(paramLayers, rules...)
+		mapper, err := pm.NewConfigMapper(sectionSchema, rules...)
 		if err != nil {
 			log.Fatal(err)
 		}

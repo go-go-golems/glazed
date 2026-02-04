@@ -11,35 +11,36 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
 
-// AppSettings maps to the app section parameters
+// AppSettings maps to the app section fields
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
-// OutputSettings maps to the output section parameters
+// OutputSettings maps to the output section fields
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 
 // DefaultSettings maps to the default section (positional args)
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 type RefactorDemoCommand struct {
-	*cmds.CommandDefinition
+	*cmds.CommandDescription
 }
 
 func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	// Create glazed schema section for output formatting
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	defaultSection, err := schema.NewSection(
 		schema.DefaultSlug,
 		"Default",
-		schema.WithDescription("Default parameters"),
+		schema.WithDescription("Default fields"),
 		schema.WithArguments(
 			fields.New("input-file", fields.TypeString,
 				fields.WithHelp("Input file to process"),
@@ -108,11 +109,11 @@ func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	}
 
 	// Create schema collection
-	schema := schema.NewSchema(
+	commandSchema := schema.NewSchema(
 		schema.WithSections(glazedSection, appSection, outputSection, defaultSection),
 	)
 
-	desc := cmds.NewCommandDefinition(
+	desc := cmds.NewCommandDescription(
 		"refactor-demo",
 		cmds.WithShort("Demonstrate new wrapper packages (schema/fields/values/sources)"),
 		cmds.WithLong(`This example demonstrates the new wrapper packages:
@@ -130,10 +131,10 @@ Example usage:
   DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo input.txt
   DEMO_APP_VERBOSE=true go run ./cmd/examples/refactor-new-packages refactor-demo --app-verbose=false input.txt
 `),
-		cmds.WithSchema(schema),
+		cmds.WithSchema(commandSchema),
 	)
 
-	return &RefactorDemoCommand{CommandDefinition: desc}, nil
+	return &RefactorDemoCommand{CommandDescription: desc}, nil
 }
 
 // Ensure interface compliance
@@ -147,17 +148,17 @@ func (c *RefactorDemoCommand) RunIntoGlazeProcessor(
 
 	// Decode each section into its struct
 	appSettings := &AppSettings{}
-	if err := values.DecodeSectionInto(vals, "app", appSettings); err != nil {
+	if err := vals.DecodeSectionInto("app", appSettings); err != nil {
 		return fmt.Errorf("failed to decode app settings: %w", err)
 	}
 
 	outputSettings := &OutputSettings{}
-	if err := values.DecodeSectionInto(vals, "output", outputSettings); err != nil {
+	if err := vals.DecodeSectionInto("output", outputSettings); err != nil {
 		return fmt.Errorf("failed to decode output settings: %w", err)
 	}
 
 	defaultSettings := &DefaultSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, defaultSettings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, defaultSettings); err != nil {
 		return fmt.Errorf("failed to decode default settings: %w", err)
 	}
 
@@ -194,7 +195,7 @@ func main() {
 	cobraDemoCmd, err := cli.BuildCobraCommandFromCommand(
 		demoCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			// AppName enables env prefix DEMO_<LAYER_PREFIX+FLAG>
+			// AppName enables env prefix DEMO_<SECTION_PREFIX+FLAG>
 			// Example: DEMO_APP_VERBOSE=true sets app.verbose
 			AppName: "demo",
 		}),

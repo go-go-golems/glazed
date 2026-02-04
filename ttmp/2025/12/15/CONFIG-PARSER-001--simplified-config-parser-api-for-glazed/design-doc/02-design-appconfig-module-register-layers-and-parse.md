@@ -17,7 +17,7 @@ RelatedFiles:
     - Path: glazed/pkg/cmds/middlewares/middlewares.go
       Note: ExecuteMiddlewares ordering/precedence mechanics
     - Path: glazed/pkg/cmds/parameters/initialize-struct.go
-      Note: ParsedLayers.InitializeStruct hydration path used by v1 (glazed.parameter tags)
+      Note: ParsedLayers.InitializeStruct hydration path used by v1 (glazed tags)
     - Path: glazed/pkg/cli/cobra-parser.go
       Note: CobraParserConfig provides a similar “configure middlewares” seam (future CLI integration)
 ExternalSources: []
@@ -97,14 +97,14 @@ ac.Register(
 Notes:
 
 - `any` is used so we can support pointers to different struct types under a single generic `T`.
-- In v1, the pointed-to struct is expected to use `glazed.parameter` tags (or whatever `ParsedLayers.InitializeStruct` requires today).
+- In v1, the pointed-to struct is expected to use `glazed` tags (or whatever `ParsedLayers.InitializeStruct` requires today).
 
 Alternative registration variants (optional, later):
 
-- `RegisterLayer(slug string, layer layers.ParameterLayer, bind func(*T) any)`
+- `RegisterLayer(slug string, layer schema.Section, bind func(*T) any)`
 - `Register(reg Registration[T])` where `Registration` is a small struct:
   - `Slug string`
-  - `Layer layers.ParameterLayer`
+  - `Layer schema.Section`
   - `Bind func(*T) any`
 
 ### Parse
@@ -117,7 +117,7 @@ if err != nil { ... }
 
 Semantics:
 
-1. Build a `layers.ParameterLayers` collection from all registered layers.
+1. Build a `schema.Schema` collection from all registered layers.
 2. Execute a middleware chain (configured via options) to populate `ParsedLayers`.
 3. For each registration:
    - call `parsedLayers.InitializeStruct(reg.Slug, reg.Bind(&t))`
@@ -154,7 +154,7 @@ Two implementation strategies:
    - Call `runner.ParseCommandParameters(stubCmd, runnerOptions...)`.
 
 2) **Direct middleware execution**:
-   - Call `cmd_middlewares.ExecuteMiddlewares(layers, parsedLayers, middlewares...)` directly.
+   - Call `cmd_sources.Execute(layers, parsedLayers, middlewares...)` directly.
    - This duplicates runner’s ordering logic unless we re-expose it.
 
 Given we want option-driven middleware configuration, strategy (1) is the cleanest starting point.
@@ -168,7 +168,7 @@ Hydration uses existing Glazed mechanics:
 This implies (based on how `ParsedParameters.InitializeStruct` is implemented today):
 
 - the registered settings structs must be compatible with `InitializeStruct`,
-- **fields are only populated if they have an explicit `glazed.parameter:"name"` tag**,
+- **fields are only populated if they have an explicit `glazed:"name"` tag**,
 - and missing parameters are currently **skipped** (no error; field stays at zero value).
 
 Future evolution:

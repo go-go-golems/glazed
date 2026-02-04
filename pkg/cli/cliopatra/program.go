@@ -9,37 +9,37 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
-// Parameter describes a cliopatra parameter, which can be either a flag or an argument.
-// It does mirror the definition of parameters.ParameterDefinition, but here we only
+// Field describes a cliopatra field, which can be either a flag or an argument.
+// It does mirror the definition of fields.Definition, but here we only
 // have a Value, and a Short description (which should actually describe which value we chose).
 //
 // The Flag makes it possible to override the flag used on the CLI, if necessary.
 // The Raw field makes it possible to pass a raw string to override the value being rendered
 // out. This is useful to for example test invalid value for flags.
-type Parameter struct {
-	Name       string                   `yaml:"name"`
-	Flag       string                   `yaml:"flag,omitempty"`
-	Short      string                   `yaml:"short"`
-	Type       parameters.ParameterType `yaml:"type"`
-	Value      interface{}              `yaml:"value"`
-	Raw        string                   `yaml:"raw,omitempty"`
-	NoValue    bool                     `yaml:"noValue,omitempty"`
-	IsArgument bool                     `yaml:"isArgument,omitempty"`
-	Log        []parameters.ParseStep   `yaml:"log,omitempty"`
+type Field struct {
+	Name       string             `yaml:"name"`
+	Flag       string             `yaml:"flag,omitempty"`
+	Short      string             `yaml:"short"`
+	Type       fields.Type        `yaml:"type"`
+	Value      interface{}        `yaml:"value"`
+	Raw        string             `yaml:"raw,omitempty"`
+	NoValue    bool               `yaml:"noValue,omitempty"`
+	IsArgument bool               `yaml:"isArgument,omitempty"`
+	Log        []fields.ParseStep `yaml:"log,omitempty"`
 }
 
 // NOTE(manuel, 2023-03-16) What about sandboxing the execution of the command, especially if it outputs files
 // NOTE(manuel, 2023-03-16) It would be interesting to provide some more tests on the output (say, as shell scripts)
 // NOTE(manuel, 2023-03-16) What about measuring profiling regression
 
-func (p *Parameter) Clone() *Parameter {
+func (p *Field) Clone() *Field {
 	p_ := *p
 	return &p_
 }
@@ -63,9 +63,9 @@ type Program struct {
 
 	// These Flags will be passed to the CLI tool. This allows us to register
 	// flags with a type to cobra itself, when exposing this command again.
-	Flags []*Parameter `yaml:"flags,omitempty"`
-	// Args is an ordered list of Parameters. The Flag field is ignored.
-	Args []*Parameter `yaml:"args,omitempty"`
+	Flags []*Field `yaml:"flags,omitempty"`
+	// Args is an ordered list of fields. The Flag field is ignored.
+	Args []*Field `yaml:"args,omitempty"`
 	// Stdin makes it possible to pass data into stdin. If empty, no data is passed.
 	Stdin string `yaml:"stdin,omitempty"`
 
@@ -131,19 +131,19 @@ func WithAddRawFlags(flags ...string) ProgramOption {
 	}
 }
 
-func WithFlags(flags ...*Parameter) ProgramOption {
+func WithFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Flags = flags
 	}
 }
 
-func WithAddFlags(flags ...*Parameter) ProgramOption {
+func WithAddFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Flags = append(p.Flags, flags...)
 	}
 }
 
-func WithReplaceFlags(flags ...*Parameter) ProgramOption {
+func WithReplaceFlags(flags ...*Field) ProgramOption {
 	return func(p *Program) {
 		for _, flag := range flags {
 			found := false
@@ -161,19 +161,19 @@ func WithReplaceFlags(flags ...*Parameter) ProgramOption {
 	}
 }
 
-func WithArgs(args ...*Parameter) ProgramOption {
+func WithArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Args = args
 	}
 }
 
-func WithAddArgs(args ...*Parameter) ProgramOption {
+func WithAddArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		p.Args = append(p.Args, args...)
 	}
 }
 
-func WithReplaceArgs(args ...*Parameter) ProgramOption {
+func WithReplaceArgs(args ...*Field) ProgramOption {
 	return func(p *Program) {
 		for _, arg := range args {
 			found := false
@@ -245,11 +245,11 @@ func (p *Program) Clone() *Program {
 
 	clone.RawFlags = make([]string, len(p.RawFlags))
 	copy(clone.RawFlags, p.RawFlags)
-	clone.Flags = make([]*Parameter, len(p.Flags))
+	clone.Flags = make([]*Field, len(p.Flags))
 	for i, f := range p.Flags {
 		clone.Flags[i] = f.Clone()
 	}
-	clone.Args = make([]*Parameter, len(p.Args))
+	clone.Args = make([]*Field, len(p.Args))
 	for i, a := range p.Args {
 		clone.Args[i] = a.Clone()
 	}
@@ -316,7 +316,7 @@ func (p *Program) AddRawFlag(raw ...string) {
 
 func (p *Program) RunIntoWriter(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	w io.Writer,
 ) error {
 	var err error
@@ -328,7 +328,7 @@ func (p *Program) RunIntoWriter(
 		}
 	}
 
-	ps := parsedLayers.GetAllParsedParameters()
+	ps := parsedValues.AllFieldValues()
 
 	args, err2 := p.ComputeArgs(ps)
 	if err2 != nil {
@@ -390,7 +390,7 @@ func (p *Program) RunIntoWriter(
 	return nil
 }
 
-func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error) {
+func (p *Program) ComputeArgs(ps *fields.FieldValues) ([]string, error) {
 	var err error
 
 	args := []string{}
@@ -408,7 +408,7 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 			flag_ = "--" + flag.Name
 		}
 		if flag.NoValue {
-			if flag.Type != parameters.ParameterTypeBool {
+			if flag.Type != fields.TypeBool {
 				return nil, errors.Errorf("flag %s is not a bool flag, only bool flags can be noValue", flag.Name)
 			}
 			if flag.Value.(bool) {
@@ -417,19 +417,19 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 			continue
 		}
 
-		parsedParameter, ok := ps.Get(flag.Name)
+		fieldValue, ok := ps.Get(flag.Name)
 		value_ := ""
 		if !ok {
 			value_ = flag.Raw
 		} else {
-			value_, err = parsedParameter.RenderValue()
+			value_, err = fieldValue.RenderValue()
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}
 		}
 
 		if value_ == "" {
-			value_, err = parameters.RenderValue(flag.Type, flag.Value)
+			value_, err = fields.RenderValue(flag.Type, flag.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render flag %s", flag.Name)
 			}
@@ -444,14 +444,14 @@ func (p *Program) ComputeArgs(ps *parameters.ParsedParameters) ([]string, error)
 		if !ok {
 			value_ = arg.Raw
 		} else {
-			value_, err = parameters.RenderValue(arg.Type, value.Value)
+			value_, err = fields.RenderValue(arg.Type, value.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}
 		}
 
 		if value_ == "" {
-			value_, err = parameters.RenderValue(arg.Type, arg.Value)
+			value_, err = fields.RenderValue(arg.Type, arg.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not render arg %s", arg.Name)
 			}

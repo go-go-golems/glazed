@@ -1,29 +1,31 @@
 package settings
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"testing"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func makeAndParse(t *testing.T, defaults *TemplateFlagsDefaults, args ...string) *TemplateSettings {
-	layer, err := NewTemplateParameterLayer()
+	section, err := NewTemplateSection()
 	require.NoError(t, err)
-	err = layer.InitializeParameterDefaultsFromStruct(defaults)
+	err = section.InitializeDefaultsFromStruct(defaults)
 	require.NoError(t, err)
 
-	layers_ := layers.NewParameterLayers(layers.WithLayers(layer))
-	parsedLayers := layers.NewParsedLayers()
-	err = middlewares.ExecuteMiddlewares(layers_, parsedLayers,
-		middlewares.UpdateFromStringList("", args, parameters.WithParseStepSource("string-list")),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
+	schema_ := schema.NewSchema(schema.WithSections(section))
+	parsedValues := values.New()
+	err = sources.Execute(schema_, parsedValues,
+		sources.UpdateFromStringList("", args, fields.WithSource("string-list")),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	)
 	require.NoError(t, err)
 
-	ps, ok := parsedLayers.Get(GlazedTemplateLayerSlug)
+	ps, ok := parsedValues.Get(GlazedTemplateSectionSlug)
 	require.True(t, ok)
 
 	settings, err := NewTemplateSettings(ps)

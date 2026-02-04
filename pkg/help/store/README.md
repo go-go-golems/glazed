@@ -20,7 +20,7 @@ The system consists of several key components:
 - **Store**: SQLite-backed storage with CRUD operations
 - **Query**: Predicate-based query language with SQL compilation
 - **Loader**: Markdown file parsing and data synchronization
-- **Compat**: Compatibility layer for existing help system interface
+- **Compat**: Compatibility section for existing help system interface
 
 ## Quick Start
 
@@ -194,7 +194,7 @@ The system creates the following tables:
 
 Indexes are automatically created for performance on common query patterns.
 
-## Compatibility Layer
+## Compatibility Section
 
 The `HelpSystem` type provides backward compatibility:
 
@@ -238,4 +238,4 @@ The new system is designed as a drop-in replacement:
 2. Use existing methods or migrate to predicate-based queries
 3. Optionally enable FTS5 for enhanced search capabilities
 
-The predicate system is more powerful than the existing `SectionQuery`, but the compatibility layer ensures existing code continues to work.
+The predicate system is more powerful than the existing `SectionQuery`, but the compatibility section ensures existing code continues to work.

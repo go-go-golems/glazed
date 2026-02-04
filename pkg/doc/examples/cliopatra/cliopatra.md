@@ -28,7 +28,7 @@ It also allows overriding the environment, providing expected outputs for golden
 CLI commands from within templates, and more.
 
 Passing `--create-cliopatra` to any glazed Command will capture the given flags and argments passed to it,
-map it to the ParameterDefinition the Command uses, and create a YAML file with the default values.
+map it to the Definition the Command uses, and create a YAML file with the default values.
 
 ``` 
 ❯ glaze yaml misc/test-data/test.yaml \

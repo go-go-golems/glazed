@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-prompto get glazed/parameter-types
+prompto get glazed/field-types
 
-for i in CommandDescription ParameterDefinition ParameterLayer; do
+for i in CommandDescription Definition Section; do
 	oak go definitions --recurse pkg/ --name "$i" --definition-type struct,interface
 done

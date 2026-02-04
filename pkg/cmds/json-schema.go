@@ -3,7 +3,7 @@ package cmds
 import (
 	"fmt"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 // JsonSchemaProperty represents a property in the JSON Schema
@@ -26,8 +26,8 @@ type CommandJsonSchema struct {
 	Required    []string                       `json:"required,omitempty"`
 }
 
-// parameterTypeToJsonSchema converts a parameter definition to a JSON schema property
-func parameterTypeToJsonSchema(param *parameters.ParameterDefinition) (*JsonSchemaProperty, error) {
+// fieldTypeToJsonSchema converts a field definition to a JSON schema property
+func fieldTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, error) {
 	prop := &JsonSchemaProperty{
 		Description: param.Help,
 		Required:    param.Required,
@@ -39,19 +39,19 @@ func parameterTypeToJsonSchema(param *parameters.ParameterDefinition) (*JsonSche
 
 	switch param.Type {
 	// Basic types
-	case parameters.ParameterTypeString, parameters.ParameterTypeSecret:
+	case fields.TypeString, fields.TypeSecret:
 		prop.Type = "string"
 
-	case parameters.ParameterTypeInteger:
+	case fields.TypeInteger:
 		prop.Type = "integer"
 
-	case parameters.ParameterTypeFloat:
+	case fields.TypeFloat:
 		prop.Type = "number"
 
-	case parameters.ParameterTypeBool:
+	case fields.TypeBool:
 		prop.Type = "boolean"
 
-	case parameters.ParameterTypeDate:
+	case fields.TypeDate:
 		prop.Type = "string"
 		// Add format for date strings
 		prop.Properties = map[string]*JsonSchemaProperty{
@@ -59,37 +59,37 @@ func parameterTypeToJsonSchema(param *parameters.ParameterDefinition) (*JsonSche
 		}
 
 	// List types
-	case parameters.ParameterTypeStringList:
+	case fields.TypeStringList:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 
-	case parameters.ParameterTypeIntegerList:
+	case fields.TypeIntegerList:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "integer"}
 
-	case parameters.ParameterTypeFloatList:
+	case fields.TypeFloatList:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "number"}
 
 	// Choice types
-	case parameters.ParameterTypeChoice:
+	case fields.TypeChoice:
 		prop.Type = "string"
 		prop.Enum = param.Choices
 
-	case parameters.ParameterTypeChoiceList:
+	case fields.TypeChoiceList:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 		prop.Items.Enum = param.Choices
 
 	// File types
-	case parameters.ParameterTypeFile:
+	case fields.TypeFile:
 		prop.Type = "object"
 		prop.Properties = map[string]*JsonSchemaProperty{
 			"path":    {Type: "string", Description: "Path to the file"},
 			"content": {Type: "string", Description: "File content"},
 		}
 
-	case parameters.ParameterTypeFileList:
+	case fields.TypeFileList:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{
 			Type: "object",
@@ -100,49 +100,49 @@ func parameterTypeToJsonSchema(param *parameters.ParameterDefinition) (*JsonSche
 		}
 
 	// Key-value type
-	case parameters.ParameterTypeKeyValue:
+	case fields.TypeKeyValue:
 		prop.Type = "object"
 		prop.Properties = map[string]*JsonSchemaProperty{
 			"key":   {Type: "string"},
 			"value": {Type: "string"},
 		}
 
-	// File-based parameter types
-	case parameters.ParameterTypeStringFromFile:
+	// File-based field types
+	case fields.TypeStringFromFile:
 		prop.Type = "string"
 
-	case parameters.ParameterTypeStringFromFiles:
+	case fields.TypeStringFromFiles:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 
-	case parameters.ParameterTypeObjectFromFile:
+	case fields.TypeObjectFromFile:
 		prop.Type = "object"
 		prop.AdditionalProperties = &JsonSchemaProperty{Type: "string"}
 
-	case parameters.ParameterTypeObjectListFromFile:
+	case fields.TypeObjectListFromFile:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{
 			Type:                 "object",
 			AdditionalProperties: &JsonSchemaProperty{Type: "string"},
 		}
 
-	case parameters.ParameterTypeObjectListFromFiles:
+	case fields.TypeObjectListFromFiles:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{
 			Type:                 "object",
 			AdditionalProperties: &JsonSchemaProperty{Type: "string"},
 		}
 
-	case parameters.ParameterTypeStringListFromFile:
+	case fields.TypeStringListFromFile:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 
-	case parameters.ParameterTypeStringListFromFiles:
+	case fields.TypeStringListFromFiles:
 		prop.Type = "array"
 		prop.Items = &JsonSchemaProperty{Type: "string"}
 
 	default:
-		return nil, fmt.Errorf("unsupported parameter type: %s", param.Type)
+		return nil, fmt.Errorf("unsupported field type: %s", param.Type)
 	}
 
 	return prop, nil
@@ -158,8 +158,8 @@ func (c *CommandDescription) ToJsonSchema() (*CommandJsonSchema, error) {
 	}
 
 	// Process flags
-	err := c.GetDefaultFlags().ForEachE(func(flag *parameters.ParameterDefinition) error {
-		prop, err := parameterTypeToJsonSchema(flag)
+	err := c.GetDefaultFlags().ForEachE(func(flag *fields.Definition) error {
+		prop, err := fieldTypeToJsonSchema(flag)
 		if err != nil {
 			return fmt.Errorf("error processing flag %s: %w", flag.Name, err)
 		}
@@ -174,8 +174,8 @@ func (c *CommandDescription) ToJsonSchema() (*CommandJsonSchema, error) {
 	}
 
 	// Process arguments
-	err = c.GetDefaultArguments().ForEachE(func(arg *parameters.ParameterDefinition) error {
-		prop, err := parameterTypeToJsonSchema(arg)
+	err = c.GetDefaultArguments().ForEachE(func(arg *fields.Definition) error {
+		prop, err := fieldTypeToJsonSchema(arg)
 		if err != nil {
 			return fmt.Errorf("error processing argument %s: %w", arg.Name, err)
 		}

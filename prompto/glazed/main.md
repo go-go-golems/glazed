@@ -158,14 +158,14 @@ func YourMiddlewareFunc(cmd *cobra.Command, glazedCommand cmds.GlazeCommand) err
 }
 ```
 
-### Custom Help Layers
+### Custom Help Sections
 
 To provide specialized help information:
 
 ```go
 const YourCustomHelpSlug = "your-custom-help"
 
-// Implement your custom help layer
+// Implement your custom help section
 ```
 
 

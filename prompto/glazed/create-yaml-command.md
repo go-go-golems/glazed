@@ -35,12 +35,12 @@ A typical YAML command file contains the following top-level keys:
    A longer multi-line description.
 
 5. **flags** and/or **arguments**:  
-   Parameters can be defined either as flags (with -- prefix) or positional arguments. Both use the same parameter definition structure, just with different usage patterns. Each entry describes one parameter with fields such as:
-   - `name` (required): The parameter name.
-   - `type` (required): The parameter type.
+   Fields can be defined either as flags (with -- prefix) or positional arguments. Both use the same field definition structure, just with different usage patterns. Each entry describes one field with fields such as:
+   - `name` (required): The field name.
+   - `type` (required): The field type.
    - `help` (optional): A short help string describing usage.
    - `default` (optional): The default value if none is provided.
-   - `required` (optional, boolean): Indicates if this parameter must be supplied.
+   - `required` (optional, boolean): Indicates if this field must be supplied.
    - `choices` (optional, array): If the type is a choice or choiceList, valid strings must be one of these choices.
 
    **Note**:   
@@ -48,10 +48,10 @@ A typical YAML command file contains the following top-level keys:
    - If you set `type: date`, you can often provide `default: 2024-01-01` (or any valid date format).  
    - For a `type: choice` or `type: choiceList`, you provide a `choices: [ ... ]` list.  
    - For lists, you might see `type: stringList` or `type: intList` or `type: floatList`.  
-   - For single numeric parameters, `type` can be `int` or `float`.  
-   - For textual parameters, `type` can be `string`.  
+   - For single numeric fields, `type` can be `int` or `float`.  
+   - For textual fields, `type` can be `string`.  
    - `help` is free-form text but should be short.
-   - Arguments are positional parameters that don't use -- prefix
+   - Arguments are positional fields that don't use -- prefix
    - Both flags and arguments support the same types and configuration options
    - Arguments are typically required unless they have a default value
 
@@ -80,7 +80,7 @@ Here:
 - **name** is `container-gallon-ab-test`.
 - **metadata** has just `environment: ttc_analytics`.
 - **short** is a single-line summary of what the command is about.
-- **flags** includes three parameters:
+- **flags** includes three fields:
   1. A date flag `from`, with default `2024-04-30`.
   2. A date flag `to`, no default, not required → optional.
   3. A string flag `order_by`, defaulting to `"cohort"`.
@@ -92,8 +92,8 @@ Here:
 Each item under `flags:` or `arguments:` is typically structured like:
 
 ```yaml
-- name: <parameter-name>
-  type: <parameter-type>
+- name: <field-name>
+  type: <field-type>
   help: <short description for usage>
   default: <default value>
   required: <true|false>
@@ -103,10 +103,10 @@ Each item under `flags:` or `arguments:` is typically structured like:
 Where:
 
 - **name**  
-  Unique parameter name (e.g. `limit`, `from`, `status`), used at the command line as `--limit=...` or similar.
+  Unique field name (e.g. `limit`, `from`, `status`), used at the command line as `--limit=...` or similar.
 
 - **type**  
-  Indicates how this parameter is interpreted. Common types:
+  Indicates how this field is interpreted. Common types:
 
   1. **string**: A single string (e.g., `--status=wc-completed`).
   2. **int**: An integer (e.g., `--limit=10`).
@@ -121,7 +121,7 @@ Where:
   11. **keyValue**: Key-value pairs (e.g., `--header='Content-Type:application/json'`).
   12. **file**: A single file input, providing file data and metadata.
   13. **fileList**: A list of file inputs.
-  14. (Less common) **stringFromFile**, **objectFromFile**, **stringListFromFile**, **objectListFromFile**: Indicate the parameter is read from a file or multiple files. Typically used in advanced scenarios.
+  14. (Less common) **stringFromFile**, **objectFromFile**, **stringListFromFile**, **objectListFromFile**: Indicate the field is read from a file or multiple files. Typically used in advanced scenarios.
 
 - **help**  
   A short description that explains what this flag does.
@@ -269,7 +269,7 @@ flags:
 In this example:
 - Two required positional arguments: input_file and output_path
 - Three optional flags: --config, --verbose, and --format
-- Both flags and arguments use the same parameter definition structure
+- Both flags and arguments use the same field definition structure
 - The file type is used for file inputs, providing access to file data and metadata
 
 ---
@@ -321,14 +321,14 @@ flags:
 2. **metadata** (object) – Additional info like `environment: ttc_analytics`.  
 3. **short** (string) – Brief description.  
 4. **flags** (list of objects) – Each entry has:
-   - `name`: parameter/flag name
-   - `type`: see typical parameter types (e.g., `string`, `int`, `bool`, `date`, etc.)
+   - `name`: field/flag name
+   - `type`: see typical field types (e.g., `string`, `int`, `bool`, `date`, etc.)
    - `help`: short explanatory text
    - `default`: (optional) default value
    - `required`: (optional) boolean
    - `choices`: (optional) for `choice`/`choiceList`  
    
-Use this structure whenever you define a new YAML command file. The system that loads it will parse these fields and make your parameters available under the indicated names.
+Use this structure whenever you define a new YAML command file. The system that loads it will parse these fields and make your fields available under the indicated names.
 
 That's all that's needed for the command *description* itself.
 
@@ -342,19 +342,19 @@ When loading this YAML, the system essentially constructs a `CommandDescription`
    - `long: > ...` (optional) → The `CommandDescription.Long`.  
    - `metadata:` can become part of `CommandDescription.AdditionalData` or environment context.
 
-2. **Flags (Parameters)**  
-   - Under `flags:`, each item (e.g. `- name: name`, `type: stringList`, etc.) is turned into a `ParameterDefinition`.
+2. **Flags (Fields)**  
+   - Under `flags:`, each item (e.g. `- name: name`, `type: stringList`, etc.) is turned into a `Definition`.
    - In Go code, this corresponds to something like:
 
      ```go
-     parameters.NewParameterDefinition(
+     fields.New(
        "name",
-       parameters.ParameterTypeStringList,
-       parameters.WithHelp("List of coupon names"),
+       fields.TypeStringList,
+       fields.WithHelp("List of coupon names"),
      )
      ```
 
-   - The system aggregates these into a "default layer" of parameters.  
-   - `required: false`, `default: ...`, and `help: ...` become `WithRequired(false)`, `WithDefault(...)`, `WithHelp(...)` in the `ParameterDefinition` construction.
+   - The system aggregates these into a "default section" of fields.  
+   - `required: false`, `default: ...`, and `help: ...` become `WithRequired(false)`, `WithDefault(...)`, `WithHelp(...)` in the `Definition` construction.
 
-Hence, the **top-level YAML keys**—`name`, `metadata`, `short`, `long`, and `flags`—**map to** the **fields and parameter layers** in a `CommandDescription` object. The `query:` would likewise be used by a specialized command that actually runs a SQL query, but the fundamental principle of turning flags into typed parameters remains the same.
+Hence, the **top-level YAML keys**—`name`, `metadata`, `short`, `long`, and `flags`—**map to** the **fields and field sections** in a `CommandDescription` object. The `query:` would likewise be used by a specialized command that actually runs a SQL query, but the fundamental principle of turning flags into typed fields remains the same.

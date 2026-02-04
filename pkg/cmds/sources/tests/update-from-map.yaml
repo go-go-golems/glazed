@@ -1,0 +1,142 @@
+- name: "Update single section with valid map"
+  description: "Updating a single section with valid values should correctly merge these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+        - name: "param2"
+          type: "int"
+  values:
+    - name: "section1"
+      fields:
+        - name: param1
+          value: "initial"
+  updateMaps:
+    section1:
+      param1: "updated"
+      param2: 42
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "updated"
+        param2: 42
+  expectedError: false
+
+- name: "Update non-existent section"
+  description: "Updating a non-existent section should be ignored and no error should be thrown"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+  values:
+    - name: "section1"
+  updateMaps:
+    section2:
+      param1: "updated"
+  expectedSections:
+    - name: "section1"
+      values: { }
+  expectedError: false
+
+- name: "Invalid field type in update map"
+  description: "An invalid field type in the update map should result in an error"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "int"
+  values:
+    - name: "section1"
+  updateMaps:
+    section1:
+      param1: "not an int"
+  expectedSections: null
+  expectedError: true
+
+- name: "Update with empty map"
+  description: "Updating with an empty map should leave the sections unchanged"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "initial"
+  updateMaps:
+    section1: {}
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "initial"
+  expectedError: false
+
+- name: "TestUpdateFromMapWithExtraData"
+  description: "Extra keys in the map that are not defined in the Section are ignored"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+  values:
+    - name: "section1"
+  updateMaps:
+    section1:
+      param1: "value1"
+      extraParam: "ignored"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "value1"
+  expectedError: false
+
+- name: "TestUpdateFromMapWithChoicesValidation"
+  description: "An error is returned if the map provides a value outside of valid choices"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "choice"
+          choices:
+            - "choice1"
+            - "choice2"
+  values:
+    - name: "section1"
+  updateMaps:
+    section1:
+      param1: "invalidChoice"
+  expectedSections: null
+  expectedError: true
+
+- name: "TestUpdateFromMapWithMultipleSections"
+  description: "Correctly updates values for multiple sections"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+  values:
+    - name: "section1"
+    - name: "section2"
+  updateMaps:
+    section1:
+      param1: "value1"
+    section2:
+      param2: 42
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "value1"
+    - name: "section2"
+      values:
+        param2: 42
+  expectedError: false
+

@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	cmd_middlewares "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	cmd_sources "github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +19,7 @@ type parserOptions struct {
 	//
 	// IMPORTANT: The recommended interpretation is that earlier options are lower
 	// precedence and later options are higher precedence (i.e. last wins).
-	middlewares []cmd_middlewares.Middleware
+	middlewares []cmd_sources.Middleware
 
 	// Bookkeeping for advanced options that need to derive additional behavior
 	// (for example, profiles require a bootstrap parse of profile selection).
@@ -37,8 +38,8 @@ type ParserOption func(*parserOptions) error
 func WithDefaults() ParserOption {
 	return func(o *parserOptions) error {
 		o.middlewares = append(o.middlewares,
-			cmd_middlewares.SetFromDefaults(
-				parameters.WithParseStepSource(parameters.SourceDefaults),
+			cmd_sources.FromDefaults(
+				fields.WithSource(fields.SourceDefaults),
 			),
 		)
 		return nil
@@ -53,9 +54,9 @@ func WithEnv(prefix string) ParserOption {
 		}
 		o.envPrefixes = append(o.envPrefixes, prefix)
 		o.middlewares = append(o.middlewares,
-			cmd_middlewares.UpdateFromEnv(
+			cmd_sources.FromEnv(
 				prefix,
-				parameters.WithParseStepSource("env"),
+				fields.WithSource("env"),
 			),
 		)
 		return nil
@@ -67,22 +68,22 @@ func WithConfigFiles(files ...string) ParserOption {
 	return func(o *parserOptions) error {
 		o.configFiles = append(o.configFiles, files...)
 		o.middlewares = append(o.middlewares,
-			cmd_middlewares.LoadParametersFromFiles(
+			cmd_sources.FromFiles(
 				files,
-				cmd_middlewares.WithParseOptions(parameters.WithParseStepSource("config")),
+				cmd_sources.WithParseOptions(fields.WithSource("config")),
 			),
 		)
 		return nil
 	}
 }
 
-// WithValuesForLayers configures programmatic values for layers (optional).
-func WithValuesForLayers(values map[string]map[string]interface{}) ParserOption {
+// WithValuesForSections configures programmatic values for sections (optional).
+func WithValuesForSections(values map[string]map[string]interface{}) ParserOption {
 	return func(o *parserOptions) error {
 		o.middlewares = append(o.middlewares,
-			cmd_middlewares.UpdateFromMap(
+			cmd_sources.FromMap(
 				values,
-				parameters.WithParseStepSource("provided-values"),
+				fields.WithSource("provided-values"),
 			),
 		)
 		return nil
@@ -92,7 +93,7 @@ func WithValuesForLayers(values map[string]map[string]interface{}) ParserOption 
 // WithMiddlewares injects additional middlewares into the parse chain.
 //
 // NOTE: Middleware ordering is subtle; this is an escape hatch for advanced usage.
-func WithMiddlewares(middlewares ...cmd_middlewares.Middleware) ParserOption {
+func WithMiddlewares(middlewares ...cmd_sources.Middleware) ParserOption {
 	return func(o *parserOptions) error {
 		o.middlewares = append(o.middlewares, middlewares...)
 		return nil
@@ -112,13 +113,13 @@ func WithCobra(cmd *cobra.Command, args []string) ParserOption {
 		o.cobraArgs = append([]string(nil), args...)
 		// GatherArguments is lower precedence than ParseFromCobraCommand (flags).
 		o.middlewares = append(o.middlewares,
-			cmd_middlewares.GatherArguments(
+			cmd_sources.FromArgs(
 				append([]string(nil), args...),
-				parameters.WithParseStepSource("arguments"),
+				fields.WithSource("arguments"),
 			),
-			cmd_middlewares.ParseFromCobraCommand(
+			cmd_sources.FromCobra(
 				cmd,
-				parameters.WithParseStepSource("cobra"),
+				fields.WithSource("cobra"),
 			),
 		)
 		return nil
@@ -172,7 +173,7 @@ func WithProfileFile(path string) ProfileOption {
 
 // WithProfile enables profiles.yaml loading with circularity-safe bootstrap parsing of profile selection.
 //
-// It does a mini "bootstrap parse" for the `profile-settings` layer to resolve:
+// It does a mini "bootstrap parse" for the `profile-settings` section to resolve:
 // - profile-settings.profile
 // - profile-settings.profile-file
 //
@@ -189,7 +190,7 @@ func WithProfileFile(path string) ProfileOption {
 //	appconfig.WithCobra(cmd, args),
 //
 // Note: For Cobra flags like `--profile` / `--profile-file` to be accepted by Cobra, callers
-// must ensure those flags exist on the command (typically by adding the ProfileSettings layer
+// must ensure those flags exist on the command (typically by adding the ProfileSettings section
 // to the Cobra command elsewhere). WithProfile can still resolve selection from env/config
 // without Cobra flags.
 func WithProfile(appName string, opts ...ProfileOption) ParserOption {
@@ -217,16 +218,16 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 		}
 
 		o.middlewares = append(o.middlewares,
-			func(next cmd_middlewares.HandlerFunc) cmd_middlewares.HandlerFunc {
-				return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+			func(next cmd_sources.HandlerFunc) cmd_sources.HandlerFunc {
+				return func(sectionSchema *schema.Schema, parsedValues *values.Values) error {
 					// 1) Bootstrap-parse profile selection.
-					psLayer, err := cli.NewProfileSettingsLayer()
+					psSection, err := cli.NewProfileSettingsSection()
 					if err != nil {
 						return err
 					}
 
-					bootstrapLayers := layers.NewParameterLayers(layers.WithLayers(psLayer))
-					bootstrapParsed := layers.NewParsedLayers()
+					bootstrapSchema := schema.NewSchema(schema.WithSections(psSection))
+					bootstrapValues := values.New()
 
 					// IMPORTANT: Profile selection env vars should default to the profile "appName",
 					// not to any other WithEnv(...) prefix used for the rest of the application's settings.
@@ -237,39 +238,39 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 						envPrefix = strings.ToUpper(appName)
 					}
 
-					bootstrapMiddlewares := []cmd_middlewares.Middleware{}
+					bootstrapMiddlewares := []cmd_sources.Middleware{}
 					if o.cobraCmd != nil {
 						bootstrapMiddlewares = append(bootstrapMiddlewares,
-							cmd_middlewares.ParseFromCobraCommand(o.cobraCmd,
-								parameters.WithParseStepSource("cobra"),
+							cmd_sources.FromCobra(o.cobraCmd,
+								fields.WithSource("cobra"),
 							),
 						)
 					}
 					if envPrefix != "" {
 						bootstrapMiddlewares = append(bootstrapMiddlewares,
-							cmd_middlewares.UpdateFromEnv(envPrefix,
-								parameters.WithParseStepSource("env"),
+							cmd_sources.FromEnv(envPrefix,
+								fields.WithSource("env"),
 							),
 						)
 					}
 					if len(o.configFiles) > 0 {
 						bootstrapMiddlewares = append(bootstrapMiddlewares,
-							cmd_middlewares.LoadParametersFromFiles(
+							cmd_sources.FromFiles(
 								o.configFiles,
-								cmd_middlewares.WithParseOptions(parameters.WithParseStepSource("config")),
+								cmd_sources.WithParseOptions(fields.WithSource("config")),
 							),
 						)
 					}
 					bootstrapMiddlewares = append(bootstrapMiddlewares,
-						cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
+						cmd_sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 					)
 
-					if err := cmd_middlewares.ExecuteMiddlewares(bootstrapLayers, bootstrapParsed, bootstrapMiddlewares...); err != nil {
+					if err := cmd_sources.Execute(bootstrapSchema, bootstrapValues, bootstrapMiddlewares...); err != nil {
 						return errors.Wrap(err, "failed to bootstrap-parse profile-settings")
 					}
 
 					ps := &cli.ProfileSettings{}
-					if err := bootstrapParsed.InitializeStruct(cli.ProfileSettingsSlug, ps); err != nil {
+					if err := bootstrapValues.DecodeSectionInto(cli.ProfileSettingsSlug, ps); err != nil {
 						return errors.Wrap(err, "failed to initialize bootstrap profile settings")
 					}
 
@@ -287,24 +288,24 @@ func WithProfile(appName string, opts ...ProfileOption) ParserOption {
 					}
 
 					// 2) Run lower-precedence chain (typically defaults + provided-values).
-					if err := next(layers_, parsedLayers); err != nil {
+					if err := next(sectionSchema, parsedValues); err != nil {
 						return err
 					}
 
-					// 3) Apply profiles.yaml at the intended precedence layer.
-					mw := cmd_middlewares.GatherFlagsFromProfiles(
+					// 3) Apply profiles.yaml at the intended precedence section.
+					mw := cmd_sources.GatherFlagsFromProfiles(
 						defaultProfileFile,
 						profileFile,
 						profileName,
 						pcfg.defaultProfile,
-						parameters.WithParseStepSource("profiles"),
-						parameters.WithParseStepMetadata(map[string]interface{}{
+						fields.WithSource("profiles"),
+						fields.WithMetadata(map[string]interface{}{
 							"profileFile": profileFile,
 							"profile":     profileName,
 						}),
 					)
-					handler := mw(func(_ *layers.ParameterLayers, _ *layers.ParsedLayers) error { return nil })
-					return handler(layers_, parsedLayers)
+					handler := mw(func(_ *schema.Schema, _ *values.Values) error { return nil })
+					return handler(sectionSchema, parsedValues)
 				}
 			},
 		)

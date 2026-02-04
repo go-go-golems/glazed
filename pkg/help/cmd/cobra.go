@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Masterminds/sprig"
-	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/layers"
+	glazed_cobra "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 )
 
@@ -147,25 +147,25 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 
 	flagGroupUsage := glazed_cobra.ComputeCommandFlagGroupUsage(c)
 
-	// if we are showing the short help and shortHelpLayers annotation was set,
+	// if we are showing the short help and shortHelpSections annotation was set,
 	// skip all the groups that are not in the list
 	if !options.LongHelp {
-		shortHelpLayers_, ok := c.Annotations["shortHelpLayers"]
+		shortHelpSections_, ok := c.Annotations["shortHelpSections"]
 		if ok {
-			shortHelpLayers := map[string]interface{}{}
-			for _, v := range strings.Split(shortHelpLayers_, ",") {
-				shortHelpLayers[v] = true
+			shortHelpSections := map[string]interface{}{}
+			for _, v := range strings.Split(shortHelpSections_, ",") {
+				shortHelpSections[v] = true
 			}
 
 			localGroupUsages := []*glazed_cobra.FlagGroupUsage{}
 			inheritedGroupUsages := []*glazed_cobra.FlagGroupUsage{}
 			for _, f := range flagGroupUsage.LocalGroupUsages {
-				if _, ok = shortHelpLayers[f.Slug]; ok {
+				if _, ok = shortHelpSections[f.Slug]; ok {
 					localGroupUsages = append(localGroupUsages, f)
 				}
 			}
 			for _, f := range flagGroupUsage.InheritedGroupUsages {
-				if _, ok = shortHelpLayers[f.Slug]; ok {
+				if _, ok = shortHelpSections[f.Slug]; ok {
 					inheritedGroupUsages = append(inheritedGroupUsages, f)
 				}
 			}

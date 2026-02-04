@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
@@ -45,36 +46,36 @@ func (rs *RenameSettings) AddMiddlewares(processor *middlewares.TableProcessor) 
 }
 
 type RenameFlagsDefaults struct {
-	Rename       []string          `glazed.parameter:"rename"`
-	RenameRegexp map[string]string `glazed.parameter:"rename-regexp"`
-	RenameYaml   string            `glazed.parameter:"rename-yaml"`
+	Rename       []string          `glazed:"rename"`
+	RenameRegexp map[string]string `glazed:"rename-regexp"`
+	RenameYaml   string            `glazed:"rename-yaml"`
 }
 
 //go:embed "flags/rename.yaml"
 var renameFlagsYaml []byte
 
-type RenameParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type RenameSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewRenameParameterLayer(options ...layers.ParameterLayerOptions) (*RenameParameterLayer, error) {
-	ret := &RenameParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(renameFlagsYaml, options...)
+func NewRenameSection(options ...schema.SectionOption) (*RenameSection, error) {
+	ret := &RenameSection{}
+	section, err := schema.NewSectionFromYAML(renameFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create rename parameter layer")
+		return nil, errors.Wrap(err, "Failed to create rename field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 	return ret, nil
 }
 
-func (f *RenameParameterLayer) Clone() layers.ParameterLayer {
-	return &RenameParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *RenameSection) Clone() schema.Section {
+	return &RenameSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewRenameSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*RenameSettings, error) {
-	ps := glazedLayer.Parameters
+func NewRenameSettingsFromValues(glazedValues *values.SectionValues) (*RenameSettings, error) {
+	ps := glazedValues.Fields
 	rename := ps.GetValue("rename")
 	if rename == nil {
 		return &RenameSettings{

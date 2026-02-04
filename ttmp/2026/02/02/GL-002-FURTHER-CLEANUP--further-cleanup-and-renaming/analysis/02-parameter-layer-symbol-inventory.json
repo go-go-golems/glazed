@@ -1,0 +1,1296 @@
+{
+  "root": ".",
+  "files": [
+    {
+      "path": "cmd/examples/appconfig-parser/main.go",
+      "idents": [
+        "LayerSlug",
+        "WithValuesForLayers",
+        "dbLayer",
+        "redisLayer"
+      ]
+    },
+    {
+      "path": "cmd/examples/appconfig-profiles/main.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "NewProfileSettingsLayer",
+        "addLayer",
+        "cobraLayer",
+        "layer",
+        "psLayer",
+        "redisLayer"
+      ]
+    },
+    {
+      "path": "cmd/examples/config-custom-mapper/main.go",
+      "idents": [
+        "Layers",
+        "SkipCommandSettingsLayer",
+        "WithLayersList",
+        "demoLayer",
+        "layer",
+        "layerSlug",
+        "parsedCommandLayers"
+      ]
+    },
+    {
+      "path": "cmd/examples/config-overlay/main.go",
+      "idents": [
+        "Layers",
+        "SkipCommandSettingsLayer",
+        "WithLayersList",
+        "layer",
+        "layerSlug"
+      ]
+    },
+    {
+      "path": "cmd/examples/config-pattern-mapper/main.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "demoLayer",
+        "paramLayers"
+      ]
+    },
+    {
+      "path": "cmd/examples/config-single/main.go",
+      "idents": [
+        "Layers",
+        "SkipCommandSettingsLayer",
+        "WithLayersList",
+        "layer",
+        "layerSlug"
+      ]
+    },
+    {
+      "path": "cmd/examples/middlewares-config-env/main.go",
+      "idents": [
+        "WithLayersList"
+      ]
+    },
+    {
+      "path": "cmd/examples/new-api-build-first-command/main.go",
+      "idents": [
+        "ShortHelpLayers"
+      ]
+    },
+    {
+      "path": "cmd/examples/overlay-override/main.go",
+      "idents": [
+        "WithLayersList"
+      ]
+    },
+    {
+      "path": "cmd/examples/parameter-types/main.go",
+      "idents": [
+        "NewParameterTypesCommand",
+        "ParameterTypesCommand",
+        "ParameterTypesSettings",
+        "WithLayersList",
+        "parameterData"
+      ]
+    },
+    {
+      "path": "cmd/examples/sources-example/main.go",
+      "idents": [
+        "Layers"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/csv.go",
+      "idents": [
+        "WithLayersList",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/docs.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "WithFieldsFiltersParameterLayerOptions",
+        "cobraLayer",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/example.go",
+      "idents": [
+        "WithLayersList",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/html/cmds.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "cobraLayer",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/json.go",
+      "idents": [
+        "WithLayersList",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/markdown.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "cobraLayer",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/cmds/yaml.go",
+      "idents": [
+        "WithLayersList",
+        "glazedLayer"
+      ]
+    },
+    {
+      "path": "cmd/glaze/main.go",
+      "idents": [
+        "AddLoggingLayerToRootCommand"
+      ]
+    },
+    {
+      "path": "pkg/appconfig/options.go",
+      "idents": [
+        "NewProfileSettingsLayer",
+        "WithValuesForLayers",
+        "bootstrapLayers",
+        "layers_",
+        "parsedLayers",
+        "psLayer"
+      ]
+    },
+    {
+      "path": "pkg/appconfig/parser.go",
+      "idents": [
+        "LayerSlug",
+        "layer",
+        "paramLayers",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/appconfig/parser_test.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "LayerSlug",
+        "WithValuesForLayers",
+        "cobraLayer",
+        "layer",
+        "newTestRedisLayer"
+      ]
+    },
+    {
+      "path": "pkg/appconfig/profile_test.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "LayerSlug",
+        "NewProfileSettingsLayer",
+        "layer",
+        "newTestRedisLayer",
+        "psLayer"
+      ]
+    },
+    {
+      "path": "pkg/cli/cli.go",
+      "idents": [
+        "LoadParametersFromFile",
+        "NewCommandSettingsLayer",
+        "NewCreateCommandSettingsLayer",
+        "NewProfileSettingsLayer",
+        "PrintParsedParameters",
+        "createCommandSettingsLayer",
+        "glazedMinimalCommandLayer",
+        "profileSettingsLayer"
+      ]
+    },
+    {
+      "path": "pkg/cli/cliopatra/capture.go",
+      "idents": [
+        "Layers",
+        "Parameter",
+        "Parameters",
+        "ParsedParameters",
+        "getCliopatraParameters",
+        "layer",
+        "parameters_",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cli/cliopatra/capture_test.go",
+      "idents": [
+        "GetLayer",
+        "Layer",
+        "NewParsedParameters",
+        "Parameters",
+        "ParsedParameters",
+        "TestSingleLayer",
+        "WithLayersList",
+        "WithParsedParameter",
+        "defaultLayer",
+        "layer",
+        "makeParsedDefaultLayer"
+      ]
+    },
+    {
+      "path": "pkg/cli/cliopatra/program.go",
+      "idents": [
+        "GetAllParsedParameters",
+        "Parameter",
+        "ParsedParameters",
+        "parsedLayers",
+        "parsedParameter"
+      ]
+    },
+    {
+      "path": "pkg/cli/cobra-parser.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "EnableCreateCommandSettingsLayer",
+        "EnableProfileSettingsLayer",
+        "Layers",
+        "LoadParametersFromResolvedFilesForCobra",
+        "NewCobraParserFromLayers",
+        "NewCommandSettingsLayer",
+        "NewCreateCommandSettingsLayer",
+        "NewProfileSettingsLayer",
+        "ParseCommandSettingsLayer",
+        "ShortHelpLayers",
+        "SkipCommandSettingsLayer",
+        "cobraLayer",
+        "commandSettingsLayer",
+        "commandSettingsLayers",
+        "createCommandSettingsLayer",
+        "enableCreateCommandSettingsLayer",
+        "enableProfileSettingsLayer",
+        "layer",
+        "paramLayers",
+        "parsedCommandLayers",
+        "parsedLayers",
+        "profileSettingsLayer",
+        "shortHelpLayers",
+        "shortHelperLayer",
+        "skipCommandSettingsLayer"
+      ]
+    },
+    {
+      "path": "pkg/cli/cobra.go",
+      "idents": [
+        "EnableCreateCommandSettingsLayer",
+        "EnableProfileSettingsLayer",
+        "Layers",
+        "NewCobraParserFromLayers",
+        "NewGlazedParameterLayers",
+        "PrintParsedParameters",
+        "ShortHelpLayers",
+        "SkipCommandSettingsLayer",
+        "WithCobraShortHelpLayers",
+        "WithCreateCommandSettingsLayer",
+        "WithProfileSettingsLayer",
+        "WithSkipCommandSettingsLayer",
+        "createLayer",
+        "glLayer",
+        "glazedLayer",
+        "glazedLayers",
+        "layers",
+        "layers_",
+        "minimalLayer",
+        "originalLayers",
+        "parsedLayers",
+        "printParsedParameters",
+        "printParsedParameters_"
+      ]
+    },
+    {
+      "path": "pkg/cli/helpers.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "GlazeParameterLayerOption",
+        "NewCobraParserFromLayers",
+        "NewGlazedParameterLayers",
+        "Parameters",
+        "ParsedParameter",
+        "layer",
+        "layerName",
+        "layersMap",
+        "layers_",
+        "parameter",
+        "parsedLayer",
+        "parsedLayers",
+        "printParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/alias/alias.go",
+      "idents": [
+        "Layers",
+        "newLayers",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/cmds.go",
+      "idents": [
+        "GetDefaultLayer",
+        "GetLayer",
+        "Layers",
+        "ParsedParametersFromDefaults",
+        "SetLayers",
+        "WithLayers",
+        "WithLayersList",
+        "WithLayersMap",
+        "WithReplaceLayers",
+        "cloneLayers",
+        "layer",
+        "layers",
+        "layers_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/cobra_test.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "AddParametersToCobraCommand",
+        "ExpectedArgumentParameters",
+        "ExpectedFlagParameters",
+        "GetDefaultLayer",
+        "Layers",
+        "ParsedParameters",
+        "WithLayersList",
+        "argumentParameters",
+        "defaultLayer",
+        "defaultLayer_",
+        "flagParameters",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/cobra.go",
+      "idents": [
+        "AddParametersToCobraCommand",
+        "CheckParameterDefaultValueValidity",
+        "NewParsedParameters",
+        "ParseParameter",
+        "ParsedParameter",
+        "ParsedParameters",
+        "parameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/gather-arguments.go",
+      "idents": [
+        "NewParsedParameters",
+        "ParseParameter",
+        "ParsedParameter",
+        "ParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/gather-arguments_test.go",
+      "idents": [
+        "TestGatherArguments_ListParameterParsing",
+        "TestSingleParametersFollowedByListDefaults",
+        "TestThreeSingleParametersFollowedByListDefaults",
+        "TestThreeSingleParametersFollowedByListDefaultsOnlyTwoValues"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/gather-parameters.go",
+      "idents": [
+        "GatherParametersFromMap",
+        "NewParsedParameters",
+        "ParseParameter",
+        "ParsedParameter",
+        "ParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/gather-parameters_test.go",
+      "idents": [
+        "GatherParametersFromMap",
+        "ParameterDefs",
+        "TestGatherParametersFromMap",
+        "gatherParametersYAML",
+        "parsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/initialize-struct.go",
+      "idents": [
+        "ParsedParameter",
+        "ParsedParameters",
+        "parameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/initialize-struct_test.go",
+      "idents": [
+        "NewParsedParameters",
+        "ParsedParameters",
+        "TestInitializeStructWithMissingParameters",
+        "WithParsedParameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parameters.go",
+      "idents": [
+        "CheckParameterDefaultValueValidity",
+        "NewParsedParameters",
+        "ParsedParameters",
+        "ParsedParametersFromDefaults",
+        "parameter",
+        "parameterDefinitions",
+        "parameterType",
+        "parameters",
+        "parameters_",
+        "parsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parameters_from_defaults_test.go",
+      "idents": [
+        "ParsedParametersFromDefaults",
+        "TestParsedParametersFromDefaults_BasicTypes",
+        "TestParsedParametersFromDefaults_EdgeCases",
+        "TestParsedParametersFromDefaults_EmptyCollections",
+        "TestParsedParametersFromDefaults_FileLoadingTypes",
+        "TestParsedParametersFromDefaults_ListTypes",
+        "TestParsedParametersFromDefaults_MapTypes",
+        "TestParsedParametersFromDefaults_NilComplexTypes",
+        "parameterDefinitions"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parameters_test.go",
+      "idents": [
+        "TestParameterTypes",
+        "TestParameterValidity",
+        "initialParameterTests",
+        "loadParameterTypeTests",
+        "parameterDefinition",
+        "testParameterDefinitions",
+        "testParameterTypeTests",
+        "testParameterValidList",
+        "testParametersTypesYaml"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parse.go",
+      "idents": [
+        "ParseParameter",
+        "ParsedParameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parse_test.go",
+      "idents": [
+        "CheckParameterDefaultValueValidity",
+        "ParameterTest",
+        "ParameterTestCase",
+        "ParseParameter",
+        "TestParameterDate",
+        "TestParseParameter",
+        "parameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/parsed-parameter.go",
+      "idents": [
+        "NewParsedParameters",
+        "ParsedParameter",
+        "ParsedParameters",
+        "ParsedParametersOption",
+        "ToSerializableParsedParameters",
+        "WithParsedParameter",
+        "parameterType"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/serialize.go",
+      "idents": [
+        "Parameters",
+        "ParsedParameter",
+        "ParsedParameters",
+        "SerializableParsedParameter",
+        "SerializableParsedParameters",
+        "ToSerializableParsedParameter",
+        "ToSerializableParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/strings.go",
+      "idents": [
+        "NewParsedParameters",
+        "ParseParameter",
+        "ParsedParameter",
+        "ParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/strings_test.go",
+      "idents": [
+        "ParsedParameter",
+        "TestGatherFlagsFromStringList_ValidArgumentsAndParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/fields/viper.go",
+      "idents": [
+        "NewParsedParameters",
+        "ParsedParameter",
+        "ParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/helpers/test-helpers.go",
+      "idents": [
+        "BlacklistLayerParameters",
+        "BlacklistLayerParametersFirst",
+        "BlacklistLayers",
+        "BlacklistLayersFirst",
+        "Layers",
+        "NewParsedParameters",
+        "NewTestParameterLayer",
+        "NewTestParameterLayers",
+        "Parameters",
+        "TestBlacklistLayerParameters",
+        "TestBlacklistLayerParametersFirst",
+        "TestBlacklistLayers",
+        "TestBlacklistLayersFirst",
+        "TestExpectedLayer",
+        "TestParameterLayer",
+        "TestParsedParameter",
+        "TestWhitelistLayerParameters",
+        "TestWhitelistLayerParametersFirst",
+        "TestWhitelistLayers",
+        "TestWhitelistLayersFirst",
+        "WhitelistLayerParameters",
+        "WhitelistLayerParametersFirst",
+        "WhitelistLayers",
+        "WhitelistLayersFirst",
+        "WithParameters",
+        "expectedLayers",
+        "expectedLayers_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/json-schema.go",
+      "idents": [
+        "parameterTypeToJsonSchema"
+      ]
+    },
+    {
+      "path": "pkg/cmds/logging/layer.go",
+      "idents": [
+        "AddLoggingLayerToCommand",
+        "AddLoggingLayerToRootCommand",
+        "Layers",
+        "LoggingLayerSlug",
+        "NewLoggingLayer",
+        "loggingLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/runner/run.go",
+      "idents": [
+        "Layers",
+        "ParseCommandParameters",
+        "ValuesForLayers",
+        "WithValuesForLayers",
+        "glazedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/cobra.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "ParseLayerFromCobraCommand"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/layer-impl.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "AddParametersToCobraCommand",
+        "CheckParameterDefaultValueValidity",
+        "ChildLayers",
+        "GatherParametersFromMap",
+        "InitializeDefaultsFromParameters",
+        "InitializeStructFromParameterDefaults",
+        "Layer",
+        "Parameters",
+        "ParseLayerFromCobraCommand",
+        "ParsedParameters",
+        "parameterDefinitions"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/layer-impl_test.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "createSimpleParameterLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/layer.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "AppendLayers",
+        "CheckParameterDefaultValueValidity",
+        "LayersToSerializable",
+        "Parameters",
+        "PrependLayers",
+        "layers",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/layer_test.go",
+      "idents": [
+        "AppendLayers",
+        "PrependLayers",
+        "TestNewParameterLayers",
+        "TestParameterLayersAppendLayers",
+        "TestParameterLayersAsList",
+        "TestParameterLayersClone",
+        "TestParameterLayersForEach",
+        "TestParameterLayersForEachE",
+        "TestParameterLayersGetAllDefinitions",
+        "TestParameterLayersMerge",
+        "TestParameterLayersMergeWithOverlappingLayers",
+        "TestParameterLayersPrependLayers",
+        "TestParameterLayersSubset",
+        "TestParameterLayersSubsetWithNonExistentLayers",
+        "TestParameterLayersWithDuplicateSlugs",
+        "TestParameterLayersWithLargeNumberOfLayers",
+        "TestParameterLayersWithLayers",
+        "TestParameterLayersWithUnicodeLayerNames",
+        "createParameterLayer",
+        "layer",
+        "layer0",
+        "layer1",
+        "layer1Duplicate",
+        "layer2",
+        "layer3",
+        "layers",
+        "layers1",
+        "layers2",
+        "numLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/serialize.go",
+      "idents": [
+        "Layers",
+        "LayersToSerializable",
+        "Parameters",
+        "SerializableLayers",
+        "SerializableParameterLayer",
+        "layer",
+        "layers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/schema/wrappers.go",
+      "idents": [
+        "BlacklistParameterLayer",
+        "BlacklistedParameters",
+        "NewBlacklistParameterLayer",
+        "NewWhitelistParameterLayer",
+        "WhitelistParameterLayer",
+        "WhitelistedParameters",
+        "blacklistedParameters",
+        "layer",
+        "whitelistedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/cobra.go",
+      "idents": [
+        "LoadParametersFromResolvedFilesForCobra",
+        "Parameters",
+        "ParseLayerFromCobraCommand",
+        "cobraLayer",
+        "defaultLayer",
+        "layers_",
+        "parameterDefinitions",
+        "parsedCommandLayers",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/custom-profiles_test.go",
+      "idents": [
+        "Parameters",
+        "layer",
+        "parameterLayers",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/layers.go",
+      "idents": [
+        "MergeParameters",
+        "layer",
+        "layerSlug",
+        "layerToMerge",
+        "layersToMerge",
+        "layers_",
+        "newLayer",
+        "newLayers",
+        "parsedLayers",
+        "targetLayer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/load-parameters-from-json.go",
+      "idents": [
+        "layerData",
+        "layerMap",
+        "layerSlug",
+        "layers_",
+        "parsedLayers",
+        "readConfigFileToLayerMap"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/middlewares.go",
+      "idents": [
+        "clonedLayers",
+        "layers",
+        "layers_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/middlewares_test.go",
+      "idents": [
+        "ExpectedLayers",
+        "NewTestParameterLayers",
+        "ParameterLayers",
+        "TestExpectedLayer",
+        "TestParameterLayer",
+        "TestWrapWithRestrictedLayers",
+        "WrapWithBlacklistedLayers",
+        "WrapWithWhitelistedLayers",
+        "layers",
+        "layers_",
+        "parsedLayers",
+        "wrapWithRestrictedLayersTest",
+        "wrapWithRestrictedLayersTestsYAML"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/exports.go",
+      "idents": [
+        "ResolveTargetParameter",
+        "resolveTargetParameter",
+        "targetParameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/loader.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "layers_"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "layer",
+        "layers",
+        "resolveCanonicalParameterName",
+        "resolveTargetParameter",
+        "targetParameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_builder.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "layers",
+        "targetLayer",
+        "targetParameter"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_edge_cases_test.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "TestLayerPrefix",
+        "createTestLayers",
+        "layer",
+        "setupLayers",
+        "testLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_loader_test.go",
+      "idents": [
+        "TargetLayer",
+        "buildTestLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_orderedmap_test.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_proposals_test.go",
+      "idents": [
+        "TargetLayer",
+        "TargetParameter",
+        "layer",
+        "layerMulti",
+        "testLayers",
+        "testLayersMulti"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/patternmapper/pattern_mapper_test.go",
+      "idents": [
+        "ResolveTargetParameter",
+        "TargetLayer",
+        "TargetParameter",
+        "TestIntegrationWithLoadParametersFromFile",
+        "TestResolveTargetParameter",
+        "createTestLayers",
+        "demoLayer",
+        "layers_",
+        "testLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/profiles.go",
+      "idents": [
+        "layers_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/update.go",
+      "idents": [
+        "GatherParametersFromMap",
+        "Parameters",
+        "ParseParameter",
+        "layer",
+        "layerPrefix",
+        "layers_",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/update_test.go",
+      "idents": [
+        "Parameters",
+        "cfgLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/sources/whitelist.go",
+      "idents": [
+        "BlacklistLayerParameters",
+        "BlacklistLayerParametersFirst",
+        "BlacklistLayerParametersHandler",
+        "BlacklistLayers",
+        "BlacklistLayersFirst",
+        "BlacklistLayersHandler",
+        "NewBlacklistParameterLayer",
+        "NewWhitelistParameterLayer",
+        "WhitelistLayerParameters",
+        "WhitelistLayerParametersFirst",
+        "WhitelistLayerParametersHandler",
+        "WhitelistLayers",
+        "WhitelistLayersFirst",
+        "WhitelistLayersHandler",
+        "WrapWithBlacklistedLayers",
+        "WrapWithBlacklistedParameterLayers",
+        "WrapWithLayerModifyingHandler",
+        "WrapWithWhitelistedLayers",
+        "WrapWithWhitelistedParameterLayers",
+        "clonedLayers",
+        "layersToDelete",
+        "layersToUpdate",
+        "layers_",
+        "parametersToKeep",
+        "parameters_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/template.go",
+      "idents": [
+        "Layers",
+        "WithLayersList",
+        "defaultLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/cmds/values/parsed-layer.go",
+      "idents": [
+        "GetAllParsedParameters",
+        "GetDefaultParameterLayer",
+        "GetParameter",
+        "Layer",
+        "MergeParameters",
+        "NewParsedParameters",
+        "Parameters",
+        "ParsedParameter",
+        "ParsedParameters",
+        "WithParameterValue",
+        "WithParameters",
+        "defaultLayer",
+        "defaultParameterLayer",
+        "layer",
+        "layerKey",
+        "parameters_"
+      ]
+    },
+    {
+      "path": "pkg/cmds/values/parsed-layer_test.go",
+      "idents": [
+        "GetAllParsedParameters",
+        "GetDefaultParameterLayer",
+        "GetParameter",
+        "Layer",
+        "TestValuesGetAllParsedParameters",
+        "TestValuesGetDefaultParameterLayer",
+        "TestValuesGetOrCreateNilLayer",
+        "TestValuesGetParameter",
+        "TestValuesGetParameterNonExistentLayer",
+        "WithParameterValue",
+        "createParameterLayer",
+        "defaultLayer",
+        "layer",
+        "layer1",
+        "layer2",
+        "parsedLayer",
+        "parsedLayer1",
+        "parsedLayer2",
+        "parsedLayers",
+        "sameDefaultLayer",
+        "sameLayer"
+      ]
+    },
+    {
+      "path": "pkg/cmds/values/serialize_parsed.go",
+      "idents": [
+        "Layer",
+        "Layers",
+        "Parameters",
+        "SerializableParsedParameters",
+        "ToSerializableParsedParameters"
+      ]
+    },
+    {
+      "path": "pkg/cmds/values/test_helpers_test.go",
+      "idents": [
+        "Parameters",
+        "ParsedParameter",
+        "createParameterLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/codegen/glazed.go",
+      "idents": [
+        "CheckParameterDefaultValueValidity",
+        "ParameterDefinitionToDict",
+        "parameterType"
+      ]
+    },
+    {
+      "path": "pkg/help/cmd/cobra.go",
+      "idents": [
+        "shortHelpLayers",
+        "shortHelpLayers_"
+      ]
+    },
+    {
+      "path": "pkg/helpers/maps/maps.go",
+      "idents": [
+        "parameterName"
+      ]
+    },
+    {
+      "path": "pkg/helpers/templating/templating.go",
+      "idents": [
+        "toUrlParameter"
+      ]
+    },
+    {
+      "path": "pkg/lua/cmds.go",
+      "idents": [
+        "Layers",
+        "glazedLayer",
+        "layer",
+        "layerName",
+        "layerTable",
+        "layersTable",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/lua/lua.go",
+      "idents": [
+        "GatherParametersFromMap",
+        "MergeParameters",
+        "Parameters",
+        "ParseLuaTableToLayer",
+        "ParseParameterFromLua",
+        "ParsedParameter",
+        "WithParameters",
+        "layer",
+        "layerName",
+        "layerTable",
+        "layers_",
+        "parameterLayers",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "pkg/settings/glazed_layer.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "ChildLayers",
+        "FieldsFiltersParameterLayer",
+        "GatherParametersFromMap",
+        "GlazeParameterLayerOption",
+        "GlazedParameterLayers",
+        "JqParameterLayer",
+        "Layer",
+        "NewFieldsFiltersParameterLayer",
+        "NewGlazedParameterLayers",
+        "NewJqParameterLayer",
+        "NewJqSettingsFromParameters",
+        "NewOutputParameterLayer",
+        "NewParsedParameters",
+        "NewRenameParameterLayer",
+        "NewRenameSettingsFromParameters",
+        "NewReplaceParameterLayer",
+        "NewReplaceSettingsFromParameters",
+        "NewSelectParameterLayer",
+        "NewSelectSettingsFromParameters",
+        "NewSkipLimitParameterLayer",
+        "NewSkipLimitSettingsFromParameters",
+        "NewSortParameterLayer",
+        "NewSortSettingsFromParameters",
+        "NewTemplateParameterLayer",
+        "OutputParameterLayer",
+        "Parameters",
+        "ParseLayerFromCobraCommand",
+        "ParsedParameters",
+        "RenameParameterLayer",
+        "ReplaceParameterLayer",
+        "SelectParameterLayer",
+        "SkipLimitParameterLayer",
+        "SortParameterLayer",
+        "TemplateParameterLayer",
+        "WithFieldsFiltersParameterLayerOptions",
+        "WithJqParameterLayerOptions",
+        "WithOutputParameterLayerOptions",
+        "WithRenameParameterLayerOptions",
+        "WithReplaceParameterLayerOptions",
+        "WithSelectParameterLayerOptions",
+        "WithSkipLimitParameterLayerOptions",
+        "WithSortParameterLayerOptions",
+        "WithTemplateParameterLayerOptions",
+        "fieldsFiltersParameterLayer",
+        "glazedLayer",
+        "jqParameterLayer",
+        "layer",
+        "layers",
+        "outputParameterLayer",
+        "renameParameterLayer",
+        "replaceParameterLayer",
+        "selectParameterLayer",
+        "skipLimitParameterLayer",
+        "sortParameterLayer",
+        "templateParameterLayer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_fields-filters.go",
+      "idents": [
+        "AddLayerToCobraCommand",
+        "FieldsFiltersParameterLayer",
+        "InitializeStructFromParameterDefaults",
+        "NewFieldsFiltersParameterLayer",
+        "Parameters",
+        "ParseLayerFromCobraCommand",
+        "ParsedParameter",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_jq.go",
+      "idents": [
+        "JqParameterLayer",
+        "NewJqParameterLayer",
+        "NewJqSettingsFromParameters",
+        "Parameters",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_output.go",
+      "idents": [
+        "NewOutputParameterLayer",
+        "OutputParameterLayer",
+        "Parameters",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_rename.go",
+      "idents": [
+        "NewRenameParameterLayer",
+        "NewRenameSettingsFromParameters",
+        "Parameters",
+        "RenameParameterLayer",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_replace.go",
+      "idents": [
+        "NewReplaceParameterLayer",
+        "NewReplaceSettingsFromParameters",
+        "Parameters",
+        "ReplaceParameterLayer",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_select.go",
+      "idents": [
+        "NewSelectParameterLayer",
+        "NewSelectSettingsFromParameters",
+        "Parameters",
+        "SelectParameterLayer",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_skip_limit.go",
+      "idents": [
+        "NewSkipLimitParameterLayer",
+        "NewSkipLimitSettingsFromParameters",
+        "Parameters",
+        "SkipLimitParameterLayer",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_sort.go",
+      "idents": [
+        "NewSortParameterLayer",
+        "NewSortSettingsFromParameters",
+        "Parameters",
+        "SortParameterLayer",
+        "glazedLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_template.go",
+      "idents": [
+        "GlazedTemplateLayerSlug",
+        "NewTemplateParameterLayer",
+        "Parameters",
+        "TemplateParameterLayer",
+        "layer"
+      ]
+    },
+    {
+      "path": "pkg/settings/settings_template_test.go",
+      "idents": [
+        "GlazedTemplateLayerSlug",
+        "NewTemplateParameterLayer",
+        "layer",
+        "layers_",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "ttmp/2025-07-29/test_defaults/test_defaults.go",
+      "idents": [
+        "Layers",
+        "WithParameterValue",
+        "defaultLayer",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "ttmp/2025-07-29/test_doc_example/test_doc_example.go",
+      "idents": [
+        "Layers",
+        "WithParameterValue",
+        "defaultLayer",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "ttmp/2025-07-29/test_template_api/test_template_api.go",
+      "idents": [
+        "Layers",
+        "WithParameterValue",
+        "defaultLayer",
+        "parsedLayer",
+        "parsedLayers"
+      ]
+    },
+    {
+      "path": "ttmp/2025-08-05/signal-test/main.go",
+      "idents": [
+        "NewCommandSettingsLayer",
+        "NewGlazedParameterLayers",
+        "ShortHelpLayers",
+        "WithLayersList",
+        "commandSettingsLayer",
+        "glazedLayer",
+        "parsedLayers"
+      ]
+    }
+  ]
+}

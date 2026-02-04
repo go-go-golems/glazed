@@ -77,7 +77,7 @@ Glazed does **not** drive Cobra’s parsing. Cobra parses CLI input as part of n
 
 Only afterwards does Glazed parse those already-populated flags into `ParsedLayers` via middleware:
 
-- `middlewares.ParseFromCobraCommand(cmd)` iterates layers and calls `ParseLayerFromCobraCommand(cmd, ...)`
+- `sources.FromCobra(cmd)` iterates layers and calls `ParseLayerFromCobraCommand(cmd, ...)`
 - `ParameterLayerImpl.ParseLayerFromCobraCommand(...)` calls
   `ParameterDefinitions.GatherFlagsFromCobraCommand(cmd, onlyProvided=true, ...)`
 - `GatherFlagsFromCobraCommand` uses `cmd.Flags().Changed(flagName)` to skip non-provided flags
@@ -87,7 +87,7 @@ Only afterwards does Glazed parse those already-populated flags into `ParsedLaye
 No. The middleware signature is:
 
 ```go
-type HandlerFunc func(layers *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error
+type HandlerFunc func(layers *schema.Schema, parsedLayers *values.Values) error
 ```
 
 So there’s **no context** and no `*cobra.Command` passed through the middleware pipeline. Cobra is accessed via closure capture:
@@ -157,11 +157,11 @@ Then instantiate `GatherFlagsFromProfiles` using those resolved values.
 Pseudocode:
 
 ```go
-bootstrapLayers := layers.NewParameterLayers(layers.WithLayers(
+bootstrapLayers := schema.NewSchema(layers.WithLayers(
   NewCommandSettingsLayer(),
   NewProfileSettingsLayer(),
 ))
-bootstrapParsed := layers.NewParsedLayers()
+bootstrapParsed := values.New()
 
 ExecuteMiddlewares(bootstrapLayers, bootstrapParsed,
   ParseFromCobraCommand(cmd),

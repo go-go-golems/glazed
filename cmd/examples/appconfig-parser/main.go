@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RedisSlug appconfig.LayerSlug = "redis"
-	DBSlug    appconfig.LayerSlug = "db"
+	RedisSlug appconfig.SectionSlug = "redis"
+	DBSlug    appconfig.SectionSlug = "db"
 )
 
 type AppSettings struct {
@@ -20,12 +20,12 @@ type AppSettings struct {
 }
 
 type RedisSettings struct {
-	Host string `glazed.parameter:"host"`
-	Port int    `glazed.parameter:"port"`
+	Host string `glazed:"host"`
+	Port int    `glazed:"port"`
 }
 
 type DBSettings struct {
-	DSN string `glazed.parameter:"dsn"`
+	DSN string `glazed:"dsn"`
 }
 
 func mustSection(section *schema.SectionImpl, err error) schema.Section {
@@ -37,7 +37,7 @@ func mustSection(section *schema.SectionImpl, err error) schema.Section {
 }
 
 func main() {
-	redisLayer := mustSection(schema.NewSection(
+	redisSection := mustSection(schema.NewSection(
 		string(RedisSlug),
 		"Redis",
 		schema.WithPrefix("redis-"),
@@ -47,7 +47,7 @@ func main() {
 		),
 	))
 
-	dbLayer := mustSection(schema.NewSection(
+	dbSection := mustSection(schema.NewSection(
 		string(DBSlug),
 		"Database",
 		schema.WithPrefix("db-"),
@@ -58,7 +58,7 @@ func main() {
 
 	parser, err := appconfig.NewParser[AppSettings](
 		// Programmatic values work well for libraries, tests, and integration code.
-		appconfig.WithValuesForLayers(map[string]map[string]interface{}{
+		appconfig.WithValuesForSections(map[string]map[string]interface{}{
 			string(RedisSlug): {"host": "cache.local", "port": 6380},
 			string(DBSlug):    {"dsn": "postgres://localhost:5432/app"},
 		}),
@@ -68,12 +68,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := parser.Register(RedisSlug, redisLayer, func(t *AppSettings) any { return &t.Redis }); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register redis layer: %v\n", err)
+	if err := parser.Register(RedisSlug, redisSection, func(t *AppSettings) any { return &t.Redis }); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to register redis section: %v\n", err)
 		os.Exit(1)
 	}
-	if err := parser.Register(DBSlug, dbLayer, func(t *AppSettings) any { return &t.DB }); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register db layer: %v\n", err)
+	if err := parser.Register(DBSlug, dbSection, func(t *AppSettings) any { return &t.DB }); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to register db section: %v\n", err)
 		os.Exit(1)
 	}
 

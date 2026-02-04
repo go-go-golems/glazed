@@ -8,7 +8,7 @@
 - **Dr. Aisha Patel** (Platform Engineering) - Values type safety and correctness
 - **ConfigFileMapper** (type `func(rawConfig interface{}) (map[string]map[string]interface{}, error)`) - The existing interface
 - **LoadParametersFromFile** (middleware) - Current implementation
-- **ParameterLayers** (layers.ParameterLayers) - The layer system itself
+- **ParameterLayers** (schema.Schema) - The layer system itself
 
 ---
 

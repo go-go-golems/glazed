@@ -18,14 +18,14 @@ SectionType: Tutorial
 
 Glazed has moved away from Viper-based configuration parsing to a more explicit, traceable config file middleware system. This migration guide walks you through updating existing applications to use the new approach, which provides better observability, deterministic precedence, and cleaner separation between config sources.
 
-The new system replaces Viper's automatic config discovery and merging with explicit file loading middlewares that record each parse step. This makes it clear where each parameter value originated and enables better debugging with `--print-parsed-parameters`.
+The new system replaces Viper's automatic config discovery and merging with explicit file loading middlewares that record each parse step. This makes it clear where each field value originated and enables better debugging with `--print-parsed-fields`.
 
 ## Overview of Changes
 
 The migration involves three main areas:
 
-1. **Config File Loading**: Replace `GatherFlagsFromViper()` and `GatherFlagsFromCustomViper()` with `LoadParametersFromFile()` or `LoadParametersFromFiles()`
-2. **Logging Initialization**: Move from `InitLoggerFromViper()` to `InitLoggerFromCobra()` or `SetupLoggingFromParsedLayers()`
+1. **Config File Loading**: Replace `GatherFlagsFromViper()` and `GatherFlagsFromCustomViper()` with `LoadFieldsFromFile()` or `LoadFieldsFromFiles()`
+2. **Logging Initialization**: Move from `InitLoggerFromViper()` to `InitLoggerFromCobra()` or `SetupLoggingFromValues()`
 3. **Cobra Integration**: Use `CobraParserConfig` to wire config discovery, environment variables, and file loading into your commands
 
 ## ⚠️ Critical: Config File Changes Required
@@ -56,7 +56,7 @@ cli.WithParserConfig(cli.CobraParserConfig{
 
 **Action required:** Every application using Viper config discovery must add explicit config file resolution (see Step 4).
 
-### 2. Config File Format Must Match Layer Structure
+### 2. Config File Format Must Match Section Structure
 
 **Before (Viper):** Config structure was flexible - Viper read any keys:
 ```yaml
@@ -66,9 +66,9 @@ threshold: 42
 log-level: "debug"
 ```
 
-**After:** Config must match layer names and parameters:
+**After:** Config must match section names and fields:
 ```yaml
-# Layer names as top-level keys
+# Section names as top-level keys
 demo:
   api-key: "secret"
   threshold: 42
@@ -79,31 +79,31 @@ logging:
 **If your config doesn't match this structure:**
 
 **Option A: Restructure your config files** (simplest)
-- Group parameters under layer names
-- Update parameter names to match definitions
+- Group fields under section names
+- Update field names to match definitions
 
 **Option B: Use pattern-based mapping** (for legacy configs)
 ```go
-mapper, _ := patternmapper.NewConfigMapper(layers,
+mapper, _ := patternmapper.NewConfigMapper(sections,
     patternmapper.MappingRule{
         Source:          "api-key",  // Flat config
-        TargetLayer:     "demo",
-        TargetParameter: "api-key",
+        TargetSection:     "demo",
+        TargetField: "api-key",
     },
 )
-middlewares.LoadParametersFromFile("config.yaml",
+sources.FromFile("config.yaml",
     middlewares.WithConfigMapper(mapper))
 ```
 
 **Option C: Use custom mapper function** (for complex transformations)
 ```go
 mapper := func(raw interface{}) (map[string]map[string]interface{}, error) {
-    // Transform your config to layer format
+    // Transform your config to section format
     return map[string]map[string]interface{}{
         "demo": {"api-key": raw["api-key"]},
     }, nil
 }
-middlewares.LoadParametersFromFile("config.yaml",
+sources.FromFile("config.yaml",
     middlewares.WithConfigFileMapper(mapper))
 ```
 
@@ -118,16 +118,16 @@ The primary change is replacing Viper-based middleware with explicit config file
 ```go
 import (
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 func GetCommandMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         middlewares.GatherFlagsFromViper(
-            parameters.WithParseStepSource("viper"),
+            sources.WithSource("viper"),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -138,24 +138,24 @@ Viper would automatically:
 - Merge environment variables
 - Bind command flags
 
-### After: Using LoadParametersFromFile
+### After: Using LoadFieldsFromFile
 
 ```go
 import (
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 func GetCommandMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.UpdateFromEnv("APP"),  // Explicit env prefix
-        middlewares.LoadParametersFromFile("config.yaml",
+        sources.FromCobra(cmd),
+        sources.FromEnv("APP"),  // Explicit env prefix
+        sources.FromFile("config.yaml",
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("config"),
+                sources.WithSource("config"),
             ),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -168,17 +168,17 @@ The new approach:
 
 ### Single Config File
 
-For applications with a single config file, use `LoadParametersFromFile`:
+For applications with a single config file, use `LoadFieldsFromFile`:
 
 ```go
-middlewares.LoadParametersFromFile("/etc/myapp/config.yaml",
+sources.FromFile("/etc/myapp/config.yaml",
     middlewares.WithParseOptions(
-        parameters.WithParseStepSource("config"),
+        sources.WithSource("config"),
     ),
 )
 ```
 
-The config file must match the default structure (layer names as top-level keys):
+The config file must match the default structure (section names as top-level keys):
 
 ```yaml
 demo:
@@ -188,15 +188,15 @@ demo:
 
 ### Multiple Config Files (Overlays)
 
-For applications that compose configuration from multiple files, use `LoadParametersFromFiles`:
+For applications that compose configuration from multiple files, use `LoadFieldsFromFiles`:
 
 ```go
-middlewares.LoadParametersFromFiles([]string{
+sources.FromFiles([]string{
     "base.yaml",
     "env.yaml", 
     "local.yaml",
 }, middlewares.WithParseOptions(
-    parameters.WithParseStepSource("config"),
+    sources.WithSource("config"),
 ))
 ```
 
@@ -215,7 +215,7 @@ import (
 
 func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         
         // Profile-specific override file
         middlewares.GatherFlagsFromCustomViper(
@@ -223,7 +223,7 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
                 fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile),
             ),
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("profile-overrides"),
+                sources.WithSource("profile-overrides"),
             ),
         ),
         
@@ -231,21 +231,21 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
         middlewares.GatherFlagsFromCustomViper(
             middlewares.WithAppName("shared-config"),
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("shared"),
+                sources.WithSource("shared"),
             ),
         ),
         
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
 
-### After: Using LoadParametersFromFiles
+### After: Using LoadFieldsFromFiles
 
 ```go
 import (
     "github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-    "github.com/go-go-golems/glazed/pkg/cmds/parameters"
+    "github.com/go-go-golems/glazed/pkg/cmds/fields"
 )
 
 func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middlewares.Middleware {
@@ -263,13 +263,13 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
     }
     
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.LoadParametersFromFiles(files,
+        sources.FromCobra(cmd),
+        sources.FromFiles(files,
             middlewares.WithParseOptions(
-                parameters.WithParseStepSource("config"),
+                sources.WithSource("config"),
             ),
         ),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -303,8 +303,8 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-    // Add logging layer
-    err := logging.AddLoggingLayerToRootCommand(rootCmd, "myapp")
+    // Add logging section
+    err := logging.AddLoggingSectionToRootCommand(rootCmd, "myapp")
     cobra.CheckErr(err)
     
     // Bind flags to Viper before initializing logger
@@ -337,7 +337,7 @@ var rootCmd = &cobra.Command{
 
 func main() {
     // Add logging flags to root command
-    _ = logging.AddLoggingLayerToRootCommand(rootCmd, "myapp")
+    _ = logging.AddLoggingSectionToRootCommand(rootCmd, "myapp")
     
     // ... register commands, help system, etc.
     _ = rootCmd.Execute()
@@ -350,30 +350,30 @@ func main() {
 - Logging reads directly from Cobra flags
 - Simpler setup with fewer moving parts
 
-### Alternative: Initialize from Parsed Layers
+### Alternative: Initialize from Parsed Sections
 
-If you're using Glazed's middleware system and want logging to respect config file values, initialize from parsed layers instead:
+If you're using Glazed's middleware system and want logging to respect config file values, initialize from parsed sections instead:
 
 ```go
 import (
     "github.com/go-go-golems/glazed/pkg/cmds/logging"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 func runCommand(cmd *cobra.Command, args []string) error {
-    // ... setup layers and parse ...
+    // ... setup sections and parse ...
     
-    err := middlewares.ExecuteMiddlewares(layers_, parsed,
-        middlewares.LoadParametersFromFile("config.yaml"),
-        middlewares.UpdateFromEnv("APP"),
-        middlewares.ParseFromCobraCommand(cmd),
+    err := sources.Execute(schema_, parsed,
+        sources.FromFile("config.yaml"),
+        sources.FromEnv("APP"),
+        sources.FromCobra(cmd),
     )
     if err != nil {
         return err
     }
     
-    // Initialize logging from parsed layers (includes config file values)
-    err = logging.SetupLoggingFromParsedLayers(parsed)
+    // Initialize logging from parsed sections (includes config file values)
+    err = logging.SetupLoggingFromValues(parsed)
     if err != nil {
         return err
     }
@@ -417,7 +417,7 @@ func buildCommand() (*cobra.Command, error) {
 ```go
 import (
     "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds/layers"
+    "github.com/go-go-golems/glazed/pkg/cmds/schema"
     appconfig "github.com/go-go-golems/glazed/pkg/config"
 )
 
@@ -427,10 +427,10 @@ func buildCommand() (*cobra.Command, error) {
     cobraCmd, err := cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",  // Enables env prefix MYAPP_ and config discovery
-            ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
                 // Use explicit path if provided via --config-file
                 cs := &cli.CommandSettings{}
-                _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+                _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
                 if cs.ConfigFile != "" {
                     return []string{cs.ConfigFile}, nil
                 }
@@ -452,7 +452,7 @@ func buildCommand() (*cobra.Command, error) {
 **Benefits:**
 - `AppName` automatically enables environment variable prefix (`MYAPP_`)
 - `ConfigFilesFunc` gives you full control over file discovery
-- `--config-file` flag is automatically available via `command-settings` layer
+- `--config-file` flag is automatically available via `command-settings` section
 - Config files integrate cleanly with env vars and flags
 
 ### Simple Config Path
@@ -470,7 +470,7 @@ cobraCmd, err := cli.BuildCobraCommandFromCommand(command,
 
 ## Step 5: Handle Custom Config Structures
 
-If your config files don't match the default layer structure, you have two options: pattern-based mapping (declarative) or custom mapper functions (programmatic).
+If your config files don't match the default section structure, you have two options: pattern-based mapping (declarative) or custom mapper functions (programmatic).
 
 ### Pattern-Based Mapping (Recommended)
 
@@ -482,21 +482,21 @@ import (
 )
 
 // Define mapping rules
-mapper, err := pm.NewConfigMapper(layers_,
+mapper, err := pm.NewConfigMapper(schema_,
     pm.MappingRule{
         Source:          "app.settings.api_key",
-        TargetLayer:     "demo",
-        TargetParameter: "api-key",
+        TargetSection:     "demo",
+        TargetField: "api-key",
     },
     pm.MappingRule{
         Source:          "app.{env}.api_key",
-        TargetLayer:     "demo",
-        TargetParameter: "{env}-api-key",
+        TargetSection:     "demo",
+        TargetField: "{env}-api-key",
     },
 )
 
-// Use with LoadParametersFromFile
-middleware := middlewares.LoadParametersFromFile(
+// Use with LoadFieldsFromFile
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigMapper(mapper),
 )
@@ -518,7 +518,7 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
         "demo": make(map[string]interface{}),
     }
     
-    // Transform config structure to layer format
+    // Transform config structure to section format
     if apiKey, ok := configMap["api_key"]; ok {
         result["demo"]["api-key"] = apiKey
     }
@@ -529,7 +529,7 @@ mapper := func(rawConfig interface{}) (map[string]map[string]interface{}, error)
     return result, nil
 }
 
-middleware := middlewares.LoadParametersFromFile(
+middleware := sources.FromFile(
     "config.yaml",
     middlewares.WithConfigFileMapper(mapper),
 )
@@ -548,16 +548,16 @@ The precedence order remains the same, but the way you express it changes. Remem
 ### Correct Precedence Order
 
 ```go
-middlewares.ExecuteMiddlewares(layers_, parsed,
-    middlewares.SetFromDefaults(),                              // Lowest priority
-    middlewares.LoadParametersFromFiles([]string{               // Config files (low → high)
+sources.Execute(schema_, parsed,
+    sources.FromDefaults(),                              // Lowest priority
+    sources.FromFiles([]string{               // Config files (low → high)
         "base.yaml",
         "env.yaml", 
         "local.yaml",
     }),
-    middlewares.UpdateFromEnv("APP"),                           // Environment variables
-    middlewares.GatherArguments(args),                          // Positional arguments
-    middlewares.ParseFromCobraCommand(cmd),                     // Flags (highest priority)
+    sources.FromEnv("APP"),                           // Environment variables
+    sources.FromArgs(args),                          // Positional arguments
+    sources.FromCobra(cmd),                     // Flags (highest priority)
 )
 ```
 
@@ -599,7 +599,7 @@ After migrating, you can remove Viper-related code:
    // With:
    logging.InitLoggerFromCobra(cmd)
    // or
-   logging.SetupLoggingFromParsedLayers(parsed)
+   logging.SetupLoggingFromValues(parsed)
    ```
 
 ## Common Migration Patterns
@@ -620,7 +620,7 @@ import appconfig "github.com/go-go-golems/glazed/pkg/config"
 
 configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
 if err == nil {
-    middlewares.LoadParametersFromFile(configPath)
+    sources.FromFile(configPath)
 }
 ```
 
@@ -641,7 +641,7 @@ files := []string{}
 if profile != "" {
     files = append(files, fmt.Sprintf("/etc/myapp/%s.yaml", profile))
 }
-middlewares.LoadParametersFromFiles(files)
+sources.FromFiles(files)
 ```
 
 ### Pattern 3: Environment Variable Overrides
@@ -652,10 +652,10 @@ Viper automatically merged environment variables based on prefix and key naming.
 **After:**
 ```go
 // Explicit env prefix
-middlewares.UpdateFromEnv("APP")  // Reads APP_* variables
+sources.FromEnv("APP")  // Reads APP_* variables
 ```
 
-Environment variable names follow the pattern: `{PREFIX}_{LAYER}_{PARAMETER}` (e.g., `APP_DEMO_API_KEY` for `demo.api-key`).
+Environment variable names follow the pattern: `{PREFIX}_{SECTION}_{FIELD}` (e.g., `APP_DEMO_API_KEY` for `demo.api-key`).
 
 ### Pattern 4: Config File Override Pattern
 
@@ -664,9 +664,9 @@ Manual Viper config file merging with custom precedence.
 
 **After:**
 ```go
-resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]string, error) {
+resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
     cs := &cli.CommandSettings{}
-    _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+    _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
     files := []string{}
     
     if cs.ConfigFile != "" {
@@ -690,17 +690,17 @@ resolver := func(parsed *layers.ParsedLayers, _ *cobra.Command, _ []string) ([]s
 
 ### Inspect Parse Steps
 
-Use `--print-parsed-parameters` to see exactly where each parameter value came from:
+Use `--print-parsed-fields` to see exactly where each field value came from:
 
 ```bash
-myapp command --print-parsed-parameters
+myapp command --print-parsed-fields
 ```
 
-This shows the full parse history for each parameter, including which config file set each value.
+This shows the full parse history for each field, including which config file set each value.
 
 ### Validate Config Files
 
-Before applying config files, validate them against your layer definitions:
+Before applying config files, validate them against your section definitions:
 
 ```go
 import (
@@ -708,7 +708,7 @@ import (
     "gopkg.in/yaml.v3"
 )
 
-func validateConfigFile(layers_ *layers.ParameterLayers, path string) error {
+func validateConfigFile(schema_ *schema.Schema, path string) error {
     b, err := os.ReadFile(path)
     if err != nil {
         return err
@@ -719,27 +719,27 @@ func validateConfigFile(layers_ *layers.ParameterLayers, path string) error {
         return err
     }
     
-    // Check each layer and parameter
-    for layerSlug, v := range raw {
-        layer, ok := layers_.Get(layerSlug)
+    // Check each section and field
+    for sectionSlug, v := range raw {
+        section, ok := schema_.Get(sectionSlug)
         if !ok {
-            return fmt.Errorf("unknown layer: %s", layerSlug)
+            return fmt.Errorf("unknown section: %s", sectionSlug)
         }
         
         kv, ok := v.(map[string]interface{})
         if !ok {
-            return fmt.Errorf("layer %s must be an object", layerSlug)
+            return fmt.Errorf("section %s must be an object", sectionSlug)
         }
         
-        pds := layer.GetParameterDefinitions()
+        pds := section.GetDefinitions()
         for key, val := range kv {
             pd, ok := pds.Get(key)
             if !ok {
-                return fmt.Errorf("unknown parameter %s.%s", layerSlug, key)
+                return fmt.Errorf("unknown field %s.%s", sectionSlug, key)
             }
             
             if _, err := pd.CheckValueValidity(val); err != nil {
-                return fmt.Errorf("invalid value for %s.%s: %v", layerSlug, key, err)
+                return fmt.Errorf("invalid value for %s.%s: %v", sectionSlug, key, err)
             }
         }
     }
@@ -761,19 +761,19 @@ If your config file isn't being loaded, check:
 
 If environment variables aren't being read:
 1. Check the prefix matches your `AppName` (e.g., `MYAPP_` for `AppName: "myapp"`)
-2. Variable names follow `{PREFIX}_{LAYER}_{PARAMETER}` format
+2. Variable names follow `{PREFIX}_{SECTION}_{FIELD}` format
 3. `UpdateFromEnv` middleware is included in your middleware chain
 
 ### Precedence Issues
 
 If values aren't overriding as expected:
 1. Verify middleware order (last middleware runs first)
-2. Check config file order in `LoadParametersFromFiles` (low → high)
-3. Use `--print-parsed-parameters` to see actual precedence
+2. Check config file order in `LoadFieldsFromFiles` (low → high)
+3. Use `--print-parsed-fields` to see actual precedence
 
 ### Legacy Config Format
 
-If you have legacy config files that don't match the layer structure:
+If you have legacy config files that don't match the section structure:
 1. Use pattern-based mapping for structured transformations
 2. Use custom mapper functions for complex transformations
 3. Consider migrating config files to the new format over time
@@ -804,7 +804,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-    err := logging.AddLoggingLayerToRootCommand(rootCmd, "myapp")
+    err := logging.AddLoggingSectionToRootCommand(rootCmd, "myapp")
     cobra.CheckErr(err)
     
     viper.SetEnvPrefix("MYAPP")
@@ -823,9 +823,9 @@ func main() {
 
 func GetMiddlewares(cmd *cobra.Command) []middlewares.Middleware {
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         middlewares.GatherFlagsFromViper(),
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -850,7 +850,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-    _ = logging.AddLoggingLayerToRootCommand(rootCmd, "myapp")
+    _ = logging.AddLoggingSectionToRootCommand(rootCmd, "myapp")
     
     // ... register commands with BuildCobraCommandFromCommand ...
     
@@ -863,9 +863,9 @@ func buildCommand() (*cobra.Command, error) {
     return cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",
-            ConfigFilesFunc: func(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]string, error) {
+            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
                 cs := &cli.CommandSettings{}
-                _ = parsed.InitializeStruct(cli.CommandSettingsSlug, cs)
+                _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
                 if cs.ConfigFile != "" {
                     return []string{cs.ConfigFile}, nil
                 }
@@ -886,7 +886,7 @@ func buildCommand() (*cobra.Command, error) {
 After completing the migration:
 
 1. **Test thoroughly**: Verify all config sources work correctly
-2. **Use `--print-parsed-parameters`**: Confirm precedence is as expected
+2. **Use `--print-parsed-fields`**: Confirm precedence is as expected
 3. **Update documentation**: Document your config file locations and formats
 4. **Remove Viper**: Clean up any remaining Viper dependencies
 5. **Consider validation**: Add config file validation to catch errors early
@@ -895,4 +895,3 @@ For more details on the new config system, see:
 - `glaze help config-files` - Config files and overlays guide
 - `glaze help pattern-based-config-mapping` - Pattern-based mapping guide
 - `glaze help cmds-middlewares` - Middleware system reference
-

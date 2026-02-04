@@ -1,31 +1,31 @@
 package cli
 
 import (
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 )
 
 const CreateCommandSettingsSlug = "create-command-settings"
 
-func NewCreateCommandSettingsLayer() (layers.ParameterLayer, error) {
-	createCommandSettingsLayer, err := layers.NewParameterLayer(
+func NewCreateCommandSettingsSection() (schema.Section, error) {
+	createCommandSettingsSection, err := schema.NewSection(
 		CreateCommandSettingsSlug,
 		"Create command settings",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"create-command",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Create a new command for the query, with the defaults updated"),
+				fields.TypeString,
+				fields.WithHelp("Create a new command for the query, with the defaults updated"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"create-alias",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Create a CLI alias for the query"),
+				fields.TypeString,
+				fields.WithHelp("Create a CLI alias for the query"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"create-cliopatra",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Print the CLIopatra YAML for the command"),
+				fields.TypeString,
+				fields.WithHelp("Print the CLIopatra YAML for the command"),
 			),
 		),
 	)
@@ -33,36 +33,36 @@ func NewCreateCommandSettingsLayer() (layers.ParameterLayer, error) {
 		return nil, err
 	}
 
-	return createCommandSettingsLayer, nil
+	return createCommandSettingsSection, nil
 }
 
 type CreateCommandSettings struct {
-	CreateCommand   string `glazed.parameter:"create-command"`
-	CreateAlias     string `glazed.parameter:"create-alias"`
-	CreateCliopatra string `glazed.parameter:"create-cliopatra"`
+	CreateCommand   string `glazed:"create-command"`
+	CreateAlias     string `glazed:"create-alias"`
+	CreateCliopatra string `glazed:"create-cliopatra"`
 }
 
 type ProfileSettings struct {
-	Profile     string `glazed.parameter:"profile"`
-	ProfileFile string `glazed.parameter:"profile-file"`
+	Profile     string `glazed:"profile"`
+	ProfileFile string `glazed:"profile-file"`
 }
 
 const ProfileSettingsSlug = "profile-settings"
 
-func NewProfileSettingsLayer() (layers.ParameterLayer, error) {
-	profileSettingsLayer, err := layers.NewParameterLayer(
+func NewProfileSettingsSection() (schema.Section, error) {
+	profileSettingsSection, err := schema.NewSection(
 		ProfileSettingsSlug,
 		"Profile settings",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"profile",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the profile"),
+				fields.TypeString,
+				fields.WithHelp("Load the profile"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"profile-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Load the profile from a file"),
+				fields.TypeString,
+				fields.WithHelp("Load the profile from a file"),
 			),
 		),
 	)
@@ -70,45 +70,43 @@ func NewProfileSettingsLayer() (layers.ParameterLayer, error) {
 		return nil, err
 	}
 
-	return profileSettingsLayer, nil
+	return profileSettingsSection, nil
 }
 
 // GlazedMinimalCommandSettings contains a subset of the most commonly used settings
 type CommandSettings struct {
-	PrintYAML              bool   `glazed.parameter:"print-yaml"`
-	PrintParsedParameters  bool   `glazed.parameter:"print-parsed-parameters"`
-	LoadParametersFromFile string `glazed.parameter:"load-parameters-from-file"`
-	PrintSchema            bool   `glazed.parameter:"print-schema"`
-	ConfigFile             string `glazed.parameter:"config-file"`
+	PrintYAML         bool   `glazed:"print-yaml"`
+	PrintParsedFields bool   `glazed:"print-parsed-fields"`
+	PrintSchema       bool   `glazed:"print-schema"`
+	ConfigFile        string `glazed:"config-file"`
 }
 
 const CommandSettingsSlug = "command-settings"
 
-func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
-	glazedMinimalCommandLayer, err := layers.NewParameterLayer(
+func NewCommandSettingsSection() (schema.Section, error) {
+	glazedMinimalCommandSection, err := schema.NewSection(
 		CommandSettingsSlug,
 		"General purpose command options",
-		layers.WithParameterDefinitions(
-			parameters.NewParameterDefinition(
+		schema.WithFields(
+			fields.New(
 				"print-yaml",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the command's YAML"),
+				fields.TypeBool,
+				fields.WithHelp("Print the command's YAML"),
 			),
-			parameters.NewParameterDefinition(
-				"print-parsed-parameters",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the parsed parameters"),
+			fields.New(
+				"print-parsed-fields",
+				fields.TypeBool,
+				fields.WithHelp("Print the parsed fields"),
 			),
-			// Deprecated: legacy per-command parameter file injection (removed from default flow)
-			parameters.NewParameterDefinition(
+			fields.New(
 				"print-schema",
-				parameters.ParameterTypeBool,
-				parameters.WithHelp("Print the command's schema"),
+				fields.TypeBool,
+				fields.WithHelp("Print the command's schema"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"config-file",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Explicit config file path to load via middlewares"),
+				fields.TypeString,
+				fields.WithHelp("Explicit config file path to load via middlewares"),
 			),
 		),
 	)
@@ -116,5 +114,5 @@ func NewCommandSettingsLayer() (layers.ParameterLayer, error) {
 		return nil, err
 	}
 
-	return glazedMinimalCommandLayer, nil
+	return glazedMinimalCommandSection, nil
 }

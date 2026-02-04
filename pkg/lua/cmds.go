@@ -4,50 +4,52 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/middlewares"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	middlewares2 "github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	lua2 "github.com/yuin/gopher-lua"
-	"strings"
 )
 
-// CallGlazedCommandFromLua executes a GlazeCommand with parameters from a Lua table
+// CallGlazedCommandFromLua executes a GlazeCommand with fields from a Lua table.
 func CallGlazedCommandFromLua(L *lua2.LState, cmd cmds.GlazeCommand, luaTable *lua2.LTable) (*types.Table, error) {
-	// Create parsed layers
-	parsedLayers := layers.NewParsedLayers()
+	// Create parsed values
+	parsedValues := values.New()
 
 	// Define middlewares
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		// Parse from Lua table (highest priority)
 		ParseNestedLuaTableMiddleware(L, luaTable),
 		// Set defaults (lowest priority)
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
 	// Execute middlewares
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return nil, fmt.Errorf("error executing middlewares: %v", err)
 	}
 
-	glazedLayer, ok := parsedLayers.Get(settings.GlazedSlug)
+	glazedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
 	if !ok {
-		return nil, fmt.Errorf("glazed layer not found")
+		return nil, fmt.Errorf("glazed section not found")
 	}
-	gp, err := settings.SetupTableProcessor(glazedLayer, middlewares2.WithTableMiddleware(&table.NullTableMiddleware{}))
+	gp, err := settings.SetupTableProcessor(glazedSectionValues, middlewares2.WithTableMiddleware(&table.NullTableMiddleware{}))
 	if err != nil {
 		return nil, fmt.Errorf("error setting up table processor: %v", err)
 	}
 
 	ctx := context.Background()
 
-	// Run the command with the parsed layers
-	err = cmd.RunIntoGlazeProcessor(ctx, parsedLayers, gp)
+	// Run the command with the parsed values
+	err = cmd.RunIntoGlazeProcessor(ctx, parsedValues, gp)
 	if err != nil {
 		return nil, fmt.Errorf("error running command: %v", err)
 	}
@@ -86,24 +88,24 @@ func LuaCallGlazedCommand(L *lua2.LState) int {
 	return 1
 }
 
-// CallGlazedBareCommandFromLua executes a BareCcommand with parameters from a Lua table
+// CallGlazedBareCommandFromLua executes a BareCommand with fields from a Lua table.
 func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable *lua2.LTable) error {
-	parsedLayers := layers.NewParsedLayers()
+	parsedValues := values.New()
 
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return fmt.Errorf("error executing middlewares: %v", err)
 	}
 
 	ctx := context.Background()
 
-	// Run the command with the parsed layers
-	err = cmd.Run(ctx, parsedLayers)
+	// Run the command with the parsed values
+	err = cmd.Run(ctx, parsedValues)
 	if err != nil {
 		return fmt.Errorf("error running command: %v", err)
 	}
@@ -111,16 +113,16 @@ func CallGlazedBareCommandFromLua(L *lua2.LState, cmd cmds.BareCommand, luaTable
 	return nil
 }
 
-// CallGlazedWriterCommandFromLua executes a WriterCommand with parameters from a Lua table
+// CallGlazedWriterCommandFromLua executes a WriterCommand with fields from a Lua table.
 func CallGlazedWriterCommandFromLua(L *lua2.LState, cmd cmds.WriterCommand, luaTable *lua2.LTable) (string, error) {
-	parsedLayers := layers.NewParsedLayers()
+	parsedValues := values.New()
 
-	middlewares_ := []middlewares.Middleware{
+	middlewares_ := []sources.Middleware{
 		ParseNestedLuaTableMiddleware(L, luaTable),
-		middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 	}
 
-	err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, parsedLayers, middlewares_...)
+	err := sources.Execute(cmd.Description().Schema, parsedValues, middlewares_...)
 	if err != nil {
 		return "", fmt.Errorf("error executing middlewares: %v", err)
 	}
@@ -130,8 +132,8 @@ func CallGlazedWriterCommandFromLua(L *lua2.LState, cmd cmds.WriterCommand, luaT
 	// Create a buffer to capture the output
 	var buf bytes.Buffer
 
-	// Run the command with the parsed layers
-	err = cmd.RunIntoWriter(ctx, parsedLayers, &buf)
+	// Run the command with the parsed values
+	err = cmd.RunIntoWriter(ctx, parsedValues, &buf)
 	if err != nil {
 		return "", fmt.Errorf("error running command: %v", err)
 	}
@@ -239,34 +241,34 @@ func RegisterGlazedCommand(L *lua2.LState, cmd interface{}) {
 	// Register the function in the global environment
 	L.SetGlobal(luaName, fn)
 
-	// Update the parameter information global name
-	paramsGlobalName := luaName + "_params"
+	// Update the field information global name
+	fieldsGlobalName := luaName + "_fields"
 
 	// Get the command description
 	desc := cmd.(cmds.Command).Description()
 
-	// Create a table to hold all layers and their parameters
-	layersTable := L.CreateTable(0, desc.Layers.Len())
+	// Create a table to hold all sections and their fields.
+	sectionsTable := L.CreateTable(0, desc.Schema.Len())
 
-	// Iterate through all layers
-	desc.Layers.ForEach(func(layerName string, layer layers.ParameterLayer) {
-		layerTable := L.CreateTable(0, layer.GetParameterDefinitions().Len())
+	// Iterate through all sections.
+	desc.Schema.ForEach(func(sectionName string, section schema.Section) {
+		sectionTable := L.CreateTable(0, section.GetDefinitions().Len())
 
-		// Add parameters for this layer
-		layer.GetParameterDefinitions().ForEach(func(param *parameters.ParameterDefinition) {
-			paramInfo := L.CreateTable(0, 5)
-			paramInfo.RawSetString("name", lua2.LString(param.Name))
-			paramInfo.RawSetString("type", lua2.LString(string(param.Type)))
-			paramInfo.RawSetString("description", lua2.LString(param.Help))
-			defaultValue := InterfaceToLuaValue(L, param.Default)
-			paramInfo.RawSetString("default", defaultValue)
-			paramInfo.RawSetString("required", lua2.LBool(param.Required))
-			layerTable.RawSetString(param.Name, paramInfo)
+		// Add fields for this section.
+		section.GetDefinitions().ForEach(func(field *fields.Definition) {
+			fieldInfo := L.CreateTable(0, 5)
+			fieldInfo.RawSetString("name", lua2.LString(field.Name))
+			fieldInfo.RawSetString("type", lua2.LString(string(field.Type)))
+			fieldInfo.RawSetString("description", lua2.LString(field.Help))
+			defaultValue := InterfaceToLuaValue(L, field.Default)
+			fieldInfo.RawSetString("default", defaultValue)
+			fieldInfo.RawSetString("required", lua2.LBool(field.Required))
+			sectionTable.RawSetString(field.Name, fieldInfo)
 		})
 
-		layersTable.RawSetString(layerName, layerTable)
+		sectionsTable.RawSetString(sectionName, sectionTable)
 	})
 
-	// Set the global variable with the layers table
-	L.SetGlobal(paramsGlobalName, layersTable)
+	// Set the global variable with the sections table.
+	L.SetGlobal(fieldsGlobalName, sectionsTable)
 }

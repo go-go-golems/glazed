@@ -37,9 +37,9 @@ LastUpdated: 2025-12-16T18:04:17.646312962-05:00
 
 Glazed’s “parameters” system is powerful but the current naming is easy to misunderstand on first contact:
 
-- `parameters.ParameterDefinition` is really a **field spec** (name/type/default/help; sometimes a flag, sometimes an arg).
-- `layers.ParameterLayer` is really a **grouped schema/spec** (a “section” with a slug/prefix + a list of field specs).
-- `layers.ParsedLayer` and `layers.ParsedLayers` are really **resolved values** (values that came from some source(s) and have provenance).
+- `fields.Definition` is really a **field spec** (name/type/default/help; sometimes a flag, sometimes an arg).
+- `schema.Section` is really a **grouped schema/spec** (a “section” with a slug/prefix + a list of field specs).
+- `values.SectionValues` and `values.Values` are really **resolved values** (values that came from some source(s) and have provenance).
 
 The request: brainstorm alternative naming schemes—not only for the types, but also for **package names**, **functions**, and the **surface API vocabulary**, then evaluate tradeoffs.
 
@@ -57,16 +57,16 @@ This doc is intentionally exploratory (no decision yet).
 
 These are the *actual* meanings based on code:
 
-- `parameters.ParameterDefinition`: declarative parameter description (flag or arg); includes `Type`, `Default`, `Required`, help text.
-- `layers.ParameterLayer`: groups many `ParameterDefinition`s + has `Slug`, `Name`, `Description`, `Prefix`, cloning, and default-init helpers.
-- `layers.ParsedLayer`: holds `Layer ParameterLayer` + `Parameters *parameters.ParsedParameters` (i.e., resolved values).
-- `layers.ParsedLayers`: ordered map of layer slug → `*ParsedLayer`; has helpers like `InitializeStruct(layerKey, dst)`.
+- `fields.Definition`: declarative parameter description (flag or arg); includes `Type`, `Default`, `Required`, help text.
+- `schema.Section`: groups many `ParameterDefinition`s + has `Slug`, `Name`, `Description`, `Prefix`, cloning, and default-init helpers.
+- `values.SectionValues`: holds `Layer ParameterLayer` + `Parameters *parameters.ParsedParameters` (i.e., resolved values).
+- `values.Values`: ordered map of layer slug → `*ParsedLayer`; has helpers like `InitializeStruct(layerKey, dst)`.
 
 Notable “peripheral” vocabulary that also impacts readability:
 
 - Package names: `cmds/layers`, `cmds/parameters`, `cmds/middlewares`, `cmds/runner`
 - APIs: `NewParameterLayer`, `NewParameterDefinition`, `ExecuteMiddlewares`, `UpdateFromEnv`, `LoadParametersFromFiles`, `ParseFromCobraCommand`, `GatherArguments`
-- Hydration: `InitializeStruct`, struct tags `glazed.parameter:"..."`
+- Hydration: `InitializeStruct`, struct tags `glazed:"..."`
 
 ## Brainstorm naming bundles
 
@@ -80,12 +80,12 @@ Below are *coherent* bundles: if we adopt one, we should rename most of the rela
 
 | Current | Proposed | Rationale |
 |---|---|---|
-| `parameters.ParameterDefinition` | `fields.FieldDefinition` or `schema.Field` | It describes one field’s spec. |
-| `parameters.ParameterDefinitions` | `schema.Schema` or `fields.Definitions` | A set of field specs. |
-| `layers.ParameterLayer` | `schema.Section` or `schema.SchemaSection` | A named/slugged “section schema”. |
-| `layers.ParameterLayers` | `schema.Sections` | Set of section schemas. |
-| `layers.ParsedLayer` | `values.SectionValues` | Values for one section schema. |
-| `layers.ParsedLayers` | `values.Values` or `values.Sections` | Values across sections. |
+| `fields.Definition` | `fields.FieldDefinition` or `schema.Field` | It describes one field’s spec. |
+| `fields.Definitions` | `schema.Schema` or `fields.Definitions` | A set of field specs. |
+| `schema.Section` | `schema.Section` or `schema.SchemaSection` | A named/slugged “section schema”. |
+| `schema.Schema` | `schema.Sections` | Set of section schemas. |
+| `values.SectionValues` | `values.SectionValues` | Values for one section schema. |
+| `values.Values` | `values.Values` or `values.Sections` | Values across sections. |
 | `parameters.ParsedParameter` | `values.FieldValue` | The resolved value + provenance. |
 | `parameters.ParsedParameters` | `values.FieldValues` | Map of values for fields. |
 
@@ -129,8 +129,8 @@ Below are *coherent* bundles: if we adopt one, we should rename most of the rela
 
 #### API vocabulary (examples)
 
-- `layers.NewParameterLayer("logging", ...)` → `options.NewGroup("logging", ...)`
-- `parameters.NewParameterDefinition("log-level", ...)` → `options.New("log-level", ...)`
+- `schema.NewSection("logging", ...)` → `options.NewGroup("logging", ...)`
+- `fields.New("log-level", ...)` → `options.New("log-level", ...)`
 - `parsedLayers.InitializeStruct("logging", &cfg.Logging)` → `resolved.Bind("logging", &cfg.Logging)`
 
 #### Pros / cons
@@ -232,9 +232,9 @@ _ = values.DecodeSectionInto("redis", &cfg)
 
 Keep the structure but rename the types:
 
-- `layers.ParameterLayer` → `layers.SchemaSection`
-- `parameters.ParameterDefinition` → `parameters.FieldDefinition`
-- `layers.ParsedLayers` → `layers.ResolvedValues`
+- `schema.Section` → `layers.SchemaSection`
+- `fields.Definition` → `parameters.FieldDefinition`
+- `values.Values` → `layers.ResolvedValues`
 
 This is less disruptive but still improves readability.
 

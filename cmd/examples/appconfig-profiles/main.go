@@ -8,7 +8,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/appconfig"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -45,7 +44,7 @@ prod:
 		os.Exit(1)
 	}
 
-	redisLayer := mustSection(schema.NewSection(
+	redisSection := mustSection(schema.NewSection(
 		"redis",
 		"Redis",
 		schema.WithFields(
@@ -59,7 +58,7 @@ prod:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			type AppSettings struct {
 				Redis struct {
-					Host string `glazed.parameter:"host"`
+					Host string `glazed:"host"`
 				}
 			}
 
@@ -105,7 +104,7 @@ redis:
 				return err
 			}
 
-			if err := parser.Register("redis", redisLayer, func(t *AppSettings) any { return &t.Redis }); err != nil {
+			if err := parser.Register("redis", redisSection, func(t *AppSettings) any { return &t.Redis }); err != nil {
 				return err
 			}
 
@@ -127,9 +126,9 @@ redis:
 	root.Flags().Bool("use-config", false, "Enable a generated config.yaml that selects prod and overrides redis.host")
 
 	// Add flags up front so Cobra accepts them before RunE executes.
-	_ = addLayer(root, redisLayer)
-	if psLayer, err := cli.NewProfileSettingsLayer(); err == nil {
-		_ = addLayer(root, psLayer)
+	_ = addSection(root, redisSection)
+	if psSection, err := cli.NewProfileSettingsSection(); err == nil {
+		_ = addSection(root, psSection)
 	}
 
 	if err := root.Execute(); err != nil {
@@ -146,10 +145,10 @@ func mustSection(section *schema.SectionImpl, err error) schema.Section {
 	return section
 }
 
-func addLayer(cmd *cobra.Command, layer schema.Section) error {
-	cobraLayer, ok := layer.(layers.CobraParameterLayer)
+func addSection(cmd *cobra.Command, section schema.Section) error {
+	cobraSection, ok := section.(schema.CobraSection)
 	if !ok {
-		return errors.Errorf("layer %s is not a CobraParameterLayer", layer.GetSlug())
+		return errors.Errorf("section %s is not a CobraSection", section.GetSlug())
 	}
-	return cobraLayer.AddLayerToCobraCommand(cmd)
+	return cobraSection.AddSectionToCobraCommand(cmd)
 }

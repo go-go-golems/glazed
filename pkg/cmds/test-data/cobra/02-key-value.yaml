@@ -10,7 +10,7 @@ description:
 tests:
   - args: []
     name: default
-    flagParameters:
+    flagFields:
       kv:
         key1: value1
         key2: value2

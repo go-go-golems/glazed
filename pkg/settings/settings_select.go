@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -11,16 +13,16 @@ import (
 var selectFlagsYaml []byte
 
 type SelectSettings struct {
-	SelectField     string `glazed.parameter:"select"`
-	SelectSeparator string `glazed.parameter:"select-separator"`
-	SelectTemplate  string `glazed.parameter:"select-template"`
+	SelectField     string `glazed:"select"`
+	SelectSeparator string `glazed:"select-separator"`
+	SelectTemplate  string `glazed:"select-template"`
 }
 
-func NewSelectSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SelectSettings, error) {
+func NewSelectSettingsFromValues(glazedValues *values.SectionValues) (*SelectSettings, error) {
 	s := &SelectSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize select settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize select settings from fields")
 	}
 
 	return s, nil
@@ -34,23 +36,23 @@ func (tf *TemplateSettings) UpdateWithSelectSettings(ss *SelectSettings) {
 	}
 }
 
-type SelectParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type SelectSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSelectParameterLayer(options ...layers.ParameterLayerOptions) (*SelectParameterLayer, error) {
-	ret := &SelectParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(selectFlagsYaml, options...)
+func NewSelectSection(options ...schema.SectionOption) (*SelectSection, error) {
+	ret := &SelectSection{}
+	section, err := schema.NewSectionFromYAML(selectFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create select parameter layer")
+		return nil, errors.Wrap(err, "Failed to create select field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *SelectParameterLayer) Clone() layers.ParameterLayer {
-	return &SelectParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *SelectSection) Clone() schema.Section {
+	return &SelectSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

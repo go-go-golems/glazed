@@ -21,7 +21,7 @@ Glazed enables you to build CLI commands that automatically support multiple out
 - Create a functional CLI command with filtering and limiting options
 - Implement automatic support for multiple output formats
 - Learn fundamental patterns for structured data processing in Glazed
-- Understand command configuration and parameter handling
+- Understand command configuration and field handling
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ import (
 
 ### Command Structure
 
-Every Glazed command follows a consistent pattern: a command struct embeds `*cmds.CommandDescription` for metadata, and a settings struct maps command-line flags to Go fields using struct tags for type-safe parameter access.
+Every Glazed command follows a consistent pattern: a command struct embeds `*cmds.CommandDescription` for metadata, and a settings struct maps command-line flags to Go fields using struct tags for type-safe field access.
 
 ```go
 // Step 2.1: Define your command struct
@@ -84,19 +84,19 @@ type ListUsersCommand struct {
     *cmds.CommandDescription
 }
 
-// Step 2.2: Define settings for type-safe parameter access
+// Step 2.2: Define settings for type-safe field access
 type ListUsersSettings struct {
-    Limit      int    `glazed.parameter:"limit"`      // Maps to --limit flag
-    NameFilter string `glazed.parameter:"name-filter"` // Maps to --name-filter flag
-    Active     bool   `glazed.parameter:"active-only"` // Maps to --active-only flag
+    Limit      int    `glazed:"limit"`      // Maps to --limit flag
+    NameFilter string `glazed:"name-filter"` // Maps to --name-filter flag
+    Active     bool   `glazed:"active-only"` // Maps to --active-only flag
 }
 ```
 
 **Key components:**
 
-1. **Command Struct**: `ListUsersCommand` embeds `*cmds.CommandDescription`, which contains command metadata (name, help text, parameters)
+1. **Command Struct**: `ListUsersCommand` embeds `*cmds.CommandDescription`, which contains command metadata (name, help text, fields)
 
-2. **Settings Struct**: `ListUsersSettings` maps command-line flags to Go fields using struct tags. The `glazed.parameter` tags provide automatic type conversion and validation.
+2. **Settings Struct**: `ListUsersSettings` maps command-line flags to Go fields using struct tags. The `glazed` tags provide automatic type conversion and validation.
 
 ### Core Command Logic
 
@@ -141,36 +141,36 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 
 **Implementation details:**
 
-1. **Settings Extraction**: `values.DecodeSectionInto()` (or `vals.InitializeStruct()`) populates the settings struct from resolved values with automatic parsing and validation
+1. **Settings Extraction**: `values.DecodeSectionInto()` (or `vals.DecodeSectionInto()`) populates the settings struct from resolved values with automatic parsing and validation
 2. **Business Logic**: `generateMockUsers()` simulates data retrieval with the parsed settings
 3. **Structured Output**: Creates `types.Row` objects instead of using direct output functions
 4. **Row Structure**: `types.MRP("key", value)` creates key-value pairs for each data field
 
 The `GlazeProcessor` collects these rows and can output them in multiple formats without additional format-specific code.
 
-**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `values.DecodeSectionInto(vals, schema.DefaultSlug, &YourSettings{})` (or the underlying `vals.InitializeStruct(schema.DefaultSlug, &YourSettings{})`). Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
+**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `values.DecodeSectionInto(vals, schema.DefaultSlug, &YourSettings{})` (or the underlying `vals.DecodeSectionInto(schema.DefaultSlug, &YourSettings{})`). Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
 
-### Command Configuration and Parameters
+### Command Configuration and Fields
 
-Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `schema.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedParameterLayers()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
+Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedSchema()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
 
 ```go
 // Step 2.4: Create constructor function
 func NewListUsersCommand() (*ListUsersCommand, error) {
     // Create glazed schema section for output formatting options
     // Note: cli.BuildCobraCommand will also auto-add this section for GlazeCommand implementations.
-    glazedLayer, err := schema.NewGlazedSchema()
+    glazedSection, err := settings.NewGlazedSchema()
     if err != nil {
         return nil, err
     }
 
-    // Create command settings layer for debugging features
-    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    // Create command settings section for debugging features
+    commandSettingsSection, err := cli.NewCommandSettingsSection()
     if err != nil {
         return nil, err
     }
 
-    // Define command with parameters
+    // Define command with fields
     cmdDesc := cmds.NewCommandDescription(
         "list-users",
         cmds.WithShort("List users in the system"),
@@ -212,8 +212,8 @@ Examples:
             ),
         ),
         
-        // Add glazed and command settings layers
-        cmds.WithLayersList(glazedLayer, commandSettingsLayer),
+        // Add glazed and command settings sections
+        cmds.WithSectionsList(glazedSection, commandSettingsSection),
     )
 
     return &ListUsersCommand{
@@ -224,18 +224,18 @@ Examples:
 
 **Configuration components:**
 
-1. **Glazed Schema Section**: `schema.NewGlazedSchema()` adds built-in parameters like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
-2. **Command Settings Layer**: `cli.NewCommandSettingsLayer()` adds debugging and configuration parameters:
-   - `--print-parsed-parameters`: Debug parameter parsing
+1. **Glazed Schema Section**: `settings.NewGlazedSchema()` adds built-in fields like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
+2. **Command Settings Section**: `cli.NewCommandSettingsSection()` adds debugging and configuration fields:
+   - `--print-parsed-fields`: Debug field parsing
    - `--print-schema`: Show command schema
-   - `--load-parameters-from-file`: Load settings from JSON file
+   - `--load-fields-from-file`: Load settings from JSON file
 3. **Command Metadata**: Defines command name, short description, and comprehensive help text with usage examples
-4. **Parameter Definitions**: Each flag specifies:
+4. **Field Definitions**: Each flag specifies:
    - **Type**: Integer, String, Bool with automatic validation
    - **Default Value**: Behavior when the flag is not specified
    - **Help Text**: Displayed in `--help` output
    - **Short Flag**: Single-letter abbreviations for convenience
-5. **Layer Composition**: Combines custom parameters with Glazed's built-in layers
+5. **Section Composition**: Combines custom fields with Glazed's built-in sections
 
 ### Practical Gotchas (Not Obvious from “Hello World”)
 
@@ -325,11 +325,11 @@ func generateMockUsers(limit int, filter string, activeOnly bool) []User {
 
 1. **Interface Compliance Check**: The `var _ cmds.GlazeCommand = &ListUsersCommand{}` line ensures the struct implements the required interface at compile time
 2. **Mock Data**: Provides realistic sample data for development and testing. Replace `generateMockUsers()` with actual data sources in production
-3. **Filtering Logic**: Demonstrates how command parameters control data processing
+3. **Filtering Logic**: Demonstrates how command fields control data processing
 
 ### CLI Application Integration
 
-Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommand()` builder function. This function handles the conversion between Glazed's parameter layer system and Cobra's flag parsing, automatically configuring output processing and help text generation. You can pass parser and mode options via `CobraParserConfig` and `CobraOption` helpers.
+Glazed commands integrate with standard Cobra applications through the `cli.BuildCobraCommand()` builder function. This function handles the conversion between Glazed's field section system and Cobra's flag parsing, automatically configuring output processing and help text generation. You can pass parser and mode options via `CobraParserConfig` and `CobraOption` helpers.
 
 ```go
 // Step 3: Set up CLI application
@@ -351,7 +351,7 @@ func main() {
     // Convert to Cobra command with enhanced options
     cobraListUsersCmd, err := cli.BuildCobraCommand(listUsersCmd,
         cli.WithParserConfig(cli.CobraParserConfig{
-            ShortHelpLayers: []string{schema.DefaultSlug},
+            ShortHelpSections: []string{schema.DefaultSlug},
             MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
         }),
     )
@@ -376,7 +376,7 @@ func main() {
 
 ### Initialize Logging (Recommended)
 
-Glazed provides a logging layer you can attach to your root command. This exposes logging-related flags and initializes logging based on configuration. Initialize the logger in `PersistentPreRunE` using Cobra-parsed flags so logging is active before your command logic runs.
+Glazed provides a logging section you can attach to your root command. This exposes logging-related flags and initializes logging based on configuration. Initialize the logger in `PersistentPreRunE` using Cobra-parsed flags so logging is active before your command logic runs.
 
 ```go
 package main
@@ -396,7 +396,7 @@ var rootCmd = &cobra.Command{
 
 func main() {
     // Add logging flags (log-level, log-format, logstash-*) to the root command
-    _ = logging.AddLoggingLayerToRootCommand(rootCmd, "glazed-quickstart")
+    _ = logging.AddLoggingSectionToRootCommand(rootCmd, "glazed-quickstart")
 
     // ... register commands, help system, etc.
     _ = rootCmd.Execute()
@@ -405,15 +405,15 @@ func main() {
 
 Key points:
 
-- Add logging flags with `logging.AddLoggingLayerToRootCommand(rootCmd, "<use-name>")`.
+- Add logging flags with `logging.AddLoggingSectionToRootCommand(rootCmd, "<use-name>")`.
 - Initialize logging early with `logging.InitLoggerFromCobra(cmd)` in `PersistentPreRunE`.
-- Alternatively, you can call `logging.SetupLoggingFromParsedLayers(parsedLayers)` after parsing for per-command logging settings.
+- Alternatively, you can call `logging.SetupLoggingFromValues(parsedSections)` after parsing for per-command logging settings.
 
 **Integration steps:**
 
 1. **Root Command**: Creates a standard Cobra root command as the application entry point
 2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
-3. **Enhanced Cobra Bridge**: Use `cli.WithParserConfig` to pass a `CobraParserConfig` that customizes parser behavior (e.g., `ShortHelpLayers`, `MiddlewaresFunc`).
+3. **Enhanced Cobra Bridge**: Use `cli.WithParserConfig` to pass a `CobraParserConfig` that customizes parser behavior (e.g., `ShortHelpSections`, `MiddlewaresFunc`).
 4. **Registration**: Adds the converted command as a subcommand
 5. **Help System Setup**: `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()` provide enhanced help functionality
 6. **Execution**: Starts the CLI application and processes command-line arguments
@@ -422,23 +422,23 @@ Key points:
 
 The `CobraCommandDefaultMiddlewares` provides several useful debugging and configuration features automatically:
 
-- `--print-parsed-parameters`: Shows how parameters were parsed from different sources
+- `--print-parsed-fields`: Shows how fields were parsed from different sources
 - `--print-yaml`: Outputs the command's configuration as YAML
-- `--print-schema`: Displays the command's parameter schema
+- `--print-schema`: Displays the command's field schema
 - `--config-file`: Explicit config file path (overlays supported via resolver)
 
 **Enhanced Help System**
 
 The Glazed help system (`help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()`) adds advanced help capabilities:
 
-- **Contextual Help**: Provides detailed help based on command context and available layers
-- **Parameter Documentation**: Automatically generates help text from parameter definitions
-- **Layer-Aware Help**: Shows relevant parameters based on active layers
+- **Contextual Help**: Provides detailed help based on command context and available sections
+- **Field Documentation**: Automatically generates help text from field definitions
+- **Section-Aware Help**: Shows relevant fields based on active sections
 - **Rich Formatting**: Enhanced formatting for better readability in terminal output
 
 ## Step 3: Build and Test Your Command
 
-Testing validates that your command properly parses parameters, processes data according to the business logic, and integrates correctly with Glazed's output system.
+Testing validates that your command properly parses fields, processes data according to the business logic, and integrates correctly with Glazed's output system.
 
 ```bash
 # Build the application
@@ -447,14 +447,14 @@ go build -o glazed-quickstart
 # Test basic functionality
 ./glazed-quickstart list-users --help
 
-# Try different parameter combinations
+# Try different field combinations
 ./glazed-quickstart list-users
 ./glazed-quickstart list-users --limit 3
 ./glazed-quickstart list-users --name-filter Engineering
 ./glazed-quickstart list-users --active-only
 
 # Test built-in debugging features
-./glazed-quickstart list-users --print-parsed-parameters
+./glazed-quickstart list-users --print-parsed-fields
 ./glazed-quickstart list-users --print-schema
 ./glazed-quickstart list-users --print-yaml
 
@@ -465,11 +465,11 @@ go build -o glazed-quickstart
 
 **Expected behavior:**
 
-1. **Help Text**: `--help` displays auto-generated parameter descriptions and examples with enhanced formatting
-2. **Parameter Validation**: Invalid values trigger automatic validation errors
+1. **Help Text**: `--help` displays auto-generated field descriptions and examples with enhanced formatting
+2. **Field Validation**: Invalid values trigger automatic validation errors
 3. **Default Behavior**: Without flags, shows the first 10 users in table format
 4. **Filtering**: `--name-filter Engineering` displays only users matching the filter criteria
-5. **Help Command**: `help` command provides contextual documentation and parameter guidance
+5. **Help Command**: `help` command provides contextual documentation and field guidance
 
 ## Step 4: Multiple Output Formats
 
@@ -517,7 +517,7 @@ type StatusCommand struct {
 
 // Settings for status command
 type StatusSettings struct {
-    Verbose bool `glazed.parameter:"verbose"`
+    Verbose bool `glazed:"verbose"`
 }
 
 // Classic mode - simple text output
@@ -569,8 +569,8 @@ func (c *StatusCommand) RunIntoGlazeProcessor(
 
 // Constructor for status command
 func NewStatusCommand() (*StatusCommand, error) {
-    // Add command settings layer for debugging features
-    commandSettingsLayer, err := cli.NewCommandSettingsLayer()
+    // Add command settings section for debugging features
+    commandSettingsSection, err := cli.NewCommandSettingsSection()
     if err != nil {
         return nil, err
     }
@@ -588,7 +588,7 @@ func NewStatusCommand() (*StatusCommand, error) {
                 fields.WithShortFlag("v"),
             ),
         ),
-        cmds.WithLayersList(commandSettingsLayer),
+        cmds.WithSectionsList(commandSettingsSection),
     )
     
     return &StatusCommand{
@@ -630,7 +630,7 @@ cobraStatusCmd, err := cli.BuildCobraCommand(statusCmd,
     cli.WithDualMode(true),
     cli.WithGlazeToggleFlag("with-glaze-output"),
     cli.WithParserConfig(cli.CobraParserConfig{
-        ShortHelpLayers: []string{schema.DefaultSlug},
+        ShortHelpSections: []string{schema.DefaultSlug},
         MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
     }),
 )
@@ -665,7 +665,7 @@ go build -o glazed-quickstart
 ./glazed-quickstart status --verbose
 
 # Test debugging features in classic mode
-./glazed-quickstart status --print-parsed-parameters
+./glazed-quickstart status --print-parsed-fields
 
 # Glaze mode
 ./glazed-quickstart status --with-glaze-output
@@ -697,14 +697,14 @@ This tutorial demonstrates several architectural patterns that form the foundati
 - `GlazeCommand` for structured data
 - Both interfaces for dual-mode commands
 
-**Type Safety**: Use settings structs with `glazed.parameter` tags for automatic parameter parsing and validation.
+**Type Safety**: Use settings structs with `glazed` tags for automatic field parsing and validation.
 
 ### Error Handling and Validation
 
-**Input Validation**: Validate business rules in your command implementation, not just parameter types:
+**Input Validation**: Validate business rules in your command implementation, not just field types:
 
 ```go
-// Validate business rules after parameter parsing
+// Validate business rules after field parsing
 if settings.Limit < 1 {
     return fmt.Errorf("limit must be at least 1, got %d", settings.Limit)
 }
@@ -715,20 +715,20 @@ if settings.Limit > 1000 {
 
 **Descriptive Errors**: Provide context and suggestions in error messages to help users correct issues.
 
-### Advanced Parameter Types
+### Advanced Field Types
 
-Glazed supports various parameter types beyond basic strings, integers, and booleans:
+Glazed supports various field types beyond basic strings, integers, and booleans:
 
 ```go
 cmds.WithFlags(
-    // File parameter validates file exists
+    // File field validates file exists
     fields.New(
         "config-file",
         fields.TypeFile,
         fields.WithHelp("Configuration file path"),
     ),
     
-    // Choice parameter limits valid options
+    // Choice field limits valid options
     fields.New(
         "output-format",
         fields.TypeChoice,
@@ -775,10 +775,10 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, vals *valu
 ### Learn Core Concepts
 
 ```
-glaze help layers-guide
+glaze help sections-guide
 ```
 
-Learn about parameter layers for organizing reusable configuration sets across commands.
+Learn about field sections for organizing reusable configuration sets across commands.
 
 ```
 glaze help middlewares-guide
@@ -795,16 +795,16 @@ glaze help commands-reference
 Explore command organization patterns for building complex CLI application suites.
 
 ```
-glaze help custom-layer
+glaze help custom-section
 ```
 
-Create domain-specific parameter layers for your application's needs.
+Create domain-specific field sections for your application's needs.
 
 ### Advanced Topics
 
 Study the patterns demonstrated in this tutorial:
 - **Command Structure**: Embed `CommandDescription` and use settings structs
-- **Type Safety**: Leverage `glazed.parameter` tags for automatic parsing
+- **Type Safety**: Leverage `glazed` tags for automatic parsing
 - **Output Flexibility**: Use `types.Row` objects for multi-format support
 - **Interface Design**: Choose appropriate command interfaces for your use case
 

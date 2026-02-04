@@ -27,7 +27,7 @@ This document focuses on the implementation pattern: where to insert the middlew
 
 ## Profile Middleware Overview
 
-Profile middleware in Pinocchio is responsible for loading and applying configuration parameters from a specified
+Profile middleware in Pinocchio is responsible for loading and applying configuration fields from a specified
 profile. This middleware allows developers to define different configurations for various environments or use cases,
 which can be dynamically selected at runtime.
 
@@ -43,7 +43,7 @@ instantiate the profile middleware with the resolved values.
 
 ```go
 func GetCommandMiddlewares(
-	parsedCommandLayers *layers.ParsedLayers,
+	parsedCommandSections *values.Values,
 	cmd *cobra.Command,
 	args []string,
 ) ([]middlewares.Middleware, error) {
@@ -68,7 +68,7 @@ Operationally, this usually means inserting `GatherFlagsFromProfiles(...)` *abov
 
 ## Profile-Specific Overrides
 
-For advanced use cases, combine profile middleware with additional config files using `LoadParametersFromFile` or `LoadParametersFromFiles`:
+For advanced use cases, combine profile middleware with additional config files using `LoadFieldsFromFile` or `LoadFieldsFromFiles`:
 
 ```go
 func GetCobraCommandGeppettoMiddlewares(
@@ -80,13 +80,13 @@ func GetCobraCommandGeppettoMiddlewares(
 
     middlewares_ := []middlewares.Middleware{
         // Command line arguments (highest priority)
-        middlewares.ParseFromCobraCommand(cmd),
-        middlewares.GatherArguments(args),
+        sources.FromCobra(cmd),
+        sources.FromArgs(args),
         
         // Profile-specific override files
-        middlewares.LoadParametersFromFile(
+        sources.FromFile(
             fmt.Sprintf("/etc/%s/overrides.yaml", commandSettings.Profile),
-            parameters.WithParseStepSource("profile-overrides"),
+            sources.WithSource("profile-overrides"),
         ),
         
         // Profile configuration
@@ -119,7 +119,7 @@ export YOUR_PROGRAM_PROFILE=development
 YOUR_PROGRAM [command]
 ```
 
-The middleware will then load the configuration parameters from the `development` profile and apply them to the command.
+The middleware will then load the configuration fields from the `development` profile and apply them to the command.
 
 ## Advanced Profile Scenarios
 
@@ -132,14 +132,14 @@ You can use the custom profile middleware to load profiles from different source
 middlewares.GatherFlagsFromCustomProfiles(
     "production",
     middlewares.WithProfileFile("/etc/myapp/custom-profiles.yaml"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("custom-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("custom-profiles")),
 )
 
 // Load from another app's profiles
 middlewares.GatherFlagsFromCustomProfiles(
     "shared-config",
     middlewares.WithProfileAppName("central-config"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("shared-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("shared-profiles")),
 )
 ```
 
@@ -149,9 +149,9 @@ Load different configuration files based on the active profile:
 
 ```go
 // Load profile-specific config file
-middlewares.LoadParametersFromFile(
+sources.FromFile(
     fmt.Sprintf("/etc/myapp/%s.yaml", commandSettings.Profile),
-    parameters.WithParseStepSource("profile-config"),
+    sources.WithSource("profile-config"),
 )
 ```
 
@@ -179,9 +179,9 @@ YOUR_PROGRAM [command]
 customConfigPath := os.Getenv("YOUR_PROGRAM_CUSTOM_CONFIG")
 if customConfigPath != "" {
     middlewares_ = append(middlewares_,
-        middlewares.LoadParametersFromFile(
+        sources.FromFile(
             customConfigPath,
-            parameters.WithParseStepSource("env-custom"),
+            sources.WithSource("env-custom"),
         ),
     )
 }
@@ -195,25 +195,25 @@ A complete example showing how profiles and custom config work together:
 func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middlewares.Middleware {
     return []middlewares.Middleware{
         // 1. Command line (highest priority)
-        middlewares.ParseFromCobraCommand(cmd),
+        sources.FromCobra(cmd),
         
         // 2. Environment-specific overrides
-        middlewares.LoadParametersFromFile(
+        sources.FromFile(
             "/etc/myapp/local-overrides.yaml",
-            parameters.WithParseStepSource("config"),
+            sources.WithSource("config"),
         ),
         
         // 3. Profile-specific configuration
-        middlewares.LoadParametersFromFile(
+        sources.FromFile(
             fmt.Sprintf("/etc/myapp/profiles/%s.yaml", commandSettings.Profile),
-            parameters.WithParseStepSource("config"),
+            sources.WithSource("config"),
         ),
         
         // 4. Custom profile sources
         middlewares.GatherFlagsFromCustomProfiles(
             commandSettings.Profile,
             middlewares.WithProfileFile("/etc/shared/organization-profiles.yaml"),
-            middlewares.WithProfileParseOptions(parameters.WithParseStepSource("org-profiles")),
+            middlewares.WithProfileParseOptions(sources.WithSource("org-profiles")),
         ),
         
         // 5. Profile middleware (from profiles.yaml)
@@ -228,7 +228,7 @@ func GetAdvancedMiddlewares(commandSettings *cli.GlazedCommandSettings) []middle
         // Provide explicit file paths or use a ConfigFiles resolver
         
         // 7. Application defaults
-        middlewares.SetFromDefaults(),
+        sources.FromDefaults(),
     }
 }
 ```
@@ -251,14 +251,14 @@ This creates a configuration hierarchy where:
 middlewares.GatherFlagsFromCustomProfiles(
     commandSettings.Profile,
     middlewares.WithProfileAppName("org-config"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("org-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("org-profiles")),
 )
 
 // Team-specific profile overrides
 middlewares.GatherFlagsFromCustomProfiles(
     fmt.Sprintf("%s-%s", commandSettings.Team, commandSettings.Profile),
     middlewares.WithProfileFile("/etc/team-configs/profiles.yaml"),
-    middlewares.WithProfileParseOptions(parameters.WithParseStepSource("team-profiles")),
+    middlewares.WithProfileParseOptions(sources.WithSource("team-profiles")),
 )
 ```
 

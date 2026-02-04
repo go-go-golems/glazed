@@ -49,15 +49,15 @@ Each candidate conducted research using actual codebase queries and file analysi
 **Import patterns:**
 - `glazed/pkg/cmds/layers` imported across multiple packages
 - `glazed/pkg/cmds/parameters` used extensively for field definitions
-- `glazed/pkg/cmds/middlewares` operates on `layers.ParsedLayers`
+- `glazed/pkg/cmds/middlewares` operates on `values.Values`
 
 #### Key Code Evidence
 
 **1. ParameterLayer Interface Structure** (`glazed/pkg/cmds/layers/layer.go:18-30`)
 ```go
 type ParameterLayer interface {
-    AddFlags(flag ...*parameters.ParameterDefinition)
-    GetParameterDefinitions() *parameters.ParameterDefinitions
+    AddFlags(flag ...*fields.Definition)
+    GetParameterDefinitions() *fields.Definitions
     InitializeParameterDefaultsFromStruct(s interface{}) error
     GetName() string
     GetSlug() string
@@ -118,13 +118,13 @@ func BuildCobraCommandFromCommandAndFunc(
 }
 ```
 
-**Key observation:** The API uses `description.Layers` (which is `*layers.ParameterLayers`). This is the public-facing API that tutorials reference.
+**Key observation:** The API uses `description.Layers` (which is `*schema.Schema`). This is the public-facing API that tutorials reference.
 
 **6. Middleware Pattern** (`glazed/pkg/cmds/middlewares/layers.go:11-26`)
 ```go
-func ReplaceParsedLayer(layerSlug string, newLayer *layers.ParsedLayer) Middleware {
+func ReplaceParsedLayer(layerSlug string, newLayer *values.SectionValues) Middleware {
     return func(next HandlerFunc) HandlerFunc {
-        return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+        return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
             // ... operates on parsedLayers
         }
     }
@@ -226,8 +226,8 @@ I've analyzed the compatibility requirements systematically:
 
 1. **Type aliases (NON-BREAKING)** ✅
    ```go
-   type SchemaSection = layers.ParameterLayer
-   type SectionValues = layers.ParsedLayer
+   type SchemaSection = schema.Section
+   type SectionValues = values.SectionValues
    ```
    - Old code continues to work
    - New code can use new names
@@ -284,7 +284,7 @@ I've reviewed the documentation and tutorials:
 **Current Documentation Issues:**
 
 1. **Tutorial confusion** (`glazed/pkg/doc/tutorials/05-build-first-command.md`):
-   - Uses `layers.ParameterLayers` - what is a "layer"?
+   - Uses `schema.Schema` - what is a "layer"?
    - Uses `parsedLayers.InitializeStruct()` - what does "initialize" mean?
    - New developers struggle with terminology
 
@@ -309,8 +309,8 @@ I've reviewed the documentation and tutorials:
 **Tutorial Updates:**
 ```go
 // Old (confusing)
-layers := layers.NewParameterLayers(...)
-parsedLayers := layers.NewParsedLayers(...)
+layers := schema.NewSchema(...)
+parsedLayers := values.New(...)
 
 // New (clear)
 schemaSections := schema.NewSections(...)
@@ -501,7 +501,7 @@ I bridge Glazed commands to Cobra. My API is:
 func BuildCobraCommand(command cmds.Command, opts ...CobraOption) (*cobra.Command, error)
 ```
 
-I work with `description.Layers` (which is `*layers.ParameterLayers`).
+I work with `description.Layers` (which is `*schema.Schema`).
 
 **CLI Mental Model:**
 
@@ -582,7 +582,7 @@ With new names:
 
 **Pragmatist, type aliases don't solve the fundamental problem.** Yes, we can alias `SchemaSection = ParameterLayer`, but developers still import `layers` and see `ParameterLayer` in their IDE. The package name matters for discoverability.
 
-**Counter-evidence:** New developers searching for "schema" won't find `layers.ParameterLayer`. They need to know to look in `layers` package. New packages solve this.
+**Counter-evidence:** New developers searching for "schema" won't find `schema.Section`. They need to know to look in `layers` package. New packages solve this.
 
 ### The Migration Engineer → Both
 
@@ -597,7 +597,7 @@ This isn't either/or - it's a sequence.
 
 **All of you are focusing on code, but documentation is the real problem.** Even with perfect code names, if tutorials use confusing terminology, developers will struggle. We need to update docs regardless of code changes.
 
-**Evidence:** Current tutorial uses `layers.ParameterLayers` - this is confusing even if we add type aliases. We need to update tutorials to use clear names.
+**Evidence:** Current tutorial uses `schema.Schema` - this is confusing even if we add type aliases. We need to update tutorials to use clear names.
 
 ### The New Developer → All
 

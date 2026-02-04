@@ -125,9 +125,9 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 }
 
 // InitLoggerFromViper initializes the logger using settings from Viper
-// Deprecated: Initialize logging from parsed layers using SetupLoggingFromParsedLayers instead.
+// Deprecated: Initialize logging from resolved values using SetupLoggingFromValues instead.
 func InitLoggerFromViper() error {
-	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromParsedLayers")
+	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromValues")
 	settings := &LoggingSettings{
 		LogLevel:            viper.GetString("log-level"),
 		LogFile:             viper.GetString("log-file"),
@@ -147,7 +147,7 @@ func InitLoggerFromViper() error {
 
 // InitLoggerFromCobra initializes the logger using flags parsed by Cobra on the given command.
 // Call this in PersistentPreRun(E) to initialize logging after Cobra parsed flags but before command execution.
-// Flags are added by AddLoggingLayerToRootCommand.
+// Flags are added by AddLoggingSectionToRootCommand.
 func InitLoggerFromCobra(cmd *cobra.Command) error {
 	if cmd == nil {
 		return errors.Errorf("nil cobra command passed to InitLoggerFromCobra")

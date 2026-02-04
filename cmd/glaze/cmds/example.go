@@ -11,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -22,14 +23,14 @@ type ExampleCommand struct {
 var _ cmds.GlazeCommand = (*ExampleCommand)(nil)
 
 type ExampleSettings struct {
-	Count int  `glazed.parameter:"count"`
-	Test  bool `glazed.parameter:"test"`
+	Count int  `glazed:"count"`
+	Test  bool `glazed:"test"`
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 
 	return &ExampleCommand{
@@ -52,8 +53,8 @@ func NewExampleCommand() (*ExampleCommand, error) {
 					fields.WithDefault(false),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -61,18 +62,18 @@ func NewExampleCommand() (*ExampleCommand, error) {
 
 // RunIntoGlazeProcessor is called to actually execute the command.
 //
-// parsedLayers contains the result of parsing each layer that has been
-// registered with the command description. These layers can be glazed structured data
-// flags, database connection parameters, application specification parameters.
+// parsedValues contains the result of resolving each section that has been
+// registered with the command description. These sections can be glazed structured data
+// flags, database connection fields, application specification fields.
 //
 // ps is a convenience map containing *all* parsed flags.
 //
 // gp is a GlazeProcessor that can be used to emit rows. Each row is an ordered map.
 func (c *ExampleCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &ExampleSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize example settings from parameters")
+		return errors.Wrap(err, "failed to initialize example settings from fields")
 	}
 
 	for i := 0; i < s.Count; i++ {

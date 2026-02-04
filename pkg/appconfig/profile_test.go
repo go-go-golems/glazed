@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWithProfile_AppliesDefaultProfile(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	profilesPath := filepath.Join(dir, "profiles.yaml")
@@ -37,7 +37,7 @@ prod:
 		),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
@@ -45,8 +45,8 @@ prod:
 }
 
 func TestWithProfile_ProfileSelection_FromEnv(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	profilesPath := filepath.Join(dir, "profiles.yaml")
@@ -72,7 +72,7 @@ prod:
 		),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
@@ -80,8 +80,8 @@ prod:
 }
 
 func TestWithProfile_ProfileSelection_FromConfig(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	profilesPath := filepath.Join(dir, "profiles.yaml")
@@ -111,7 +111,7 @@ prod:
 		WithConfigFiles(cfgPath),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
@@ -119,8 +119,8 @@ prod:
 }
 
 func TestWithProfile_ProfileSelection_FromCobraFlag(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	profilesPath := filepath.Join(dir, "profiles.yaml")
@@ -148,7 +148,7 @@ prod:
 				WithCobra(cmd, args),
 			)
 			require.NoError(t, err)
-			require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+			require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 			cfg, err := p.Parse()
 			require.NoError(t, err)
@@ -158,20 +158,20 @@ prod:
 	}
 
 	// Ensure flags exist so Cobra accepts them.
-	psLayer, err := cli.NewProfileSettingsLayer()
+	psSection, err := cli.NewProfileSettingsSection()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psSection.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
-	// Also add the redis layer flags (not strictly needed for this test, but keeps the pattern consistent).
-	require.NoError(t, layer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	// Also add the redis section flags (not strictly needed for this test, but keeps the pattern consistent).
+	require.NoError(t, section.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--profile", "prod"})
 	require.NoError(t, rootCmd.Execute())
 }
 
 func TestWithProfile_Precedence_FlagsOverrideEnvConfigProfilesDefaults(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	profilesPath := filepath.Join(dir, "profiles.yaml")
@@ -205,7 +205,7 @@ func TestWithProfile_Precedence_FlagsOverrideEnvConfigProfilesDefaults(t *testin
 				WithCobra(cmd, args),
 			)
 			require.NoError(t, err)
-			require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+			require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 			cfg, err := p.Parse()
 			require.NoError(t, err)
@@ -215,18 +215,18 @@ func TestWithProfile_Precedence_FlagsOverrideEnvConfigProfilesDefaults(t *testin
 	}
 
 	// Ensure flags exist so Cobra accepts them.
-	require.NoError(t, layer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
-	psLayer, err := cli.NewProfileSettingsLayer()
+	require.NoError(t, section.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
+	psSection, err := cli.NewProfileSettingsSection()
 	require.NoError(t, err)
-	require.NoError(t, psLayer.(layers.CobraParameterLayer).AddLayerToCobraCommand(rootCmd))
+	require.NoError(t, psSection.(schema.CobraSection).AddSectionToCobraCommand(rootCmd))
 
 	rootCmd.SetArgs([]string{"--host", "from-flag"})
 	require.NoError(t, rootCmd.Execute())
 }
 
 func TestWithProfile_MissingDefaultFile_DefaultProfile_Skips(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	// Ensure the default file path does not exist.
 	dir := t.TempDir()
@@ -244,7 +244,7 @@ func TestWithProfile_MissingDefaultFile_DefaultProfile_Skips(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	cfg, err := p.Parse()
 	require.NoError(t, err)
@@ -252,8 +252,8 @@ func TestWithProfile_MissingDefaultFile_DefaultProfile_Skips(t *testing.T) {
 }
 
 func TestWithProfile_MissingDefaultFile_NonDefaultProfile_Errors(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	missing := filepath.Join(dir, "does-not-exist.yaml")
@@ -272,15 +272,15 @@ func TestWithProfile_MissingDefaultFile_NonDefaultProfile_Errors(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	_, err = p.Parse()
 	require.Error(t, err)
 }
 
 func TestWithProfile_MissingExplicitProfileFile_Errors(t *testing.T) {
-	const redisSlug LayerSlug = "redis"
-	layer := newTestRedisLayer("from-default")
+	const redisSlug SectionSlug = "redis"
+	section := newTestRedisSection("from-default")
 
 	dir := t.TempDir()
 	defaultMissing := filepath.Join(dir, "default-profiles.yaml")
@@ -300,7 +300,7 @@ func TestWithProfile_MissingExplicitProfileFile_Errors(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	require.NoError(t, p.Register(redisSlug, layer, func(t *app) any { return &t.Redis }))
+	require.NoError(t, p.Register(redisSlug, section, func(t *app) any { return &t.Redis }))
 
 	_, err = p.Parse()
 	require.Error(t, err)

@@ -147,11 +147,11 @@ The basic pattern involves defining parameter layers and composing them into com
 
 ```go
 // Define a reusable layer
-databaseLayer := layers.NewParameterLayer("database", "Database connection parameters",
-    parameters.NewParameterDefinition("host", parameters.ParameterTypeString,
-        parameters.WithDefault("localhost")),
-    parameters.NewParameterDefinition("port", parameters.ParameterTypeInteger,
-        parameters.WithDefault(5432)),
+databaseLayer := schema.NewSection("database", "Database connection parameters",
+    fields.New("host", fields.TypeString,
+        fields.WithDefault("localhost")),
+    fields.New("port", fields.TypeInteger,
+        fields.WithDefault(5432)),
 )
 
 // Use in command definition
@@ -165,7 +165,7 @@ cmd := cmds.NewCommandDescription("mycommand",
 Commands extract typed values from parsed layers:
 
 ```go
-func (c *MyCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *MyCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
     settings := &DatabaseSettings{}
     if err := parsedLayers.InitializeStruct("database", settings); err != nil {
         return err

@@ -19,9 +19,9 @@ import (
 )
 
 type ListUsersSettings struct {
-	Limit      int    `glazed.parameter:"limit"`
-	NameFilter string `glazed.parameter:"name-filter"`
-	ActiveOnly bool   `glazed.parameter:"active-only"`
+	Limit      int    `glazed:"limit"`
+	NameFilter string `glazed:"name-filter"`
+	ActiveOnly bool   `glazed:"active-only"`
 }
 
 type ListUsersCommand struct {
@@ -75,7 +75,7 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ListUsersSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 
@@ -151,8 +151,8 @@ func main() {
 
 	cobraCmd, err := cli.BuildCobraCommand(listUsers,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+			ShortHelpSections: []string{schema.DefaultSlug},
+			MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
 		}),
 	)
 	if err != nil {

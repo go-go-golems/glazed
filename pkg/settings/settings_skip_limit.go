@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/pkg/errors"
 )
 
@@ -10,36 +12,36 @@ import (
 var skipLimitFlagsYaml []byte
 
 type SkipLimitSettings struct {
-	Skip  int `glazed.parameter:"glazed-skip"`
-	Limit int `glazed.parameter:"glazed-limit"`
+	Skip  int `glazed:"glazed-skip"`
+	Limit int `glazed:"glazed-limit"`
 }
 
-func NewSkipLimitSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SkipLimitSettings, error) {
+func NewSkipLimitSettingsFromValues(glazedValues *values.SectionValues) (*SkipLimitSettings, error) {
 	s := &SkipLimitSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize skipLimit settings from fields")
 	}
 
 	return s, nil
 }
 
-type SkipLimitParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type SkipLimitSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSkipLimitParameterLayer(options ...layers.ParameterLayerOptions) (*SkipLimitParameterLayer, error) {
-	ret := &SkipLimitParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(skipLimitFlagsYaml, options...)
+func NewSkipLimitSection(options ...schema.SectionOption) (*SkipLimitSection, error) {
+	ret := &SkipLimitSection{}
+	section, err := schema.NewSectionFromYAML(skipLimitFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create skipLimit parameter layer")
+		return nil, errors.Wrap(err, "Failed to create skipLimit field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *SkipLimitParameterLayer) Clone() layers.ParameterLayer {
-	return &SkipLimitParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *SkipLimitSection) Clone() schema.Section {
+	return &SkipLimitSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }

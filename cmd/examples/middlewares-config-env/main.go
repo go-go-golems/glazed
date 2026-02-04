@@ -10,14 +10,15 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 )
 
-// DemoSettings maps to the demo layer parameters
+// DemoSettings maps to the demo section fields
 type DemoSettings struct {
-	ApiKey    string `glazed.parameter:"api-key"`
-	Threshold int    `glazed.parameter:"threshold"`
+	ApiKey    string `glazed:"api-key"`
+	Threshold int    `glazed:"threshold"`
 }
 
 type DemoCommand struct {
@@ -25,7 +26,7 @@ type DemoCommand struct {
 }
 
 func NewDemoCommand() (*DemoCommand, error) {
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func NewDemoCommand() (*DemoCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"demo",
 		cmds.WithShort("Demonstrate config/env/flags middlewares"),
-		cmds.WithLayersList(glazedSection, demoSection),
+		cmds.WithSections(glazedSection, demoSection),
 	)
 
 	return &DemoCommand{CommandDescription: desc}, nil
@@ -70,7 +71,7 @@ func (c *DemoCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &DemoSettings{}
-	if err := values.DecodeSectionInto(vals, "demo", settings); err != nil {
+	if err := vals.DecodeSectionInto("demo", settings); err != nil {
 		return err
 	}
 	row := types.NewRow(
@@ -96,7 +97,7 @@ func main() {
 	cobraDemoCmd, err := cli.BuildCobraCommandFromCommand(
 		demoCmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			// AppName enables env prefix APP_<LAYER_PREFIX+FLAG>
+			// AppName enables env prefix APP_<SECTION_PREFIX+FLAG>
 			AppName: "glazed-mw-demo",
 			// Explicit config file for demo
 			ConfigPath: "cmd/examples/middlewares-config-env/config.yaml",

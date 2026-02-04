@@ -102,7 +102,7 @@ type AppSettings struct {
 }
 
 type RedisSettings struct {
-	Host string `glazed.parameter:"host"`
+	Host string `glazed:"host"`
 }
 
 parser, _ := appconfig.NewParser[AppSettings](
@@ -135,7 +135,7 @@ This step adds a first meaningful safety net around the new `appconfig.Parser` A
 - Added `glazed/pkg/appconfig/parser_test.go` with:
   - Register validation tests (empty slug, nil layer, nil bind, slug mismatch, duplicate slug)
   - Binder failure tests (bind returns nil, non-pointer, nil pointer)
-  - Hydration test demonstrating **tag-required** behavior (no `glazed.parameter` tags → zero values)
+  - Hydration test demonstrating **tag-required** behavior (no `glazed` tags → zero values)
   - Precedence test: defaults < config file < env
 - Ran:
   - `gofmt -w pkg/appconfig/*.go`
@@ -213,7 +213,7 @@ Typed slugs make it slightly harder to accidentally pass the wrong string and ma
 
 ### What I learned
 
-- We do not currently have a shared slug type in Glazed core packages; slugs are generally plain `string` values today (e.g. `layers.DefaultSlug`).
+- We do not currently have a shared slug type in Glazed core packages; slugs are generally plain `string` values today (e.g. `schema.DefaultSlug`).
 
 ### What warrants a second pair of eyes
 

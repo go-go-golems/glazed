@@ -1,16 +1,16 @@
-# Clay Logging Layer
+# Clay Logging Section
 
-This package provides a Glazed parameter layer for configuring logging in Clay applications.
+This package provides a Glazed field section for configuring logging in Clay applications.
 
 ## Documentation
 
-**📖 For API reference and detailed usage**, see: [Logging Layer API Reference](../../doc/reference/logging-layer.md)
+**📖 For API reference and detailed usage**, see: [Logging Section API Reference](../../doc/reference/logging-section.md)
 
-**🎓 To learn how to create custom layers**, see: [Custom Layer Tutorial](../../doc/tutorials/custom-layer.md)
+**🎓 To learn how to create custom sections**, see: [Custom Section Tutorial](../../doc/tutorials/custom-section.md)
 
 ## Quick Overview
 
-The logging layer provides:
+The logging section provides:
 - **Log Level**: Control verbosity (`debug`, `info`, `warn`, `error`, `fatal`)
 - **Log Format**: Choose between text and JSON formats  
 - **Log File**: Specify output file (defaults to stderr)
@@ -23,7 +23,7 @@ The logging layer provides:
 import "github.com/go-go-golems/glazed/pkg/cmds/logging"
 
 // In your command's Run method:
-if err := logging.SetupLoggingFromParsedLayers(parsedLayers); err != nil {
+if err := logging.SetupLoggingFromValues(parsedSections); err != nil {
     return err
 }
 

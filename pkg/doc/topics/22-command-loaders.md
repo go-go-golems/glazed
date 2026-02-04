@@ -143,7 +143,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/loaders"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/pkg/errors"
 )
 
@@ -229,7 +229,7 @@ func (mcl *MyCustomLoader) loadMyCommandFromReader(
 	// if err != nil { ... handle error ... }
 	commandName := "parsed-name" // Replace with actual parsed value
 	shortDesc := "parsed-short" // Replace with actual parsed value
-	paramDefs := []*parameters.ParameterDefinition{ /* ... parsed params ... */ }
+	paramDefs := []*fields.Definition{ /* ... parsed params ... */ }
 
 
 	// 2. Create the CommandDescription, applying passed-in options FIRST
@@ -241,7 +241,7 @@ func (mcl *MyCustomLoader) loadMyCommandFromReader(
 	// 3. Apply options derived from the file content itself
 	cmds.WithShort(shortDesc)(description)
 	cmds.WithFlags(paramDefs...)(description)
-	// Add other options like WithLong, WithArguments, WithLayers etc. as needed
+	// Add other options like WithLong, WithArguments, WithSections etc. as needed
 
 	// 4. Create the actual command instance (assuming a specific command type)
 	//    This depends on the type of command being loaded (Bare, Writer, Glaze)
@@ -256,7 +256,7 @@ type MySpecificCommand struct {
 	*cmds.CommandDescription
 	// ... other fields ...
 }
-func (msc *MySpecificCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error { /* ... */}
+func (msc *MySpecificCommand) Run(ctx context.Context, parsedSections *values.Values) error { /* ... */}
 func NewMySpecificCommand(desc *cmds.CommandDescription) *MySpecificCommand { /* ... */ }
 
 ```
@@ -271,7 +271,7 @@ func NewMySpecificCommand(desc *cmds.CommandDescription) *MySpecificCommand { /*
 Glazed and related projects use several loaders:
 
 -   **`YAMLCommandLoader` (`github.com/go-go-golems/glazed/pkg/cmds/loaders`)**: A generic loader for commands defined purely by their `CommandDescription` structure in YAML. Less common now, as specific loaders are preferred.
--   **`SqlCommandLoader` (`github.com/go-go-golems/sqleton/pkg/cmds`)**: Loads SQL execution commands for the `sqleton` tool from YAML files containing SQL queries and parameter definitions. Uses `loaders.CheckYamlFileType(f, fileName, "sqleton")` in `IsFileSupported`.
+-   **`SqlCommandLoader` (`github.com/go-go-golems/sqleton/pkg/cmds`)**: Loads SQL execution commands for the `sqleton` tool from YAML files containing SQL queries and field definitions. Uses `loaders.CheckYamlFileType(f, fileName, "sqleton")` in `IsFileSupported`.
 -   **`PinocchioCommandLoader` (`github.com/go-go-golems/pinocchio/pkg/cmds`)**: Loads AI prompt commands for the `pinocchio` tool from YAML files defining prompts, messages, and AI settings. Checks for `type: pinocchio` in the YAML.
 -   **`AgentCommandLoader` (`github.com/go-go-golems/goagent/pkg/cmds`)**: Loads LLM Agent commands for the `goagent` framework from YAML files. Checks for `.yaml`/`.yml` suffix.
 

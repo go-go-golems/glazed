@@ -25,7 +25,7 @@ RelatedFiles:
     - Path: moments/backend/pkg/appconfig/gather_viper_nested.go
       Note: Prior art for ConfigPath + prefix stripping (config keys unprefixed
     - Path: moments/backend/pkg/appconfig/store.go
-      Note: Prior art for schema-driven hydration without glazed.parameter tags
+      Note: Prior art for schema-driven hydration without glazed tags
     - Path: pinocchio/cmd/pinocchio/main.go
       Note: Primary motivating example of complex manual Glazed setup
     - Path: glazed/ttmp/2025/12/15/CONFIG-PARSER-001--simplified-config-parser-api-for-glazed/analysis/01-glazed-parameter-parsing-architecture-analysis.md

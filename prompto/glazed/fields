@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+prompto get glazed/field-types
+
+echo "---"
+echo "Here are all the types and method signatures for manipulating fields and resolved values in glazed (github.com/go-go-golems/glazed is the base package):"
+echo "---"
+echo "package github.com/go-go-golems/glazed/pkg/cmds/fields"
+echo
+oak go definitions --only-public pkg/cmds/fields/definitions.go
+echo
+oak go definitions --only-public pkg/cmds/fields/field-value.go
+
+echo
+echo
+echo "---"
+echo "Here are all the types and method signatures for manipulating schema sections and values in glazed:"
+echo "---"
+echo "package schema"
+echo
+oak go definitions --only-public pkg/cmds/schema/schema.go
+echo
+oak go definitions --only-public pkg/cmds/values/section-values.go

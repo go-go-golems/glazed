@@ -67,15 +67,15 @@ lua2.RegisterGlazedCommand(L, animalListCmd)
 
 This registration process:
 1. Creates a global Lua function named after your command (with hyphens replaced by underscores)
-2. Creates a global table containing parameter information (`animal_list_params`)
+2. Creates a global table containing field information (`animal_list_params`)
 
 ## Step 4: Creating a Lua Script
 
 Let's create a Lua script that uses our registered command. This script will:
-- Set up parameters for the command
+- Set up fields for the command
 - Execute the command
 - Print the results
-- Display parameter information
+- Display field information
 
 ```lua
 local params = {
@@ -95,19 +95,19 @@ for i, row in ipairs(result) do
     print(string.format("Animal %d: %s, Diet: %s", i, row.animal, row.diet))
 end
 
--- Print parameter information
-print("\nParameters for animal_list command:")
-for layer_name, layer_params in pairs(animal_list_params) do
-    print("Layer: " .. layer_name)
-    for param_name, param_info in pairs(layer_params) do
+-- Print field information
+print("\nFields for animal_list command:")
+for section_name, section_fields in pairs(animal_list_params) do
+    print("Section: " .. section_name)
+    for field_name, field_info in pairs(section_fields) do
         print(string.format("  %s (%s): %s", 
-            param_name, 
-            param_info.type, 
-            param_info.description))
+            field_name, 
+            field_info.type, 
+            field_info.description))
         print(string.format("    Default: %s", 
-            tostring(param_info.default)))
+            tostring(field_info.default)))
         print(string.format("    Required: %s", 
-            tostring(param_info.required)))
+            tostring(field_info.required)))
     end
 end
 ```
@@ -124,7 +124,7 @@ if err := L.DoString(script); err != nil {
 
 ## Step 6: Advanced Usage - Working with Nested Tables
 
-For more complex commands, you might need to work with nested parameter structures. Here's how to use nested tables:
+For more complex commands, you might need to work with nested field structures. Here's how to use nested tables:
 
 ```lua
 local params = {
@@ -148,11 +148,11 @@ In Go, handle these nested tables using the `ParseNestedLuaTableMiddleware`:
 ```go
 middlewares_ := []middlewares.Middleware{
     lua2.ParseNestedLuaTableMiddleware(L, luaTable),
-    middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+    sources.FromDefaults(sources.WithSource("defaults")),
 }
 
-err := middlewares.ExecuteMiddlewares(cmd.Description().Layers, 
-    parsedLayers, 
+err := sources.Execute(cmd.Description().Sections, 
+    parsedSections, 
     middlewares_...)
 ```
 
@@ -163,7 +163,7 @@ This tutorial covered the basics of implementing the Glazed Lua wrapper in your 
 - Set up the Lua environment
 - Register Glazed commands
 - Create and execute Lua scripts
-- Work with parameters and nested tables
+- Work with fields and nested tables
 - Handle common implementation challenges
 
 For more detailed information about specific features and advanced usage, refer to the main Glazed Lua Wrapper documentation using `glaze help lua`.

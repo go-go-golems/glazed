@@ -1,0 +1,361 @@
+- title: "Test with valid arguments and default values included"
+  description: "All arguments are provided, including those with default values."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      default: "default_input"
+      required: true
+    - name: "output"
+      type: "string"
+      default: "default_output"
+      required: false
+  data:
+    input: "provided_input"
+    output: "provided_output"
+  onlyProvided: false
+  expectedResult:
+    input: "provided_input"
+    output: "provided_output"
+  expectedError: ""
+
+- title: "Test with valid arguments and default values excluded"
+  description: "Only explicitly provided arguments are included, excluding defaults."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      default: "default_input"
+      required: true
+    - name: "output"
+      type: "string"
+      default: "default_output"
+      required: false
+  data:
+    input: "provided_input"
+  onlyProvided: true
+  expectedResult:
+    input: "provided_input"
+  expectedError: ""
+- title: "Test with all arguments provided including defaults"
+  description: "All arguments are provided explicitly, including those with default values."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data:
+    host: "example.com"
+    port: 9090
+  onlyProvided: false
+  expectedResult:
+    host: "example.com"
+    port: 9090
+  expectedError: ""
+
+- title: "Test with some arguments missing, defaults included"
+  description: "Some arguments are not provided and should be filled with default values."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data:
+    host: "example.com"
+  onlyProvided: false
+  expectedResult:
+    host: "example.com"
+    port: 8080
+  expectedError: ""
+
+- title: "Test with all arguments provided, defaults excluded"
+  description: "All arguments are provided explicitly, but default values should not be included."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data:
+    host: "example.com"
+    port: 9090
+  onlyProvided: true
+  expectedResult:
+    host: "example.com"
+    port: 9090
+  expectedError: ""
+
+- title: "Test with some arguments missing, defaults excluded"
+  description: "Some arguments are not provided and default values should not be included."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data:
+    host: "example.com"
+  onlyProvided: true
+  expectedResult:
+    host: "example.com"
+  expectedError: ""
+
+- title: "Test with no arguments provided, defaults included"
+  description: "No arguments are provided, all values should be default."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data: {}
+  onlyProvided: false
+  expectedResult:
+    host: "localhost"
+    port: 8080
+  expectedError: ""
+
+- title: "Test with no arguments provided, defaults excluded"
+  description: "No arguments are provided, and no default values should be included."
+  fieldDefs:
+    - name: "host"
+      type: "string"
+      default: "localhost"
+      required: true
+    - name: "port"
+      type: "int"
+      default: 8080
+      required: false
+  data: {}
+  onlyProvided: true
+  expectedResult: {}
+  expectedError: ""
+
+- title: "Test Missing Required Arguments"
+  description: "Ensure that an error is returned when required arguments are missing."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      required: true
+    - name: "output"
+      type: "string"
+      required: false
+      default: "default.txt"
+  data:
+    output: "result.txt"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "required argument 'input' is missing"
+
+# Test with missing required arguments - single missing
+- title: "Test Single Missing Required Argument"
+  description: "Ensure that an error is returned when a single required argument is missing."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      required: true
+    - name: "output"
+      type: "string"
+      required: true
+  data:
+    output: "result.txt"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "required argument 'input' is missing"
+
+# Test with missing required arguments - all missing
+- title: "Test All Missing Required Arguments"
+  description: "Ensure that an error is returned when all required arguments are missing."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      required: true
+    - name: "output"
+      type: "string"
+      required: true
+  data: {}
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "required arguments 'input', 'output' are missing"
+
+- title: "Test Multiple Missing Required Arguments with Defaults"
+  description: "Ensure that an error is returned when multiple required arguments are missing, even if defaults are provided."
+  fieldDefs:
+    - name: "input"
+      type: "string"
+      required: true
+    - name: "output"
+      type: "string"
+      required: true
+    - name: "log"
+      type: "string"
+      required: false
+      default: "default.log"
+  data:
+    log: "custom.log"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "required arguments 'input', 'output' are missing"
+
+- title: "Test with invalid type"
+  description: "Ensure that passing a string where an int is expected results in an error."
+  fieldDefs:
+    - name: "age"
+      type: "foobar"
+      required: true
+  data:
+    age: "twenty-five"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "unknown field type foobar"
+
+- title: "Test with invalid argument types"
+  description: "Ensure that passing a string where an int is expected results in an error."
+  fieldDefs:
+    - name: "age"
+      type: "int"
+      required: true
+  data:
+    age: "twenty-five"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "Invalid type for argument 'age', expected int."
+
+- title: "Test with invalid boolean argument type"
+  description: "Ensure that passing a non-boolean string for a boolean argument results in an error."
+  fieldDefs:
+    - name: "isActive"
+      type: "bool"
+      required: true
+  data:
+    isActive: "maybe"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "Invalid type for argument 'isActive', expected boolean."
+
+- title: "Test with invalid float argument type"
+  description: "Ensure that passing a string for a float argument results in an error."
+  fieldDefs:
+    - name: "temperature"
+      type: "float"
+      required: true
+  data:
+    temperature: "cold"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "Invalid type for argument 'temperature', expected float."
+
+- title: "Test with choice fields"
+  description: "Ensure that providing a value outside of the valid choices results in an error."
+  fieldDefs:
+    - name: "color"
+      type: "choice"
+      choices:
+        - "red"
+        - "green"
+        - "blue"
+      required: true
+  data:
+    color: "yellow"
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "Invalid choice for argument 'color', valid options are: red, green, blue."
+
+- title: "Test with valid choice field"
+  description: "Ensure that providing a valid choice does not result in an error."
+  fieldDefs:
+    - name: "size"
+      type: "choice"
+      choices:
+        - "small"
+        - "medium"
+        - "large"
+      required: true
+  data:
+    size: "medium"
+  onlyProvided: false
+  expectedResult:
+    size: "medium"
+  expectedError: ""
+
+- title: "Test with empty choice field"
+  description: "Ensure that providing an empty string for a choice field results in an error."
+  fieldDefs:
+    - name: "size"
+      type: "choice"
+      choices:
+        - "small"
+        - "medium"
+        - "large"
+      required: true
+  data:
+    size: ""
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "Invalid choice for argument 'size', cannot be empty."
+
+# Hard to test because the yaml gives us []interface{} but we parse to intList
+# - title: "Test list-type field"
+#   description: "Ensure that the list-type field is correctly parsed"
+#   fieldDefs:
+#     - name: "item"
+#       type: "string"
+#       required: true
+#     - name: "quantities"
+#       type: "intList"
+#   data:
+#     item: "apple"
+#     quantities: [1, 2, 3]
+#   onlyProvided: false
+#   expectedResult:
+#     item: "apple"
+#     quantities: [1, 2, 3]
+#   expectedError: ""
+
+# - title: "Test with empty list-type field"
+#   description: "Ensure that an empty list is handled correctly for list-type fields."
+#   fieldDefs:
+#     - name: "tags"
+#       type: "stringList"
+#   data:
+#     tags: []
+#   onlyProvided: false
+#   expectedResult:
+#     tags: []
+#   expectedError: ""
+
+- title: "Test with mixed types in list-type field"
+  description: "Ensure that a list with mixed types results in an error."
+  fieldDefs:
+    - name: "scores"
+      type: "floatList"
+  data:
+    scores: [95.5, "high", 88.0]
+  onlyProvided: false
+  expectedResult: {}
+  expectedError: "List-type field 'scores' contains invalid types, expected float list."
+
+- title: "Test with single value for list-type field"
+  description: "Ensure that a single value is handled correctly for list-type fields."
+  fieldDefs:
+    - name: "ids"
+      type: "intList"
+  data:
+    ids: 42
+  onlyProvided: false
+  expectedError: "Invalid type for argument 'ids', expected int list."

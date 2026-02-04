@@ -368,7 +368,7 @@ mapper := func(raw interface{}) (map[string]map[string]interface{}, error) {
 
 **Code**:
 ```go
-func NewConfigMapper(layers *layers.ParameterLayers, rules ...MappingRule) (*ConfigMapper, error) {
+func NewConfigMapper(layers *schema.Schema, rules ...MappingRule) (*ConfigMapper, error) {
     // Validate patterns
     for _, rule := range rules {
         if err := validatePattern(rule.Source); err != nil {

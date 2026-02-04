@@ -42,10 +42,10 @@ func NewExampleBareCommand() (*ExampleBareCommand, error) {
 
 func (c *ExampleBareCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := struct {
-		Message string `glazed.parameter:"message"`
+		Message string `glazed:"message"`
 	}{}
 
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -79,10 +79,10 @@ func NewExampleWriterCommand() (*ExampleWriterCommand, error) {
 
 func (c *ExampleWriterCommand) RunIntoWriter(ctx context.Context, vals *values.Values, w io.Writer) error {
 	s := struct {
-		Count int `glazed.parameter:"count"`
+		Count int `glazed:"count"`
 	}{}
 
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -118,10 +118,10 @@ func NewExampleGlazeCommand() (*ExampleGlazeCommand, error) {
 
 func (c *ExampleGlazeCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := struct {
-		Rows int `glazed.parameter:"rows"`
+		Rows int `glazed:"rows"`
 	}{}
 
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -172,11 +172,11 @@ func NewExampleDualCommand() (*ExampleDualCommand, error) {
 // Implement BareCommand interface for classic mode
 func (c *ExampleDualCommand) Run(ctx context.Context, vals *values.Values) error {
 	s := struct {
-		Name  string `glazed.parameter:"name"`
-		Times int    `glazed.parameter:"times"`
+		Name  string `glazed:"name"`
+		Times int    `glazed:"times"`
 	}{}
 
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}
@@ -190,11 +190,11 @@ func (c *ExampleDualCommand) Run(ctx context.Context, vals *values.Values) error
 // Implement GlazeCommand interface for glaze mode
 func (c *ExampleDualCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := struct {
-		Name  string `glazed.parameter:"name"`
-		Times int    `glazed.parameter:"times"`
+		Name  string `glazed:"name"`
+		Times int    `glazed:"times"`
 	}{}
 
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, &s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, &s)
 	if err != nil {
 		return err
 	}

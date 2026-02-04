@@ -1,0 +1,352 @@
+#  TypeString         Type = "string"
+#  TypeStringFromFile Type = "stringFromFile"
+#  TypeObjectListFromFile Type = "objectListFromFile"
+#  TypeObjectFromFile     Type = "objectFromFile"
+#  // TypeKeyValue signals either a string with comma separate key-value options, or when beginning with @, a file with key-value options
+#  TypeKeyValue    Type = "keyValue"
+#  TypeInteger     Type = "int"
+#  TypeFloat       Type = "float"
+#  TypeBool        Type = "bool"
+#  TypeDate        Type = "date"
+#  TypeStringList  Type = "stringList"
+#  TypeIntegerList Type = "intList"
+#  TypeFloatList   Type = "floatList"
+#  TypeChoice      Type = "choice"
+#  TypeChoiceList  Type = "choiceList"
+
+- name: string-flag
+  type: string
+  value: "foo"
+  valid: true
+
+- name: string-flag-empty
+  type: string
+  value: ""
+  valid: true
+
+- name: string--int-flag
+  type: string
+  value: 1
+  valid: false
+
+- name: string--list-flag
+  type: string
+  value: ["foo", "bar"]
+  valid: false
+
+- name: string-from-file-flag
+  type: stringFromFile
+  value: "foo"
+  valid: true
+
+- name: string-from-file--int-flag
+  type: stringFromFile
+  value: 1
+  valid: false
+
+- name: string-from-file--list-flag
+  type: stringFromFile
+  value: ["foo", "bar"]
+  valid: false
+
+- name: object-list-from-file-flag
+  type: objectListFromFile
+  value:
+    - foo: bar
+  valid: true
+
+- name: object-list-from-file-flag2
+  type: objectListFromFile
+  value:
+    - foo: bar
+    - blip: bar
+  valid: true
+
+- name: object-list-from-file--string-flag
+  type: objectListFromFile
+  value: "foo"
+  valid: false
+
+- name: object-list-from-file--int-flag
+  type: objectListFromFile
+  value: 1
+  valid: false
+
+- name: object-from-file-flag
+  type: objectFromFile
+  value:
+    foo: bar
+  valid: true
+
+- name: object-from-file--string-flag
+  type: objectFromFile
+  value: "foo"
+  valid: false
+
+- name: object-from-file--int-flag
+  type: objectFromFile
+  value: 1
+  valid: false
+
+- name: object-from-file--nested-object
+  type: objectFromFile
+  value:
+      foo:
+        bar: baz
+      bla: 2
+  valid: true
+
+- name: key-value-flag
+  type: keyValue
+  value:
+    foo: bar
+  valid: true
+
+- name: key-value--string-flag
+  type: keyValue
+  value: "foo"
+  valid: false
+
+- name: key-value--int-flag
+  type: keyValue
+  value: 1
+  valid: false
+
+- name: key-value--nested-object
+  type: keyValue
+  value:
+      foo:
+          bar: baz
+      bla: 2
+  valid: false
+
+- name: int-flag
+  type: int
+  value: 1
+  valid: true
+
+- name: int-flag-zero
+  type: int
+  value: 0
+  valid: true
+
+- name: int-flag-negative
+  type: int
+  value: -1
+  valid: true
+
+- name: int-flag--string-flag
+  type: int
+  value: "foo"
+  valid: false
+
+- name: int-flag--float
+  type: int
+  value: 1.1
+  valid: false
+
+- name: int-flag--list-flag
+  type: int
+  value: ["foo", "bar"]
+  valid: false
+
+- name: float-flag
+  type: float
+  value: 1.1
+  valid: true
+
+- name: float-flag-zero
+  type: float
+  value: 0.0
+  valid: true
+
+- name: float-flag-negative
+  type: float
+  value: -1.1
+  valid: true
+
+- name: float-flag--string
+  type: float
+  value: "foo"
+  valid: false
+
+- name: float-flag--int
+  type: float
+  value: 2
+  valid: true
+
+- name: float-flag--list
+  type: float
+  value: [1.1, 2.2]
+  valid: false
+
+- name: bool-flag
+  type: bool
+  value: true
+  valid: true
+
+- name: bool-flag-false
+  type: bool
+  value: false
+  valid: true
+
+- name: bool-flag--string
+  type: bool
+  value: "foo"
+  valid: false
+
+- name: bool-flag--int
+  type: bool
+  value: 1
+  valid: false
+
+- name: date-flag
+  type: date
+  value: "2023-09-09"
+  valid: true
+
+- name: date-flag-invalid
+  type: date
+  value: "2023/09/09"
+  valid: true
+
+- name: date-time-flag
+  type: date
+  value: "2023-09-09T12:00:00Z"
+  valid: true
+
+- name: date-time-flag-natural-language
+  type: date
+  value: "today"
+  valid: true
+
+- name: stringList-flag
+  type: stringList
+  value: ["foo", "bar"]
+  valid: true
+
+- name: stringList-flag--string
+  type: stringList
+  value: "foo"
+  valid: false
+
+- name: intList-flag
+  type: intList
+  value: [1, 2, 3]
+  valid: true
+
+- name: intList-flag--int
+  type: intList
+  value: 1
+  valid: false
+
+- name: floatList-flag
+  type: floatList
+  value: [1.1, 2.2]
+  valid: true
+
+- name: floatList-flag--float
+  type: floatList
+  value: 1.1
+  valid: false
+
+- name: choice-flag
+  type: choice
+  value: "option1"
+  choices:
+    - option1
+    - option2
+  valid: true
+
+- name: choice-flag-invalid
+  type: choice
+  value: "invalidOption"
+  choices:
+      - option1
+      - option2
+  valid: false
+
+- name: choiceList-flag
+  type: choiceList
+  value: ["option1", "option2"]
+  choices:
+      - option1
+      - option2
+  valid: true
+
+- name: choiceList-flag--string
+  type: choiceList
+  value: "option1"
+  choices:
+      - option1
+      - option2
+  valid: false
+
+- name: choice-flag--no-choice-list
+  type: choice
+  value: "option1"
+  valid: false
+
+- name: choiceList-flag--duplicate-values
+  type: choiceList
+  value: ["option1", "option1"]
+  choices:
+    - option1
+    - option2
+  valid: true
+
+- name: choiceList-flag--invalid-choice
+  type: choiceList
+  value: ["option1", "invalidOption"]
+  choices:
+    - option1
+    - option2
+  valid: false
+
+- name: choiceList-flag--empty-list
+  type: choiceList
+  value: []
+  choices:
+    - option1
+    - option2
+  valid: true
+
+- name: choice-flag--int-value
+  type: choice
+  value: 1
+  choices:
+    - option1
+    - option2
+  valid: false
+
+- name: choiceList-flag--mixed-values
+  type: choiceList
+  value: ["option1", 1]
+  choices:
+    - option1
+    - option2
+  valid: false
+
+- name: choice-flag--list-value
+  type: choice
+  value: ["option1"]
+  choices:
+    - option1
+    - option2
+  valid: false
+
+- name: choiceList-flag--nested-list
+  type: choiceList
+  value: ["option1", ["option2"]]
+  choices:
+    - option1
+    - option2
+  valid: false
+
+- name: choiceList-flag--only-one-valid
+  type: choiceList
+  value: ["option1", "option3"]
+  choices:
+    - option1
+    - option2
+  valid: false

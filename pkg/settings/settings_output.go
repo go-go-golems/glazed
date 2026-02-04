@@ -7,7 +7,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/Masterminds/sprig"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/formatters"
 	"github.com/go-go-golems/glazed/pkg/formatters/csv"
 	"github.com/go-go-golems/glazed/pkg/formatters/excel"
@@ -26,55 +27,55 @@ type TemplateFormatterSettings struct {
 }
 
 type OutputFormatterSettings struct {
-	Output                    string                 `glazed.parameter:"output"`
-	OutputFile                string                 `glazed.parameter:"output-file"`
-	OutputFileTemplate        string                 `glazed.parameter:"output-file-template"`
-	OutputMultipleFiles       bool                   `glazed.parameter:"output-multiple-files"`
-	Stream                    bool                   `glazed.parameter:"stream"`
-	SheetName                 string                 `glazed.parameter:"sheet-name"`
-	TableFormat               string                 `glazed.parameter:"table-format"`
-	TableStyle                string                 `glazed.parameter:"table-style"`
-	TableStyleFile            string                 `glazed.parameter:"table-style-file"`
-	PrintTableStyle           bool                   `glazed.parameter:"print-table-style"`
-	OutputAsObjects           bool                   `glazed.parameter:"output-as-objects"`
-	FlattenObjects            bool                   `glazed.parameter:"flatten"`
-	WithHeaders               bool                   `glazed.parameter:"with-headers"`
-	CsvSeparator              string                 `glazed.parameter:"csv-separator"`
-	Template                  string                 `glazed.parameter:"template-file"`
-	TemplateData              map[string]interface{} `glazed.parameter:"template-data"`
+	Output                    string                 `glazed:"output"`
+	OutputFile                string                 `glazed:"output-file"`
+	OutputFileTemplate        string                 `glazed:"output-file-template"`
+	OutputMultipleFiles       bool                   `glazed:"output-multiple-files"`
+	Stream                    bool                   `glazed:"stream"`
+	SheetName                 string                 `glazed:"sheet-name"`
+	TableFormat               string                 `glazed:"table-format"`
+	TableStyle                string                 `glazed:"table-style"`
+	TableStyleFile            string                 `glazed:"table-style-file"`
+	PrintTableStyle           bool                   `glazed:"print-table-style"`
+	OutputAsObjects           bool                   `glazed:"output-as-objects"`
+	FlattenObjects            bool                   `glazed:"flatten"`
+	WithHeaders               bool                   `glazed:"with-headers"`
+	CsvSeparator              string                 `glazed:"csv-separator"`
+	Template                  string                 `glazed:"template-file"`
+	TemplateData              map[string]interface{} `glazed:"template-data"`
 	TemplateFormatterSettings *TemplateFormatterSettings
-	SqlTableName              string `glazed.parameter:"sql-table-name"`
-	WithUpsert                bool   `glazed.parameter:"sql-upsert"`
-	SqlSplitByRows            int    `glazed.parameter:"sql-split-by-rows"`
+	SqlTableName              string `glazed:"sql-table-name"`
+	WithUpsert                bool   `glazed:"sql-upsert"`
+	SqlSplitByRows            int    `glazed:"sql-split-by-rows"`
 }
 
 //go:embed "flags/output.yaml"
 var outputFlagsYaml []byte
 
-type OutputParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type OutputSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewOutputParameterLayer(options ...layers.ParameterLayerOptions) (*OutputParameterLayer, error) {
-	ret := &OutputParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(outputFlagsYaml, options...)
+func NewOutputSection(options ...schema.SectionOption) (*OutputSection, error) {
+	ret := &OutputSection{}
+	section, err := schema.NewSectionFromYAML(outputFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *OutputParameterLayer) Clone() layers.ParameterLayer {
-	return &OutputParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *OutputSection) Clone() schema.Section {
+	return &OutputSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewOutputFormatterSettings(glazedLayer *layers.ParsedLayer) (*OutputFormatterSettings, error) {
+func NewOutputFormatterSettings(glazedValues *values.SectionValues) (*OutputFormatterSettings, error) {
 	s := &OutputFormatterSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize output formatter settings")
 	}

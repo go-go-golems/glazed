@@ -52,9 +52,9 @@ Scope constraints:
 
 We’re exploring renames like:
 
-- `layers.ParameterLayer` → “schema section”
-- `parameters.ParameterDefinition` → “field definition”
-- `layers.ParsedLayers` → “values / resolved values”
+- `schema.Section` → “schema section”
+- `fields.Definition` → “field definition”
+- `values.Values` → “values / resolved values”
 
 **Already decided / assumed for debate:**
 
@@ -103,7 +103,7 @@ We still have multiple viable paths for the detailed shape:
 9. **What do we call “layer” itself?**
    - keep “layer” as the grouping word
    - or replace with “section”, “group”, or “namespace” (docs vs code)?
-10. **Do we keep the struct tag `glazed.parameter`?**
+10. **Do we keep the struct tag `glazed`?**
    - (Debate should cover naming clarity, but the current plan is “do not rename tags”; confirm.)
 
 ### Candidate roster

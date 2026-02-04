@@ -346,7 +346,7 @@ err := hs.PrintQueryDebug("type:example AND topic:database", true, true)
 //   └── Field: topic = "database"
 // SQL Query:
 //   SELECT * FROM sections WHERE section_type = ? AND ? = ANY(topics)
-//   Parameters: [1 database]
+//   Fields: [1 database]
 ```
 
 ### Performance Considerations

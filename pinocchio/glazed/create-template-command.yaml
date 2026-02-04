@@ -63,21 +63,21 @@ prompt: |
   {{ .template_text }}
   -- END INPUT TEXT
 
-  The types of parameters that can be used for flags are:
-  - ParameterTypeString: "string"
-  - ParameterTypeStringFromFile: "stringFromFile" -> string
-  - ParameterTypeObjectListFromFile: "objectListFromFile" -> []interface{}
-  - ParameterTypeObjectFromFile: "objectFromFile" -> interface{}
-  - ParameterTypeKeyValue: "keyValue" -> map[string]interface{}
-  - ParameterTypeInteger: "int"
-  - ParameterTypeFloat: "float"
-  - ParameterTypeBool: "bool"
-  - ParameterTypeDate: "date"
-  - ParameterTypeStringList: "stringList"
-  - ParameterTypeIntegerList: "intList"
-  - ParameterTypeFloatList: "floatList"
-  - ParameterTypeChoice: "choice" -> string
-  - ParameterTypeChoiceList: "choiceList" -> []string
+  The types of fields that can be used for flags are:
+  - TypeString: "string"
+  - TypeStringFromFile: "stringFromFile" -> string
+  - TypeObjectListFromFile: "objectListFromFile" -> []interface{}
+  - TypeObjectFromFile: "objectFromFile" -> interface{}
+  - TypeKeyValue: "keyValue" -> map[string]interface{}
+  - TypeInteger: "int"
+  - TypeFloat: "float"
+  - TypeBool: "bool"
+  - TypeDate: "date"
+  - TypeStringList: "stringList"
+  - TypeIntegerList: "intList"
+  - TypeFloatList: "floatList"
+  - TypeChoice: "choice" -> string
+  - TypeChoiceList: "choiceList" -> []string
   
   Here is an example YAML command. Don't copy the structure of this command, it is just there as an example
   of the YAML structure.

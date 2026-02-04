@@ -41,7 +41,7 @@ The current API requires explicit creation of layers, parameter definitions, and
 
 **Key Functions**:
 - `NewParameterDefinition()`: Creates a parameter definition with options
-- `InitializeDefaultsFromStruct()`: Sets parameter defaults from struct fields with `glazed.parameter` tags
+- `InitializeDefaultsFromStruct()`: Sets parameter defaults from struct fields with `glazed` tags
 - `InitializeDefaultsFromMap()`: Sets parameter defaults from a map
 
 **Key Symbols**:
@@ -89,8 +89,8 @@ func NewParameterDefinition(
 **Key Symbols**:
 ```go
 type ParameterLayer interface {
-    AddFlags(flag ...*parameters.ParameterDefinition)
-    GetParameterDefinitions() *parameters.ParameterDefinitions
+    AddFlags(flag ...*fields.Definition)
+    GetParameterDefinitions() *fields.Definitions
     InitializeParameterDefaultsFromStruct(s interface{}) error
     GetName() string
     GetSlug() string
@@ -104,7 +104,7 @@ type ParameterLayerImpl struct {
     Slug                 string
     Description          string
     Prefix               string
-    ParameterDefinitions *parameters.ParameterDefinitions
+    ParameterDefinitions *fields.Definitions
     ChildLayers          []ParameterLayer
 }
 
@@ -148,7 +148,7 @@ func (p *ParsedLayers) InitializeStruct(layerKey string, dst interface{}) error
 - ParsedLayers contain the actual runtime values after parsing
 - Each ParsedLayer is linked to its ParameterLayer definition
 - Values are stored in ParsedParameters (map of name -> ParsedParameter)
-- `InitializeStruct()` extracts values into struct fields using `glazed.parameter` tags
+- `InitializeStruct()` extracts values into struct fields using `glazed` tags
 
 ### 4. Struct Tag Parsing
 
@@ -156,13 +156,13 @@ func (p *ParsedLayers) InitializeStruct(layerKey string, dst interface{}) error
 
 **Key Functions**:
 - `InitializeStruct()`: Main function that populates structs from ParsedParameters
-- `parsedTagOptions()`: Parses `glazed.parameter` tag syntax
+- `parsedTagOptions()`: Parses `glazed` tag syntax
 
 **Tag Syntax**:
 ```
-glazed.parameter:"parameter-name"           // Basic parameter mapping
-glazed.parameter:"parameter-name,from_json" // Parse JSON from string value
-glazed.parameter:"pattern*"                // Wildcard matching for maps
+glazed:"parameter-name"           // Basic parameter mapping
+glazed:"parameter-name,from_json" // Parse JSON from string value
+glazed:"pattern*"                // Wildcard matching for maps
 ```
 
 **Key Symbols**:
@@ -172,9 +172,9 @@ func parsedTagOptions(tag string) (*tagOptions, error)
 ```
 
 **How It Works**:
-- Struct fields tagged with `glazed.parameter:"name"` are populated from ParsedParameters
+- Struct fields tagged with `glazed:"name"` are populated from ParsedParameters
 - The tag name must match a parameter name in the ParsedParameters
-- Supports wildcards for map fields (e.g., `glazed.parameter:"env.*"` matches all `env.*` parameters)
+- Supports wildcards for map fields (e.g., `glazed:"env.*"` matches all `env.*` parameters)
 - Supports `from_json` option to parse JSON strings into complex types
 
 ### 5. Middlewares
@@ -196,11 +196,11 @@ func parsedTagOptions(tag string) (*tagOptions, error)
 **Key Symbols**:
 ```go
 type Middleware func(HandlerFunc) HandlerFunc
-type HandlerFunc func(*layers.ParameterLayers, *layers.ParsedLayers) error
+type HandlerFunc func(*schema.Schema, *values.Values) error
 
 func ExecuteMiddlewares(
-    layers_ *layers.ParameterLayers,
-    parsedLayers *layers.ParsedLayers,
+    layers_ *schema.Schema,
+    parsedLayers *values.Values,
     middlewares ...Middleware,
 ) error
 ```
@@ -238,7 +238,7 @@ func ExecuteMiddlewares(
 **Key Symbols**:
 ```go
 type CobraParser struct {
-    Layers              *layers.ParameterLayers
+    Layers              *schema.Schema
     middlewaresFunc     CobraMiddlewaresFunc
     shortHelpLayers     []string
     skipCommandSettingsLayer bool
@@ -247,13 +247,13 @@ type CobraParser struct {
 }
 
 type CobraMiddlewaresFunc func(
-    parsedCommandLayers *layers.ParsedLayers,
+    parsedCommandLayers *values.Values,
     cmd *cobra.Command,
     args []string,
 ) ([]cmd_middlewares.Middleware, error)
 
 func CobraCommandDefaultMiddlewares(
-    parsedCommandLayers *layers.ParsedLayers,
+    parsedCommandLayers *values.Values,
     cmd *cobra.Command,
     args []string,
 ) ([]cmd_middlewares.Middleware, error)
@@ -313,7 +313,7 @@ type commandBuildConfig struct {
 
 ### Proposed Simplified Flow
 
-1. **Define Struct**: Create settings struct with `glazed.parameter` tags
+1. **Define Struct**: Create settings struct with `glazed` tags
 2. **Create Parser**: `appconfig.NewConfigParser[AppSettings](...)`
 3. **Build Command**: `parser.ToCobraCommand(...)`
 4. **Parse**: `settings := parser.Parse()` (handles all middlewares internally)
@@ -329,7 +329,7 @@ type commandBuildConfig struct {
 ### Struct Initialization
 - **File**: `glazed/pkg/cmds/parameters/initialize-struct.go`
 - **Functions**: `InitializeStruct()`, `parsedTagOptions()`
-- **Tag**: `glazed.parameter:"name"`
+- **Tag**: `glazed:"name"`
 
 ### Layers
 - **File**: `glazed/pkg/cmds/layers/layer.go`, `layer-impl.go`
@@ -373,7 +373,7 @@ type commandBuildConfig struct {
 ### How Structs Map to Parameters
 
 1. **Struct → ParameterDefinitions**: 
-   - Use reflection to scan struct fields with `glazed.parameter` tags
+   - Use reflection to scan struct fields with `glazed` tags
    - Infer parameter type from Go type (int → ParameterTypeInteger, string → ParameterTypeString)
    - Create `ParameterDefinition` for each tagged field
    - Use field name as parameter name (or tag value if specified)
@@ -394,7 +394,7 @@ type commandBuildConfig struct {
    - Merges into appropriate `ParsedLayer`
 
 5. **ParsedLayers → Struct**:
-   - `InitializeStruct()` reads `glazed.parameter` tags
+   - `InitializeStruct()` reads `glazed` tags
    - Looks up parameter value in ParsedParameters
    - Sets struct field value using reflection
 

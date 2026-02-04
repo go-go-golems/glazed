@@ -34,19 +34,19 @@ The Glazed Lua wrapper provides an interface for executing Glazed commands withi
 ```go
 func CallGlazedCommandFromLua(L *lua.LState, cmd cmds.GlazeCommand, luaTable *lua.LTable) (*types.Table, error)
 ```
-Executes a GlazeCommand with parameters from a Lua table.
+Executes a GlazeCommand with fields from a Lua table.
 
 #### CallGlazedBareCommandFromLua
 ```go
 func CallGlazedBareCommandFromLua(L *lua.LState, cmd cmds.BareCommand, luaTable *lua.LTable) error
 ```
-Executes a BareCommand with parameters from a Lua table.
+Executes a BareCommand with fields from a Lua table.
 
 #### CallGlazedWriterCommandFromLua
 ```go
 func CallGlazedWriterCommandFromLua(L *lua.LState, cmd cmds.WriterCommand, luaTable *lua.LTable) (string, error)
 ```
-Executes a WriterCommand with parameters from a Lua table.
+Executes a WriterCommand with fields from a Lua table.
 
 ### 2. Command Registration
 
@@ -62,7 +62,7 @@ Registers a Glazed command (GlazeCommand, BareCommand, or WriterCommand) in the 
 ```go
 func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) middlewares.Middleware
 ```
-Middleware to parse nested Lua tables into ParsedLayers.
+Middleware to parse nested Lua tables into Values.
 
 ## Data Conversion Functions
 
@@ -88,23 +88,23 @@ Converts a Glazed table to a Lua table.
 
 ### Middleware Conversion Functions
 
-1. **ParseLuaTableToLayer**
+1. **ParseLuaTableToSection**
 ```go
-func ParseLuaTableToLayer(L *lua.LState, luaTable *lua.LTable, layer layers.ParameterLayer) (*layers.ParsedLayer, error)
+func ParseLuaTableToSection(L *lua.LState, luaTable *lua.LTable, section schema.Section) (*values.SectionValues, error)
 ```
-Parses a Lua table into a ParsedLayer.
+Parses a Lua table into a SectionValues.
 
-2. **ParseNestedLuaTableToParsedLayers**
+2. **ParseNestedLuaTableToValues**
 ```go
-func ParseNestedLuaTableToParsedLayers(L *lua.LState, luaTable *lua.LTable, parameterLayers *layers.ParameterLayers) (*layers.ParsedLayers, error)
+func ParseNestedLuaTableToValues(L *lua.LState, luaTable *lua.LTable, schema_ *schema.Schema) (*values.Values, error)
 ```
-Parses a nested Lua table into ParsedLayers.
+Parses a nested Lua table into Values.
 
-3. **ParseParameterFromLua**
+3. **ParseFieldFromLua**
 ```go
-func ParseParameterFromLua(L *lua.LState, value lua.LValue, paramDef *parameters.ParameterDefinition) (interface{}, error)
+func ParseFieldFromLua(L *lua.LState, value lua.LValue, paramDef *fields.Definition) (interface{}, error)
 ```
-Parses a Lua value into a Go value based on the parameter definition.
+Parses a Lua value into a Go value based on the field definition.
 
 ## Usage Guide
 
@@ -126,7 +126,7 @@ lua2.RegisterGlazedCommand(L, animalListCmd)
 
 This registers the command and creates:
 1. A global Lua function with the command's name (replacing hyphens with underscores)
-2. A global table containing parameter information (`command_name_params`)
+2. A global table containing field information (`command_name_params`)
 
 ### Executing Commands from Lua
 
@@ -143,23 +143,23 @@ local params = {
 local result = animal_list(params)
 ```
 
-### Accessing Command Parameters
+### Accessing Command Fields
 
-The registration process creates a global Lua table with parameter information:
+The registration process creates a global Lua table with field information:
 ```lua
-for layer_name, layer_params in pairs(animal_list_params) do
-    print("Layer: " .. layer_name)
-    for param_name, param_info in pairs(layer_params) do
-        print(string.format("  %s (%s): %s", param_name, param_info.type, param_info.description))
-        print(string.format("    Default: %s", tostring(param_info.default)))
-        print(string.format("    Required: %s", tostring(param_info.required)))
+for section_name, section_fields in pairs(animal_list_params) do
+    print("Section: " .. section_name)
+    for field_name, field_info in pairs(section_fields) do
+        print(string.format("  %s (%s): %s", field_name, field_info.type, field_info.description))
+        print(string.format("    Default: %s", tostring(field_info.default)))
+        print(string.format("    Required: %s", tostring(field_info.required)))
     end
 end
 ```
 
 ### Advanced Usage: Nested Tables
 
-The wrapper supports nested Lua tables for complex parameter structures:
+The wrapper supports nested Lua tables for complex field structures:
 ```lua
 local params = {
     default = {
@@ -202,6 +202,6 @@ if err := L.DoString(script); err != nil {
 
 3. Use type assertions when handling return values from Lua functions
 
-4. Structure your parameter tables to match the expected layer organization
+4. Structure your field tables to match the expected section organization
 
-5. Leverage the parameter information tables for runtime validation and documentation
+5. Leverage the field information tables for runtime validation and documentation

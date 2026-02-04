@@ -44,9 +44,9 @@ The examples for the core command interfaces (`BareCommand`, `WriterCommand`, `G
   *After:*
   ```go
   // ... (struct definition) ...
-  func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+  func (c *CleanupCommand) Run(ctx context.Context, parsedLayers *values.Values) error {
       s := &CleanupSettings{}
-      if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+      if err := parsedLayers.InitializeStruct(schema.DefaultSlug, s); err != nil {
           return err
       }
       

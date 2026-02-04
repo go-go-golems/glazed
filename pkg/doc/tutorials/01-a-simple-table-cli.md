@@ -17,8 +17,8 @@ for output.
 
 - `CommandDescription`: This struct is used to describe the command. It includes the name of the command, a short
   description, and any flags or arguments the command takes.
-- `ParameterDefinition`: This struct is used to define the parameters (flags or arguments) that the command takes. It
-  includes the name of the parameter, the type, and any default value.
+- `Definition`: This struct is used to define the fields (flags or arguments) that the command takes. It
+  includes the name of the field, the type, and any default value.
 - `Command` and `GlazeCommand`: These interfaces define the methods that a command must implement. The `Run` method is
   where the main functionality of the command is implemented.
 - `Row`: This struct represents a row of data. It can have any number of fields, each with a name and value.
@@ -45,17 +45,17 @@ func NewExampleCommand() (*ExampleCommand, error) {
 			"example",
 			cmds.WithShort("Example command"),
 			cmds.WithFlags(
-				parameters.NewParameterDefinition(
+				fields.New(
 					"count",
-					parameters.ParameterTypeInteger,
-					parameters.WithHelp("Number of rows to output"),
-					parameters.WithDefault(10),
+					fields.TypeInteger,
+					fields.WithHelp("Number of rows to output"),
+					fields.WithDefault(10),
 				),
-				parameters.NewParameterDefinition(
+				fields.New(
 					"test",
-					parameters.ParameterTypeBool,
-					parameters.WithHelp("Whether to add a test column"),
-					parameters.WithDefault(false),
+					fields.TypeBool,
+					fields.WithHelp("Whether to add a test column"),
+					fields.WithDefault(false),
 				),
 			),
 		),
@@ -69,7 +69,7 @@ The `Run` method is where the main functionality of the command is implemented. 
 ```go
 func (c *ExampleCommand) Run(
 	ctx context.Context,
-	parsedLayers map[string]*layers.ParsedParameterLayer,
+	parsedSections map[string]*sections.ParsedSection,
 	ps map[string]interface{},
 	gp middlewares.Processor,
 ) error {

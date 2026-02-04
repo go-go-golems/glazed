@@ -17,14 +17,14 @@ import (
 
 // Settings struct for the command
 type ConfigSettings struct {
-	ApiKey  string `glazed.parameter:"api-key"`
-	Timeout int    `glazed.parameter:"timeout"`
-	Debug   bool   `glazed.parameter:"debug"`
+	ApiKey  string `glazed:"api-key"`
+	Timeout int    `glazed:"timeout"`
+	Debug   bool   `glazed:"debug"`
 }
 
 // BareCommand that uses sources package for manual middleware execution
 type SourcesExampleCommand struct {
-	*cmds.CommandDefinition
+	*cmds.CommandDescription
 }
 
 func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
@@ -58,8 +58,8 @@ func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
 		schema.WithSections(configSection),
 	)
 
-	// Create command definition
-	desc := cmds.NewCommandDefinition(
+	// Create command description
+	desc := cmds.NewCommandDescription(
 		"sources-example",
 		cmds.WithShort("Example demonstrating sources package for manual middleware execution"),
 		cmds.WithLong(`This example shows how to use the sources package to manually
@@ -78,7 +78,7 @@ Precedence order (lowest to highest):
 		cmds.WithSchema(schema_),
 	)
 
-	return &SourcesExampleCommand{CommandDefinition: desc}, nil
+	return &SourcesExampleCommand{CommandDescription: desc}, nil
 }
 
 // Ensure interface compliance
@@ -87,7 +87,7 @@ var _ cmds.BareCommand = &SourcesExampleCommand{}
 func (c *SourcesExampleCommand) Run(ctx context.Context, vals *values.Values) error {
 	// Decode settings from resolved values using the new API
 	settings := &ConfigSettings{}
-	if err := values.DecodeSectionInto(vals, "config", settings); err != nil {
+	if err := vals.DecodeSectionInto("config", settings); err != nil {
 		return fmt.Errorf("failed to decode config settings: %w", err)
 	}
 
@@ -114,9 +114,7 @@ func main() {
 	}
 
 	// Get the schema from the command
-	// cmd.Layers is *layers.ParameterLayers, but we convert to schema.Schema (type alias)
-	// to use the new API vocabulary
-	cmdSchema := (*schema.Schema)(cmd.Layers)
+	cmdSchema := cmd.Schema
 
 	// Register flags manually
 	root.Flags().String("config-file", "", "Config file path")
@@ -140,26 +138,26 @@ func main() {
 	// Ordering: first middleware has highest precedence (runs last); last middleware has lowest precedence (runs first).
 	// So we pass: flags > env > map > config-file > defaults.
 	middlewares := []sources.Middleware{
-		sources.FromCobra(root, sources.WithSource("flags")),
-		sources.FromEnv("APP", sources.WithSource("env")),
+		sources.FromCobra(root, fields.WithSource("flags")),
+		sources.FromEnv("APP", fields.WithSource("env")),
 		sources.FromMap(map[string]map[string]interface{}{
 			"config": {
 				"api-key": "custom-map-key",
 				"timeout": 60,
 			},
-		}, sources.WithSource("custom-map")),
+		}, fields.WithSource("custom-map")),
 	}
 	if configFile != "" {
 		middlewares = append(middlewares,
 			sources.FromFile(configFile,
 				sources.WithParseOptions(
-					sources.WithSource("config-file"),
+					fields.WithSource("config-file"),
 				),
 			),
 		)
 	}
 	middlewares = append(middlewares,
-		sources.FromDefaults(sources.WithSource("defaults")),
+		sources.FromDefaults(fields.WithSource("defaults")),
 	)
 
 	// Execute middleware chain using sources.Execute with new API types

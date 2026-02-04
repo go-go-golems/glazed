@@ -135,19 +135,19 @@ directories := []repositories.Directory{
 //
 // Usage:
 //
-//  middleware := middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper"))
+//  middleware := middlewares.GatherFlagsFromViper(sources.WithSource("viper"))
 func GatherFlagsFromViper(options ...parameters.ParseStepOption) Middleware {
     return func(next HandlerFunc) HandlerFunc {
-        return func(layers_ *layers.ParameterLayers, parsedLayers *layers.ParsedLayers) error {
+        return func(layers_ *schema.Schema, parsedLayers *values.Values) error {
 
             err := next(layers_, parsedLayers)
             if err != nil {
                 return err
             }
-            err = layers_.ForEachE(func(key string, l layers.ParameterLayer) error {
+            err = layers_.ForEachE(func(key string, l schema.Section) error {
                 options_ := append([]parameters.ParseStepOption{
-                    parameters.WithParseStepSource("viper"),
-                    parameters.WithParseStepMetadata(map[string]interface{}{
+                    sources.WithSource("viper"),
+                    sources.WithMetadata(map[string]interface{}{
                         "layer":          l.GetName(),
                         "layer_slug":     l.GetSlug(),
                         "layer_prefix":   l.GetPrefix(),
@@ -222,7 +222,7 @@ options := append([]ParseStepOption{
 
 ```31:61:glazed/pkg/cli/cobra-parser.go
 func CobraCommandDefaultMiddlewares(
-    parsedCommandLayers *layers.ParsedLayers,
+    parsedCommandLayers *values.Values,
     cmd *cobra.Command,
     args []string,
 ) ([]cmd_middlewares.Middleware, error) {
@@ -233,21 +233,21 @@ func CobraCommandDefaultMiddlewares(
     }
 
     middlewares_ := []cmd_middlewares.Middleware{
-        cmd_middlewares.ParseFromCobraCommand(cmd,
-            parameters.WithParseStepSource("cobra"),
+        cmd_sources.FromCobra(cmd,
+            sources.WithSource("cobra"),
         ),
-        cmd_middlewares.GatherArguments(args,
-            parameters.WithParseStepSource("arguments"),
+        cmd_sources.FromArgs(args,
+            sources.WithSource("arguments"),
         ),
     }
 
     if commandSettings.LoadParametersFromFile != "" {
         middlewares_ = append(middlewares_,
-            cmd_middlewares.LoadParametersFromFile(commandSettings.LoadParametersFromFile))
+            cmd_sources.FromFile(commandSettings.LoadParametersFromFile))
     }
 
     middlewares_ = append(middlewares_,
-        cmd_middlewares.SetFromDefaults(parameters.WithParseStepSource(parameters.SourceDefaults)),
+        cmd_sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
     )
 
     return middlewares_, nil
@@ -257,8 +257,8 @@ func CobraCommandDefaultMiddlewares(
 ```228:269:glazed/pkg/cli/cobra-parser.go
 // ParseGlazedCommandLayer parses the global glazed settings from the given cobra.Command, if not nil,
 // and from the configured viper config file.
-func ParseCommandSettingsLayer(cmd *cobra.Command) (*layers.ParsedLayers, error) {
-    parsedLayers := layers.NewParsedLayers()
+func ParseCommandSettingsLayer(cmd *cobra.Command) (*values.Values, error) {
+    parsedLayers := values.New()
     commandSettingsLayer, err := NewCommandSettingsLayer()
     if err != nil {
         return nil, err
@@ -274,7 +274,7 @@ func ParseCommandSettingsLayer(cmd *cobra.Command) (*layers.ParsedLayers, error)
         return nil, err
     }
     
-    commandSettingsLayers := layers.NewParameterLayers(
+    commandSettingsLayers := schema.NewSchema(
         layers.WithLayers(
             commandSettingsLayer,
             profileSettingsLayer,
@@ -286,12 +286,12 @@ func ParseCommandSettingsLayer(cmd *cobra.Command) (*layers.ParsedLayers, error)
     middlewares_ := []cmd_middlewares.Middleware{}
     
     if cmd != nil {
-        middlewares_ = append(middlewares_, cmd_middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("cobra")))
+        middlewares_ = append(middlewares_, cmd_sources.FromCobra(cmd, sources.WithSource("cobra")))
     }
     
-    middlewares_ = append(middlewares_, cmd_middlewares.GatherFlagsFromViper(parameters.WithParseStepSource("viper")))
+    middlewares_ = append(middlewares_, cmd_middlewares.GatherFlagsFromViper(sources.WithSource("viper")))
     
-    err = cmd_middlewares.ExecuteMiddlewares(commandSettingsLayers, parsedLayers, middlewares_...)
+    err = cmd_sources.Execute(commandSettingsLayers, parsedLayers, middlewares_...)
     if err != nil {
         return nil, err
     }
@@ -363,10 +363,10 @@ Viper’s env semantics are: `ENV_PREFIX + '_' + UPPERCASE(REPLACE_ALL(layerPref
 
 Use this chain by default for Cobra commands (order listed here is low→high precedence; execution is reverse order):
 
-1) `SetFromDefaults(parameters.WithParseStepSource("defaults"))`
-2) `LoadParametersFromFile(resolvedConfigPath, parameters.WithParseStepSource("config"))`
-3) `UpdateFromEnv(appEnvPrefix, parameters.WithParseStepSource("env"))`
-4) `ParseFromCobraCommand(cmd, parameters.WithParseStepSource("flags"))`
+1) `SetFromDefaults(sources.WithSource("defaults"))`
+2) `LoadParametersFromFile(resolvedConfigPath, sources.WithSource("config"))`
+3) `UpdateFromEnv(appEnvPrefix, sources.WithSource("env"))`
+4) `ParseFromCobraCommand(cmd, sources.WithSource("flags"))`
 
 Because middlewares execute in reverse order, flags override env, env overrides config, and config overrides defaults.
 
@@ -397,8 +397,8 @@ if v, ok := os.LookupEnv(envKey); ok {
     // IMPORTANT: store under the logical parameter key (p.Name),
     // not the envKey, to remain consistent with how flags/config map.
     err := parsedLayer.Parameters.UpdateValue(p.Name, p, v,
-        parameters.WithParseStepSource("env"),
-        parameters.WithParseStepMetadata(map[string]interface{}{
+        sources.WithSource("env"),
+        sources.WithMetadata(map[string]interface{}{
             "env_key": envKey,
         }),
     )
@@ -428,15 +428,15 @@ type CobraParserConfig struct {
     ConfigPath     string // explicit path (overrides resolver), may come from a root flag
 }
 
-func CobraCommandDefaultMiddlewares(parsed *layers.ParsedLayers, cmd *cobra.Command, args []string) ([]middlewares.Middleware, error) {
+func CobraCommandDefaultMiddlewares(parsed *values.Values, cmd *cobra.Command, args []string) ([]middlewares.Middleware, error) {
     cfg := /* read from parser instance */
     configPath, _ := appconfig.ResolveAppConfigPath(cfg.AppName, cfg.ConfigPath)
     return []middlewares.Middleware{
-        middlewares.ParseFromCobraCommand(cmd, parameters.WithParseStepSource("flags")),
-        middlewares.GatherArguments(args, parameters.WithParseStepSource("arguments")),
-        middlewares.LoadParametersFromFile(configPath, parameters.WithParseStepSource("config")),
-        middlewares.UpdateFromEnv(strings.ToUpper(cfg.AppName), parameters.WithParseStepSource("env")),
-        middlewares.SetFromDefaults(parameters.WithParseStepSource("defaults")),
+        sources.FromCobra(cmd, sources.WithSource("flags")),
+        sources.FromArgs(args, sources.WithSource("arguments")),
+        sources.FromFile(configPath, sources.WithSource("config")),
+        sources.FromEnv(strings.ToUpper(cfg.AppName), sources.WithSource("env")),
+        sources.FromDefaults(sources.WithSource("defaults")),
     }, nil
 }
 ```
@@ -445,8 +445,8 @@ This keeps the precedence identical to today’s documented pattern:
 
 ```285:289:glazed/pkg/doc/topics/21-cmds-middlewares.md
 combined := middlewares.Chain(
-    middlewares.SetFromDefaults(),
-    middlewares.UpdateFromEnv("APP"),
+    sources.FromDefaults(),
+    sources.FromEnv("APP"),
     middlewares.GatherFlagsFromViper(),
 )
 ```
@@ -502,7 +502,7 @@ Replace direct `viper.Get…` reads (e.g., repositories list) with either:
       - Does not call Viper; leaves parsing to Glazed middlewares.
     - Keep `InitViper` for backward compatibility but mark as deprecated in docstring.
   - `pkg/sql/cobra.go`
-    - Replace `middlewares.GatherFlagsFromViper(...)` with `middlewares.LoadParametersFromFile(…)` plus `middlewares.UpdateFromEnv(…)` restricted to the whitelisted layers via `WrapWithWhitelistedLayers`.
+    - Replace `middlewares.GatherFlagsFromViper(...)` with `sources.FromFile(…)` plus `sources.FromEnv(…)` restricted to the whitelisted layers via `WrapWithWhitelistedLayers`.
 
 ### 3.2 Documentation updates
 

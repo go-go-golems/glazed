@@ -13,6 +13,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	yaml2 "github.com/go-go-golems/glazed/pkg/helpers/yaml"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,9 +27,9 @@ type YamlCommand struct {
 var _ cmds.GlazeCommand = (*YamlCommand)(nil)
 
 func NewYamlCommand() (*YamlCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 
 	return &YamlCommand{
@@ -62,25 +63,25 @@ func NewYamlCommand() (*YamlCommand, error) {
 					fields.WithRequired(true),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
 }
 
 type YamlSettings struct {
-	InputIsArray bool     `glazed.parameter:"input-is-array"`
-	Sanitize     bool     `glazed.parameter:"sanitize"`
-	FromMarkdown bool     `glazed.parameter:"from-markdown"`
-	InputFiles   []string `glazed.parameter:"input-files"`
+	InputIsArray bool     `glazed:"input-is-array"`
+	Sanitize     bool     `glazed:"sanitize"`
+	FromMarkdown bool     `glazed:"from-markdown"`
+	InputFiles   []string `glazed:"input-files"`
 }
 
 func (y *YamlCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &YamlSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "Failed to initialize yaml settings from parameters")
+		return errors.Wrap(err, "Failed to initialize yaml settings from fields")
 	}
 
 	for _, arg := range s.InputFiles {

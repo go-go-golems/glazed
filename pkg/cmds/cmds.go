@@ -5,10 +5,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -17,20 +17,17 @@ import (
 // CommandDescription contains the necessary information for registering
 // a command with cobra. Because a command gets registered in a verb tree,
 // a full list of Parents all the way to the root needs to be provided.
-//
-// CommandDefinition is an alias for CommandDescription that provides clearer
-// vocabulary when thinking about command definitions vs descriptions.
 type CommandDescription struct {
 	Name  string `yaml:"name"`
 	Short string `yaml:"short"`
 	Long  string `yaml:"long,omitempty"`
 	// TODO(manuel, 2023-12-21) Does this need to be a list of pointers? Could it just be a list of struct?
-	Layout         []*layout.Section       `yaml:"layout,omitempty"`
-	Layers         *layers.ParameterLayers `yaml:"layers,omitempty"`
-	AdditionalData map[string]interface{}  `yaml:"additionalData,omitempty"`
-	Type           string                  `yaml:"type,omitempty"`
-	Tags           []string                `yaml:"tags,omitempty"`
-	Metadata       map[string]interface{}  `yaml:"metadata,omitempty"`
+	Layout         []*layout.Section      `yaml:"layout,omitempty"`
+	Schema         *schema.Schema         `yaml:"schema,omitempty"`
+	AdditionalData map[string]interface{} `yaml:"additionalData,omitempty"`
+	Type           string                 `yaml:"type,omitempty"`
+	Tags           []string               `yaml:"tags,omitempty"`
+	Metadata       map[string]interface{} `yaml:"metadata,omitempty"`
 
 	Parents []string `yaml:",omitempty"`
 	// Source indicates where the command was loaded from, to make debugging easier.
@@ -40,14 +37,6 @@ type CommandDescription struct {
 // Steal the builder API from https://github.com/bbkane/warg
 
 type CommandDescriptionOption func(*CommandDescription)
-
-// CommandDefinition is a type alias for CommandDescription.
-// It provides clearer vocabulary when thinking about command definitions.
-type CommandDefinition = CommandDescription
-
-// CommandDefinitionOption is a type alias for CommandDescriptionOption.
-// It provides clearer vocabulary when thinking about command definition options.
-type CommandDefinitionOption = CommandDescriptionOption
 
 func WithName(s string) CommandDescriptionOption {
 	return func(c *CommandDescription) {
@@ -85,101 +74,94 @@ func WithMetadata(metadata map[string]interface{}) CommandDescriptionOption {
 	}
 }
 
-func WithLayersList(ls ...layers.ParameterLayer) CommandDescriptionOption {
+func WithSections(sections ...schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		for _, l := range ls {
-			c.Layers.Set(l.GetSlug(), l)
+		for _, section := range sections {
+			c.Schema.Set(section.GetSlug(), section)
 		}
 	}
 }
 
-func WithLayers(ls *layers.ParameterLayers) CommandDescriptionOption {
+func WithSchema(schema_ *schema.Schema) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		c.Layers.Merge(ls)
+		c.Schema.Merge(schema_)
 	}
 }
 
-// WithSchema is an alias for WithLayers that accepts a schema.Schema.
-// It provides a more intuitive name when working with the schema package.
-func WithSchema(s *schema.Schema) CommandDescriptionOption {
-	return WithLayers((*layers.ParameterLayers)(s))
-}
-
-// WithLayersMap registers layers using explicit slugs from the provided map.
-// The map key is used as the registration slug. If a layer's internal slug
-// (returned by l.GetSlug()) differs from the map key, this function will try
+// WithSectionsMap registers sections using explicit slugs from the provided map.
+// The map key is used as the registration slug. If a section's internal slug
+// (returned by section.GetSlug()) differs from the map key, this function will try
 // to align them when possible so that runtime parsing and lookups are
 // consistent:
-//   - Prefer cloning the layer and overriding the slug on the clone when the
-//     clone is a *layers.ParameterLayerImpl (common for wrapper types that
-//     embed ParameterLayerImpl and whose Clone returns a ParameterLayerImpl).
-//   - Otherwise, the layer is registered under the provided key as-is.
+//   - Prefer cloning the section and overriding the slug on the clone when the
+//     clone is a *schema.SectionImpl (common for wrapper types that embed
+//     SectionImpl and whose Clone returns a SectionImpl).
+//   - Otherwise, the section is registered under the provided key as-is.
 //
-// Note: If a non-ParameterLayerImpl is registered under a key that differs
-// from its internal slug, middlewares that derive parsed layer slugs from the
-// layer's GetSlug() may use the internal slug instead of the registration key.
-// Prefer using matching slugs or ParameterLayerImpl when you need explicit
-// remapping.
-func WithLayersMap(m map[string]layers.ParameterLayer) CommandDescriptionOption {
+// Note: If a non-SectionImpl is registered under a key that differs
+// from its internal slug, middlewares that derive resolved section slugs from
+// the section's GetSlug() may use the internal slug instead of the registration
+// key. Prefer using matching slugs or SectionImpl when you need explicit remapping.
+func WithSectionsMap(m map[string]schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		for slug, l := range m {
-			if l.GetSlug() != slug {
-				// Try a generic clone: many wrapper types embed ParameterLayerImpl,
-				// whose Clone returns *ParameterLayerImpl. If so, set the slug.
-				cloned := l.Clone()
-				if impl, ok := cloned.(*layers.ParameterLayerImpl); ok {
+		for slug, section := range m {
+			if section.GetSlug() != slug {
+				// Try a generic clone: many wrapper types embed SectionImpl,
+				// whose Clone returns *SectionImpl. If so, set the slug.
+				cloned := section.Clone()
+				if impl, ok := cloned.(*schema.SectionImpl); ok {
 					impl.Slug = slug
-					c.Layers.Set(slug, impl)
-					log.Debug().Str("slug", slug).Str("internalSlug", l.GetSlug()).Msg("WithLayersMap: cloned layer and set overridden slug")
+					c.Schema.Set(slug, impl)
+					log.Debug().Str("slug", slug).Str("internalSlug", section.GetSlug()).Msg("WithSectionsMap: cloned section and set overridden slug")
 					continue
 				}
-				// Fallback: keep original layer but register under provided key.
-				// Parsed layers may still use the internal slug when indexing.
-				log.Warn().Str("slug", slug).Str("internalSlug", l.GetSlug()).Msg("WithLayersMap: registering layer with mismatched internal slug; parsed layers may use internal slug")
+				// Fallback: keep original section but register under provided key.
+				// Resolved values may still use the internal slug when indexing.
+				log.Warn().Str("slug", slug).Str("internalSlug", section.GetSlug()).Msg("WithSectionsMap: registering section with mismatched internal slug; resolved values may use internal slug")
 			}
-			c.Layers.Set(slug, l)
+			c.Schema.Set(slug, section)
 		}
 	}
 }
 
-// WithFlags is a convenience function to add arguments to the default layer, useful
-// to make the transition from explicit flags and arguments to a default layer a bit easier.
+// WithFlags is a convenience function to add arguments to the default section, useful
+// to make the transition from explicit flags and arguments to a default section a bit easier.
 func WithFlags(
-	flags ...*parameters.ParameterDefinition,
+	flags ...*fields.Definition,
 ) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		layer, ok := c.GetDefaultLayer()
+		section, ok := c.GetDefaultSection()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Flags")
+			section, err = schema.NewSection(schema.DefaultSlug, "Flags")
 			if err != nil {
 				panic(err)
 			}
-			c.Layers.Set(layer.GetSlug(), layer)
-			err = c.Layers.MoveToFront(layer.GetSlug())
+			c.Schema.Set(section.GetSlug(), section)
+			err = c.Schema.MoveToFront(section.GetSlug())
 			if err != nil {
 				panic(err)
 			}
 		}
-		layer.AddFlags(flags...)
+		section.AddFields(flags...)
 	}
 }
 
-// WithArguments is a convenience function to add arguments to the default layer, useful
-// to make the transition from explicit flags and arguments to a default layer a bit easier.
+// WithArguments is a convenience function to add arguments to the default section, useful
+// to make the transition from explicit flags and arguments to a default section a bit easier.
 func WithArguments(
-	arguments ...*parameters.ParameterDefinition,
+	arguments ...*fields.Definition,
 ) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		layer, ok := c.GetDefaultLayer()
+		section, ok := c.GetDefaultSection()
 		var err error
 		if !ok {
-			layer, err = layers.NewParameterLayer(layers.DefaultSlug, "Arguments")
+			section, err = schema.NewSection(schema.DefaultSlug, "Arguments")
 			if err != nil {
 				panic(err)
 			}
-			c.Layers.Set(layer.GetSlug(), layer)
-			err = c.Layers.MoveToFront(layer.GetSlug())
+			c.Schema.Set(section.GetSlug(), section)
+			err = c.Schema.MoveToFront(section.GetSlug())
 			if err != nil {
 				panic(err)
 			}
@@ -188,7 +170,7 @@ func WithArguments(
 		for _, arg := range arguments {
 			arg.IsArgument = true
 		}
-		layer.AddFlags(arguments...)
+		section.AddFields(arguments...)
 	}
 }
 
@@ -198,10 +180,10 @@ func WithLayout(l *layout.Layout) CommandDescriptionOption {
 	}
 }
 
-func WithReplaceLayers(layers_ ...layers.ParameterLayer) CommandDescriptionOption {
+func WithReplaceSections(sections ...schema.Section) CommandDescriptionOption {
 	return func(c *CommandDescription) {
-		for _, l := range layers_ {
-			c.Layers.Set(l.GetSlug(), l)
+		for _, section := range sections {
+			c.Schema.Set(section.GetSlug(), section)
 		}
 	}
 }
@@ -239,7 +221,7 @@ func WithPrependSource(s string) CommandDescriptionOption {
 func NewCommandDescription(name string, options ...CommandDescriptionOption) *CommandDescription {
 	ret := &CommandDescription{
 		Name:   name,
-		Layers: layers.NewParameterLayers(),
+		Schema: schema.NewSchema(),
 	}
 
 	for _, o := range options {
@@ -249,12 +231,6 @@ func NewCommandDescription(name string, options ...CommandDescriptionOption) *Co
 	return ret
 }
 
-// NewCommandDefinition creates a new command definition with the given name and options.
-// It is an alias for NewCommandDescription that provides clearer vocabulary.
-func NewCommandDefinition(name string, options ...CommandDefinitionOption) *CommandDefinition {
-	return NewCommandDescription(name, options...)
-}
-
 func (cd *CommandDescription) FullPath() string {
 	if len(cd.Parents) == 0 {
 		return cd.Name
@@ -262,39 +238,39 @@ func (cd *CommandDescription) FullPath() string {
 	return strings.Join(cd.Parents, "/") + "/" + cd.Name
 }
 
-func (cd *CommandDescription) GetDefaultLayer() (layers.ParameterLayer, bool) {
-	return cd.GetLayer(layers.DefaultSlug)
+func (cd *CommandDescription) GetDefaultSection() (schema.Section, bool) {
+	return cd.GetSection(schema.DefaultSlug)
 }
 
-func (cd *CommandDescription) GetDefaultFlags() *parameters.ParameterDefinitions {
-	l, ok := cd.GetDefaultLayer()
+func (cd *CommandDescription) GetDefaultFlags() *fields.Definitions {
+	section, ok := cd.GetDefaultSection()
 	if !ok {
-		return parameters.NewParameterDefinitions()
+		return fields.NewDefinitions()
 	}
-	return l.GetParameterDefinitions().GetFlags()
+	return section.GetDefinitions().GetFlags()
 }
 
-func (cd *CommandDescription) GetDefaultArguments() *parameters.ParameterDefinitions {
-	l, ok := cd.GetDefaultLayer()
+func (cd *CommandDescription) GetDefaultArguments() *fields.Definitions {
+	section, ok := cd.GetDefaultSection()
 	if !ok {
-		return parameters.NewParameterDefinitions()
+		return fields.NewDefinitions()
 	}
 
-	return l.GetParameterDefinitions().GetArguments()
+	return section.GetDefinitions().GetArguments()
 }
 
-// GetDefaultsMap returns a map of parameter names to their default values
+// GetDefaultsMap returns a map of field names to their default values
 // by combining the default flags and arguments.
 func (cd *CommandDescription) GetDefaultsMap() (map[string]interface{}, error) {
 	flags := cd.GetDefaultFlags()
 	arguments := cd.GetDefaultArguments()
 
-	params, err := flags.ParsedParametersFromDefaults()
+	params, err := flags.FieldValuesFromDefaults()
 	if err != nil {
 		return nil, err
 	}
 
-	argsParams, err := arguments.ParsedParametersFromDefaults()
+	argsParams, err := arguments.FieldValuesFromDefaults()
 	if err != nil {
 		return nil, err
 	}
@@ -307,15 +283,15 @@ func (cd *CommandDescription) GetDefaultsMap() (map[string]interface{}, error) {
 	return paramsMap, nil
 }
 
-func (cd *CommandDescription) GetLayer(name string) (layers.ParameterLayer, bool) {
-	return cd.Layers.Get(name)
+func (cd *CommandDescription) GetSection(name string) (schema.Section, bool) {
+	return cd.Schema.Get(name)
 }
 
-func (cd *CommandDescription) Clone(cloneLayers bool, options ...CommandDescriptionOption) *CommandDescription {
+func (cd *CommandDescription) Clone(cloneSchema bool, options ...CommandDescriptionOption) *CommandDescription {
 	// clone flags
-	layers_ := layers.NewParameterLayers()
-	if cloneLayers {
-		layers_ = cd.Layers.Clone()
+	schema_ := schema.NewSchema()
+	if cloneSchema {
+		schema_ = cd.Schema.Clone()
 	}
 
 	// copy parents
@@ -326,7 +302,7 @@ func (cd *CommandDescription) Clone(cloneLayers bool, options ...CommandDescript
 		Name:    cd.Name,
 		Short:   cd.Short,
 		Long:    cd.Long,
-		Layers:  layers_,
+		Schema:  schema_,
 		Parents: parents,
 		Source:  cd.Source,
 	}
@@ -351,9 +327,9 @@ func (cd *CommandDescription) Description() *CommandDescription {
 	return cd
 }
 
-func (cd *CommandDescription) SetLayers(layers ...layers.ParameterLayer) {
-	for _, l := range layers {
-		cd.Layers.Set(l.GetSlug(), l)
+func (cd *CommandDescription) SetSections(sections ...schema.Section) {
+	for _, section := range sections {
+		cd.Schema.Set(section.GetSlug(), section)
 	}
 }
 
@@ -364,7 +340,7 @@ type Command interface {
 
 type CommandWithMetadata interface {
 	Command
-	Metadata(ctx context.Context, parsedLayers *layers.ParsedLayers) (map[string]interface{}, error)
+	Metadata(ctx context.Context, parsedValues *values.Values) (map[string]interface{}, error)
 }
 
 // NOTE(manuel, 2023-03-17) Future types of commands that we could need
@@ -376,23 +352,23 @@ type CommandWithMetadata interface {
 
 type BareCommand interface {
 	Command
-	Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error
+	Run(ctx context.Context, parsedValues *values.Values) error
 }
 
 type WriterCommand interface {
 	Command
-	RunIntoWriter(ctx context.Context, parsedLayers *layers.ParsedLayers, w io.Writer) error
+	RunIntoWriter(ctx context.Context, parsedValues *values.Values, w io.Writer) error
 }
 
 type GlazeCommand interface {
 	Command
 	// RunIntoGlazeProcessor is called to actually execute the command.
 	//
-	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take parsed layers
+	// NOTE(manuel, 2023-02-27) We can probably simplify this to only take resolved values
 	//
-	// The ps and GlazeProcessor calls could be replaced by a GlazeCommand specific layer,
+	// The ps and GlazeProcessor calls could be replaced by a GlazeCommand specific section,
 	// which would allow the GlazeCommand to parse into a specific struct. The GlazeProcessor
-	// is just something created by the passed in GlazeLayer anyway.
+	// is just something created by the passed in GlazeSection anyway.
 	//
 	// When we are just left with building a convenience wrapper for Glaze based commands,
 	// instead of forcing it into the upstream interface.
@@ -400,7 +376,7 @@ type GlazeCommand interface {
 	// https://github.com/go-go-golems/glazed/issues/217
 	// https://github.com/go-go-golems/glazed/issues/216
 	// See https://github.com/go-go-golems/glazed/issues/173
-	RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error
+	RunIntoGlazeProcessor(ctx context.Context, parsedValues *values.Values, gp middlewares.Processor) error
 }
 
 type ExitWithoutGlazeError struct{}

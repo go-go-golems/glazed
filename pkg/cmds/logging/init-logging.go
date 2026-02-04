@@ -27,7 +27,7 @@ func InitLoggerWithConfig(config *LogConfig) error {
 	return InitLoggerFromSettings(settings)
 }
 
-// Deprecated: Use Glazed config middlewares (LoadParametersFromFiles + UpdateFromEnv) and InitGlazed/InitLoggerFromCobra.
+// Deprecated: Use Glazed config middlewares (LoadFieldsFromFiles + UpdateFromEnv) and InitGlazed/InitLoggerFromCobra.
 func InitViperWithAppName(appName string, configFile string) error {
 	log.Warn().Msg("logging.InitViperWithAppName is deprecated; use Glazed config middlewares and InitLoggerFromCobra")
 	viper.SetEnvPrefix(appName)

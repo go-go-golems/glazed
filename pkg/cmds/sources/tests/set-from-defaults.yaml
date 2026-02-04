@@ -1,0 +1,262 @@
+- name: "Empty sections and values"
+  description: "Empty sections should result in empty parsed sections"
+  sections: [ ]
+  values: [ ]
+  expectedSections: [ ]
+  expectedError: false
+
+- name: "Single section with default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "defaultVal"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "defaultVal"
+      logs:
+        param1:
+          - source: "defaults"
+            value: "defaultVal"
+
+- name: "Single section with list type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "stringList"
+          default: ["defaultVal1", "defaultVal2"]
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: ["defaultVal1", "defaultVal2"]
+      logs:
+        param1:
+          - source: "defaults"
+            value: ["defaultVal1", "defaultVal2"]
+
+- name: "Single section with objectFromFile type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "objectFromFile"
+          default:
+            file: "test.json"
+            key: "key1"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1:
+          file: "test.json"
+          key: "key1"
+
+- name: "Single section with objectListFromFile type default"
+  description: "Single section with default values should result in a single section with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "objectListFromFile"
+          default:
+            - file: "test.json"
+              key: "key1"
+            - file: "test2.json"
+              key: "key2"
+  values:
+    - name: "section1"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1:
+          - file: "test.json"
+            key: "key1"
+          - file: "test2.json"
+            key: "key2"
+      logs:
+        param1:
+          - source: "defaults"
+            value:
+              - file: "test.json"
+                key: "key1"
+              - file: "test2.json"
+                key: "key2"
+
+- name: "Section with existing values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "int"
+          default: 42
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingValue"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingValue"
+        param2: 42
+  expectedError: false
+
+- name: "Multiple sections with defaults"
+  description: "Multiple sections with defaults should result in multiple sections with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "int"
+          default: 42
+    - name: "section2"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  values:
+    - name: "section1"
+      fields: [ ]
+    - name: "section2"
+      fields: [ ]
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "default1"
+        param2: 42
+    - name: "section2"
+      values:
+        param3: true
+  expectedError: false
+
+- name: "Multiple sections with defaults (no defined target sections, should be created)"
+  description: "Multiple sections with defaults should result in multiple sections with these values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "int"
+          default: 42
+    - name: "section2"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  values: [ ]
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "default1"
+        param2: 42
+    - name: "section2"
+      values:
+        param3: true
+  expectedError: false
+
+- name: "Section with no default values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+        - name: "param2"
+          type: "int"
+  values:
+    - name: "section1"
+      fields: [ ]
+  expectedSections:
+    - name: "section1"
+      values: { }
+  expectedError: false
+
+- name: "Section with partially set values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+        - name: "param2"
+          type: "int"
+          default: 42
+  values:
+    - name: "section1"
+      fields:
+        - name: "param1"
+          value: "existingValue"
+  expectedSections:
+    - name: "section1"
+      values:
+        param1: "existingValue"
+        param2: 42
+  expectedError: false
+
+- name: "Section with invalid default values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "int"
+          default: "notAnInt"
+  expectedSections: [ ]
+  expectedError: true
+
+- name: "Section with invalid default values"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "choice"
+          choices: [ "choice1", "choice2" ]
+          default: "none"
+  expectedSections: [ ]
+  expectedError: true
+
+- name: "Section with required fields without defaults"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          required: true
+  values:
+    - name: "section1"
+      fields: [ ]
+  expectedSections:
+    - name: "section1"
+      values: { }
+  expectedError: false
+
+- name: "Section with optional fields without defaults"
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+  values:
+    - name: "section1"
+      fields: [ ]
+  expectedSections:
+    - name: "section1"
+      values: { }
+  expectedError: false

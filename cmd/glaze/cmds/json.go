@@ -17,6 +17,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/go-go-golems/glazed/pkg/settings"
 )
 
 type JsonCommand struct {
@@ -26,17 +27,17 @@ type JsonCommand struct {
 var _ cmds.GlazeCommand = (*JsonCommand)(nil)
 
 type JsonSettings struct {
-	InputIsArray bool     `glazed.parameter:"input-is-array"`
-	Sanitize     bool     `glazed.parameter:"sanitize"`
-	FromMarkdown bool     `glazed.parameter:"from-markdown"`
-	TailMode     bool     `glazed.parameter:"tail"`
-	InputFiles   []string `glazed.parameter:"input-files"`
+	InputIsArray bool     `glazed:"input-is-array"`
+	Sanitize     bool     `glazed:"sanitize"`
+	FromMarkdown bool     `glazed:"from-markdown"`
+	TailMode     bool     `glazed:"tail"`
+	InputFiles   []string `glazed:"input-files"`
 }
 
 func NewJsonCommand() (*JsonCommand, error) {
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create Glazed parameter layer")
+		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
 	return &JsonCommand{
 		CommandDescription: cmds.NewCommandDescription(
@@ -75,8 +76,8 @@ func NewJsonCommand() (*JsonCommand, error) {
 					fields.WithRequired(true),
 				),
 			),
-			cmds.WithLayersList(
-				glazedLayer,
+			cmds.WithSections(
+				glazedSection,
 			),
 		),
 	}, nil
@@ -84,9 +85,9 @@ func NewJsonCommand() (*JsonCommand, error) {
 
 func (j *JsonCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
 	s := &JsonSettings{}
-	err := values.DecodeSectionInto(vals, schema.DefaultSlug, s)
+	err := vals.DecodeSectionInto(schema.DefaultSlug, s)
 	if err != nil {
-		return errors.Wrap(err, "Failed to initialize json settings from parameters")
+		return errors.Wrap(err, "Failed to initialize json settings from fields")
 	}
 
 	for _, arg := range s.InputFiles {

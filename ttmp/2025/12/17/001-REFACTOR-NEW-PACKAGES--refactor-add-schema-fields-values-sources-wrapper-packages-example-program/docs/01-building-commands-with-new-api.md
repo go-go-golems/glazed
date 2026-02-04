@@ -37,10 +37,10 @@ Glazed's new API vocabulary (`schema`, `fields`, `values`, `sources`) provides c
 The new API packages provide clearer names that align with common developer mental models. A **Schema** is a collection of **Sections**, where each section groups related **Fields**. When a command runs, these fields are resolved from various **Sources** (defaults, environment variables, config files, Cobra flags) into **Values** that can be decoded into Go structs.
 
 **Key concepts:**
-- **Schema**: A collection of sections (`schema.Schema` = `layers.ParameterLayers`)
-- **Section**: A named group of fields (`schema.Section` = `layers.ParameterLayer`)
-- **Field**: A parameter definition (`fields.Definition` = `parameters.ParameterDefinition`)
-- **Values**: Resolved parameters (`values.Values` = `layers.ParsedLayers`)
+- **Schema**: A collection of sections (`schema.Schema` = `schema.Schema`)
+- **Section**: A named group of fields (`schema.Section` = `schema.Section`)
+- **Field**: A parameter definition (`fields.Definition` = `fields.Definition`)
+- **Values**: Resolved parameters (`values.Values` = `values.Values`)
 - **Sources**: Where values come from (`sources` package provides middleware wrappers)
 
 This vocabulary makes it easier to think about command structure: you define a schema with sections, each section contains fields, and at runtime you decode values from those sections into your application structs.
@@ -74,33 +74,33 @@ type AppCommand struct {
 
 // Settings structs map to schema sections
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 ```
 
 **Key components:**
 
 1. **Command Struct**: `AppCommand` embeds `*cmds.CommandDefinition`, which contains command metadata and schema configuration
-2. **Settings Structs**: Each struct corresponds to a schema section, with fields tagged using `glazed.parameter:"field-name"` for automatic mapping
+2. **Settings Structs**: Each struct corresponds to a schema section, with fields tagged using `glazed:"field-name"` for automatic mapping
 3. **Type Safety**: Struct fields provide compile-time type checking and automatic conversion from string inputs
 
 ## Step 2: Create Schema Sections
 
 Schema sections organize related parameters into logical groups. Each section can have a prefix (like `app-` or `output-`) that affects how flags and environment variables are named. The `schema` package provides constructors that make section creation intuitive.
 
-Attach fields to a section using `schema.WithFields(...)` (which wraps the historical `layers.WithParameterDefinitions(...)`).
+Attach fields to a section using `schema.WithFields(...)` (which wraps the historical `schema.WithFields(...)`).
 
 ```go
 func NewAppCommand() (*AppCommand, error) {
 	// Create glazed section for built-in output formatting options
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func NewAppCommand() (*AppCommand, error) {
 
 **Section creation patterns:**
 
-1. **Glazed Section**: `schema.NewGlazedSchema()` adds built-in output formatting options (`--output`, `--fields`, `--sort-columns`, etc.)
+1. **Glazed Section**: `settings.NewGlazedSchema()` adds built-in output formatting options (`--output`, `--fields`, `--sort-columns`, etc.)
 2. **Custom Sections**: `schema.NewSection()` creates sections with:
    - **Slug**: Internal identifier (e.g., `"app"`)
    - **Name**: Display name (e.g., `"App"`)
@@ -192,7 +192,7 @@ func NewAppCommand() (*AppCommand, error) {
 
 ## Step 3: Implement Command Logic
 
-The `GlazeCommand` interface requires implementing `RunIntoGlazeProcessor`, which receives resolved values and a processor for structured output. The new API uses `*values.Values` instead of `*layers.ParsedLayers`, and provides `values.DecodeSectionInto()` for type-safe struct population.
+The `GlazeCommand` interface requires implementing `RunIntoGlazeProcessor`, which receives resolved values and a processor for structured output. The new API uses `*values.Values` instead of `*values.Values`, and provides `values.DecodeSectionInto()` for type-safe struct population.
 
 ```go
 // Ensure interface compliance
@@ -389,7 +389,7 @@ schema := schema.NewSchema(
 
 ```go
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 func (c *AppCommand) RunIntoGlazeProcessor(
@@ -434,18 +434,18 @@ import (
 
 // Settings structs
 type AppSettings struct {
-	Verbose bool   `glazed.parameter:"verbose"`
-	Port    int    `glazed.parameter:"port"`
-	Host    string `glazed.parameter:"host"`
+	Verbose bool   `glazed:"verbose"`
+	Port    int    `glazed:"port"`
+	Host    string `glazed:"host"`
 }
 
 type OutputSettings struct {
-	Format string `glazed.parameter:"format"`
-	Pretty bool   `glazed.parameter:"pretty"`
+	Format string `glazed:"format"`
+	Pretty bool   `glazed:"pretty"`
 }
 
 type DefaultSettings struct {
-	InputFile string `glazed.parameter:"input-file"`
+	InputFile string `glazed:"input-file"`
 }
 
 // Command struct
@@ -455,7 +455,7 @@ type ExampleCommand struct {
 
 func NewExampleCommand() (*ExampleCommand, error) {
 	// Create glazed section
-	glazedSection, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -689,7 +689,7 @@ APP_CONFIG_API_KEY=env-key go run ./cmd/examples/sources-example --config-file=c
 
 **Use Meaningful Prefixes**: Section prefixes should be short but descriptive. `app-` is better than `a-` or `application-configuration-`.
 
-**Leverage Glazed Section**: Always include `schema.NewGlazedSchema()` to get built-in output formatting options without defining them yourself.
+**Leverage Glazed Section**: Always include `settings.NewGlazedSchema()` to get built-in output formatting options without defining them yourself.
 
 ### Field Definitions
 
@@ -709,18 +709,18 @@ APP_CONFIG_API_KEY=env-key go run ./cmd/examples/sources-example --config-file=c
 
 **Handle Errors Gracefully**: Always check `DecodeSectionInto()` errors and provide context about which section failed.
 
-**Use Type-Safe Structs**: Avoid accessing values as `map[string]interface{}`. Use structs with `glazed.parameter` tags for type safety and better IDE support.
+**Use Type-Safe Structs**: Avoid accessing values as `map[string]interface{}`. Use structs with `glazed` tags for type safety and better IDE support.
 
 ## Migration from Old API
 
-If you have existing commands using the old API (`layers.ParameterLayer`, `parameters.ParameterDefinition`), you can migrate gradually. In the new vocabulary, “parameter definitions” are called **fields** (hence `schema.WithFields(...)`).
+If you have existing commands using the old API (`schema.Section`, `fields.Definition`), you can migrate gradually. In the new vocabulary, “parameter definitions” are called **fields** (hence `schema.WithFields(...)`).
 
 **Old API:**
 ```go
-layer, err := layers.NewParameterLayer("app", "App",
+layer, err := schema.NewSection("app", "App",
 	layers.WithPrefix("app-"),
-	layers.WithParameterDefinitions(
-		parameters.NewParameterDefinition("verbose", parameters.ParameterTypeBool, ...),
+	schema.WithFields(
+		fields.New("verbose", fields.TypeBool, ...),
 	),
 )
 ```
@@ -736,10 +736,10 @@ section, err := schema.NewSection("app", "App",
 ```
 
 **Key changes:**
-- `layers.NewParameterLayer` → `schema.NewSection`
-- `parameters.NewParameterDefinition` → `fields.New`
-- `layers.ParameterLayers` → `schema.Schema`
-- `layers.ParsedLayers` → `values.Values`
+- `schema.NewSection` → `schema.NewSection`
+- `fields.New` → `fields.New`
+- `schema.Schema` → `schema.Schema`
+- `values.Values` → `values.Values`
 - `parsedLayers.InitializeStruct` → `values.DecodeSectionInto`
 
 The underlying types are aliases, so old code continues to work. You can migrate incrementally, updating one command at a time.

@@ -1,0 +1,234 @@
+- name: "Blacklist Single Section"
+  description: "A single section is blacklisted and should be removed from Schema."
+  sections:
+    - name: section1
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: section2
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+  values: []
+  blacklistedUpdateMaps:
+    section1:
+      param1: "newValue1"
+  blacklistedSlugs:
+    - "section1"
+  expectedError: false
+
+- name: "Blacklist Multiple Sections"
+  description: "Multiple sections are blacklisted and should be removed from Schema."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "section3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  expectedSections:
+    - name: section2
+      values:
+        param2: 22
+  blacklistedUpdateMaps:
+    section1:
+      param1: "newValue1"
+    section2:
+      param2: 22
+    section3:
+      param3: false
+  blacklistedSlugs:
+    - "section1"
+    - "section3"
+  expectedError: false
+
+- name: "Blacklist does not affect before and after update map"
+  description: "Blacklisting should not affect the before and after update maps."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "section3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+    - name: "section4"
+      definitions:
+        - name: "param4"
+          type: "string"
+          default: "default4"
+  values: []
+  blacklistedUpdateMaps:
+    section2:
+      param2: 13
+    section4:
+      param4: "newValue4BlackListed"
+  blacklistedSlugs:
+    - "section1"
+    - "section3"
+  expectedError: false
+  expectedSections:
+    - name: section1
+      values:
+        param1: "newValue1After"
+    - name: section2
+      values:
+        param2: 13
+    - name: section3
+      values:
+        param3: true
+    - name: section4
+      values:
+        param4: "newValue4After"
+  beforeUpdateMaps:
+    section1:
+      param1: "newValue1Before"
+    section2:
+      param2: 222
+    section3:
+      param3: false
+  afterUpdateMaps:
+    section1:
+      param1: "newValue1After"
+    section3:
+      param3: true
+    section4:
+      param4: "newValue4After"
+
+- name: "Whitelist single section"
+  description: "A single section is whitelisted and should be kept in Schema."
+  sections:
+    - name: section1
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: section2
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+  values: []
+  expectedSections:
+    - name: section1
+      values:
+        param1: "newValue1"
+  whitelistedUpdateMaps:
+    section1:
+      param1: "newValue1"
+  whitelistedSlugs:
+    - "section1"
+  expectedError: false
+
+- name: "Whitelist multiple sections"
+  description: "Multiple sections are whitelisted and should be kept in Schema."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "section3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+  expectedSections:
+    - name: section1
+      values:
+        param1: "newValue1"
+    - name: section3
+      values:
+        param3: false
+  whitelistedUpdateMaps:
+    section1:
+      param1: "newValue1"
+    section3:
+      param3: false
+  whitelistedSlugs:
+    - "section1"
+    - "section3"
+  expectedError: false
+
+- name: "Whitelist does not affect before and after update map"
+  description: "Whitelisting should not affect the before and after update maps."
+  sections:
+    - name: "section1"
+      definitions:
+        - name: "param1"
+          type: "string"
+          default: "default1"
+    - name: "section2"
+      definitions:
+        - name: "param2"
+          type: "int"
+          default: 2
+    - name: "section3"
+      definitions:
+        - name: "param3"
+          type: "bool"
+          default: true
+    - name: "section4"
+      definitions:
+        - name: "param4"
+          type: "string"
+          default: "default4"
+  values: []
+  whitelistedUpdateMaps:
+    section1:
+      param1: "newValue1Whitelisted"
+    section3:
+      param3: true
+  whitelistedSlugs:
+    - "section1"
+    - "section3"
+  expectedError: false
+  expectedSections:
+    - name: section1
+      values:
+        param1: "newValue1After"
+    - name: section2
+      values:
+        param2: 222
+    - name: section3
+      values:
+        param3: true
+    - name: section4
+      values:
+        param4: "newValue4After"
+  beforeUpdateMaps:
+    section1:
+      param1: "newValue1Before"
+    section2:
+      param2: 222
+    section3:
+      param3: false
+  afterUpdateMaps:
+    section1:
+      param1: "newValue1After"
+    section4:
+      param4: "newValue4After"

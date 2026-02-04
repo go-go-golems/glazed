@@ -2,7 +2,9 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
 	"github.com/pkg/errors"
@@ -12,37 +14,37 @@ import (
 var sortFlagsYaml []byte
 
 type SortFlagsSettings struct {
-	SortBy []string `glazed.parameter:"sort-by"`
+	SortBy []string `glazed:"sort-by"`
 }
 
-func NewSortSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*SortFlagsSettings, error) {
+func NewSortSettingsFromValues(glazedValues *values.SectionValues) (*SortFlagsSettings, error) {
 	s := &SortFlagsSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to initialize sort settings from parameters")
+		return nil, errors.Wrap(err, "Failed to initialize sort settings from fields")
 	}
 
 	return s, nil
 }
 
-type SortParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type SortSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
-func NewSortParameterLayer(options ...layers.ParameterLayerOptions) (*SortParameterLayer, error) {
-	ret := &SortParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(sortFlagsYaml, options...)
+func NewSortSection(options ...schema.SectionOption) (*SortSection, error) {
+	ret := &SortSection{}
+	section, err := schema.NewSectionFromYAML(sortFlagsYaml, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create sort parameter layer")
+		return nil, errors.Wrap(err, "Failed to create sort field section")
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
 
-func (f *SortParameterLayer) Clone() layers.ParameterLayer {
-	return &SortParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *SortSection) Clone() schema.Section {
+	return &SortSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 

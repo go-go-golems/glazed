@@ -2,16 +2,18 @@ package settings
 
 import (
 	_ "embed"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"os"
+
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/pkg/errors"
-	"os"
 )
 
 type ReplaceSettings struct {
-	ReplaceFile string            `glazed.parameter:"replace-file"`
-	AddFields   map[string]string `glazed.parameter:"add-fields"`
+	ReplaceFile string            `glazed:"replace-file"`
+	AddFields   map[string]string `glazed:"add-fields"`
 }
 
 func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error {
@@ -37,34 +39,34 @@ func (rs *ReplaceSettings) AddMiddlewares(of *middlewares.TableProcessor) error 
 	return nil
 }
 
-type ReplaceParameterLayer struct {
-	*layers.ParameterLayerImpl `yaml:",inline"`
+type ReplaceSection struct {
+	*schema.SectionImpl `yaml:",inline"`
 }
 
 //go:embed "flags/replace.yaml"
 var replaceFlagsYaml []byte
 
-func NewReplaceParameterLayer(options ...layers.ParameterLayerOptions) (*ReplaceParameterLayer, error) {
-	ret := &ReplaceParameterLayer{}
-	layer, err := layers.NewParameterLayerFromYAML(replaceFlagsYaml, options...)
+func NewReplaceSection(options ...schema.SectionOption) (*ReplaceSection, error) {
+	ret := &ReplaceSection{}
+	section, err := schema.NewSectionFromYAML(replaceFlagsYaml, options...)
 	if err != nil {
 		return nil, err
 	}
-	ret.ParameterLayerImpl = layer
+	ret.SectionImpl = section
 
 	return ret, nil
 }
-func (f *ReplaceParameterLayer) Clone() layers.ParameterLayer {
-	return &ReplaceParameterLayer{
-		ParameterLayerImpl: f.ParameterLayerImpl.Clone().(*layers.ParameterLayerImpl),
+func (f *ReplaceSection) Clone() schema.Section {
+	return &ReplaceSection{
+		SectionImpl: f.SectionImpl.Clone().(*schema.SectionImpl),
 	}
 }
 
-func NewReplaceSettingsFromParameters(glazedLayer *layers.ParsedLayer) (*ReplaceSettings, error) {
+func NewReplaceSettingsFromValues(glazedValues *values.SectionValues) (*ReplaceSettings, error) {
 	s := &ReplaceSettings{}
-	err := glazedLayer.Parameters.InitializeStruct(s)
+	err := glazedValues.Fields.DecodeInto(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize replace settings from parameters")
+		return nil, errors.Wrap(err, "failed to initialize replace settings from fields")
 	}
 	return s, nil
 }

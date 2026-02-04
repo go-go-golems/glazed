@@ -99,7 +99,7 @@ func (c *ConfigEditor) GetAll() map[string]interface{} {
 	return c.viper.AllSettings()
 }
 
-// GetDefaultConfigPath is updated to take an appName parameter
+// GetDefaultConfigPath is updated to take an appName argument
 func GetDefaultConfigPath(appName string) (string, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {

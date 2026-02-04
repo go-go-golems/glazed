@@ -332,7 +332,7 @@ Use the right format for your content:
 ### Use Tables For
 
 - **Comparisons:** When items have multiple attributes to compare
-- **Options/Config:** When documenting flags, parameters, or settings
+- **Options/Config:** When documenting flags, fields, or settings
 - **Troubleshooting:** Problem/Cause/Solution format
 - **Quick reference:** Scannable lookup information
 

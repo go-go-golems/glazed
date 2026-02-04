@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/html"
 )
@@ -52,16 +52,16 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	glazedLayer, err := schema.NewGlazedSchema()
+	glazedSection, err := settings.NewGlazedSchema()
 	if err != nil {
 		return nil, err
 	}
-	cobraLayer, ok := glazedLayer.(layers.CobraParameterLayer)
+	cobraSection, ok := glazedSection.(schema.CobraSection)
 	if !ok {
-		return nil, fmt.Errorf("glazed layer is not a CobraParameterLayer")
+		return nil, fmt.Errorf("glazed section is not a CobraSection")
 	}
 
-	err = cobraLayer.AddLayerToCobraCommand(parseCmd)
+	err = cobraSection.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
 	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
 
-	err = cobraLayer.AddLayerToCobraCommand(extractCmd)
+	err = cobraSection.AddSectionToCobraCommand(extractCmd)
 	if err != nil {
 		return nil, err
 	}
