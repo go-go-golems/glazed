@@ -129,3 +129,12 @@ Step 13: add fixtures for gopls/tree-sitter/doc scans (commit 67a68d4)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_tree_sitter_smoke_test.go — Fixtures
 
+
+## 2026-02-03
+
+Step 14: add commit-range worktree orchestration (commit eb15201)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_range.go — Range ingestion
+

@@ -39,6 +39,8 @@ RelatedFiles:
       Note: |-
         gopls references ingestion
         Parsing fix
+    - Path: refactorio/pkg/refactorindex/ingest_range.go
+      Note: Commit-range orchestrator
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
@@ -59,10 +61,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T20:13:33-05:00
+LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -707,3 +710,49 @@ I added fixture-style tests to validate gopls location parsing, tree-sitter inge
 
 ### Technical details
 - Tree-sitter tests use a `go` query YAML capturing function identifiers.
+
+## Step 14: Add commit-range worktree orchestration
+
+I added a commit-range orchestrator that uses git worktrees to run ingestion passes per commit. It drives diff, symbols, code units, doc hits, tree-sitter, and gopls passes (as configured) and aggregates per-commit run IDs.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement commit-aware worktree orchestration for range ingestion.
+
+**Inferred user intent:** Enable end-to-end indexing across commit ranges.
+
+**Commit (code):** eb15201 — "Add commit-range worktree orchestrator"
+
+### What I did
+- Implemented `IngestCommitRange` to create a worktree per commit and run selected ingestion passes.
+- Added helpers to add/remove worktrees and prune afterward.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Commit-aware ingestion requires clean worktree materialization per commit.
+
+### What worked
+- The orchestrator compiles and integrates with existing ingestion functions.
+
+### What didn't work
+- Initial build failed due to an unused import; removed.
+
+### What I learned
+- Keeping worktree cleanup in a dedicated helper avoids leaking temp dirs.
+
+### What was tricky to build
+- Avoiding errors from missing optional config (terms file / tree-sitter queries / gopls targets) required explicit checks.
+
+### What warrants a second pair of eyes
+- Verify the per-commit diff range `commit^..commit` is correct for merge commits.
+
+### What should be done in the future
+- Consider batching worktree usage or reusing a single worktree to reduce overhead.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_range.go`.
+
+### Technical details
+- Worktrees are created under a temporary directory and removed via `git worktree remove --force`.
