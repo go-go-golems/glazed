@@ -9,4 +9,4 @@
 - [x] Implement AST symbol inventory ingest (go/packages + go/ast + go/types)
 - [x] Implement code unit snapshot extraction (functions/types) with hashes
 - [x] Add CLI commands: ingest symbols / ingest code-units (GlazeCommand + outputs)
-- [ ] Golden tests for AST symbols + code unit snapshots using temp git repo
+- [x] Golden tests for AST symbols + code unit snapshots using temp git repo

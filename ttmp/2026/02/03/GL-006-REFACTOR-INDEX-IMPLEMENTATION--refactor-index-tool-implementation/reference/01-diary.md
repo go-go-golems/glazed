@@ -29,16 +29,19 @@ RelatedFiles:
       Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
+    - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
+      Note: Golden tests for symbols and code units
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: Pass 2 schema additions
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:38:42-05:00
+LastUpdated: 2026-02-03T19:41:18-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -291,3 +294,50 @@ I added `ingest symbols` and `ingest code-units` GlazeCommands and wired them in
 
 ### Technical details
 - Output rows include counts for symbols/occurrences and code-units/snapshots.
+
+## Step 6: Add golden smoke tests for symbols and code units
+
+I added a golden smoke test that creates a minimal Go module in a temp directory, runs both symbol and code-unit ingestion, and asserts expected symbols, code units, and snapshot bodies in SQLite. This provides a full pass 2 regression check on the AST and snapshot pipelines.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Create golden tests that validate the new pass 2 ingestion flows end-to-end.
+
+**Inferred user intent:** Ensure symbol and code unit ingestion are stable and verifiable.
+
+**Commit (code):** e4fc92e — "Add golden smoke test for symbols and code units"
+
+### What I did
+- Added `ingest_symbols_code_units_smoke_test.go` with a temp Go module and package.
+- Asserted symbols (`Person`, `Greet`, `Add`, `Answer`) and code units in SQLite.
+- Validated snapshot bodies contain expected text.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- The smoke test guards against regressions in symbol and code unit ingestion.
+
+### What worked
+- The test passes and validates both ingestion paths in a single run.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- Ensuring the test module is self-contained and loads correctly via `go/packages`.
+
+### What warrants a second pair of eyes
+- Confirm that the assertions are strict enough but not overly brittle across Go versions.
+
+### What should be done in the future
+- Consider adding multi-package fixtures if we need broader coverage.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go`.
+
+### Technical details
+- The test checks snapshot bodies using SQL `LIKE` for `type Person` and `func Add`.
