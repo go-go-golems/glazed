@@ -92,3 +92,12 @@ Step 6: rename module placeholder to refactorio (commit 6f0562d)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/go.mod — Module rename
 
+
+## 2026-02-03
+
+Step 7: add golden smoke test (commit f2595cd)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_diff_smoke_test.go — Golden test
+
