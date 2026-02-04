@@ -183,3 +183,12 @@ Step 19: add symbol inventory listing and CLI (commit 094ff98)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/list_symbols.go — symbol inventory CLI
 
+
+## 2026-02-03
+
+Step 20: link symbol occurrences to commit IDs (commit 2980f06)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — symbol_occurrences commit_id
+
