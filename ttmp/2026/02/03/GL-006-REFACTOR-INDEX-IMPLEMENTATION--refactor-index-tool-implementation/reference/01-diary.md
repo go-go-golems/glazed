@@ -13,6 +13,18 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_commits.go
+      Note: commit lineage CLI
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_doc_hits.go
+      Note: doc hits CLI
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_gopls_refs.go
+      Note: gopls refs CLI
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_range.go
+      Note: commit range CLI orchestration
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/ingest_tree_sitter.go
+      Note: tree-sitter CLI
+    - Path: ../../../../../../../refactorio/cmd/refactor-index/root.go
+      Note: wire new ingest commands
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -65,6 +77,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -756,3 +769,50 @@ I added a commit-range orchestrator that uses git worktrees to run ingestion pas
 
 ### Technical details
 - Worktrees are created under a temporary directory and removed via `git worktree remove --force`.
+
+## Step 15: Add CLI commands for remaining ingest passes
+
+I added Glazed CLI commands for commit lineage, doc hits, tree-sitter, gopls references, and range ingestion. The ingest subcommand now exposes the remaining pipeline passes so we can drive them from the CLI and collect structured output.
+
+### Prompt Context
+
+**User prompt (verbatim):** "2. do it and then add them to smoke tests and then on your own repo to make sure things work reasonably well"
+
+**Assistant interpretation:** Add CLI commands for the remaining ingest passes, then extend smoke tests and run manual sanity on the repo.
+
+**Inferred user intent:** Make the ingest pipeline fully usable from the CLI and validate it with tests + manual runs.
+
+**Commit (code):** a4afa3b — "Add ingest commands for commits, gopls, tree-sitter, docs, range"
+
+### What I did
+- Added new Glazed commands for commit lineage, doc hits, tree-sitter, gopls references, and commit-range ingest.
+- Wired the new commands into the `ingest` command group.
+- Ran `go test ./...` in `refactorio` to verify compilation.
+
+### Why
+- The remaining ingest passes needed CLI entry points to make the tool end-to-end usable.
+
+### What worked
+- The new commands compile and run through the GlazeCommand flow with structured output.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Keeping target parsing helpers shared between gopls + range CLI reduces duplication.
+
+### What was tricky to build
+- Mapping optional commit IDs through CLI flags required consistent sentinel values across commands.
+
+### What warrants a second pair of eyes
+- Validate the CLI target spec parsing for gopls references (delimiter and error handling) is acceptable for users.
+
+### What should be done in the future
+- Consider adding a more ergonomic targets file format or a helper command to list symbol targets.
+
+### Code review instructions
+- Start at `refactorio/cmd/refactor-index/root.go` and the new command files under `refactorio/cmd/refactor-index/`.
+- Validate with `go test ./...`.
+
+### Technical details
+- New ingest commands: `commits`, `doc-hits`, `tree-sitter`, `gopls-refs`, `range`.
