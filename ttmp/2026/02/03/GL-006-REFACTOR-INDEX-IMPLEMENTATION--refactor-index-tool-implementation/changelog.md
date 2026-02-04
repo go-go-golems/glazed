@@ -219,3 +219,12 @@ Step 23: evaluate AST caching by blob SHA (analysis update)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md — added caching evaluation
 
+
+## 2026-02-03
+
+Step 24: add validation playbook and upload to reMarkable
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/reference/02-validation-playbook.md — validation steps
+
