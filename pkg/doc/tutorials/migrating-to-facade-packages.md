@@ -163,6 +163,11 @@ if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 - `middlewares.UpdateFromMap` -> `sources.FromMap` / `sources.FromMapFirst`
 - `middlewares.ExecuteMiddlewares` -> `sources.Execute`
 - `fields.WithParseStepSource` -> `sources.WithSource`
+- `middlewares.WrapWithWhitelistedLayers` -> `sources.WrapWithWhitelistedSections`
+- `middlewares.WrapWithWhitelistedLayerParameters` -> `sources.WrapWithWhitelistedSectionFields`
+- `middlewares.BlacklistLayers` -> `sources.BlacklistSections`
+- `middlewares.BlacklistLayerParameters` -> `sources.BlacklistSectionFields`
+- `middlewares.UpdateFromMapAsDefaultFirst` -> `sources.FromMapAsDefaultFirst`
 
 **New:**
 
@@ -174,6 +179,38 @@ err := sources.Execute(schema_, vals,
     sources.FromFile("config.yaml", sources.WithParseOptions(sources.WithSource("config"))),
     sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
 )
+```
+
+**Signature change to keep in mind:**
+
+```go
+// Old
+middlewares.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares_...)
+
+// New
+sources.Execute(description.Schema.Clone(), parsedValues, middlewares_...)
+```
+
+### Step 5.5: YAML command schema key rename
+
+If you load commands from YAML, replace `layers:` with `sections:`. The legacy `layers:` key no longer matches the new schema API.
+
+```yaml
+# Old
+layers:
+  - slug: default
+    name: Default
+    flags:
+      - name: limit
+        type: int
+
+# New
+sections:
+  - slug: default
+    name: Default
+    flags:
+      - name: limit
+        type: int
 ```
 
 ### Step 6: Settings sections
