@@ -93,3 +93,12 @@ Step 9: implement gopls references ingestion (commit b38dc2b)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_gopls_refs.go — gopls references
 
+
+## 2026-02-03
+
+Step 10: add tree-sitter ingestion (commit 43be56f)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_tree_sitter.go — Tree-sitter pass
+
