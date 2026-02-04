@@ -138,3 +138,12 @@ Step 14: add commit-range worktree orchestration (commit eb15201)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_range.go — Range ingestion
 
+
+## 2026-02-03
+
+Step 15: add CLI commands for commits/gopls/tree-sitter/doc hits/range ingest (commit a4afa3b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/root.go — wire new ingest commands
+
