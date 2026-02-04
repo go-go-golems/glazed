@@ -147,3 +147,12 @@ Step 15: add CLI commands for commits/gopls/tree-sitter/doc hits/range ingest (c
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/root.go — wire new ingest commands
 
+
+## 2026-02-03
+
+Step 16: add smoke tests for commit lineage, range, and gopls refs (commit 74b2b8c)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go — test coverage for commit lineage
+
