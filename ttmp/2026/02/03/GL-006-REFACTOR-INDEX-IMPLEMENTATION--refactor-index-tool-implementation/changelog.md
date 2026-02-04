@@ -156,3 +156,12 @@ Step 16: add smoke tests for commit lineage, range, and gopls refs (commit 74b2b
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go — test coverage for commit lineage
 
+
+## 2026-02-03
+
+Step 17: manual CLI sanity; range ingest with symbols/code-units failed due to worktree package load errors
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_range.go — worktree ingestion behavior observed
+

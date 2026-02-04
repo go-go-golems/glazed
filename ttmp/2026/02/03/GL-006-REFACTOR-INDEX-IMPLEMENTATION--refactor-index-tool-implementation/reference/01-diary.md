@@ -868,3 +868,53 @@ I added golden smoke tests for commit lineage ingestion, range orchestration, an
 
 ### Technical details
 - Commit ingestion test uses a multi-change commit to validate file/blob counts.
+
+## Step 17: Manual CLI sanity on refactorio repo
+
+I ran the new CLI commands against the refactorio repo itself using temporary SQLite databases. The core ingest commands (commits, symbols, code-units, doc-hits, gopls-refs, tree-sitter) produced expected rows, and a range ingest with diff-only completed successfully.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 15)
+
+**Assistant interpretation:** Execute manual CLI sanity runs in the repo and record any issues.
+
+**Inferred user intent:** Confirm the CLI works end-to-end before closing out the ticket.
+
+**Commit (code):** N/A (manual validation only)
+
+### What I did
+- Ran `go run ./cmd/refactor-index` commands against the refactorio repo using a temp SQLite DB.
+- Verified output for `init`, `ingest commits`, `ingest symbols`, `ingest code-units`, `ingest doc-hits`, `ingest gopls-refs`, and `ingest tree-sitter`.
+- Attempted `ingest range` with diff+symbols+code-units, then reran diff-only after the initial failure.
+
+### Why
+- Manual smoke runs catch CLI wiring or runtime issues that tests may not cover.
+
+### What worked
+- CLI outputs for commit lineage, symbols, code units, doc hits, gopls refs, and tree-sitter were produced with non-zero counts.
+- `ingest range --include-diff` completed and returned per-commit run IDs.
+
+### What didn't work
+- `go run ./cmd/refactor-index ingest range --db <tmp> --repo . --from HEAD~1 --to HEAD --include-diff --include-symbols --include-code-units` failed with go/packages load errors from worktrees:
+  - `could not import github.com/go-go-golems/oak/pkg/api (invalid package name: "")`
+  - `vals.DecodeSectionInto undefined (type *values.Values has no field or method DecodeSectionInto)`
+  - `Error: package load errors`
+
+### What I learned
+- Commit-range ingestion inherits go/packages dependency resolution inside worktrees, which can diverge from the workspace modules.
+
+### What was tricky to build
+- The worktree path loads module dependencies without the surrounding go.work context, which surfaces API mismatches for glazed/oak in older module versions.
+
+### What warrants a second pair of eyes
+- Determine the best fix for worktree package loading (e.g., injecting `GOWORK`, adjusting `packages.Config.Env`, or changing DecodeSectionInto usage) so range ingest can include symbols/code units reliably.
+
+### What should be done in the future
+- Add a configurable environment override for go/packages when running ingestion in worktrees.
+
+### Code review instructions
+- Focus on `refactorio/pkg/refactorindex/ingest_range.go` and `refactorio/pkg/refactorindex/ingest_symbols.go` for environment handling.
+
+### Technical details
+- Successful manual commands included: `init`, `ingest commits`, `ingest symbols`, `ingest code-units`, `ingest doc-hits`, `ingest gopls-refs`, `ingest tree-sitter`, and `ingest range --include-diff`.

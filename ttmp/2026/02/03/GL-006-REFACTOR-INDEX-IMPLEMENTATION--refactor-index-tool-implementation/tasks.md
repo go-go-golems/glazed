@@ -19,4 +19,4 @@
 - [x] Add commit-aware worktree orchestration for range ingest (diff + AST + gopls + rg + treesitter)
 - [x] Add CLI commands for commit lineage, tree-sitter, doc hits, gopls refs, and range ingest
 - [x] Extend smoke tests for commit lineage, gopls refs (skip if missing), and range ingest
-- [ ] Run manual CLI sanity on refactorio repo after tests
+- [x] Run manual CLI sanity on refactorio repo after tests
