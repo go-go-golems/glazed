@@ -192,3 +192,12 @@ Step 20: link symbol occurrences to commit IDs (commit 2980f06)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — symbol_occurrences commit_id
 
+
+## 2026-02-03
+
+Step 21: link code unit snapshots to commit IDs (commit 7bcba24)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — code_unit_snapshots commit_id
+
