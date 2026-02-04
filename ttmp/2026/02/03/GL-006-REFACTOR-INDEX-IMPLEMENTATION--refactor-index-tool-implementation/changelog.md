@@ -48,3 +48,12 @@ Step 4: implement code unit snapshot ingestion (commit 98a6142)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_code_units.go — Code unit ingestion
 
+
+## 2026-02-03
+
+Step 5: add CLI commands for symbols/code-units (commit 99bd539)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/ingest_symbols.go — CLI wiring
+

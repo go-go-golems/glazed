@@ -19,6 +19,12 @@ RelatedFiles:
       Note: GL-006 design doc
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md
       Note: GL-006 task breakdown
+    - Path: refactorio/cmd/refactor-index/ingest_code_units.go
+      Note: CLI command for code unit snapshots
+    - Path: refactorio/cmd/refactor-index/ingest_symbols.go
+      Note: CLI command for symbols ingestion
+    - Path: refactorio/cmd/refactor-index/root.go
+      Note: Wired new ingest subcommands
     - Path: refactorio/pkg/refactorindex/ingest_code_units.go
       Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
@@ -29,10 +35,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:36:12-05:00
+LastUpdated: 2026-02-03T19:38:42-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -237,3 +244,50 @@ I added the code unit snapshot ingestion pipeline, capturing function/method/typ
 
 ### Technical details
 - Body hash uses SHA-256 of normalized text (CRLF → LF, trim trailing whitespace).
+
+## Step 5: Add CLI commands for symbol and code unit ingestion
+
+I added `ingest symbols` and `ingest code-units` GlazeCommands and wired them into the `ingest` command group. Each command calls the new ingestion functions and emits structured rows with counts.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Expose the new ingestion passes via CLI commands that follow the Glazed patterns.
+
+**Inferred user intent:** Make pass 2 ingestion usable from the CLI for manual runs and tests.
+
+**Commit (code):** 99bd539 — "Add CLI commands for symbol and code-unit ingestion"
+
+### What I did
+- Added `cmd/refactor-index/ingest_symbols.go` and `cmd/refactor-index/ingest_code_units.go`.
+- Wired both commands under the `ingest` group in `root.go`.
+- Ran `go test ./... -count=1`.
+
+### Why
+- CLI wiring is required before golden tests can run through the command surface.
+
+### What worked
+- The commands compile and return structured output rows.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A (straightforward wiring).
+
+### What warrants a second pair of eyes
+- Ensure command naming (`code-units`) aligns with expected UX.
+
+### What should be done in the future
+- Add golden tests for symbols and code unit snapshots.
+
+### Code review instructions
+- Start at `refactorio/cmd/refactor-index/ingest_symbols.go` and `refactorio/cmd/refactor-index/ingest_code_units.go`.
+- Check `refactorio/cmd/refactor-index/root.go` for wiring.
+
+### Technical details
+- Output rows include counts for symbols/occurrences and code-units/snapshots.
