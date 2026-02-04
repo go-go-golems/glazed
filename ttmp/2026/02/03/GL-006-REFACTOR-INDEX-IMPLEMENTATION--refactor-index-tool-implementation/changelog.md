@@ -30,3 +30,12 @@ Step 2: extend schema for symbols/code units (commit 0d30b1d)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — Schema additions
 
+
+## 2026-02-03
+
+Step 3: implement AST symbol ingestion (commit 9d5238b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_symbols.go — Symbol ingestion
+
