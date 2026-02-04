@@ -27,20 +27,25 @@ RelatedFiles:
       Note: Wired new ingest subcommands
     - Path: refactorio/pkg/refactorindex/ingest_code_units.go
       Note: Code unit snapshot ingestion
+    - Path: refactorio/pkg/refactorindex/ingest_commits.go
+      Note: Commit lineage ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
       Note: Golden tests for symbols and code units
     - Path: refactorio/pkg/refactorindex/schema.go
-      Note: Pass 2 schema additions
+      Note: |-
+        Pass 2 schema additions
+        Commit lineage tables
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:47:07-05:00
+LastUpdated: 2026-02-03T19:52:03-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -385,3 +390,51 @@ I reviewed the GL-005 design doc and added the remaining pipeline tasks to GL-00
 
 ### Technical details
 - New tasks target `ts_captures`, `doc_hits`, `symbol_refs`, `commits/commit_files/file_blobs`, and reporting SQL/templating.
+
+## Step 8: Add commit lineage ingestion
+
+I added commit lineage schema tables and an ingestion pipeline that walks commits in a range, captures commit metadata, and records file changes with blob SHAs and basic blob stats. This builds the commit-aware backbone needed for per-commit AST, gopls, tree-sitter, and doc scan runs.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement commit lineage ingestion to support commit-aware indexing.
+
+**Inferred user intent:** Make the index capable of tracking history across commit ranges.
+
+**Commit (code):** b4aecb9 — "Add commit lineage ingestion"
+
+### What I did
+- Added `commits`, `commit_files`, and `file_blobs` tables (schema version 4).
+- Implemented `IngestCommits` to parse commit metadata and diff-tree name-status entries.
+- Captured blob SHAs and basic size/line-count stats for new blobs.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Commit lineage is required to drive commit-aware AST/gopls/tree-sitter ingestion.
+
+### What worked
+- The ingestion pipeline compiles and integrates with the existing store/run flow.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Using `git show -s --format` with a unit separator keeps commit parsing robust.
+
+### What was tricky to build
+- Handling rename/copy entries required mapping old/new paths and resolving blobs on parent commits.
+
+### What warrants a second pair of eyes
+- Review blob stats computation for large/binary files and the use of parent commit for old blobs.
+
+### What should be done in the future
+- Wire commit ingestion into the CLI and add tests/fixtures.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_commits.go`.
+- Review `refactorio/pkg/refactorindex/schema.go` and `refactorio/pkg/refactorindex/store.go` for new tables/helpers.
+
+### Technical details
+- Commit parsing format: `%H%x1f%an%x1f%ae%x1f%ad%x1f%cd%x1f%s%x1f%b`.
