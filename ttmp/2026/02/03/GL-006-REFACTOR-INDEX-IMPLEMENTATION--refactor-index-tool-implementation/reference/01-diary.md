@@ -19,6 +19,8 @@ RelatedFiles:
       Note: GL-006 design doc
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md
       Note: GL-006 task breakdown
+    - Path: refactorio/pkg/refactorindex/ingest_code_units.go
+      Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/schema.go
@@ -27,10 +29,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:30:27-05:00
+LastUpdated: 2026-02-03T19:36:12-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -186,3 +189,51 @@ I implemented the pass 2 AST symbol ingestion pipeline using `go/packages` and a
 
 ### Technical details
 - Symbol hashes are SHA-256 of `pkg|name|kind|recv|signature`.
+
+## Step 4: Implement code unit snapshot ingestion
+
+I added the code unit snapshot ingestion pipeline, capturing function/method/type spans, body text, doc text, and hashes. The implementation computes stable unit hashes, stores snapshots with start/end line/column, and tracks counts for code units and snapshots.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Build the code unit snapshot pass using AST nodes and type info.
+
+**Inferred user intent:** Capture stable, queryable code unit snapshots to support refactor diffing.
+
+**Commit (code):** 98a6142 — "Implement code unit snapshot ingestion"
+
+### What I did
+- Added `IngestCodeUnits` to walk AST declarations and record code unit snapshots.
+- Added store helpers for `code_units` and `code_unit_snapshots` inserts.
+- Normalized body text for hashing and kept raw body text for snapshots.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Code unit snapshots enable diffing and historical tracking for functions and types.
+
+### What worked
+- Snapshot extraction uses node spans to capture accurate start/end positions.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Using node spans (not symbol positions) is necessary for accurate snapshot ranges.
+
+### What was tricky to build
+- Handling multi-spec `type (...)` blocks required choosing between GenDecl and TypeSpec spans.
+
+### What warrants a second pair of eyes
+- Review span selection logic for `type` declarations with multiple specs.
+
+### What should be done in the future
+- Add CLI wiring for `ingest code-units` and golden tests.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_code_units.go`.
+- Review `refactorio/pkg/refactorindex/store.go` for code unit inserts.
+
+### Technical details
+- Body hash uses SHA-256 of normalized text (CRLF → LF, trim trailing whitespace).

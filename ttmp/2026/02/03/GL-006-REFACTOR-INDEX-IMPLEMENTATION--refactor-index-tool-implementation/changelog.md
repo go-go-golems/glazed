@@ -39,3 +39,12 @@ Step 3: implement AST symbol ingestion (commit 9d5238b)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_symbols.go — Symbol ingestion
 
+
+## 2026-02-03
+
+Step 4: implement code unit snapshot ingestion (commit 98a6142)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_code_units.go — Code unit ingestion
+
