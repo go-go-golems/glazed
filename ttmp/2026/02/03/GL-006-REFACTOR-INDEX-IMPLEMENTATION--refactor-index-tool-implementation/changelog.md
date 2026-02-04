@@ -120,3 +120,12 @@ Step 12: add report generation + CLI (commit e37404b)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/report.go — Report generation
 
+
+## 2026-02-03
+
+Step 13: add fixtures for gopls/tree-sitter/doc scans (commit 67a68d4)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_tree_sitter_smoke_test.go — Fixtures
+
