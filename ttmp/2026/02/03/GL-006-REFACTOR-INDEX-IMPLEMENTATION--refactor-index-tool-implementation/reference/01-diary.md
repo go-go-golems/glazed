@@ -19,12 +19,15 @@ RelatedFiles:
       Note: GL-006 design doc
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md
       Note: GL-006 task breakdown
+    - Path: refactorio/pkg/refactorindex/schema.go
+      Note: Pass 2 schema additions
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:25:40-05:00
+LastUpdated: 2026-02-03T19:27:06-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -82,3 +85,50 @@ This step sets the scope and data model for the next round of code changes while
 ### Technical details
 - `symbol_defs` + `symbol_occurrences` tables for stable symbol hashing and run-specific occurrences.
 - `code_units` + `code_unit_snapshots` for body/doc text + hashes.
+
+## Step 2: Extend schema for symbols and code units
+
+I extended the SQLite schema to include symbol definitions/occurrences and code unit snapshots, bumping the schema version and adding indexes for hash lookups. This creates the storage foundation needed before wiring AST ingestion.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement the first concrete GL-006 task by extending the schema for pass 2 data.
+
+**Inferred user intent:** Ensure the DB can persist symbol and code unit data before we build ingestion logic.
+
+**Commit (code):** 0d30b1d — "Extend schema for symbols and code units"
+
+### What I did
+- Added `symbol_defs`, `symbol_occurrences`, `code_units`, and `code_unit_snapshots` tables.
+- Added hash/run-based indexes for symbol and code-unit lookups.
+- Bumped `SchemaVersion` to 2.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- The AST ingestion and snapshot work needs stable tables and indexes first.
+
+### What worked
+- Schema updates compile and the existing tests still pass.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A (straightforward schema additions).
+
+### What warrants a second pair of eyes
+- Verify schema naming and indexes align with the pass 2 analysis doc.
+
+### What should be done in the future
+- Implement AST symbol ingestion and code unit snapshot extraction.
+
+### Code review instructions
+- Review `refactorio/pkg/refactorindex/schema.go` for new tables and indexes.
+
+### Technical details
+- New tables include hash columns (`symbol_hash`, `unit_hash`, `body_hash`) for stable identity and diffing.
