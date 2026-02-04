@@ -29,6 +29,8 @@ RelatedFiles:
       Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_commits.go
       Note: Commit lineage ingestion
+    - Path: refactorio/pkg/refactorindex/ingest_gopls_refs.go
+      Note: gopls references ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
@@ -37,14 +39,16 @@ RelatedFiles:
       Note: |-
         Pass 2 schema additions
         Commit lineage tables
+        symbol_refs table
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:52:03-05:00
+LastUpdated: 2026-02-03T19:56:44-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -438,3 +442,52 @@ I added commit lineage schema tables and an ingestion pipeline that walks commit
 
 ### Technical details
 - Commit parsing format: `%H%x1f%an%x1f%ae%x1f%ad%x1f%cd%x1f%s%x1f%b`.
+
+## Step 9: Implement gopls references ingestion
+
+I added gopls reference ingestion with raw output capture and parsing into `symbol_refs`. The new pipeline runs `gopls prepare_rename` and `gopls references -declaration`, stores outputs, and normalizes reference locations to file IDs.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement the gopls references ingestion pass described in GL-005.
+
+**Inferred user intent:** Capture semantic reference data into SQLite for refactor checks.
+
+**Commit (code):** b38dc2b — "Add gopls references ingestion"
+
+### What I did
+- Added `symbol_refs` table and indexes (schema version 5).
+- Implemented `IngestGoplsReferences` with prepare_rename + references calls.
+- Added parsing for multiple gopls reference output formats.
+- Added store helpers to insert symbol refs and resolve symbol IDs by hash.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- gopls references provide semantic cross-package usage data that AST alone can’t capture.
+
+### What worked
+- The ingestion pipeline compiles and captures raw outputs per run.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- gopls reference output may include ranges, so parsing must handle multiple span formats.
+
+### What was tricky to build
+- Mapping references back to symbol definitions requires a stable symbol hash from the target list.
+
+### What warrants a second pair of eyes
+- Validate the output parser against real gopls reference output variants.
+
+### What should be done in the future
+- Add fixtures/tests for gopls parsing (Task 13).
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_gopls_refs.go`.
+- Review `refactorio/pkg/refactorindex/schema.go` and `refactorio/pkg/refactorindex/store.go` for symbol_refs support.
+
+### Technical details
+- Raw outputs are stored under `sources/<run_id>/gopls/`.

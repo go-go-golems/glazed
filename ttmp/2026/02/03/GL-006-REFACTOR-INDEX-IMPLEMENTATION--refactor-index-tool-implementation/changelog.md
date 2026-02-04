@@ -84,3 +84,12 @@ Step 8: add commit lineage ingestion (commit b4aecb9)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_commits.go — Commit ingestion
 
+
+## 2026-02-03
+
+Step 9: implement gopls references ingestion (commit b38dc2b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_gopls_refs.go — gopls references
+
