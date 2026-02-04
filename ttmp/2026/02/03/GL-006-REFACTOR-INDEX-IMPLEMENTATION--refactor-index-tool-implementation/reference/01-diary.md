@@ -31,6 +31,8 @@ RelatedFiles:
       Note: Code unit snapshot ingestion
     - Path: refactorio/pkg/refactorindex/ingest_commits.go
       Note: Commit lineage ingestion
+    - Path: refactorio/pkg/refactorindex/ingest_doc_hits.go
+      Note: Doc hits ingestion
     - Path: refactorio/pkg/refactorindex/ingest_gopls_refs.go
       Note: gopls references ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
@@ -44,14 +46,16 @@ RelatedFiles:
         Pass 2 schema additions
         Commit lineage tables
         symbol_refs table
+        doc_hits table
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T20:01:35-05:00
+LastUpdated: 2026-02-03T20:04:00-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -546,3 +550,52 @@ I added a tree-sitter ingestion pipeline using Oak’s query builder, along with
 
 ### Technical details
 - Tree-sitter capture positions are stored as 1-based line/column from `StartPoint`/`EndPoint`.
+
+## Step 11: Implement doc/string scan ingestion via ripgrep
+
+I added the doc/string scan ingestion pipeline using ripgrep, along with schema support for `doc_hits`. The new pass reads a terms file, captures matches with line/column context, and stores raw outputs per run.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement the doc/string scan pass described in GL-005.
+
+**Inferred user intent:** Ensure documentation and string occurrences are indexed for refactor cleanup.
+
+**Commit (code):** f824ea0 — "Add doc hit ingestion via ripgrep"
+
+### What I did
+- Added `doc_hits` table and indexes (schema version 7).
+- Implemented `IngestDocHits` to run `rg` per term and insert match rows.
+- Captured raw ripgrep outputs under `sources/<run_id>/doc-hits`.
+- Added store helper for doc hit inserts.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Textual scans are required to catch doc/config remnants during refactors.
+
+### What worked
+- The ingestion handles empty matches (rg exit code 1) and normalizes file paths.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Ripgrep’s exit code for no matches must be treated as a non-error.
+
+### What was tricky to build
+- Parsing `rg` output requires careful splitting to avoid losing match text.
+
+### What warrants a second pair of eyes
+- Validate that `rg` output parsing handles paths containing colons (edge case on some platforms).
+
+### What should be done in the future
+- Add fixtures for doc-hits parsing (Task 13).
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_doc_hits.go`.
+- Review `refactorio/pkg/refactorindex/schema.go` and `refactorio/pkg/refactorindex/store.go` for `doc_hits`.
+
+### Technical details
+- Doc hits store `term` and raw `match_text` from ripgrep output.
