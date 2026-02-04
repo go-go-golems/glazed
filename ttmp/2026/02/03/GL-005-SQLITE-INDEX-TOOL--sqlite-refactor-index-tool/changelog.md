@@ -65,3 +65,12 @@ Step 3: add schema + store helpers (commit c50d9bf)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — Initial schema
 
+
+## 2026-02-03
+
+Step 4: implement diff ingestion pipeline (commit b036396)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_diff.go — Ingest orchestration
+

@@ -19,7 +19,9 @@ RelatedFiles:
     - Path: glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/tasks.md
       Note: Task breakdown for GL-005
     - Path: refactorio/cmd/refactor-index/ingest_diff.go
-      Note: Ingest diff GlazeCommand scaffold
+      Note: |-
+        Ingest diff GlazeCommand scaffold
+        Ingest diff command wiring
     - Path: refactorio/cmd/refactor-index/init.go
       Note: Init GlazeCommand scaffold
     - Path: refactorio/cmd/refactor-index/list_diff_files.go
@@ -28,16 +30,21 @@ RelatedFiles:
       Note: Cobra root command wiring for refactor-index
     - Path: refactorio/go.mod
       Note: CLI dependencies
+    - Path: refactorio/pkg/refactorindex/diff_parse.go
+      Note: Name-status and unified diff parsing
+    - Path: refactorio/pkg/refactorindex/ingest_diff.go
+      Note: Diff ingestion orchestration
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: MVP SQLite schema
     - Path: refactorio/pkg/refactorindex/store.go
       Note: Store helpers for runs and diff inserts
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:06:31-05:00
+LastUpdated: 2026-02-03T19:10:29-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -204,3 +211,54 @@ The schema matches the MVP slice from the design doc (meta runs, files, diff fil
 ### Technical details
 - Schema version tracking uses a single `schema_versions` row with version 1.
 - Raw output persistence stores tool outputs under a per-run sources directory.
+
+## Step 4: Implement diff ingestion pipeline and wire init/ingest commands
+
+I wired the `init` and `ingest diff` commands to the new `refactorindex` store and implemented the full diff ingestion pipeline: running git commands, parsing name-status and unified diff hunks, and inserting rows into SQLite. The ingest command now produces structured output with counts for files, hunks, and lines.
+
+This step turns the scaffolding into a working ingest path that writes normalized diff data and captures raw sources for later debugging.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Hook the CLI commands to the store helpers and implement actual diff ingestion logic.
+
+**Inferred user intent:** Achieve a functional end-to-end ingest pipeline before adding query and tests.
+
+**Commit (code):** b036396 — "Implement diff ingestion pipeline"
+
+### What I did
+- Added `pkg/refactorindex/ingest_diff.go` to orchestrate git calls, run creation, raw output capture, and inserts.
+- Added diff parsing helpers for name-status and unified diffs.
+- Updated `init` and `ingest diff` commands to call the store and output rows.
+
+### Why
+- The ingest path is the backbone of the refactor index; it must be stable before query/report commands and tests can be meaningful.
+
+### What worked
+- Parsing and insert helpers compile together and provide a single ingest entry point for the CLI.
+
+### What didn't work
+- N/A (no runtime tests yet).
+
+### What I learned
+- `git diff --name-status -z` parsing needs explicit handling for rename/copy records to avoid misaligned paths.
+
+### What was tricky to build
+- Parsing `@@` hunk headers correctly required careful handling of missing line-count segments (defaults to 1).
+
+### What warrants a second pair of eyes
+- Validate the unified diff parsing logic against edge cases (empty files, renamed files, and no-newline markers).
+
+### What should be done in the future
+- Implement the diff-files query command and verify with golden smoke tests.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_diff.go` for the orchestration flow.
+- Review `refactorio/pkg/refactorindex/diff_parse.go` for parsing logic.
+- Check `refactorio/cmd/refactor-index/ingest_diff.go` for command wiring.
+
+### Technical details
+- Raw outputs are written under `sources/<run_id>/` with name-status and unified patch files.
+- Diff lines store optional old/new line numbers using nullable integers.
