@@ -30,13 +30,25 @@ RelatedFiles:
         wire new ingest commands
         wire list symbols
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go
-      Note: commit lineage + range smoke tests
+      Note: |-
+        commit lineage + range smoke tests
+        assert commit linkage
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_gopls_refs_smoke_test.go
       Note: gopls references smoke test
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_range.go
+      Note: map commit hash to commit id
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols.go
+      Note: pass commit id
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
       Note: inventory smoke assertion
     - Path: ../../../../../../../refactorio/pkg/refactorindex/query.go
-      Note: symbol inventory query
+      Note: |-
+        symbol inventory query
+        commit id lookup helper
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/schema.go
+      Note: add commit_id to symbol_occurrences
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/store.go
+      Note: commit_id insert + ensureColumn
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -89,6 +101,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1027,3 +1040,52 @@ I added a symbol inventory listing that joins symbol definitions to occurrences 
 
 ### Technical details
 - The inventory query joins `symbol_occurrences`, `symbol_defs`, and `files` and can be filtered by run, kind, name, package, path, and exported-only.
+
+## Step 20: Link symbol occurrences to commit IDs
+
+I updated the schema and ingestion flow so symbol occurrences can be linked to commit IDs when available. Range ingestion now looks up commit IDs for each commit hash and passes them into symbol ingestion, and the smoke test asserts commit linkage.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, continue"
+
+**Assistant interpretation:** Proceed with the next pending task in GL-006.
+
+**Inferred user intent:** Keep iterating through the remaining implementation tasks.
+
+**Commit (code):** 2980f06 — "Link symbol occurrences to commits"
+
+### What I did
+- Added `commit_id` to `symbol_occurrences` schema and ensured the column exists for existing DBs.
+- Added a commit-id lookup helper and used it in commit-range ingestion.
+- Updated symbol ingestion to accept an optional commit ID.
+- Extended the range smoke test to verify commit-linked symbol occurrences.
+- Ran `go test ./... -count=1`.
+
+### Why
+- The design requires commit-aware symbol occurrences so queries can filter by commit lineage.
+
+### What worked
+- Commit-range ingestion now records symbol occurrences with commit IDs in the DB.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Adding a small migration helper is enough to evolve schema columns without a full migration system.
+
+### What was tricky to build
+- Ensuring indexes are created only after the column exists required a post-schema step.
+
+### What warrants a second pair of eyes
+- Confirm the commit-id lookup (`commits` table scoped by run id) is the correct join semantics for downstream queries.
+
+### What should be done in the future
+- Apply the same commit-id linkage to code unit snapshots (next task).
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/schema.go`, `refactorio/pkg/refactorindex/store.go`, and `refactorio/pkg/refactorindex/ingest_range.go`.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- A new index `idx_symbol_occurrences_commit_id` is created after ensuring the column exists.
