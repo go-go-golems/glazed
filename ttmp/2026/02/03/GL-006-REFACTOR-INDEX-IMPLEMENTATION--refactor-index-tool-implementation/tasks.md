@@ -15,5 +15,5 @@
 - [x] Implement tree-sitter ingestion (Oak query builder) into ts_captures for non-Go files
 - [x] Implement doc/string scan ingestion (ripgrep) into doc_hits with commit-aware runs
 - [x] Add report generation (SQL-backed queries + markdown templates) and CLI report command
-- [ ] Add tests/fixtures for gopls, tree-sitter, doc scans (golden outputs)
+- [x] Add tests/fixtures for gopls, tree-sitter, doc scans (golden outputs)
 - [ ] Add commit-aware worktree orchestration for range ingest (diff + AST + gopls + rg + treesitter)

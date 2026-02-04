@@ -36,13 +36,17 @@ RelatedFiles:
     - Path: refactorio/pkg/refactorindex/ingest_doc_hits.go
       Note: Doc hits ingestion
     - Path: refactorio/pkg/refactorindex/ingest_gopls_refs.go
-      Note: gopls references ingestion
+      Note: |-
+        gopls references ingestion
+        Parsing fix
     - Path: refactorio/pkg/refactorindex/ingest_symbols.go
       Note: AST symbol ingestion
     - Path: refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
       Note: Golden tests for symbols and code units
     - Path: refactorio/pkg/refactorindex/ingest_tree_sitter.go
       Note: Tree-sitter ingestion
+    - Path: refactorio/pkg/refactorindex/ingest_tree_sitter_smoke_test.go
+      Note: Tree-sitter/doc hits fixtures
     - Path: refactorio/pkg/refactorindex/report.go
       Note: Report generator
     - Path: refactorio/pkg/refactorindex/schema.go
@@ -55,10 +59,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T20:07:32-05:00
+LastUpdated: 2026-02-03T20:13:33-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -653,3 +658,52 @@ I added a minimal report generation pipeline backed by embedded SQL queries and 
 
 ### Technical details
 - Reports use embedded SQL + markdown templates keyed by filename.
+
+## Step 13: Add fixtures/tests for gopls/tree-sitter/doc scans
+
+I added fixture-style tests to validate gopls location parsing, tree-sitter ingestion with a simple Go query, and doc-hits ingestion via ripgrep (skipping if `rg` is unavailable). I also tightened tree-sitter file selection to avoid scanning the query YAML during tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Add test coverage for the new ingestion passes and parsing logic.
+
+**Inferred user intent:** Ensure pass 3+ ingestion paths have regression coverage.
+
+**Commit (code):** 67a68d4 — "Add fixtures for gopls/tree-sitter/doc scans"
+
+### What I did
+- Added tests for gopls reference parsing and tree-sitter/doc hit ingestion.
+- Adjusted tree-sitter ingestion to skip directory scanning when a glob is provided.
+- Ensured doc-hit tests write sources under temp dirs to avoid repo pollution.
+- Ran `go test ./pkg/refactorindex -count=1`.
+
+### Why
+- Parsing and ingestion passes need fixtures to prevent regressions as the pipeline grows.
+
+### What worked
+- Tests pass locally and cover the parsing/ingestion helpers.
+
+### What didn't work
+- Initial test run failed because gopls span parsing didn’t handle `line:col-line:col` format; fixed parser.
+- Tests created a stray `sources/` dir before setting temp `SourcesDir`; fixed in test.
+
+### What I learned
+- gopls output uses multiple span formats, so parsing must be defensive.
+
+### What was tricky to build
+- Avoiding tree-sitter scanning the query YAML required changing the ingestion option ordering.
+
+### What warrants a second pair of eyes
+- Review the gopls parsing logic for Windows-style paths with drive letters.
+
+### What should be done in the future
+- Extend fixtures as more reports and ingestion passes are added.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/ingest_tree_sitter_smoke_test.go`.
+- Review `refactorio/pkg/refactorindex/ingest_gopls_refs.go` and `refactorio/pkg/refactorindex/ingest_tree_sitter.go`.
+
+### Technical details
+- Tree-sitter tests use a `go` query YAML capturing function identifiers.
