@@ -11,7 +11,7 @@
 - [x] Add CLI commands: ingest symbols / ingest code-units (GlazeCommand + outputs)
 - [x] Golden tests for AST symbols + code unit snapshots using temp git repo
 - [x] Add commit lineage schema + ingest commits/commit_files/file_blobs (commit-aware runs/worktrees)
-- [ ] Implement gopls references ingestion (prepare_rename + references) with raw output capture
+- [x] Implement gopls references ingestion (prepare_rename + references) with raw output capture
 - [ ] Implement tree-sitter ingestion (Oak query builder) into ts_captures for non-Go files
 - [ ] Implement doc/string scan ingestion (ripgrep) into doc_hits with commit-aware runs
 - [ ] Add report generation (SQL-backed queries + markdown templates) and CLI report command
