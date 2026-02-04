@@ -47,3 +47,12 @@ Step 1: define MVP scope and task breakdown (commit 24cea6d)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/reference/01-diary.md — Diary entry for Step 1
 
+
+## 2026-02-03
+
+Step 2: scaffold refactor-index CLI (commit a1730a2)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/root.go — CLI wiring
+
