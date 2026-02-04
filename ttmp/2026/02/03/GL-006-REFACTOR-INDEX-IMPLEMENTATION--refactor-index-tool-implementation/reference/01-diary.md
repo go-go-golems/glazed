@@ -918,3 +918,55 @@ I ran the new CLI commands against the refactorio repo itself using temporary SQ
 
 ### Technical details
 - Successful manual commands included: `init`, `ingest commits`, `ingest symbols`, `ingest code-units`, `ingest doc-hits`, `ingest gopls-refs`, `ingest tree-sitter`, and `ingest range --include-diff`.
+
+## Step 18: Add follow-up tasks for commit linking and FTS
+
+I added new tasks to GL-006 to capture missing commit linkage for symbol/code-unit snapshots, add FTS indexes, and evaluate AST caching. This keeps the remaining gaps tracked while we defer reports for now.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Add to the current ticket:
+
+- Create tasks for the commit linking. 
+- Not sure how important/hard the AST caching by blob SHA is
+- I don't understand the reference ingestion input + symbol inventory and what it would give us as additional features. 
+- we don't worry about reports yet
+- Add FTS indexes"
+
+**Assistant interpretation:** Update the GL-006 tasks to include commit-linking work, FTS indexes, and a scoped evaluation for AST caching, while deferring report tasks.
+
+**Inferred user intent:** Track the remaining design gaps without committing to report work or big refactors yet.
+
+**Commit (code):** N/A (doc/task updates only)
+
+### What I did
+- Added tasks for commit_id linkage on `symbol_occurrences` and `code_unit_snapshots`.
+- Added a task for FTS indexes on `doc_hits` and `diff_lines`.
+- Added a task to evaluate AST caching by blob SHA.
+
+### Why
+- These are the remaining gaps requested from the GL-005 design doc, minus reports.
+
+### What worked
+- Tasks are now visible in the GL-006 task list.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Ensure FTS scope (tables/columns) matches the intended queries once we implement it.
+
+### What should be done in the future
+- Decide whether AST caching by blob SHA is worth implementing based on repo size and history length.
+
+### Code review instructions
+- Check `glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md` for the new tasks.
+
+### Technical details
+- Tasks added: commit_id linkage, FTS indexes, AST caching evaluation.

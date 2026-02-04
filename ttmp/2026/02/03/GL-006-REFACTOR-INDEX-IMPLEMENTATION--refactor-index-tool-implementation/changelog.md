@@ -165,3 +165,12 @@ Step 17: manual CLI sanity; range ingest with symbols/code-units failed due to w
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_range.go — worktree ingestion behavior observed
 
+
+## 2026-02-03
+
+Step 18: add tasks for commit linkage, FTS indexes, and AST caching evaluation
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md — added follow-up tasks
+

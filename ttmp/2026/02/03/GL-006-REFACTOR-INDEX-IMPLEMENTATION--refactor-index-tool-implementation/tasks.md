@@ -20,3 +20,7 @@
 - [x] Add CLI commands for commit lineage, tree-sitter, doc hits, gopls refs, and range ingest
 - [x] Extend smoke tests for commit lineage, gopls refs (skip if missing), and range ingest
 - [x] Run manual CLI sanity on refactorio repo after tests
+- [ ] Link symbol_occurrences to commit_id (schema change + ingest updates)
+- [ ] Link code_unit_snapshots to commit_id (schema change + ingest updates)
+- [ ] Add FTS indexes for doc_hits.match_text and diff_lines.text
+- [ ] Evaluate AST caching by blob SHA (cost/benefit + scope)
