@@ -23,6 +23,8 @@ RelatedFiles:
       Note: CLI command for code unit snapshots
     - Path: refactorio/cmd/refactor-index/ingest_symbols.go
       Note: CLI command for symbols ingestion
+    - Path: refactorio/cmd/refactor-index/report.go
+      Note: Report CLI
     - Path: refactorio/cmd/refactor-index/root.go
       Note: Wired new ingest subcommands
     - Path: refactorio/go.mod
@@ -41,6 +43,8 @@ RelatedFiles:
       Note: Golden tests for symbols and code units
     - Path: refactorio/pkg/refactorindex/ingest_tree_sitter.go
       Note: Tree-sitter ingestion
+    - Path: refactorio/pkg/refactorindex/report.go
+      Note: Report generator
     - Path: refactorio/pkg/refactorindex/schema.go
       Note: |-
         Pass 2 schema additions
@@ -51,10 +55,11 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T20:04:00-05:00
+LastUpdated: 2026-02-03T20:07:32-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -599,3 +604,52 @@ I added the doc/string scan ingestion pipeline using ripgrep, along with schema 
 
 ### Technical details
 - Doc hits store `term` and raw `match_text` from ripgrep output.
+
+## Step 12: Add report generation and CLI
+
+I added a minimal report generation pipeline backed by embedded SQL queries and markdown templates, plus a `report` CLI command to render outputs to disk. The initial report renders diff-file rows for a given run id.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Implement SQL-backed report generation and expose it via the CLI.
+
+**Inferred user intent:** Provide human-readable report artifacts from index data.
+
+**Commit (code):** e37404b — "Add report generation and CLI"
+
+### What I did
+- Added embedded report queries/templates and a report renderer.
+- Implemented `refactor-index report` to generate markdown files.
+- Added a first report (`diff-files`) with SQL + template.
+- Ran `go test ./... -count=1`.
+
+### Why
+- Reports turn raw index data into actionable summaries.
+
+### What worked
+- Embedding queries/templates avoids runtime path issues.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Embedding makes it easier to distribute reports alongside the CLI.
+
+### What was tricky to build
+- Ensuring SQL rows map cleanly into template data required generic row decoding.
+
+### What warrants a second pair of eyes
+- Review template rendering and column naming for consistency across reports.
+
+### What should be done in the future
+- Add additional report templates and SQL queries as more ingestion passes land.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/report.go` and `refactorio/pkg/refactorindex/reports_embed.go`.
+- Check `refactorio/pkg/refactorindex/reports/queries/diff-files.sql` and template.
+- Review CLI wiring in `refactorio/cmd/refactor-index/report.go` and `root.go`.
+
+### Technical details
+- Reports use embedded SQL + markdown templates keyed by filename.
