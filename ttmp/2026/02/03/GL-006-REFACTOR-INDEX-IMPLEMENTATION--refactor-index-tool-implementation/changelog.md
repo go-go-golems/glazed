@@ -102,3 +102,12 @@ Step 10: add tree-sitter ingestion (commit 43be56f)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_tree_sitter.go — Tree-sitter pass
 
+
+## 2026-02-03
+
+Step 11: add doc hits ingestion (commit f824ea0)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_doc_hits.go — Doc scan ingestion
+
