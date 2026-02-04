@@ -37,7 +37,7 @@ RelatedFiles:
       Note: Symbol insert helpers
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:41:18-05:00
+LastUpdated: 2026-02-03T19:47:07-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -341,3 +341,47 @@ I added a golden smoke test that creates a minimal Go module in a temp directory
 
 ### Technical details
 - The test checks snapshot bodies using SQL `LIKE` for `type Person` and `func Add`.
+
+## Step 7: Add remaining index pipeline tasks from GL-005 design
+
+I reviewed the GL-005 design doc and added the remaining pipeline tasks to GL-006: commit lineage ingestion, gopls references, tree-sitter captures, doc scan ingestion, report generation, worktree orchestration, and golden fixtures. This aligns the implementation backlog with the full indexing roadmap described in GL-005.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Look at the glazed/ttmp/2026/02/03/GL-005-SQLITE-INDEX-TOOL--sqlite-refactor-index-tool/design-doc/01-sqlite-refactor-index-tool.md and the tasks for that index part (treesitter, etc...) and add those to the ticket"
+
+**Assistant interpretation:** Extract the remaining ingestion/reporting tasks from GL-005 and add them as GL-006 tasks.
+
+**Inferred user intent:** Ensure the GL-006 backlog captures the full index pipeline beyond pass 2.
+
+**Commit (code):** N/A
+
+### What I did
+- Added GL-006 tasks for commit lineage ingestion, gopls references, tree-sitter captures, doc scan ingestion, report generation, worktree orchestration, and test fixtures.
+
+### Why
+- The GL-005 design doc defines a broader ingestion roadmap that should be tracked in GL-006.
+
+### What worked
+- Task list now reflects all remaining index pipeline passes.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Review task ordering/prioritization for commit-aware worktree support.
+
+### What should be done in the future
+- Implement the newly added tasks in order of dependency (commit lineage → gopls/tree-sitter/doc scans → reports → golden fixtures).
+
+### Code review instructions
+- Review `glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md` for the updated backlog.
+
+### Technical details
+- New tasks target `ts_captures`, `doc_hits`, `symbol_refs`, `commits/commit_files/file_blobs`, and reporting SQL/templating.
