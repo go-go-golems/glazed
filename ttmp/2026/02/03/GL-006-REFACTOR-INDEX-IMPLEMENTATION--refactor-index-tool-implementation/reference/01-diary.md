@@ -29,14 +29,19 @@ RelatedFiles:
       Note: |-
         wire new ingest commands
         wire list symbols
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_code_units.go
+      Note: pass commit id
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_commits_range_smoke_test.go
       Note: |-
         commit lineage + range smoke tests
         assert commit linkage
+        assert code unit commit linkage
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_gopls_refs_smoke_test.go
       Note: gopls references smoke test
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_range.go
-      Note: map commit hash to commit id
+      Note: |-
+        map commit hash to commit id
+        commit id for code units
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols.go
       Note: pass commit id
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
@@ -46,9 +51,13 @@ RelatedFiles:
         symbol inventory query
         commit id lookup helper
     - Path: ../../../../../../../refactorio/pkg/refactorindex/schema.go
-      Note: add commit_id to symbol_occurrences
+      Note: |-
+        add commit_id to symbol_occurrences
+        code_unit_snapshots commit_id
     - Path: ../../../../../../../refactorio/pkg/refactorindex/store.go
-      Note: commit_id insert + ensureColumn
+      Note: |-
+        commit_id insert + ensureColumn
+        commit_id insert/index
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -101,6 +110,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1089,3 +1099,52 @@ I updated the schema and ingestion flow so symbol occurrences can be linked to c
 
 ### Technical details
 - A new index `idx_symbol_occurrences_commit_id` is created after ensuring the column exists.
+
+## Step 21: Link code unit snapshots to commit IDs
+
+I added commit linkage for code unit snapshots in the schema and ingestion flow. Range ingestion now passes commit IDs into code-unit ingestion, and the range smoke test asserts that snapshots are associated with the commit.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 20)
+
+**Assistant interpretation:** Implement the next task: commit-aware code unit snapshots.
+
+**Inferred user intent:** Keep commit linkage consistent across symbol and code unit data.
+
+**Commit (code):** 7bcba24 — "Link code unit snapshots to commits"
+
+### What I did
+- Added `commit_id` to `code_unit_snapshots` schema and ensured the column exists for existing DBs.
+- Updated code-unit ingestion to accept an optional commit ID and persist it.
+- Passed commit IDs through range ingestion for code-unit snapshots.
+- Extended the range smoke test to verify commit-linked snapshots.
+- Ran `go test ./... -count=1`.
+
+### Why
+- Commit-aware code-unit snapshots are required to query function/type evolution across commits.
+
+### What worked
+- Code-unit snapshots now record commit IDs when running range ingest.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The same migration helper used for symbol occurrences works for code-unit snapshots.
+
+### What was tricky to build
+- Keeping schema/index updates safe for existing DBs required explicit post-schema steps.
+
+### What warrants a second pair of eyes
+- Confirm the new commit_id index on code_unit_snapshots aligns with expected query patterns.
+
+### What should be done in the future
+- Add commit linkage to any new snapshot tables as they are introduced.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/schema.go`, `refactorio/pkg/refactorindex/store.go`, and `refactorio/pkg/refactorindex/ingest_code_units.go`.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- A new index `idx_code_unit_snapshots_commit_id` is created after ensuring the column exists.
