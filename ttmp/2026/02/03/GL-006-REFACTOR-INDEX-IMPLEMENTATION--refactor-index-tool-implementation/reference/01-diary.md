@@ -112,12 +112,15 @@ RelatedFiles:
       Note: Symbol insert helpers
     - Path: ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: AST caching evaluation
+    - Path: ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/reference/02-validation-playbook.md
+      Note: validation playbook
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1250,3 +1253,49 @@ I added an evaluation section to the analysis doc that weighs the cost/benefit o
 
 ### Technical details
 - Added a short decision record covering benefits, costs, and scope for blob SHA caching.
+
+## Step 24: Write and upload validation playbook
+
+I wrote a detailed validation playbook covering end-to-end CLI runs, DB checks, and FTS verification, and uploaded the playbook PDF to the reMarkable device. This gives a copy/paste-ready checklist for manual validation.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Write a detailed playbook for me to test and validate all this incredible functionality you built, so I can see it with my own eyes. Then close the ticket, after uploading the playbook to remarkable"
+
+**Assistant interpretation:** Produce a comprehensive validation playbook, upload it to reMarkable, and then close the ticket.
+
+**Inferred user intent:** Have a practical, hands-on checklist and a synced copy on reMarkable before closing the ticket.
+
+**Commit (code):** N/A (doc update only)
+
+### What I did
+- Created a validation playbook doc with two tracks (refactorio repo and synthetic repo).
+- Included CLI steps, expected outputs, and SQL checks for commit linkage and FTS tables.
+- Uploaded the playbook to `/ai/2026/02/04/GL-006-REFACTOR-INDEX-IMPLEMENTATION` via `remarquee`.
+
+### Why
+- Manual validation is easier with a single, structured checklist.
+
+### What worked
+- `remarquee upload md` succeeded and the file appears in the target directory.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- Ensuring the playbook is copy/paste-safe and avoids dirtying the repo required explicit temp paths.
+
+### What warrants a second pair of eyes
+- Validate that the expected outputs still match the CLI output format after future changes.
+
+### What should be done in the future
+- Update the playbook when new ingestion passes or reports are added.
+
+### Code review instructions
+- Review `glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/reference/02-validation-playbook.md`.
+
+### Technical details
+- Remote path: `/ai/2026/02/04/GL-006-REFACTOR-INDEX-IMPLEMENTATION/02-validation-playbook.pdf`.
