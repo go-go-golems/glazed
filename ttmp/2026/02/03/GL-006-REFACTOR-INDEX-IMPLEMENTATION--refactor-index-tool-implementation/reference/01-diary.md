@@ -21,7 +21,7 @@ RelatedFiles:
       Note: GL-006 task breakdown
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-03T19:24:23-05:00
+LastUpdated: 2026-02-03T19:25:40-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -47,7 +47,7 @@ This step sets the scope and data model for the next round of code changes while
 
 **Inferred user intent:** Ensure GL-006 starts with clear scope, tasks, and documentation before coding begins.
 
-**Commit (code):** N/A
+**Commit (code):** d7d53d0 — "docmgr: start GL-006 analysis and tasks"
 
 ### What I did
 - Drafted a deep analysis document for AST symbols + code unit snapshots.
