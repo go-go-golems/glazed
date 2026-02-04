@@ -201,3 +201,12 @@ Step 21: link code unit snapshots to commit IDs (commit 7bcba24)
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/schema.go — code_unit_snapshots commit_id
 
+
+## 2026-02-03
+
+Step 22: add FTS indexes for diff lines and doc hits (commit 4c03aa7)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/store.go — FTS setup
+

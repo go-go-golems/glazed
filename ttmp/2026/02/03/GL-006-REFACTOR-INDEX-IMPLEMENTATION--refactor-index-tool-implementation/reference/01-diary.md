@@ -36,6 +36,8 @@ RelatedFiles:
         commit lineage + range smoke tests
         assert commit linkage
         assert code unit commit linkage
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_diff_smoke_test.go
+      Note: FTS diff_lines check
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_gopls_refs_smoke_test.go
       Note: gopls references smoke test
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_range.go
@@ -46,6 +48,8 @@ RelatedFiles:
       Note: pass commit id
     - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_symbols_code_units_smoke_test.go
       Note: inventory smoke assertion
+    - Path: ../../../../../../../refactorio/pkg/refactorindex/ingest_tree_sitter_smoke_test.go
+      Note: FTS doc_hits check
     - Path: ../../../../../../../refactorio/pkg/refactorindex/query.go
       Note: |-
         symbol inventory query
@@ -54,10 +58,12 @@ RelatedFiles:
       Note: |-
         add commit_id to symbol_occurrences
         code_unit_snapshots commit_id
+        FTS schema version bump
     - Path: ../../../../../../../refactorio/pkg/refactorindex/store.go
       Note: |-
         commit_id insert + ensureColumn
         commit_id insert/index
+        FTS setup and triggers
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/analysis/01-pass-2-ast-symbols-and-code-unit-snapshots-analysis.md
       Note: Pass 2 analysis
     - Path: glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/design-doc/01-refactor-index-tool-implementation.md
@@ -110,6 +116,7 @@ LastUpdated: 2026-02-03T20:17:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1148,3 +1155,51 @@ I added commit linkage for code unit snapshots in the schema and ingestion flow.
 
 ### Technical details
 - A new index `idx_code_unit_snapshots_commit_id` is created after ensuring the column exists.
+
+## Step 22: Add FTS indexes for diff lines and doc hits
+
+I added FTS5-backed indexes for diff line text and doc hit match text, with triggers to keep the virtual tables in sync. The smoke tests now assert FTS tables contain rows after ingestion.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 20)
+
+**Assistant interpretation:** Implement the FTS index task for doc hits and diff lines.
+
+**Inferred user intent:** Enable fast text search in diff/doc data while keeping tests comprehensive.
+
+**Commit (code):** 4c03aa7 — "Add FTS indexes for diff lines and doc hits"
+
+### What I did
+- Added an FTS setup helper that creates virtual tables and sync triggers for `doc_hits` and `diff_lines`.
+- Rebuilt the FTS index on first creation to populate existing rows.
+- Extended diff/doc smoke tests to verify FTS rows are present.
+- Ran `go test ./... -count=1`.
+
+### Why
+- Full-text indexing makes it practical to query large diff/doc datasets by phrase.
+
+### What worked
+- FTS tables populate automatically via triggers and tests confirm non-zero row counts.
+
+### What didn't work
+- N/A
+
+### What I learned
+- FTS setup is safest when creation and initial rebuild are handled in schema initialization.
+
+### What was tricky to build
+- Ensuring triggers are idempotent and created only when needed without forcing rebuilds every run.
+
+### What warrants a second pair of eyes
+- Validate that the chosen FTS schema (external content tables + triggers) matches expected query patterns.
+
+### What should be done in the future
+- Consider adding helper queries or a report that uses FTS for term lookup.
+
+### Code review instructions
+- Start at `refactorio/pkg/refactorindex/store.go` and the updated smoke tests.
+- Validate with `go test ./... -count=1`.
+
+### Technical details
+- New virtual tables: `doc_hits_fts`, `diff_lines_fts` with triggers for insert/update/delete.
