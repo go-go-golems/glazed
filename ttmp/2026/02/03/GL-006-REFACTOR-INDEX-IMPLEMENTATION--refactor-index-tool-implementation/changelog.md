@@ -174,3 +174,12 @@ Step 18: add tasks for commit linkage, FTS indexes, and AST caching evaluation
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md — added follow-up tasks
 
+
+## 2026-02-03
+
+Step 19: add symbol inventory listing and CLI (commit 094ff98)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/cmd/refactor-index/list_symbols.go — symbol inventory CLI
+

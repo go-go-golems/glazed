@@ -24,3 +24,4 @@
 - [ ] Link code_unit_snapshots to commit_id (schema change + ingest updates)
 - [ ] Add FTS indexes for doc_hits.match_text and diff_lines.text
 - [ ] Evaluate AST caching by blob SHA (cost/benefit + scope)
+- [x] Add symbol inventory listing (symbols + occurrences + target spec output)
