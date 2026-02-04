@@ -75,3 +75,12 @@ Step 7: add remaining pipeline tasks from GL-005 design
 
 - /home/manuel/workspaces/2026-02-02/refactor-glazed-names/glazed/ttmp/2026/02/03/GL-006-REFACTOR-INDEX-IMPLEMENTATION--refactor-index-tool-implementation/tasks.md — Backlog expansion
 
+
+## 2026-02-03
+
+Step 8: add commit lineage ingestion (commit b4aecb9)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-02/refactor-glazed-names/refactorio/pkg/refactorindex/ingest_commits.go — Commit ingestion
+
