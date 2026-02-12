@@ -1,5 +1,5 @@
 ---
-Title: Migration Playbook: Legacy Layers/Parameters API to Schema/Fields/Values/Sources
+Title: 'Migration Playbook: Legacy Layers/Parameters API to Schema/Fields/Values/Sources'
 Slug: migrating-to-facade-packages
 Short: Exhaustive, no-compat playbook for migrating Glazed code from the legacy layers/parameters API to the schema/fields/values/sources API.
 Topics:
@@ -10,10 +10,6 @@ Topics:
 - values
 - sources
 - commands
-Commands:
-- none
-Flags:
-- none
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
@@ -254,7 +250,7 @@ If you reference example paths or files in docs/scripts:
 - github.com/go-go-golems/glazed/pkg/cmds/sources: WrapWithBlacklistedParameterLayers -> WrapWithBlacklistedSectionFields
 - github.com/go-go-golems/glazed/pkg/cmds/sources: LoadParametersFromResolvedFilesForCobra -> LoadFieldsFromResolvedFilesForCobra
 - github.com/go-go-golems/glazed/pkg/cmds/sources: readConfigFileToLayerMap -> readConfigFileToSectionMap
-- github.com/go-go-golems/glazed/pkg/cmds/sources: layers_ -> schema_
+- github.com/go-go-golems/glazed/pkg/cmds/sources: layers_-> schema_
 - github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayers -> parsedValues
 - github.com/go-go-golems/glazed/pkg/cmds/sources: layer -> section
 - github.com/go-go-golems/glazed/pkg/cmds/sources: parsedLayer -> sectionValues
@@ -357,36 +353,36 @@ If you reference example paths or files in docs/scripts:
 ### Appendix B: File renames (git diff --name-status --find-renames)
 
 - Format: `R<score> <old> <new>`
-- R100	cmd/examples/parameter-types/config.yaml	cmd/examples/field-types/config.yaml
-- R100	cmd/examples/parameter-types/sample-lines.txt	cmd/examples/field-types/sample-lines.txt
-- R100	cmd/examples/parameter-types/sample-list.json	cmd/examples/field-types/sample-list.json
-- R067	cmd/examples/parameter-types/sample-text.txt	cmd/examples/field-types/sample-text.txt
-- R100	cmd/examples/parameter-types/sample.json	cmd/examples/field-types/sample.json
-- R100	cmd/examples/parameter-types/sample.yaml	cmd/examples/field-types/sample.yaml
-- R100	cmd/examples/parameter-types/simple-config.yaml	cmd/examples/field-types/simple-config.yaml
-- R100	misc/json-parameters-from-json.json	misc/json-fields-from-json.json
-- R073	pkg/cmds/fields/parameters.go	pkg/cmds/fields/definitions.go
-- R076	pkg/cmds/fields/parameters_from_defaults_test.go	pkg/cmds/fields/definitions_from_defaults_test.go
-- R078	pkg/cmds/fields/parameters_test.go	pkg/cmds/fields/definitions_test.go
-- R091	pkg/cmds/fields/parameter-type.go	pkg/cmds/fields/field-type.go
-- R093	pkg/cmds/fields/parsed-parameter.go	pkg/cmds/fields/field-value.go
-- R076	pkg/cmds/fields/gather-parameters.go	pkg/cmds/fields/gather-fields.go
-- R064	pkg/cmds/fields/gather-parameters_test.go	pkg/cmds/fields/gather-fields_test.go
-- R084	pkg/cmds/fields/test-data/parameters_test.yaml	pkg/cmds/fields/test-data/definitions_test.yaml
-- R084	pkg/cmds/fields/test-data/parameters_validity_test.yaml	pkg/cmds/fields/test-data/definitions_validity_test.yaml
-- R081	pkg/cmds/logging/layer.go	pkg/cmds/logging/section.go
-- R082	pkg/cmds/schema/layer.go	pkg/cmds/schema/schema.go
-- R079	pkg/cmds/schema/layer-impl.go	pkg/cmds/schema/section-impl.go
-- R073	pkg/cmds/schema/layer-impl_test.go	pkg/cmds/schema/section-impl_test.go
-- R074	pkg/cmds/sources/load-parameters-from-json.go	pkg/cmds/sources/load-fields-from-config.go
-- R064	pkg/cmds/sources/tests/wrap-with-restricted-layers.yaml	pkg/cmds/sources/tests/wrap-with-restricted-sections.yaml
-- R097	pkg/cmds/values/parsed-layer.go	pkg/cmds/values/section-values.go
-- R057	pkg/cmds/values/parsed-layer_test.go	pkg/cmds/values/section-values_test.go
-- R078	pkg/doc/topics/08-file-parameter-type.md	pkg/doc/topics/08-file-field-type.md
-- R060	pkg/doc/topics/16-adding-parameter-types.md	pkg/doc/topics/16-adding-field-types.md
-- R084	pkg/doc/topics/logging-layer.md	pkg/doc/topics/logging-section.md
-- R058	pkg/doc/topics/layers-guide.md	pkg/doc/topics/sections-guide.md
-- R073	pkg/doc/tutorials/custom-layer.md	pkg/doc/tutorials/custom-section.md
+- R100 cmd/examples/parameter-types/config.yaml cmd/examples/field-types/config.yaml
+- R100 cmd/examples/parameter-types/sample-lines.txt cmd/examples/field-types/sample-lines.txt
+- R100 cmd/examples/parameter-types/sample-list.json cmd/examples/field-types/sample-list.json
+- R067 cmd/examples/parameter-types/sample-text.txt cmd/examples/field-types/sample-text.txt
+- R100 cmd/examples/parameter-types/sample.json cmd/examples/field-types/sample.json
+- R100 cmd/examples/parameter-types/sample.yaml cmd/examples/field-types/sample.yaml
+- R100 cmd/examples/parameter-types/simple-config.yaml cmd/examples/field-types/simple-config.yaml
+- R100 misc/json-parameters-from-json.json misc/json-fields-from-json.json
+- R073 pkg/cmds/fields/parameters.go pkg/cmds/fields/definitions.go
+- R076 pkg/cmds/fields/parameters_from_defaults_test.go pkg/cmds/fields/definitions_from_defaults_test.go
+- R078 pkg/cmds/fields/parameters_test.go pkg/cmds/fields/definitions_test.go
+- R091 pkg/cmds/fields/parameter-type.go pkg/cmds/fields/field-type.go
+- R093 pkg/cmds/fields/parsed-parameter.go pkg/cmds/fields/field-value.go
+- R076 pkg/cmds/fields/gather-parameters.go pkg/cmds/fields/gather-fields.go
+- R064 pkg/cmds/fields/gather-parameters_test.go pkg/cmds/fields/gather-fields_test.go
+- R084 pkg/cmds/fields/test-data/parameters_test.yaml pkg/cmds/fields/test-data/definitions_test.yaml
+- R084 pkg/cmds/fields/test-data/parameters_validity_test.yaml pkg/cmds/fields/test-data/definitions_validity_test.yaml
+- R081 pkg/cmds/logging/layer.go pkg/cmds/logging/section.go
+- R082 pkg/cmds/schema/layer.go pkg/cmds/schema/schema.go
+- R079 pkg/cmds/schema/layer-impl.go pkg/cmds/schema/section-impl.go
+- R073 pkg/cmds/schema/layer-impl_test.go pkg/cmds/schema/section-impl_test.go
+- R074 pkg/cmds/sources/load-parameters-from-json.go pkg/cmds/sources/load-fields-from-config.go
+- R064 pkg/cmds/sources/tests/wrap-with-restricted-layers.yaml pkg/cmds/sources/tests/wrap-with-restricted-sections.yaml
+- R097 pkg/cmds/values/parsed-layer.go pkg/cmds/values/section-values.go
+- R057 pkg/cmds/values/parsed-layer_test.go pkg/cmds/values/section-values_test.go
+- R078 pkg/doc/topics/08-file-parameter-type.md pkg/doc/topics/08-file-field-type.md
+- R060 pkg/doc/topics/16-adding-parameter-types.md pkg/doc/topics/16-adding-field-types.md
+- R084 pkg/doc/topics/logging-layer.md pkg/doc/topics/logging-section.md
+- R058 pkg/doc/topics/layers-guide.md pkg/doc/topics/sections-guide.md
+- R073 pkg/doc/tutorials/custom-layer.md pkg/doc/tutorials/custom-section.md
 
 ### Appendix C: Validation commands
 
