@@ -12,7 +12,7 @@
 
 ## Follow-up (Implementation)
 
-- [ ] Implement fix in `glazed` to preserve `map-value` but eliminate cross-field metadata aliasing.
-- [ ] Add unit/integration regression tests for stable per-field `map-value` metadata.
-- [ ] Re-run pinocchio repro to verify `ai-chat.ai-engine` no longer shows mismatched config `map-value`.
-- [ ] Commit implementation changes in incremental commits.
+- [x] Implement fix in `glazed` to preserve `map-value` but eliminate cross-field metadata aliasing.
+- [x] Add unit/integration regression tests for stable per-field `map-value` metadata.
+- [x] Re-run pinocchio repro to verify `ai-chat.ai-engine` no longer shows mismatched config `map-value`.
+- [x] Commit implementation changes in incremental commits.
