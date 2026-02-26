@@ -18,10 +18,23 @@ type FieldValue struct {
 
 type ParseOption func(*ParseStep)
 
+func copyMetadata(metadata map[string]interface{}) map[string]interface{} {
+	if metadata == nil {
+		return nil
+	}
+
+	cloned := make(map[string]interface{}, len(metadata))
+	for k, v := range metadata {
+		cloned[k] = v
+	}
+
+	return cloned
+}
+
 func WithMetadata(metadata map[string]interface{}) ParseOption {
 	return func(p *ParseStep) {
 		if p.Metadata == nil {
-			p.Metadata = metadata
+			p.Metadata = copyMetadata(metadata)
 			return
 		}
 
