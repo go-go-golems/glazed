@@ -82,7 +82,7 @@ func WriteTemporaryFile(prefix string, name string, body []byte) (string, error)
 	if err != nil {
 		// delete file
 		_ = f.Close()
-		_ = os.Remove(f.Name())
+		_ = os.Remove(f.Name()) // #nosec G703 -- f.Name() comes from os.CreateTemp in getTempFile.
 		return "", err
 	}
 	_ = f.Close()
@@ -111,7 +111,7 @@ func CopyReaderToTemporaryFile(prefix string, name string, r io.Reader) (string,
 	if err != nil {
 		// delete file
 		_ = f.Close()
-		_ = os.Remove(f.Name())
+		_ = os.Remove(f.Name()) // #nosec G703 -- f.Name() comes from os.CreateTemp in getTempFile.
 		return "", err
 	}
 	_ = f.Close()

@@ -43,3 +43,38 @@ func TestGatherFieldsFromMap(t *testing.T) {
 		})
 	}
 }
+
+func TestGatherFieldsFromMap_MapValueMetadataScopedPerField(t *testing.T) {
+	pds := NewDefinitions(WithDefinitionList([]*Definition{
+		New("ai-engine", TypeString),
+		New("openai-api-key", TypeString),
+	}))
+
+	fieldValues, err := pds.GatherFieldsFromMap(
+		map[string]interface{}{
+			"ai-engine":      "gpt-4o-mini",
+			"openai-api-key": "sk-test-secret",
+		},
+		true,
+		WithSource("config"),
+		WithMetadata(map[string]interface{}{
+			"config_file": "config.yaml",
+			"index":       0,
+		}),
+	)
+	require.NoError(t, err)
+
+	aiEngine, ok := fieldValues.Get("ai-engine")
+	require.True(t, ok)
+	require.Len(t, aiEngine.Log, 1)
+	require.Equal(t, "gpt-4o-mini", aiEngine.Log[0].Metadata["map-value"])
+	require.Equal(t, "config.yaml", aiEngine.Log[0].Metadata["config_file"])
+	require.Equal(t, 0, aiEngine.Log[0].Metadata["index"])
+
+	openAIKey, ok := fieldValues.Get("openai-api-key")
+	require.True(t, ok)
+	require.Len(t, openAIKey.Log, 1)
+	require.Equal(t, "sk-test-secret", openAIKey.Log[0].Metadata["map-value"])
+	require.Equal(t, "config.yaml", openAIKey.Log[0].Metadata["config_file"])
+	require.Equal(t, 0, openAIKey.Log[0].Metadata["index"])
+}

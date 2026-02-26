@@ -216,13 +216,18 @@ func (c *ConfigCommand) newEditCommand() *cobra.Command {
 
 			// Extract the base editor command without arguments
 			editorParts := strings.Fields(editor)
+			if len(editorParts) == 0 {
+				return fmt.Errorf("editor is empty")
+			}
 			baseEditor := filepath.Base(editorParts[0])
 
 			if !validEditors[baseEditor] {
 				return fmt.Errorf("editor '%s' not in allowed list, please use a standard editor", baseEditor)
 			}
 
-			editCmd := exec.Command(editor, configPath)
+			editorArgs := append(editorParts[1:], configPath)
+			// #nosec G702 -- editor binary is constrained to a hardcoded allowlist above.
+			editCmd := exec.Command(editorParts[0], editorArgs...)
 			editCmd.Stdin = os.Stdin
 			editCmd.Stdout = os.Stdout
 			editCmd.Stderr = os.Stderr

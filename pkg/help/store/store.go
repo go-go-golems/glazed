@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
@@ -296,8 +298,13 @@ func (s *Store) List(ctx context.Context, orderBy string) ([]*model.Section, err
 		FROM sections
 	`
 
-	if orderBy != "" {
-		query += " ORDER BY " + orderBy
+	orderByClause, err := sanitizeOrderByClause(orderBy)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid order by clause")
+	}
+	if orderByClause != "" {
+		// #nosec G202 -- orderByClause is built only by sanitizeOrderByClause from a fixed column/direction allow-list.
+		query += orderByClause
 	}
 
 	rows, err := s.db.QueryContext(ctx, query)
@@ -318,6 +325,44 @@ func (s *Store) List(ctx context.Context, orderBy string) ([]*model.Section, err
 	}
 
 	return sections, nil
+}
+
+func sanitizeOrderByClause(orderBy string) (string, error) {
+	trimmed := strings.TrimSpace(orderBy)
+	if trimmed == "" {
+		return "", nil
+	}
+
+	parts := strings.Fields(trimmed)
+	if len(parts) == 0 || len(parts) > 2 {
+		return "", fmt.Errorf("unsupported order by format")
+	}
+
+	column := strings.ToLower(parts[0])
+	column = strings.TrimPrefix(column, "s.")
+	allowedColumns := map[string]string{
+		"id":         "id",
+		"slug":       "slug",
+		"title":      "title",
+		"order_num":  "order_num",
+		"created_at": "created_at",
+		"updated_at": "updated_at",
+	}
+	resolvedColumn, ok := allowedColumns[column]
+	if !ok {
+		return "", fmt.Errorf("unsupported order by column %q", parts[0])
+	}
+
+	direction := "ASC"
+	if len(parts) == 2 {
+		d := strings.ToUpper(parts[1])
+		if d != "ASC" && d != "DESC" {
+			return "", fmt.Errorf("unsupported order by direction %q", parts[1])
+		}
+		direction = d
+	}
+
+	return " ORDER BY " + resolvedColumn + " " + direction, nil
 }
 
 // scanSection scans a database row into a Section struct
