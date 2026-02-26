@@ -321,6 +321,7 @@ func (tof *OutputFormatter) makeTable(table_ *types.Table, rows []types.Row, w i
 		return nil
 	default:
 		if tof.TableStyleFile != "" {
+			// #nosec G703 -- table-style-file is an explicit user-selected local file path.
 			f, err := os.Open(tof.TableStyleFile)
 			if err != nil {
 				return err
