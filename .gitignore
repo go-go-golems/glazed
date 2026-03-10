@@ -2,5 +2,6 @@ doc/gifs/*gif
 /.env
 
 dist/
+.bin/
 .history
 .crush
