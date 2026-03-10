@@ -18,7 +18,7 @@ func SliceToCSV[T any](items []T) string {
 		if i > 0 {
 			sb.WriteString(",")
 		}
-		sb.WriteString(fmt.Sprint(item))
+		fmt.Fprint(&sb, item)
 	}
 	return sb.String()
 }

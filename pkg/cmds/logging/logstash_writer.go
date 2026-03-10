@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -91,7 +92,7 @@ func (w *LogstashWriter) ensureConnection() error {
 	w.lastReconnect = now
 
 	// Connect to Logstash
-	addr := fmt.Sprintf("%s:%d", w.Host, w.Port)
+	addr := net.JoinHostPort(w.Host, strconv.Itoa(w.Port))
 	conn, err := net.Dial(w.Protocol, addr)
 	if err != nil {
 		return fmt.Errorf("failed to connect to Logstash at %s: %v", addr, err)
