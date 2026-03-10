@@ -792,7 +792,7 @@ func (m *Model) formatSectionForCopy(section *help.Section) string {
 	if title == "" {
 		title = section.Slug
 	}
-	s.WriteString(fmt.Sprintf("# %s\n\n", title))
+	fmt.Fprintf(&s, "# %s\n\n", title)
 
 	// Metadata
 	var metadata []string
@@ -810,7 +810,7 @@ func (m *Model) formatSectionForCopy(section *help.Section) string {
 	}
 
 	if len(metadata) > 0 {
-		s.WriteString(fmt.Sprintf("*%s*\n\n", strings.Join(metadata, " • ")))
+		fmt.Fprintf(&s, "*%s*\n\n", strings.Join(metadata, " • "))
 	}
 
 	// Content

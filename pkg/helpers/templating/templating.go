@@ -185,7 +185,7 @@ func indentBlock(indent int, value string) string {
 	var buffer bytes.Buffer
 
 	for _, line := range strings.Split(value, "\n") {
-		buffer.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat(" ", indent), line))
+		fmt.Fprintf(&buffer, "%s%s\n", strings.Repeat(" ", indent), line)
 	}
 
 	return buffer.String()
