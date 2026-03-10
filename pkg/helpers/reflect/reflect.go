@@ -152,7 +152,7 @@ func SetReflectValue(dst reflect.Value, src interface{}) error {
 				return nil
 			}
 			if i, ok := src.(uint); ok {
-				if i > uint(math.MaxInt64) { // MaxInt64
+				if uint64(i) > uint64(math.MaxInt64) { // MaxInt64
 					return errors.Errorf("uint value %d overflows int64", i)
 				}
 				dst.SetInt(int64(i))
