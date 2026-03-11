@@ -337,7 +337,8 @@ func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
 }
 
 type HelpSystem struct {
-	Store *store.Store // Store backend
+	Store        *store.Store // Store backend
+	PageComposer PageComposer
 }
 
 func NewHelpSystem() *HelpSystem {
@@ -355,6 +356,11 @@ func NewHelpSystemWithStore(st *store.Store) *HelpSystem {
 	return &HelpSystem{
 		Store: st,
 	}
+}
+
+// SetPageComposer configures an optional runtime page composer.
+func (hs *HelpSystem) SetPageComposer(pc PageComposer) {
+	hs.PageComposer = pc
 }
 
 func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {

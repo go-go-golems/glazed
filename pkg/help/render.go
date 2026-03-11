@@ -3,6 +3,7 @@ package help
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,16 @@ type fdWriter interface {
 }
 
 func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) (string, error) {
+	var sb strings.Builder
+	err := t.Execute(&sb, data)
+	if err != nil {
+		return "", err
+	}
+
+	return RenderMarkdownString(sb.String(), output)
+}
+
+func RenderMarkdownString(markdown string, output io.Writer) (string, error) {
 	sz, err := tsize.GetSize()
 	if err != nil {
 		sz.Width = 80
@@ -45,16 +56,8 @@ func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) 
 		}
 	}
 
-	// get markdown output
-	var sb strings.Builder
 	r, _ := glamour.NewTermRenderer(options...)
-
-	err = t.Execute(&sb, data)
-	if err != nil {
-		return "", err
-	}
-
-	s := sb.String()
+	s := markdown
 	sizeString := fmt.Sprintf("size: %dx%d\n", sz.Width, sz.Height)
 	_ = sizeString
 
@@ -149,6 +152,20 @@ func (hs *HelpSystem) RenderTopicHelpWithWriter(
 	options *RenderOptions,
 	output io.Writer,
 ) (string, error) {
+	if hs.PageComposer != nil {
+		page, err := hs.PageComposer.ComposePage(context.Background(), topicSection.Slug, hs)
+		if err == nil && page != nil {
+			markdown, err := page.RenderMarkdown(context.Background())
+			if err != nil {
+				return "", err
+			}
+			return RenderMarkdownString(markdown, output)
+		}
+		if err != nil && !errors.Is(err, ErrPageNotComposed) {
+			return "", err
+		}
+	}
+
 	userQuery := options.Query
 
 	// TODO(manuel, 2024-08-07) This should also include information about the program itself (that it's embedded in, maybe coming from the helpSystem metadata itself)
