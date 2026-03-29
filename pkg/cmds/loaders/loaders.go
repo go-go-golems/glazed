@@ -142,7 +142,6 @@ func LoadCommandsFromFS(
 		if loader.IsFileSupported(f, fileName) {
 			fromDir := GetParentsFromDir(dir)
 			commands_, err := func() ([]cmds.Command, error) {
-				log.Debug().Str("file", fileName).Msg("Loading command from file")
 				options_ := append([]cmds.CommandDescriptionOption{
 					cmds.WithSource(source + "/" + fileName),
 					cmds.WithParents(fromDir...),
