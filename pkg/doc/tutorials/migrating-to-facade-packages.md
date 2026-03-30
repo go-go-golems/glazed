@@ -163,6 +163,11 @@ if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 - `middlewares.UpdateFromMap` -> `sources.FromMap` / `sources.FromMapFirst`
 - `middlewares.ExecuteMiddlewares` -> `sources.Execute`
 - `fields.WithParseStepSource` -> `sources.WithSource`
+- `middlewares.WrapWithWhitelistedLayers` -> `sources.WrapWithWhitelistedSections`
+- `middlewares.WrapWithWhitelistedLayerParameters` -> `sources.WrapWithWhitelistedSectionFields`
+- `middlewares.BlacklistLayers` -> `sources.BlacklistSections`
+- `middlewares.BlacklistLayerParameters` -> `sources.BlacklistSectionFields`
+- `middlewares.UpdateFromMapAsDefaultFirst` -> `sources.FromMapAsDefaultFirst`
 
 **New:**
 
@@ -174,6 +179,38 @@ err := sources.Execute(schema_, vals,
     sources.FromFile("config.yaml", sources.WithParseOptions(sources.WithSource("config"))),
     sources.FromDefaults(sources.WithSource(sources.SourceDefaults)),
 )
+```
+
+**Signature change to keep in mind:**
+
+```go
+// Old
+middlewares.ExecuteMiddlewares(description.Layers, parsedLayers, middlewares_...)
+
+// New
+sources.Execute(description.Schema.Clone(), parsedValues, middlewares_...)
+```
+
+### Step 5.5: YAML command schema key rename
+
+If you load commands from YAML, replace `layers:` with `sections:`. The legacy `layers:` key no longer matches the new schema API.
+
+```yaml
+# Old
+layers:
+  - slug: default
+    name: Default
+    flags:
+      - name: limit
+        type: int
+
+# New
+sections:
+  - slug: default
+    name: Default
+    flags:
+      - name: limit
+        type: int
 ```
 
 ### Step 6: Settings sections
@@ -203,7 +240,35 @@ Update any config mapping or pattern rules to refer to sections/fields explicitl
 
 ### Step 8: Struct tags
 
-Only `glazed:"..."` is supported. Remove legacy aliases if present.
+Only `glazed:"..."` is supported. Remove legacy aliases if present (for example, `glazed.parameter:"..."`).
+
+**Example:**
+
+```go
+// Old
+type Settings struct {
+    Host string `glazed.parameter:"host"`
+}
+
+// New
+type Settings struct {
+    Host string `glazed:"host"`
+}
+```
+
+### Step 8b: YAML field keys
+
+If you define fields via YAML, the short flag key is now `shortFlag` (not `shorthand`).
+
+**Example:**
+
+```yaml
+flags:
+  - name: host
+    type: string
+    help: Database host
+    shortFlag: H
+```
 
 ### Step 9: Example and file renames
 
@@ -226,6 +291,8 @@ If you reference example paths or files in docs/scripts:
 | `undefined: layers.ParameterLayer` | Old package removed | Use `schema.Section` |
 | `parsedLayers.InitializeStruct` missing | Method removed | Use `Values.DecodeSectionInto` |
 | `middlewares.ExecuteMiddlewares` missing | Package removed | Use `sources.Execute` |
+| `undefined: cli.BuildCobraCommandFromBareCommand` | Helper removed | Use `cli.BuildCobraCommand` |
+| `undefined: logging.AddLoggingLayerToRootCommand` | Renamed | Use `logging.AddLoggingSectionToRootCommand` |
 
 ## Appendices
 
