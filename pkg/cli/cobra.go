@@ -433,7 +433,7 @@ func AddCommandsToRootCommand(
 	}
 
 	for _, alias := range aliases {
-		path := strings.Join(alias.Parents, " ")
+		path := strings.Join(append(append([]string{}, alias.Parents...), alias.AliasFor), " ")
 		aliasedCommand, ok := commandsByName[path]
 		if !ok {
 			return errors.Errorf("Command %s not found for alias %s", path, alias.Name)
