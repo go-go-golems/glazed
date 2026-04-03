@@ -1,0 +1,9 @@
+- type: local
+  path: /home/manuel/Downloads/glazed-implemented-clean.patch
+  lastFetched: 2026-04-02T19:20:42.703886518-04:00
+- type: local
+  path: /home/manuel/Downloads/glazed-secret-redaction.patch
+  lastFetched: 2026-04-02T19:20:42.705613399-04:00
+- type: local
+  path: /home/manuel/Downloads/glazed-vault-bootstrap-example.md
+  lastFetched: 2026-04-02T19:20:42.706701963-04:00

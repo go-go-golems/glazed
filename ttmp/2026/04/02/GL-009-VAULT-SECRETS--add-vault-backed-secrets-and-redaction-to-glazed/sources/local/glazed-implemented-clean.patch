@@ -1,0 +1,1250 @@
+diff --git a/pkg/cmds/fields/cobra.go b/pkg/cmds/fields/cobra.go
+index 5e201c9..b9a4927 100644
+--- a/pkg/cmds/fields/cobra.go
++++ b/pkg/cmds/fields/cobra.go
+@@ -180,7 +180,7 @@ func (pds *Definitions) AddFieldsToCobraCommand(
+ 				flagSet.StringSlice(flagName, defaultValue, helpText)
+ 			}
+ 
+-		case TypeString, TypeSecret:
++		case TypeString, TypeSecret, TypeCredentials:
+ 			defaultValue := ""
+ 
+ 			if field.Default != nil {
+@@ -382,6 +382,12 @@ func (pds *Definitions) AddFieldsToCobraCommand(
+ 			return errors.Errorf("Unknown field type for field %s: %s", field.Name, field.Type)
+ 		}
+ 
++		if field.IsSensitive() && field.Default != nil {
++			if f := flagSet.Lookup(flagName); f != nil && f.DefValue != "" {
++				f.DefValue = redactStringValue(f.DefValue)
++			}
++		}
++
+ 		return nil
+ 	})
+ 	if err != nil {
+@@ -458,6 +464,7 @@ func (pds *Definitions) GatherFlagsFromCobraCommand(
+ 			TypeStringListFromFile,
+ 			TypeString,
+ 			TypeSecret,
++			TypeCredentials,
+ 			TypeFile,
+ 			TypeDate,
+ 			TypeChoice:
+diff --git a/pkg/cmds/fields/definitions.go b/pkg/cmds/fields/definitions.go
+index 634506b..f0492e5 100644
+--- a/pkg/cmds/fields/definitions.go
++++ b/pkg/cmds/fields/definitions.go
+@@ -25,6 +25,8 @@ type Definition struct {
+ 	Default    *interface{} `yaml:"default,omitempty"`
+ 	Choices    []string     `yaml:"choices,omitempty"`
+ 	Required   bool         `yaml:"required,omitempty"`
++	Bootstrap  bool         `yaml:"bootstrap,omitempty"`
++	SecretRef  *SecretRef   `yaml:"secretRef,omitempty"`
+ 	IsArgument bool         `yaml:"-"`
+ }
+ 
+@@ -60,6 +62,18 @@ func WithRequired(required bool) Option {
+ 	}
+ }
+ 
++func WithBootstrap(bootstrap bool) Option {
++	return func(p *Definition) {
++		p.Bootstrap = bootstrap
++	}
++}
++
++func WithSecretRef(secretRef *SecretRef) Option {
++	return func(p *Definition) {
++		p.SecretRef = secretRef.Clone()
++	}
++}
++
+ func WithIsArgument(isArgument bool) Option {
+ 	return func(p *Definition) {
+ 		p.IsArgument = isArgument
+@@ -88,18 +102,33 @@ func (p *Definition) String() string {
+ }
+ 
+ func (p *Definition) Clone() *Definition {
++	var defaultValue *interface{}
++	if p.Default != nil {
++		v := *p.Default
++		defaultValue = &v
++	}
++
++	choices := make([]string, len(p.Choices))
++	copy(choices, p.Choices)
++
+ 	return &Definition{
+ 		Name:       p.Name,
+ 		ShortFlag:  p.ShortFlag,
+ 		Type:       p.Type,
+ 		Help:       p.Help,
+-		Default:    p.Default,
+-		Choices:    p.Choices,
++		Default:    defaultValue,
++		Choices:    choices,
+ 		Required:   p.Required,
++		Bootstrap:  p.Bootstrap,
++		SecretRef:  p.SecretRef.Clone(),
+ 		IsArgument: p.IsArgument,
+ 	}
+ }
+ 
++func (p *Definition) IsSensitive() bool {
++	return p.Type.IsSensitive()
++}
++
+ func (p *Definition) IsEqualToDefault(i interface{}) bool {
+ 	if p.Default == nil {
+ 		return false
+@@ -151,7 +180,7 @@ func (p *Definition) SetValueFromDefault(value reflect.Value) error {
+ // InitializeValueToEmptyValue initializes the given value to the empty value of the type of the field.
+ func (p *Definition) InitializeValueToEmptyValue(value reflect.Value) error {
+ 	switch p.Type {
+-	case TypeString, TypeSecret, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
++	case TypeString, TypeSecret, TypeCredentials, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
+ 		value.SetString("")
+ 	case TypeBool:
+ 		value.SetBool(false)
+@@ -194,7 +223,7 @@ func (p *Definition) SetValueFromInterface(value reflect.Value, v interface{}) e
+ 	}
+ 
+ 	switch p.Type {
+-	case TypeString, TypeSecret, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
++	case TypeString, TypeSecret, TypeCredentials, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
+ 		strVal, ok := v.(string)
+ 		if !ok {
+ 			return errors.Errorf("expected string value for field %s, got %T", p.Name, v)
+@@ -438,7 +467,7 @@ func (p *Definition) CheckValueValidity(v interface{}) (interface{}, error) {
+ 		fallthrough
+ 	case TypeString:
+ 		fallthrough
+-	case TypeSecret:
++	case TypeSecret, TypeCredentials:
+ 		s, err := cast.ToString(v)
+ 		if err != nil {
+ 			return nil, errors.Errorf("Value for field %s is not a string: %v", p.Name, v)
+@@ -776,7 +805,7 @@ func (p *Definition) setReflectValue(v reflect.Value, value interface{}) error {
+ 	}
+ 
+ 	switch p.Type {
+-	case TypeString, TypeSecret, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
++	case TypeString, TypeSecret, TypeCredentials, TypeChoice, TypeStringFromFiles, TypeStringFromFile:
+ 		strVal, ok := value.(string)
+ 		if !ok {
+ 			return errors.Errorf("expected string value for field %s, got %T", p.Name, value)
+diff --git a/pkg/cmds/fields/field-type.go b/pkg/cmds/fields/field-type.go
+index fcb51ea..ba948cf 100644
+--- a/pkg/cmds/fields/field-type.go
++++ b/pkg/cmds/fields/field-type.go
+@@ -5,8 +5,9 @@ import "strings"
+ type Type string
+ 
+ const (
+-	TypeString Type = "string"
+-	TypeSecret Type = "secret"
++	TypeString      Type = "string"
++	TypeSecret      Type = "secret"
++	TypeCredentials Type = "credentials"
+ 
+ 	// TODO(2023-02-13, manuel) Should the "default" of a stringFromFile be the filename, or the string?
+ 	//
+@@ -46,6 +47,16 @@ const (
+ 	TypeChoiceList  Type = "choiceList"
+ )
+ 
++func (p Type) IsSensitive() bool {
++	//exhaustive:ignore
++	switch p {
++	case TypeSecret, TypeCredentials:
++		return true
++	default:
++		return false
++	}
++}
++
+ // NeedsFileContent returns true if the field type is one that loads one or more files, when provided with the given
+ // value. This slightly odd API is because some types like TypeKeyValue can be either a string or a file. A
+ // beginning character of @ indicates a file.
+diff --git a/pkg/cmds/fields/parse.go b/pkg/cmds/fields/parse.go
+index a150b45..0b8f1bf 100644
+--- a/pkg/cmds/fields/parse.go
++++ b/pkg/cmds/fields/parse.go
+@@ -106,7 +106,7 @@ func (p *Definition) ParseField(v []string, options ...ParseOption) (*FieldValue
+ 			return nil, errors.Errorf("Argument %s must be a single string", p.Name)
+ 		}
+ 		v_ = v[0]
+-	case TypeSecret:
++	case TypeSecret, TypeCredentials:
+ 		if len(v) > 1 {
+ 			return nil, errors.Errorf("Argument %s must be a single secret", p.Name)
+ 		}
+diff --git a/pkg/cmds/fields/render.go b/pkg/cmds/fields/render.go
+index 6883f52..4eb5b8a 100644
+--- a/pkg/cmds/fields/render.go
++++ b/pkg/cmds/fields/render.go
+@@ -24,19 +24,13 @@ func RenderValue(type_ Type, value interface{}) (string, error) {
+ 		}
+ 		return s, nil
+ 
+-	case TypeSecret:
++	case TypeSecret, TypeCredentials:
+ 		s, ok := value.(string)
+ 		if !ok {
+ 			return "", errors.Errorf("expected string, got %T", value)
+ 		}
+ 
+-		// For very short strings, just return ***
+-		if len(s) <= 6 {
+-			return "***", nil
+-		}
+-
+-		// For longer strings, show first 2 chars, ***, and last 2 chars
+-		return s[:2] + "***" + s[len(s)-2:], nil
++		return redactStringValue(s), nil
+ 
+ 	case TypeObjectListFromFiles,
+ 		TypeObjectListFromFile,
+diff --git a/mnt/data/work/glazed/pkg/cmds/fields/secret-ref.go b/pkg/cmds/fields/secret-ref.go
+new file mode 100644
+index 0000000..6e621ee
+--- /dev/null
++++ b/pkg/cmds/fields/secret-ref.go
+@@ -0,0 +1,32 @@
++package fields
++
++// SecretRef describes how a field should be loaded from a secret backend.
++// The middleware resolves these references through a provider-specific SecretResolver.
++type SecretRef struct {
++	Provider   string            `yaml:"provider,omitempty" json:"provider,omitempty"`
++	Identifier string            `yaml:"identifier,omitempty" json:"identifier,omitempty"`
++	Key        string            `yaml:"key,omitempty" json:"key,omitempty"`
++	Version    string            `yaml:"version,omitempty" json:"version,omitempty"`
++	Options    map[string]string `yaml:"options,omitempty" json:"options,omitempty"`
++}
++
++func (s *SecretRef) Clone() *SecretRef {
++	if s == nil {
++		return nil
++	}
++
++	ret := &SecretRef{
++		Provider:   s.Provider,
++		Identifier: s.Identifier,
++		Key:        s.Key,
++		Version:    s.Version,
++	}
++	if s.Options != nil {
++		ret.Options = make(map[string]string, len(s.Options))
++		for key, value := range s.Options {
++			ret.Options[key] = value
++		}
++	}
++
++	return ret
++}
+diff --git a/mnt/data/work/glazed/pkg/cmds/fields/sensitive.go b/pkg/cmds/fields/sensitive.go
+new file mode 100644
+index 0000000..11a5875
+--- /dev/null
++++ b/pkg/cmds/fields/sensitive.go
+@@ -0,0 +1,78 @@
++package fields
++
++// RedactedPlaceholder is used when a sensitive value is omitted from rendered output.
++const RedactedPlaceholder = "***"
++
++func redactStringValue(s string) string {
++	if len(s) <= 6 {
++		return RedactedPlaceholder
++	}
++	return s[:2] + RedactedPlaceholder + s[len(s)-2:]
++}
++
++// RedactValue returns a printable representation of a value for sensitive field types.
++// Non-sensitive field types are returned unchanged.
++func RedactValue(type_ Type, value interface{}) interface{} {
++	if !type_.IsSensitive() {
++		return value
++	}
++
++	switch v := value.(type) {
++	case nil:
++		return nil
++	case string:
++		return redactStringValue(v)
++	case []string:
++		ret := make([]string, len(v))
++		for i, s := range v {
++			ret[i] = redactStringValue(s)
++		}
++		return ret
++	case []interface{}:
++		ret := make([]interface{}, len(v))
++		for i, item := range v {
++			ret[i] = RedactValue(type_, item)
++		}
++		return ret
++	case map[string]string:
++		ret := make(map[string]string, len(v))
++		for key, item := range v {
++			ret[key] = redactStringValue(item)
++		}
++		return ret
++	case map[string]interface{}:
++		ret := make(map[string]interface{}, len(v))
++		for key, item := range v {
++			ret[key] = RedactValue(type_, item)
++		}
++		return ret
++	default:
++		return RedactedPlaceholder
++	}
++}
++
++// RedactMetadata returns a redacted copy of the metadata for sensitive field types.
++// Non-sensitive field types are returned unchanged.
++func RedactMetadata(type_ Type, metadata map[string]interface{}) map[string]interface{} {
++	if !type_.IsSensitive() || metadata == nil {
++		return metadata
++	}
++
++	ret := make(map[string]interface{}, len(metadata))
++	for key, value := range metadata {
++		ret[key] = RedactValue(type_, value)
++	}
++	return ret
++}
++
++// RedactParseStep returns a copy of the parse step with any sensitive data masked.
++func RedactParseStep(type_ Type, step ParseStep) ParseStep {
++	if !type_.IsSensitive() {
++		return step
++	}
++
++	ret := step
++	ret.Value = RedactValue(type_, step.Value)
++	ret.Metadata = RedactMetadata(type_, step.Metadata)
++	return ret
++}
+diff --git a/mnt/data/work/glazed/pkg/cmds/fields/sensitive_test.go b/pkg/cmds/fields/sensitive_test.go
+new file mode 100644
+index 0000000..e7a8b1e
+--- /dev/null
++++ b/pkg/cmds/fields/sensitive_test.go
+@@ -0,0 +1,68 @@
++package fields
++
++import (
++	"encoding/json"
++	"testing"
++
++	"github.com/spf13/cobra"
++	"github.com/stretchr/testify/require"
++)
++
++func TestRenderValueCredentialsMasked(t *testing.T) {
++	rendered, err := RenderValue(TypeCredentials, "super-secret-token")
++	require.NoError(t, err)
++	require.Equal(t, "su***en", rendered)
++}
++
++func TestToSerializableFieldValueRedactsSensitiveData(t *testing.T) {
++	definition := New("api-key", TypeCredentials)
++	fieldValue := &FieldValue{
++		Definition: definition,
++		Value:      "super-secret-token",
++		Log: []ParseStep{{
++			Source: "config",
++			Value:  "super-secret-token",
++			Metadata: map[string]interface{}{
++				"map-value":      "super-secret-token",
++				"parsed-strings": []string{"super-secret-token"},
++				"index":          1,
++			},
++		}},
++	}
++
++	serializable := ToSerializableFieldValue(fieldValue)
++	require.Equal(t, "su***en", serializable.Value)
++	require.Len(t, serializable.Log, 1)
++	require.Equal(t, "su***en", serializable.Log[0].Value)
++	require.Equal(t, "su***en", serializable.Log[0].Metadata["map-value"])
++	require.Equal(t, []string{"su***en"}, serializable.Log[0].Metadata["parsed-strings"])
++	require.Equal(t, 1, serializable.Log[0].Metadata["index"])
++}
++
++func TestFieldValuesJSONMarshallingRedactsSensitiveData(t *testing.T) {
++	definition := New("api-key", TypeSecret)
++	values := NewFieldValues()
++	require.NoError(t, values.UpdateValue("api-key", definition, "super-secret-token", WithSource("config")))
++
++	data, err := json.Marshal(values)
++	require.NoError(t, err)
++	require.NotContains(t, string(data), "super-secret-token")
++	require.Contains(t, string(data), "su***en")
++}
++
++func TestAddFieldsToCobraCommandRedactsSensitiveDefaults(t *testing.T) {
++	defs := NewDefinitions(WithDefinitionList([]*Definition{
++		New("api-key", TypeCredentials, WithDefault("super-secret-token")),
++	}))
++
++	cmd := &cobra.Command{Use: "test"}
++	require.NoError(t, defs.AddFieldsToCobraCommand(cmd, ""))
++
++	flag := cmd.Flags().Lookup("api-key")
++	require.NotNil(t, flag)
++	require.Equal(t, "su***en", flag.DefValue)
++
++	v, err := cmd.Flags().GetString("api-key")
++	require.NoError(t, err)
++	require.Equal(t, "super-secret-token", v)
++}
+diff --git a/pkg/cmds/fields/serialize.go b/pkg/cmds/fields/serialize.go
+index 8593c5f..1525838 100644
+--- a/pkg/cmds/fields/serialize.go
++++ b/pkg/cmds/fields/serialize.go
+@@ -7,28 +7,54 @@ import (
+ )
+ 
+ // SerializableFieldValue represents a parsed field in a format suitable for
+-// YAML/JSON serialization, excluding the Definition
++// YAML/JSON serialization, excluding the Definition.
++// Sensitive field values and parse logs are redacted automatically.
+ type SerializableFieldValue struct {
+ 	Value interface{} `yaml:"value" json:"value"`
+ 	Log   []ParseStep `yaml:"log" json:"log"`
+ }
+ 
+-// ToSerializableFieldValue converts a FieldValue to its serializable representation
++func toSerializableParseLog(def *Definition, log []ParseStep) []ParseStep {
++	if len(log) == 0 {
++		return nil
++	}
++
++	ret := make([]ParseStep, 0, len(log))
++	for _, step := range log {
++		if def != nil {
++			ret = append(ret, RedactParseStep(def.Type, step))
++		} else {
++			ret = append(ret, step)
++		}
++	}
++	return ret
++}
++
++// ToSerializableFieldValue converts a FieldValue to its serializable representation.
+ func ToSerializableFieldValue(pp *FieldValue) *SerializableFieldValue {
++	if pp == nil {
++		return nil
++	}
++
++	value := pp.Value
++	if pp.Definition != nil {
++		value = RedactValue(pp.Definition.Type, value)
++	}
++
+ 	return &SerializableFieldValue{
+-		Value: pp.Value,
+-		Log:   pp.Log,
++		Value: value,
++		Log:   toSerializableParseLog(pp.Definition, pp.Log),
+ 	}
+ }
+ 
+ // SerializableFieldValues represents a collection of parsed fields in a format suitable
+-// for YAML/JSON serialization, maintaining the order of fields
++// for YAML/JSON serialization, maintaining the order of fields.
+ type SerializableFieldValues struct {
+-	// Using orderedmap to maintain field order while having name-based access
++	// Using orderedmap to maintain field order while having name-based access.
+ 	Fields *orderedmap.OrderedMap[string, *SerializableFieldValue] `yaml:"fields" json:"fields"`
+ }
+ 
+-// ToSerializableFieldValues converts a FieldValues collection to its serializable representation
++// ToSerializableFieldValues converts a FieldValues collection to its serializable representation.
+ func ToSerializableFieldValues(pp *FieldValues) *SerializableFieldValues {
+ 	ret := &SerializableFieldValues{
+ 		Fields: orderedmap.New[string, *SerializableFieldValue](),
+@@ -42,9 +68,9 @@ func ToSerializableFieldValues(pp *FieldValues) *SerializableFieldValues {
+ 	return ret
+ }
+ 
+-// MarshalYAML implements yaml.Marshaler for SerializableFieldValues
++// MarshalYAML implements yaml.Marshaler for SerializableFieldValues.
+ func (spp *SerializableFieldValues) MarshalYAML() (interface{}, error) {
+-	// Convert to a map for YAML serialization
++	// Convert to a map for YAML serialization.
+ 	m := make(map[string]*SerializableFieldValue)
+ 	for pair := spp.Fields.Oldest(); pair != nil; pair = pair.Next() {
+ 		m[pair.Key] = pair.Value
+@@ -52,9 +78,9 @@ func (spp *SerializableFieldValues) MarshalYAML() (interface{}, error) {
+ 	return m, nil
+ }
+ 
+-// MarshalJSON implements json.Marshaler for SerializableFieldValues
++// MarshalJSON implements json.Marshaler for SerializableFieldValues.
+ func (spp *SerializableFieldValues) MarshalJSON() ([]byte, error) {
+-	// Convert to a map for JSON serialization
++	// Convert to a map for JSON serialization.
+ 	m := make(map[string]*SerializableFieldValue)
+ 	for pair := spp.Fields.Oldest(); pair != nil; pair = pair.Next() {
+ 		m[pair.Key] = pair.Value
+diff --git a/pkg/cmds/fields/viper.go b/pkg/cmds/fields/viper.go
+index d77770d..ab0fbd0 100644
+--- a/pkg/cmds/fields/viper.go
++++ b/pkg/cmds/fields/viper.go
+@@ -56,7 +56,7 @@ func (pds *Definitions) GatherFlagsFromViper(
+ 		}, options...)
+ 		//exhaustive:ignore
+ 		switch p.Type {
+-		case TypeString, TypeSecret:
++		case TypeString, TypeSecret, TypeCredentials:
+ 			err := parsed.Update(viper.GetString(flagName), options...)
+ 			if err != nil {
+ 				return nil, err
+diff --git a/pkg/cmds/json-schema.go b/pkg/cmds/json-schema.go
+index c54ff35..deb661d 100644
+--- a/pkg/cmds/json-schema.go
++++ b/pkg/cmds/json-schema.go
+@@ -39,7 +39,7 @@ func fieldTypeToJsonSchema(param *fields.Definition) (*JsonSchemaProperty, error
+ 
+ 	switch param.Type {
+ 	// Basic types
+-	case fields.TypeString, fields.TypeSecret:
++	case fields.TypeString, fields.TypeSecret, fields.TypeCredentials:
+ 		prop.Type = "string"
+ 
+ 	case fields.TypeInteger:
+diff --git a/pkg/cmds/schema/schema.go b/pkg/cmds/schema/schema.go
+index 9801376..701ce8b 100644
+--- a/pkg/cmds/schema/schema.go
++++ b/pkg/cmds/schema/schema.go
+@@ -38,6 +38,10 @@ type Schema struct {
+ 
+ type SchemaOption func(*Schema)
+ 
++func WithSection(section Section) SchemaOption {
++	return WithSections(section)
++}
++
+ func WithSections(sections ...Section) SchemaOption {
+ 	return func(pl *Schema) {
+ 		for _, section := range sections {
+diff --git a/mnt/data/work/glazed/pkg/cmds/sources/secrets.go b/pkg/cmds/sources/secrets.go
+new file mode 100644
+index 0000000..d3e2fa8
+--- /dev/null
++++ b/pkg/cmds/sources/secrets.go
+@@ -0,0 +1,496 @@
++package sources
++
++import (
++	"bytes"
++	"context"
++	"strings"
++	"text/template"
++
++	"github.com/go-go-golems/glazed/pkg/cmds/fields"
++	"github.com/go-go-golems/glazed/pkg/cmds/schema"
++	"github.com/go-go-golems/glazed/pkg/cmds/values"
++	"github.com/pkg/errors"
++)
++
++// SecretPopulateMode controls how secret-backed values are merged into parsed values.
++type SecretPopulateMode string
++
++const (
++	// SecretPopulateFillIfUnset only applies secret values when a field is unset or only has defaults.
++	SecretPopulateFillIfUnset SecretPopulateMode = "fill-if-unset"
++	// SecretPopulateOverride always applies secret values, even when the field already has a non-default value.
++	SecretPopulateOverride SecretPopulateMode = "override"
++)
++
++// SecretRequestKey identifies a field that should be populated from a secret backend.
++type SecretRequestKey struct {
++	SectionSlug string
++	FieldName   string
++}
++
++// SecretRequest represents a single secret-backed field resolved by a SecretResolver.
++type SecretRequest struct {
++	Key        SecretRequestKey
++	Section    schema.Section
++	Definition *fields.Definition
++	Ref        fields.SecretRef
++}
++
++// SecretResolver resolves secret-backed fields for one provider.
++type SecretResolver interface {
++	Name() string
++	Resolve(ctx context.Context, bootstrap *values.Values, requests []SecretRequest) (map[SecretRequestKey]interface{}, error)
++}
++
++// SecretResolverRegistry resolves resolvers by provider name.
++type SecretResolverRegistry interface {
++	Get(name string) (SecretResolver, bool)
++}
++
++type secretResolverRegistry map[string]SecretResolver
++
++func (r secretResolverRegistry) Get(name string) (SecretResolver, bool) {
++	resolver, ok := r[name]
++	return resolver, ok
++}
++
++type secretOptions struct {
++	ctx                  context.Context
++	resolvers            secretResolverRegistry
++	defaultProvider      string
++	mode                 SecretPopulateMode
++	parseOptions         []fields.ParseOption
++	bootstrapMiddlewares []Middleware
++	mergeBootstrapValues bool
++}
++
++// SecretOption configures secret resolution middleware.
++type SecretOption func(*secretOptions)
++
++// WithSecretResolver registers a single secret resolver.
++func WithSecretResolver(resolver SecretResolver) SecretOption {
++	return func(o *secretOptions) {
++		if resolver == nil {
++			return
++		}
++		if o.resolvers == nil {
++			o.resolvers = secretResolverRegistry{}
++		}
++		o.resolvers[resolver.Name()] = resolver
++	}
++}
++
++// WithSecretResolvers registers multiple secret resolvers.
++func WithSecretResolvers(resolvers ...SecretResolver) SecretOption {
++	return func(o *secretOptions) {
++		for _, resolver := range resolvers {
++			WithSecretResolver(resolver)(o)
++		}
++	}
++}
++
++// WithDefaultSecretProvider sets the provider used when a field-level secretRef omits provider.
++func WithDefaultSecretProvider(provider string) SecretOption {
++	return func(o *secretOptions) {
++		o.defaultProvider = provider
++	}
++}
++
++// WithSecretPopulateMode controls whether secret values fill only unset fields or override existing values.
++func WithSecretPopulateMode(mode SecretPopulateMode) SecretOption {
++	return func(o *secretOptions) {
++		o.mode = mode
++	}
++}
++
++// WithSecretParseOptions appends parse-step options when a secret value is applied.
++func WithSecretParseOptions(options ...fields.ParseOption) SecretOption {
++	return func(o *secretOptions) {
++		o.parseOptions = append(o.parseOptions, options...)
++	}
++}
++
++// WithBootstrapMiddlewares configures the middlewares used to pre-parse bootstrap fields.
++func WithBootstrapMiddlewares(middlewares ...Middleware) SecretOption {
++	return func(o *secretOptions) {
++		o.bootstrapMiddlewares = append(o.bootstrapMiddlewares, middlewares...)
++	}
++}
++
++// WithSecretsContext overrides the context passed to secret resolvers.
++func WithSecretsContext(ctx context.Context) SecretOption {
++	return func(o *secretOptions) {
++		if ctx != nil {
++			o.ctx = ctx
++		}
++	}
++}
++
++// WithMergeBootstrapValues controls whether parsed bootstrap values are merged into the final Values.
++func WithMergeBootstrapValues(merge bool) SecretOption {
++	return func(o *secretOptions) {
++		o.mergeBootstrapValues = merge
++	}
++}
++
++func newSecretOptions(options ...SecretOption) *secretOptions {
++	ret := &secretOptions{
++		ctx:                  context.Background(),
++		resolvers:            secretResolverRegistry{},
++		mode:                 SecretPopulateFillIfUnset,
++		mergeBootstrapValues: true,
++	}
++	for _, option := range options {
++		option(ret)
++	}
++	return ret
++}
++
++// FromSecrets resolves secret-backed fields after the rest of the middleware chain.
++// This is useful when secrets act like dynamic defaults and should only fill fields that
++// were not provided explicitly by later sources such as config, env, or CLI.
++func FromSecrets(options ...SecretOption) Middleware {
++	return func(next HandlerFunc) HandlerFunc {
++		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
++			opts := newSecretOptions(options...)
++
++			if err := next(schema_, parsedValues); err != nil {
++				return err
++			}
++
++			bootstrapValues := parsedValues
++			if len(opts.bootstrapMiddlewares) > 0 {
++				parsedBootstrap, err := parseBootstrapValues(schema_, opts)
++				if err != nil {
++					return err
++				}
++				if parsedBootstrap != nil && parsedBootstrap.Len() > 0 {
++					bootstrapValues = parsedBootstrap
++				}
++			}
++
++			return resolveAndApplySecrets(schema_, parsedValues, bootstrapValues, opts)
++		}
++	}
++}
++
++// FromSecretsFirst resolves secret-backed fields after pre-parsing bootstrap fields but before
++// running the rest of the middleware chain. This lets secrets participate as an intermediate
++// source that later middlewares may still override.
++func FromSecretsFirst(options ...SecretOption) Middleware {
++	return func(next HandlerFunc) HandlerFunc {
++		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
++			opts := newSecretOptions(options...)
++
++			bootstrapValues, err := parseBootstrapValues(schema_, opts)
++			if err != nil {
++				return err
++			}
++			if opts.mergeBootstrapValues && bootstrapValues != nil && bootstrapValues.Len() > 0 {
++				if err := parsedValues.Merge(bootstrapValues); err != nil {
++					return err
++				}
++			}
++
++			if err := resolveAndApplySecrets(schema_, parsedValues, bootstrapValues, opts); err != nil {
++				return err
++			}
++
++			return next(schema_, parsedValues)
++		}
++	}
++}
++
++func parseBootstrapValues(schema_ *schema.Schema, opts *secretOptions) (*values.Values, error) {
++	if len(opts.bootstrapMiddlewares) == 0 {
++		return values.New(), nil
++	}
++
++	fieldsBySection := collectBootstrapFields(schema_)
++	if len(fieldsBySection) == 0 {
++		return values.New(), nil
++	}
++
++	bootstrapSchema := schema_.Clone()
++	if err := WhitelistSectionFieldsHandler(fieldsBySection)(bootstrapSchema, values.New()); err != nil {
++		return nil, err
++	}
++
++	bootstrapValues := values.New()
++	if err := Execute(bootstrapSchema, bootstrapValues, opts.bootstrapMiddlewares...); err != nil {
++		return nil, err
++	}
++
++	return bootstrapValues, nil
++}
++
++func collectBootstrapFields(schema_ *schema.Schema) map[string][]string {
++	ret := map[string][]string{}
++	schema_.ForEach(func(slug string, section schema.Section) {
++		section.GetDefinitions().ForEach(func(definition *fields.Definition) {
++			if definition.Bootstrap {
++				ret[slug] = append(ret[slug], definition.Name)
++			}
++		})
++	})
++	return ret
++}
++
++func resolveAndApplySecrets(schema_ *schema.Schema, parsedValues *values.Values, bootstrapValues *values.Values, opts *secretOptions) error {
++	requests, err := collectSecretRequests(schema_, bootstrapValues)
++	if err != nil {
++		return err
++	}
++	if len(requests) == 0 {
++		return nil
++	}
++
++	updates, err := resolveSecretUpdates(bootstrapValues, requests, opts)
++	if err != nil {
++		return err
++	}
++
++	return applySecretUpdates(parsedValues, requests, updates, opts)
++}
++
++func collectSecretRequests(schema_ *schema.Schema, templateValues *values.Values) ([]SecretRequest, error) {
++	ret := make([]SecretRequest, 0)
++	templateContext := buildSecretTemplateContext(templateValues)
++
++	err := schema_.ForEachE(func(slug string, section schema.Section) error {
++		return section.GetDefinitions().ForEachE(func(definition *fields.Definition) error {
++			if definition.SecretRef == nil {
++				return nil
++			}
++
++			ref, err := renderSecretRef(definition.SecretRef, templateContext)
++			if err != nil {
++				return errors.Wrapf(err, "failed to render secret ref for %s.%s", slug, definition.Name)
++			}
++			if strings.TrimSpace(ref.Identifier) == "" {
++				return errors.Errorf("secret ref for %s.%s is missing identifier", slug, definition.Name)
++			}
++
++			ret = append(ret, SecretRequest{
++				Key: SecretRequestKey{
++					SectionSlug: slug,
++					FieldName:   definition.Name,
++				},
++				Section:    section,
++				Definition: definition,
++				Ref:        *ref,
++			})
++			return nil
++		})
++	})
++	if err != nil {
++		return nil, err
++	}
++
++	return ret, nil
++}
++
++func buildSecretTemplateContext(v *values.Values) map[string]interface{} {
++	ret := map[string]interface{}{}
++	if v == nil {
++		ret["Values"] = map[string]interface{}{}
++		ret["Sections"] = map[string]map[string]interface{}{}
++		return ret
++	}
++
++	flatValues := v.GetDataMap()
++	sections := map[string]map[string]interface{}{}
++	v.ForEach(func(slug string, sectionValues *values.SectionValues) {
++		sectionData := map[string]interface{}{}
++		sectionValues.Fields.ForEach(func(key string, value *fields.FieldValue) {
++			sectionData[key] = value.Value
++		})
++		sections[slug] = sectionData
++	})
++
++	ret["Values"] = flatValues
++	ret["Sections"] = sections
++	for key, value := range flatValues {
++		if _, ok := ret[key]; !ok {
++			ret[key] = value
++		}
++	}
++
++	return ret
++}
++
++func renderSecretRef(ref *fields.SecretRef, templateContext map[string]interface{}) (*fields.SecretRef, error) {
++	if ref == nil {
++		return nil, nil
++	}
++
++	ret := ref.Clone()
++	var err error
++	ret.Provider, err = renderTemplateString(ret.Provider, templateContext)
++	if err != nil {
++		return nil, err
++	}
++	ret.Identifier, err = renderTemplateString(ret.Identifier, templateContext)
++	if err != nil {
++		return nil, err
++	}
++	ret.Key, err = renderTemplateString(ret.Key, templateContext)
++	if err != nil {
++		return nil, err
++	}
++	ret.Version, err = renderTemplateString(ret.Version, templateContext)
++	if err != nil {
++		return nil, err
++	}
++	if ret.Options != nil {
++		for key, value := range ret.Options {
++			rendered, err := renderTemplateString(value, templateContext)
++			if err != nil {
++				return nil, err
++			}
++			ret.Options[key] = rendered
++		}
++	}
++	return ret, nil
++}
++
++func renderTemplateString(value string, templateContext map[string]interface{}) (string, error) {
++	if !strings.Contains(value, "{{") {
++		return value, nil
++	}
++
++	tmpl, err := template.New("secret-ref").Option("missingkey=error").Parse(value)
++	if err != nil {
++		return "", err
++	}
++
++	var buffer bytes.Buffer
++	if err := tmpl.Execute(&buffer, templateContext); err != nil {
++		return "", err
++	}
++	return buffer.String(), nil
++}
++
++func resolveSecretUpdates(bootstrapValues *values.Values, requests []SecretRequest, opts *secretOptions) (map[SecretRequestKey]interface{}, error) {
++	grouped := map[string][]SecretRequest{}
++	for _, request := range requests {
++		provider, err := resolveRequestProvider(request.Ref, opts)
++		if err != nil {
++			return nil, err
++		}
++		grouped[provider] = append(grouped[provider], request)
++	}
++
++	ret := map[SecretRequestKey]interface{}{}
++	for provider, groupedRequests := range grouped {
++		resolver, ok := opts.resolvers.Get(provider)
++		if !ok {
++			return nil, errors.Errorf("no secret resolver registered for provider %s", provider)
++		}
++		updates, err := resolver.Resolve(opts.ctx, bootstrapValues, groupedRequests)
++		if err != nil {
++			return nil, errors.Wrapf(err, "failed to resolve secrets for provider %s", provider)
++		}
++		for key, value := range updates {
++			ret[key] = value
++		}
++	}
++
++	return ret, nil
++}
++
++func resolveRequestProvider(ref fields.SecretRef, opts *secretOptions) (string, error) {
++	provider := strings.TrimSpace(ref.Provider)
++	if provider != "" {
++		return provider, nil
++	}
++	if strings.TrimSpace(opts.defaultProvider) != "" {
++		return strings.TrimSpace(opts.defaultProvider), nil
++	}
++	if len(opts.resolvers) == 1 {
++		for name := range opts.resolvers {
++			return name, nil
++		}
++	}
++	return "", errors.Errorf("secret ref for %s does not specify a provider", ref.Identifier)
++}
++
++func applySecretUpdates(parsedValues *values.Values, requests []SecretRequest, updates map[SecretRequestKey]interface{}, opts *secretOptions) error {
++	requestsByKey := map[SecretRequestKey]SecretRequest{}
++	for _, request := range requests {
++		requestsByKey[request.Key] = request
++	}
++
++	for key, value := range updates {
++		request, ok := requestsByKey[key]
++		if !ok {
++			continue
++		}
++
++		sectionValues := parsedValues.GetOrCreate(request.Section)
++		existing, hasExisting := sectionValues.Fields.Get(request.Definition.Name)
++		if !shouldApplySecretValue(existing, hasExisting, opts.mode) {
++			continue
++		}
++
++		parseOptions := make([]fields.ParseOption, 0, len(opts.parseOptions)+2)
++		parseOptions = append(parseOptions,
++			fields.WithSource("secret:"+resolveAppliedProvider(request.Ref, opts)),
++			fields.WithMetadata(secretUpdateMetadata(request.Ref, opts)),
++		)
++		parseOptions = append(parseOptions, opts.parseOptions...)
++
++		if err := sectionValues.Fields.UpdateValue(request.Definition.Name, request.Definition, value, parseOptions...); err != nil {
++			return err
++		}
++	}
++	return nil
++}
++
++func resolveAppliedProvider(ref fields.SecretRef, opts *secretOptions) string {
++	provider, err := resolveRequestProvider(ref, opts)
++	if err != nil {
++		return "secret"
++	}
++	return provider
++}
++
++func secretUpdateMetadata(ref fields.SecretRef, opts *secretOptions) map[string]interface{} {
++	ret := map[string]interface{}{}
++	provider := resolveAppliedProvider(ref, opts)
++	if provider != "" {
++		ret["secret_provider"] = provider
++	}
++	if ref.Identifier != "" {
++		ret["secret_identifier"] = ref.Identifier
++	}
++	if ref.Key != "" {
++		ret["secret_key"] = ref.Key
++	}
++	if ref.Version != "" {
++		ret["secret_version"] = ref.Version
++	}
++	return ret
++}
++
++func shouldApplySecretValue(existing *fields.FieldValue, hasExisting bool, mode SecretPopulateMode) bool {
++	if mode == SecretPopulateOverride {
++		return true
++	}
++	if !hasExisting || existing == nil {
++		return true
++	}
++	if len(existing.Log) == 0 {
++		return false
++	}
++	for _, step := range existing.Log {
++		source := strings.TrimSpace(step.Source)
++		switch source {
++		case "default", fields.SourceDefaults:
++			continue
++		default:
++			return false
++		}
++	}
++	return true
++}
+diff --git a/mnt/data/work/glazed/pkg/cmds/sources/secrets_test.go b/pkg/cmds/sources/secrets_test.go
+new file mode 100644
+index 0000000..875bd99
+--- /dev/null
++++ b/pkg/cmds/sources/secrets_test.go
+@@ -0,0 +1,178 @@
++package sources_test
++
++import (
++	"context"
++	"testing"
++
++	"github.com/go-go-golems/glazed/pkg/cmds/fields"
++	"github.com/go-go-golems/glazed/pkg/cmds/schema"
++	"github.com/go-go-golems/glazed/pkg/cmds/sources"
++	"github.com/go-go-golems/glazed/pkg/cmds/values"
++	"github.com/stretchr/testify/require"
++)
++
++type mockSecretResolver struct {
++	lastBootstrap map[string]interface{}
++	secrets       map[string]map[string]string
++}
++
++func (m *mockSecretResolver) Name() string {
++	return "mock"
++}
++
++func (m *mockSecretResolver) Resolve(_ context.Context, bootstrap *values.Values, requests []sources.SecretRequest) (map[sources.SecretRequestKey]interface{}, error) {
++	m.lastBootstrap = map[string]interface{}{}
++	if bootstrap != nil {
++		m.lastBootstrap = bootstrap.GetDataMap()
++	}
++
++	ret := map[sources.SecretRequestKey]interface{}{}
++	for _, request := range requests {
++		providerSecrets := m.secrets[request.Ref.Identifier]
++		if providerSecrets == nil {
++			continue
++		}
++		if request.Ref.Key != "" {
++			ret[request.Key] = providerSecrets[request.Ref.Key]
++			continue
++		}
++		for _, value := range providerSecrets {
++			ret[request.Key] = value
++			break
++		}
++	}
++	return ret, nil
++}
++
++func newSecretsTestSchema(t *testing.T) *schema.Schema {
++	t.Helper()
++
++	configSection, err := schema.NewSection("config", "Config",
++		schema.WithFields(
++			fields.New("environment", fields.TypeString, fields.WithBootstrap(true)),
++			fields.New("region", fields.TypeString),
++		),
++	)
++	require.NoError(t, err)
++
++	appSection, err := schema.NewSection("app", "App",
++		schema.WithFields(
++			fields.New("database-password", fields.TypeCredentials,
++				fields.WithSecretRef(&fields.SecretRef{
++					Provider:   "mock",
++					Identifier: "db/{{ .environment }}",
++					Key:        "password",
++				}),
++			),
++			fields.New("api-token", fields.TypeSecret,
++				fields.WithSecretRef(&fields.SecretRef{
++					Provider:   "mock",
++					Identifier: "api/{{ .environment }}",
++					Key:        "token",
++				}),
++			),
++		),
++	)
++	require.NoError(t, err)
++
++	return schema.NewSchema(
++		schema.WithSection(configSection),
++		schema.WithSection(appSection),
++	)
++}
++
++func TestFromSecretsFirstPreParsesBootstrapFields(t *testing.T) {
++	schema_ := newSecretsTestSchema(t)
++	parsedValues := values.New()
++	resolver := &mockSecretResolver{
++		secrets: map[string]map[string]string{
++			"db/prod":  {"password": "prod-password"},
++			"api/prod": {"token": "prod-token"},
++		},
++	}
++
++	err := sources.Execute(
++		schema_,
++		parsedValues,
++		sources.FromSecretsFirst(
++			sources.WithSecretResolver(resolver),
++			sources.WithBootstrapMiddlewares(
++				sources.FromMap(map[string]map[string]interface{}{
++					"config": {"environment": "prod"},
++				}),
++			),
++		),
++	)
++	require.NoError(t, err)
++
++	require.Equal(t, map[string]interface{}{"environment": "prod"}, resolver.lastBootstrap)
++
++	configValues, ok := parsedValues.Get("config")
++	require.True(t, ok)
++	require.Equal(t, "prod", configValues.Fields.GetValue("environment"))
++
++	appValues, ok := parsedValues.Get("app")
++	require.True(t, ok)
++	require.Equal(t, "prod-password", appValues.Fields.GetValue("database-password"))
++	require.Equal(t, "prod-token", appValues.Fields.GetValue("api-token"))
++}
++
++func TestFromSecretsFillsDefaultsButDoesNotOverrideExplicitValues(t *testing.T) {
++	schema_ := newSecretsTestSchema(t)
++	parsedValues := values.New()
++	resolver := &mockSecretResolver{
++		secrets: map[string]map[string]string{
++			"db/prod":  {"password": "prod-password"},
++			"api/prod": {"token": "prod-token"},
++		},
++	}
++
++	err := sources.Execute(
++		schema_,
++		parsedValues,
++		sources.FromSecrets(
++			sources.WithSecretResolver(resolver),
++		),
++		sources.FromMap(map[string]map[string]interface{}{
++			"config": {"environment": "prod"},
++			"app":    {"api-token": "manual-token"},
++		}),
++		sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
++	)
++	require.NoError(t, err)
++
++	require.Equal(t, map[string]interface{}{"environment": "prod", "api-token": "manual-token"}, resolver.lastBootstrap)
++
++	appValues, ok := parsedValues.Get("app")
++	require.True(t, ok)
++	require.Equal(t, "prod-password", appValues.Fields.GetValue("database-password"))
++	require.Equal(t, "manual-token", appValues.Fields.GetValue("api-token"))
++}
++
++func TestFromSecretsOverrideModeReplacesExistingValues(t *testing.T) {
++	schema_ := newSecretsTestSchema(t)
++	parsedValues := values.New()
++	resolver := &mockSecretResolver{
++		secrets: map[string]map[string]string{
++			"api/prod": {"token": "resolved-token"},
++		},
++	}
++
++	err := sources.Execute(
++		schema_,
++		parsedValues,
++		sources.FromSecrets(
++			sources.WithSecretResolver(resolver),
++			sources.WithSecretPopulateMode(sources.SecretPopulateOverride),
++		),
++		sources.FromMap(map[string]map[string]interface{}{
++			"config": {"environment": "prod"},
++			"app":    {"api-token": "manual-token"},
++		}),
++	)
++	require.NoError(t, err)
++
++	appValues, ok := parsedValues.Get("app")
++	require.True(t, ok)
++	require.Equal(t, "resolved-token", appValues.Fields.GetValue("api-token"))
++}
+diff --git a/pkg/codegen/glazed.go b/pkg/codegen/glazed.go
+index d4ca06f..ee0de56 100644
+--- a/pkg/codegen/glazed.go
++++ b/pkg/codegen/glazed.go
+@@ -66,7 +66,8 @@ func FlagTypeToGoType(s *jen.Statement, fieldType fields.Type) *jen.Statement {
+ 		fields.TypeStringFromFiles,
+ 		fields.TypeChoice,
+ 		fields.TypeString,
+-		fields.TypeSecret:
++		fields.TypeSecret,
++		fields.TypeCredentials:
+ 		return s.Id("string")
+ 	case fields.TypeStringList,
+ 		fields.TypeStringListFromFile,
+diff --git a/pkg/lua/lua.go b/pkg/lua/lua.go
+index 35fdedc..41e1cbf 100644
+--- a/pkg/lua/lua.go
++++ b/pkg/lua/lua.go
+@@ -128,7 +128,7 @@ func ParseNestedLuaTableMiddleware(L *lua.LState, luaTable *lua.LTable) sources.
+ // ParseFieldFromLua parses a Lua value into a Go value based on a field definition.
+ func ParseFieldFromLua(L *lua.LState, value lua.LValue, fieldDef *fields.Definition) (interface{}, error) {
+ 	switch fieldDef.Type {
+-	case fields.TypeString, fields.TypeSecret:
++	case fields.TypeString, fields.TypeSecret, fields.TypeCredentials:
+ 		if v, ok := value.(lua.LString); ok {
+ 			return string(v), nil
+ 		}
