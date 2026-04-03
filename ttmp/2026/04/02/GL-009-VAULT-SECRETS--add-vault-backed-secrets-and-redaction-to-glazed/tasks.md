@@ -21,17 +21,17 @@
 
 ## Phase 2: Vault Middleware And Bootstrap
 
-- [ ] Add a reusable Vault settings section and decoding helper in Glazed.
-- [ ] Mark sensitive Vault configuration fields such as `vault-token` as `TypeSecret`.
-- [ ] Add a minimal Vault client/helper layer in Glazed sufficient for reading KV secrets and resolving templated paths.
-- [ ] Add a Vault overlay middleware that hydrates only `TypeSecret` fields after `next(...)`.
-- [ ] Add bootstrap parsing support or a tested recipe for `vault-settings` so provider settings can come from config/env/flags before the main parse.
-- [ ] Add focused tests for Vault field hydration, section decoding, and precedence/override behavior.
-- [ ] Update GL-009 diary, changelog, and task bookkeeping for the Vault/bootstrap phase.
-- [ ] Commit the Phase 2 Vault/bootstrap work to git.
+- [x] Add a reusable Vault settings section and decoding helper in Glazed.
+- [x] Mark sensitive Vault configuration fields such as `vault-token` as `TypeSecret`.
+- [x] Add a minimal Vault client/helper layer in Glazed sufficient for reading KV secrets and resolving templated paths.
+- [x] Add a Vault overlay middleware that hydrates only `TypeSecret` fields after `next(...)`.
+- [x] Add bootstrap parsing support or a tested recipe for `vault-settings` so provider settings can come from config/env/flags before the main parse.
+- [x] Add focused tests for Vault field hydration, section decoding, and precedence/override behavior.
+- [x] Update GL-009 diary, changelog, and task bookkeeping for the Vault/bootstrap phase.
+- [x] Commit the Phase 2 Vault/bootstrap work to git.
 
 ## Final Validation
 
-- [ ] Run the relevant focused tests for both phases.
-- [ ] Re-run `docmgr doctor --ticket GL-009-VAULT-SECRETS --stale-after 30`.
-- [ ] Refresh the ticket docs if the implementation diverged from the design.
+- [x] Run the relevant focused tests for both phases.
+- [x] Re-run `docmgr doctor --ticket GL-009-VAULT-SECRETS --stale-after 30`.
+- [x] Refresh the ticket docs if the implementation diverged from the design.

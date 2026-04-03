@@ -28,6 +28,12 @@ RelatedFiles:
       Note: |-
         Key evidence gathered during the analysis pass
         Serializable field output now redacts TypeSecret values and parse logs in Phase 1 commit c4445fa780898da9b3e4612409968ceac5e5e99a
+    - Path: pkg/cmds/sources/vault.go
+      Note: Vault client helpers
+    - Path: pkg/cmds/sources/vault_settings.go
+      Note: Vault settings section and decoding helper added in Phase 2 commit b18ccb696dd828dfa99b3fc1cd3c6a12d0dc397d
+    - Path: pkg/cmds/sources/vault_test.go
+      Note: Focused Vault/bootstrap tests added in Phase 2 commit b18ccb696dd828dfa99b3fc1cd3c6a12d0dc397d
     - Path: ttmp/2026/04/02/GL-009-VAULT-SECRETS--add-vault-backed-secrets-and-redaction-to-glazed/design-doc/01-intern-guide-vault-backed-secrets-credentials-aliases-and-redaction-in-glazed.md
       Note: Primary design deliverable recorded by this diary
 ExternalSources: []
@@ -36,6 +42,7 @@ LastUpdated: 2026-04-02T19:20:42.680115829-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -546,6 +553,123 @@ pkg/cmds/fields/field-type.go:50:2: missing cases in switch of type fields.Type 
 Fix:
 
 - Added `//exhaustive:ignore` on the new `IsSensitive()` switch because the function intentionally only identifies the sensitive subset.
+
+## Step 5: Implement Phase 2 Vault middleware and bootstrap support
+
+This step turned the design into reusable Glazed source-layer code. The implementation stayed intentionally smaller than the earlier sketch: it added Vault settings, token/path helpers, the Vault overlay middleware, and a bootstrap helper, but it did not add a `credentials` alias or a broader appconfig framework wrapper.
+
+The key engineering choice was to keep the first merge inside `pkg/cmds/sources`. That let the ticket land a complete, tested Vault flow without creating a second layer of parser API surface before there was a concrete need for it.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, create tasks for the secret redactions. No need for the \"credentials\" lias. 
+
+Then create a second phase / set of tasks for implementing the vault middleware and the bootstrap process. 
+
+Then, work on the tasks one by one, committing to git at appropriate intervals, and keeping a diary as you work."
+
+**Assistant interpretation:** Split the work into redaction and Vault/bootstrap phases, then implement the remaining Vault/bootstrap tasks in small, reviewable commits while updating the ticket diary.
+
+**Inferred user intent:** Land the actual Glazed implementation now, not just the design, while keeping a clear record of the sequencing and tradeoffs.
+
+**Commit (code):** b18ccb696dd828dfa99b3fc1cd3c6a12d0dc397d — "Add Vault source middleware and bootstrap helper"
+
+### What I did
+- Added `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault_settings.go` with:
+  - `VaultSettings`,
+  - `VaultTokenSource` constants,
+  - `NewVaultSettingsSection()`,
+  - `GetVaultSettings(...)`.
+- Marked `vault-token` as `fields.TypeSecret`.
+- Added `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault.go` with:
+  - `FromVaultSettings(...)`,
+  - `BootstrapVaultSettings(...)`,
+  - minimal Vault token resolution (`explicit`, `VAULT_TOKEN`, token file, `vault token lookup`),
+  - KV v2 then KV v1 reads,
+  - templated path rendering from token lookup context.
+- Restricted Vault hydration to `definition.Type.IsSensitive()` and explicitly skipped the `vault-settings` section itself so provider configuration does not get re-hydrated by accident.
+- Added focused tests in `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault_test.go` for:
+  - section decoding,
+  - sensitive-only hydration,
+  - templated path rendering,
+  - bootstrap precedence,
+  - main-chain precedence with Vault between config and env/cobra,
+  - token resolution ordering and `~` expansion.
+- Added the HashiCorp Vault API dependency to `go.mod` / `go.sum`.
+
+### Why
+- The migrated envrc-generator code had the right "call next first, then overlay" middleware shape, but it was still too loose because it hydrated any matching field name.
+- Keeping the implementation in `pkg/cmds/sources` makes the first merge reusable immediately by downstream apps without forcing a new parser-option abstraction.
+- The user explicitly asked not to add the `credentials` alias, so the implementation kept all sensitivity behavior anchored on `TypeSecret`.
+
+### What worked
+- The fake-client test seam made it possible to validate Vault hydration rules and precedence without a live Vault server.
+- `BootstrapVaultSettings(...)` cleanly reproduced the intended `defaults -> config -> env -> cobra` provider-settings precedence.
+- The main-chain test confirmed the intended `defaults -> config -> vault -> env -> cobra` ordering for secret-backed fields.
+- The repo pre-commit hooks passed after the change, including repo-wide tests, lint, `gosec`, and `govulncheck`.
+
+### What didn't work
+- The first focused test run failed on a test-only bug:
+
+```text
+pkg/cmds/sources/vault_test.go:203:21: invalid operation: appSection (variable of type *schema.SectionImpl) is not an interface
+```
+
+- Cause:
+  - I mistakenly type-asserted a concrete `*schema.SectionImpl` to `schema.CobraSection` in the test instead of just calling its method directly.
+- Fix:
+  - Replaced the unnecessary type assertion with `appSection.AddSectionToCobraCommand(rootCmd)`.
+
+### What I learned
+- The smallest useful bootstrap abstraction for this ticket is just a helper that parses `vault-settings` in isolation; a full `appconfig.WithVault(...)` option is not necessary to prove the model.
+- Skipping the `vault-settings` section during hydration is a worthwhile defensive rule even if most apps will not register that section in their main schema.
+- The existing Glazed middleware semantics are already sufficient for this feature; the real work is about careful placement and field eligibility, not inventing a new execution system.
+
+### What was tricky to build
+- The sharpest edge was precedence. The same env/config/flag sources need to participate twice, but in different roles: once to configure Vault itself, and again later to keep their right to override final application field values. The bootstrap helper solves that by isolating the provider parse from the main application parse.
+- The other tricky point was keeping the helper layer small while still supporting the migrated feature set that mattered: KV v2/v1 reads, token source selection, and templated secret paths.
+
+### What warrants a second pair of eyes
+- Whether the source-layer `BootstrapVaultSettings(...)` helper is the right public surface long-term, or whether a later `appconfig.WithVault(...)` wrapper is still desirable once multiple callers exist.
+- Whether the Vault token lookup fallback should remain CLI-based or eventually move to a pure API-based discovery path.
+- Whether the templated path context should stay token-focused or be extended later with parsed-values context from the application.
+
+### What should be done in the future
+- Finish the ticket bookkeeping for this phase and refresh the design doc to match the implemented no-alias decision.
+- Consider a higher-level `appconfig` wrapper only if multiple apps repeat the same bootstrap wiring.
+- Add a command/example or help page once there is a concrete downstream Glazed CLI adopting the new Vault source helpers.
+
+### Code review instructions
+- Start with:
+  - `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault_settings.go`
+  - `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault.go`
+- Then inspect:
+  - `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/sources/vault_test.go`
+- Validate with:
+  - `go test ./pkg/cmds/sources`
+  - or rely on the commit hook output, which ran repo-wide tests plus lint/security scans.
+
+### Technical details
+
+Commands run:
+
+```bash
+go get github.com/hashicorp/vault/api@v1.20.0
+gofmt -w pkg/cmds/sources/vault_settings.go pkg/cmds/sources/vault.go pkg/cmds/sources/vault_test.go
+go test ./pkg/cmds/sources -run 'Test(GetVaultSettingsDecodesSection|FromVaultSettingsOnlyHydratesSensitiveFields|FromVaultSettingsRendersTemplatedPath|BootstrapVaultSettingsPrecedence|BootstrapVaultSettingsMainChainPrecedence|ResolveVaultTokenAutoUsesExplicitTokenBeforeEnvironment|ResolveVaultTokenFileExpandsHomeDirectory)$'
+go test ./pkg/cmds/sources
+git add go.mod go.sum pkg/cmds/sources/vault.go pkg/cmds/sources/vault_settings.go pkg/cmds/sources/vault_test.go
+git commit -m "Add Vault source middleware and bootstrap helper"
+```
+
+Key API surface added:
+
+```go
+func NewVaultSettingsSection() (schema.Section, error)
+func GetVaultSettings(parsed *values.Values) (*VaultSettings, error)
+func BootstrapVaultSettings(configFiles []string, envPrefixes []string, cmd *cobra.Command) (*VaultSettings, error)
+func FromVaultSettings(vs *VaultSettings, options ...fields.ParseOption) sources.Middleware
+```
 
 ## Usage Examples
 

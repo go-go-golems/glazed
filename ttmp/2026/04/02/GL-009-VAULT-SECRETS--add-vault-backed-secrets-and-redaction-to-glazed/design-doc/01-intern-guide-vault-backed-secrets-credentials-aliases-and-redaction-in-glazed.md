@@ -1,5 +1,5 @@
 ---
-Title: 'Intern guide: vault-backed secrets, credentials aliases, and redaction in Glazed'
+Title: 'Intern guide: vault-backed secrets and redaction in Glazed'
 Ticket: GL-009-VAULT-SECRETS
 Status: active
 Topics:
@@ -34,7 +34,7 @@ WhenToUse: ""
 ---
 
 
-# Intern guide: vault-backed secrets, credentials aliases, and redaction in Glazed
+# Intern guide: vault-backed secrets and redaction in Glazed
 
 ## Executive Summary
 
@@ -47,13 +47,27 @@ After reading the imported notes and the actual code, my recommendation is:
 
 1. Keep one internal "sensitive string" semantic for the first implementation.
    Use `TypeSecret` as the only behavior-bearing type for now.
-2. Treat `credentials` as a YAML/text alias for `secret`, not as a new internal semantic branch.
-3. Centralize redaction in `pkg/cmds/fields`, then make all human-readable/debug output flow through those helpers.
-4. Port only the small Vault overlay pattern first.
+2. Keep `TypeSecret` as the only behavior-bearing sensitive-string semantic in the first pass.
+3. Do not add a `credentials` alias in this pass.
+4. Centralize redaction in `pkg/cmds/fields`, then make all human-readable/debug output flow through those helpers.
+5. Port only the small Vault overlay pattern first.
    Do not start with the larger generalized `SecretResolver` registry / `SecretRef` / bootstrap-flag framework from the clean patch unless a second provider is already a real requirement.
-5. Reuse the profile bootstrap pattern as the conceptual model for provider bootstrap parsing.
+6. Reuse the profile bootstrap pattern as the conceptual model for provider bootstrap parsing.
 
 This guide is written for a new intern. It explains the current system, the actual gaps, the recommended first-pass design, the tradeoffs, and the exact file-level work plan.
+
+### Implementation Update: 2026-04-02
+
+The implementation that landed after this investigation stayed smaller than the early alias-oriented sketch:
+
+1. `TypeSecret` remains the only sensitivity semantic.
+2. No `credentials` alias was added.
+3. Vault support landed as reusable source-layer APIs in `pkg/cmds/sources`:
+   - `NewVaultSettingsSection()`
+   - `GetVaultSettings(...)`
+   - `FromVaultSettings(...)`
+   - `BootstrapVaultSettings(...)`
+4. The `appconfig.WithProfile(...)` flow remains the conceptual bootstrap model, but the first merge did not add a separate `appconfig.WithVault(...)` wrapper.
 
 ## Problem Statement And Scope
 
@@ -80,17 +94,17 @@ The imported notes are useful inputs, but they are not automatically the correct
 In scope for the first implementation:
 
 1. Make `TypeSecret` the single first-pass sensitivity semantic.
-2. Add `credentials` as an external alias for `secret`.
-3. Centralize redaction for parsed-field serialization, parsed-field printing, and other debug-facing representations.
-4. Add a small Vault settings section and a Vault overlay middleware that hydrates only sensitive fields.
-5. Add a bootstrap parsing recipe or helper for `vault-settings` so provider settings can come from config/env/flags while final app fields still allow env/flags to win.
+2. Centralize redaction for parsed-field serialization, parsed-field printing, and other debug-facing representations.
+3. Add a small Vault settings section and a Vault overlay middleware that hydrates only sensitive fields.
+4. Add a bootstrap parsing recipe or helper for `vault-settings` so provider settings can come from config/env/flags while final app fields still allow env/flags to win.
 
 Out of scope for the first pass:
 
 1. A generalized secret-provider registry.
-2. A field-level `SecretRef` model.
-3. Non-string sensitive field semantics.
-4. A KMS abstraction covering multiple providers.
+2. A `credentials` alias or any second sensitivity spelling.
+3. A field-level `SecretRef` model.
+4. Non-string sensitive field semantics.
+5. A KMS abstraction covering multiple providers.
 
 Those are reasonable future directions, but they are not needed to land a clean first implementation.
 
@@ -300,17 +314,17 @@ Consequence:
 
 Every new output path can accidentally become a leak path.
 
-### Gap 2: there is no first-class "credentials" spelling
+### Gap 2: aliasing is not the real blocker
 
 Current state:
 
-1. Internal semantics use `TypeSecret`.
-2. There is no alias layer mapping `credentials` to `secret`.
-3. The imported clean patch proposes a new `TypeCredentials` branch.
+1. Internal semantics already use `TypeSecret`.
+2. The imported clean patch proposes a new `TypeCredentials` branch and alias handling.
+3. None of that is required to land redaction or Vault hydration.
 
 Consequence:
 
-If we add a brand-new internal type, we must touch every switch that already knows about `TypeSecret`:
+If we add a brand-new internal type or even a second accepted spelling too early, we must touch every switch and every user-facing explanation that already knows about `TypeSecret`:
 
 - parsing,
 - validation,
@@ -379,13 +393,13 @@ Do not start with the generalized clean-patch architecture.
 Recommendation:
 
 1. Keep `TypeSecret` as the behavior-bearing type.
-2. Add `credentials` only as an external alias that normalizes to `TypeSecret`.
+2. Do not add a second accepted spelling in the first pass.
 3. Document that if we later need non-string sensitive values, sensitivity should become a property on `fields.Definition`, not a proliferation of pseudo-types.
 
 Why:
 
 1. The code already understands `TypeSecret`.
-2. A new internal `TypeCredentials` adds maintenance cost without adding first-pass behavior.
+2. A new internal `TypeCredentials` or alias layer adds maintenance cost without adding first-pass behavior.
 3. The user's requested semantics are "sensitive string", not "new structured type".
 
 ### Design Principle 2: centralize redaction in the fields package
@@ -562,34 +576,13 @@ func RedactMetadata(t Type, metadata map[string]interface{}) map[string]interfac
 func RedactParseStep(t Type, step ParseStep) ParseStep
 ```
 
-### B. Type alias normalization
+### B. Sensitivity naming
 
-Recommended file:
+Recommendation for the first merge:
 
-1. `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/fields/field-type.go`
-
-Recommended implementation shape:
-
-```go
-func normalizeTypeAlias(s string) Type {
-    switch strings.TrimSpace(strings.ToLower(s)) {
-    case "credentials":
-        return TypeSecret
-    default:
-        return Type(s)
-    }
-}
-```
-
-Potential integration points:
-
-1. `UnmarshalYAML` on `Type`
-2. `UnmarshalJSON` on `Type`
-3. optional `Set(string)` or text-unmarshal support if Glazed decodes types through CLI or JSON elsewhere
-
-The important rule is:
-
-`The alias is external input syntax, not a new internal branch.`
+1. Keep the public and internal spelling on `secret` / `TypeSecret`.
+2. Do not add `credentials` normalization yet.
+3. Revisit aliasing only if a concrete downstream consumer still needs it after the Vault flow settles.
 
 ### C. Vault settings section
 
@@ -753,28 +746,17 @@ Notes for the intern:
 2. The first implementation can still return `***` for unknown/non-string sensitive values.
 3. Keep the public behavior deterministic and easy to test.
 
-### Phase 2: Add the `credentials` alias without adding a new internal semantic branch
+### Phase 2: Keep the first pass on `TypeSecret` only
 
 Goal:
 
-Accept user-facing `credentials` spelling while keeping runtime behavior on `TypeSecret`.
-
-Files to change:
-
-1. `/home/manuel/workspaces/2025-09-10/add-vault-middleware-to-glazed/glazed/pkg/cmds/fields/field-type.go`
-2. any tests covering YAML/JSON decoding of definitions
+Avoid introducing a second sensitive-string spelling while the core Vault and redaction behavior is still stabilizing.
 
 Tasks:
 
-1. Add normalization so external `credentials` decodes to `TypeSecret`.
-2. Add tests that load a definition from YAML and assert the resulting internal type is `TypeSecret`.
-3. Update docs to say:
-   - `secret` is the canonical internal type,
-   - `credentials` is an accepted alias.
-
-Why this phase is separate:
-
-It keeps the behavior change small and keeps the conversation about sensitivity distinct from the conversation about Vault sources.
+1. Do not add `credentials` decoding aliases in the first merge.
+2. Keep all behavior keyed on `TypeSecret`.
+3. Revisit aliasing only if a concrete downstream caller still needs it after the Vault flow settles.
 
 ### Phase 3: Port the minimal Vault settings section into Glazed
 
@@ -876,10 +858,9 @@ Files to change:
 Documentation must explain:
 
 1. what `TypeSecret` actually guarantees,
-2. where `credentials` is accepted,
-3. how to place Vault in the precedence chain,
-4. when bootstrap parsing is required,
-5. that only sensitive fields are eligible for secret hydration.
+2. how to place Vault in the precedence chain,
+3. when bootstrap parsing is required,
+4. that only sensitive fields are eligible for secret hydration.
 
 ## Testing And Validation Strategy
 
@@ -1002,15 +983,15 @@ Rationale:
 2. it minimizes blast radius,
 3. it aligns with the actual semantics we need today.
 
-### Decision 2: `credentials` is an alias, not a branch
+### Decision 2: keep `TypeSecret` as the only first-pass semantic
 
 Status: recommended
 
 Rationale:
 
-1. preserves user-facing vocabulary,
-2. avoids internal duplication,
-3. leaves room for a future real "sensitive" property.
+1. the runtime behavior already exists on `TypeSecret`,
+2. a second spelling does not unlock Vault support or redaction safety by itself,
+3. avoiding the alias keeps the implementation surface smaller.
 
 ### Decision 3: redaction lives in `pkg/cmds/fields`
 
