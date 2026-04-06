@@ -51,6 +51,10 @@ topics:
       description: Tests and test infrastructure
     - slug: bug
       description: Bugs and investigations
+    - slug: security
+      description: Security-sensitive behavior, redaction, and secret-handling work
+    - slug: vault
+      description: Vault integration and secret-provider configuration work
 docTypes:
     - slug: index
       description: Ticket index

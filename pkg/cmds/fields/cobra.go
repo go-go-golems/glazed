@@ -382,6 +382,12 @@ func (pds *Definitions) AddFieldsToCobraCommand(
 			return errors.Errorf("Unknown field type for field %s: %s", field.Name, field.Type)
 		}
 
+		if field.Type.IsSensitive() && field.Default != nil {
+			if f := flagSet.Lookup(flagName); f != nil && f.DefValue != "" {
+				f.DefValue = redactStringValue(f.DefValue)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {

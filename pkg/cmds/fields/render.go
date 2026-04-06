@@ -30,13 +30,7 @@ func RenderValue(type_ Type, value interface{}) (string, error) {
 			return "", errors.Errorf("expected string, got %T", value)
 		}
 
-		// For very short strings, just return ***
-		if len(s) <= 6 {
-			return "***", nil
-		}
-
-		// For longer strings, show first 2 chars, ***, and last 2 chars
-		return s[:2] + "***" + s[len(s)-2:], nil
+		return redactStringValue(s), nil
 
 	case TypeObjectListFromFiles,
 		TypeObjectListFromFile,

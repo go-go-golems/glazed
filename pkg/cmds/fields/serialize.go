@@ -13,11 +13,37 @@ type SerializableFieldValue struct {
 	Log   []ParseStep `yaml:"log" json:"log"`
 }
 
-// ToSerializableFieldValue converts a FieldValue to its serializable representation
+func toSerializableParseLog(def *Definition, log []ParseStep) []ParseStep {
+	if len(log) == 0 {
+		return nil
+	}
+
+	ret := make([]ParseStep, 0, len(log))
+	for _, step := range log {
+		if def != nil {
+			ret = append(ret, RedactParseStep(def.Type, step))
+		} else {
+			ret = append(ret, step)
+		}
+	}
+
+	return ret
+}
+
+// ToSerializableFieldValue converts a FieldValue to its serializable representation.
 func ToSerializableFieldValue(pp *FieldValue) *SerializableFieldValue {
+	if pp == nil {
+		return nil
+	}
+
+	value := pp.Value
+	if pp.Definition != nil {
+		value = RedactValue(pp.Definition.Type, value)
+	}
+
 	return &SerializableFieldValue{
-		Value: pp.Value,
-		Log:   pp.Log,
+		Value: value,
+		Log:   toSerializableParseLog(pp.Definition, pp.Log),
 	}
 }
 

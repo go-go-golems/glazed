@@ -46,6 +46,16 @@ const (
 	TypeChoiceList  Type = "choiceList"
 )
 
+func (p Type) IsSensitive() bool {
+	//exhaustive:ignore
+	switch p {
+	case TypeSecret:
+		return true
+	default:
+		return false
+	}
+}
+
 // NeedsFileContent returns true if the field type is one that loads one or more files, when provided with the given
 // value. This slightly odd API is because some types like TypeKeyValue can be either a string or a file. A
 // beginning character of @ indicates a file.

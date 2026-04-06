@@ -70,21 +70,22 @@ func printParsedFields(parsedValues *values.Values) {
 	parsedValues.ForEach(func(sectionName string, sectionValues *values.SectionValues) {
 		fieldValues := map[string]interface{}{}
 		sectionValues.Fields.ForEach(func(name string, fieldValue *fields.FieldValue) {
+			serializable := fields.ToSerializableFieldValue(fieldValue)
 			fieldMap := map[string]interface{}{
-				"value": fieldValue.Value,
+				"value": serializable.Value,
 			}
-			logs := make([]map[string]interface{}, 0, len(fieldValue.Log))
-			for _, l := range fieldValue.Log {
-				logEntry := map[string]interface{}{
-					"source": l.Source,
-					"value":  l.Value,
+			if len(serializable.Log) > 0 {
+				logs := make([]map[string]interface{}, 0, len(serializable.Log))
+				for _, l := range serializable.Log {
+					logEntry := map[string]interface{}{
+						"source": l.Source,
+						"value":  l.Value,
+					}
+					if len(l.Metadata) > 0 {
+						logEntry["metadata"] = l.Metadata
+					}
+					logs = append(logs, logEntry)
 				}
-				if len(l.Metadata) > 0 {
-					logEntry["metadata"] = l.Metadata
-				}
-				logs = append(logs, logEntry)
-			}
-			if len(logs) > 0 {
 				fieldMap["log"] = logs
 			}
 			fieldValues[name] = fieldMap
