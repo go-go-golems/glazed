@@ -213,7 +213,7 @@ func newVaultClientFromSettings(ctx context.Context, settings *VaultSettings) (v
 	return &apiVaultClient{client: client}, nil
 }
 
-func (c *apiVaultClient) ReadPath(_ context.Context, path string) (map[string]interface{}, error) {
+func (c *apiVaultClient) ReadPath(ctx context.Context, path string) (map[string]interface{}, error) {
 	effectivePath := strings.TrimSpace(path)
 	if effectivePath == "" {
 		return nil, errors.New("vault path is empty")
@@ -221,11 +221,11 @@ func (c *apiVaultClient) ReadPath(_ context.Context, path string) (map[string]in
 
 	mountPath, secretPath := parseVaultPath(effectivePath)
 
-	if data, err := c.readKVv2Path(mountPath, secretPath); err == nil {
+	if data, err := c.readKVv2Path(ctx, mountPath, secretPath); err == nil {
 		return data, nil
 	}
 
-	data, err := c.readKVv1Path(effectivePath)
+	data, err := c.readKVv1Path(ctx, effectivePath)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +233,8 @@ func (c *apiVaultClient) ReadPath(_ context.Context, path string) (map[string]in
 	return data, nil
 }
 
-func (c *apiVaultClient) BuildTemplateContext(_ context.Context) (vaultTemplateContext, error) {
-	lookup, err := c.client.Auth().Token().LookupSelf()
+func (c *apiVaultClient) BuildTemplateContext(ctx context.Context) (vaultTemplateContext, error) {
+	lookup, err := c.client.Auth().Token().LookupSelfWithContext(ctx)
 	if err != nil {
 		return vaultTemplateContext{}, errors.Wrap(err, "failed to lookup current Vault token")
 	}
@@ -303,8 +303,8 @@ func (c *apiVaultClient) BuildTemplateContext(_ context.Context) (vaultTemplateC
 	return ret, nil
 }
 
-func (c *apiVaultClient) readKVv1Path(path string) (map[string]interface{}, error) {
-	secret, err := c.client.Logical().Read(path)
+func (c *apiVaultClient) readKVv1Path(ctx context.Context, path string) (map[string]interface{}, error) {
+	secret, err := c.client.Logical().ReadWithContext(ctx, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read Vault secret from %s", path)
 	}
@@ -314,9 +314,9 @@ func (c *apiVaultClient) readKVv1Path(path string) (map[string]interface{}, erro
 	return secret.Data, nil
 }
 
-func (c *apiVaultClient) readKVv2Path(mountPath string, secretPath string) (map[string]interface{}, error) {
+func (c *apiVaultClient) readKVv2Path(ctx context.Context, mountPath string, secretPath string) (map[string]interface{}, error) {
 	fullPath := fmt.Sprintf("%s/data/%s", mountPath, secretPath)
-	secret, err := c.client.Logical().Read(fullPath)
+	secret, err := c.client.Logical().ReadWithContext(ctx, fullPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read Vault KV v2 secret from %s", fullPath)
 	}
@@ -400,7 +400,11 @@ func resolveVaultToken(
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to read Vault token file %s", tokenFilePath)
 		}
-		return strings.TrimSpace(string(data)), nil
+		token := strings.TrimSpace(string(data))
+		if token == "" {
+			return "", errors.Errorf("Vault token file %s is empty", tokenFilePath)
+		}
+		return token, nil
 
 	case VaultTokenSourceLookup:
 		return lookupVaultToken(ctx)

@@ -2,6 +2,8 @@ package sources
 
 import (
 	"context"
+	stdErrors "errors"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -28,6 +31,29 @@ func (f *fakeVaultClient) ReadPath(_ context.Context, path string) (map[string]i
 func (f *fakeVaultClient) BuildTemplateContext(_ context.Context) (vaultTemplateContext, error) {
 	f.buildCtxCalled = true
 	return f.templateCtx, nil
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+var errContextNotPropagated = stdErrors.New("request context was not canceled")
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func newTestAPIVaultClient(t *testing.T, rt http.RoundTripper) *apiVaultClient {
+	t.Helper()
+
+	config := api.DefaultConfig()
+	config.Address = "http://vault.test"
+	config.HttpClient = &http.Client{Transport: rt}
+	config.MaxRetries = 0
+	config.Timeout = 0
+
+	client, err := api.NewClient(config)
+	require.NoError(t, err)
+
+	return &apiVaultClient{client: client}
 }
 
 func TestGetVaultSettingsDecodesSection(t *testing.T) {
@@ -260,4 +286,49 @@ func TestResolveVaultTokenFileExpandsHomeDirectory(t *testing.T) {
 	token, err := resolveVaultToken(context.Background(), "", VaultTokenSourceFile, "~/.vault-token")
 	require.NoError(t, err)
 	require.Equal(t, "from-file", token)
+}
+
+func TestResolveVaultTokenFileRejectsEmptyContent(t *testing.T) {
+	dir := t.TempDir()
+	tokenFile := filepath.Join(dir, "empty-token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte(" \n\t "), 0o644))
+
+	token, err := resolveVaultToken(context.Background(), "", VaultTokenSourceFile, tokenFile)
+	require.Empty(t, token)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "is empty")
+}
+
+func TestAPIVaultClientReadPathHonorsContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := newTestAPIVaultClient(t, roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.Context().Err() == nil {
+			return nil, errContextNotPropagated
+		}
+		return nil, req.Context().Err()
+	}))
+
+	_, err := client.ReadPath(ctx, "secret/demo")
+	require.Error(t, err)
+	require.ErrorContains(t, err, context.Canceled.Error())
+	require.NotErrorIs(t, err, errContextNotPropagated)
+}
+
+func TestAPIVaultClientBuildTemplateContextHonorsContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := newTestAPIVaultClient(t, roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.Context().Err() == nil {
+			return nil, errContextNotPropagated
+		}
+		return nil, req.Context().Err()
+	}))
+
+	_, err := client.BuildTemplateContext(ctx)
+	require.Error(t, err)
+	require.ErrorContains(t, err, context.Canceled.Error())
+	require.NotErrorIs(t, err, errContextNotPropagated)
 }
