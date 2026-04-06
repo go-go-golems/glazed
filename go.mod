@@ -15,6 +15,7 @@ require (
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/dave/jennifer v1.7.0
+	github.com/hashicorp/vault/api v1.20.0
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/itchyny/gojq v0.12.12
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
@@ -83,7 +84,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
-	github.com/hashicorp/vault/api v1.20.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

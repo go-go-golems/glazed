@@ -29,13 +29,14 @@ WhenToUse: ""
 
 ## Overview
 
-This ticket captures the design work for bringing Vault-backed secret loading and consistent sensitive-value handling into Glazed. The current recommendation is intentionally smaller than the imported generalized patch: keep `TypeSecret` as the first-pass behavior, accept `credentials` only as an alias, centralize output redaction in `pkg/cmds/fields`, and port a minimal Vault overlay middleware plus bootstrap recipe based on the existing `appconfig.WithProfile(...)` pattern.
+This ticket now captures both the design work and the completed implementation for bringing Vault-backed secret loading and consistent sensitive-value handling into Glazed. The final implementation stayed intentionally smaller than the imported generalized patch: keep `TypeSecret` as the only first-pass sensitivity semantic, centralize output redaction in `pkg/cmds/fields`, and port a minimal Vault overlay middleware plus bootstrap helper based on the existing profile-style precedence model.
 
 ## Key Links
 
 - **Related Files**: See frontmatter RelatedFiles field
 - **External Sources**: See frontmatter ExternalSources field
 - **Primary Design Doc**: `design-doc/01-intern-guide-vault-backed-secrets-credentials-aliases-and-redaction-in-glazed.md`
+- **Technical Project Report**: `design-doc/02-technical-project-report-glazed-secret-redaction-and-vault-bootstrap.md`
 - **Diary**: `reference/01-diary.md`
 
 ## Status
@@ -48,13 +49,13 @@ Completed in this ticket so far:
 2. Imported the provided sketch and patch files.
 3. Audited the current Glazed code and the migrated `vault-envrc-generator` implementation.
 4. Wrote the intern-oriented analysis/design/implementation guide.
+5. Implemented redaction hardening.
+6. Implemented the Vault settings section, middleware, and bootstrap helper.
+7. Added focused tests and a technical project report.
 
 Still open:
 
-1. Implement redaction hardening.
-2. Add the `credentials` alias.
-3. Add the Vault section and middleware.
-4. Add tests and documentation examples.
+1. Optional downstream example/help-page adoption work, outside the core framework merge.
 
 ## Topics
 
