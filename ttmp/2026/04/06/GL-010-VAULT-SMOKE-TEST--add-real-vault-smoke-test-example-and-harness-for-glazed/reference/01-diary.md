@@ -9,13 +9,20 @@ DocType: reference
 Intent: long-term
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: cmd/examples/vault-smoke-test/README.md
+      Note: Operator guide for running the example manually
+    - Path: cmd/examples/vault-smoke-test/main.go
+      Note: Example command implementing the real Vault smoke harness
+    - Path: cmd/examples/vault-smoke-test/smoke-test.sh
+      Note: Automated real Vault smoke-test script using tmux
 ExternalSources: []
 Summary: Working diary for the real Vault smoke-test example and shell harness.
-LastUpdated: 2026-04-06T16:25:00-04:00
+LastUpdated: 2026-04-06T16:35:00-04:00
 WhatFor: Capture the implementation steps, decisions, validations, and follow-up notes for GL-010.
 WhenToUse: Use this diary when reviewing what changed or rerunning the smoke harness work.
 ---
+
 
 # Diary
 
@@ -85,6 +92,44 @@ Observations:
 - The plain run shows the default values and their source as `defaults`.
 - The parsed-field output is redacted for `TypeSecret` values, including the default `vault-token` field.
 - The help output already masks secret defaults as expected.
+
+Commit:
+
+- `ce85c11` `Add GL-010 Vault smoke-test example harness`
+
+### Step 3: Implement and run the real smoke script
+
+Actions:
+
+- Added `cmd/examples/vault-smoke-test/smoke-test.sh`.
+- Made the script start a dedicated `vault server -dev` instance inside a unique `tmux` session.
+- Wrote a temporary config file that sets `vault-settings.secret-path` and a config-level `app.host` / `app.password`.
+- Seeded Vault with `password`, `api-key`, and `host` so the smoke run could prove that only the `TypeSecret` fields hydrate from Vault.
+- Added assertion helpers for shell output and a cleanup trap that captures the `tmux` pane on failure.
+
+Validation:
+
+- `./cmd/examples/vault-smoke-test/smoke-test.sh`
+
+Observed cases:
+
+- Case 1: config provided `host`, Vault replaced only `password` and `api-key`
+- Case 2: `GLAZED_VAULT_SMOKE_TEST_PASSWORD` overrode the Vault value
+- Case 3: `--password` overrode the environment value
+- Case 4: `GLAZED_VAULT_SMOKE_TEST_SECRET_PATH` allowed bootstrap without a config file
+- Case 5: `--print-parsed-fields` did not print the raw Vault secrets or the root token
+
+Commit:
+
+- Not committed yet at this stage.
+
+### Step 4: Final bookkeeping
+
+Actions:
+
+- Updated the task list and changelog for the completed smoke harness work.
+- Planned doc relations for the example files so the ticket metadata points back to the implementation.
+- Planned a final `docmgr doctor --ticket GL-010-VAULT-SMOKE-TEST --stale-after 30` run before the closing commit.
 
 Commit:
 

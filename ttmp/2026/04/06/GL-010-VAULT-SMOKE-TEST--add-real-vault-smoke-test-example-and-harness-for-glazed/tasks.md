@@ -20,16 +20,16 @@
 
 ## Phase 2: Real Smoke Script
 
-- [ ] Add a shell smoke-test script in the example directory that starts `vault server -dev`, seeds secrets, runs the example, and asserts expected behavior.
-- [ ] Use `tmux` for the long-running Vault dev server so the script matches repo process-handling conventions.
-- [ ] Make the script verify that secret fields hydrate from Vault, non-secret fields do not, env overrides Vault, flags override env, and parsed-field output redacts secrets.
-- [ ] Execute the smoke-test script successfully against the local Vault binary.
-- [ ] Commit the smoke-test script and any follow-up fixes.
+- [x] Add a shell smoke-test script in the example directory that starts `vault server -dev`, seeds secrets, runs the example, and asserts expected behavior.
+- [x] Use `tmux` for the long-running Vault dev server so the script matches repo process-handling conventions.
+- [x] Make the script verify that secret fields hydrate from Vault, non-secret fields do not, env overrides Vault, flags override env, and parsed-field output redacts secrets.
+- [x] Execute the smoke-test script successfully against the local Vault binary.
+- [x] Commit the smoke-test script and any follow-up fixes.
 
 ## Phase 3: Ticket Bookkeeping
 
-- [ ] Update the diary with the implementation and validation steps.
-- [ ] Relate the new example files to the diary.
-- [ ] Update the ticket changelog for the example and smoke-test commits.
-- [ ] Re-run `docmgr doctor --ticket GL-010-VAULT-SMOKE-TEST --stale-after 30`.
-- [ ] Commit the final ticket bookkeeping updates.
+- [x] Update the diary with the implementation and validation steps.
+- [x] Relate the new example files to the diary.
+- [x] Update the ticket changelog for the example and smoke-test commits.
+- [x] Re-run `docmgr doctor --ticket GL-010-VAULT-SMOKE-TEST --stale-after 30`.
+- [x] Commit the final ticket bookkeeping updates.
