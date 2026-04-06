@@ -10,13 +10,13 @@
 
 ## Phase 1: Example Harness
 
-- [ ] Add a new `cmd/examples/vault-smoke-test` example command that exercises real Vault-backed `TypeSecret` hydration.
-- [ ] Wire `vault-settings` and `command-settings` into the example command so it can prove bootstrap parsing and redacted parsed-field output.
-- [ ] Implement the main source chain with precedence `defaults -> config -> vault -> env -> args -> cobra`.
-- [ ] Add clear stdout output that makes resolved values and precedence behavior easy to inspect manually.
-- [ ] Add a `README.md` in the example directory explaining setup, expected precedence, and manual runs.
-- [ ] Run focused Go validation for the example package.
-- [ ] Commit the example harness code and docs.
+- [x] Add a new `cmd/examples/vault-smoke-test` example command that exercises real Vault-backed `TypeSecret` hydration.
+- [x] Wire `vault-settings` and `command-settings` into the example command so it can prove bootstrap parsing and redacted parsed-field output.
+- [x] Implement the main source chain with precedence `defaults -> config -> vault -> env -> args -> cobra`.
+- [x] Add clear stdout output that makes resolved values and precedence behavior easy to inspect manually.
+- [x] Add a `README.md` in the example directory explaining setup, expected precedence, and manual runs.
+- [x] Run focused Go validation for the example package.
+- [x] Commit the example harness code and docs.
 
 ## Phase 2: Real Smoke Script
 

@@ -12,7 +12,7 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: Working diary for the real Vault smoke-test example and shell harness.
-LastUpdated: 2026-04-06T16:10:00-04:00
+LastUpdated: 2026-04-06T16:25:00-04:00
 WhatFor: Capture the implementation steps, decisions, validations, and follow-up notes for GL-010.
 WhenToUse: Use this diary when reviewing what changed or rerunning the smoke harness work.
 ---
@@ -58,6 +58,33 @@ Notes:
 - The example should use the same public Vault helpers added in GL-009 instead of test-only seams.
 - `printParsedFields` is package-private inside `pkg/cli`, so the example should rely on the normal Cobra command-settings path rather than trying to call that helper directly.
 - `apply_patch` is failing in this workspace, so documentation and code edits are being done with a shell fallback.
+
+Commit:
+
+- `0d48330` `Add GL-010 smoke-test ticket plan and diary`
+
+### Step 2: Implement the example command and README
+
+Actions:
+
+- Added `cmd/examples/vault-smoke-test/main.go`.
+- Added `cmd/examples/vault-smoke-test/README.md`.
+- Built the example through `cli.BuildCobraCommandFromCommand` so `--print-parsed-fields` uses the standard Glazed path.
+- Added a custom middleware builder that bootstraps `vault-settings` first and then runs the main chain as `defaults -> config -> vault -> env -> args -> cobra`.
+- Made the example print the resolved values and their winning source in a shell-friendly `key=value` format.
+
+Validation:
+
+- `go test ./cmd/examples/vault-smoke-test`
+- `go run ./cmd/examples/vault-smoke-test --help`
+- `go run ./cmd/examples/vault-smoke-test`
+- `go run ./cmd/examples/vault-smoke-test --print-parsed-fields`
+
+Observations:
+
+- The plain run shows the default values and their source as `defaults`.
+- The parsed-field output is redacted for `TypeSecret` values, including the default `vault-token` field.
+- The help output already masks secret defaults as expected.
 
 Commit:
 
