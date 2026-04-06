@@ -105,9 +105,9 @@ vault_addr=http://127.0.0.1:8200
 secret_path=kv/glazed-demo
 host=from-config-host
 host_source=config
-password=from-vault-password
+password=***
 password_source=vault
-api_key=from-vault-api-key
+api_key=***
 api_key_source=vault
 ```
 
@@ -117,7 +117,7 @@ Redaction check:
 go run ./cmd/examples/vault-smoke-test --config-file ./config.yaml --print-parsed-fields
 ```
 
-The parsed-field dump should show `***` for the secret values instead of the raw password or API key.
+The example masks secret values in its normal `key=value` output, and the parsed-field dump should also show `***` instead of the raw password or API key.
 
 ## Smoke Script
 

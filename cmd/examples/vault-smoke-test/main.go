@@ -115,14 +115,10 @@ func (c *VaultSmokeTestCommand) Run(_ context.Context, vals *values.Values) erro
 	fmt.Printf("secret_path=%s\n", vaultSettings.SecretPath)
 	fmt.Printf("host=%s\n", settings.Host)
 	fmt.Printf("host_source=%s\n", hostSource)
-	// lgtm [go/clear-text-logging] -- This example intentionally prints resolved secret values to prove real precedence in the smoke harness.
-	fmt.Printf("password=%s\n", settings.Password)
-	// lgtm [go/clear-text-logging] -- This example intentionally prints the winning source for the resolved password in the smoke harness.
-	fmt.Printf("password_source=%s\n", passwordSource)
-	// lgtm [go/clear-text-logging] -- This example intentionally prints resolved secret values to prove real precedence in the smoke harness.
-	fmt.Printf("api_key=%s\n", settings.APIKey)
-	// lgtm [go/clear-text-logging] -- This example intentionally prints the winning source for the resolved API key in the smoke harness.
-	fmt.Printf("api_key_source=%s\n", apiKeySource)
+	fmt.Printf("password=%s\n", maskedSensitiveValue(settings.Password))
+	fmt.Printf("password_source=%s\n", safeSourceLabel(passwordSource))
+	fmt.Printf("api_key=%s\n", maskedSensitiveValue(settings.APIKey))
+	fmt.Printf("api_key_source=%s\n", safeSourceLabel(apiKeySource))
 
 	return nil
 }
@@ -136,6 +132,23 @@ func fieldSource(vals *values.Values, sectionName, fieldName string) (string, er
 		return "", nil
 	}
 	return fieldValue.Log[len(fieldValue.Log)-1].Source, nil
+}
+
+func maskedSensitiveValue(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return ""
+	}
+
+	return "***"
+}
+
+func safeSourceLabel(source string) string {
+	switch source {
+	case "", "arguments", "cobra", "config", "defaults", "env", "vault":
+		return source
+	default:
+		return "other"
+	}
 }
 
 func resolveConfigFiles(parsedCommandSections *values.Values) ([]string, error) {

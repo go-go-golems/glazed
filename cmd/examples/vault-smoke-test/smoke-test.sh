@@ -106,9 +106,9 @@ printf '%s\n' "$case1"
 assert_contains "$case1" "secret_path=$SECRET_PATH"
 assert_contains "$case1" "host=from-config-host"
 assert_contains "$case1" "host_source=config"
-assert_contains "$case1" "password=from-vault-password"
+assert_contains "$case1" "password=***"
 assert_contains "$case1" "password_source=vault"
-assert_contains "$case1" "api_key=from-vault-api-key"
+assert_contains "$case1" "api_key=***"
 assert_contains "$case1" "api_key_source=vault"
 assert_not_contains "$case1" "host=from-vault-host"
 
@@ -120,7 +120,7 @@ case2=$(run_example env \
   GLAZED_VAULT_SMOKE_TEST_PASSWORD=from-env-password \
   go run "$EXAMPLE_PKG" --config-file "$CONFIG_FILE")
 printf '%s\n' "$case2"
-assert_contains "$case2" "password=from-env-password"
+assert_contains "$case2" "password=***"
 assert_contains "$case2" "password_source=env"
 
 echo "Case 3: flag overrides env"
@@ -131,7 +131,7 @@ case3=$(run_example env \
   GLAZED_VAULT_SMOKE_TEST_PASSWORD=from-env-password \
   go run "$EXAMPLE_PKG" --config-file "$CONFIG_FILE" --password from-flag-password)
 printf '%s\n' "$case3"
-assert_contains "$case3" "password=from-flag-password"
+assert_contains "$case3" "password=***"
 assert_contains "$case3" "password_source=cobra"
 
 echo "Case 4: bootstrap from env without config file"
@@ -143,8 +143,8 @@ case4=$(run_example env \
   go run "$EXAMPLE_PKG")
 printf '%s\n' "$case4"
 assert_contains "$case4" "secret_path=$SECRET_PATH"
-assert_contains "$case4" "password=from-vault-password"
-assert_contains "$case4" "api_key=from-vault-api-key"
+assert_contains "$case4" "password=***"
+assert_contains "$case4" "api_key=***"
 
 echo "Case 5: parsed-field output redacts secrets"
 case5=$(run_example env \
