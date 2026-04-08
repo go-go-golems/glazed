@@ -91,6 +91,7 @@ func main() {
 	srv := server.NewServer(hs.Store,
 		server.WithAddr(*addr),
 		server.WithSlogger(logger),
+		server.WithSPA(staticFS),
 	)
 	if err := srv.ListenAndServe(); err != nil {
 		logger.Error("server exited", "error", err)
