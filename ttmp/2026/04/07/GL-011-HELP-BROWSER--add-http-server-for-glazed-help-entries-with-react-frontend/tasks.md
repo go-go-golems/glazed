@@ -25,45 +25,45 @@
 
 ### Phase 3: Component Decomposition (Port from JSX Prototype)
 
-- [ ] Extract `<MenuBar />` into `web/src/components/MenuBar/` (menu bar with File/Edit/View/Help items)
-- [ ] Extract `<TitleBar />` into `web/src/components/TitleBar/` (retro title bar with icon and centered title)
-- [ ] Extract `<Badge />` into `web/src/components/Badge/` (colored tags: type, command, flag, topic variants)
-- [ ] Extract `<SearchBar />` into `web/src/components/SearchBar/` (search input with icon)
-- [ ] Extract `<TypeFilter />` into `web/src/components/TypeFilter/` (filter buttons: All, Topic, Example, App, Tutorial)
-- [ ] Extract `<SectionCard />` into `web/src/components/SectionList/SectionCard.tsx`
-- [ ] Extract `<SectionList />` into `web/src/components/SectionList/` (scrollable list with alternating backgrounds)
-- [ ] Extract `<SectionHeader />` into `web/src/components/SectionView/SectionHeader.tsx`
-- [ ] Extract `<MarkdownContent />` into `web/src/components/Markdown/` (react-markdown with GFM: code blocks, tables, headings)
-- [ ] Extract `<SectionView />` into `web/src/components/SectionView/` (composes header + content)
-- [ ] Extract `<EmptyState />` into `web/src/components/EmptyState/` (book icon placeholder)
-- [ ] Extract `<StatusBar />` into `web/src/components/StatusBar/` (section count + version)
-- [ ] Wire `<App.tsx>`: compose all components, connect RTK Query hooks, add sidebar filtering and section selection
+- [x] Extract `<MenuBar />` into `web/src/components/MenuBar/` (menu bar with File/Edit/View/Help items)
+- [x] Extract `<TitleBar />` into `web/src/components/TitleBar/` (retro title bar with icon and centered title)
+- [x] Extract `<Badge />` into `web/src/components/Badge/` (colored tags: type, command, flag, topic variants)
+- [x] Extract `<SearchBar />` into `web/src/components/SearchBar/` (search input with icon)
+- [x] Extract `<TypeFilter />` into `web/src/components/TypeFilter/` (filter buttons: All, Topic, Example, App, Tutorial)
+- [x] Extract `<SectionCard />` into `web/src/components/SectionList/SectionCard.tsx`
+- [x] Extract `<SectionList />` into `web/src/components/SectionList/` (scrollable list with alternating backgrounds)
+- [x] Extract `<SectionHeader />` into `web/src/components/SectionView/SectionHeader.tsx`
+- [x] Extract `<MarkdownContent />` into `web/src/components/Markdown/` (react-markdown with GFM: code blocks, tables, headings)
+- [x] Extract `<SectionView />` into `web/src/components/SectionView/` (composes header + content)
+- [x] Extract `<EmptyState />` into `web/src/components/EmptyState/` (book icon placeholder)
+- [x] Extract `<StatusBar />` into `web/src/components/StatusBar/` (section count + version)
+- [x] Wire `<App.tsx>`: compose all components, connect RTK Query hooks, add sidebar filtering and section selection
 
 ### Phase 4: Theming System
 
-- [ ] Create `web/src/styles/global.css` with all CSS variables at `:root` (colors, fonts, spacing, borders, shadows, layout)
-- [ ] Create `web/src/styles/theme-default.css` with "classic Mac" retro theme defaults
-- [ ] Convert all component `.css` files to use `data-part` selectors and CSS variables (no hardcoded values)
-- [ ] Create `parts.ts` for each component with stable `data-part` name constants
-- [ ] Implement `unstyled` prop on `<App />` that skips importing base CSS
-- [ ] Verify theme override works in browser DevTools (override `--color-bg` and observe change)
+- [x] Create `web/src/styles/global.css` with all CSS variables at `:root` (colors, fonts, spacing, borders, shadows, layout)
+- [x] Create `web/src/styles/theme-default.css` with "classic Mac" retro theme defaults
+- [x] Convert all component `.css` files to use `data-part` selectors and CSS variables (no hardcoded values)
+- [x] Create `parts.ts` for each component with stable `data-part` name constants
+- [x] Implement `unstyled` prop on `<App />` that skips importing base CSS
+- [x] Verify theme override works in browser DevTools (override `--color-bg` and observe change)
 
 ### Phase 5: Storybook Stories
 
-- [ ] Install Storybook: `pnpm add -D @storybook/react-vite @storybook/addon-essentials`
-- [ ] Configure `.storybook/main.ts` and `.storybook/preview.ts`
-- [ ] Add stories for `<Badge />` (5 variants: topic, GeneralTopic, Example, command, flag)
-- [ ] Add stories for `<TitleBar />` (default)
-- [ ] Add stories for `<SearchBar />` (empty, with text)
-- [ ] Add stories for `<TypeFilter />` (each filter active)
-- [ ] Add stories for `<SectionCard />` (active, inactive, top indicator)
-- [ ] Add stories for `<SectionList />` (empty, with items, filtered)
-- [ ] Add stories for `<SectionView />` (with sample section data)
-- [ ] Add stories for `<MarkdownContent />` (headings, code blocks, tables, lists, inline formatting)
-- [ ] Add stories for `<EmptyState />` (default)
-- [ ] Add stories for `<MenuBar />` (default)
-- [ ] Add stories for `<StatusBar />` (default)
-- [ ] Run `pnpm storybook` and verify all stories render correctly
+- [x] Install Storybook: `pnpm add -D @storybook/react-vite @storybook/addon-essentials`
+- [x] Configure `.storybook/main.ts` and `.storybook/preview.ts`
+- [x] Add stories for `<Badge />` (5 variants: topic, GeneralTopic, Example, command, flag)
+- [x] Add stories for `<TitleBar />` (default)
+- [x] Add stories for `<SearchBar />` (empty, with text)
+- [x] Add stories for `<TypeFilter />` (each filter active)
+- [x] Add stories for `<SectionCard />` (active, inactive, top indicator)
+- [x] Add stories for `<SectionList />` (empty, with items, filtered)
+- [x] Add stories for `<SectionView />` (with sample section data)
+- [x] Add stories for `<MarkdownContent />` (headings, code blocks, tables, lists, inline formatting)
+- [x] Add stories for `<EmptyState />` (default)
+- [x] Add stories for `<MenuBar />` (default)
+- [x] Add stories for `<StatusBar />` (default)
+- [x] Run `pnpm storybook` and verify all stories render correctly
 
 ### Phase 6: Dagger Build Pipeline
 

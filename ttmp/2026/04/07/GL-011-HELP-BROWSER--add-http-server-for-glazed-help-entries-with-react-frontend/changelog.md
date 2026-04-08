@@ -65,3 +65,13 @@ Phase 2 Tasks 8-15: scaffold web/ with Vite + React + RTK Query + TypeScript (co
 
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/web/ — Phase 2 Tasks 8-15 — full web scaffold
 
+
+## 2026-04-07
+
+Phase 3 Tasks 16-28: all 13 React components extracted from JSX prototype (commit eae3b82)
+
+
+## 2026-04-07
+
+Phase 4 + Phase 5 Tasks 29-36, 37-48: Storybook configured + stories for all components (commit eae3b82)
+

@@ -37,12 +37,17 @@ RelatedFiles:
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/sources/local/glazed-docs-browser(2).jsx
     - Path: web
       Note: Step 5 — Phase 2 scaffold committed (cca9859)
+    - Path: web/.storybook
+      Note: Step 6 — Storybook configured + 9 story files (eae3b82)
+    - Path: web/src/components
+      Note: Step 6 — 13 components extracted from JSX prototype
 ExternalSources: []
 Summary: Step-by-step diary of the glaze help browser implementation
 LastUpdated: 2026-04-08T00:00:00Z
 WhatFor: Record implementation progress and decisions
 WhenToUse: Use when following up on or reviewing this ticket
 ---
+
 
 
 
@@ -586,4 +591,87 @@ GET /api/sections       → handleListSections (no q param)
 GET /api/sections?q=x   → handleListSections (with q param)
 GET /api/sections/search?q=x → handleSearchSections (alias)
 GET /api/sections/:slug → handleGetSection
+```
+
+## Step 6: Phase 3 Tasks 16-28 + Phase 5 Tasks 35-48 — Components, wiring, Storybook
+
+Extracted all 13 components from the JSX prototype, wired App.tsx with RTK Query,
+added CSS variables + `data-part` selectors throughout, and set up Storybook.
+
+### Prompt Context
+
+**User prompt (verbatim):** "don't forget the storybook stories btw, when you have time. continue"
+
+**Assistant interpretation:** Continue working through the remaining tasks, including
+the component decomposition and Storybook setup.
+
+**Commit (code):** eae3b82 — "Phase 3 Tasks 16-27, 35-36, 37-47: all React components,
+wiring, Storybook"
+
+### What I did
+
+**Components extracted** (each: `Component.tsx`, `parts.ts`, `styles/*.css`):
+
+1. `MenuBar` — Apple logo, File/Edit/View/Help items, app title on right
+2. `AppLayout` — two-pane layout container
+3. `TitleBar` — retro title bar with centred title, icon box, stripe dividers
+4. `Badge` — coloured tags; `variant` prop: `type|topic|command|flag`; CSS custom
+   properties (`--badge-color`, `--badge-weight`) for theming without class swapping
+5. `SearchBar` — search input with magnifier icon, `useState`-driven `onChange`
+6. `TypeFilter` — filter buttons with `aria-pressed`; `FilterValue` type exported
+7. `SectionCard` / `SectionList` — `aria-selected`, alternating row backgrounds, `isTopLevel` ◆ badge
+8. `SectionHeader` / `SectionView` — slug pill, h1, short desc, tag badges, Markdown body
+9. `MarkdownContent` — `react-markdown` + `remark-gfm`; full CSS for all markdown elements
+10. `EmptyState` — book emoji, customisable label
+11. `StatusBar` — section count + version
+
+**Wired App.tsx**: `useListSectionsQuery`, `useGetSectionQuery`, client-side filter
+(`useMemo`), `search` + `filter` state, all components composed via `AppLayout`.
+
+**CSS system**: `data-part` attribute selectors throughout; `parts.ts` exports a const
+object per component for stable name strings. Theme overrides via CSS variables at
+`:root`.
+
+**Storybook**: `.storybook/main.ts` (react-vite framework), `.storybook/preview.ts`
+(global CSS + backgrounds); 9 story files with 20+ story variants total.
+
+**Build**: `pnpm build` → 394 kB JS, 7.6 kB CSS.
+
+### What I learned
+
+- `data-variant` on `<span>` is set directly as an HTML attribute, but CSS attribute
+  selectors (`[data-variant='type']`) work on any element regardless of type.
+- `react-markdown` + `remark-gfm` handles tables, strikethrough, task lists natively.
+- `parts.ts` per component is the correct pattern: `const MyParts = { root: 'my-component' } as const`
+  and `data-part={MyParts.root}` in JSX — avoids string typos and makes refactoring safe.
+- `pnpm build` deduplication keeps bundle size reasonable (394 kB includes React, RTK,
+  react-router-dom, react-markdown + remark-gfm).
+- `SectionCard` uses `button[data-part=...]` in CSS for the outer element, and
+  `SectionListParts.item` + `SectionCardParts.root` combined as `data-part` value —
+  this lets both CSS rules apply.
+
+### What warrants a second pair of eyes
+
+- Whether `app-root` styles (dither background) belong in `global.css` or in a
+  dedicated `App.css`. Currently in `global.css`; could move to `App.tsx` CSS module.
+- Whether the `SectionCard` `data-part` value should be `section-card` or the combined
+  `section-list-item section-card` — both work but the latter enables both list-level
+  and card-level CSS targeting.
+- `Badge` uses CSS custom properties (`--badge-color`) set inline for the dynamic
+  color per type. Is this the right approach vs CSS modules or `styled-components`?
+  The skill guide recommends CSS variables; this is consistent with that.
+
+### Code review instructions
+
+Where to start: `web/src/App.tsx` — verify the component wiring is correct. Then
+`web/src/components/Badge/Badge.tsx` — verify the `data-variant` pattern. Then
+`web/src/services/api.ts` — verify hooks are called correctly in App.
+
+How to validate:
+```bash
+cd web
+pnpm install
+pnpm build
+# Storybook:
+pnpm storybook
 ```
