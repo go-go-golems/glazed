@@ -35,12 +35,15 @@ RelatedFiles:
       Note: Step 3 — Added ErrSectionNotFound sentinel (commit d6ac109)
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/design-doc/01-help-browser-architecture-and-implementation-guide.md
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/sources/local/glazed-docs-browser(2).jsx
+    - Path: web
+      Note: Step 5 — Phase 2 scaffold committed (cca9859)
 ExternalSources: []
 Summary: Step-by-step diary of the glaze help browser implementation
 LastUpdated: 2026-04-08T00:00:00Z
 WhatFor: Record implementation progress and decisions
 WhenToUse: Use when following up on or reviewing this ticket
 ---
+
 
 
 
@@ -493,4 +496,94 @@ go run ./cmd/help-browser/ ./docs --address :18088 &
 curl http://localhost:18088/api/health
 curl http://localhost:18088/api/sections
 kill %1
+```
+
+## Step 5: Phase 2 Tasks 8-15 — web/ scaffold
+
+Scaffolded the entire `web/` directory with Vite, React, RTK Query, and TypeScript.
+The build produces a working dist/ that can be embedded with `go:embed` (Phase 6).
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Create the Phase 2 scaffold for the React frontend:
+package.json, vite config, TypeScript types, RTK Query API slice, Redux store,
+entry point, and placeholder App.
+
+**Inferred user intent:** Get the web build pipeline working end-to-end before
+decomposing the JSX prototype.
+
+**Commit (code):** cca9859 — "Phase 2 Tasks 8-15: scaffold web/ with Vite + React + RTK Query"
+
+### What I did
+
+1. Created `web/` directory structure.
+2. Wrote `package.json`: React 18, RTK 2.5, react-router-dom, react-markdown,
+   remark-gfm, @storybook/* (dev), vite, typescript.
+3. Wrote `vite.config.ts`: React plugin, `/api` proxy to `localhost:8088`, `dist/`
+   output.
+4. Wrote `tsconfig.json`: strict mode, ESNext modules, `react-jsx`.
+5. Wrote `web/src/types/index.ts`: TypeScript interfaces mirroring Go server types
+   (`SectionSummary`, `SectionDetail`, `ListSectionsResponse`, `HealthResponse`,
+   `ErrorResponse`).
+6. Wrote `web/src/services/api.ts`: RTK Query `createApi` with 4 endpoints
+   (`healthCheck`, `listSections`, `searchSections`, `getSection`), auto-generated
+   hooks (`useHealthCheckQuery`, etc.).
+7. Wrote `web/src/store.ts`: `configureStore` wiring RTK Query middleware.
+8. Wrote `web/src/main.tsx`: React root with `Provider` + `HashRouter`.
+9. Wrote `web/src/App.tsx`: placeholder calling `useListSectionsQuery()`, showing
+   section count.
+10. Wrote `web/src/styles/global.css`: CSS variables for layout, typography, colors.
+11. Added `react-router-dom` to `package.json` (was missing initially).
+12. Ran `pnpm install` → 3.9s.
+13. `npx tsc --noEmit` → clean (fixed unused imports in `App.tsx`).
+14. `pnpm build` → `dist/` (230 kB JS, 0.9 kB CSS).
+
+### What I learned
+
+- `vite.config.ts` proxy: `target: 'http://localhost:8088'` forwards `/api/*` to
+  the Go server during dev. In prod, both are served same-origin by the Go binary.
+- RTK Query `fetchBaseQuery({ baseUrl: '/api' })` — the base URL is prefixed to
+  all endpoint URLs. The Vite proxy handles forwarding to the Go server.
+- `noUnusedLocals: true` in tsconfig catches unused imports at compile time.
+  `App.tsx` initially imported `{ Routes, Route, Link }` from react-router-dom
+  which were unused in the placeholder — removed them to satisfy strict mode.
+- `pnpm build` → `dist/` is 230 kB gzipped to 76 kB — reasonable for React +
+  RTK Query + react-markdown.
+
+### What warrants a second pair of eyes
+
+- Whether `react-router-dom` v6 (imported in `main.tsx`) is the right choice
+  given the decision to use `HashRouter`. The JSX prototype used state-based
+  routing — if we switch to URL-based routing, `react-router-dom` is needed;
+  if we stay with state-based routing, it can be removed.
+- `dist/` output size (230 kB) could be optimized with dynamic imports or
+  code splitting if needed.
+
+### Code review instructions
+
+Where to start: `web/src/services/api.ts` — verify RTK Query endpoints match Go
+handlers exactly. Then `web/src/types/index.ts` — verify TypeScript types match
+Go server types.
+
+How to validate:
+```bash
+cd web
+pnpm install
+pnpm build
+ls dist/
+# Or for dev mode:
+pnpm dev  # starts Vite on :5173, proxies /api to :8088
+```
+
+### Technical details
+
+```typescript
+// RTK Query endpoint → Go handler mapping
+GET /api/health         → handleHealth
+GET /api/sections       → handleListSections (no q param)
+GET /api/sections?q=x   → handleListSections (with q param)
+GET /api/sections/search?q=x → handleSearchSections (alias)
+GET /api/sections/:slug → handleGetSection
 ```

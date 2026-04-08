@@ -56,3 +56,12 @@ Phase 1 Task 7: add cmd/help-browser/main.go (commit 9d673f9)
 
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Task 7 — standalone CLI
 
+
+## 2026-04-07
+
+Phase 2 Tasks 8-15: scaffold web/ with Vite + React + RTK Query + TypeScript (commit cca9859)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/web/ — Phase 2 Tasks 8-15 — full web scaffold
+

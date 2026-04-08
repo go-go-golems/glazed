@@ -14,14 +14,14 @@
 
 ### Phase 2: React Frontend Scaffold
 
-- [ ] Create `web/package.json` with dependencies (React 18, RTK, react-markdown, remark-gfm, Vite, TypeScript)
-- [ ] Create `web/vite.config.ts` with API proxy to Go server on `:8088`
-- [ ] Create `web/tsconfig.json` and `web/index.html`
-- [ ] Create `web/src/types/index.ts` with TypeScript interfaces matching API response shapes
-- [ ] Create `web/src/services/api.ts` with RTK Query `createApi` (4 endpoints: health, listSections, getSection, searchSections)
-- [ ] Create `web/src/store.ts` with Redux store configuration
-- [ ] Create `web/src/main.tsx` entry point with Provider and BrowserRouter
-- [ ] Create `web/src/App.tsx` placeholder that calls `useListSectionsQuery()` and displays section count
+- [x] Create `web/package.json` with dependencies (React 18, RTK, react-markdown, remark-gfm, Vite, TypeScript)
+- [x] Create `web/vite.config.ts` with API proxy to Go server on `:8088`
+- [x] Create `web/tsconfig.json` and `web/index.html`
+- [x] Create `web/src/types/index.ts` with TypeScript interfaces matching API response shapes
+- [x] Create `web/src/services/api.ts` with RTK Query `createApi` (4 endpoints: health, listSections, getSection, searchSections)
+- [x] Create `web/src/store.ts` with Redux store configuration
+- [x] Create `web/src/main.tsx` entry point with Provider and BrowserRouter
+- [x] Create `web/src/App.tsx` placeholder that calls `useListSectionsQuery()` and displays section count
 
 ### Phase 3: Component Decomposition (Port from JSX Prototype)
 
