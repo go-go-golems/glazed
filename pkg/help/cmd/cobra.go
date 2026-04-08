@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	"github.com/spf13/cobra"
 
 	"github.com/Masterminds/sprig"
@@ -49,6 +50,86 @@ func getHelpWriter(cmd *cobra.Command) io.Writer {
 	return os.Stdout
 }
 
+func combinePredicates(preds ...store.Predicate) store.Predicate {
+	filtered := make([]store.Predicate, 0, len(preds))
+	for _, pred := range preds {
+		if pred != nil {
+			filtered = append(filtered, pred)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	if len(filtered) == 1 {
+		return filtered[0]
+	}
+	return store.And(filtered...)
+}
+
+func buildTypePredicate(topics, examples, applications, tutorials bool) (store.Predicate, string, bool) {
+	typePreds := []store.Predicate{}
+	requestedTypes := []string{}
+
+	if !topics && !examples && !applications && !tutorials {
+		return nil, "general topics, examples, applications, tutorials", false
+	}
+	if topics {
+		typePreds = append(typePreds, store.IsGeneralTopic())
+		requestedTypes = append(requestedTypes, "general topics")
+	}
+	if examples {
+		typePreds = append(typePreds, store.IsExample())
+		requestedTypes = append(requestedTypes, "examples")
+	}
+	if applications {
+		typePreds = append(typePreds, store.IsApplication())
+		requestedTypes = append(requestedTypes, "applications")
+	}
+	if tutorials {
+		typePreds = append(typePreds, store.IsTutorial())
+		requestedTypes = append(requestedTypes, "tutorials")
+	}
+	return combinePredicates(store.Or(typePreds...)), strings.Join(requestedTypes, ", "), true
+}
+
+func buildOnlyPredicate(topic, flag, command string) (store.Predicate, string, bool) {
+	preds := []store.Predicate{}
+	parts := []string{}
+	if topic != "" {
+		preds = append(preds, store.HasTopic(topic))
+		parts = append(parts, "topics "+topic)
+	}
+	if flag != "" {
+		preds = append(preds, store.HasFlag(flag))
+		parts = append(parts, "flags "+flag)
+	}
+	if command != "" {
+		preds = append(preds, store.HasCommand(command))
+		parts = append(parts, "commands "+command)
+	}
+	return combinePredicates(preds...), strings.Join(parts, " and "), len(preds) > 0
+}
+
+func withExtraPredicates(options *help.RenderOptions, extras ...store.Predicate) *help.RenderOptions {
+	return &help.RenderOptions{
+		Predicate:             combinePredicates(append([]store.Predicate{options.Predicate}, extras...)...),
+		RelaxNoQueryPredicate: combinePredicates(append([]store.Predicate{options.RelaxNoQueryPredicate}, extras...)...),
+		RelaxNoTypesPredicate: combinePredicates(append([]store.Predicate{options.RelaxNoTypesPredicate}, extras...)...),
+		RelaxBroadPredicate:   combinePredicates(append([]store.Predicate{options.RelaxBroadPredicate}, extras...)...),
+		HasOnlyQueries:        options.HasOnlyQueries,
+		HasRestrictedTypes:    options.HasRestrictedTypes,
+		QueryString:           options.QueryString,
+		RequestedTypes:        options.RequestedTypes,
+		ShowAllSections:       options.ShowAllSections,
+		ShowShortTopic:        options.ShowShortTopic,
+		HelpCommand:           options.HelpCommand,
+		LongHelp:              options.LongHelp,
+		ListSections:          options.ListSections,
+		OnlyTopLevel:          options.OnlyTopLevel,
+		ShowDocumentationList: options.ShowDocumentationList,
+	}
+}
+
 func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 	helpFunc, usageFunc := getCobraHelpUsageFuncs(hs)
 	helpTemplate, usageTemplate := getCobraHelpUsageTemplates(hs)
@@ -67,13 +148,10 @@ func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 
 func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 	helpFunc := func(c *cobra.Command, args []string) {
-		qb := help.NewSectionQuery().
-			ReturnAllTypes()
-
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &help.RenderOptions{
-			Query:           qb,
+			RequestedTypes: "general topics, examples, applications, tutorials",
 			ShowAllSections: false,
 			ShowShortTopic:  false,
 			LongHelp:        longHelp,
@@ -88,17 +166,18 @@ func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 	}
 
 	usageFunc := func(c *cobra.Command) error {
-		qb := help.NewSectionQuery().
-			ReturnExamples()
-
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &help.RenderOptions{
-			Query:           qb,
-			ShowAllSections: false,
-			ShowShortTopic:  true,
-			LongHelp:        longHelp,
-			HelpCommand:     c.Root().CommandPath() + " help",
+			Predicate:        store.IsExample(),
+			RelaxNoTypesPredicate: nil,
+			RelaxBroadPredicate:   nil,
+			RequestedTypes:   "examples",
+			HasRestrictedTypes: true,
+			ShowAllSections:  false,
+			ShowShortTopic:   true,
+			LongHelp:         longHelp,
+			HelpCommand:      c.Root().CommandPath() + " help",
 		}
 		if c.Parent() == nil {
 			options.OnlyTopLevel = true
@@ -114,14 +193,15 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 
 	isTopLevel := c.Parent() == nil
 
-	userQuery := options.Query
-	userQuery.OnlyTopLevel = options.OnlyTopLevel
-
+	renderOptions := options
 	if !isTopLevel {
-		userQuery = userQuery.SearchForCommand(c.Name())
+		renderOptions = withExtraPredicates(renderOptions, store.HasCommand(c.Name()))
+	}
+	if options.OnlyTopLevel {
+		renderOptions = withExtraPredicates(renderOptions, store.IsTopLevel())
 	}
 
-	data, noResultsFound := hs.ComputeRenderData(userQuery)
+	data, noResultsFound := hs.ComputeRenderData(renderOptions)
 
 	t.Funcs(templating.TemplateFuncs).Funcs(sprig.TxtFuncMap())
 
@@ -137,7 +217,7 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 		} else {
 			tmpl = COBRA_COMMAND_HELP_TEMPLATE
 		}
-		if !userQuery.HasOnlyQueries() && !userQuery.HasRestrictedReturnTypes() {
+		if !renderOptions.HasOnlyQueries && !renderOptions.HasRestrictedTypes {
 			tmpl += c.UsageTemplate()
 		}
 		if showDocs {
@@ -190,11 +270,11 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["Command"] = c
 	data["FlagGroupUsage"] = flagGroupUsage
 	data["FlagUsageMaxLength"] = maxLength
-	data["HelpCommand"] = options.HelpCommand
+	data["HelpCommand"] = renderOptions.HelpCommand
 	data["Slug"] = c.Name()
 	data["LongHelp"] = options.LongHelp
 
-	// Make command fields directly accessible for cobra template compatibility
+	// Expose command fields directly so the Cobra-derived templates can reference them without extra nesting.
 	data["Runnable"] = c.Runnable()
 	data["UseLine"] = c.UseLine()
 	data["HasAvailableSubCommands"] = c.HasAvailableSubCommands()
@@ -312,8 +392,6 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 				return
 			}
 
-			qb := help.NewSectionQuery()
-
 			// Check for DSL query first
 			queryDSL := c.Flag("query").Value.String()
 			printQuery, _ := c.Flags().GetBool("print-query")
@@ -376,70 +454,43 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 				return
 			}
 
-			hasTopicFilter := false
 			topic := c.Flag("topic").Value.String()
-			if topic != "" {
-				qb = qb.ReturnOnlyTopics(topic)
-				hasTopicFilter = true
-			}
-			hasFlagFilter := false
 			flag := c.Flag("flag").Value.String()
-			if flag != "" {
-				qb = qb.ReturnOnlyFlags(flag)
-				hasFlagFilter = true
-			}
-
-			hasCommandFilter := false
 			command := c.Flag("command").Value.String()
-			if command != "" {
-				qb = qb.ReturnOnlyCommands(command)
-				hasCommandFilter = true
-			}
+			hasTopicFilter := topic != ""
+			hasFlagFilter := flag != ""
+			hasCommandFilter := command != ""
 
 			showAllSections, _ := c.Flags().GetBool("all")
 			showShortTopic, _ := c.Flags().GetBool("short")
 
 			topics, _ := c.Flags().GetBool("topics")
-			if topics {
-				qb = qb.ReturnTopics()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
 			examples, _ := c.Flags().GetBool("examples")
-			if examples {
-				qb = qb.ReturnExamples()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
 			applications, _ := c.Flags().GetBool("applications")
-			if applications {
-				qb = qb.ReturnApplications()
-				qb.OnlyTopLevel = false
-				showAllSections = true
-				showShortTopic = true
-			}
 			tutorials, _ := c.Flags().GetBool("tutorials")
-			if tutorials {
-				qb = qb.ReturnTutorials()
-				qb.OnlyTopLevel = false
+
+			if topics || examples || applications || tutorials {
 				showAllSections = true
 				showShortTopic = true
 			}
 
-			if !topics && !examples && !applications && !tutorials {
-				qb = qb.ReturnAllTypes()
-			}
+			typePredicate, requestedTypes, hasRestrictedTypes := buildTypePredicate(topics, examples, applications, tutorials)
+			onlyPredicate, queryString, hasOnlyQueries := buildOnlyPredicate(topic, flag, command)
 
 			list, _ := c.Flags().GetBool("list")
-
 			if showAllSections || topics || examples || applications || tutorials {
 				list = true
 			}
 
 			options := &help.RenderOptions{
-				Query:                 qb,
+				Predicate:             combinePredicates(typePredicate, onlyPredicate),
+				RelaxNoQueryPredicate: typePredicate,
+				RelaxNoTypesPredicate: onlyPredicate,
+				RelaxBroadPredicate:   nil,
+				HasOnlyQueries:        hasOnlyQueries,
+				HasRestrictedTypes:    hasRestrictedTypes,
+				QueryString:           queryString,
+				RequestedTypes:        requestedTypes,
 				ShowAllSections:       showAllSections,
 				ShowShortTopic:        showShortTopic,
 				ListSections:          list,
@@ -464,14 +515,16 @@ func NewCobraHelpCommand(hs *help.HelpSystem) *cobra.Command {
 				// if we found a topic with that slug, show it
 				if err == nil {
 					// TODO(manuel, 2022-12-10) Potentially allow subtopics search
-					options.Query = options.Query.
-						ReturnAnyOfTopics(args[0]).
-						FilterSections(topicSection)
+					topicOptions := withExtraPredicates(
+						options,
+						store.HasTopic(args[0]),
+						store.Not(store.SlugIn([]string{topicSection.Slug})),
+					)
 
 					writer := getHelpWriter(c)
 					s, err := hs.RenderTopicHelpWithWriter(
 						topicSection,
-						options,
+						topicOptions,
 						writer)
 					if err != nil {
 						// need to show the default error page here

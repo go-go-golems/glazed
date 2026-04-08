@@ -33,8 +33,8 @@ func (hs *HelpSystem) QuerySections(query string) ([]*model.Section, error) {
 			// This is clearly a DSL query, return the error
 			return nil, fmt.Errorf("invalid query syntax: %s", err.Error())
 		}
-		// Fall back to the legacy simple parser for backward compatibility
-		return hs.queryLegacy(query)
+		// Fall back to simple field/text query parsing when the DSL parser does not match.
+		return hs.querySimple(query)
 	}
 
 	// Pass the predicate directly to the store — single query, no O(N) temp stores
@@ -42,8 +42,8 @@ func (hs *HelpSystem) QuerySections(query string) ([]*model.Section, error) {
 	return hs.Store.Find(ctx, predicate)
 }
 
-// queryLegacy provides backward compatibility with the old simple parser
-func (hs *HelpSystem) queryLegacy(query string) ([]*model.Section, error) {
+// querySimple handles field queries and plain text search when the full DSL parser does not match.
+func (hs *HelpSystem) querySimple(query string) ([]*model.Section, error) {
 	// Handle field:value queries
 	if strings.Contains(query, ":") {
 		parts := strings.SplitN(query, ":", 2)

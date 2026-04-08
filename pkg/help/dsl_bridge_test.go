@@ -127,7 +127,7 @@ func TestQuerySectionsErrorHandling(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "Valid legacy query",
+			name:    "Valid simple query with unknown type",
 			query:   "type:unknown",
 			wantErr: true,
 		},

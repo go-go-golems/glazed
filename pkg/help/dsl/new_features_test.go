@@ -170,8 +170,8 @@ func TestMixedQuoteTypes(t *testing.T) {
 	}
 }
 
-// TestBackwardCompatibility tests that explicit field queries still work
-func TestBackwardCompatibility(t *testing.T) {
+// TestFieldQuerySupport tests that explicit field queries still work
+func TestFieldQuerySupport(t *testing.T) {
 	tests := []struct {
 		input       string
 		shouldError bool
