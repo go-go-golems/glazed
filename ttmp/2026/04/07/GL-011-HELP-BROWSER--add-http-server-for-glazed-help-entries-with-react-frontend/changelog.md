@@ -118,3 +118,13 @@ Cleanup slice: remove the redundant `cmd/help-browser` runtime wrapper, move `go
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/static_test.go — Direct SPA handler tests
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/build-web/main.go — Builder docs updated to match the new ownership model
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — `glaze serve` is now the only supported runtime entrypoint
+
+## 2026-04-08
+
+Final polish: ignore `web/node_modules/`, keep `web/pnpm-lock.yaml` in version control for reproducible frontend builds, and add a new Glazed help topic (`serve-help-over-http`) that explains `glaze serve`, the HTTP API, and how to mount the help browser/API in existing servers.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/.gitignore — Ignore `web/node_modules/`
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/web/pnpm-lock.yaml — Frontend dependency lockfile kept in version control
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/doc/topics/25-serving-help-over-http.md — New help topic for `glaze serve` and programmatic API usage

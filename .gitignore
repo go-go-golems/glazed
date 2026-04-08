@@ -2,6 +2,7 @@ doc/gifs/*gif
 /.env
 
 dist/
+/web/node_modules/
 .bin/
 .history
 .crush

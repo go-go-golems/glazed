@@ -1121,3 +1121,59 @@ Only optional cleanup remains:
 1. commit `web/pnpm-lock.yaml` if we want fully reproducible frontend dependency resolution
 2. optionally annotate the long design doc as partially superseded by the final shared-SPA architecture
 3. optionally add browser E2E tests
+
+## Step 12: Final polish — lockfile, gitignore, and user-facing help for `glaze serve`
+
+Finished the last polish pass after the architectural cleanup: committed the frontend lockfile for reproducibility, explicitly ignored `web/node_modules/`, and added a user-facing Glazed help page that explains both the `glaze serve` command and the programmatic API/SPA composition path.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. yes 2. gitignore 3. create a help galzed entry guide about how to use the serve verb, and how to use the API to serve help doc pages yourself."
+
+Follow-up:
+
+**User prompt (verbatim):** "See the glazed help writing entyr skill."
+
+**Assistant interpretation:** Apply the Glazed help-entry writing conventions, add a proper help topic to `pkg/doc`, and finish the last repo hygiene items around frontend artifacts.
+
+### What I changed
+
+1. Updated `.gitignore`
+   - added `/web/node_modules/`
+2. Prepared `web/pnpm-lock.yaml` for version control
+   - this makes frontend dependency resolution reproducible across local and generated builds
+3. Added a new Glazed help topic:
+   - `pkg/doc/topics/25-serving-help-over-http.md`
+4. Validated the topic through the real CLI:
+   - `glaze help serve-help-over-http`
+
+### Content of the new help entry
+
+The new page explains:
+
+- why `glaze serve` exists
+- how to run it against markdown files/directories
+- which API endpoints it exposes
+- how to reuse the handlers in your own HTTP server
+- how to mount under a prefix such as `/help`
+- how to run API-only without the SPA
+- common troubleshooting cases
+
+### Why
+
+At this point the code was cleaned up, but users still needed a discoverable, first-class explanation of how to actually use the feature. The right place for that explanation is the Glazed help system itself so it stays close to the command surface and is queryable with the rest of the docs.
+
+Committing the lockfile also closes the last obvious reproducibility gap in the frontend toolchain.
+
+### Validation
+
+- `GOWORK=off go build ./cmd/glaze`
+- `glaze help serve-help-over-http`
+- confirmed the new topic renders in the CLI help output
+
+### What should be done next
+
+Only optional polish remains now:
+
+1. annotate the long design doc as partially superseded by the final shared `pkg/web` + `glaze serve` architecture
+2. add browser E2E smoke tests if we want full end-to-end coverage beyond handler/unit tests
