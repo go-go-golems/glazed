@@ -1,0 +1,23 @@
+/* badge.css — Styles for the Badge component.
+ * All colours use CSS variables so themes can override them.
+ * The "variant" prop is passed via CSS custom properties so no class-swapping needed. */
+
+[data-part='badge'] {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1.5px solid var(--badge-color, #000);
+  border-radius: 2px;
+  font-size: 10px;
+  font-family: var(--font-ui);
+  font-weight: var(--badge-weight, 400);
+  color: var(--badge-color, #000);
+  background: #fff;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+}
+
+/* Type badge (GeneralTopic, Example, etc.) — bold */
+[data-part='badge'][data-variant='type'] {
+  font-weight: 700;
+}

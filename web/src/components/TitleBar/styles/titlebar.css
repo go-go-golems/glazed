@@ -1,0 +1,59 @@
+/* titlebar.css — classic Mac-style title bar with centred title and icon box. */
+
+[data-part='titlebar'] {
+  background: #fff;
+  border-bottom: 2px solid #000;
+  display: flex;
+  align-items: stretch;
+  height: 22px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+[data-part='titlebar-icon'] {
+  width: 20px;
+  border-right: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-part='titlebar-icon-box'] {
+  width: 11px;
+  height: 11px;
+  border: 2px solid #000;
+  background: #fff;
+}
+
+[data-part='titlebar-ruler'] {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  height: 6px;
+  overflow: hidden;
+}
+
+[data-part='titlebar-stripe'] {
+  flex: 1;
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 1px,
+    #000 1px,
+    #000 2px
+  );
+  background-size: 1px 2px;
+}
+
+[data-part='titlebar-title'] {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 8px;
+  background: #fff;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}

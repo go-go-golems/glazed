@@ -1,0 +1,26 @@
+/* typefilter.css */
+
+[data-part='typefilter'] {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+[data-part='typefilter-button'] {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  border: 1px solid #999;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+[data-part='typefilter-button'][aria-pressed='true'] {
+  font-weight: 700;
+  border: 2px solid #000;
+  background: #000;
+  color: #fff;
+}

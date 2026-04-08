@@ -1,0 +1,96 @@
+/* markdown.css — styles for MarkdownContent.
+ * Uses BEM-like selectors for prose elements inside the root. */
+
+[data-part='markdown-content'] {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-part='markdown-content'] h1,
+[data-part='markdown-content'] h2,
+[data-part='markdown-content'] h3 {
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+}
+
+[data-part='markdown-content'] h1 { font-size: 1.6em; }
+[data-part='markdown-content'] h2 { font-size: 1.3em; }
+[data-part='markdown-content'] h3 { font-size: 1.1em; }
+
+[data-part='markdown-content'] p {
+  margin: 0.8em 0;
+}
+
+[data-part='markdown-content'] a {
+  color: var(--color-accent, #0078d4);
+}
+
+[data-part='markdown-content'] code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: #e8e8e8;
+  padding: 1px 4px;
+  border: 1px solid #bbb;
+  border-radius: 2px;
+}
+
+[data-part='markdown-content'] pre {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-left: 3px solid #999;
+  padding: 12px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+[data-part='markdown-content'] pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+[data-part='markdown-content'] blockquote {
+  border-left: 3px solid #ccc;
+  margin: 1em 0;
+  padding: 0 1em;
+  color: #555;
+}
+
+[data-part='markdown-content'] ul,
+[data-part='markdown-content'] ol {
+  padding-left: 1.5em;
+}
+
+[data-part='markdown-content'] li {
+  margin: 0.3em 0;
+}
+
+[data-part='markdown-content'] table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+[data-part='markdown-content'] th,
+[data-part='markdown-content'] td {
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  text-align: left;
+}
+
+[data-part='markdown-content'] th {
+  background: #f0f0f0;
+  font-weight: 700;
+}
+
+[data-part='markdown-content'] strong {
+  font-weight: 700;
+}
+
+[data-part='markdown-content'] hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 1.5em 0;
+}

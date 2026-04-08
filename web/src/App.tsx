@@ -1,28 +1,95 @@
-// App.tsx
-// Root component — placeholder for the full help browser UI.
-// The full implementation wires all 13 components together (Tasks 16–28).
-
-import './services/api'; // side-effect: registers RTK Query endpoints
-import { useListSectionsQuery } from './services/api';
+// App.tsx — root component: wires all components together with RTK Query state.
+import { useState, useMemo } from 'react';
+import { TitleBar } from './components/TitleBar/TitleBar';
+import { SearchBar } from './components/SearchBar/SearchBar';
+import { TypeFilter, type FilterValue } from './components/TypeFilter/TypeFilter';
+import { SectionList } from './components/SectionList/SectionList';
+import { SectionView } from './components/SectionView/SectionView';
+import { EmptyState } from './components/EmptyState/EmptyState';
+import { StatusBar } from './components/StatusBar/StatusBar';
+import { MenuBar } from './components/MenuBar/MenuBar';
+import { AppLayout } from './components/AppLayout/AppLayout';
+import { useListSectionsQuery, useGetSectionQuery } from './services/api';
+import type { SectionSummary } from './types';
 
 export default function App() {
-  const { data, isLoading, error } = useListSectionsQuery();
+  const [activeSlug, setActiveSlug] = useState<string>('help-system');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterValue>('All');
+
+  const { data: listData, isLoading, error } = useListSectionsQuery();
+  const { data: section } = useGetSectionQuery(activeSlug, {
+    skip: !activeSlug,
+  });
+
+  // Client-side filter — mirrors the JSX prototype logic.
+  const filtered = useMemo(() => {
+    if (!listData) return [];
+    return listData.sections.filter((s: SectionSummary) => {
+      if (filter !== 'All' && s.type !== filter) return false;
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        s.title.toLowerCase().includes(q) ||
+        s.short.toLowerCase().includes(q) ||
+        s.topics.some((t: string) => t.toLowerCase().includes(q)) ||
+        s.slug.toLowerCase().includes(q)
+      );
+    });
+  }, [listData, search, filter]);
 
   return (
     <div className="app-root">
-      <header className="app-header">
-        <h1>Glazed Help Browser</h1>
-      </header>
+      <MenuBar />
 
-      <main>
-        {isLoading && <p>Loading…</p>}
-        {error && <p style={{ color: 'red' }}>Error loading sections.</p>}
-        {data && (
-          <p>
-            {data.total} section{data.total !== 1 ? 's' : ''} available.
-          </p>
-        )}
-      </main>
+      <AppLayout
+        sidebar={
+          <>
+            <TitleBar title="📁 Sections" />
+            <div style={{ padding: '10px 10px 8px', borderBottom: '2px solid #000' }}>
+              <div style={{ marginBottom: 8 }}>
+                <SearchBar value={search} onChange={setSearch} />
+              </div>
+              <TypeFilter value={filter} onChange={setFilter} />
+            </div>
+            <SectionList
+              sections={filtered}
+              activeSlug={activeSlug}
+              onSelect={setActiveSlug}
+            />
+            <StatusBar count={filtered.length} />
+          </>
+        }
+        content={
+          <>
+            <TitleBar
+              title={
+                section
+                  ? `📄 ${section.title} — glaze help ${section.slug}`
+                  : '📄 Documentation'
+              }
+            />
+            {isLoading && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                Loading…
+              </div>
+            )}
+            {error && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
+                Error loading sections.
+              </div>
+            )}
+            {!isLoading && !error && section && (
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <SectionView section={section} />
+              </div>
+            )}
+            {!isLoading && !error && !section && (
+              <EmptyState />
+            )}
+          </>
+        }
+      />
     </div>
   );
 }
