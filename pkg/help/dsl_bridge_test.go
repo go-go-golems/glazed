@@ -15,7 +15,7 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 		{
 			Section: &model.Section{
 				Slug:        "example-1",
-				SectionType: SectionExample,
+				SectionType: model.SectionExample,
 				Title:       "Example 1",
 				Content:     "This is an example",
 				Topics:      []string{"templates", "basic"},
@@ -24,7 +24,7 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 		{
 			Section: &model.Section{
 				Slug:        "example-2",
-				SectionType: SectionExample,
+				SectionType: model.SectionExample,
 				Title:       "Example 2",
 				Content:     "Another example",
 				Topics:      []string{"advanced"},
@@ -33,7 +33,7 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 		{
 			Section: &model.Section{
 				Slug:        "tutorial-1",
-				SectionType: SectionTutorial,
+				SectionType: model.SectionTutorial,
 				Title:       "Tutorial 1",
 				Content:     "This is a tutorial",
 				Topics:      []string{"templates", "basic"},
@@ -42,7 +42,7 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 		{
 			Section: &model.Section{
 				Slug:        "topic-1",
-				SectionType: SectionGeneralTopic,
+				SectionType: model.SectionGeneralTopic,
 				Title:       "Topic 1",
 				Content:     "This is a topic",
 				Topics:      []string{"advanced"},

@@ -18,19 +18,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Re-export types from model package for backward compatibility
-type SectionType = model.SectionType
-
-const (
-	SectionGeneralTopic = model.SectionGeneralTopic
-	SectionExample      = model.SectionExample
-	SectionApplication  = model.SectionApplication
-	SectionTutorial     = model.SectionTutorial
-)
-
-// Re-export functions from model package
-var SectionTypeFromString = model.SectionTypeFromString
-
 // Section is a structure describing an actual documentation section.
 //
 // This can describe:
@@ -201,12 +188,12 @@ func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
 	}
 
 	if sectionType, ok := metaData["SectionType"]; ok {
-		section.SectionType, err = SectionTypeFromString(sectionType.(string))
+		section.SectionType, err = model.SectionTypeFromString(sectionType.(string))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		section.SectionType = SectionGeneralTopic
+		section.SectionType = model.SectionGeneralTopic
 	}
 
 	if slug := metaData["Slug"]; slug != nil {
@@ -288,28 +275,28 @@ func NewHelpPage(sections []*Section) *HelpPage {
 
 	for _, section := range sections {
 		switch section.SectionType {
-		case SectionGeneralTopic:
+		case model.SectionGeneralTopic:
 			if section.ShowPerDefault {
 				ret.DefaultGeneralTopics = append(ret.DefaultGeneralTopics, section)
 			} else {
 				ret.OtherGeneralTopics = append(ret.OtherGeneralTopics, section)
 			}
 			ret.AllGeneralTopics = append(ret.DefaultGeneralTopics, ret.OtherGeneralTopics...)
-		case SectionExample:
+		case model.SectionExample:
 			if section.ShowPerDefault {
 				ret.DefaultExamples = append(ret.DefaultExamples, section)
 			} else {
 				ret.OtherExamples = append(ret.OtherExamples, section)
 			}
 			ret.AllExamples = append(ret.DefaultExamples, ret.OtherExamples...)
-		case SectionApplication:
+		case model.SectionApplication:
 			if section.ShowPerDefault {
 				ret.DefaultApplications = append(ret.DefaultApplications, section)
 			} else {
 				ret.OtherApplications = append(ret.OtherApplications, section)
 			}
 			ret.AllApplications = append(ret.DefaultApplications, ret.OtherApplications...)
-		case SectionTutorial:
+		case model.SectionTutorial:
 			if section.ShowPerDefault {
 				ret.DefaultTutorials = append(ret.DefaultTutorials, section)
 			} else {

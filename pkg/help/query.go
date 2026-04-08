@@ -20,7 +20,7 @@ type SectionQuery struct {
 	OnlyTopLevel          bool
 
 	// only these types will be returned
-	Types map[SectionType]bool
+	Types map[model.SectionType]bool
 
 	// if any of these is set, and they match each of the Only types,
 	// the section will be return
@@ -47,7 +47,7 @@ type SectionQuery struct {
 
 func NewSectionQuery() *SectionQuery {
 	ret := &SectionQuery{
-		Types: make(map[SectionType]bool),
+		Types: make(map[model.SectionType]bool),
 		All:   true,
 	}
 
@@ -60,37 +60,37 @@ func (s *SectionQuery) ReturnAllTypes() *SectionQuery {
 }
 
 func (s *SectionQuery) ReturnTopics() *SectionQuery {
-	s.Types[SectionGeneralTopic] = true
+	s.Types[model.SectionGeneralTopic] = true
 	return s
 }
 
 func (s *SectionQuery) DontReturnTopics() *SectionQuery {
-	s.Types[SectionGeneralTopic] = false
+	s.Types[model.SectionGeneralTopic] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnExamples() *SectionQuery {
-	s.Types[SectionExample] = true
+	s.Types[model.SectionExample] = true
 	return s
 }
 
 func (s *SectionQuery) DontReturnExamples() *SectionQuery {
-	s.Types[SectionExample] = false
+	s.Types[model.SectionExample] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnApplications() *SectionQuery {
-	s.Types[SectionApplication] = true
+	s.Types[model.SectionApplication] = true
 	return s
 }
 
 func (s *SectionQuery) DontReturnApplications() *SectionQuery {
-	s.Types[SectionApplication] = false
+	s.Types[model.SectionApplication] = false
 	return s
 }
 
 func (s *SectionQuery) ReturnTutorials() *SectionQuery {
-	s.Types[SectionTutorial] = true
+	s.Types[model.SectionTutorial] = true
 	return s
 }
 
@@ -105,7 +105,7 @@ func (s *SectionQuery) SearchForCommand(command string) *SectionQuery {
 }
 
 func (s *SectionQuery) DontReturnTutorials() *SectionQuery {
-	s.Types[SectionTutorial] = false
+	s.Types[model.SectionTutorial] = false
 	return s
 }
 
@@ -220,7 +220,7 @@ func (s *SectionQuery) Clone() *SectionQuery {
 
 	// gotta love go, let's do a deep copy
 
-	ret.Types = make(map[SectionType]bool)
+	ret.Types = make(map[model.SectionType]bool)
 	for k, v := range s.Types {
 		ret.Types[k] = v
 	}
@@ -365,13 +365,13 @@ func (s *SectionQuery) GetRequestedTypesAsString() string {
 	for sectionType, requested := range s.Types {
 		if requested {
 			switch sectionType {
-			case SectionGeneralTopic:
+			case model.SectionGeneralTopic:
 				requestedTypes = append(requestedTypes, "general topics")
-			case SectionExample:
+			case model.SectionExample:
 				requestedTypes = append(requestedTypes, "examples")
-			case SectionApplication:
+			case model.SectionApplication:
 				requestedTypes = append(requestedTypes, "applications")
-			case SectionTutorial:
+			case model.SectionTutorial:
 				requestedTypes = append(requestedTypes, "tutorials")
 
 			}
