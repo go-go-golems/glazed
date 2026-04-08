@@ -887,3 +887,97 @@ Proceed in small, reviewable slices:
 4. Wire both `cmd/help-browser` and `cmd/glaze` through the shared package.
 5. Add/tests docs for mounting under prefixes.
 6. Commit at each stable boundary and keep the diary updated.
+
+## Step 9: Shared `pkg/web` embed package, restored loader, and prefix-mountable serve handler
+
+Implemented the first refactor slice from the bug report. The goal of this slice was not to perfect every abstraction yet, but to get the codebase back to a coherent and working state with a single shared asset location, working SPA serving, reliable markdown loading, and an explicit mounting story for existing servers.
+
+### Prompt Context
+
+**User prompt (verbatim):** "good, put all of this in a bug report in the current ticket, then add detailed tasks for the refactor, also add the fact that we can mount this under different prefixes (so that we can reuse it in existing http servers), and then implement it task by task, comitting at appropriate intervals, and keeping a detailed diary as you work."
+
+**Assistant interpretation:** Start the actual refactor with the lowest-risk slice that fixes the current broken state and establishes a clean ownership model for embedded assets.
+
+**Inferred user intent:** Restore a working system first, but do it in a way that leaves the code cleaner and more reusable than before.
+
+### What I changed
+
+1. **Made `pkg/web` the shared embed owner**
+   - Simplified `pkg/web/static.go` so it now only owns:
+     - `//go:embed dist`
+     - `var FS embed.FS`
+   - Removed the half-finished `frontend` abstraction and the experimental handler code there.
+2. **Changed the build output to a single shared location**
+   - `cmd/build-web/main.go` now copies the built frontend to:
+     - `pkg/web/dist/`
+   - This matches the existing `SPAHandler(embed.FS, "dist")` contract directly.
+3. **Removed the obsolete command-local embed path from code**
+   - `cmd/help-browser/embed.go` stays deleted.
+   - `cmd/help-browser/main.go` and `cmd/glaze/main.go` now both import `pkg/web` and pass `web.FS` into `server.NewServeCommand(...)`.
+4. **Restored robust markdown loading in `pkg/help/server/serve.go`**
+   - Replaced the brittle `LoadSectionsFromFS(os.DirFS("."), path)` path handling with explicit OS walking:
+     - `loadPaths`
+     - `loadDir`
+     - `loadFile`
+   - This reuses the earlier standalone logic that was known to be reliable.
+5. **Added reusable composition helpers for existing servers**
+   - `NewServeHandler(deps, embedFS)` composes API + optional SPA at the root.
+   - `MountPrefix(prefix, h)` adapts any root-mounted handler for mounting under `/help`, `/docs`, etc.
+   - `NewMountedHandler(prefix, deps, embedFS)` gives a one-call convenience for existing muxes.
+6. **Added tests for the new composition/mounting path**
+   - `TestNewServeHandler_ServesEmbeddedSPAAtRoot`
+   - `TestNewMountedHandler_ServesAPIUnderPrefix`
+   - `TestNewMountedHandler_ServesSPAUnderPrefix`
+   - `TestMountPrefix_RejectsOutsidePrefix`
+7. **Validated runtime behavior**
+   - `help-browser` now serves:
+     - `/` → real embedded HTML (not `index.html not found`)
+     - `/api/health` → JSON health response
+   - `glaze serve` now serves both SPA and API correctly as well.
+
+### Why
+
+This slice deliberately chose the shortest path back to coherence:
+
+- keep the existing `SPAHandler(..., "dist")` contract,
+- shape the shared `pkg/web` package to match that contract,
+- remove the broken command-local / symlink / `frontend` experiments,
+- restore the older known-good file loading logic,
+- add explicit prefix mounting so the system is reusable in bigger servers.
+
+That gave a working system with less risk than inventing a brand-new serving abstraction at the same time as the embed/layout refactor.
+
+### What worked
+
+- `GOWORK=off go generate ./cmd/help-browser` successfully rebuilt the SPA into `pkg/web/dist/`.
+- `GOWORK=off go test ./pkg/help/server ./pkg/web` passed.
+- `GOWORK=off go build ./cmd/help-browser ./cmd/glaze` passed.
+- Runtime `/` now serves the embedded `index.html` again.
+- Runtime `/api/health` continues to work.
+- Prefix mounting works in tests.
+
+### What didn’t work before the fix
+
+1. `/` returned `index.html not found` because the embedded FS layout (`pkg/web/frontend`) no longer matched `SPAHandler`’s `dist/` assumptions.
+2. Directory loading in `serve.go` produced warnings like:
+   - `readdir ./pkg/help: invalid argument`
+   because `LoadSectionsFromFS(os.DirFS("."), path)` was not a robust way to load arbitrary user-supplied paths.
+3. Command-local embedding and shared embedding had both been partially implemented at once, leaving the code in a contradictory state.
+
+### What I learned
+
+- The fastest route out of the failure loop was to **align the shared embed package to the existing serving abstraction**, not rewrite both at once.
+- The older explicit OS walking logic from the original standalone binary was materially better than the newer `DirFS(".")` approach for user paths.
+- Prefix mounting is easy to support once the root handler composition is explicit and testable.
+
+### What warrants a second pair of eyes
+
+- Whether `pkg/web` should remain an embedded-assets package only, or whether it should also grow a dedicated SPA handler so `pkg/help/server` no longer has to know about `dist` at all.
+- Whether `MountPrefix` should eventually become a richer API that also exposes configurable API prefixes separately from the outer mount prefix.
+
+### What should be done next
+
+1. Clean up ticket metadata/docs that still mention the old command-local embed design.
+2. Decide whether to keep `pkg/web` as `embed.FS` only or add a first-class SPA handler there.
+3. Add an explicit example doc snippet for mounting under `/help` in an existing server.
+4. Add one end-to-end integration test at the binary/command level if needed.

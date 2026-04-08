@@ -75,3 +75,21 @@ Phase 3 Tasks 16-28: all 13 React components extracted from JSX prototype (commi
 
 Phase 4 + Phase 5 Tasks 29-36, 37-48: Storybook configured + stories for all components (commit eae3b82)
 
+
+## 2026-04-07
+
+cmd/build-web: Dagger Go SDK builder with local pnpm fallback. cmd/help-browser: added //go:generate + //go:embed dist. go generate ./cmd/help-browser now produces embedded web assets.
+
+
+## 2026-04-08
+
+Shared SPA refactor slice 1: move generated frontend ownership to `pkg/web/dist`, embed via `pkg/web/static.go`, restore robust markdown path loading in `pkg/help/server/serve.go`, wire both `cmd/help-browser` and `cmd/glaze` to the shared embedded assets, and add prefix-mount helpers/tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/build-web/main.go — Builder now outputs to pkg/web/dist
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/static.go — Shared embedded asset package
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/serve.go — Robust loader + root handler + prefix mounting helpers
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/serve_test.go — Tests for root SPA serving and prefix mounting
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Standalone binary wired to pkg/web
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — Main CLI wired to pkg/web

@@ -3,7 +3,8 @@
 //
 // The program walks up from the current working directory to find the repo root
 // (by locating go.mod), builds web/ with pnpm inside a node:22 container,
-// and exports the dist/ output to cmd/help-browser/dist/.
+// and copies the dist/ output to pkg/web/dist/ for embedding via //go:embed
+// in pkg/web.
 package main
 
 import (
@@ -31,13 +32,12 @@ func main() {
 	}
 
 	webPath := filepath.Join(repoRoot, "web")
-	outPath := filepath.Join(repoRoot, "cmd", "help-browser", "dist")
+	outPath := filepath.Join(repoRoot, "pkg", "web", "dist")
 
 	log.Printf("repo root: %s", repoRoot)
 	log.Printf("web source: %s", webPath)
 	log.Printf("build output: %s", outPath)
 
-	// Try Dagger first; fall back to local pnpm if Dagger fails.
 	if err := buildWithDagger(webPath, outPath, pnpmVersion, builderImage); err != nil {
 		log.Printf("Dagger build failed (%v), falling back to local pnpm", err)
 		if err := buildLocal(webPath, outPath); err != nil {
@@ -47,7 +47,6 @@ func main() {
 	log.Printf("exported web dist to %s", outPath)
 }
 
-// buildWithDagger builds web/ inside a node:22 container via Dagger.
 func buildWithDagger(webPath, outPath, pnpmVersion, builderImage string) error {
 	ctx := context.Background()
 	client, err := dagger.Connect(ctx)
@@ -64,15 +63,11 @@ func buildWithDagger(webPath, outPath, pnpmVersion, builderImage string) error {
 		WithMountedDirectory("/src", webDir).
 		WithEnvVariable("PNPM_HOME", "/pnpm")
 
-	// Enable corepack and activate the requested pnpm version.
 	ctr = ctr.WithExec([]string{
 		"sh", "-lc",
 		fmt.Sprintf("corepack enable && corepack prepare pnpm@%s --activate", pnpmVersion),
 	})
 
-	// Install and build.
-	// "yes |" pipes y-responses to suppress pnpm's interactive "modules directory
-	// will be removed" prompts that can appear when switching pnpm versions.
 	ctr = ctr.
 		WithExec([]string{"sh", "-lc", "pnpm --version"}).
 		WithExec([]string{"sh", "-lc", "yes | pnpm install --reporter=append-only"}).
@@ -80,13 +75,11 @@ func buildWithDagger(webPath, outPath, pnpmVersion, builderImage string) error {
 
 	dist := ctr.Directory("/src/dist")
 	if _, err := dist.Export(ctx, outPath); err != nil {
-		return fmt.Errorf("export dist: %v", err)
+		return fmt.Errorf("export dist to %s: %v", outPath, err)
 	}
 	return nil
 }
 
-// buildLocal builds web/ using the locally installed pnpm.
-// This is a fallback when Dagger is unavailable or misconfigured.
 func buildLocal(webPath, outPath string) error {
 	if _, err := exec.LookPath("pnpm"); err != nil {
 		return fmt.Errorf("pnpm not found in PATH: %v", err)
@@ -96,7 +89,6 @@ func buildLocal(webPath, outPath string) error {
 		return fmt.Errorf("remove dist: %v", err)
 	}
 
-	// "yes |" suppresses pnpm's interactive prompts (same as Dagger path).
 	for _, cmdStr := range []string{"yes | pnpm install", "pnpm build"} {
 		cmd := exec.Command("sh", "-c", cmdStr)
 		cmd.Dir = webPath
@@ -109,7 +101,7 @@ func buildLocal(webPath, outPath string) error {
 
 	srcDist := filepath.Join(webPath, "dist")
 	if err := copyDir(srcDist, outPath); err != nil {
-		return fmt.Errorf("copy dist: %v", err)
+		return fmt.Errorf("copy dist to %s: %v", outPath, err)
 	}
 	return nil
 }

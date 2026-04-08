@@ -17,18 +17,30 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: cmd/build-web/main.go
+      Note: Shared frontend builder; now outputs to pkg/web/dist
     - Path: cmd/glaze/main.go
-      Note: Main entrypoint where serve command will be registered
+      Note: Main CLI entrypoint; now wires serve to shared pkg/web assets
+    - Path: cmd/help-browser/gen.go
+      Note: go:generate entrypoint that rebuilds the shared embedded frontend
+    - Path: cmd/help-browser/main.go
+      Note: Standalone binary wired to the shared pkg/web assets
     - Path: pkg/help/cmd/cobra.go
       Note: Existing Cobra help command integration - pattern for adding serve subcommand
+    - Path: pkg/help/server/serve.go
+      Note: Shared serve command, loader, root-handler composition, and prefix mounting helpers
+    - Path: pkg/help/server/spa.go
+      Note: Existing SPA fallback middleware used by the shared root handler
     - Path: pkg/help/help.go
-      Note: Core HelpSystem struct and API - the Go backend will expose this via HTTP
+      Note: Core HelpSystem struct and API - the Go backend is exposed via HTTP
     - Path: pkg/help/model/section.go
       Note: Section model with JSON tags - maps directly to API response shape
     - Path: pkg/help/store/query.go
       Note: QueryCompiler for advanced filtering/search
     - Path: pkg/help/store/store.go
       Note: SQLite store with List/GetBySlug/Query - backend for the API
+    - Path: pkg/web/static.go
+      Note: Shared embedded frontend package (single source of truth for embedded SPA assets)
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/sources/local/glazed-docs-browser(2).jsx
       Note: Source JSX prototype to decompose into modular React
 ExternalSources:
@@ -38,6 +50,7 @@ LastUpdated: 2026-04-07T20:26:14.571308584-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

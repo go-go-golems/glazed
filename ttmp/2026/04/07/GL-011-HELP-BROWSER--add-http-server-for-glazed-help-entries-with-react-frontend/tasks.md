@@ -71,24 +71,24 @@
 - [x] Create `cmd/help-browser/gen.go` with `//go:generate go run ../build-web`
 - [x] Add embedded SPA support for the standalone binary
 - [x] Add local pnpm fallback when Dagger export fails
-- [ ] Refactor the build output to a single shared location owned by `pkg/web/`
-- [ ] Remove stale command-local embedding assumptions (`cmd/help-browser/dist`, `cmd/glaze/dist`, deleted `embed.go` references)
+- [x] Refactor the build output to a single shared location owned by `pkg/web/`
+- [x] Remove stale command-local embedding assumptions from code (`cmd/help-browser/dist`, `cmd/glaze/dist`, deleted `embed.go` references)
 
 ### Phase 7: Serve Command, Shared SPA Package, and Reusable Mounting
 
 - [ ] Add bug report doc for the embed/serve/build regression and target architecture
-- [ ] Create a shared `pkg/web/` package that owns generated frontend assets and `//go:embed`
-- [ ] Change `cmd/build-web` to copy the frontend to `pkg/web/dist/` (single source of truth)
-- [ ] Implement `pkg/web.NewSPAHandler()` so SPA serving is owned by `pkg/web`, not by ad hoc command-local embed wiring
-- [ ] Refactor `pkg/help/server/serve.go` to restore robust file/directory loading (reuse the older standalone loader logic)
-- [ ] Refactor `pkg/help/server/serve.go` so Cobra wiring composes API + optional SPA handler cleanly
-- [ ] Wire `cmd/help-browser/main.go` to the shared `pkg/web` package
-- [ ] Wire `cmd/glaze/main.go` to the shared `pkg/web` package and add `serve`
-- [ ] Verify `help-browser --help` works and serves the shared SPA
-- [ ] Verify `glaze serve --help` works and serves the shared SPA
-- [ ] Add reusable mounting support for existing HTTP servers under prefixes such as `/help` or `/docs`
-- [ ] Add tests or documented examples for mounting under prefixes using existing muxes/servers
-- [ ] Verify `glaze serve docs/` starts the server correctly and serves both SPA + API
+- [x] Create a shared `pkg/web/` package that owns generated frontend assets and `//go:embed`
+- [x] Change `cmd/build-web` to copy the frontend to `pkg/web/dist/` (single source of truth)
+- [ ] Decide whether `pkg/web` should also expose a dedicated SPA handler or remain an embedded-assets package only
+- [x] Refactor `pkg/help/server/serve.go` to restore robust file/directory loading (reuse the older standalone loader logic)
+- [x] Refactor `pkg/help/server/serve.go` so Cobra wiring composes API + optional SPA handler cleanly
+- [x] Wire `cmd/help-browser/main.go` to the shared `pkg/web` package
+- [x] Wire `cmd/glaze/main.go` to the shared `pkg/web` package and add `serve`
+- [x] Verify `help-browser --help` works and serves the shared SPA
+- [x] Verify `glaze serve --help` works and serves the shared SPA
+- [x] Add reusable mounting support for existing HTTP servers under prefixes such as `/help` or `/docs`
+- [x] Add tests or documented examples for mounting under prefixes using existing muxes/servers
+- [x] Verify `glaze serve docs/` starts the server correctly and serves both SPA + API
 
 ### Phase 8: Integration Testing
 
