@@ -11,191 +11,39 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/dsl"
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
-	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/rs/zerolog/log"
 )
 
-// Section is a structure describing an actual documentation section.
-//
-// This can describe:
-//   - a general topic: think of this as an entry in a book
-//   - an example: a way to run a certain command
-//   - an application: a concrete use case for running a command. This can potentially
-//     use additional external tools, multiple commands, etc. While it is nice to keep
-//     these self-contained, it is not required.
-//   - a tutorial: a step-by-step guide to running a command.
-//
-// Run `glaze help help-system` for more information.
-type Section struct {
-	*model.Section
-	HelpSystem *HelpSystem
-}
-
-func (s *Section) IsForCommand(command string) bool {
-	return strings2.StringInSlice(command, s.Commands)
-}
-
-func (s *Section) IsForFlag(flag string) bool {
-	return strings2.StringInSlice(flag, s.Flags)
-}
-
-func (s *Section) IsForTopic(topic string) bool {
-	return strings2.StringInSlice(topic, s.Topics)
-}
-
-// these should potentially be scoped by command
-
-func (s *Section) DefaultGeneralTopic() []*Section {
-	query := NewSectionQuery().
-		ReturnTopics().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) DefaultExamples() []*Section {
-	query := NewSectionQuery().
-		ReturnExamples().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) OtherExamples() []*Section {
-	query := NewSectionQuery().
-		ReturnExamples().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) DefaultTutorials() []*Section {
-	query := NewSectionQuery().
-		ReturnTutorials().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) OtherTutorials() []*Section {
-	query := NewSectionQuery().
-		ReturnTutorials().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) DefaultApplications() []*Section {
-	query := NewSectionQuery().
-		ReturnApplications().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func (s *Section) OtherApplications() []*Section {
-	query := NewSectionQuery().
-		ReturnApplications().
-		ReturnOnlyTopics(s.Slug).
-		ReturnOnlyNotShownByDefault().
-		FilterSections(s)
-
-	ctx := context.Background()
-	results, err := query.FindSections(ctx, s.HelpSystem.Store)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to query sections from store")
-		return []*Section{}
-	}
-	return results
-}
-
-func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
-	modelSection, err := model.ParseSectionFromMarkdown(markdownBytes)
-	if err != nil {
-		return nil, err
-	}
-	return &Section{Section: modelSection}, nil
+func LoadSectionFromMarkdown(markdownBytes []byte) (*model.Section, error) {
+	return model.ParseSectionFromMarkdown(markdownBytes)
 }
 
 // HelpPage contains all the sections related to a command
 type HelpPage struct {
-	DefaultGeneralTopics []*Section
-	OtherGeneralTopics   []*Section
+	DefaultGeneralTopics []*model.Section
+	OtherGeneralTopics   []*model.Section
 	// this is just the concatenation of default and others
-	AllGeneralTopics []*Section
+	AllGeneralTopics []*model.Section
 
-	DefaultExamples []*Section
-	OtherExamples   []*Section
-	AllExamples     []*Section
+	DefaultExamples []*model.Section
+	OtherExamples   []*model.Section
+	AllExamples     []*model.Section
 
-	DefaultApplications []*Section
-	OtherApplications   []*Section
-	AllApplications     []*Section
+	DefaultApplications []*model.Section
+	OtherApplications   []*model.Section
+	AllApplications     []*model.Section
 
-	DefaultTutorials []*Section
-	OtherTutorials   []*Section
-	AllTutorials     []*Section
+	DefaultTutorials []*model.Section
+	OtherTutorials   []*model.Section
+	AllTutorials     []*model.Section
 }
 
-func (hs *HelpSystem) GetSectionWithSlug(slug string) (*Section, error) {
+func (hs *HelpSystem) GetSectionWithSlug(slug string) (*model.Section, error) {
 	ctx := context.Background()
-	modelSection, err := hs.Store.GetBySlug(ctx, slug)
-	if err != nil {
-		return nil, err
-	}
-	section := &Section{Section: modelSection, HelpSystem: hs}
-	return section, nil
+	return hs.Store.GetBySlug(ctx, slug)
 }
 
-func NewHelpPage(sections []*Section) *HelpPage {
+func NewHelpPage(sections []*model.Section) *HelpPage {
 	ret := &HelpPage{}
 
 	sort.Slice(sections, func(i, j int) bool {
@@ -239,15 +87,11 @@ func NewHelpPage(sections []*Section) *HelpPage {
 }
 
 func (hs *HelpSystem) GetTopLevelHelpPage() *HelpPage {
-	query := NewSectionQuery().
-		ReturnOnlyTopLevel().
-		ReturnAllTypes()
-
 	ctx := context.Background()
-	sections, err := query.FindSections(ctx, hs.Store)
+	sections, err := hs.Store.Find(ctx, store.IsTopLevel())
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to query top level sections")
-		return NewHelpPage([]*Section{})
+		return NewHelpPage([]*model.Section{})
 	}
 	return NewHelpPage(sections)
 }
@@ -297,7 +141,7 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 				log.Warn().Err(err).Str("file", filePath).Msg("Failed to read file")
 				continue
 			}
-			section, err := LoadSectionFromMarkdown(b)
+			section, err := model.ParseSectionFromMarkdown(b)
 			if err != nil {
 				log.Debug().Err(err).Str("file", filePath).Msg("Failed to load section from file")
 				continue
@@ -309,13 +153,12 @@ func (hs *HelpSystem) LoadSectionsFromFS(f fs.FS, dir string) error {
 	return nil
 }
 
-func (hs *HelpSystem) AddSection(section *Section) {
+func (hs *HelpSystem) AddSection(section *model.Section) {
 	ctx := context.Background()
-	err := hs.Store.Upsert(ctx, section.Section)
+	err := hs.Store.Upsert(ctx, section)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to store section")
 	}
-	section.HelpSystem = hs
 }
 
 type HelpError int

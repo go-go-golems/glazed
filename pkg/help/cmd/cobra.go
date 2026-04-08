@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/spf13/cobra"
 
 	"github.com/Masterminds/sprig"
@@ -211,7 +212,7 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["HasHelpSubCommands"] = c.HasHelpSubCommands()
 	data["AllChildCommandsHaveGroup"] = c.AllChildCommandsHaveGroup()
 	data["HasSections"] = false          // This would need to be set based on help system data
-	data["Sections"] = []*help.Section{} // This would need to be populated
+	data["Sections"] = []*model.Section{} // This would need to be populated
 	data["NamePadding"] = c.NamePadding()
 	data["CommandPathPadding"] = c.CommandPathPadding()
 	data["CommandIsRoot"] = isTopLevel

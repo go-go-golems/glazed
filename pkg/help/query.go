@@ -42,7 +42,7 @@ type SectionQuery struct {
 	OnlyCommands []string
 
 	// We often need to filter sections that have already been shown
-	WithoutSections []*Section
+	WithoutSections []*model.Section
 }
 
 func NewSectionQuery() *SectionQuery {
@@ -138,7 +138,7 @@ func (s *SectionQuery) IsOnlyTopLevel() bool {
 	return s.OnlyTopLevel
 }
 
-func (s *SectionQuery) FilterSections(sections ...*Section) *SectionQuery {
+func (s *SectionQuery) FilterSections(sections ...*model.Section) *SectionQuery {
 	s.WithoutSections = sections
 	return s
 }
@@ -238,14 +238,14 @@ func (s *SectionQuery) Clone() *SectionQuery {
 	copy(ret.OnlyFlags, s.OnlyFlags)
 	ret.OnlyCommands = make([]string, len(s.OnlyCommands))
 	copy(ret.OnlyCommands, s.OnlyCommands)
-	ret.WithoutSections = make([]*Section, len(s.WithoutSections))
+	ret.WithoutSections = make([]*model.Section, len(s.WithoutSections))
 	copy(ret.WithoutSections, s.WithoutSections)
 
 	return ret
 }
 
 // FindSections queries sections using the store backend
-func (s *SectionQuery) FindSections(ctx context.Context, st *store.Store) ([]*Section, error) {
+func (s *SectionQuery) FindSections(ctx context.Context, st *store.Store) ([]*model.Section, error) {
 	predicate := s.toPredicate()
 
 	storeSections, err := st.Find(ctx, predicate)
@@ -253,13 +253,7 @@ func (s *SectionQuery) FindSections(ctx context.Context, st *store.Store) ([]*Se
 		return nil, err
 	}
 
-	// Convert store sections to help sections
-	sections := make([]*Section, len(storeSections))
-	for i, storeSection := range storeSections {
-		sections[i] = &Section{Section: storeSection}
-	}
-
-	return sections, nil
+	return storeSections, nil
 }
 
 // toPredicate converts the SectionQuery to a store predicate

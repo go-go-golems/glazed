@@ -9,9 +9,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/go-go-golems/glazed/pkg/helpers/templating"
-
 	"github.com/charmbracelet/glamour"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/mattn/go-isatty"
 )
@@ -77,7 +77,7 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 	ctx := context.Background()
 	sections, err := userQuery.FindSections(ctx, hs.Store)
 	if err != nil {
-		sections = []*Section{}
+		sections = []*model.Section{}
 	}
 	data := map[string]interface{}{}
 
@@ -89,14 +89,14 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 	hasUserRestrictedTypes := userQuery.HasRestrictedReturnTypes()
 
 	if len(sections) == 0 {
-		var alternativeSections []*Section
+		var alternativeSections []*model.Section
 
 		if hasUserRestrictedQuery {
 			// in this case, we should widen our userQuery to not have restrictions on commands, flags, topics
 			alternativeQuery := userQuery.Clone().ResetOnlyQueries()
 			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
@@ -105,7 +105,7 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 			alternativeQuery := userQuery.Clone().ReturnAllTypes()
 			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
@@ -115,7 +115,7 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 			alternativeQuery := userQuery.Clone().ResetOnlyQueries().ReturnAllTypes()
 			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
@@ -137,7 +137,7 @@ func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]int
 }
 
 func (hs *HelpSystem) RenderTopicHelp(
-	topicSection *Section,
+	topicSection *model.Section,
 	options *RenderOptions) (string, error) {
 	return hs.RenderTopicHelpWithWriter(topicSection, options, os.Stdout)
 }
@@ -145,7 +145,7 @@ func (hs *HelpSystem) RenderTopicHelp(
 // RenderTopicHelpWithWriter renders a topic's help content using the provided writer
 // to detect terminal characteristics when applying Glamour styles.
 func (hs *HelpSystem) RenderTopicHelpWithWriter(
-	topicSection *Section,
+	topicSection *model.Section,
 	options *RenderOptions,
 	output io.Writer,
 ) (string, error) {

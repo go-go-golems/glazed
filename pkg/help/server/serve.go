@@ -213,7 +213,7 @@ func loadFile(ctx context.Context, hs *help.HelpSystem, filePath string) error {
 	if err != nil {
 		return err
 	}
-	return hs.Store.Upsert(ctx, section.Section)
+	return hs.Store.Upsert(ctx, section)
 }
 
 func serveHTTP(addr string, handler http.Handler) error {
