@@ -1177,3 +1177,38 @@ Only optional polish remains now:
 
 1. annotate the long design doc as partially superseded by the final shared `pkg/web` + `glaze serve` architecture
 2. add browser E2E smoke tests if we want full end-to-end coverage beyond handler/unit tests
+
+## Step 13: UI fixes and no-path serve default
+
+Fixed several UI and behavior issues identified by comparing the current implementation against the original JSX prototype using Playwright screenshots.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue. WHen no path is given to glaze serve, serve the internal doc embedFS. Also, the UI looks a bit bad (check with playwright), especially the cards on the left. Double check with the original imported jsx. Also, remove the menu bar."
+
+### What I changed
+
+1. **Removed MenuBar** from `App.tsx` — the classic Mac menu bar was unnecessary chrome for a help browser
+2. **Fixed `isTopLevel` handling**:
+   - Added `IsTopLevel` to Go `SectionSummary` and `SectionDetail` response types
+   - Added `isTopLevel` to TypeScript `SectionSummary` interface
+   - Fixed `SectionCard.tsx` to show `◆ TOP` based on `section.isTopLevel` (not `section.topics.length > 0`)
+   - Updated story fixtures with `isTopLevel` field
+3. **Made `glaze serve` paths optional**:
+   - Changed `Args: cobra.MinimumNArgs(1)` to `RunE` without args validation
+   - When no paths given, the help system serves the embedded docs already loaded by `doc.AddDocToHelpSystem()`
+4. **Fixed initial selection race**:
+   - Changed `useState<string>('help-system')` to `useState<string | null>(null)`
+   - This avoids a 500 error from fetching a section before the server has loaded docs into the store
+5. **Updated CSS**:
+   - Global: classic Mac font stack (Chicago/Geneva), retro scrollbar, black selection
+   - Section list: refined card styling
+6. **Updated help topic**: documented no-args behavior
+
+### Validation
+
+- `GOWORK=off go test ./pkg/help/server/... ./pkg/web/...` — all pass
+- `GOWORK=off go build ./cmd/glaze` — builds clean
+- `/tmp/glaze serve` (no args) serves 66 embedded sections
+- `/tmp/glaze serve ./pkg/doc` also works
+- Playwright screenshots confirm: menu bar removed, cards show correct ◆ TOP, content renders with code blocks

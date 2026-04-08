@@ -128,3 +128,20 @@ Final polish: ignore `web/node_modules/`, keep `web/pnpm-lock.yaml` in version c
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/.gitignore — Ignore `web/node_modules/`
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/web/pnpm-lock.yaml — Frontend dependency lockfile kept in version control
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/doc/topics/25-serving-help-over-http.md — New help topic for `glaze serve` and programmatic API usage
+
+## 2026-04-08 (Step 13)
+
+UI fixes and serve behavior improvements.
+
+### Changes
+
+- Removed MenuBar from the help browser UI
+- Added `isTopLevel` to API response types (Go + TypeScript) and fixed ◆ TOP indicator
+- Made `glaze serve` paths optional — no arguments now serves the built-in embedded documentation
+- Fixed initial section selection race condition (no auto-select on load)
+- Updated CSS with classic Mac font stack and retro scrollbar styling
+- Updated help topic to document no-args behavior
+
+### Commit
+
+- `4966ed1` — Fix UI issues and make serve paths optional
