@@ -49,8 +49,10 @@ func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) (*ServeComman
 server that serves them with an optional React SPA frontend.
 
 Paths can be individual .md files or directories. Directories are walked
-recursively. When no paths are given, the server loads the built-in Glazed
-documentation from the embedded filesystem.
+recursively. When no paths are given, the server serves the built-in Glazed
+documentation already loaded into the help system. When one or more paths are
+given, the serve command clears any preloaded sections and serves only the
+sections discovered from those explicit paths.
 
 The server listens on the address specified by --address (default :8088) and
 serves:
@@ -93,9 +95,11 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 	}
 
 	// When no paths are given, the help system was already loaded with the
-	// embedded documentation (e.g. via doc.AddDocToHelpSystem). Just use that.
+	// built-in documentation (e.g. via doc.AddDocToHelpSystem). When explicit
+	// paths are given, they are authoritative: clear any preloaded sections and
+	// serve only the requested content.
 	if len(s.Paths) > 0 {
-		if err := loadPaths(ctx, hs, s.Paths); err != nil {
+		if err := replaceStoreWithPaths(ctx, hs, s.Paths); err != nil {
 			return err
 		}
 	}
@@ -164,6 +168,13 @@ func MountPrefix(prefix string, h http.Handler) http.Handler {
 // prefix in an existing HTTP server.
 func NewMountedHandler(prefix string, deps HandlerDeps, spaHandler http.Handler) http.Handler {
 	return MountPrefix(prefix, NewServeHandler(deps, spaHandler))
+}
+
+func replaceStoreWithPaths(ctx context.Context, hs *help.HelpSystem, paths []string) error {
+	if err := hs.Store.Clear(ctx); err != nil {
+		return fmt.Errorf("clearing preloaded sections: %w", err)
+	}
+	return loadPaths(ctx, hs, paths)
 }
 
 func loadPaths(ctx context.Context, hs *help.HelpSystem, paths []string) error {

@@ -1,11 +1,16 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/web"
 )
 
@@ -86,5 +91,47 @@ func TestMountPrefix_RejectsOutsidePrefix(t *testing.T) {
 
 	if rw.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", rw.Code)
+	}
+}
+
+func TestReplaceStoreWithPaths_ClearsPreloadedSections(t *testing.T) {
+	hs := help.NewHelpSystem()
+	hs.AddSection(&model.Section{
+		Slug:        "embedded-topic",
+		Title:       "Embedded Topic",
+		SectionType: model.SectionGeneralTopic,
+	})
+
+	tmpDir := t.TempDir()
+	markdown := `---
+Title: Explicit Topic
+Slug: explicit-topic
+SectionType: GeneralTopic
+---
+
+Loaded from explicit path.
+`
+	filePath := filepath.Join(tmpDir, "explicit.md")
+	if err := os.WriteFile(filePath, []byte(markdown), 0o644); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	if err := replaceStoreWithPaths(context.Background(), hs, []string{tmpDir}); err != nil {
+		t.Fatalf("replaceStoreWithPaths: %v", err)
+	}
+
+	count, err := hs.Store.Count(context.Background())
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected exactly 1 section after replace, got %d", count)
+	}
+
+	if _, err := hs.GetSectionWithSlug("explicit-topic"); err != nil {
+		t.Fatalf("expected explicit-topic to be loaded: %v", err)
+	}
+	if _, err := hs.GetSectionWithSlug("embedded-topic"); err == nil {
+		t.Fatalf("expected embedded-topic to be cleared when explicit paths are provided")
 	}
 }
