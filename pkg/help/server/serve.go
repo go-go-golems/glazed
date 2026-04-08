@@ -25,13 +25,14 @@ const DefaultAddr = ":8088"
 // serves them over HTTP with an optional SPA handler.
 func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "serve [flags] <path> [<path>...]",
+		Use:   "serve [flags] [<path>...]",
 		Short: "Serve help documentation as a web browser application",
 		Long: `Discover Glazed Markdown files from the given paths and start an HTTP
 server that serves them with an optional React SPA frontend.
 
 Paths can be individual .md files or directories. Directories are walked
-recursively.
+recursively. When no paths are given, the server loads the built-in Glazed
+documentation from the embedded filesystem.
 
 The server listens on the address specified by --address (default :8088) and
 serves:
@@ -40,7 +41,6 @@ serves:
 
 The resulting handler is also mountable under prefixes such as /help or /docs
 using MountPrefix or NewMountedHandler.`,
-		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runServe(cmd, args, hs, spaHandler)
 		},
@@ -118,8 +118,13 @@ func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, spaHandler
 	}
 
 	ctx := context.Background()
-	if err := loadPaths(ctx, hs, args); err != nil {
-		return err
+
+	// When no paths are given, the help system was already loaded with the
+	// embedded documentation (e.g. via doc.AddDocToHelpSystem). Just use that.
+	if len(args) > 0 {
+		if err := loadPaths(ctx, hs, args); err != nil {
+			return err
+		}
 	}
 
 	deps := HandlerDeps{Store: hs.Store}

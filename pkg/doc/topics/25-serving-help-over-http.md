@@ -32,7 +32,14 @@ The command is intentionally built on the same primitives you can use from Go co
 
 ## Use `glaze serve` from the command line
 
-The simplest way to use the feature is to point it at one or more markdown files or directories:
+The simplest way to use the feature is to run it with no arguments — it will
+load the built-in Glazed documentation:
+
+```bash
+glaze serve
+```
+
+You can also point it at one or more markdown files or directories:
 
 ```bash
 glaze serve ./pkg/doc
@@ -50,9 +57,10 @@ If you need a different port, use `--address`:
 glaze serve --address :18100 ./pkg/doc
 ```
 
-What happens when the server starts:
+When the server starts:
 
-- Glazed walks the supplied directories recursively.
+- If no paths are given, the built-in Glazed documentation (loaded at startup via `doc.AddDocToHelpSystem`) is used.
+- If paths are given, Glazed walks the supplied directories recursively.
 - It loads `.md` files with Glazed help frontmatter into the help store.
 - It exposes the help API under `/api/...`.
 - It serves the embedded SPA for browser routes such as `/`.

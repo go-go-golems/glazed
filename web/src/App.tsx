@@ -7,18 +7,17 @@ import { SectionList } from './components/SectionList/SectionList';
 import { SectionView } from './components/SectionView/SectionView';
 import { EmptyState } from './components/EmptyState/EmptyState';
 import { StatusBar } from './components/StatusBar/StatusBar';
-import { MenuBar } from './components/MenuBar/MenuBar';
 import { AppLayout } from './components/AppLayout/AppLayout';
 import { useListSectionsQuery, useGetSectionQuery } from './services/api';
 import type { SectionSummary } from './types';
 
 export default function App() {
-  const [activeSlug, setActiveSlug] = useState<string>('help-system');
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
 
   const { data: listData, isLoading, error } = useListSectionsQuery();
-  const { data: section } = useGetSectionQuery(activeSlug, {
+  const { data: section } = useGetSectionQuery(activeSlug!, {
     skip: !activeSlug,
   });
 
@@ -40,8 +39,6 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <MenuBar />
-
       <AppLayout
         sidebar={
           <>

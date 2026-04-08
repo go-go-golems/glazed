@@ -27,7 +27,7 @@ export function SectionCard({ section, isActive, onClick }: SectionCardProps) {
               : 'Tutorial'}
           </span>
         )}
-        {section.topics.length > 0 && (
+        {section.isTopLevel && (
           <span data-part={SectionCardParts.topBadge}>&#9670; TOP</span>
         )}
       </div>

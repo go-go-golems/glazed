@@ -18,6 +18,7 @@ const exampleSection: SectionSummary = {
   title: 'Database Example',
   short: 'How to connect to a database with connection pooling.',
   topics: ['database', 'sql'],
+  isTopLevel: false,
 };
 
 export const Inactive: Story = {
@@ -30,7 +31,7 @@ export const Active: Story = {
 
 export const TopLevel: Story = {
   args: {
-    section: { ...exampleSection, topics: ['getting-started'] },
+    section: { ...exampleSection, isTopLevel: true },
     isActive: false,
     onClick: () => {},
   },

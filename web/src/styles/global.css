@@ -1,6 +1,5 @@
 /* global.css — root CSS variables and resets.
- * Full theming system (Tasks 29–34) replaces this with token-driven CSS variables
- * and component-scoped data-part selectors. */
+ * Classic Mac / System 7 aesthetic. */
 
 *,
 *::before,
@@ -10,28 +9,24 @@
 
 :root {
   /* Layout */
-  --layout-sidebar-width: 300px;
-  --layout-header-height: 44px;
-  --layout-statusbar-height: 28px;
+  --layout-sidebar-width: 280px;
 
-  /* Typography */
-  --font-ui: system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+  /* Typography — classic Mac stack */
+  --font-ui: 'Chicago_', 'Geneva', 'Charcoal', 'Lucida Grande', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Monaco', 'Courier New', monospace;
   --font-size-sm: 11px;
   --font-size-base: 13px;
   --font-size-lg: 15px;
   --font-size-xl: 18px;
 
-  /* Colors — classic Mac palette (overridable per theme) */
+  /* Colors — classic Mac palette */
   --color-bg: #ffffff;
   --color-fg: #000000;
-  --color-sidebar-bg: #f0f0f0;
+  --color-sidebar-bg: #ffffff;
   --color-sidebar-fg: #000000;
-  --color-accent: #0078d4;
-  --color-border: #c0c0c0;
-  --color-titlebar-bg: #000080;
-  --color-titlebar-fg: #ffffff;
-  --color-selection-bg: #000080;
+  --color-accent: #000000;
+  --color-border: #000000;
+  --color-selection-bg: #000000;
   --color-selection-fg: #ffffff;
 }
 
@@ -65,6 +60,22 @@ body {
   background-size: 4px 4px;
 }
 
+/* Classic Mac scrollbar */
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fff;
+  border-left: 1px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border: 1px solid #000;
+}
+
+/* Classic Mac selection */
 ::selection {
   background: var(--color-selection-bg);
   color: var(--color-selection-fg);

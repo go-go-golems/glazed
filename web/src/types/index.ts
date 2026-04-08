@@ -11,6 +11,7 @@ export interface SectionSummary {
   title: string;
   short: string;
   topics: string[];
+  isTopLevel: boolean;
 }
 
 /** Full shape returned by GET /api/sections/:slug. */

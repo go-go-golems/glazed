@@ -12,9 +12,9 @@ export default meta;
 type Story = StoryObj<typeof SectionList>;
 
 const SECTIONS: SectionSummary[] = [
-  { id: 1, slug: 'intro', type: 'GeneralTopic', title: 'Introduction', short: 'Welcome to Glazed.', topics: ['help'] },
-  { id: 2, slug: 'database', type: 'Example', title: 'Database', short: 'How to connect to a database.', topics: ['database'] },
-  { id: 3, slug: 'config', type: 'GeneralTopic', title: 'Configuration', short: 'Configure the application.', topics: ['config'] },
+  { id: 1, slug: 'intro', type: 'GeneralTopic', title: 'Introduction', short: 'Welcome to Glazed.', topics: ['help'], isTopLevel: true },
+  { id: 2, slug: 'database', type: 'Example', title: 'Database', short: 'How to connect to a database.', topics: ['database'], isTopLevel: false },
+  { id: 3, slug: 'config', type: 'GeneralTopic', title: 'Configuration', short: 'Configure the application.', topics: ['config'], isTopLevel: false },
 ];
 
 export const WithItems: Story = {

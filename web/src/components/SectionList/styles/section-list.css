@@ -1,11 +1,12 @@
-/* section-list.css — styles for SectionList and SectionCard. */
+/* section-list.css — styles for SectionList and SectionCard.
+ * Matches the original JSX prototype with classic Mac styling. */
 
 [data-part='section-list'] {
   flex: 1;
   overflow-y: auto;
 }
 
-/* Per-item wrapper */
+/* Per-item card wrapper */
 [data-part='section-list-item'] {
   width: 100%;
   text-align: left;
@@ -16,6 +17,7 @@
   font-family: var(--font-ui);
   display: block;
   background: #fff;
+  transition: none;
 }
 
 [data-part='section-list-item']:nth-child(even) {
@@ -27,10 +29,7 @@
   color: #fff;
 }
 
-[data-part='section-list-item'][aria-selected='true'] [data-part='section-card-short'] {
-  color: #aaa;
-}
-
+/* Badge row at top of card */
 [data-part='section-card-meta'] {
   display: flex;
   gap: 6px;
@@ -38,6 +37,7 @@
   margin-bottom: 3px;
 }
 
+/* "◆ TOP" indicator */
 [data-part='section-card-top-badge'] {
   font-size: 9px;
   color: #999;
@@ -47,12 +47,15 @@
   color: #888;
 }
 
+/* Card title */
 [data-part='section-card-title'] {
   font-weight: 700;
   font-size: 12px;
   margin-bottom: 2px;
+  line-height: 1.4;
 }
 
+/* Card short description */
 [data-part='section-card-short'] {
   font-size: 10px;
   color: #777;
@@ -61,4 +64,8 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+[data-part='section-list-item'][aria-selected='true'] [data-part='section-card-short'] {
+  color: #aaa;
 }

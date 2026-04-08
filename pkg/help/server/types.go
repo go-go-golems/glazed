@@ -40,24 +40,26 @@ type ListSectionsParams struct {
 // SectionSummary is the public shape for a section in list/search results.
 // It intentionally omits the full `content` field to keep responses small.
 type SectionSummary struct {
-	ID     int64    `json:"id"`
-	Slug   string   `json:"slug"`
-	Type   string   `json:"type"`
-	Title  string   `json:"title"`
-	Short  string   `json:"short"`
-	Topics []string `json:"topics"`
+	ID         int64    `json:"id"`
+	Slug       string   `json:"slug"`
+	Type       string   `json:"type"`
+	Title      string   `json:"title"`
+	Short      string   `json:"short"`
+	Topics     []string `json:"topics"`
+	IsTopLevel bool     `json:"isTopLevel"`
 }
 
 // SummaryFromModel converts a model.Section into a SectionSummary.
 // It is the only place where this conversion is defined.
 func SummaryFromModel(s *model.Section) SectionSummary {
 	return SectionSummary{
-		ID:     s.ID,
-		Slug:   s.Slug,
-		Type:   s.SectionType.String(), // "GeneralTopic" | "Example" | "Application" | "Tutorial"
-		Title:  s.Title,
-		Short:  s.Short,
-		Topics: s.Topics,
+		ID:         s.ID,
+		Slug:       s.Slug,
+		Type:       s.SectionType.String(), // "GeneralTopic" | "Example" | "Application" | "Tutorial"
+		Title:      s.Title,
+		Short:      s.Short,
+		Topics:     s.Topics,
+		IsTopLevel: s.IsTopLevel,
 	}
 }
 
@@ -75,14 +77,15 @@ type ListSectionsResponse struct {
 
 // SectionDetail is the full shape returned by GET /api/sections/:slug.
 type SectionDetail struct {
-	ID       int64    `json:"id"`
-	Slug     string   `json:"slug"`
-	Type     string   `json:"type"`
-	Title    string   `json:"title"`
-	Short    string   `json:"short"`
-	Topics   []string `json:"topics"`
-	Flags    []string `json:"flags"`
-	Commands []string `json:"commands"`
+	ID         int64    `json:"id"`
+	Slug       string   `json:"slug"`
+	Type       string   `json:"type"`
+	Title      string   `json:"title"`
+	Short      string   `json:"short"`
+	Topics     []string `json:"topics"`
+	Flags      []string `json:"flags"`
+	Commands   []string `json:"commands"`
+	IsTopLevel bool     `json:"isTopLevel"`
 	// Content is the full rendered Markdown body.
 	Content string `json:"content"`
 }
@@ -90,15 +93,16 @@ type SectionDetail struct {
 // DetailFromModel converts a model.Section into a SectionDetail.
 func DetailFromModel(s *model.Section) SectionDetail {
 	return SectionDetail{
-		ID:       s.ID,
-		Slug:     s.Slug,
-		Type:     s.SectionType.String(),
-		Title:    s.Title,
-		Short:    s.Short,
-		Topics:   s.Topics,
-		Flags:    s.Flags,
-		Commands: s.Commands,
-		Content:  s.Content,
+		ID:         s.ID,
+		Slug:       s.Slug,
+		Type:       s.SectionType.String(),
+		Title:      s.Title,
+		Short:      s.Short,
+		Topics:     s.Topics,
+		Flags:      s.Flags,
+		Commands:   s.Commands,
+		IsTopLevel: s.IsTopLevel,
+		Content:    s.Content,
 	}
 }
 
