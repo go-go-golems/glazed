@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -127,6 +128,9 @@ func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, spaHandler
 		}
 	}
 
+	count, _ := hs.Store.Count(ctx)
+	log.Info().Int64("sections", count).Msg("Loaded help sections")
+
 	deps := HandlerDeps{Store: hs.Store}
 	handler := NewServeHandler(deps, spaHandler)
 	return serveHTTP(addr, handler)
@@ -190,6 +194,8 @@ func serveHTTP(addr string, handler http.Handler) error {
 		WriteTimeout: 30 * time.Second,
 	}
 
+	log.Info().Str("address", addr).Msg("Help browser listening")
+
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- httpSrv.ListenAndServe()
@@ -205,7 +211,7 @@ func serveHTTP(addr string, handler http.Handler) error {
 		}
 		return fmt.Errorf("server error: %w", err)
 	case sig := <-sigCh:
-		_, _ = fmt.Fprintf(os.Stderr, "received %v, shutting down...\n", sig)
+		log.Info().Str("signal", sig.String()).Msg("Shutting down")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return httpSrv.Shutdown(ctx)
