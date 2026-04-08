@@ -71,6 +71,10 @@ topics:
       description: Vite build tool for modern web apps
     - slug: web
       description: Web frontend development
+    - slug: code-review
+      description: Code review findings and analysis
+    - slug: help-browser
+      description: Glazed help browser feature (HTTP server + React SPA)
 docTypes:
     - slug: index
       description: Ticket index
