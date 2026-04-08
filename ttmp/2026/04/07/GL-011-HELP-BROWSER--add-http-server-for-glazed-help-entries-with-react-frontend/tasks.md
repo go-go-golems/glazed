@@ -5,12 +5,12 @@
 ### Phase 1: Go HTTP Server Scaffold
 
 - [x] Create `pkg/help/server/types.go` with `SectionSummary`, `SectionDetail`, `ListResponse`, `HealthResponse` structs
-- [ ] Create `pkg/help/server/handlers.go` with `handleHealth`, `handleListSections`, `handleGetSection`, `handleSearch` handlers
-- [ ] Create `pkg/help/server/middleware.go` with CORS middleware
-- [ ] Create `pkg/help/server/spa.go` with SPA fallback handler
-- [ ] Create `pkg/help/server/server.go` with `NewServer()`, `ServeMux` registration, and `ListenAndServe()`
-- [ ] Write `pkg/help/server/server_test.go` with `httptest.NewServer` integration tests
-- [ ] Create `cmd/help-browser/main.go` with file discovery from CLI args and `HelpSystem` initialization
+- [x] Create `pkg/help/server/handlers.go` with `handleHealth`, `handleListSections`, `handleGetSection`, `handleSearch` handlers
+- [x] Create `pkg/help/server/middleware.go` with CORS middleware
+- [x] Create `pkg/help/server/spa.go` with SPA fallback handler
+- [x] Create `pkg/help/server/server.go` with `NewServer()`, `ServeMux` registration, and `ListenAndServe()`
+- [x] Write `pkg/help/server/server_test.go` with `httptest.NewServer` integration tests
+- [x] Create `cmd/help-browser/main.go` with file discovery from CLI args and `HelpSystem` initialization
 
 ### Phase 2: React Frontend Scaffold
 

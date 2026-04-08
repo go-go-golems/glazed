@@ -17,8 +17,20 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: pkg/help/server/handlers.go
+      Note: Step 3 — NewHandler
+    - Path: pkg/help/server/middleware.go
+      Note: Step 3 — NewCORSHandler (commit d6ac109)
+    - Path: pkg/help/server/server.go
+      Note: Step 3 — Server
+    - Path: pkg/help/server/server_test.go
+      Note: Step 3 — 13 tests (commit d6ac109)
+    - Path: pkg/help/server/spa.go
+      Note: Step 3 — SPAHandler middleware
     - Path: pkg/help/server/types.go
       Note: Phase 1 Task 1 — HTTP types (commit fb2f616)
+    - Path: pkg/help/store/store.go
+      Note: Step 3 — Added ErrSectionNotFound sentinel (commit d6ac109)
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/design-doc/01-help-browser-architecture-and-implementation-guide.md
     - Path: ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/sources/local/glazed-docs-browser(2).jsx
 ExternalSources: []
@@ -27,6 +39,7 @@ LastUpdated: 2026-04-08T00:00:00Z
 WhatFor: Record implementation progress and decisions
 WhenToUse: Use when following up on or reviewing this ticket
 ---
+
 
 
 # Diary
@@ -275,4 +288,153 @@ should both report 0 issues.
 
 // GET /api/health
 {"ok": true, "sections": 42}
+```
+
+## Step 3: Phase 1 Tasks 2-7 — Handlers, middleware, SPA, Server, tests
+
+Built all remaining Phase 1 files in sequence, testing after each new file, then
+committed everything together as one logical unit.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Build the Go HTTP server package one file at a time,
+then commit. Make the handlers composable so other webservers can mount them.
+
+**Inferred user intent:** Have a clean, composable HTTP API package that can serve
+the help browser alone or as a sub-route of a larger application.
+
+**Commit (code):** d6ac109 — "Phase 1 Tasks 2-6: HTTP handlers, middleware, SPA
+fallback, Server, tests"
+
+### What I did
+
+1. Read `store/store.go` and `store/query.go` to understand the full store API:
+   `GetBySlug`, `Find`, `List`, `Count`, `Predicate` type, predicate helpers
+   (`IsType`, `HasTopic`, `HasFlag`, `HasCommand`, etc.).
+2. Wrote `handlers.go`: `NewHandler(deps) http.Handler` — internal `http.ServeMux`
+   routes `GET /api/health`, `GET /api/sections`, `GET /api/sections/search`,
+   `GET /api/sections/{slug}`. CORS is applied inside `NewHandler` so every caller
+   gets correct headers automatically without needing to remember to wrap.
+3. Wrote `middleware.go`: `NewCORSHandler(h http.Handler) http.Handler` — sets
+   `Access-Control-Allow-Origin: *`, handles OPTIONS with 204.
+4. Wrote `spa.go`: `SPAHandler(fsys embed.FS, indexFS string) func(next http.Handler) http.Handler`
+   — middleware-style: tries static file first, delegates to `next` (API handler),
+   falls back to `index.html` for client-side routing. The index.html is read from
+   the caller's embedded fsys, not from an internal embed directive.
+5. Added `ErrSectionNotFound` to `store/store.go` — `GetBySlug` now returns this
+   sentinel instead of `errors.New("section not found")`, enabling `errors.Is` checks.
+6. Wrote `server.go`: `Server` struct with `ServerOption` functional options
+   (`WithAddr`, `WithSlogger`, `WithReadTimeout`, `WithWriteTimeout`, `WithSPA`).
+   `NewServer` assembles the handler chain: `CORS → SPA(spaFS)(API)`. `ListenAndServe`
+   does graceful shutdown on SIGINT/SIGTERM.
+7. Wrote `server_test.go` with 13 tests — all pass.
+
+### Why
+
+- `NewHandler` returns `http.Handler` (not `*Handler`) so callers don't depend on
+  internal types. The `Handler` struct is unexported.
+- CORS is baked into `NewHandler` to ensure callers always get correct headers even
+  if they forget to apply `NewCORSHandler`.
+- `SPAHandler` is middleware-style (`func(next http.Handler) http.Handler`) rather
+  than returning a concrete struct — it composes naturally with `server.go`'s chain.
+  The alternative (returning a struct with a `next` field) would be more verbose.
+- `store.ErrSectionNotFound` is added to `store.go` rather than `server/` because
+  callers of `store.Store` methods should also benefit from the sentinel.
+
+### What worked
+
+- Writing and testing each file incrementally: each file compiled and passed tests
+  before the next was written.
+- The middleware composition pattern (`SPAHandler(fs)(nextHandler)(w, r)`) composes
+  cleanly with Go's `http.Handler` interface.
+- `http.ServeMux` in Go 1.22+ handles `{slug}` path parameters correctly with
+  `r.PathValue("slug")` — no third-party router needed.
+- Go 1.22's `HandleFunc("GET /path", handler)` method syntax prevents accidentally
+  registering handlers for the wrong HTTP method.
+
+### What didn't work
+
+1. `//go:embed index.html` in `spa.go` caused a build error: "pattern index.html:
+   no matching files found". Fixed by reading index.html from the caller's fsys
+   instead of from an internal embed directive.
+2. golangci-lint flagged an empty `if` branch in a test (`// ok` with no body).
+   Fixed by removing the no-op loop.
+3. golangci-lint flagged `var h http.Handler = apiHandler` in `server.go` as
+   "QF1011: could omit type". Fixed with `h := apiHandler`.
+
+### What I learned
+
+- `embed.FS` is a distinct type from `fs.FS`. You cannot cast between them directly.
+  To use `embed.FS` with `http.FileServerFS`, you need `fs.Sub(fsys, dir)` to get
+  an `fs.FS`. The embed directive in the calling package populates the `embed.FS`
+  variable; this package reads from that variable at runtime.
+- `http.ServeMux` handles `{param}` patterns and `r.PathValue("param")` correctly
+  without any third-party router.
+- `NewHandler` returning `http.Handler` means callers don't need to know the concrete
+  type (`*Handler`) — the interface is the public contract.
+- Empty `if` branches trigger `SA9003: empty branch`. No-op bodies need a comment
+  or should be removed entirely.
+- `golangci-lint` runs `gofmt` automatically; any formatting issue causes a failure.
+
+### What was tricky to build
+
+- The SPA fallback composition: the handler needs to try static files first, then
+  delegate to the API handler, then fall back to index.html — while also correctly
+  detecting whether the API handler wrote a response so it doesn't overwrite it.
+  Solved with a `responseWriter` wrapper that tracks whether `WriteHeader` was called.
+
+### What warrants a second pair of eyes
+
+- Whether `buildPredicate` in `handlers.go` correctly composes all filter predicates
+  with AND semantics. The design doc says filters are combined with AND, which is
+  what the current implementation does.
+- Whether the pagination is applied in-memory (correct for moderate dataset sizes)
+  or should be pushed into the SQL query via `store.Find` options. For v1 this is
+  fine; for large datasets (thousands of sections) the offset/limit should move
+  into the SQL.
+
+### What should be done in the future
+
+- Move pagination into the SQL query (use `store.Find` with `store.Limit`/`store.Offset`
+  predicates) for better performance at scale.
+- Consider adding `store.ErrSectionNotFound` to the store package's exports and
+  updating any existing callers of `GetBySlug` to use `errors.Is`.
+- Write a `NewHandlerFromHelpSystem(hs *help.HelpSystem)` convenience constructor
+  that extracts the store and logger from a HelpSystem.
+
+### Code review instructions
+
+Where to start: Read `handlers.go` top to bottom, then `server.go`, then `spa.go`.
+Key decisions to check:
+- `buildPredicate` correctly chains all active filters with AND semantics.
+- `SPAHandler` correctly reads index.html from the caller's embedded FS, not from
+  an internal embed directive.
+- `NewHandler` includes CORS so callers always get correct headers.
+- `buildHandler` in `server.go` chains: CORS → SPA(spaFS)(API).
+
+How to validate: `go test -v ./pkg/help/server/` — 13 tests, all pass.
+`go vet ./pkg/help/server/` and `golangci-lint run ./pkg/help/server/` — 0 issues.
+
+### Technical details
+
+```go
+// Composition examples:
+
+// Minimal: API only
+deps := server.HandlerDeps{Store: st}
+http.ListenAndServe(":8088", server.NewHandler(deps))
+
+// Full: API + SPA + graceful shutdown
+srv := server.NewServer(st,
+  server.WithAddr(":8088"),
+  server.WithSPA(embeddedFS),
+)
+log.Fatal(srv.ListenAndServe())
+
+// Sub-router on existing server:
+mux := http.NewServeMux()
+mux.Handle("/help/api/", server.NewHandler(deps))  // mounts at /help/api/*
+http.ListenAndServe(":8080", mux)  // serves /help/api/health, etc.
 ```

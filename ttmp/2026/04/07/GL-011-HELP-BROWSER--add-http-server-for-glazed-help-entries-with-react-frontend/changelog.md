@@ -33,3 +33,17 @@ Phase 1 Task 1: Create pkg/help/server/types.go with SectionSummary, SectionDeta
 
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/types.go — Phase 1 Task 1 — HTTP request/response types
 
+
+## 2026-04-07
+
+Phase 1 Tasks 2-6: pkg/help/server/ — handlers, middleware, SPA fallback, Server, tests (commit d6ac109)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/handlers.go — Tasks 2-6 — HTTP handler functions
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/middleware.go — Tasks 2-6 — CORS middleware
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/server.go — Tasks 2-6 — Server struct
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/server_test.go — Tasks 2-6 — 13 integration tests
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/spa.go — Tasks 2-6 — SPA fallback handler (middleware-style)
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/store/store.go — Task 6 — Added ErrSectionNotFound sentinel
+
