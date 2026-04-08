@@ -19,15 +19,7 @@ export function SectionCard({ section, isActive, onClick }: SectionCardProps) {
       onClick={onClick}
     >
       <div data-part={SectionCardParts.meta}>
-        {!isActive && <Badge text={section.type} variant="type" />}
-        {isActive && (
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#aaa' }}>
-            {section.type === 'GeneralTopic' ? 'Topic'
-              : section.type === 'Example' ? 'Example'
-              : section.type === 'Application' ? 'App'
-              : 'Tutorial'}
-          </span>
-        )}
+        <Badge text={section.type} variant="type" />
         {section.isTopLevel && (
           <span data-part={SectionCardParts.topBadge}>&#9670; TOP</span>
         )}

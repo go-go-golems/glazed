@@ -21,3 +21,10 @@
 [data-part='badge'][data-variant='type'] {
   font-weight: 700;
 }
+
+/* Inside a selected card — transparent border, muted text, no background */
+[data-part~='section-list-item'][aria-selected='true'] [data-part='badge'] {
+  border-color: transparent;
+  color: #aaa;
+  background: transparent;
+}
