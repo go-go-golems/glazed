@@ -36,16 +36,6 @@ export const helpApi = createApi({
           : [{ type: 'Section' as const, id: 'LIST' }],
     }),
 
-    // GET /api/sections/search?q=term
-    // Identical to listSections but has a distinct URL so RTK Query caches them separately.
-    searchSections: builder.query<ListSectionsResponse, string>({
-      query: (q) => ({
-        url: '/sections/search',
-        params: { q },
-      }),
-      providesTags: ['Section'],
-    }),
-
     // GET /api/sections/:slug
     getSection: builder.query<SectionDetail, string>({
       query: (slug) => ({ url: `/sections/${encodeURIComponent(slug)}` }),
@@ -58,6 +48,5 @@ export const helpApi = createApi({
 export const {
   useHealthCheckQuery,
   useListSectionsQuery,
-  useSearchSectionsQuery,
   useGetSectionQuery,
 } = helpApi;

@@ -16,8 +16,6 @@ export interface SectionSummary {
 
 /** Full shape returned by GET /api/sections/:slug. */
 export interface SectionDetail extends SectionSummary {
-  short: string;
-  topics: string[];
   flags: string[];
   commands: string[];
   /** Rendered Markdown body */

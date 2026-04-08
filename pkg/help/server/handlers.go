@@ -24,7 +24,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
@@ -231,14 +230,7 @@ func buildPredicate(params ListSectionsParams) store.Predicate {
 		preds = append(preds, store.HasFlag(params.Flag))
 	}
 	if params.Search != "" {
-		term := strings.ToLower(params.Search)
-		preds = append(preds, func(qc *store.QueryCompiler) {
-			// Match against title, short description, and content body.
-			qc.AddWhere(
-				"LOWER(s.title) LIKE ? OR LOWER(s.short) LIKE ? OR LOWER(s.content) LIKE ?",
-				"%"+term+"%", "%"+term+"%", "%"+term+"%",
-			)
-		})
+		preds = append(preds, store.TextSearch(params.Search))
 	}
 
 	if len(preds) == 0 {
