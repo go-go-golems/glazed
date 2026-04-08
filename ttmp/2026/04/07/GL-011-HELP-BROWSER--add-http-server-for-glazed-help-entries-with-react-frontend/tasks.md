@@ -67,11 +67,11 @@
 
 ### Phase 6: Dagger Build Pipeline
 
-- [ ] Create `cmd/build-web/main.go` with Dagger Go SDK (node:22 container, corepack, pnpm install, pnpm build, export dist/)
-- [ ] Create `cmd/help-browser/gen.go` with `//go:generate go run ../build-web`
-- [ ] Add `//go:embed dist` to `cmd/help-browser/main.go`
-- [ ] Run `go generate ./cmd/help-browser` and verify `cmd/help-browser/dist/` contains `index.html` + assets/
-- [ ] Build binary: `go build -o glaze ./cmd/glaze`
+- [x] Create `cmd/build-web/main.go` with Dagger Go SDK (node:22 container, corepack, pnpm install, pnpm build, export dist/)
+- [x] Create `cmd/help-browser/gen.go` with `//go:generate go run ../build-web`
+- [x] Add `//go:embed dist` to `cmd/help-browser/main.go` (now in embed.go)
+- [x] Run `go generate ./cmd/help-browser` and verify `cmd/help-browser/dist/` contains `index.html` + assets/
+- [x] Build binary: `go build -o glaze ./cmd/glaze` (uses cmd/help-browser)
 - [ ] Verify single binary serves both SPA and API: `./glaze serve docs/`
 
 ### Phase 7: Cobra Integration
@@ -83,9 +83,9 @@
 
 ### Phase 8: Integration Testing
 
-- [ ] Add Go integration tests with `httptest.NewServer` (full request/response cycles)
-- [ ] Add Go test that loads a fixture `.md` file and verifies it appears in the API
-- [ ] Add Go test for 404 when slug not found
-- [ ] Add Go test for SPA fallback (serves `index.html` for unknown paths)
-- [ ] Add Go test for CORS headers
+- [x] Add Go integration tests with `httptest.NewServer` (full request/response cycles)
+- [x] Add Go test that loads a fixture `.md` file and verifies it appears in the API
+- [x] Add Go test for 404 when slug not found
+- [x] Add Go test for SPA fallback (serves `index.html` for unknown paths)
+- [x] Add Go test for CORS headers
 - [ ] Optionally: add Playwright or Cypress tests for the frontend
