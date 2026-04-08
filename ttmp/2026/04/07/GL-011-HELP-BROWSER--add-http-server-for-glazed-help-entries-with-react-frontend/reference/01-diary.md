@@ -799,3 +799,91 @@ curl http://localhost:18088/api/health
 curl http://localhost:18088/ | grep title
 kill %1
 ```
+
+## Step 8: Takeover analysis, bug report, and refactor plan for embed/serve/build integration
+
+Took over after the previous implementation got stuck in a long embed/build/serve loop. Before changing more code, I audited the current repository state, reconstructed the failure modes, and wrote a dedicated bug report in the ticket so the refactor can proceed from a stable shared understanding instead of more trial-and-error edits.
+
+### Prompt Context
+
+**User prompt (verbatim):** "You are taking over for your little brother who has been struggling way too long with embedding this application and serving it and building it. Study what they did and tell me what happened and why they struggle and what the issues might be, and what needs to be done and cleaned up."
+
+Follow-up:
+
+**User prompt (verbatim):** "good, put all of this in a bug report in the current ticket, then add detailed tasks for the refactor, also add the fact that we can mount this under different prefixes (so that we can reuse it in existing http servers), and then implement it task by task, comitting at appropriate intervals, and keeping a detailed diary as you work."
+
+**Assistant interpretation:** Freeze the architecture first. Document the regression and the competing designs in the ticket, expand the tasks into a concrete refactor sequence, then continue with code changes in smaller, reviewable steps.
+
+**Inferred user intent:** Stop the thrash, establish a single correct ownership model for embedded web assets and SPA serving, preserve reusability under prefixes, and continue implementation with better discipline and documentation.
+
+### What I did
+
+1. Audited the current code state:
+   - `cmd/build-web/main.go`
+   - `pkg/web/static.go`
+   - `pkg/help/server/serve.go`
+   - `pkg/help/server/spa.go`
+   - `cmd/help-browser/main.go`
+   - `cmd/glaze/main.go`
+   - current git status / untracked files / deleted files
+2. Reconstructed the failure modes:
+   - command-local embed design vs shared `pkg/web` design were both present at once,
+   - `go:embed` path rules and symlink experiments caused invalid-path / irregular-file failures,
+   - the shared `pkg/web` direction was correct but incomplete,
+   - runtime SPA serving remained broken because `pkg/help/server/SPAHandler` expects a different FS layout than the one currently embedded by `pkg/web`,
+   - `serve.go` regressed directory loading by calling `LoadSectionsFromFS(os.DirFS("."), path)` with user-supplied paths that are not reliably valid relative paths for that FS root.
+3. Wrote a full bug report:
+   - `reference/02-embedding-and-spa-refactor-bug-report.md`
+4. Expanded `tasks.md` with a dedicated shared-SPA / serve-command / prefix-mounting refactor sequence.
+5. Added explicit mention that this feature should be mountable under prefixes like `/help` or `/docs` so it can be reused in existing HTTP servers.
+
+### Why
+
+The repository had crossed the line where more direct coding would only create more drift. There were too many half-finished designs coexisting:
+
+- `cmd/help-browser/dist`
+- `cmd/glaze/dist`
+- symlink attempts
+- shared `pkg/web/frontend`
+- generic `SPAHandler(embed.FS, subdir)` assumptions
+- command-local embed wiring
+
+Without a written bug report and a new task plan, every further change would keep re-opening the same questions. The ticket now contains a stable explanation of what went wrong and what architecture the refactor should converge toward.
+
+### What worked
+
+- The audit quickly showed that the API path is fine; the remaining failures are concentrated in the SPA embedding / runtime serving boundary and in brittle content-loading logic inside `serve.go`.
+- The `moments` reference project clarified the right separation of concerns: one shared web package should own embedded assets and SPA serving, while the command layer should only compose it.
+- The ticket now has an explicit statement that prefix mounting matters, which will prevent over-fitting the design to `/` only.
+
+### What didn’t work / what was already broken when I took over
+
+1. Runtime `/` still returned `index.html not found` even though `/api/health` worked. This confirmed the embedded SPA layout and the `SPAHandler` assumptions were still mismatched.
+2. The current `serve.go` loader produced warnings like:
+   - `readdir ./pkg/help: invalid argument`
+   showing that directory loading regressed relative to the earlier standalone implementation.
+3. The repository still had stale references to deleted command-local embed files and partially migrated code paths.
+
+### What I learned
+
+- The shared `pkg/web` approach is the right target, but only if it fully owns both embedding and SPA-serving semantics.
+- Reusing the old generic `SPAHandler(embed.FS, subdir)` abstraction is only safe if the embedded FS layout still matches its assumptions exactly. Right now it does not.
+- The earlier standalone `cmd/help-browser/main.go` had better path loading logic than the new `serve.go`; that logic should be reused instead of continuing with `os.DirFS(".")` plus raw user paths.
+- Mounting under prefixes should be treated as a first-class requirement, not an afterthought — especially if this code is intended to be reused inside larger servers.
+
+### What warrants a second pair of eyes
+
+- Whether `pkg/help/server` should expose a generic mount helper for prefixed mounting, or whether documenting/test-driving `http.StripPrefix` composition is sufficient.
+- Whether `pkg/web` should return a concrete `http.Handler` (`NewSPAHandler`) or whether a lower-level FS accessor should also remain public.
+- Whether `go generate` ownership should stay in `cmd/help-browser/gen.go` or move to `pkg/web/gen.go` once the shared package is finalized.
+
+### What should be done next
+
+Proceed in small, reviewable slices:
+
+1. Make `pkg/web` the single owner of generated frontend assets.
+2. Make `pkg/web` own SPA serving, not just raw embedding.
+3. Refactor `serve.go` to restore reliable markdown loading.
+4. Wire both `cmd/help-browser` and `cmd/glaze` through the shared package.
+5. Add/tests docs for mounting under prefixes.
+6. Commit at each stable boundary and keep the diary updated.
