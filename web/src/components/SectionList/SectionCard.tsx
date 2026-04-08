@@ -2,6 +2,7 @@
 import type { SectionSummary } from '../../types';
 import { Badge } from '../Badge/Badge';
 import { SectionCardParts, SectionListParts } from './parts';
+import { stripMarkdown } from '../../utils/text';
 import './styles/section-list.css';
 
 interface SectionCardProps {
@@ -31,8 +32,8 @@ export function SectionCard({ section, isActive, onClick }: SectionCardProps) {
           <span data-part={SectionCardParts.topBadge}>&#9670; TOP</span>
         )}
       </div>
-      <div data-part={SectionCardParts.title}>{section.title}</div>
-      <div data-part={SectionCardParts.short}>{section.short}</div>
+      <div data-part={SectionCardParts.title}>{stripMarkdown(section.title)}</div>
+      <div data-part={SectionCardParts.short}>{stripMarkdown(section.short)}</div>
     </button>
   );
 }
