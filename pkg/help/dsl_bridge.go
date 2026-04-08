@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help/dsl"
-	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
 )
 
@@ -45,50 +44,19 @@ func (hs *HelpSystem) QuerySections(query string) ([]*Section, error) {
 		return hs.queryLegacy(query)
 	}
 
-	// Get all sections from store for DSL evaluation
+	// Pass the predicate directly to the store — single query, no O(N) temp stores
 	ctx := context.Background()
-	modelSections, err := hs.Store.List(ctx, "order_num ASC")
+	modelSections, err := hs.Store.Find(ctx, predicate)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use the DSL predicate to filter sections
-	results := make([]*Section, 0)
-	for _, modelSection := range modelSections {
-		if hs.evaluatePredicate(predicate, modelSection) {
-			// Convert to legacy section for return
-			section := &Section{Section: modelSection, HelpSystem: hs}
-			results = append(results, section)
-		}
+	results := make([]*Section, len(modelSections))
+	for i, modelSection := range modelSections {
+		results[i] = &Section{Section: modelSection, HelpSystem: hs}
 	}
 
 	return results, nil
-}
-
-// evaluatePredicate evaluates a predicate against a model section
-func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *model.Section) bool {
-	// Create a temporary in-memory store for evaluation
-	memStore, err := store.NewInMemory()
-	if err != nil {
-		return false
-	}
-	defer func() {
-		_ = memStore.Close()
-	}()
-
-	// Insert the section into the temporary store
-	err = memStore.Insert(context.Background(), section)
-	if err != nil {
-		return false
-	}
-
-	// Find using the predicate
-	results, err := memStore.Find(context.Background(), predicate)
-	if err != nil {
-		return false
-	}
-
-	return len(results) > 0
 }
 
 // queryLegacy provides backward compatibility with the old simple parser
