@@ -145,3 +145,28 @@ UI fixes and serve behavior improvements.
 ### Commit
 
 - `4966ed1` — Fix UI issues and make serve paths optional
+
+## 2026-04-08 (Step 14)
+
+CSS overhaul, serve command refactoring, and badge jitter fix.
+
+### Changes
+
+- Added @font-face for Chicago_ font
+- Fixed background dither to match original solid-black checkerboard
+- Fixed title bar stripes (SVG data URI) and ruler layout
+- Fixed empty state vertical stacking
+- Fixed card CSS selectors (~= for space-separated data-part)
+- Cards now render full-width with consistent height
+- Strip markdown from card titles and descriptions (new utils/text.ts)
+- Converted serve command to glazed BareCommand format
+- Uses zerolog for startup/shutdown logging
+- Fixed badge height jitter: always render Badge, transparent border on selection
+- Added CSS discrepancy analysis document
+
+### Commits
+
+- `2437651` — Use zerolog for serve startup and shutdown logging
+- `92f1ccc` — Convert serve command to glazed BareCommand format
+- `71e6c30` — Fix CSS to match original JSX prototype
+- `a640993` — Fix card height jitter: always render badge, transparent border on selection

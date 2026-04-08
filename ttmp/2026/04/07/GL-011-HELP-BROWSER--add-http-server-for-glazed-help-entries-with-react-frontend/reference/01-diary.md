@@ -1212,3 +1212,53 @@ Fixed several UI and behavior issues identified by comparing the current impleme
 - `/tmp/glaze serve` (no args) serves 66 embedded sections
 - `/tmp/glaze serve ./pkg/doc` also works
 - Playwright screenshots confirm: menu bar removed, cards show correct ◆ TOP, content renders with code blocks
+
+## Step 14: CSS overhaul, glazed BareCommand, and badge jitter fix
+
+### Prompt Context
+
+**User prompt (verbatim):** "Fix the CSS to match the original import... Study it, then add an analysis document of CSS discrepancies."
+**Follow-up:** "Convert serve to glazed BareCommand format" / "Use zerolog" / "Fix card jitter on selection"
+
+### What I changed
+
+1. **CSS fixes matching original JSX prototype** (`71e6c30`):
+   - Added `@font-face` for Chicago_ font (was missing, so fallback fonts were used)
+   - Fixed background dither: removed `opacity='0.08'`, matched original solid-black checkerboard
+   - Fixed title bar stripes: switched from CSS gradient to original SVG 1×2 data URI
+   - Fixed title bar ruler: removed clipped `height: 6px` + `overflow: hidden`, let flex handle it
+   - Fixed empty state: added `flex-direction: column` (was side-by-side)
+   - Fixed card CSS selectors: changed `[data-part='...']` (exact match) to `[data-part~='...']` (word match) because `data-part` contains space-separated values like `"section-list-item section-card"`
+   - This fixed cards rendering as `inline-block` with irregular widths — they now get `display: block` and `width: 100%`
+   - Stripped markdown from card titles and descriptions via new `stripMarkdown()` utility
+   - Added CSS discrepancy analysis document
+
+2. **Serve command converted to glazed BareCommand** (`92f1ccc`):
+   - `ServeCommand` now implements `cmds.BareCommand` instead of returning raw `*cobra.Command`
+   - Uses `fields.New()` for `--address` flag and `paths` argument
+   - Wired via `cli.BuildCobraCommand()` in `main.go` like other commands
+   - Gets all glazed infrastructure: `--print-schema`, `--config-file`, logging flags
+   - Uses `schema.DefaultSlug` for decoding parsed values
+
+3. **Zerolog for serve logging** (`2437651`):
+   - Startup: `INF Loaded help sections sections=66` + `INF Help browser listening address=:18199`
+   - Shutdown: `INF Shutting down signal=terminated`
+
+4. **Badge jitter fix** (`a640993`):
+   - Previously: unselected cards rendered `<Badge>`, selected cards rendered plain `<span>` — different box model caused height jump
+   - Now: always render `<Badge>`, selected state uses CSS parent selector to set `border-color: transparent; color: #aaa; background: transparent`
+   - Same element = same box model = no jitter
+
+### Validation
+
+- `GOWORK=off go test ./pkg/help/server/... ./pkg/web/...` — all pass
+- `GOWORK=off go build ./cmd/glaze` — builds clean
+- `glaze serve` (no args) serves 66 embedded sections
+- `glaze serve --help` shows glazed command infrastructure
+- Playwright screenshots confirmed: full-width cards, clean text, no raw backticks, consistent badge rendering, no jitter on selection
+
+### Remaining optional work
+
+1. Browser E2E smoke tests (Playwright)
+2. Annotate long design doc as partially superseded
+3. The `web/node_modules/` is properly gitignored
