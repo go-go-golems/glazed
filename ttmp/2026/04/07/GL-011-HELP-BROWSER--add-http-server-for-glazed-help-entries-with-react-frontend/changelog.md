@@ -47,3 +47,12 @@ Phase 1 Tasks 2-6: pkg/help/server/ — handlers, middleware, SPA fallback, Serv
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/spa.go — Tasks 2-6 — SPA fallback handler (middleware-style)
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/store/store.go — Task 6 — Added ErrSectionNotFound sentinel
 
+
+## 2026-04-07
+
+Phase 1 Task 7: add cmd/help-browser/main.go (commit 9d673f9)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Task 7 — standalone CLI
+

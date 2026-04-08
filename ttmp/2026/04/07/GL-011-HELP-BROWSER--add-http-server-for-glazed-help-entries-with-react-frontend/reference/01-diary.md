@@ -17,6 +17,8 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: cmd/help-browser/main.go
+      Note: Step 4 — Task 7 committed (9d673f9)
     - Path: pkg/help/server/handlers.go
       Note: Step 3 — NewHandler
     - Path: pkg/help/server/middleware.go
@@ -39,6 +41,7 @@ LastUpdated: 2026-04-08T00:00:00Z
 WhatFor: Record implementation progress and decisions
 WhenToUse: Use when following up on or reviewing this ticket
 ---
+
 
 
 
@@ -437,4 +440,57 @@ log.Fatal(srv.ListenAndServe())
 mux := http.NewServeMux()
 mux.Handle("/help/api/", server.NewHandler(deps))  // mounts at /help/api/*
 http.ListenAndServe(":8080", mux)  // serves /help/api/health, etc.
+```
+
+## Step 4: Phase 1 Task 7 — cmd/help-browser/main.go
+
+Built the standalone CLI binary that wraps the server package.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Write `cmd/help-browser/main.go` that accepts file/directory
+paths and starts the HTTP server.
+
+**Inferred user intent:** Have a working standalone binary that can serve any directory
+of Glazed Markdown files.
+
+**Commit (code):** 9d673f9 — "Phase 1 Task 7: add cmd/help-browser (standalone HTTP server)"
+
+### What I did
+
+1. Created `cmd/help-browser/main.go`:
+   - `flag.NewFlagSet` with `--address` flag (default `:8088`)
+   - `flags.Args()` for positional paths
+   - `filepath.WalkDir` for recursive directory loading
+   - `help.LoadSectionFromMarkdown` for individual files
+   - `server.NewServer` + `WithAddr` + `WithSlogger` + `ListenAndServe`
+2. Build and lint: 0 issues.
+3. Smoke test: `curl http://localhost:18088/api/health` returned `{"ok":true,"sections":0}`.
+
+### Why
+
+Kept it minimal for Phase 1. The `//go:embed dist` and `//go:generate` directives belong
+in Phase 6. For now, `help-browser ./docs` starts a functional API-only server.
+
+### What I learned
+
+- `flag.NewFlagSet` with `flag.ContinueOnError` requires flags to come before positional
+  arguments (standard Unix convention). `go run help-browser --address :18088 /path`
+  works; `go run help-browser /path --address :18088` does not.
+  - Fix: document the flag-then-path order; no code change needed.
+- `help.LoadSectionFromMarkdown(data []byte)` returns `*help.Section`, and the caller
+  accesses `.Section` (the `model.Section` embedded field) to upsert into the store.
+
+### Code review instructions
+
+Where to start: `cmd/help-browser/main.go` top to bottom.
+How to validate:
+```bash
+go run ./cmd/help-browser/ --help
+go run ./cmd/help-browser/ ./docs --address :18088 &
+curl http://localhost:18088/api/health
+curl http://localhost:18088/api/sections
+kill %1
 ```
