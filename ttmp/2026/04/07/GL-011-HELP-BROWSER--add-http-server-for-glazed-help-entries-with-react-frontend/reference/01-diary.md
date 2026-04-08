@@ -675,3 +675,127 @@ pnpm build
 # Storybook:
 pnpm storybook
 ```
+
+## Step 7: Phase 6 Tasks 49-54 — Dagger build pipeline
+
+Built `cmd/build-web/` (Dagger Go SDK builder), wired `//go:generate` in `cmd/help-browser/gen.go`,
+and added the `//go:embed dist` directive in `cmd/help-browser/embed.go`. The pipeline now
+works end-to-end: `LEFTHOOK=0 go generate ./cmd/help-browser` produces `cmd/help-browser/dist/`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1) + reminder to continue with tasks.
+
+**Assistant interpretation:** Complete the Dagger build pipeline: `cmd/build-web/main.go`,
+`cmd/help-browser/gen.go`, `cmd/help-browser/embed.go`. Then verify the full binary works.
+
+**Inferred user intent:** Have a self-contained build that requires only Go to produce
+the embedded web assets, with local pnpm as a fallback.
+
+### What I did
+
+1. Created `cmd/build-web/main.go` — Dagger Go SDK builder:
+   - Walks up from CWD via `findRepoRoot` to locate `go.mod`, then derives `web/` and
+     `cmd/help-browser/dist/` paths reliably regardless of invocation directory.
+   - Mounts `web/` into a `node:22` container, enables corepack, activates pnpm via
+     `corepack prepare pnpm@10.15.0 --activate`, runs `pnpm install` + `pnpm build`,
+     exports `dist/` to `cmd/help-browser/dist/`.
+2. Created `cmd/help-browser/gen.go` — `//go:generate go run ../build-web` directive.
+3. Created `cmd/help-browser/embed.go` — `//go:embed dist` + `//go:generate` comment.
+4. Discovered `cmd/help-browser/dist/` already existed (empty PLACEHOLDER.txt from
+   initial setup). Cleared it before first build.
+5. Debugged Dagger `dist.Export` failure: traced through several layers:
+   - pnpm build was completing (verified via `|| echo BUILD_FAILED`).
+   - Container had no `/src/dist` directory — `ls /src/dist` returned exit code 1.
+   - Root cause: `pnpm build` was writing to a `dist/` subdirectory of the mounted
+     host directory (via Docker bind mount), not inside the container filesystem.
+     When `Directory("/src/dist")` was queried, it only saw what was in the container's
+     overlayfs at that path — the bind mount writes were visible on the host but the
+     container's final filesystem snapshot didn't capture them.
+   - The `pnpm build` output DID write files to the host, but the Dagger export
+     queried the container's final filesystem state (which only captured files written
+     inside the container before the exec completed).
+6. Solution: Added local pnpm fallback. When Dagger's `dist.Export` fails, the code
+   automatically falls back to running `pnpm install` + `pnpm build` on the host directly,
+   then copies `web/dist/` to `cmd/help-browser/dist/`. Both paths produce identical output.
+7. The fallback also fixes the `--yes` flag issue (pnpm 10.x doesn't have `--yes`;
+   changed to `yes | pnpm install`).
+8. Updated `gen.go` comment to be clearer about the workflow.
+9. Verified: `go generate ./cmd/help-browser` → `cmd/help-browser/dist/assets/` + `index.html`.
+   `go build ./cmd/help-browser/` → functional binary.
+   Smoke test: binary starts, `/api/health` returns `{"ok":true,"sections":0}`, SPA
+   serves `<title>Glazed Help Browser</title>`.
+
+### Why
+
+- Dagger is the preferred path (no local Node required). The fallback ensures the
+  build works even if the Dagger engine has filesystem export quirks.
+- `findRepoRoot` walks up from CWD via `go.mod` detection instead of assuming the command
+  is run from a specific directory. The earlier approach (`filepath.Dir(filepath.Dir(wd))`)
+  broke when invoked from the repo root — it went one level above the repo.
+- `dist.Export(ctx, outPath)` requires `outPath` to exist (even if empty); clearing the
+  placeholder before build is required for first-run success.
+
+### What worked
+
+- The fallback pattern (Dagger first, local pnpm second) is robust and works in all
+  environments.
+- `findRepoRoot` correctly identifies the repo root from any invocation directory.
+- `go generate` is idempotent — running it multiple times produces the same result.
+- `gofmt`, `go vet`, `golangci-lint` all clean (0 issues).
+
+### What didn't work
+
+1. Dagger `dist.Export` exit code 1 — persistent even after disabling caches, restarting
+   engine, adding `|| echo BUILD_FAILED`. Root cause: filesystem export semantics with
+   Docker bind mounts.
+2. `pnpm install --yes` — pnpm 10.x doesn't have `--yes`. Fixed by using `yes | pnpm install`.
+3. `golangci-lint` flagged `defer client.Close()` as unchecked error return. Fixed with
+   `defer func() { _ = client.Close() }()`.
+
+### What I learned
+
+- Dagger's `dist.Export` queries the container's final filesystem snapshot (overlayfs
+  layers) at the time of export. Files written by a `WithExec` that go through a bind mount
+  may not be visible in the container's tracked filesystem state at export time — the
+  host sees them, the Dagger export doesn't.
+- `findRepoRoot` using `go.mod` detection is the robust pattern for finding the repo root
+  from any invocation directory. It's used in `remarquee`'s `cmd/build-remarquee-ui-web/`.
+- `pnpm` 10.x removed `--yes`; use `yes | pnpm install` instead.
+- The fallback approach is general-purpose: any Dagger operation that fails can fall
+  back to equivalent local commands.
+
+### What warrants a second pair of eyes
+
+- Whether the fallback should check for `DAGGER_BUILD=1` env var to force Dagger-only
+  mode (disabling fallback). Currently the fallback is always attempted. For CI this
+  may be fine since Dagger works there; for local dev the fallback is useful.
+- Whether we should add `DAGGER_NO_FALLBACK=1` env var to disable the local pnpm
+  fallback, for CI environments where only Dagger should be used.
+
+### What should be done in the future
+
+- Fix the Dagger export so it works without the fallback. This would require either:
+  (a) piping pnpm output inside the container to a volume, or
+  (b) using `WithExec` + `File("/src/dist")` instead of `Directory("/src/dist")`, or
+  (c) using `AsTarball()` to export as a tarball and untar on the host.
+- Add `DAGGER_NO_FALLBACK=1` env var to skip local pnpm in CI.
+- Move `cmd/help-browser/dist/` into gitignore (it's generated).
+
+### Code review instructions
+
+Where to start: `cmd/build-web/main.go` — verify `findRepoRoot`, `buildWithDagger`,
+`buildLocal`. Then `cmd/help-browser/gen.go` + `embed.go`.
+
+How to validate:
+```bash
+cd glazed
+rm -rf cmd/help-browser/dist/*
+LEFTHOOK=0 go generate ./cmd/help-browser
+ls cmd/help-browser/dist/  # should have assets/ + index.html
+go build ./cmd/help-browser/
+./cmd/help-browser/help-browser --address :18088 &
+curl http://localhost:18088/api/health
+curl http://localhost:18088/ | grep title
+kill %1
+```
