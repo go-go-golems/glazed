@@ -10,7 +10,12 @@ import (
 
 func main() {
 	helpSystem := help.NewHelpSystem()
-	rootCmd := server.NewServeCommand(helpSystem, web.FS)
+	spaHandler, err := web.NewSPAHandler()
+	if err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+	rootCmd := server.NewServeCommand(helpSystem, spaHandler)
 	rootCmd.Use = "help-browser [flags] <path> [<path>...]"
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {

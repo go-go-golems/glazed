@@ -93,3 +93,16 @@ Shared SPA refactor slice 1: move generated frontend ownership to `pkg/web/dist`
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/serve_test.go — Tests for root SPA serving and prefix mounting
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Standalone binary wired to pkg/web
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — Main CLI wired to pkg/web
+
+## 2026-04-08
+
+Shared SPA refactor slice 2: move SPA-serving ownership into `pkg/web.NewSPAHandler()`, make `pkg/help/server` compose API + optional SPA handlers instead of raw embed FS values, and add a playbook showing how to mount the help browser under `/help` or another prefix.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/static.go — Shared embedded asset package now also exposes `NewSPAHandler()`
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/serve.go — Serve command now composes API + optional SPA handlers
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/server/serve_test.go — Tests updated to consume `web.NewSPAHandler()`
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Standalone binary now builds SPA handler from `pkg/web`
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — Main CLI now builds SPA handler from `pkg/web`
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/playbooks/01-mount-help-browser-under-prefix.md — Prefix-mount playbook for existing servers

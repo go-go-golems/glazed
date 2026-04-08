@@ -11,7 +11,11 @@ import (
 
 func TestNewServeHandler_ServesEmbeddedSPAAtRoot(t *testing.T) {
 	st, _ := setupTestServer(t)
-	h := NewServeHandler(HandlerDeps{Store: st}, web.FS)
+	spaHandler, err := web.NewSPAHandler()
+	if err != nil {
+		t.Fatalf("web.NewSPAHandler: %v", err)
+	}
+	h := NewServeHandler(HandlerDeps{Store: st}, spaHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rw := httptest.NewRecorder()
@@ -30,7 +34,11 @@ func TestNewServeHandler_ServesEmbeddedSPAAtRoot(t *testing.T) {
 
 func TestNewMountedHandler_ServesAPIUnderPrefix(t *testing.T) {
 	st, _ := setupTestServer(t)
-	h := NewMountedHandler("/help", HandlerDeps{Store: st}, web.FS)
+	spaHandler, err := web.NewSPAHandler()
+	if err != nil {
+		t.Fatalf("web.NewSPAHandler: %v", err)
+	}
+	h := NewMountedHandler("/help", HandlerDeps{Store: st}, spaHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/help/api/health", nil)
 	rw := httptest.NewRecorder()
@@ -46,7 +54,11 @@ func TestNewMountedHandler_ServesAPIUnderPrefix(t *testing.T) {
 
 func TestNewMountedHandler_ServesSPAUnderPrefix(t *testing.T) {
 	st, _ := setupTestServer(t)
-	h := NewMountedHandler("/help", HandlerDeps{Store: st}, web.FS)
+	spaHandler, err := web.NewSPAHandler()
+	if err != nil {
+		t.Fatalf("web.NewSPAHandler: %v", err)
+	}
+	h := NewMountedHandler("/help", HandlerDeps{Store: st}, spaHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/help/", nil)
 	rw := httptest.NewRecorder()
@@ -62,7 +74,11 @@ func TestNewMountedHandler_ServesSPAUnderPrefix(t *testing.T) {
 
 func TestMountPrefix_RejectsOutsidePrefix(t *testing.T) {
 	st, _ := setupTestServer(t)
-	h := NewMountedHandler("/help", HandlerDeps{Store: st}, web.FS)
+	spaHandler, err := web.NewSPAHandler()
+	if err != nil {
+		t.Fatalf("web.NewSPAHandler: %v", err)
+	}
+	h := NewMountedHandler("/help", HandlerDeps{Store: st}, spaHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	rw := httptest.NewRecorder()

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,8 +19,8 @@ import (
 
 // NewServeCommand returns a Cobra command that starts the help browser HTTP server.
 // It discovers Glazed Markdown files from the given file/directory arguments and
-// serves them over HTTP with an optional embedded React SPA.
-func NewServeCommand(hs *help.HelpSystem, embedFS embed.FS) *cobra.Command {
+// serves them over HTTP with an optional SPA handler.
+func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve [flags] <path> [<path>...]",
 		Short: "Serve help documentation as a web browser application",
@@ -40,7 +39,7 @@ The resulting handler is also mountable under prefixes such as /help or /docs
 using MountPrefix or NewMountedHandler.`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(cmd, args, hs, embedFS)
+			return runServe(cmd, args, hs, spaHandler)
 		},
 	}
 
@@ -51,12 +50,20 @@ using MountPrefix or NewMountedHandler.`,
 // NewServeHandler composes the API handler and optional SPA handler for use at
 // the server root (/). The returned handler already includes CORS because
 // NewHandler applies it internally.
-func NewServeHandler(deps HandlerDeps, embedFS embed.FS) http.Handler {
-	h := NewHandler(deps)
-	if embedFS != (embed.FS{}) {
-		h = SPAHandler(embedFS, "dist")(h)
+func NewServeHandler(deps HandlerDeps, spaHandler http.Handler) http.Handler {
+	apiHandler := NewHandler(deps)
+	if spaHandler == nil {
+		return apiHandler
 	}
-	return h
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cleanPath := path.Clean("/" + r.URL.Path)
+		if cleanPath == "/api" || strings.HasPrefix(cleanPath, "/api/") {
+			apiHandler.ServeHTTP(w, r)
+			return
+		}
+		spaHandler.ServeHTTP(w, r)
+	})
 }
 
 // MountPrefix adapts a root-mounted handler so it can be exposed under a prefix
@@ -65,7 +72,7 @@ func NewServeHandler(deps HandlerDeps, embedFS embed.FS) http.Handler {
 // Example:
 //
 //	mux := http.NewServeMux()
-//	h := server.NewServeHandler(deps, web.FS)
+//	h := server.NewServeHandler(deps, spa)
 //	mux.Handle("/help/", server.MountPrefix("/help", h))
 //	mux.Handle("/help", server.MountPrefix("/help", h))
 func MountPrefix(prefix string, h http.Handler) http.Handler {
@@ -94,11 +101,11 @@ func MountPrefix(prefix string, h http.Handler) http.Handler {
 
 // NewMountedHandler builds a root handler and adapts it for mounting under a
 // prefix in an existing HTTP server.
-func NewMountedHandler(prefix string, deps HandlerDeps, embedFS embed.FS) http.Handler {
-	return MountPrefix(prefix, NewServeHandler(deps, embedFS))
+func NewMountedHandler(prefix string, deps HandlerDeps, spaHandler http.Handler) http.Handler {
+	return MountPrefix(prefix, NewServeHandler(deps, spaHandler))
 }
 
-func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, embedFS embed.FS) error {
+func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, spaHandler http.Handler) error {
 	addr, err := cmd.Flags().GetString("address")
 	if err != nil {
 		return fmt.Errorf("address flag: %w", err)
@@ -113,7 +120,7 @@ func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, embedFS em
 	}
 
 	deps := HandlerDeps{Store: hs.Store}
-	handler := NewServeHandler(deps, embedFS)
+	handler := NewServeHandler(deps, spaHandler)
 	return serveHTTP(addr, handler)
 }
 

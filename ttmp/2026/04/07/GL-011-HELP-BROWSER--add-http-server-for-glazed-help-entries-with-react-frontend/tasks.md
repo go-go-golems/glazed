@@ -79,7 +79,7 @@
 - [ ] Add bug report doc for the embed/serve/build regression and target architecture
 - [x] Create a shared `pkg/web/` package that owns generated frontend assets and `//go:embed`
 - [x] Change `cmd/build-web` to copy the frontend to `pkg/web/dist/` (single source of truth)
-- [ ] Decide whether `pkg/web` should also expose a dedicated SPA handler or remain an embedded-assets package only
+- [x] Decide that `pkg/web` should also expose a dedicated SPA handler (`NewSPAHandler`) so `pkg/help/server` no longer needs to know the shared asset layout
 - [x] Refactor `pkg/help/server/serve.go` to restore robust file/directory loading (reuse the older standalone loader logic)
 - [x] Refactor `pkg/help/server/serve.go` so Cobra wiring composes API + optional SPA handler cleanly
 - [x] Wire `cmd/help-browser/main.go` to the shared `pkg/web` package

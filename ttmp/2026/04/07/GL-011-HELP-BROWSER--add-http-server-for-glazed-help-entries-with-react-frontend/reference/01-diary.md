@@ -981,3 +981,75 @@ That gave a working system with less risk than inventing a brand-new serving abs
 2. Decide whether to keep `pkg/web` as `embed.FS` only or add a first-class SPA handler there.
 3. Add an explicit example doc snippet for mounting under `/help` in an existing server.
 4. Add one end-to-end integration test at the binary/command level if needed.
+
+## Step 10: Let `pkg/web` own SPA serving, not just embedding
+
+Finished the second refactor slice: `pkg/web` now owns both the embedded assets and the SPA-serving handler, so `pkg/help/server` no longer needs to know about the internal shared asset layout (`dist`).
+
+### Prompt Context
+
+**User prompt (verbatim):** same as Step 9 — continue task by task with commits and diary updates.
+
+**Assistant interpretation:** Complete the next cleanup boundary now that the first slice restored a working system: remove the remaining coupling where `pkg/help/server` still knew that the shared web package used `dist` internally.
+
+### What I changed
+
+1. `pkg/web/static.go`
+   - kept `//go:embed dist`
+   - added `NewSPAHandler() (http.Handler, error)`
+   - the handler now owns:
+     - `fs.Sub(FS, "dist")`
+     - static asset serving
+     - SPA fallback to `index.html`
+2. `pkg/help/server/serve.go`
+   - changed `NewServeCommand` to accept `spaHandler http.Handler` instead of raw `embed.FS`
+   - changed `NewServeHandler` and `NewMountedHandler` to compose `apiHandler + optional spaHandler`
+   - removed the remaining knowledge that shared assets live under a `dist` subdirectory
+3. `cmd/help-browser/main.go`
+   - now creates `spaHandler, err := web.NewSPAHandler()` and passes the handler to `server.NewServeCommand`
+4. `cmd/glaze/main.go`
+   - same change: create the SPA handler from `pkg/web`, then wire it into the serve subcommand
+5. Updated `serve_test.go`
+   - tests now build their SPA via `web.NewSPAHandler()` instead of passing raw embedded FS values around
+
+### Why
+
+The first refactor slice restored a working system, but one abstraction leak remained:
+
+- `pkg/web` owned the shared embedded assets,
+- yet `pkg/help/server` still needed to know that the assets were stored under `dist`.
+
+That meant the server layer still knew too much about the frontend packaging details. By moving the SPA handler into `pkg/web`, the ownership line is now clearer:
+
+- `pkg/web` owns frontend embedding and SPA serving
+- `pkg/help/server` owns help API serving, command wiring, and prefix-mount composition
+- command packages (`cmd/help-browser`, `cmd/glaze`) just compose the two
+
+This matches the general architecture used in the `moments` reference project more closely.
+
+### What worked
+
+- `GOWORK=off go test ./pkg/help/server ./pkg/web` passed
+- `GOWORK=off go build ./cmd/help-browser ./cmd/glaze` passed
+- Runtime validation:
+  - `help-browser` serves `/` and `/api/health`
+  - `glaze serve` serves `/` and `/api/health`
+- Prefix mounting tests still passed after the abstraction cleanup
+
+### What didn’t work before this change
+
+- The server layer still had to do:
+  - `SPAHandler(embedFS, "dist")`
+- That kept the shared asset layout as a hidden coupling between `pkg/web` and `pkg/help/server`.
+
+### What I learned
+
+- The first slice fixed the bug; this slice fixed the ownership boundary.
+- A shared embed package is much more maintainable when it exports a handler, not just raw embedded files.
+- Tests became clearer once they also consumed the public `pkg/web.NewSPAHandler()` API.
+
+### What should be done next
+
+1. Add one short playbook/example doc for mounting under `/help` in an existing mux.
+2. Clean up ticket metadata and any stale references that still mention the old command-local embed design.
+3. Decide whether to keep `cmd/help-browser/gen.go` as the generate entrypoint or move generation ownership fully into `pkg/web`.

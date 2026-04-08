@@ -35,7 +35,9 @@ func main() {
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 	// Add the serve command (embeds the React SPA via pkg/web).
-	rootCmd.AddCommand(server.NewServeCommand(helpSystem, web.FS))
+	spaHandler, err := web.NewSPAHandler()
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(server.NewServeCommand(helpSystem, spaHandler))
 
 	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()
