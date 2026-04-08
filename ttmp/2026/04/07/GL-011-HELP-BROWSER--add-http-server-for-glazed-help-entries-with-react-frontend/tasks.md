@@ -76,7 +76,7 @@
 
 ### Phase 7: Serve Command, Shared SPA Package, and Reusable Mounting
 
-- [ ] Add bug report doc for the embed/serve/build regression and target architecture
+- [x] Add bug report doc for the embed/serve/build regression and target architecture
 - [x] Create a shared `pkg/web/` package that owns generated frontend assets and `//go:embed`
 - [x] Change `cmd/build-web` to copy the frontend to `pkg/web/dist/` (single source of truth)
 - [x] Decide that `pkg/web` should also expose a dedicated SPA handler (`NewSPAHandler`) so `pkg/help/server` no longer needs to know the shared asset layout
