@@ -7,28 +7,45 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
+	stdpath "path"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 )
 
 // DefaultAddr is the TCP address used by the serve command when no --address is supplied.
 const DefaultAddr = ":8088"
 
-// NewServeCommand returns a Cobra command that starts the help browser HTTP server.
-// It discovers Glazed Markdown files from the given file/directory arguments and
-// serves them over HTTP with an optional SPA handler.
-func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "serve [flags] [<path>...]",
-		Short: "Serve help documentation as a web browser application",
-		Long: `Discover Glazed Markdown files from the given paths and start an HTTP
+// ServeCommand implements cmds.BareCommand to start the help browser HTTP server.
+type ServeCommand struct {
+	*cmds.CommandDescription
+	helpSystem *help.HelpSystem
+	spaHandler http.Handler
+}
+
+var _ cmds.BareCommand = (*ServeCommand)(nil)
+
+// ServeSettings holds the parsed flag values for the serve command.
+type ServeSettings struct {
+	Address string   `glazed:"address"`
+	Paths   []string `glazed:"paths"`
+}
+
+// NewServeCommand creates a BareCommand that starts the help browser HTTP server.
+func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) (*ServeCommand, error) {
+	return &ServeCommand{
+		CommandDescription: cmds.NewCommandDescription(
+			"serve",
+			cmds.WithShort("Serve help documentation as a web browser application"),
+			cmds.WithLong(`Discover Glazed Markdown files from the given paths and start an HTTP
 server that serves them with an optional React SPA frontend.
 
 Paths can be individual .md files or directories. Directories are walked
@@ -41,14 +58,54 @@ serves:
   GET /*       — React SPA (serves index.html for all other paths, if configured)
 
 The resulting handler is also mountable under prefixes such as /help or /docs
-using MountPrefix or NewMountedHandler.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(cmd, args, hs, spaHandler)
-		},
+using MountPrefix or NewMountedHandler.`),
+			cmds.WithFlags(
+				fields.New(
+					"address",
+					fields.TypeString,
+					fields.WithHelp("Address to listen on"),
+					fields.WithDefault(DefaultAddr),
+				),
+			),
+			cmds.WithArguments(
+				fields.New(
+					"paths",
+					fields.TypeStringList,
+					fields.WithHelp("Markdown files or directories to load (default: embedded docs)"),
+				),
+			),
+		),
+		helpSystem: hs,
+		spaHandler: spaHandler,
+	}, nil
+}
+
+// Run starts the HTTP server. Implements cmds.BareCommand.
+func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) error {
+	s := &ServeSettings{}
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
+		return fmt.Errorf("failed to decode serve settings: %w", err)
 	}
 
-	cmd.Flags().String("address", DefaultAddr, "Address to listen on")
-	return cmd
+	hs := sc.helpSystem
+	if hs.Store == nil {
+		return errors.New("HelpSystem.Store is nil")
+	}
+
+	// When no paths are given, the help system was already loaded with the
+	// embedded documentation (e.g. via doc.AddDocToHelpSystem). Just use that.
+	if len(s.Paths) > 0 {
+		if err := loadPaths(ctx, hs, s.Paths); err != nil {
+			return err
+		}
+	}
+
+	count, _ := hs.Store.Count(ctx)
+	log.Info().Int64("sections", count).Msg("Loaded help sections")
+
+	deps := HandlerDeps{Store: hs.Store}
+	handler := NewServeHandler(deps, sc.spaHandler)
+	return serveHTTP(s.Address, handler)
 }
 
 // NewServeHandler composes the API handler and optional SPA handler for use at
@@ -61,7 +118,7 @@ func NewServeHandler(deps HandlerDeps, spaHandler http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cleanPath := path.Clean("/" + r.URL.Path)
+		cleanPath := stdpath.Clean("/" + r.URL.Path)
 		if cleanPath == "/api" || strings.HasPrefix(cleanPath, "/api/") {
 			apiHandler.ServeHTTP(w, r)
 			return
@@ -86,7 +143,7 @@ func MountPrefix(prefix string, h http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cleanPath := path.Clean("/" + r.URL.Path)
+		cleanPath := stdpath.Clean("/" + r.URL.Path)
 		if cleanPath != prefix && !strings.HasPrefix(cleanPath, prefix+"/") {
 			http.NotFound(w, r)
 			return
@@ -107,33 +164,6 @@ func MountPrefix(prefix string, h http.Handler) http.Handler {
 // prefix in an existing HTTP server.
 func NewMountedHandler(prefix string, deps HandlerDeps, spaHandler http.Handler) http.Handler {
 	return MountPrefix(prefix, NewServeHandler(deps, spaHandler))
-}
-
-func runServe(cmd *cobra.Command, args []string, hs *help.HelpSystem, spaHandler http.Handler) error {
-	addr, err := cmd.Flags().GetString("address")
-	if err != nil {
-		return fmt.Errorf("address flag: %w", err)
-	}
-	if hs.Store == nil {
-		return errors.New("HelpSystem.Store is nil")
-	}
-
-	ctx := context.Background()
-
-	// When no paths are given, the help system was already loaded with the
-	// embedded documentation (e.g. via doc.AddDocToHelpSystem). Just use that.
-	if len(args) > 0 {
-		if err := loadPaths(ctx, hs, args); err != nil {
-			return err
-		}
-	}
-
-	count, _ := hs.Store.Count(ctx)
-	log.Info().Int64("sections", count).Msg("Loaded help sections")
-
-	deps := HandlerDeps{Store: hs.Store}
-	handler := NewServeHandler(deps, spaHandler)
-	return serveHTTP(addr, handler)
 }
 
 func loadPaths(ctx context.Context, hs *help.HelpSystem, paths []string) error {
@@ -226,7 +256,7 @@ func normalizePrefix(prefix string) string {
 	if !strings.HasPrefix(prefix, "/") {
 		prefix = "/" + prefix
 	}
-	prefix = path.Clean(prefix)
+	prefix = stdpath.Clean(prefix)
 	if prefix == "." {
 		return "/"
 	}

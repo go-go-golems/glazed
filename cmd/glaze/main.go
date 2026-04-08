@@ -37,7 +37,13 @@ func main() {
 	// Add the serve command (embeds the React SPA via pkg/web).
 	spaHandler, err := web.NewSPAHandler()
 	cobra.CheckErr(err)
-	rootCmd.AddCommand(server.NewServeCommand(helpSystem, spaHandler))
+	serveCmd, err := server.NewServeCommand(helpSystem, spaHandler)
+	cobra.CheckErr(err)
+	serveCobraCmd, err := cli.BuildCobraCommand(serveCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(serveCobraCmd)
 
 	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()
