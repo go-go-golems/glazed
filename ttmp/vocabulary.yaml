@@ -55,6 +55,22 @@ topics:
       description: Security-sensitive behavior, redaction, and secret-handling work
     - slug: vault
       description: Vault integration and secret-provider configuration work
+    - slug: dagger
+      description: Dagger CI/CD pipeline tool
+    - slug: help
+      description: Help system and documentation
+    - slug: http
+      description: HTTP server and REST API
+    - slug: react
+      description: React UI framework
+    - slug: rtk-query
+      description: Redux Toolkit Query for data fetching
+    - slug: storybook
+      description: Storybook component development environment
+    - slug: vite
+      description: Vite build tool for modern web apps
+    - slug: web
+      description: Web frontend development
 docTypes:
     - slug: index
       description: Ticket index
