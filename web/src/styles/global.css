@@ -1,0 +1,59 @@
+/* global.css — root CSS variables and resets.
+ * Full theming system (Tasks 29–34) replaces this with token-driven CSS variables
+ * and component-scoped data-part selectors. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Layout */
+  --layout-sidebar-width: 300px;
+  --layout-header-height: 44px;
+  --layout-statusbar-height: 28px;
+
+  /* Typography */
+  --font-ui: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+  --font-size-sm: 11px;
+  --font-size-base: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+
+  /* Colors — classic Mac palette (overridable per theme) */
+  --color-bg: #ffffff;
+  --color-fg: #000000;
+  --color-sidebar-bg: #f0f0f0;
+  --color-sidebar-fg: #000000;
+  --color-accent: #0078d4;
+  --color-border: #c0c0c0;
+  --color-titlebar-bg: #000080;
+  --color-titlebar-fg: #ffffff;
+  --color-selection-bg: #000080;
+  --color-selection-fg: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+::selection {
+  background: var(--color-selection-bg);
+  color: var(--color-selection-fg);
+}
