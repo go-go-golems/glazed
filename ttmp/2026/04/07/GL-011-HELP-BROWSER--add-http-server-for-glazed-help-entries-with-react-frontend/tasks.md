@@ -10,7 +10,7 @@
 - [x] Create `pkg/help/server/spa.go` with SPA fallback handler
 - [x] Create `pkg/help/server/server.go` with `NewServer()`, `ServeMux` registration, and `ListenAndServe()`
 - [x] Write `pkg/help/server/server_test.go` with `httptest.NewServer` integration tests
-- [x] Create `cmd/help-browser/main.go` with file discovery from CLI args and `HelpSystem` initialization
+- [x] Create the initial standalone runner for file discovery and `HelpSystem` initialization (later folded into the shared `serve` command)
 
 ### Phase 2: React Frontend Scaffold
 
@@ -68,8 +68,8 @@
 ### Phase 6: Dagger Build Pipeline
 
 - [x] Create `cmd/build-web/main.go` with Dagger Go SDK (node:22 container, corepack, pnpm install, pnpm build, export dist/)
-- [x] Create `cmd/help-browser/gen.go` with `//go:generate go run ../build-web`
-- [x] Add embedded SPA support for the standalone binary
+- [x] Add a Go-based build entrypoint for the frontend (`cmd/build-web`) and a `go generate` trigger (now owned by `pkg/web/gen.go`)
+- [x] Add embedded SPA support via the shared `pkg/web` package
 - [x] Add local pnpm fallback when Dagger export fails
 - [x] Refactor the build output to a single shared location owned by `pkg/web/`
 - [x] Remove stale command-local embedding assumptions from code (`cmd/help-browser/dist`, `cmd/glaze/dist`, deleted `embed.go` references)
@@ -82,13 +82,13 @@
 - [x] Decide that `pkg/web` should also expose a dedicated SPA handler (`NewSPAHandler`) so `pkg/help/server` no longer needs to know the shared asset layout
 - [x] Refactor `pkg/help/server/serve.go` to restore robust file/directory loading (reuse the older standalone loader logic)
 - [x] Refactor `pkg/help/server/serve.go` so Cobra wiring composes API + optional SPA handler cleanly
-- [x] Wire `cmd/help-browser/main.go` to the shared `pkg/web` package
+- [x] Wire the shared `pkg/web` package into the runtime entrypoint
 - [x] Wire `cmd/glaze/main.go` to the shared `pkg/web` package and add `serve`
-- [x] Verify `help-browser --help` works and serves the shared SPA
-- [x] Verify `glaze serve --help` works and serves the shared SPA
+- [x] Verify the supported CLI entrypoint (`glaze serve`) works and serves the shared SPA
 - [x] Add reusable mounting support for existing HTTP servers under prefixes such as `/help` or `/docs`
 - [x] Add tests or documented examples for mounting under prefixes using existing muxes/servers
 - [x] Verify `glaze serve docs/` starts the server correctly and serves both SPA + API
+- [x] Remove the redundant standalone `cmd/help-browser` runtime wrapper and make `glaze serve` the only supported runtime entrypoint
 
 ### Phase 8: Integration Testing
 

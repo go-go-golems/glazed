@@ -1053,3 +1053,71 @@ This matches the general architecture used in the `moments` reference project mo
 1. Add one short playbook/example doc for mounting under `/help` in an existing mux.
 2. Clean up ticket metadata and any stale references that still mention the old command-local embed design.
 3. Decide whether to keep `cmd/help-browser/gen.go` as the generate entrypoint or move generation ownership fully into `pkg/web`.
+
+## Step 11: Remove `cmd/help-browser`, move generation ownership to `pkg/web`, and delete dead wrappers
+
+Completed the final structural cleanup pass after the shared SPA work stabilized: removed the redundant standalone runtime binary, moved the `go generate` entrypoint to the shared web package, and deleted the now-dead generic wrapper code that existed only for backward-compatibility with earlier experiments.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, let's get rid of help-browser and any other backwards compatibility  / deprecateion / wrapper you might fine."
+
+**Assistant interpretation:** Remove the redundant standalone runtime surface and prune clearly dead wrapper layers now that `glaze serve` is the supported path.
+
+### What I changed
+
+1. Removed `cmd/help-browser/`
+   - deleted the standalone binary entrypoint entirely
+   - `glaze serve` is now the only supported runtime entrypoint
+2. Moved generation ownership to `pkg/web`
+   - added `pkg/web/gen.go`
+   - generation is now triggered via:
+     - `GOWORK=off go generate ./pkg/web`
+3. Updated `cmd/build-web/main.go`
+   - comments now reflect the new ownership model (`pkg/web/dist` + `pkg/web/gen.go`)
+4. Added `pkg/web/static_test.go`
+   - tests `web.NewSPAHandler()` directly for `/` and SPA fallback routes
+5. Deleted dead wrapper code in `pkg/help/server`
+   - removed `server.go`
+   - removed `spa.go`
+   - kept the current supported composition path in `serve.go`
+6. Updated current-facing ticket metadata/tasks
+   - index now points at `pkg/web/gen.go` and `cmd/glaze/main.go`
+   - tasks now reflect that the initial standalone binary was folded back into the shared serve command and then removed
+
+### Why
+
+At this point `cmd/help-browser` no longer added architectural value:
+
+- it duplicated the supported runtime surface (`glaze serve`)
+- it required its own docs and generation references
+- it encouraged confusion about which binary users should actually run
+
+Likewise, `pkg/help/server/server.go` and `pkg/help/server/spa.go` had become dead internal compatibility layers after the refactor:
+
+- serving now goes through `serve.go`
+- embedded SPA serving now belongs to `pkg/web.NewSPAHandler()`
+- root/prefix composition now belongs to `NewServeHandler` / `MountPrefix`
+
+Removing them made the ownership model much clearer.
+
+### Validation
+
+- `GOWORK=off go generate ./pkg/web`
+- `GOWORK=off go test ./pkg/help/server ./pkg/web`
+- `GOWORK=off go build ./cmd/glaze`
+- runtime check:
+  - `glaze serve /` → serves embedded `index.html`
+  - `glaze serve /api/health` → returns JSON
+
+### What warrants a second pair of eyes
+
+- The long design doc and historical diary/changelog entries still mention `cmd/help-browser` because they record the earlier architecture. That history is intentional, but if we want a fully current polished doc set, the design doc should get a short “superseded by shared `pkg/web` + `glaze serve`” note.
+
+### What should be done next
+
+Only optional cleanup remains:
+
+1. commit `web/pnpm-lock.yaml` if we want fully reproducible frontend dependency resolution
+2. optionally annotate the long design doc as partially superseded by the final shared-SPA architecture
+3. optionally add browser E2E tests

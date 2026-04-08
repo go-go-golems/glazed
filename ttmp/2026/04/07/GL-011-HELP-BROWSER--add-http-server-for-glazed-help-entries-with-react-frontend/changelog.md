@@ -106,3 +106,15 @@ Shared SPA refactor slice 2: move SPA-serving ownership into `pkg/web.NewSPAHand
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/help-browser/main.go — Standalone binary now builds SPA handler from `pkg/web`
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — Main CLI now builds SPA handler from `pkg/web`
 - /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/ttmp/2026/04/07/GL-011-HELP-BROWSER--add-http-server-for-glazed-help-entries-with-react-frontend/playbooks/01-mount-help-browser-under-prefix.md — Prefix-mount playbook for existing servers
+
+## 2026-04-08
+
+Cleanup slice: remove the redundant `cmd/help-browser` runtime wrapper, move `go generate` ownership to `pkg/web/gen.go`, add direct `pkg/web.NewSPAHandler()` tests, and delete the now-dead generic server/SPA wrapper files.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/gen.go — `go generate` ownership moved to the shared web package
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/static.go — Shared SPA handler and embed owner remain the single source of truth
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/web/static_test.go — Direct SPA handler tests
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/build-web/main.go — Builder docs updated to match the new ownership model
+- /home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/cmd/glaze/main.go — `glaze serve` is now the only supported runtime entrypoint

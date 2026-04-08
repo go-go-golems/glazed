@@ -17,6 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DefaultAddr is the TCP address used by the serve command when no --address is supplied.
+const DefaultAddr = ":8088"
+
 // NewServeCommand returns a Cobra command that starts the help browser HTTP server.
 // It discovers Glazed Markdown files from the given file/directory arguments and
 // serves them over HTTP with an optional SPA handler.

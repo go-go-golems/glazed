@@ -4,7 +4,7 @@
 // The program walks up from the current working directory to find the repo root
 // (by locating go.mod), builds web/ with pnpm inside a node:22 container,
 // and copies the dist/ output to pkg/web/dist/ for embedding via //go:embed
-// in pkg/web.
+// in pkg/web. Generation is triggered by `go generate ./pkg/web`.
 package main
 
 import (
