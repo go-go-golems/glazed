@@ -1,7 +1,6 @@
 package help
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
@@ -9,12 +8,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/help/dsl"
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
 	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -161,79 +158,11 @@ func (s *Section) OtherApplications() []*Section {
 }
 
 func LoadSectionFromMarkdown(markdownBytes []byte) (*Section, error) {
-	// get YAML metadata from markdown bytes
-	//var matter struct {
-	//	Name string   `yaml:"name"`
-	//	Tags []string `yaml:"tags"`
-	//}
-	var metaData map[string]interface{}
-
-	inputReader := bytes.NewReader(markdownBytes)
-	rest, err := frontmatter.Parse(inputReader, &metaData)
+	modelSection, err := model.ParseSectionFromMarkdown(markdownBytes)
 	if err != nil {
 		return nil, err
 	}
-
-	modelSection := &model.Section{}
-	section := &Section{Section: modelSection}
-
-	if title, ok := metaData["Title"]; ok {
-		section.Title = title.(string)
-	}
-	if subTitle, ok := metaData["SubTitle"]; ok {
-		section.SubTitle = subTitle.(string)
-	}
-	if short, ok := metaData["Short"]; ok {
-		section.Short = short.(string)
-	}
-
-	if sectionType, ok := metaData["SectionType"]; ok {
-		section.SectionType, err = model.SectionTypeFromString(sectionType.(string))
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		section.SectionType = model.SectionGeneralTopic
-	}
-
-	if slug := metaData["Slug"]; slug != nil {
-		section.Slug = slug.(string)
-	}
-	section.Content = string(rest)
-
-	if topics, ok := metaData["Topics"]; ok {
-		section.Topics = strings2.InterfaceToStringList(topics)
-	}
-
-	if flags, ok := metaData["Flags"]; ok {
-		section.Flags = strings2.InterfaceToStringList(flags)
-	}
-
-	if commands, ok := metaData["Commands"]; ok {
-		section.Commands = strings2.InterfaceToStringList(commands)
-	}
-
-	if isTopLevel, ok := metaData["IsTopLevel"]; ok {
-		section.IsTopLevel = isTopLevel.(bool)
-	}
-
-	if isTemplate, ok := metaData["IsTemplate"]; ok {
-		section.IsTemplate = isTemplate.(bool)
-	}
-
-	if showPerDefault, ok := metaData["ShowPerDefault"]; ok {
-		section.ShowPerDefault = showPerDefault.(bool)
-	}
-
-	if order, ok := metaData["Order"]; ok {
-		section.Order = order.(int)
-	}
-
-	if section.Slug == "" || section.Title == "" {
-		return nil, errors.New("missing slug or title")
-	}
-
-	return section, nil
+	return &Section{Section: modelSection}, nil
 }
 
 // HelpPage contains all the sections related to a command
