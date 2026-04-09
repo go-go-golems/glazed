@@ -76,8 +76,6 @@ type Section struct {
 
 	CreatedAt string `json:"created_at,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
-
-
 }
 
 // IsForCommand checks if the section is related to a specific command

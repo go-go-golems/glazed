@@ -151,7 +151,7 @@ func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &help.RenderOptions{
-			RequestedTypes: "general topics, examples, applications, tutorials",
+			RequestedTypes:  "general topics, examples, applications, tutorials",
 			ShowAllSections: false,
 			ShowShortTopic:  false,
 			LongHelp:        longHelp,
@@ -169,15 +169,15 @@ func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {
 		longHelp, _ := c.Flags().GetBool("long-help")
 
 		options := &help.RenderOptions{
-			Predicate:        store.IsExample(),
+			Predicate:             store.IsExample(),
 			RelaxNoTypesPredicate: nil,
 			RelaxBroadPredicate:   nil,
-			RequestedTypes:   "examples",
-			HasRestrictedTypes: true,
-			ShowAllSections:  false,
-			ShowShortTopic:   true,
-			LongHelp:         longHelp,
-			HelpCommand:      c.Root().CommandPath() + " help",
+			RequestedTypes:        "examples",
+			HasRestrictedTypes:    true,
+			ShowAllSections:       false,
+			ShowShortTopic:        true,
+			LongHelp:              longHelp,
+			HelpCommand:           c.Root().CommandPath() + " help",
 		}
 		if c.Parent() == nil {
 			options.OnlyTopLevel = true
@@ -291,7 +291,7 @@ func renderCommandHelpPage(c *cobra.Command, options *help.RenderOptions, hs *he
 	data["InheritedFlags"] = c.InheritedFlags()
 	data["HasHelpSubCommands"] = c.HasHelpSubCommands()
 	data["AllChildCommandsHaveGroup"] = c.AllChildCommandsHaveGroup()
-	data["HasSections"] = false          // This would need to be set based on help system data
+	data["HasSections"] = false           // This would need to be set based on help system data
 	data["Sections"] = []*model.Section{} // This would need to be populated
 	data["NamePadding"] = c.NamePadding()
 	data["CommandPathPadding"] = c.CommandPathPadding()

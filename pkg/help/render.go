@@ -59,21 +59,21 @@ func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) 
 }
 
 type RenderOptions struct {
-	Predicate               store.Predicate
-	RelaxNoQueryPredicate   store.Predicate
-	RelaxNoTypesPredicate   store.Predicate
-	RelaxBroadPredicate     store.Predicate
-	HasOnlyQueries          bool
-	HasRestrictedTypes      bool
-	QueryString             string
-	RequestedTypes          string
-	ShowAllSections         bool
-	ShowShortTopic          bool
-	HelpCommand             string
-	LongHelp                bool
-	ListSections            bool
-	OnlyTopLevel            bool
-	ShowDocumentationList   bool
+	Predicate             store.Predicate
+	RelaxNoQueryPredicate store.Predicate
+	RelaxNoTypesPredicate store.Predicate
+	RelaxBroadPredicate   store.Predicate
+	HasOnlyQueries        bool
+	HasRestrictedTypes    bool
+	QueryString           string
+	RequestedTypes        string
+	ShowAllSections       bool
+	ShowShortTopic        bool
+	HelpCommand           string
+	LongHelp              bool
+	ListSections          bool
+	OnlyTopLevel          bool
+	ShowDocumentationList bool
 }
 
 func predicateOrDefault(pred store.Predicate) store.Predicate {

@@ -13,8 +13,6 @@ import (
 
 // ListSectionsParams describes optional filters for GET /api/sections.
 // All fields are optional; zero values mean "no filter".
-//
-//go:generate set-zerolog-level Info
 type ListSectionsParams struct {
 	// SectionType filters by the section type (GeneralTopic, Example, Application, Tutorial).
 	// Zero value means "all types".

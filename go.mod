@@ -2,9 +2,10 @@ module github.com/go-go-golems/glazed
 
 go 1.25.0
 
-toolchain go1.25.8
+toolchain go1.25.9
 
 require (
+	dagger.io/dagger v0.20.3
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/adrg/frontmatter v0.2.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -46,7 +47,6 @@ require (
 )
 
 require (
-	dagger.io/dagger v0.20.3 // indirect
 	github.com/99designs/gqlgen v0.17.81 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Khan/genqlient v0.8.1 // indirect
@@ -114,7 +114,6 @@ require (
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.4 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
@@ -143,5 +142,4 @@ require (
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
