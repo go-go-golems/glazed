@@ -98,14 +98,14 @@ func (hs *HelpSystem) ComputeRenderData(options *RenderOptions) (map[string]inte
 	if len(sections) == 0 {
 		var alternativeSections []*model.Section
 
-		if options.HasOnlyQueries && options.RelaxNoQueryPredicate != nil {
+		if options.HasOnlyQueries {
 			alternativeSections, err = hs.findWithPredicate(options.RelaxNoQueryPredicate)
 			if err != nil {
 				alternativeSections = []*model.Section{}
 			}
 		}
 
-		if len(alternativeSections) == 0 && options.HasRestrictedTypes && options.RelaxNoTypesPredicate != nil {
+		if len(alternativeSections) == 0 && options.HasRestrictedTypes {
 			alternativeSections, err = hs.findWithPredicate(options.RelaxNoTypesPredicate)
 			if err != nil {
 				alternativeSections = []*model.Section{}

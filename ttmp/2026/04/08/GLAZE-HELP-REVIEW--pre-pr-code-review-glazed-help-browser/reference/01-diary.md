@@ -17,7 +17,7 @@ RelatedFiles:
     - "/home/manuel/workspaces/2026-04-07/glaze-help-browser/glazed/pkg/help/dsl_bridge.go:DSL bridge with O(N) temp-store-per-section"
 ExternalSources: []
 Summary: "Pre-PR review diary analyzing the 21-hour coding session that built the glazed help browser"
-LastUpdated: 2026-04-08T18:30:00-04:00
+LastUpdated: 2026-04-08T20:20:00-04:00
 WhatFor: "Pre-PR code review: session analysis and code findings"
 WhenToUse: "When reviewing the help browser PR or continuing work on it"
 ---
@@ -445,6 +445,38 @@ The highest-friction part was not the store/predicate work itself; it was the me
   - `backward|compat|legacy`
 
 ---
+
+## Step 10: Address PR Review Feedback After Opening #547
+
+### What I did
+
+1. Queried PR review comments for `go-go-golems/glazed#547` with `gh api` because `gh pr view` failed on a deprecated Projects Classic GraphQL field.
+2. Confirmed three actionable review items:
+   - missing tracked `pkg/web/dist/*` content for `//go:embed dist`
+   - SPA client hard-coded `/api`, breaking mounted-prefix deployments like `/help`
+   - `ComputeRenderData()` skipped fallback queries when the relaxation predicate was `nil`, even though `nil` now means "no restriction"
+3. Implemented the missing tracked embed content by adding a fallback `pkg/web/dist/index.html` and a matching `.gitignore` exception so clean checkouts compile without generating frontend assets first.
+4. Updated `web/src/services/api.ts` to derive the API base URL from `window.location.pathname`, which works with the existing `HashRouter` because mounted deployments keep the mount prefix in the pathname while client routes live in the hash.
+5. Fixed `pkg/help/render.go` so the no-query and no-types fallback passes still run when their relaxation predicate is `nil`, restoring the intended broadened fallback behavior.
+6. Added `pkg/help/render_test.go` with regression coverage for both nil-relaxation fallback cases.
+
+### Why
+
+These were all real PR blockers or regressions:
+
+- `//go:embed dist` with no tracked files breaks `go build`, `go test`, and `golangci-lint` on clean CI checkouts.
+- Mounted serving is a documented feature of the server package, so the SPA must not assume root-mounted `/api`.
+- The render fallback regression removed useful suggestions for topic/flag/command-only help queries.
+
+### Validation
+
+Validated with:
+
+- `GOWORK=off go test ./pkg/help/... ./pkg/web/... -count=1`
+- `cd web && pnpm build`
+- `go test ./pkg/web ./pkg/help/server && go build ./cmd/glaze`
+
+All passed locally after the fixes.
 
 ## Related
 

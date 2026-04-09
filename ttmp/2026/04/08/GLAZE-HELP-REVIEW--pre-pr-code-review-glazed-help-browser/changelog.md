@@ -29,3 +29,8 @@ Implemented cleanup plan end-to-end: removed dead wrappers, unified markdown par
 
 Added design-doc/02-project-report-glazed-serve.md: self-contained project report covering serve architecture, SPA embedding, cleanup outcomes, and current semantics for explicit paths
 
+
+## 2026-04-08
+
+Addressed PR #547 review feedback: added tracked pkg/web/dist/index.html for go:embed CI builds, made SPA API base mount-aware for prefixed deployments, restored nil-predicate relax fallbacks in pkg/help/render.go, and added regression tests in pkg/help/render_test.go
+

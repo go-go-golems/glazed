@@ -1,14 +1,23 @@
 // services/api.ts
 // RTK Query API slice — mirrors the Go HTTP endpoints defined in pkg/help/server/handlers.go.
 //
-// Base URL: /api  (proxied by Vite in dev, served same-origin in production).
-// The proxy in vite.config.ts forwards /api/* → localhost:8088.
+// Base URL: derived from the current pathname so mounted deployments like /help
+// call /help/api instead of /api. In dev, the app runs at / and this resolves to /api,
+// which Vite proxies to localhost:8088.
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { ListSectionsResponse, SectionDetail, HealthResponse } from '../types';
 
-// Injected base URL — in dev Vite proxies /api to :8088; in prod it's same-origin.
-const baseUrl = '/api';
+function resolveApiBaseUrl(pathname: string): string {
+  if (!pathname || pathname === '/') {
+    return '/api';
+  }
+
+  const mountPrefix = pathname.replace(/\/+$/, '');
+  return `${mountPrefix}/api`;
+}
+
+const baseUrl = resolveApiBaseUrl(window.location.pathname);
 
 export const helpApi = createApi({
   reducerPath: 'helpApi',
