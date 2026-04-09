@@ -116,10 +116,12 @@ func copyDir(src, dst string) error {
 		if info.IsDir() {
 			return os.MkdirAll(dstPath, info.Mode())
 		}
+		// #nosec G122 -- src is a repo-local build output directory created by this tool; we intentionally walk and copy it.
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
+		// #nosec G703 -- dstPath is derived from filepath.Rel(src, path) under the same controlled copy operation.
 		return os.WriteFile(dstPath, data, info.Mode())
 	})
 }

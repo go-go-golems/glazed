@@ -24,3 +24,8 @@ Added 20 detailed cleanup tasks across 8 phases: delete dead code (T1-T4), fix D
 
 Implemented cleanup plan end-to-end: removed dead wrappers, unified markdown parsing, eliminated help.Section + SectionQuery, switched server search to store.TextSearch, cleaned frontend types/API, and validated with full Go/web builds/tests (commits d97240c..b4d879a)
 
+
+## 2026-04-08
+
+Added design-doc/02-project-report-glazed-serve.md: self-contained project report covering serve architecture, SPA embedding, cleanup outcomes, and current semantics for explicit paths
+
