@@ -2,6 +2,9 @@ doc/gifs/*gif
 /.env
 
 dist/
+!/pkg/web/dist/
+pkg/web/dist/*
+!pkg/web/dist/index.html
 /web/node_modules/
 .bin/
 .history
