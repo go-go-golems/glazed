@@ -13,6 +13,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// ErrSectionNotFound is returned by GetBySlug and GetByID when no matching
+// section exists in the store. Callers should use errors.Is to test for it.
+var ErrSectionNotFound = errors.New("section not found")
+
 // Store represents the SQLite-backed help system storage
 type Store struct {
 	db *sql.DB
@@ -418,7 +422,7 @@ func (s *Store) scanSection(scanner interface{}) (*model.Section, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("section not found")
+			return nil, ErrSectionNotFound
 		}
 		return nil, errors.Wrap(err, "failed to scan section")
 	}

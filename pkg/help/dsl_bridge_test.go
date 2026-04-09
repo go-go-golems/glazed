@@ -7,50 +7,39 @@ import (
 )
 
 func TestQuerySectionsWithBooleanLogic(t *testing.T) {
-	// Create a test help system with some sections
 	hs := NewHelpSystem()
 
-	// Add test sections
-	sections := []*Section{
+	sections := []*model.Section{
 		{
-			Section: &model.Section{
-				Slug:        "example-1",
-				SectionType: SectionExample,
-				Title:       "Example 1",
-				Content:     "This is an example",
-				Topics:      []string{"templates", "basic"},
-			},
+			Slug:        "example-1",
+			SectionType: model.SectionExample,
+			Title:       "Example 1",
+			Content:     "This is an example",
+			Topics:      []string{"templates", "basic"},
 		},
 		{
-			Section: &model.Section{
-				Slug:        "example-2",
-				SectionType: SectionExample,
-				Title:       "Example 2",
-				Content:     "Another example",
-				Topics:      []string{"advanced"},
-			},
+			Slug:        "example-2",
+			SectionType: model.SectionExample,
+			Title:       "Example 2",
+			Content:     "Another example",
+			Topics:      []string{"advanced"},
 		},
 		{
-			Section: &model.Section{
-				Slug:        "tutorial-1",
-				SectionType: SectionTutorial,
-				Title:       "Tutorial 1",
-				Content:     "This is a tutorial",
-				Topics:      []string{"templates", "basic"},
-			},
+			Slug:        "tutorial-1",
+			SectionType: model.SectionTutorial,
+			Title:       "Tutorial 1",
+			Content:     "This is a tutorial",
+			Topics:      []string{"templates", "basic"},
 		},
 		{
-			Section: &model.Section{
-				Slug:        "topic-1",
-				SectionType: SectionGeneralTopic,
-				Title:       "Topic 1",
-				Content:     "This is a topic",
-				Topics:      []string{"advanced"},
-			},
+			Slug:        "topic-1",
+			SectionType: model.SectionGeneralTopic,
+			Title:       "Topic 1",
+			Content:     "This is a topic",
+			Topics:      []string{"advanced"},
 		},
 	}
 
-	// Add sections to the help system
 	for _, section := range sections {
 		hs.AddSection(section)
 	}
@@ -63,42 +52,42 @@ func TestQuerySectionsWithBooleanLogic(t *testing.T) {
 		{
 			name:     "Simple AND query",
 			query:    "type:example AND topic:templates",
-			expected: 1, // Only example-1
+			expected: 1,
 		},
 		{
 			name:     "Simple OR query",
 			query:    "type:example OR type:tutorial",
-			expected: 3, // example-1, example-2, tutorial-1
+			expected: 3,
 		},
 		{
 			name:     "NOT query",
 			query:    "NOT type:topic",
-			expected: 3, // All except topic-1
+			expected: 3,
 		},
 		{
 			name:     "Complex query with parentheses",
 			query:    "(type:example OR type:tutorial) AND topic:templates",
-			expected: 2, // example-1 and tutorial-1
+			expected: 2,
 		},
 		{
 			name:     "Text search with boolean",
 			query:    "\"example\" AND topic:advanced",
-			expected: 1, // Only example-2
+			expected: 1,
 		},
 		{
 			name:     "Text search fallback",
 			query:    "type:example",
-			expected: 2, // example-1 and example-2
+			expected: 2,
 		},
 		{
 			name:     "Implicit text search",
 			query:    "another example",
-			expected: 1, // Should find example-2 which contains "Another example"
+			expected: 1,
 		},
 		{
 			name:     "Single quote text search",
 			query:    "'This is an example'",
-			expected: 1, // Should find example-1
+			expected: 1,
 		},
 	}
 
@@ -138,9 +127,9 @@ func TestQuerySectionsErrorHandling(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "Valid legacy query",
+			name:    "Valid simple query with unknown type",
 			query:   "type:unknown",
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:    "Valid boolean query",

@@ -76,10 +76,6 @@ type Section struct {
 
 	CreatedAt string `json:"created_at,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
-
-	// Back-reference to the help system (not stored in database)
-	// Using interface{} to avoid circular dependency
-	HelpSystem interface{} `json:"-" yaml:"_"`
 }
 
 // IsForCommand checks if the section is related to a specific command

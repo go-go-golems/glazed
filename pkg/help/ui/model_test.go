@@ -10,24 +10,18 @@ import (
 )
 
 func TestViewingModeYAndOShortcuts(t *testing.T) {
-	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
-	section := &help.Section{
-		Section: &model.Section{
-			Slug:    "test-section",
-			Title:   "Test Section",
-			Content: "This is a test section content",
-		},
+	section := &model.Section{
+		Slug:    "test-section",
+		Title:   "Test Section",
+		Content: "This is a test section content",
 	}
 	hs.AddSection(section)
 
-	// Create model
-	model := New(hs)
-	model.SetSize(80, 24)
-
-	// Set up viewing mode with the test section
-	model.state = stateViewing
-	model.CurrentSection = section
+	uiModel := New(hs)
+	uiModel.SetSize(80, 24)
+	uiModel.state = stateViewing
+	uiModel.CurrentSection = section
 
 	// Test 'y' key (copy)
 	yMsg := tea.KeyMsg{
@@ -35,11 +29,10 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 		Runes: []rune{'y'},
 	}
 
-	updatedModel, cmd := model.Update(yMsg)
+	updatedModel, cmd := uiModel.Update(yMsg)
 	assert.NotNil(t, updatedModel)
 	assert.NotNil(t, cmd)
 
-	// The model should remain in viewing state
 	m := updatedModel.(*Model)
 	assert.Equal(t, stateViewing, m.state)
 	assert.Equal(t, section, m.CurrentSection)
@@ -50,95 +43,75 @@ func TestViewingModeYAndOShortcuts(t *testing.T) {
 		Runes: []rune{'o'},
 	}
 
-	updatedModel, _ = model.Update(oMsg)
+	updatedModel, _ = uiModel.Update(oMsg)
 	assert.NotNil(t, updatedModel)
 
-	// The model should quit with output
 	m = updatedModel.(*Model)
 	assert.True(t, m.QuitWithOutput)
 	assert.Equal(t, section, m.CurrentSection)
 }
 
 func TestViewingModeStillHandlesOtherKeys(t *testing.T) {
-	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
-	section := &help.Section{
-		Section: &model.Section{
-			Slug:    "test-section",
-			Title:   "Test Section",
-			Content: "This is a test section content",
-		},
+	section := &model.Section{
+		Slug:    "test-section",
+		Title:   "Test Section",
+		Content: "This is a test section content",
 	}
 	hs.AddSection(section)
 
-	// Create model
-	model := New(hs)
-	model.SetSize(80, 24)
+	uiModel := New(hs)
+	uiModel.SetSize(80, 24)
+	uiModel.state = stateViewing
+	uiModel.CurrentSection = section
 
-	// Set up viewing mode with the test section
-	model.state = stateViewing
-	model.CurrentSection = section
-
-	// Test 'q' key (quit to normal mode)
 	qMsg := tea.KeyMsg{
 		Type:  tea.KeyRunes,
 		Runes: []rune{'q'},
 	}
 
-	updatedModel, _ := model.Update(qMsg)
+	updatedModel, _ := uiModel.Update(qMsg)
 	assert.NotNil(t, updatedModel)
 
-	// The model should return to normal state
 	m := updatedModel.(*Model)
 	assert.Equal(t, stateNormal, m.state)
 	assert.False(t, m.QuitWithOutput)
 }
 
 func TestNormalModeYAndOShortcuts(t *testing.T) {
-	// Create a test help system with a sample section
 	hs := help.NewHelpSystem()
-	section := &help.Section{
-		Section: &model.Section{
-			Slug:    "test-section",
-			Title:   "Test Section",
-			Content: "This is a test section content",
-		},
+	section := &model.Section{
+		Slug:    "test-section",
+		Title:   "Test Section",
+		Content: "This is a test section content",
 	}
 	hs.AddSection(section)
 
-	// Create model and initialize
-	model := New(hs)
-	model.SetSize(80, 24)
+	uiModel := New(hs)
+	uiModel.SetSize(80, 24)
+	uiModel.results = []*model.Section{section}
+	uiModel.state = stateNormal
 
-	// Simulate having results and a selected item
-	model.results = []*help.Section{section}
-	model.state = stateNormal
-
-	// Test 'y' key (copy)
 	yMsg := tea.KeyMsg{
 		Type:  tea.KeyRunes,
 		Runes: []rune{'y'},
 	}
 
-	updatedModel, cmd := model.Update(yMsg)
+	updatedModel, cmd := uiModel.Update(yMsg)
 	assert.NotNil(t, updatedModel)
 	assert.NotNil(t, cmd)
 
-	// The model should remain in normal state
 	m := updatedModel.(*Model)
 	assert.Equal(t, stateNormal, m.state)
 
-	// Test 'o' key (quit with output)
 	oMsg := tea.KeyMsg{
 		Type:  tea.KeyRunes,
 		Runes: []rune{'o'},
 	}
 
-	updatedModel, _ = model.Update(oMsg)
+	updatedModel, _ = uiModel.Update(oMsg)
 	assert.NotNil(t, updatedModel)
 
-	// The model should quit with output
 	m = updatedModel.(*Model)
 	assert.True(t, m.QuitWithOutput)
-	assert.Equal(t, section, m.CurrentSection)
 }

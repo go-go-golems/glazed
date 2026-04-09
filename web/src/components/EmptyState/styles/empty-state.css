@@ -1,0 +1,22 @@
+/* empty-state.css */
+
+[data-part='empty-state'] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 13px;
+  text-align: center;
+}
+
+[data-part='empty-state-icon'] {
+  font-size: 40px;
+  margin-bottom: 10px;
+  filter: grayscale(1);
+}
+
+[data-part='empty-state-label'] {
+  text-align: center;
+}

@@ -1,15 +1,12 @@
 package store
 
 import (
-	"bytes"
 	"context"
 	"io/fs"
 	"path/filepath"
 	"strings"
 
-	"github.com/adrg/frontmatter"
 	"github.com/go-go-golems/glazed/pkg/help/model"
-	strings2 "github.com/go-go-golems/glazed/pkg/helpers/strings"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -24,91 +21,10 @@ func NewLoader(store *Store) *Loader {
 	return &Loader{store: store}
 }
 
-// LoadFromMarkdown parses a markdown file and returns a Section
+// LoadFromMarkdown parses a markdown file and returns a Section.
+// Delegates to the canonical model.ParseSectionFromMarkdown.
 func (l *Loader) LoadFromMarkdown(markdownBytes []byte) (*model.Section, error) {
-	var metaData map[string]interface{}
-
-	inputReader := bytes.NewReader(markdownBytes)
-	rest, err := frontmatter.Parse(inputReader, &metaData)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse frontmatter")
-	}
-
-	section := &model.Section{}
-
-	// Parse metadata
-	if title, ok := metaData["Title"]; ok {
-		section.Title = title.(string)
-	}
-	if subTitle, ok := metaData["SubTitle"]; ok {
-		section.SubTitle = subTitle.(string)
-	}
-	if short, ok := metaData["Short"]; ok {
-		section.Short = short.(string)
-	}
-
-	// Parse section type
-	if sectionType, ok := metaData["SectionType"]; ok {
-		section.SectionType, err = model.SectionTypeFromString(sectionType.(string))
-		if err != nil {
-			return nil, errors.Wrap(err, "invalid section type")
-		}
-	} else {
-		section.SectionType = model.SectionGeneralTopic
-	}
-
-	// Parse slug
-	if slug, ok := metaData["Slug"]; ok {
-		section.Slug = slug.(string)
-	}
-
-	// Set content
-	section.Content = string(rest)
-
-	// Parse arrays - initialize to empty slices if not present
-	if topics, ok := metaData["Topics"]; ok {
-		section.Topics = strings2.InterfaceToStringList(topics)
-	} else {
-		section.Topics = []string{}
-	}
-	if flags, ok := metaData["Flags"]; ok {
-		section.Flags = strings2.InterfaceToStringList(flags)
-	} else {
-		section.Flags = []string{}
-	}
-	if commands, ok := metaData["Commands"]; ok {
-		section.Commands = strings2.InterfaceToStringList(commands)
-	} else {
-		section.Commands = []string{}
-	}
-
-	// Parse boolean flags
-	if isTopLevel, ok := metaData["IsTopLevel"]; ok {
-		section.IsTopLevel = isTopLevel.(bool)
-	}
-	if isTemplate, ok := metaData["IsTemplate"]; ok {
-		section.IsTemplate = isTemplate.(bool)
-	}
-	if showPerDefault, ok := metaData["ShowPerDefault"]; ok {
-		section.ShowPerDefault = showPerDefault.(bool)
-	}
-
-	// Parse order
-	if order, ok := metaData["Order"]; ok {
-		switch v := order.(type) {
-		case int:
-			section.Order = v
-		case float64:
-			section.Order = int(v)
-		}
-	}
-
-	// Validate required fields
-	if section.Slug == "" || section.Title == "" {
-		return nil, errors.New("missing required fields: slug and title")
-	}
-
-	return section, nil
+	return model.ParseSectionFromMarkdown(markdownBytes)
 }
 
 // LoadFromFS loads all markdown files from a filesystem into the store

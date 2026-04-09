@@ -3,15 +3,15 @@ package help
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"io"
 	"os"
 	"strings"
 	"text/template"
 
-	"github.com/go-go-golems/glazed/pkg/helpers/templating"
-
 	"github.com/charmbracelet/glamour"
+	"github.com/go-go-golems/glazed/pkg/help/model"
+	"github.com/go-go-golems/glazed/pkg/help/store"
+	"github.com/go-go-golems/glazed/pkg/helpers/templating"
 	tsize "github.com/kopoli/go-terminal-size"
 	"github.com/mattn/go-isatty"
 )
@@ -45,7 +45,6 @@ func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) 
 		}
 	}
 
-	// get markdown output
 	var sb strings.Builder
 	r, _ := glamour.NewTermRenderer(options...)
 
@@ -55,15 +54,19 @@ func RenderToMarkdown(t *template.Template, data interface{}, output io.Writer) 
 	}
 
 	s := sb.String()
-	sizeString := fmt.Sprintf("size: %dx%d\n", sz.Width, sz.Height)
-	_ = sizeString
-
 	out, err := r.Render(s)
 	return out, err
 }
 
 type RenderOptions struct {
-	Query                 *SectionQuery
+	Predicate             store.Predicate
+	RelaxNoQueryPredicate store.Predicate
+	RelaxNoTypesPredicate store.Predicate
+	RelaxBroadPredicate   store.Predicate
+	HasOnlyQueries        bool
+	HasRestrictedTypes    bool
+	QueryString           string
+	RequestedTypes        string
 	ShowAllSections       bool
 	ShowShortTopic        bool
 	HelpCommand           string
@@ -73,71 +76,65 @@ type RenderOptions struct {
 	ShowDocumentationList bool
 }
 
-func (hs *HelpSystem) ComputeRenderData(userQuery *SectionQuery) (map[string]interface{}, bool) {
+func predicateOrDefault(pred store.Predicate) store.Predicate {
+	if pred == nil {
+		return store.OrderByOrder()
+	}
+	return store.And(pred, store.OrderByOrder())
+}
+
+func (hs *HelpSystem) findWithPredicate(pred store.Predicate) ([]*model.Section, error) {
 	ctx := context.Background()
-	sections, err := userQuery.FindSections(ctx, hs.Store)
+	return hs.Store.Find(ctx, predicateOrDefault(pred))
+}
+
+func (hs *HelpSystem) ComputeRenderData(options *RenderOptions) (map[string]interface{}, bool) {
+	sections, err := hs.findWithPredicate(options.Predicate)
 	if err != nil {
-		sections = []*Section{}
+		sections = []*model.Section{}
 	}
 	data := map[string]interface{}{}
 
-	// check if the user has restricted the help to only specific commands, flags or topics
-	// (this is before adding our own restriction based on the command or toplevel we are
-	// going to show the help for)
-	hasUserRestrictedQuery := userQuery.HasOnlyQueries()
-	// Check if the user has restricted the userQuery to only certain return types
-	hasUserRestrictedTypes := userQuery.HasRestrictedReturnTypes()
-
 	if len(sections) == 0 {
-		var alternativeSections []*Section
+		var alternativeSections []*model.Section
 
-		if hasUserRestrictedQuery {
-			// in this case, we should widen our userQuery to not have restrictions on commands, flags, topics
-			alternativeQuery := userQuery.Clone().ResetOnlyQueries()
-			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+		if options.HasOnlyQueries {
+			alternativeSections, err = hs.findWithPredicate(options.RelaxNoQueryPredicate)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
-		if len(alternativeSections) == 0 && hasUserRestrictedTypes {
-			// in this case, we should widen our userQuery to not have restrictions on return types
-			alternativeQuery := userQuery.Clone().ReturnAllTypes()
-			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+		if len(alternativeSections) == 0 && options.HasRestrictedTypes {
+			alternativeSections, err = hs.findWithPredicate(options.RelaxNoTypesPredicate)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
-		if len(alternativeSections) == 0 {
-			// in this case, both the userQuery relaxation and the type relaxation don't return anything,
-			// so we should show all possible options for the command / topLevel
-			alternativeQuery := userQuery.Clone().ResetOnlyQueries().ReturnAllTypes()
-			alternativeSections, err = alternativeQuery.FindSections(ctx, hs.Store)
+		if len(alternativeSections) == 0 && options.RelaxBroadPredicate != nil {
+			alternativeSections, err = hs.findWithPredicate(options.RelaxBroadPredicate)
 			if err != nil {
-				alternativeSections = []*Section{}
+				alternativeSections = []*model.Section{}
 			}
 		}
 
-		alternativeHelpPage := NewHelpPage(alternativeSections)
-		data["Help"] = alternativeHelpPage
+		data["Help"] = NewHelpPage(alternativeSections)
 	} else {
-		hp := NewHelpPage(sections)
-		data["Help"] = hp
+		data["Help"] = NewHelpPage(sections)
 	}
 
-	noResultsFound := len(sections) == 0 && (userQuery.HasOnlyQueries() || userQuery.HasRestrictedReturnTypes())
+	noResultsFound := len(sections) == 0 && (options.HasOnlyQueries || options.HasRestrictedTypes)
 
 	data["NoResultsFound"] = noResultsFound
-	data["QueryString"] = userQuery.GetOnlyQueryAsString()
-	data["RequestedTypes"] = userQuery.GetRequestedTypesAsString()
-	data["Query"] = userQuery
-	data["IsTopLevel"] = userQuery.IsOnlyTopLevel()
+	data["QueryString"] = options.QueryString
+	data["RequestedTypes"] = options.RequestedTypes
+	data["IsTopLevel"] = options.OnlyTopLevel
 	return data, noResultsFound
 }
 
 func (hs *HelpSystem) RenderTopicHelp(
-	topicSection *Section,
+	topicSection *model.Section,
 	options *RenderOptions) (string, error) {
 	return hs.RenderTopicHelpWithWriter(topicSection, options, os.Stdout)
 }
@@ -145,16 +142,11 @@ func (hs *HelpSystem) RenderTopicHelp(
 // RenderTopicHelpWithWriter renders a topic's help content using the provided writer
 // to detect terminal characteristics when applying Glamour styles.
 func (hs *HelpSystem) RenderTopicHelpWithWriter(
-	topicSection *Section,
+	topicSection *model.Section,
 	options *RenderOptions,
 	output io.Writer,
 ) (string, error) {
-	userQuery := options.Query
-
-	// TODO(manuel, 2024-08-07) This should also include information about the program itself (that it's embedded in, maybe coming from the helpSystem metadata itself)
-	data, noResultsFound := hs.ComputeRenderData(userQuery)
-
-	// TODO(manuel, 2024-08-07) Render templated sections (IsTemplate = true)
+	data, noResultsFound := hs.ComputeRenderData(options)
 
 	t := template.New("topic")
 	t.Funcs(templating.TemplateFuncs)

@@ -8,6 +8,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+	"github.com/go-go-golems/glazed/pkg/help/server"
+	"github.com/go-go-golems/glazed/pkg/web"
 	"github.com/spf13/cobra"
 )
 
@@ -30,8 +32,18 @@ func main() {
 	err = doc.AddDocToHelpSystem(helpSystem)
 	cobra.CheckErr(err)
 
-	// Set up help system with UI support
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
+	// Add the serve command (embeds the React SPA via pkg/web).
+	spaHandler, err := web.NewSPAHandler()
+	cobra.CheckErr(err)
+	serveCmd, err := server.NewServeCommand(helpSystem, spaHandler)
+	cobra.CheckErr(err)
+	serveCobraCmd, err := cli.BuildCobraCommand(serveCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(serveCobraCmd)
 
 	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()

@@ -1,0 +1,30 @@
+/* app-layout.css — two-pane layout: sidebar + content. */
+
+[data-part='app-layout'] {
+  display: flex;
+  flex: 1;
+  padding: 8px;
+  gap: 1px;
+  overflow: hidden;
+}
+
+[data-part='app-layout-sidebar'] {
+  width: 280px;
+  min-width: 280px;
+  border: 2px solid #000;
+  background: #fff;
+  box-shadow: 2px 2px 0 #000;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+[data-part='app-layout-content'] {
+  flex: 1;
+  border: 2px solid #000;
+  background: #fff;
+  box-shadow: 2px 2px 0 #000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

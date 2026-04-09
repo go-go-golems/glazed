@@ -1,0 +1,87 @@
+/* global.css — root CSS variables and resets.
+ * Classic Mac / System 7 aesthetic. */
+
+@font-face {
+  font-family: 'Chicago_';
+  src: url('https://cdn.jsdelivr.net/gh/polgfred/mac-fonts@main/Chicago.woff2') format('woff2');
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Layout */
+  --layout-sidebar-width: 280px;
+
+  /* Typography — classic Mac stack */
+  --font-ui: 'Chicago_', 'Geneva', 'Charcoal', 'Lucida Grande', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Monaco', 'Courier New', monospace;
+  --font-size-sm: 11px;
+  --font-size-base: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+
+  /* Colors — classic Mac palette */
+  --color-bg: #ffffff;
+  --color-fg: #000000;
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-fg: #000000;
+  --color-accent: #000000;
+  --color-border: #000000;
+  --color-selection-bg: #000000;
+  --color-selection-fg: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: #000;
+  background: #a8a8a8;
+  background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='2' height='2' fill='%23000'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%23000'/%3E%3C/svg%3E");
+  background-size: 4px 4px;
+}
+
+/* Classic Mac scrollbar */
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fff;
+  border-left: 1px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border: 1px solid #000;
+}
+
+/* Classic Mac selection */
+::selection {
+  background: var(--color-selection-bg);
+  color: var(--color-selection-fg);
+}

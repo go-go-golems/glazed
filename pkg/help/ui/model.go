@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"strings"
 	"time"
 
@@ -29,10 +30,10 @@ type Model struct {
 	// Search state
 	searchInput string
 	list        list.Model
-	results     []*help.Section
+	results     []*model.Section
 
 	// View state
-	CurrentSection *help.Section
+	CurrentSection *model.Section
 	viewport       viewport.Model
 
 	// UI dimensions
@@ -57,7 +58,7 @@ type Model struct {
 
 // listItem represents a help section in the list
 type listItem struct {
-	section *help.Section
+	section *model.Section
 }
 
 func (i listItem) Title() string {
@@ -137,7 +138,7 @@ func New(helpSystem *help.HelpSystem) *Model {
 		state:           stateNormal,
 		searchInput:     "",
 		list:            l,
-		results:         []*help.Section{},
+		results:         []*model.Section{},
 		glamourRenderer: renderer,
 		cursorVisible:   true,
 		cursorBlink:     time.Now(),
@@ -677,7 +678,7 @@ Press any key to return to search...`
 }
 
 type searchResultsMsg struct {
-	results []*help.Section
+	results []*model.Section
 	err     error
 }
 
@@ -691,7 +692,7 @@ type copyErrorMsg struct {
 
 func (m *Model) search(query string) tea.Cmd {
 	return func() tea.Msg {
-		var results []*help.Section
+		var results []*model.Section
 		var err error
 
 		if query == "" {
@@ -721,7 +722,7 @@ func (m *Model) setupViewport() tea.Cmd {
 	return nil
 }
 
-func (m *Model) renderContent(section *help.Section) string {
+func (m *Model) renderContent(section *model.Section) string {
 	var s strings.Builder
 
 	// Metadata
@@ -773,7 +774,7 @@ func (m *Model) tickCursor() tea.Cmd {
 	})
 }
 
-func (m *Model) copySection(section *help.Section) tea.Cmd {
+func (m *Model) copySection(section *model.Section) tea.Cmd {
 	return func() tea.Msg {
 		content := m.formatSectionForCopy(section)
 		err := clipboard.WriteAll(content)
@@ -784,7 +785,7 @@ func (m *Model) copySection(section *help.Section) tea.Cmd {
 	}
 }
 
-func (m *Model) formatSectionForCopy(section *help.Section) string {
+func (m *Model) formatSectionForCopy(section *model.Section) string {
 	var s strings.Builder
 
 	// Title
@@ -826,7 +827,7 @@ func (m *Model) SetSize(width, height int) {
 }
 
 // FormatSectionForCopy exposes the internal method for testing
-func (m *Model) FormatSectionForCopy(section *help.Section) string {
+func (m *Model) FormatSectionForCopy(section *model.Section) string {
 	return m.formatSectionForCopy(section)
 }
 

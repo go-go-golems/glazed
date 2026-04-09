@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/help/model"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,7 +51,7 @@ func RunUI(helpSystem *help.HelpSystem) error {
 }
 
 // RunUIWithOutput starts the interactive help UI and returns the selected section
-func RunUIWithOutput(helpSystem *help.HelpSystem) (*help.Section, error) {
+func RunUIWithOutput(helpSystem *help.HelpSystem) (*model.Section, error) {
 	model := ui.New(helpSystem)
 
 	// Create a program that captures the final model state

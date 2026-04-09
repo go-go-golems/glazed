@@ -1,0 +1,30 @@
+/* menubar.css */
+
+[data-part='menubar'] {
+  height: 22px;
+  background: #fff;
+  border-bottom: 2px solid #000;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  flex-shrink: 0;
+}
+
+[data-part='menubar-item'] {
+  cursor: default;
+}
+
+[data-part='menubar-apple'] {
+  font-size: 14px;
+}
+
+[data-part='menubar-title'] {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}

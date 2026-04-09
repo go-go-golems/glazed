@@ -11,19 +11,11 @@ import (
 )
 
 // QuerySections performs a DSL query on the current help system with boolean logic support
-func (hs *HelpSystem) QuerySections(query string) ([]*Section, error) {
+func (hs *HelpSystem) QuerySections(query string) ([]*model.Section, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		ctx := context.Background()
-		modelSections, err := hs.Store.List(ctx, "order_num ASC")
-		if err != nil {
-			return nil, err
-		}
-		results := make([]*Section, len(modelSections))
-		for i, modelSection := range modelSections {
-			results[i] = &Section{Section: modelSection, HelpSystem: hs}
-		}
-		return results, nil
+		return hs.Store.List(ctx, "order_num ASC")
 	}
 
 	// Try to parse the query using the DSL parser first
@@ -41,60 +33,17 @@ func (hs *HelpSystem) QuerySections(query string) ([]*Section, error) {
 			// This is clearly a DSL query, return the error
 			return nil, fmt.Errorf("invalid query syntax: %s", err.Error())
 		}
-		// Fall back to the legacy simple parser for backward compatibility
-		return hs.queryLegacy(query)
+		// Fall back to simple field/text query parsing when the DSL parser does not match.
+		return hs.querySimple(query)
 	}
 
-	// Get all sections from store for DSL evaluation
+	// Pass the predicate directly to the store — single query, no O(N) temp stores
 	ctx := context.Background()
-	modelSections, err := hs.Store.List(ctx, "order_num ASC")
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the DSL predicate to filter sections
-	results := make([]*Section, 0)
-	for _, modelSection := range modelSections {
-		if hs.evaluatePredicate(predicate, modelSection) {
-			// Convert to legacy section for return
-			section := &Section{Section: modelSection, HelpSystem: hs}
-			results = append(results, section)
-		}
-	}
-
-	return results, nil
+	return hs.Store.Find(ctx, predicate)
 }
 
-// evaluatePredicate evaluates a predicate against a model section
-func (hs *HelpSystem) evaluatePredicate(predicate store.Predicate, section *model.Section) bool {
-	// Create a temporary in-memory store for evaluation
-	memStore, err := store.NewInMemory()
-	if err != nil {
-		return false
-	}
-	defer func() {
-		_ = memStore.Close()
-	}()
-
-	// Insert the section into the temporary store
-	err = memStore.Insert(context.Background(), section)
-	if err != nil {
-		return false
-	}
-
-	// Find using the predicate
-	results, err := memStore.Find(context.Background(), predicate)
-	if err != nil {
-		return false
-	}
-
-	return len(results) > 0
-}
-
-// queryLegacy provides backward compatibility with the old simple parser
-func (hs *HelpSystem) queryLegacy(query string) ([]*Section, error) {
-	var results []*Section
-
+// querySimple handles field queries and plain text search when the full DSL parser does not match.
+func (hs *HelpSystem) querySimple(query string) ([]*model.Section, error) {
 	// Handle field:value queries
 	if strings.Contains(query, ":") {
 		parts := strings.SplitN(query, ":", 2)
@@ -104,23 +53,16 @@ func (hs *HelpSystem) queryLegacy(query string) ([]*Section, error) {
 
 			switch field {
 			case "type":
-				return hs.filterByType(value), nil
+				return hs.filterByType(value)
 			case "topic":
-				return hs.filterByTopic(value), nil
+				return hs.filterByTopic(value)
 			case "flag":
-				return hs.filterByFlag(value), nil
+				return hs.filterByFlag(value)
 			case "command":
-				return hs.filterByCommand(value), nil
+				return hs.filterByCommand(value)
 			case "slug":
 				ctx := context.Background()
-				modelSections, err := hs.Store.Find(ctx, store.SlugEquals(value))
-				if err != nil {
-					return []*Section{}, nil
-				}
-				for _, modelSection := range modelSections {
-					results = append(results, &Section{Section: modelSection, HelpSystem: hs})
-				}
-				return results, nil
+				return hs.Store.Find(ctx, store.SlugEquals(value))
 			default:
 				return nil, fmt.Errorf("unknown field '%s'. Valid fields: type, topic, flag, command, slug", field)
 			}
@@ -128,33 +70,16 @@ func (hs *HelpSystem) queryLegacy(query string) ([]*Section, error) {
 	}
 
 	// Handle quoted text search
+	searchTerm := query
 	if strings.HasPrefix(query, "\"") && strings.HasSuffix(query, "\"") {
-		searchTerm := query[1 : len(query)-1]
-		ctx := context.Background()
-		modelSections, err := hs.Store.Find(ctx, store.TextSearch(searchTerm))
-		if err != nil {
-			return []*Section{}, nil
-		}
-		for _, modelSection := range modelSections {
-			results = append(results, &Section{Section: modelSection, HelpSystem: hs})
-		}
-		return results, nil
+		searchTerm = query[1 : len(query)-1]
 	}
 
-	// Default: text search without quotes
 	ctx := context.Background()
-	modelSections, err := hs.Store.Find(ctx, store.TextSearch(query))
-	if err != nil {
-		return []*Section{}, nil
-	}
-	for _, modelSection := range modelSections {
-		results = append(results, &Section{Section: modelSection, HelpSystem: hs})
-	}
-
-	return results, nil
+	return hs.Store.Find(ctx, store.TextSearch(searchTerm))
 }
 
-func (hs *HelpSystem) filterByType(typeValue string) []*Section {
+func (hs *HelpSystem) filterByType(typeValue string) ([]*model.Section, error) {
 	ctx := context.Background()
 	var predicate store.Predicate
 
@@ -168,63 +93,27 @@ func (hs *HelpSystem) filterByType(typeValue string) []*Section {
 	case "application":
 		predicate = store.IsApplication()
 	default:
-		return []*Section{}
+		return nil, fmt.Errorf("unknown section type: %s", typeValue)
 	}
 
-	modelSections, err := hs.Store.Find(ctx, predicate)
-	if err != nil {
-		return []*Section{}
-	}
-
-	results := make([]*Section, len(modelSections))
-	for i, modelSection := range modelSections {
-		results[i] = &Section{Section: modelSection, HelpSystem: hs}
-	}
-	return results
+	return hs.Store.Find(ctx, predicate)
 }
 
-func (hs *HelpSystem) filterByTopic(topic string) []*Section {
+func (hs *HelpSystem) filterByTopic(topic string) ([]*model.Section, error) {
 	ctx := context.Background()
-	modelSections, err := hs.Store.Find(ctx, store.HasTopic(topic))
-	if err != nil {
-		return []*Section{}
-	}
-
-	results := make([]*Section, len(modelSections))
-	for i, modelSection := range modelSections {
-		results[i] = &Section{Section: modelSection, HelpSystem: hs}
-	}
-	return results
+	return hs.Store.Find(ctx, store.HasTopic(topic))
 }
 
-func (hs *HelpSystem) filterByFlag(flag string) []*Section {
+func (hs *HelpSystem) filterByFlag(flag string) ([]*model.Section, error) {
 	// Normalize flag (remove leading dashes if present)
 	flag = strings.TrimPrefix(flag, "--")
 	flag = strings.TrimPrefix(flag, "-")
 
 	ctx := context.Background()
-	modelSections, err := hs.Store.Find(ctx, store.HasFlag(flag))
-	if err != nil {
-		return []*Section{}
-	}
-
-	results := make([]*Section, len(modelSections))
-	for i, modelSection := range modelSections {
-		results[i] = &Section{Section: modelSection, HelpSystem: hs}
-	}
-	return results
+	return hs.Store.Find(ctx, store.HasFlag(flag))
 }
 
-func (hs *HelpSystem) filterByCommand(command string) []*Section {
+func (hs *HelpSystem) filterByCommand(command string) ([]*model.Section, error) {
 	ctx := context.Background()
-	modelSections, err := hs.Store.Find(ctx, store.HasCommand(command))
-	if err != nil {
-		return []*Section{}
-	}
-
-	results := make([]*Section, len(modelSections))
-	for i, modelSection := range modelSections {
-		results[i] = &Section{Section: modelSection, HelpSystem: hs}
-	}
-	return results
+	return hs.Store.Find(ctx, store.HasCommand(command))
 }
