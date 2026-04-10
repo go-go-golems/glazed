@@ -49,3 +49,13 @@ Added the first frontend test harness for the help SPA, covering static runtime-
 - /home/manuel/workspaces/2026-04-09/glaze-render-static/glazed/web/src/App.test.tsx — Added hash-route selection tests
 - /home/manuel/workspaces/2026-04-09/glaze-render-static/glazed/web/src/test/setup.ts — Added shared test cleanup/reset behavior
 - /home/manuel/workspaces/2026-04-09/glaze-render-static/glazed/pkg/web/dist/index.html — Rebuilt embedded frontend assets after the runtime helper changes
+
+
+## 2026-04-09 - User-facing static export help page
+
+Added a new built-in Glazed help page that explains how to use `glaze render-site`, what the exported output contains, how to preview it locally, and how it differs from `glaze serve`. This work landed in commit `bb73490`.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-09/glaze-render-static/glazed/pkg/doc/topics/26-export-help-as-static-website.md — New top-level help page for the static-site export workflow
+- /home/manuel/workspaces/2026-04-09/glaze-render-static/glazed/pkg/doc/topics/25-serving-help-over-http.md — Added a cross-reference from the existing HTTP-serving page to the new static-export page

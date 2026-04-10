@@ -18,6 +18,10 @@ RelatedFiles:
       Note: Inspected to understand how the frontend artifact is produced
     - Path: cmd/glaze/main.go
       Note: Inspected to confirm how serve is registered today
+    - Path: pkg/doc/topics/25-serving-help-over-http.md
+      Note: Existing user-facing page for `glaze serve`, updated to cross-reference the new static-export page
+    - Path: pkg/doc/topics/26-export-help-as-static-website.md
+      Note: Added as the user-facing help page for `glaze render-site`
     - Path: pkg/help/help.go
       Note: Inspected to confirm canonical loading semantics
     - Path: pkg/help/model/parse.go
@@ -50,7 +54,7 @@ RelatedFiles:
       Note: Updated to configure the shared frontend test environment
 ExternalSources: []
 Summary: Chronological diary of the investigation and ticket setup work for the static help-site rendering feature.
-LastUpdated: 2026-04-09T23:08:46-04:00
+LastUpdated: 2026-04-09T23:18:59-04:00
 WhatFor: Record commands, findings, mistakes, and review guidance while the ticket is being developed.
 WhenToUse: Use when continuing work on GL-012 or reviewing why the design went in a particular direction.
 ---
@@ -567,3 +571,129 @@ The final shape is intentionally small: `vitest` plus `jsdom`, one test file for
   ```
 
   This warning is expected for the current design because `site-config.js` is intentionally loaded as a classic runtime configuration script rather than bundled into the application module graph.
+
+## Step 4: Add the end-user help page for `glaze render-site`
+
+This step closed the next user-visible gap in the ticket: the feature existed and was tested, but there was no built-in help page explaining how to use it. The goal was to add a Glazed help entry that a normal CLI user can discover through `glaze help`, not another implementation-oriented design note.
+
+The resulting page explains the command surface, the generated output layout, how to preview the exported site, how to host it under a sub-path, and how `render-site` differs from `serve`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "what's the user facing help page"
+
+**User follow-up (verbatim):** "go ahead"
+
+**Assistant interpretation:** Explain the missing task, then implement the actual built-in help page for `glaze render-site`.
+
+**Inferred user intent:** Make the feature self-documenting for CLI users and wire it into the existing Glazed help corpus so it is discoverable from the terminal.
+
+**Commit (code/docs):** `bb73490` — `docs(help): add static export guide`
+
+### What I did
+
+- Read the `glazed-help-page-authoring` skill and refreshed the built-in writing guidance with:
+
+  ```bash
+  go run ./cmd/glaze help how-to-write-good-documentation-pages
+  go run ./cmd/glaze help writing-help-entries
+  ```
+
+- Read the existing user-facing HTTP help page:
+  - `pkg/doc/topics/25-serving-help-over-http.md`
+- Read the actual `render-site` command and exporter implementation to document real behavior instead of ticket-era assumptions:
+  - `cmd/glaze/main.go`
+  - `pkg/help/site/render.go`
+- Added a new top-level help page:
+  - `pkg/doc/topics/26-export-help-as-static-website.md`
+- Added a cross-reference from the existing `serve` page back to the new static export page.
+- Validated the new page via direct slug lookup:
+
+  ```bash
+  go run ./cmd/glaze help export-help-static-website
+  ```
+
+- Validated discoverability via the command name:
+
+  ```bash
+  go run ./cmd/glaze help render-site
+  ```
+
+### Why
+
+- The feature had already become usable, but a user encountering `glaze render-site --help` still only saw flag-level command help.
+- The ticket specifically called for a user-facing page that explains the workflow, not just the implementation.
+- Glazed’s help system is one of the repo’s main user interfaces, so shipping a feature without a corresponding help topic leaves discoverability unfinished.
+
+### What worked
+
+- The existing `serve-help-over-http` page was a good template for tone and structure.
+- `glaze help render-site` now surfaces the new topic in the "General topics" section, which means the page is discoverable from the command name even though the canonical slug is `export-help-static-website`.
+- The new page is strong enough for first-use guidance because it includes:
+  - command examples,
+  - important flags,
+  - output layout,
+  - local preview instructions,
+  - hosting guidance,
+  - a `serve` vs `render-site` comparison,
+  - troubleshooting,
+  - see-also links.
+
+### What didn't work
+
+- Nothing failed in this step, but the command help output confirmed an important nuance: the built-in page is discoverable from `glaze help render-site` through tags/querying, not because the page slug equals the command name.
+- I kept the slug descriptive (`export-help-static-website`) instead of forcing it to mirror the command name.
+
+### What I learned
+
+- The command-level long help and the help-system topic page complement each other well:
+  - command help is best for flags and syntax,
+  - help topics are better for workflows, output structure, and hosting advice.
+- Cross-linking adjacent workflow pages matters here because `serve` and `render-site` are parallel delivery modes for the same help content.
+
+### What was tricky to build
+
+- The main subtlety was choosing the right page scope.
+- A weak version of this page would have repeated the command’s long help with slightly longer prose. That would not have justified a dedicated help topic.
+- The useful version needed to focus on the user workflow after the command runs: what gets written, how to preview it, and how to reason about static hosting.
+
+### What warrants a second pair of eyes
+
+- Whether the new page should also cross-link from other top-level docs such as `help-system` or `sections-guide`.
+- Whether the filename numbering convention in `pkg/doc/topics/` should reserve another adjacent slot for the developer validation playbook once that document exists.
+
+### What should be done in the future
+
+- Add the developer playbook for validating exported sites locally.
+- Consider adding a short example page that demonstrates exporting a minimal external help tree rather than the built-in `pkg/doc`.
+- Consider whether `glaze render-site --help` should eventually link directly to the canonical topic slug in a more explicit way.
+
+### Code review instructions
+
+- Start with the new user-facing page:
+  - `pkg/doc/topics/26-export-help-as-static-website.md`
+- Then review the discoverability link from the adjacent page:
+  - `pkg/doc/topics/25-serving-help-over-http.md`
+- Validate with:
+
+  ```bash
+  go run ./cmd/glaze help export-help-static-website
+  go run ./cmd/glaze help render-site
+  ```
+
+### Technical details
+
+- Authoring references used during this step:
+
+  ```bash
+  go run ./cmd/glaze help how-to-write-good-documentation-pages
+  go run ./cmd/glaze help writing-help-entries
+  ```
+
+- Implementation references inspected during drafting:
+  - `cmd/glaze/main.go`
+  - `pkg/help/site/render.go`
+
+- Validation result:
+  - `glaze help export-help-static-website` rendered the full page
+  - `glaze help render-site` listed `export-help-static-website - Export Help as a Static Website` under general topics

@@ -39,7 +39,7 @@
 - [x] Add unit tests for shared path loading, snapshot generation, and deterministic output ordering
 - [x] Add integration tests that render a small fixture site and assert on the emitted files
 - [x] Add frontend tests for static-mode data loading and route selection
-- [ ] Add a user-facing help page describing how to build and host a static exported site
+- [x] Add a user-facing help page describing how to build and host a static exported site
 - [ ] Add a developer playbook for validating the exported site locally
 
 ### Phase 6: Optional Follow-Ons
