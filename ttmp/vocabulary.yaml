@@ -75,6 +75,10 @@ topics:
       description: Code review findings and analysis
     - slug: help-browser
       description: Glazed help browser feature (HTTP server + React SPA)
+    - slug: site-generator
+      description: Generating a static site artifact from structured source content
+    - slug: static-render
+      description: Static website rendering and export workflows for Glazed help content
 docTypes:
     - slug: index
       description: Ticket index
