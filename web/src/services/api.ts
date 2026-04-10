@@ -8,7 +8,20 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { ListSectionsResponse, SectionDetail, HealthResponse } from '../types';
 
-function resolveApiBaseUrl(pathname: string): string {
+export interface GlazeSiteConfig {
+  mode?: 'server' | 'static';
+  apiBaseUrl?: string;
+  dataBasePath?: string;
+  siteTitle?: string;
+}
+
+declare global {
+  interface Window {
+    __GLAZE_SITE_CONFIG__?: GlazeSiteConfig;
+  }
+}
+
+export function resolveApiBaseUrl(pathname: string): string {
   if (!pathname || pathname === '/') {
     return '/api';
   }
@@ -17,7 +30,33 @@ function resolveApiBaseUrl(pathname: string): string {
   return `${mountPrefix}/api`;
 }
 
-const baseUrl = resolveApiBaseUrl(window.location.pathname);
+export function getRuntimeConfig(win: Window = window): GlazeSiteConfig {
+  return win.__GLAZE_SITE_CONFIG__ ?? {};
+}
+
+export function resolveRuntimeMode(config: GlazeSiteConfig): 'server' | 'static' {
+  return config.mode === 'static' ? 'static' : 'server';
+}
+
+export function resolveDataBasePath(config: GlazeSiteConfig): string {
+  return config.dataBasePath ?? './site-data';
+}
+
+export function resolveRuntimeBaseUrl(
+  pathname: string,
+  config: GlazeSiteConfig,
+): string {
+  if (resolveRuntimeMode(config) === 'static') {
+    return resolveDataBasePath(config);
+  }
+
+  return config.apiBaseUrl ?? resolveApiBaseUrl(pathname);
+}
+
+const runtimeConfig = getRuntimeConfig();
+const runtimeMode = resolveRuntimeMode(runtimeConfig);
+const isStaticMode = runtimeMode === 'static';
+const baseUrl = resolveRuntimeBaseUrl(window.location.pathname, runtimeConfig);
 
 export const helpApi = createApi({
   reducerPath: 'helpApi',
@@ -26,15 +65,15 @@ export const helpApi = createApi({
   endpoints: (builder) => ({
     // GET /api/health
     healthCheck: builder.query<HealthResponse, void>({
-      query: () => ({ url: '/health' }),
+      query: () => ({ url: isStaticMode ? '/health.json' : '/health' }),
     }),
 
     // GET /api/sections
     // Optional query params: type, topic, command, flag, q (search), limit, offset
     listSections: builder.query<ListSectionsResponse, string | void>({
       query: (q) => ({
-        url: '/sections',
-        params: q ? { q } : undefined,
+        url: isStaticMode ? '/sections.json' : '/sections',
+        params: isStaticMode ? undefined : (q ? { q } : undefined),
       }),
       providesTags: (result) =>
         result
@@ -47,7 +86,11 @@ export const helpApi = createApi({
 
     // GET /api/sections/:slug
     getSection: builder.query<SectionDetail, string>({
-      query: (slug) => ({ url: `/sections/${encodeURIComponent(slug)}` }),
+      query: (slug) => ({
+        url: isStaticMode
+          ? `/sections/${encodeURIComponent(slug)}.json`
+          : `/sections/${encodeURIComponent(slug)}`,
+      }),
       providesTags: (_result, _error, slug) => [{ type: 'Section' as const, id: slug }],
     }),
   }),
