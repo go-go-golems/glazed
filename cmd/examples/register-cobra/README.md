@@ -5,7 +5,7 @@ This example demonstrates the four different ways to register commands with Cobr
 ## 1. Bare Command (`bare`)
 A simple command that implements only the `BareCommand` interface:
 - Outputs text directly to stdout
-- Uses the traditional `BuildCobraCommandFromBareCommand` builder
+- Uses `cli.BuildCobraCommand`
 
 ```bash
 go run . bare --message "Hello World!"
@@ -14,7 +14,7 @@ go run . bare --message "Hello World!"
 ## 2. Writer Command (`writer`)
 A command that implements the `WriterCommand` interface:
 - Outputs to a specified `io.Writer`
-- Uses the traditional `BuildCobraCommandFromWriterCommand` builder
+- Uses `cli.BuildCobraCommand`
 
 ```bash
 go run . writer --count 3
@@ -23,7 +23,7 @@ go run . writer --count 3
 ## 3. Glaze Command (`glaze`)
 A command that implements the `GlazeCommand` interface:
 - Outputs structured data through the Glaze processor
-- Uses the traditional `BuildCobraCommandFromGlazeCommand` builder
+- Uses `cli.BuildCobraCommand`
 - Supports all Glaze output formatting options
 
 ```bash
@@ -40,7 +40,7 @@ go run . glaze --rows 3 --output csv
 ## 4. Dual Command (`dual`) - NEW!
 A command that implements both `BareCommand` and `GlazeCommand` interfaces:
 - Can run in both classic and glaze modes
-- Uses the new `BuildCobraCommandDualMode` builder
+- Uses `cli.BuildCobraCommand` with `cli.WithDualMode(true)`
 - Mode is controlled by the `--with-glaze-output` flag
 
 ```bash
@@ -64,13 +64,14 @@ go run . dual --name "Manuel" --times 2 --with-glaze-output --output json
 
 ## Customization Options
 
-The dual command builder supports several options:
+Dual-mode registration supports several options:
 
 ```go
-cobraDualCmd, err := cli.BuildCobraCommandDualMode(
+cobraDualCmd, err := cli.BuildCobraCommand(
     dualCmd,
-    cli.WithGlazeToggleFlag("custom-flag-name"),     // Rename the toggle flag
-    cli.WithHiddenGlazeFlags("output", "format"),    // Keep specific flags hidden
-    cli.WithDefaultToGlaze(),                        // Make glaze mode the default
+    cli.WithDualMode(true),
+    cli.WithGlazeToggleFlag("custom-flag-name"),      // Rename the toggle flag
+    cli.WithHiddenGlazeFlags("output", "format"),   // Keep specific flags hidden
+    cli.WithDefaultToGlaze(),                         // Make glaze mode the default
 )
 ```

@@ -318,54 +318,23 @@ All from the same command implementation.
 
 ### Dual Commands
 
-Dual commands implement multiple interfaces and switch between output modes based on runtime flags. This approach provides both human-readable text output and structured data from a single command.
+Dual commands implement multiple interfaces and switch between output modes based on runtime flags. For the complete guide, see [Dual Commands](./07-dual-commands.md).
 
-Dual commands address the need for different output formats: interactive use typically requires readable text output, while scripts need structured data. Rather than maintaining separate commands, dual commands adapt their behavior based on context.
+**Quick reference:**
 
 ```go
-// Dual command example
-type StatusCommand struct {
-    *cmds.CommandDescription
-}
-
-// Implement BareCommand for classic mode
-func (c *StatusCommand) Run(ctx context.Context, parsedSections *values.Values) error {
-    s := &StatusSettings{}
-    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
-        return err
-    }
-    
-    // Human-readable output
-    fmt.Printf("System Status:\n")
-    fmt.Printf("  CPU: %.1f%%\n", s.CPUUsage)
-    fmt.Printf("  Memory: %s\n", s.MemoryUsage)
-    return nil
-}
-
-// Implement GlazeCommand for structured output mode
-func (c *StatusCommand) RunIntoGlazeProcessor(
-    ctx context.Context, 
-    parsedSections *values.Values, 
-    gp middlewares.Processor,
-) error {
-    s := &StatusSettings{}
-    if err := parsedSections.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
-        return err
-    }
-    
-    // Structured data output
-    row := types.NewRow(
-        types.MRP("cpu_usage", s.CPUUsage),
-        types.MRP("memory_usage", s.MemoryUsage),
-        types.MRP("timestamp", time.Now()),
-    )
-    return gp.AddRow(ctx, row)
-}
-
-// Ensure both interfaces are implemented
+// Implement both interfaces
 var _ cmds.BareCommand = &StatusCommand{}
 var _ cmds.GlazeCommand = &StatusCommand{}
+
+// Build with dual mode
+cli.BuildCobraCommand(cmd,
+    cli.WithDualMode(true),
+    cli.WithGlazeToggleFlag("with-glaze-output"),
+)
 ```
+
+See [Dual Commands](./07-dual-commands.md) for advanced options (default output format, hidden flags, callback patterns).
 
 ## Command Implementation
 
@@ -898,18 +867,7 @@ if err != nil {
 }
 ```
 
-### Dual Command Builder Options
-
-The dual command builder supports several customization options:
-
-```go
-cobraCmd, err := cli.BuildCobraCommand(dualCmd,
-    cli.WithDualMode(true),                  // enable dual-mode
-    cli.WithGlazeToggleFlag("structured-output"),
-    cli.WithHiddenGlazeFlags("template", "select"),
-    cli.WithDefaultToGlaze(),                // default to glaze
-)
-```
+See [Dual Commands](./07-dual-commands.md) for complete documentation of all builder options.
 
 ## Best Practices
 
@@ -922,7 +880,7 @@ Choose interfaces based on user requirements:
 - **BareCommand** when users need rich feedback, progress updates, or interactive elements
 - **WriterCommand** when output might go to files, logs, or other destinations
 - **GlazeCommand** when data will be processed, filtered, or integrated with other tools
-- **Dual Commands** when usage patterns vary
+- **Dual Commands** when usage patterns vary — see [Dual Commands](./07-dual-commands.md)
 
 Example: A backup command might start as BareCommand for user feedback (`Backing up 1,247 files...`), but users eventually want structured output for monitoring scripts. A dual command serves both needs.
 

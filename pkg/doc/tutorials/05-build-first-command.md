@@ -112,7 +112,7 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 ) error {
     // Parse settings from command line
     settings := &ListUsersSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
         return err
     }
 
@@ -141,18 +141,18 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 
 **Implementation details:**
 
-1. **Settings Extraction**: `values.DecodeSectionInto()` (or `vals.DecodeSectionInto()`) populates the settings struct from resolved values with automatic parsing and validation
+1. **Settings Extraction**: `vals.DecodeSectionInto()` populates the settings struct from resolved values with automatic parsing and validation
 2. **Business Logic**: `generateMockUsers()` simulates data retrieval with the parsed settings
 3. **Structured Output**: Creates `types.Row` objects instead of using direct output functions
 4. **Row Structure**: `types.MRP("key", value)` creates key-value pairs for each data field
 
 The `GlazeProcessor` collects these rows and can output them in multiple formats without additional format-specific code.
 
-**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `values.DecodeSectionInto(vals, schema.DefaultSlug, &YourSettings{})` (or the underlying `vals.DecodeSectionInto(schema.DefaultSlug, &YourSettings{})`). Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
+**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `vals.DecodeSectionInto(schema.DefaultSlug, &YourSettings{})`. Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
 
 ### Command Configuration and Fields
 
-Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedSchema()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
+Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
 
 ```go
 // Step 2.4: Create constructor function
@@ -507,182 +507,35 @@ The primary benefit of using `types.Row` objects is automatic support for multip
 
 ## Step 5: Dual Commands (Advanced)
 
-Some commands benefit from providing both human-readable text output and machine-parseable structured data. Glazed supports this pattern through dual commands that implement both `BareCommand` and `GlazeCommand` interfaces, with automatic switching between output modes.
+Some commands benefit from providing both human-readable text output and machine-parseable structured data. Glazed supports this pattern through dual commands that implement both `BareCommand` and `GlazeCommand` interfaces.
+
+**For the complete guide, see [Dual Commands](../topics/07-dual-commands.md).**
+
+**Key pattern:**
 
 ```go
-// Dual command that implements both BareCommand and GlazeCommand
-type StatusCommand struct {
-    *cmds.CommandDescription
-}
-
-// Settings for status command
-type StatusSettings struct {
-    Verbose bool `glazed:"verbose"`
-}
-
-// Classic mode - simple text output
-func (c *StatusCommand) Run(ctx context.Context, vals *values.Values) error {
-    settings := &StatusSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
-        return err
-    }
-    
-    fmt.Println("System Status:")
-    fmt.Println("  Users: 8 total, 6 active")
-    fmt.Println("  Departments: 5")
-    fmt.Println("  Status: Healthy")
-    
-    if settings.Verbose {
-        fmt.Println("  Last updated:", time.Now().Format("2006-01-02 15:04:05"))
-        fmt.Println("  Version: 1.0.0")
-    }
-    
-    return nil
-}
-
-// Glaze mode - structured output
-func (c *StatusCommand) RunIntoGlazeProcessor(
-    ctx context.Context,
-    vals *values.Values,
-    gp middlewares.Processor,
-) error {
-    settings := &StatusSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
-        return err
-    }
-    
-    row := types.NewRow(
-        types.MRP("total_users", 8),
-        types.MRP("active_users", 6),
-        types.MRP("departments", 5),
-        types.MRP("status", "healthy"),
-        types.MRP("timestamp", time.Now().Format(time.RFC3339)),
-    )
-    
-    if settings.Verbose {
-        row.Set("version", "1.0.0")
-        row.Set("uptime", "24h30m")
-    }
-    
-    return gp.AddRow(ctx, row)
-}
-
-// Constructor for status command
-func NewStatusCommand() (*StatusCommand, error) {
-    // Add command settings section for debugging features
-    commandSettingsSection, err := cli.NewCommandSettingsSection()
-    if err != nil {
-        return nil, err
-    }
-
-    cmdDesc := cmds.NewCommandDescription(
-        "status",
-        cmds.WithShort("Show system status"),
-        cmds.WithLong("Show system status in either human-readable or structured format"),
-        cmds.WithFlags(
-            fields.New(
-                "verbose",
-                fields.TypeBool,
-                fields.WithDefault(false),
-                fields.WithHelp("Show additional details"),
-                fields.WithShortFlag("v"),
-            ),
-        ),
-        cmds.WithSectionsList(commandSettingsSection),
-    )
-    
-    return &StatusCommand{
-        CommandDescription: cmdDesc,
-    }, nil
-}
-
-// Ensure both interfaces are implemented
+// Implement both interfaces
 var _ cmds.BareCommand = &StatusCommand{}
 var _ cmds.GlazeCommand = &StatusCommand{}
-```
 
-**Dual command pattern:**
-
-The `StatusCommand` implements two interfaces:
-
-1. **`BareCommand`** (via `Run` method): Produces human-readable text output
-2. **`GlazeCommand`** (via `RunIntoGlazeProcessor` method): Produces structured data
-
-**Interface differences:**
-- **Human Mode**: Uses `fmt.Println()` for formatted text display
-- **Structured Mode**: Uses `types.Row` for machine-parseable data
-- **Shared Logic**: Both methods access the same parsed settings
-
-### Integrating the Dual Command
-
-Dual commands enable dual-mode behavior via `cli.WithDualMode(true)` (or the deprecated `BuildCobraCommandDualMode` helper). The builder detects both interface implementations and creates a toggle flag to switch between output modes.
-
-```go
-// Create status command with dual mode
-statusCmd, err := NewStatusCommand()
-if err != nil {
-    fmt.Fprintf(os.Stderr, "Error creating status command: %v\n", err)
-    os.Exit(1)
-}
-
-// Build with dual-mode enabled and custom parser settings
-cobraStatusCmd, err := cli.BuildCobraCommand(statusCmd,
+// Build with dual mode
+cli.BuildCobraCommand(cmd,
     cli.WithDualMode(true),
     cli.WithGlazeToggleFlag("with-glaze-output"),
-    cli.WithParserConfig(cli.CobraParserConfig{
-        ShortHelpSections: []string{schema.DefaultSlug},
-        MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-    }),
 )
-if err != nil {
-    fmt.Fprintf(os.Stderr, "Error building status command: %v\n", err)
-    os.Exit(1)
-}
-
-rootCmd.AddCommand(cobraStatusCmd)
-
-// Setup enhanced help system for the complete application
-helpSystem := help.NewHelpSystem()
-help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 ```
 
-**Key differences from single-mode commands:**
-
-1. **Dual mode option**: Use `cli.WithDualMode(true)` to enable the dual-command toggle
-2. **Toggle Flag**: `WithGlazeToggleFlag("with-glaze-output")` creates a flag that switches between interfaces
-3. **Automatic Detection**: Glazed detects both interface implementations and configures the toggle mechanism
-
-### Testing Dual Command
-
-Test both output modes:
+**Testing:**
 
 ```bash
-# Rebuild
-go build -o glazed-quickstart
-
 # Classic mode (default)
 ./glazed-quickstart status
-./glazed-quickstart status --verbose
-
-# Test debugging features in classic mode
-./glazed-quickstart status --print-parsed-fields
 
 # Glaze mode
-./glazed-quickstart status --with-glaze-output
 ./glazed-quickstart status --with-glaze-output --output json
-./glazed-quickstart status --with-glaze-output --verbose --output yaml
-
-# Test debugging features in glaze mode
-./glazed-quickstart status --with-glaze-output --print-schema
-
-# Test help system with dual command
-./glazed-quickstart status --help
 ```
 
-**Output comparison:**
-
-- **Classic Mode**: Human-readable text with clear labels and formatting
-- **Glaze Mode**: Structured data compatible with automation tools and scripts
+See [Dual Commands](../topics/07-dual-commands.md) for advanced options like `WithDefaultToGlaze`, setting default output format, and common patterns.
 
 ## Best Practices and Patterns
 
@@ -746,7 +599,7 @@ cmds.WithFlags(
 ```go
 func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
     settings := &ListUsersSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
         return fmt.Errorf("failed to parse settings: %w", err)
     }
     
