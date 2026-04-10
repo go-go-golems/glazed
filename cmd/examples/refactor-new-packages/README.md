@@ -7,7 +7,7 @@ This example demonstrates the new wrapper packages (`schema`, `fields`, `values`
 Show how to use the new vocabulary packages to:
 - Define schema sections using `schema.NewSection()`
 - Define field definitions using `fields.New()`
-- Decode resolved values into structs using `values.DecodeSectionInto()`
+- Decode resolved values into structs using `vals.DecodeSectionInto()`
 - Demonstrate env + cobra parsing with proper precedence
 
 ## Usage
@@ -75,7 +75,7 @@ The example defines three schema sections:
 
 - Uses `schema.NewSection()` to create schema sections
 - Uses `fields.New()` to define fields with types and options
-- Uses `values.DecodeSectionInto()` to decode resolved values into structs
+- Uses `vals.DecodeSectionInto()` to decode resolved values into structs
 - Uses `cli.BuildCobraCommand()` with `CobraParserConfig.AppName` for env parsing
 
 ## Related

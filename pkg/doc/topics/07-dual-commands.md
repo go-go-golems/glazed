@@ -36,9 +36,9 @@ type StatusSettings struct {
 }
 
 // BareCommand: human-readable output
-func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *StatusCommand) Run(ctx context.Context, vals *values.Values) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     fmt.Println("Status: Healthy")
@@ -49,9 +49,9 @@ func (c *StatusCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLaye
 }
 
 // GlazeCommand: structured output
-func (c *StatusCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *StatusCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
     s := &StatusSettings{}
-    if err := parsedLayers.InitializeStruct(layers.DefaultSlug, s); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
         return err
     }
     row := types.NewRow(
@@ -87,13 +87,13 @@ cobraCmd, err := cli.BuildCobraCommand(cmd,
 
 ## Default Output Format
 
-Set the default output format for glaze mode using `WithOutputParameterLayerOptions`:
+Set the default output format for glaze mode using `WithOutputSectionOptions`:
 
 ```go
-glazedLayer, err := settings.NewGlazedParameterLayers(
-    settings.WithOutputParameterLayerOptions(
-        layers.WithDefaults(map[string]interface{}{
-            "output": "json",  // default to JSON
+glazedSection, err := settings.NewGlazedSection(
+    settings.WithOutputSectionOptions(
+        schema.WithDefaults(map[string]interface{}{
+            "output": "json", // default to JSON
         }),
     ),
 )
@@ -141,21 +141,25 @@ Share the same settings struct between both interface implementations:
 ```go
 type FindSettings struct {
     AuthSettings
-    Compact bool `glazed.parameter:"compact"`
-    Start   string `glazed.parameter:"start"`
-    Pattern string `glazed.parameter:"pattern"`
+    Compact bool   `glazed:"compact"`
+    Start   string `glazed:"start"`
+    Pattern string `glazed:"pattern"`
 }
 
 // Used by both Run() and RunIntoGlazeProcessor()
-func (c *FindCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayers) error {
+func (c *FindCommand) Run(ctx context.Context, vals *values.Values) error {
     s := &FindSettings{}
-    parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
+        return err
+    }
     // ...
 }
 
-func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
     s := &FindSettings{}
-    parsedLayers.InitializeStruct(layers.DefaultSlug, s)
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, s); err != nil {
+        return err
+    }
     // ...
 }
 ```

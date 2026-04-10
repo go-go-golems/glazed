@@ -112,7 +112,7 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 ) error {
     // Parse settings from command line
     settings := &ListUsersSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
         return err
     }
 
@@ -141,18 +141,18 @@ func (c *ListUsersCommand) RunIntoGlazeProcessor(
 
 **Implementation details:**
 
-1. **Settings Extraction**: `values.DecodeSectionInto()` (or `vals.DecodeSectionInto()`) populates the settings struct from resolved values with automatic parsing and validation
+1. **Settings Extraction**: `vals.DecodeSectionInto()` populates the settings struct from resolved values with automatic parsing and validation
 2. **Business Logic**: `generateMockUsers()` simulates data retrieval with the parsed settings
 3. **Structured Output**: Creates `types.Row` objects instead of using direct output functions
 4. **Row Structure**: `types.MRP("key", value)` creates key-value pairs for each data field
 
 The `GlazeProcessor` collects these rows and can output them in multiple formats without additional format-specific code.
 
-**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `values.DecodeSectionInto(vals, schema.DefaultSlug, &YourSettings{})` (or the underlying `vals.DecodeSectionInto(schema.DefaultSlug, &YourSettings{})`). Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
+**Important — Decode values into a struct:** Always decode resolved values into your settings struct using `vals.DecodeSectionInto(schema.DefaultSlug, &YourSettings{})`. Avoid reading Cobra flags directly; decoding ensures defaults, validation, and help text stay consistent with your schema field definitions and active sections.
 
 ### Command Configuration and Fields
 
-Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper (a wrapper around `settings.NewGlazedSchema()`) adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
+Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
 
 ```go
 // Step 2.4: Create constructor function
@@ -599,7 +599,7 @@ cmds.WithFlags(
 ```go
 func (c *ListUsersCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Values, gp middlewares.Processor) error {
     settings := &ListUsersSettings{}
-    if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+    if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
         return fmt.Errorf("failed to parse settings: %w", err)
     }
     
