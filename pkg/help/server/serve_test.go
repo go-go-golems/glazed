@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/help"
+	helploader "github.com/go-go-golems/glazed/pkg/help/loader"
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/web"
 )
@@ -116,8 +117,8 @@ Loaded from explicit path.
 		t.Fatalf("write markdown: %v", err)
 	}
 
-	if err := replaceStoreWithPaths(context.Background(), hs, []string{tmpDir}); err != nil {
-		t.Fatalf("replaceStoreWithPaths: %v", err)
+	if err := helploader.ReplaceStoreWithPaths(context.Background(), hs, []string{tmpDir}); err != nil {
+		t.Fatalf("ReplaceStoreWithPaths: %v", err)
 	}
 
 	count, err := hs.Store.Count(context.Background())

@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/go-go-golems/glazed/pkg/help/server"
+	"github.com/go-go-golems/glazed/pkg/help/site"
 	"github.com/go-go-golems/glazed/pkg/web"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +45,14 @@ func main() {
 	)
 	cobra.CheckErr(err)
 	rootCmd.AddCommand(serveCobraCmd)
+
+	renderSiteCmd, err := site.NewRenderSiteCommand(helpSystem)
+	cobra.CheckErr(err)
+	renderSiteCobraCmd, err := cli.BuildCobraCommand(renderSiteCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{AppName: "glaze"}),
+	)
+	cobra.CheckErr(err)
+	rootCmd.AddCommand(renderSiteCobraCmd)
 
 	// JSON command
 	jsonCmd, err := cmds.NewJsonCommand()

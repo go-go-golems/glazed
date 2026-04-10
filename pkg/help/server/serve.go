@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	stdpath "path"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
+	helploader "github.com/go-go-golems/glazed/pkg/help/loader"
 	"github.com/rs/zerolog/log"
 )
 
@@ -99,7 +99,7 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 	// paths are given, they are authoritative: clear any preloaded sections and
 	// serve only the requested content.
 	if len(s.Paths) > 0 {
-		if err := replaceStoreWithPaths(ctx, hs, s.Paths); err != nil {
+		if err := helploader.ReplaceStoreWithPaths(ctx, hs, s.Paths); err != nil {
 			return err
 		}
 	}
@@ -168,63 +168,6 @@ func MountPrefix(prefix string, h http.Handler) http.Handler {
 // prefix in an existing HTTP server.
 func NewMountedHandler(prefix string, deps HandlerDeps, spaHandler http.Handler) http.Handler {
 	return MountPrefix(prefix, NewServeHandler(deps, spaHandler))
-}
-
-func replaceStoreWithPaths(ctx context.Context, hs *help.HelpSystem, paths []string) error {
-	if err := hs.Store.Clear(ctx); err != nil {
-		return fmt.Errorf("clearing preloaded sections: %w", err)
-	}
-	return loadPaths(ctx, hs, paths)
-}
-
-func loadPaths(ctx context.Context, hs *help.HelpSystem, paths []string) error {
-	for _, input := range paths {
-		info, err := os.Stat(input)
-		if err != nil {
-			return fmt.Errorf("stat %q: %w", input, err)
-		}
-		if info.IsDir() {
-			if err := loadDir(ctx, hs, input); err != nil {
-				return fmt.Errorf("loading directory %q: %w", input, err)
-			}
-			continue
-		}
-		if err := loadFile(ctx, hs, input); err != nil {
-			return fmt.Errorf("loading file %q: %w", input, err)
-		}
-	}
-	return nil
-}
-
-func loadDir(ctx context.Context, hs *help.HelpSystem, dir string) error {
-	return filepath.WalkDir(dir, func(filePath string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		name := strings.ToLower(d.Name())
-		if name == "readme.md" || !strings.HasSuffix(name, ".md") {
-			return nil
-		}
-		return loadFile(ctx, hs, filePath)
-	})
-}
-
-func loadFile(ctx context.Context, hs *help.HelpSystem, filePath string) error {
-	if !strings.HasSuffix(strings.ToLower(filePath), ".md") {
-		return nil
-	}
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	section, err := help.LoadSectionFromMarkdown(data)
-	if err != nil {
-		return err
-	}
-	return hs.Store.Upsert(ctx, section)
 }
 
 func serveHTTP(addr string, handler http.Handler) error {

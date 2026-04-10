@@ -1,5 +1,6 @@
 // App.tsx — root component: wires all components together with RTK Query state.
 import { useState, useMemo } from 'react';
+import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import { TypeFilter, type FilterValue } from './components/TypeFilter/TypeFilter';
@@ -12,14 +13,24 @@ import { useListSectionsQuery, useGetSectionQuery } from './services/api';
 import type { SectionSummary } from './types';
 
 export default function App() {
-  const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const activeSlug = useMemo(() => {
+    const match = matchPath('/sections/:slug', location.pathname);
+    return match?.params.slug ?? null;
+  }, [location.pathname]);
 
   const { data: listData, isLoading, error } = useListSectionsQuery();
   const { data: section } = useGetSectionQuery(activeSlug!, {
     skip: !activeSlug,
   });
+
+  const handleSelect = (slug: string) => {
+    navigate(`/sections/${slug}`);
+  };
 
   // Client-side filter — mirrors the JSX prototype logic.
   const filtered = useMemo(() => {
@@ -52,7 +63,7 @@ export default function App() {
             <SectionList
               sections={filtered}
               activeSlug={activeSlug}
-              onSelect={setActiveSlug}
+              onSelect={handleSelect}
             />
             <StatusBar count={filtered.length} />
           </>
