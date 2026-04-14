@@ -53,6 +53,14 @@ plan := config.NewPlan(
     config.ExplicitFile(explicitPath),
 )
 
+// Load it either directly...
+sources.FromConfigPlan(plan)
+
+// ...or resolve it first if you want to inspect the report/files.
+files, report, err := plan.Resolve(context.Background())
+_ = report
+_ = files
+
 // Option B: plug the plan into CobraParserConfig
 cli.WithParserConfig(cli.CobraParserConfig{
     AppName: "myapp", // env prefix only

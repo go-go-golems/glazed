@@ -17,12 +17,15 @@ Glazed provides first-class support for reading configuration from one or more Y
 
 - Precedence: Defaults < Config files (low→high) < Env < Positional Args < Flags
 - Traceability: Each config file write is logged with `source: config` and metadata such as `{ config_file, index }`, and richer layered flows can also record `{ config_index, config_layer, config_source_name, config_source_kind }`.
+- Loading styles: You can load config via simple file middlewares (`FromFile`, `FromFiles`), via resolved layered inputs (`FromResolvedFiles`), or directly from declarative plans (`FromConfigPlan`, `FromConfigPlanBuilder`).
 
 This guide shows how to load single and multiple files, integrate with Cobra, implement app-level file resolution patterns, use pattern- and custom-mappers, inspect parse steps, and validate config files.
 
 ## Option A: Direct middlewares (library-only)
 
 Use this approach when you’re embedding Glazed into a service or library and you want explicit, programmatic control over where configuration comes from. You decide the exact order of sources and call the middleware execution yourself. This makes the precedence rules obvious in code and easy to unit test.
+
+If you already have a declarative `config.Plan`, you can either resolve it yourself and call `FromResolvedFiles(...)`, or load it directly with `FromConfigPlan(...)` / `FromConfigPlanBuilder(...)`.
 
 ```go
 package main
@@ -177,6 +180,19 @@ err = sources.Execute(
     sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 )
 ```
+
+If you do not need the explicit `files, report := plan.Resolve(...)` step, you can load the plan directly:
+
+```go
+err = sources.Execute(
+    schema_,
+    parsed,
+    sources.FromConfigPlan(plan),
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+)
+```
+
+Use the direct plan middlewares when you want Glazed to resolve and load the plan inside the middleware pipeline. Use `FromResolvedFiles(...)` when you want to inspect, test, print, or otherwise reuse the explicit `[]ResolvedConfigFile` output before loading.
 
 Use this approach when you want both:
 
@@ -458,6 +474,6 @@ Use these as templates. Each example shows a minimal, focused scenario you can c
 
 If you’re migrating from Viper-based setups, replace per-command file injection and env parsing with Glazed middlewares and `CobraParserConfig`. This typically reduces glue code while improving observability (traceable parse steps) and testability (deterministic precedence).
 
-Older Viper-based config parsing helpers have been removed. Prefer config middlewares (`LoadFieldsFromFiles` / `FromFiles` / `FromResolvedFiles`) together with env updates and `--config-file`.
+Older Viper-based config parsing helpers have been removed. Prefer config middlewares (`FromFile` / `FromFiles` / `FromResolvedFiles` / `FromConfigPlan`) together with env updates and `--config-file`.
 
 

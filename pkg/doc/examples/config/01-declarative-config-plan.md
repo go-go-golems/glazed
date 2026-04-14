@@ -1,7 +1,7 @@
 ---
 Title: Declarative Config Plan Example
 Slug: declarative-config-plan-example
-Short: Use `config.Plan` and `sources.FromResolvedFiles(...)` to build layered config loading with provenance.
+Short: Use `config.Plan` with either `sources.FromResolvedFiles(...)` or `sources.FromConfigPlan(...)` to build layered config loading with provenance.
 Topics:
 - configuration
 - examples
@@ -22,6 +22,7 @@ It shows how to:
 - resolve repo, cwd, and explicit config files in low → high precedence order
 - print a human-readable plan report
 - load the resolved files with `sources.FromResolvedFiles(...)`
+- understand when you could swap that for `sources.FromConfigPlan(...)`
 - inspect the resulting parsed field history and config provenance metadata
 
 ## Run the example
@@ -52,6 +53,18 @@ go run . show --explicit explicit.yaml
 ```
 
 The explicit file is applied last, so it overrides both the repo-level and cwd-level files.
+
+## Why this example uses `FromResolvedFiles(...)`
+
+This runnable example resolves the plan explicitly first because it wants to print the plan report before loading values.
+
+If your application does not need to inspect or print `report.String()` and only wants the resolved settings, the loading step can be shortened to:
+
+```go
+sources.Execute(schema_, parsed, sources.FromConfigPlan(plan))
+```
+
+That direct middleware form still preserves the same config provenance metadata in parsed field history.
 
 ## What to inspect
 

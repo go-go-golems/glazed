@@ -16,6 +16,8 @@ SectionType: Tutorial
 
 This tutorial shows how to load configuration from one or more files using Glazed middlewares. You’ll see a simple single-file setup and a multi-file overlay with deterministic precedence. We’ll also show how to inspect parse steps using `--print-parsed-fields`.
 
+For CLIs, the normal entry point is `CobraParserConfig.ConfigPlanBuilder`. For library-style middleware execution, the equivalent direct APIs are `sources.FromConfigPlan(...)` and `sources.FromConfigPlanBuilder(...)`.
+
 ## Prerequisites
 
 - Go 1.19+
@@ -127,6 +129,18 @@ Expected output:
 
 ```text
 api_key=local threshold=20
+```
+
+Under the hood, the Cobra parser now uses the same plan-loading middleware shape you can call directly in library code:
+
+```go
+sources.Execute(schema_, parsed,
+    sources.FromDefaults(),
+    sources.FromConfigPlan(plan),
+    sources.FromEnv("DEMO"),
+    sources.FromArgs(args),
+    sources.FromCobra(cmd),
+)
 ```
 
 ## 3. Inspect Parse Steps

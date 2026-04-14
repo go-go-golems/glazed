@@ -1,7 +1,7 @@
 ---
 Title: Declarative Config Plans
 Slug: declarative-config-plans
-Short: Define layered config discovery as explicit source plans and preserve config provenance in parsed field history.
+Short: Define layered config discovery as explicit source plans and preserve config provenance in parsed field history, either by resolving files yourself or by loading plans directly through source middlewares.
 Topics:
 - configuration
 - middlewares
@@ -107,7 +107,7 @@ It carries:
 - source kind
 - file index in the final low→high precedence list
 
-This is the object you pass to `sources.FromResolvedFiles(...)` when you want provenance-aware loading.
+This is the object you pass to `sources.FromResolvedFiles(...)` when you want provenance-aware loading and also want to inspect or reuse the explicit resolved file list.
 
 ### `PlanReport`
 
@@ -142,7 +142,7 @@ These are especially useful for tools that want repository-local or working-dire
 
 ## Example: resolving and loading a plan
 
-Once you have a plan, you resolve it and feed the result into Glazed sources.
+Once you have a plan, you can either resolve it explicitly and feed the result into Glazed sources, or let the middleware do that for you.
 
 ```go
 files, report, err := plan.Resolve(context.Background())
@@ -165,6 +165,45 @@ This gives you both:
 
 - deterministic config ordering
 - rich parse-step provenance in `parsed`
+- access to the explicit `PlanReport` and `[]ResolvedConfigFile` values before loading
+
+## Example: loading a plan directly through middleware
+
+If you do not need to inspect the resolved file list first, use the higher-level source middlewares:
+
+```go
+parsed := values.New()
+err := sources.Execute(
+    schema_,
+    parsed,
+    sources.FromConfigPlan(plan),
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+)
+```
+
+For dynamic plans that depend on already-parsed lower-precedence values, use `FromConfigPlanBuilder(...)`:
+
+```go
+err := sources.Execute(
+    schema_,
+    parsed,
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+    sources.FromConfigPlanBuilder(func(ctx context.Context, parsed *values.Values) (*config.Plan, error) {
+        settings := &MySelectorSettings{}
+        if err := parsed.DecodeSectionInto("selector", settings); err != nil {
+            return nil, err
+        }
+
+        return config.NewPlan(
+            config.WithLayerOrder(config.LayerExplicit),
+        ).Add(
+            config.ExplicitFile(settings.ConfigFile).Named("selected-config"),
+        ), nil
+    }),
+)
+```
+
+Use `FromConfigPlan(...)` / `FromConfigPlanBuilder(...)` when you want the middleware pipeline to own resolution and loading. Use `FromResolvedFiles(...)` when you want to debug, print, test, or otherwise reuse the explicit resolved results.
 
 ## Provenance metadata in parsed field history
 
@@ -203,7 +242,7 @@ demo:
 
 That is much more useful than only seeing a final value with no history.
 
-## Relationship to `FromFiles(...)`
+## Relationship to `FromFiles(...)` and `FromResolvedFiles(...)`
 
 `FromFiles(...)` still exists and is still appropriate when you already have a simple ordered list of file paths.
 
@@ -218,6 +257,13 @@ Use `FromResolvedFiles(...)` when:
 - you are building layered config discovery
 - you want traceable provenance in parse history
 - you want the loader to preserve layer/source information directly
+- you want to inspect or reuse the resolved file list before loading
+
+Use `FromConfigPlan(...)` or `FromConfigPlanBuilder(...)` when:
+
+- you already have a plan and want the middleware pipeline to resolve it for you
+- you want dynamic plan selection based on already-parsed lower-precedence values
+- you still want the same provenance metadata without manually calling `plan.Resolve(...)`
 
 ## Relationship to higher-level bootstraps
 
@@ -236,7 +282,7 @@ That lets multiple tools share the same underlying config machinery without shar
 | Problem | Cause | Solution |
 |---|---|---|
 | A later file did not override an earlier one | The file order in the resolved plan is wrong | Print `report.String()` and verify the layer order and final path list |
-| A config value shows `source: config` but no layer metadata | The loader used `FromFiles(...)` instead of `FromResolvedFiles(...)` | Resolve the plan to `[]ResolvedConfigFile` and load through `FromResolvedFiles(...)` |
+| A config value shows `source: config` but no layer metadata | The loader used `FromFiles(...)` instead of a provenance-aware plan loader | Resolve the plan to `[]ResolvedConfigFile` and load through `FromResolvedFiles(...)`, or load the plan directly with `FromConfigPlan(...)` / `FromConfigPlanBuilder(...)` |
 | The same file appears twice | Two sources discovered the same path | Enable `WithDedupePaths()` and inspect the deduped paths in the plan report |
 | A git-root source never finds anything | The current process is not inside a git repository or the target file path is wrong | Verify the repo root and the path passed to `GitRootFile(...)` |
 
