@@ -42,7 +42,13 @@ cmd := &DemoBareCommand{CommandDescription: desc}
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
         SkipCommandSettingsSection: true,
-        ConfigPath:               "./config.yaml",
+        ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+            return config.NewPlan(
+                config.WithLayerOrder(config.LayerExplicit),
+            ).Add(
+                config.ExplicitFile("./config.yaml").Named("single-config"),
+            ), nil
+        },
     }),
 )
 ```
@@ -69,17 +75,21 @@ api_key=cfg-one threshold=33
 
 ## 2. Multiple Files (Overlays)
 
-Use a resolver to return an ordered list of files (low → high precedence):
+Use a config plan to return an ordered set of files (low → high precedence):
 
 ```go
-resolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-    return []string{"base.yaml", "env.yaml", "local.yaml"}, nil
-}
-
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
         SkipCommandSettingsSection: true,
-        ConfigFilesFunc:          resolver,
+        ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+            return config.NewPlan(
+                config.WithLayerOrder(config.LayerSystem, config.LayerUser, config.LayerCWD),
+            ).Add(
+                config.ExplicitFile("base.yaml").Named("base").InLayer(config.LayerSystem),
+                config.ExplicitFile("env.yaml").Named("env").InLayer(config.LayerUser),
+                config.ExplicitFile("local.yaml").Named("local").InLayer(config.LayerCWD),
+            ), nil
+        },
     }),
 )
 ```

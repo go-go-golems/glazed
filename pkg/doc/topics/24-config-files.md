@@ -60,9 +60,9 @@ func run(cmd *cobra.Command, args []string) error {
 
 ## Option B: Cobra integration (recommended for CLIs)
 
-If you’re building a CLI, the Cobra integration wires configuration, environment variables, positional arguments, and flags into a predictable pipeline with minimal boilerplate. `CobraParserConfig` lets you enable app-wide env prefixes, resolve config files, or inject your own resolver logic. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
+If you’re building a CLI, the Cobra integration wires configuration, environment variables, positional arguments, and flags into a predictable pipeline with minimal boilerplate. `CobraParserConfig` lets you enable app-wide env prefixes and attach an explicit declarative config plan. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
 
-Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The parser config can auto-wire env and config discovery.
+Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The parser config auto-wires env parsing; config loading is explicit through `ConfigPlanBuilder`.
 
 ```go
 package main
@@ -84,15 +84,18 @@ func build() (*cobra.Command, error) {
     )
     desc := cmds.NewCommandDescription("demo", cmds.WithSectionsList(demo))
 
-    // AppName enables env overrides (prefix = APPNAME_) and config discovery
-    // ConfigPath uses an explicit path if provided
-    // ConfigFilesFunc can return multiple files low → high precedence
+    // AppName enables env overrides (prefix = APPNAME_)
+    // ConfigPlanBuilder defines config discovery explicitly
     return cli.BuildCobraCommandFromCommand(&DemoBare{desc},
         cli.WithParserConfig(cli.CobraParserConfig{
-            AppName:       "myapp",
-            ConfigPath:    "", // optional explicit file (can come from --config-file too)
-            ConfigFilesFunc: func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-                return []string{"base.yaml", "local.yaml"}, nil
+            AppName: "myapp",
+            ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+                return config.NewPlan(
+                    config.WithLayerOrder(config.LayerSystem, config.LayerCWD),
+                ).Add(
+                    config.ExplicitFile("base.yaml").Named("base").InLayer(config.LayerSystem),
+                    config.ExplicitFile("local.yaml").Named("local").InLayer(config.LayerCWD),
+                ), nil
             },
         }),
     )
@@ -184,51 +187,66 @@ See the dedicated topic [Declarative Config Plans](27-declarative-config-plans.m
 
 ## App-level config discovery and patterns
 
-Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). `ResolveAppConfigPath` encapsulates that search so your app can “just find” a config without hardcoding paths. Pair it with a `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery. For overlays, a resolver can add optional files like `<base>.override.yaml` if they exist, keeping configuration flexible without hidden magic.
+Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). `ResolveAppConfigPath` remains available as a simple compatibility helper, but new CLI code should express config policy through `config.Plan`. Pair plan-based discovery with the `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery explicitly.
 
-Use `github.com/go-go-golems/glazed/pkg/config.ResolveAppConfigPath` to discover a per-app config file:
-
-```go
-package main
-
-import (
-    appconfig "github.com/go-go-golems/glazed/pkg/config"
-)
-
-configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
-// Search order (first existing wins):
-// 1) $XDG_CONFIG_HOME/myapp/config.yaml
-// 2) $HOME/.myapp/config.yaml
-// 3) /etc/myapp/config.yaml
-```
-
-You can also implement overlay patterns like `<base>.override.yaml` or `<app>.local.yaml` in a resolver:
+Use `github.com/go-go-golems/glazed/pkg/config` to build a plan that discovers a conventional app config plus explicit overrides:
 
 ```go
 package main
 
 import (
+    "context"
     "fmt"
     "os"
     "path/filepath"
     "strings"
 
     "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/values"
+    glazedconfig "github.com/go-go-golems/glazed/pkg/config"
+    "github.com/spf13/cobra"
 )
 
-resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
+overrideSibling := func(path string) glazedconfig.SourceSpec {
+    return glazedconfig.SourceSpec{
+        Name:       "explicit-override",
+        Layer:      glazedconfig.LayerExplicit,
+        SourceKind: "computed-override-file",
+        Optional:   true,
+        Discover: func(context.Context) ([]string, error) {
+            if strings.TrimSpace(path) == "" {
+                return nil, nil
+            }
+            stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+            override := filepath.Join(filepath.Dir(path), fmt.Sprintf("%s.override.yaml", stem))
+            if _, err := os.Stat(override); err == nil {
+                return []string{override}, nil
+            } else if os.IsNotExist(err) {
+                return nil, nil
+            } else {
+                return nil, err
+            }
+        },
+    }
+}
+
+builder := func(parsed *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
     cs := &cli.CommandSettings{}
     _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
-    if cs.ConfigFile == "" { return nil, nil }
-    files := []string{cs.ConfigFile}
-    dir, base := filepath.Dir(cs.ConfigFile), filepath.Base(cs.ConfigFile)
-    stem := strings.TrimSuffix(base, filepath.Ext(base))
-    override := filepath.Join(dir, fmt.Sprintf("%s.override.yaml", stem))
-    if _, err := os.Stat(override); err == nil {
-        files = append(files, override)
-    }
-    return files, nil
+
+    return glazedconfig.NewPlan(
+        glazedconfig.WithLayerOrder(
+            glazedconfig.LayerSystem,
+            glazedconfig.LayerUser,
+            glazedconfig.LayerExplicit,
+        ),
+    ).Add(
+        glazedconfig.SystemAppConfig("myapp").Named("system-app-config"),
+        glazedconfig.XDGAppConfig("myapp").Named("xdg-app-config"),
+        glazedconfig.HomeAppConfig("myapp").Named("home-app-config"),
+        glazedconfig.ExplicitFile(cs.ConfigFile).Named("explicit-config"),
+        overrideSibling(cs.ConfigFile),
+    ), nil
 }
 ```
 

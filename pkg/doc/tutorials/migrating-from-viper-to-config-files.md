@@ -43,14 +43,22 @@ viper.ReadInConfig()  // Searches automatically
 
 **After:** Explicit discovery required:
 ```go
-// Option A: Use ResolveAppConfigPath helper
-configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
-// Searches: $XDG_CONFIG_HOME/myapp, $HOME/.myapp, /etc/myapp
+// Option A: use a declarative config plan directly
+plan := config.NewPlan(
+    config.WithLayerOrder(config.LayerSystem, config.LayerUser, config.LayerExplicit),
+).Add(
+    config.SystemAppConfig("myapp"),
+    config.XDGAppConfig("myapp"),
+    config.HomeAppConfig("myapp"),
+    config.ExplicitFile(explicitPath),
+)
 
-// Option B: Use ConfigFilesFunc in CobraParserConfig (recommended)
+// Option B: plug the plan into CobraParserConfig
 cli.WithParserConfig(cli.CobraParserConfig{
-    AppName: "myapp",  // Enables automatic discovery
-    ConfigFilesFunc: resolver,
+    AppName: "myapp", // env prefix only
+    ConfigPlanBuilder: func(parsed *values.Values, cmd *cobra.Command, args []string) (*config.Plan, error) {
+        return plan, nil
+    },
 })
 ```
 
@@ -418,55 +426,45 @@ func buildCommand() (*cobra.Command, error) {
 import (
     "github.com/go-go-golems/glazed/pkg/cli"
     "github.com/go-go-golems/glazed/pkg/cmds/schema"
-    appconfig "github.com/go-go-golems/glazed/pkg/config"
+    "github.com/go-go-golems/glazed/pkg/cmds/values"
+    glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 )
 
 func buildCommand() (*cobra.Command, error) {
     // ... create command description ...
-    
+
     cobraCmd, err := cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
-            AppName: "myapp",  // Enables env prefix MYAPP_ and config discovery
-            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
-                // Use explicit path if provided via --config-file
+            AppName: "myapp", // Enables env prefix MYAPP_
+            ConfigPlanBuilder: func(parsed *values.Values, cmd *cobra.Command, args []string) (*glazedconfig.Plan, error) {
                 cs := &cli.CommandSettings{}
                 _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
-                if cs.ConfigFile != "" {
-                    return []string{cs.ConfigFile}, nil
-                }
-                
-                // Otherwise discover config file
-                configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
-                if err != nil {
-                    return nil, nil  // No config file found, continue without
-                }
-                return []string{configPath}, nil
+
+                return glazedconfig.NewPlan(
+                    glazedconfig.WithLayerOrder(
+                        glazedconfig.LayerSystem,
+                        glazedconfig.LayerUser,
+                        glazedconfig.LayerExplicit,
+                    ),
+                ).Add(
+                    glazedconfig.SystemAppConfig("myapp").Named("system-app-config"),
+                    glazedconfig.XDGAppConfig("myapp").Named("xdg-app-config"),
+                    glazedconfig.HomeAppConfig("myapp").Named("home-app-config"),
+                    glazedconfig.ExplicitFile(cs.ConfigFile).Named("explicit-config"),
+                ), nil
             },
         }),
     )
-    
+
     return cobraCmd, err
 }
 ```
 
 **Benefits:**
 - `AppName` automatically enables environment variable prefix (`MYAPP_`)
-- `ConfigFilesFunc` gives you full control over file discovery
-- `--config-file` flag is automatically available via `command-settings` section
+- `ConfigPlanBuilder` keeps config discovery explicit and provenance-aware
+- `--config-file` flag is still available via the `command-settings` section when your plan wants to consume it
 - Config files integrate cleanly with env vars and flags
-
-### Simple Config Path
-
-For simpler cases, you can specify a single config path directly:
-
-```go
-cobraCmd, err := cli.BuildCobraCommandFromCommand(command,
-    cli.WithParserConfig(cli.CobraParserConfig{
-        AppName:    "myapp",
-        ConfigPath: "/etc/myapp/config.yaml",  // Explicit path
-    }),
-)
-```
 
 ## Step 5: Handle Custom Config Structures
 
@@ -754,7 +752,7 @@ func validateConfigFile(schema_ *schema.Schema, path string) error {
 
 If your config file isn't being loaded, check:
 1. File path is correct and file exists
-2. `ConfigFilesFunc` returns the path (or `ConfigPath` is set)
+2. Your `ConfigPlanBuilder` resolves the expected files
 3. File has correct permissions
 
 ### Environment Variables Not Working
@@ -863,18 +861,21 @@ func buildCommand() (*cobra.Command, error) {
     return cli.BuildCobraCommandFromCommand(command,
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",
-            ConfigFilesFunc: func(parsed *values.Values, cmd *cobra.Command, args []string) ([]string, error) {
+            ConfigPlanBuilder: func(parsed *values.Values, cmd *cobra.Command, args []string) (*glazedconfig.Plan, error) {
                 cs := &cli.CommandSettings{}
                 _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
-                if cs.ConfigFile != "" {
-                    return []string{cs.ConfigFile}, nil
-                }
-                
-                configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
-                if err != nil {
-                    return nil, nil  // No config file, continue without
-                }
-                return []string{configPath}, nil
+                return glazedconfig.NewPlan(
+                    glazedconfig.WithLayerOrder(
+                        glazedconfig.LayerSystem,
+                        glazedconfig.LayerUser,
+                        glazedconfig.LayerExplicit,
+                    ),
+                ).Add(
+                    glazedconfig.SystemAppConfig("myapp"),
+                    glazedconfig.XDGAppConfig("myapp"),
+                    glazedconfig.HomeAppConfig("myapp"),
+                    glazedconfig.ExplicitFile(cs.ConfigFile),
+                ), nil
             },
         }),
     )
