@@ -89,7 +89,6 @@ func ExplicitFile(path string) SourceSpec {
 		Name:       "explicit-config-file",
 		Layer:      LayerExplicit,
 		SourceKind: "explicit-file",
-		Optional:   true,
 		Discover: func(ctx context.Context) ([]string, error) {
 			if path == "" {
 				return nil, nil

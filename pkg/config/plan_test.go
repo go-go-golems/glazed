@@ -128,6 +128,54 @@ func TestGitRootFileFindsRepoRootFileFromNestedDirectory(t *testing.T) {
 	}
 }
 
+func TestExplicitFileMissingPathErrorsDuringResolve(t *testing.T) {
+	ctx := context.Background()
+	missing := filepath.Join(t.TempDir(), "does-not-exist.yaml")
+
+	plan := NewPlan(
+		WithLayerOrder(LayerExplicit),
+	).Add(ExplicitFile(missing))
+
+	_, report, err := plan.Resolve(ctx)
+	if err == nil {
+		t.Fatal("expected missing explicit file to return an error")
+	}
+	if !os.IsNotExist(err) {
+		t.Fatalf("expected os.ErrNotExist, got %v", err)
+	}
+	if report == nil {
+		t.Fatal("expected non-nil report")
+	}
+	if len(report.Sources) != 0 {
+		t.Fatalf("expected no completed source entries on hard discover error, got %d", len(report.Sources))
+	}
+}
+
+func TestExplicitFileEmptyPathSkipsWithoutError(t *testing.T) {
+	ctx := context.Background()
+
+	plan := NewPlan(
+		WithLayerOrder(LayerExplicit),
+	).Add(ExplicitFile(""))
+
+	files, report, err := plan.Resolve(ctx)
+	if err != nil {
+		t.Fatalf("expected empty explicit file to skip without error, got %v", err)
+	}
+	if len(files) != 0 {
+		t.Fatalf("expected no resolved files, got %v", files)
+	}
+	if report == nil {
+		t.Fatal("expected non-nil report")
+	}
+	if len(report.Sources) != 1 {
+		t.Fatalf("expected 1 source entry, got %d", len(report.Sources))
+	}
+	if report.Sources[0].SkippedReason != "not found" {
+		t.Fatalf("expected skipped reason 'not found', got %q", report.Sources[0].SkippedReason)
+	}
+}
+
 func TestXDGAndHomeAppConfigDiscoverFiles(t *testing.T) {
 	ctx := context.Background()
 	tmp := t.TempDir()
