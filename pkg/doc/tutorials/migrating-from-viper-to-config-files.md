@@ -614,11 +614,22 @@ viper.ReadInConfig()
 
 **After:**
 ```go
-import appconfig "github.com/go-go-golems/glazed/pkg/config"
+import glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 
-configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
+plan := glazedconfig.NewPlan(
+    glazedconfig.WithLayerOrder(
+        glazedconfig.LayerSystem,
+        glazedconfig.LayerUser,
+    ),
+).Add(
+    glazedconfig.SystemAppConfig("myapp"),
+    glazedconfig.XDGAppConfig("myapp"),
+    glazedconfig.HomeAppConfig("myapp"),
+)
+
+files, _, err := plan.Resolve(context.Background())
 if err == nil {
-    sources.FromFile(configPath)
+    sources.FromResolvedFiles(files)
 }
 ```
 

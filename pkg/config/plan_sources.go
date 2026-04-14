@@ -157,3 +157,11 @@ func gitRoot(ctx context.Context) (string, error) {
 	}
 	return strings.TrimSpace(string(out)), nil
 }
+
+func fileExists(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !fi.IsDir()
+}

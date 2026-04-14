@@ -187,7 +187,7 @@ See the dedicated topic [Declarative Config Plans](27-declarative-config-plans.m
 
 ## App-level config discovery and patterns
 
-Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). `ResolveAppConfigPath` remains available as a simple compatibility helper, but new CLI code should express config policy through `config.Plan`. Pair plan-based discovery with the `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery explicitly.
+Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). Express that policy directly through `config.Plan` so the search order and precedence are visible in code. Pair plan-based discovery with the `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery explicitly.
 
 Use `github.com/go-go-golems/glazed/pkg/config` to build a plan that discovers a conventional app config plus explicit overrides:
 
