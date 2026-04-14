@@ -167,26 +167,14 @@ func NewCobraParserFromSections(
 				}
 
 				if cfgCopy.ConfigPlanBuilder != nil {
-					plan, err := cfgCopy.ConfigPlanBuilder(parsedCommandSections, cmd, args)
-					if err != nil {
-						return nil, err
-					}
-					if plan != nil {
-						ctx := context.Background()
-						if cmd != nil && cmd.Context() != nil {
-							ctx = cmd.Context()
-						}
-						files, _, err := plan.Resolve(ctx)
-						if err != nil {
-							return nil, err
-						}
-						middlewares_ = append(middlewares_,
-							cmd_sources.FromResolvedFiles(
-								files,
-								cmd_sources.WithParseOptions(fields.WithSource("config")),
-							),
-						)
-					}
+					middlewares_ = append(middlewares_,
+						cmd_sources.FromConfigPlanBuilder(
+							func(_ context.Context, _ *values.Values) (*glazedConfig.Plan, error) {
+								return cfgCopy.ConfigPlanBuilder(parsedCommandSections, cmd, args)
+							},
+							cmd_sources.WithParseOptions(fields.WithSource("config")),
+						),
+					)
 				}
 
 				middlewares_ = append(middlewares_,

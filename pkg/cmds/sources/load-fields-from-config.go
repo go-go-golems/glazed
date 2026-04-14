@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -115,6 +116,50 @@ func FromResolvedFiles(files []glazedconfig.ResolvedConfigFile, options ...Confi
 				}
 			}
 			return nil
+		}
+	}
+}
+
+// ConfigPlanResolver resolves a config plan at middleware execution time.
+// It receives the current parsed values after lower-precedence sources have already run.
+type ConfigPlanResolver func(ctx context.Context, parsedValues *values.Values) (*glazedconfig.Plan, error)
+
+// FromConfigPlan resolves a config plan at middleware execution time and loads the resulting files
+// via FromResolvedFiles, preserving config provenance metadata in parse-step history.
+func FromConfigPlan(plan *glazedconfig.Plan, options ...ConfigFileOption) Middleware {
+	return FromConfigPlanBuilder(func(context.Context, *values.Values) (*glazedconfig.Plan, error) {
+		return plan, nil
+	}, options...)
+}
+
+// FromConfigPlanBuilder resolves a config plan dynamically at middleware execution time and loads
+// the resulting files via FromResolvedFiles.
+func FromConfigPlanBuilder(resolver ConfigPlanResolver, options ...ConfigFileOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			if err := next(schema_, parsedValues); err != nil {
+				return err
+			}
+			if resolver == nil {
+				return nil
+			}
+
+			ctx := context.Background()
+			plan, err := resolver(ctx, parsedValues)
+			if err != nil {
+				return err
+			}
+			if plan == nil {
+				return nil
+			}
+
+			files, _, err := plan.Resolve(ctx)
+			if err != nil {
+				return err
+			}
+			return FromResolvedFiles(files, options...)(func(*schema.Schema, *values.Values) error {
+				return nil
+			})(schema_, parsedValues)
 		}
 	}
 }
