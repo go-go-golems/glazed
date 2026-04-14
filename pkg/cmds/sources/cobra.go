@@ -92,35 +92,3 @@ func FromArgs(args []string, options ...fields.ParseOption) Middleware {
 		}
 	}
 }
-
-// ConfigFilesResolver is a callback used by Cobra-specific middleware to resolve the list
-// of config files to load in low -> high precedence order.
-type ConfigFilesResolver func(parsedValues *values.Values, cmd *cobra.Command, args []string) ([]string, error)
-
-// LoadFieldsFromResolvedFilesForCobra loads fields from a resolver-provided list of files
-// (low -> high precedence). Each file is tracked as a separate parse step with metadata.
-func LoadFieldsFromResolvedFilesForCobra(
-	cmd *cobra.Command,
-	args []string,
-	resolver ConfigFilesResolver,
-	options ...fields.ParseOption,
-) Middleware {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
-			if err := next(schema_, parsedValues); err != nil {
-				return err
-			}
-			files, err := resolver(parsedValues, cmd, args)
-			if err != nil {
-				return err
-			}
-			// Apply as a single multi-file step using helper
-			// Wrap ParseOptions into ConfigFileOptions
-			configOpts := []ConfigFileOption{}
-			if len(options) > 0 {
-				configOpts = append(configOpts, WithParseOptions(options...))
-			}
-			return FromFiles(files, configOpts...)(func(_ *schema.Schema, _ *values.Values) error { return nil })(schema_, parsedValues)
-		}
-	}
-}

@@ -12,6 +12,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,32 @@ type Settings struct {
 }
 
 type Command struct{ *cmds.CommandDescription }
+
+func overrideSiblingSource(path string) glazedconfig.SourceSpec {
+	return glazedconfig.SourceSpec{
+		Name:       "explicit-override-config",
+		Layer:      glazedconfig.LayerExplicit,
+		SourceKind: "computed-override-file",
+		Optional:   true,
+		Discover: func(context.Context) ([]string, error) {
+			if strings.TrimSpace(path) == "" {
+				return nil, nil
+			}
+			dir := filepath.Dir(path)
+			base := filepath.Base(path)
+			ext := filepath.Ext(base)
+			stem := strings.TrimSuffix(base, ext)
+			override := filepath.Join(dir, fmt.Sprintf("%s.override.yaml", stem))
+			if _, err := os.Stat(override); err != nil {
+				if os.IsNotExist(err) {
+					return nil, nil
+				}
+				return nil, err
+			}
+			return []string{override}, nil
+		},
+	}
+}
 
 func NewCommand() (*Command, error) {
 	demo, err := schema.NewSection(
@@ -66,30 +93,20 @@ func main() {
 		panic(err)
 	}
 
-	// Config files resolver: start from --config-file if provided, then add sibling <base>.override.yaml
-	resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-		cs := &cli.CommandSettings{}
-		_ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
-		files := []string{}
-		if cs.ConfigFile != "" {
-			files = append(files, cs.ConfigFile)
-			dir := filepath.Dir(cs.ConfigFile)
-			base := filepath.Base(cs.ConfigFile)
-			ext := filepath.Ext(base)
-			stem := strings.TrimSuffix(base, ext)
-			override := filepath.Join(dir, fmt.Sprintf("%s.override.yaml", stem))
-			if _, err := os.Stat(override); err == nil {
-				files = append(files, override)
-			}
-		}
-		return files, nil
-	}
-
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		cmd,
 		cli.WithParserConfig(cli.CobraParserConfig{
-			// Keep command-settings to parse --config-file
-			ConfigFilesFunc: resolver,
+			// Keep command-settings to parse --config-file.
+			ConfigPlanBuilder: func(parsed *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
+				cs := &cli.CommandSettings{}
+				_ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
+				return glazedconfig.NewPlan(
+					glazedconfig.WithLayerOrder(glazedconfig.LayerExplicit),
+				).Add(
+					glazedconfig.ExplicitFile(cs.ConfigFile).Named("explicit-config"),
+					overrideSiblingSource(cs.ConfigFile),
+				), nil
+			},
 		}),
 	)
 	if err != nil {

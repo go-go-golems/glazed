@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -87,18 +88,19 @@ type CobraParser struct {
 	enableCreateCommandSettingsSection bool
 }
 
-// Inserted: new config struct for parser customization
+type ConfigPlanBuilder func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) (*glazedConfig.Plan, error)
+
 type CobraParserConfig struct {
 	MiddlewaresFunc                    CobraMiddlewaresFunc
 	ShortHelpSections                  []string
 	SkipCommandSettingsSection         bool
 	EnableProfileSettingsSection       bool
 	EnableCreateCommandSettingsSection bool
-	// New: application name and optional explicit config path
-	AppName    string
-	ConfigPath string
-	// New: optional callback returning an ordered list of config files (low -> high precedence)
-	ConfigFilesFunc func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]string, error)
+	// AppName controls the default env prefix (strings.ToUpper(AppName)). It no longer implies config discovery.
+	AppName string
+	// ConfigPlanBuilder resolves explicit layered config policy for the command. If nil, the default
+	// Cobra parser path loads no config files automatically.
+	ConfigPlanBuilder ConfigPlanBuilder
 }
 
 func NewCobraCommandFromCommandDescription(
@@ -137,28 +139,24 @@ func NewCobraParserFromSections(
 		ret.skipCommandSettingsSection = cfg.SkipCommandSettingsSection
 		ret.enableProfileSettingsSection = cfg.EnableProfileSettingsSection
 		ret.enableCreateCommandSettingsSection = cfg.EnableCreateCommandSettingsSection
-		// If no custom middlewares func provided, construct one that leverages AppName/ConfigPath
 		if cfg.MiddlewaresFunc == nil {
 			cfgCopy := *cfg
 			ret.middlewaresFunc = func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]cmd_sources.Middleware, error) {
 				middlewares_ := []cmd_sources.Middleware{}
 
 				// Append in reverse precedence so the last applied has highest precedence (flags)
-				// Flags (highest precedence)
 				middlewares_ = append(middlewares_,
 					cmd_sources.FromCobra(cmd,
 						fields.WithSource("cobra"),
 					),
 				)
 
-				// Positional arguments
 				middlewares_ = append(middlewares_,
 					cmd_sources.FromArgs(args,
 						fields.WithSource("arguments"),
 					),
 				)
 
-				// Environment overrides
 				if cfgCopy.AppName != "" {
 					envPrefix := strings.ToUpper(cfgCopy.AppName)
 					middlewares_ = append(middlewares_,
@@ -168,41 +166,29 @@ func NewCobraParserFromSections(
 					)
 				}
 
-				// Config files (low -> high precedence) via a single middleware
-				resolver := cfgCopy.ConfigFilesFunc
-				if resolver == nil {
-					resolver = func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-						var files []string
-						if cfgCopy.ConfigPath != "" || cfgCopy.AppName != "" {
-							explicit := cfgCopy.ConfigPath
-							cs := &CommandSettings{}
-							if err := parsed.DecodeSectionInto(CommandSettingsSlug, cs); err == nil {
-								if cs.ConfigFile != "" {
-									explicit = cs.ConfigFile
-								}
-							}
-							p, _ := glazedConfig.ResolveAppConfigPath(cfgCopy.AppName, explicit)
-							if p != "" {
-								files = []string{p}
-							}
+				if cfgCopy.ConfigPlanBuilder != nil {
+					plan, err := cfgCopy.ConfigPlanBuilder(parsedCommandSections, cmd, args)
+					if err != nil {
+						return nil, err
+					}
+					if plan != nil {
+						ctx := context.Background()
+						if cmd != nil && cmd.Context() != nil {
+							ctx = cmd.Context()
 						}
-						return files, nil
+						files, _, err := plan.Resolve(ctx)
+						if err != nil {
+							return nil, err
+						}
+						middlewares_ = append(middlewares_,
+							cmd_sources.FromResolvedFiles(
+								files,
+								cmd_sources.WithParseOptions(fields.WithSource("config")),
+							),
+						)
 					}
 				}
-				// Wrap resolver to bind parsedCommandSections captured earlier
-				wrapped := func(_ *values.Values, cmd_ *cobra.Command, args_ []string) ([]string, error) {
-					return resolver(parsedCommandSections, cmd_, args_)
-				}
-				middlewares_ = append(middlewares_,
-					cmd_sources.LoadFieldsFromResolvedFilesForCobra(
-						cmd,
-						args,
-						wrapped,
-						fields.WithSource("config"),
-					),
-				)
 
-				// Defaults (lowest precedence)
 				middlewares_ = append(middlewares_,
 					cmd_sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
 				)

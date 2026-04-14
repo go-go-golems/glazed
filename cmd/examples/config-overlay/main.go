@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -20,6 +21,24 @@ type OverlaySettings struct {
 }
 
 type OverlayCommand struct{ *cmds.CommandDescription }
+
+func exampleFileSource(name string, layer glazedconfig.ConfigLayer, path string) glazedconfig.SourceSpec {
+	return glazedconfig.SourceSpec{
+		Name:       name,
+		Layer:      layer,
+		SourceKind: "example-config",
+		Optional:   true,
+		Discover: func(context.Context) ([]string, error) {
+			if _, err := os.Stat(path); err != nil {
+				if os.IsNotExist(err) {
+					return nil, nil
+				}
+				return nil, err
+			}
+			return []string{path}, nil
+		},
+	}
+}
 
 func NewOverlayCommand() (*OverlayCommand, error) {
 	demo, err := schema.NewSection(
@@ -65,20 +84,19 @@ func main() {
 		panic(err)
 	}
 
-	// Provide a custom files resolver returning low->high precedence files
-	filesResolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-		return []string{
-			"cmd/examples/config-overlay/base.yaml",
-			"cmd/examples/config-overlay/env.yaml",
-			"cmd/examples/config-overlay/local.yaml",
-		}, nil
-	}
-
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		overlay,
 		cli.WithParserConfig(cli.CobraParserConfig{
 			SkipCommandSettingsSection: true,
-			ConfigFilesFunc:            filesResolver,
+			ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
+				return glazedconfig.NewPlan(
+					glazedconfig.WithLayerOrder(glazedconfig.LayerSystem, glazedconfig.LayerUser, glazedconfig.LayerCWD),
+				).Add(
+					exampleFileSource("base-config", glazedconfig.LayerSystem, "cmd/examples/config-overlay/base.yaml"),
+					exampleFileSource("env-config", glazedconfig.LayerUser, "cmd/examples/config-overlay/env.yaml"),
+					exampleFileSource("local-config", glazedconfig.LayerCWD, "cmd/examples/config-overlay/local.yaml"),
+				), nil
+			},
 		}),
 	)
 	if err != nil {
