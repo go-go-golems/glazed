@@ -8,12 +8,9 @@ Topics:
 - settings
 - yaml
 Commands:
-- config
-- set
-- get
+- help
 Flags:
 - --config-file
-- --global
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
@@ -40,19 +37,16 @@ logging:
   file: "/var/log/app.log"
 ```
 
-## Setting Configuration
+## Working With Configuration
 
-Use the config command to manage settings:
+Applications built on Glazed typically combine configuration files, environment variables, and command-line flags. A common workflow is:
 
 ```bash
-# Set a value
-config set database.url "postgresql://user:pass@localhost/db"
+# Point a command at an explicit config file
+myapp run --config-file ./config.yaml
 
-# Get a value
-config get database.url
-
-# Use global configuration
-config set --global output.format json
+# Override individual values via flags
+myapp run --output-format json
 ```
 
 ## Configuration Precedence
