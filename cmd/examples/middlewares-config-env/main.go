@@ -9,6 +9,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/go-go-golems/glazed/pkg/types"
@@ -99,8 +100,13 @@ func main() {
 		cli.WithParserConfig(cli.CobraParserConfig{
 			// AppName enables env prefix APP_<SECTION_PREFIX+FLAG>
 			AppName: "glazed-mw-demo",
-			// Explicit config file for demo
-			ConfigPath: "cmd/examples/middlewares-config-env/config.yaml",
+			ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
+				return glazedconfig.NewPlan(
+					glazedconfig.WithLayerOrder(glazedconfig.LayerExplicit),
+				).Add(
+					glazedconfig.ExplicitFile("cmd/examples/middlewares-config-env/config.yaml").Named("example-config"),
+				), nil
+			},
 		}),
 	)
 	if err != nil {

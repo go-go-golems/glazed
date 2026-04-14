@@ -11,7 +11,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -65,13 +64,10 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 
 	// Configure Logstash logging if enabled
 	if settings.LogstashEnabled {
-		// Use default app name if not specified
+		// Use a stable fallback app name if not specified explicitly.
 		appName := settings.LogstashAppName
 		if appName == "" {
-			appName = viper.GetEnvPrefix()
-			if appName == "" {
-				appName = "app"
-			}
+			appName = "app"
 		}
 
 		logstashWriter := SetupLogstashLogger(
@@ -122,27 +118,6 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		Msg("Logger initialized")
 
 	return nil
-}
-
-// InitLoggerFromViper initializes the logger using settings from Viper
-// Deprecated: Initialize logging from resolved values using SetupLoggingFromValues instead.
-func InitLoggerFromViper() error {
-	log.Warn().Msg("logging.InitLoggerFromViper is deprecated; use SetupLoggingFromValues")
-	settings := &LoggingSettings{
-		LogLevel:            viper.GetString("log-level"),
-		LogFile:             viper.GetString("log-file"),
-		LogFormat:           viper.GetString("log-format"),
-		WithCaller:          viper.GetBool("with-caller"),
-		LogToStdout:         viper.GetBool("log-to-stdout"),
-		LogstashEnabled:     viper.GetBool("logstash-enabled"),
-		LogstashHost:        viper.GetString("logstash-host"),
-		LogstashPort:        viper.GetInt("logstash-port"),
-		LogstashProtocol:    viper.GetString("logstash-protocol"),
-		LogstashAppName:     viper.GetString("logstash-app-name"),
-		LogstashEnvironment: viper.GetString("logstash-environment"),
-	}
-
-	return InitLoggerFromSettings(settings)
 }
 
 // InitLoggerFromCobra initializes the logger using flags parsed by Cobra on the given command.

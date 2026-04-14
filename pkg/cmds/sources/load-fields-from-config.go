@@ -1,14 +1,17 @@
 package sources
 
 import (
+	"context"
 	"encoding/json"
+	"os"
+	"strings"
+
 	fields "github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"os"
-	"strings"
 )
 
 // ConfigFileMapper is a function that transforms an arbitrary config file structure
@@ -67,18 +70,96 @@ func FromFiles(files []string, options ...ConfigFileOption) Middleware {
 				if err != nil {
 					return err
 				}
-				parseOpts := append(opts.ParseOptions,
-					fields.WithSource("config"),
-					fields.WithMetadata(map[string]interface{}{
-						"config_file": f,
-						"index":       i,
-					}),
-				)
+				parseOpts := configParseOptions(opts.ParseOptions, map[string]interface{}{
+					"config_file":        f,
+					"index":              i,
+					"config_index":       i,
+					"config_source_name": "files",
+					"config_source_kind": "config-file",
+				})
 				if err := updateFromMap(schema_, parsedValues, m, parseOpts...); err != nil {
 					return err
 				}
 			}
 			return nil
+		}
+	}
+}
+
+// FromResolvedFiles applies config files discovered by a glazed config.Plan.
+// Unlike FromFiles, each entry carries layer/source metadata that is preserved in parse-step history.
+func FromResolvedFiles(files []glazedconfig.ResolvedConfigFile, options ...ConfigFileOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			if err := next(schema_, parsedValues); err != nil {
+				return err
+			}
+			opts := &configFileOptions{}
+			for _, opt := range options {
+				opt(opts)
+			}
+			for _, file := range files {
+				m, err := readConfigFileToSectionMap(file.Path, opts.Mapper)
+				if err != nil {
+					return err
+				}
+				parseOpts := configParseOptions(opts.ParseOptions, map[string]interface{}{
+					"config_file":        file.Path,
+					"index":              file.Index,
+					"config_index":       file.Index,
+					"config_layer":       string(file.Layer),
+					"config_source_name": file.SourceName,
+					"config_source_kind": file.SourceKind,
+				})
+				if err := updateFromMap(schema_, parsedValues, m, parseOpts...); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
+}
+
+// ConfigPlanResolver resolves a config plan at middleware execution time.
+// It receives the current parsed values after lower-precedence sources have already run.
+type ConfigPlanResolver func(ctx context.Context, parsedValues *values.Values) (*glazedconfig.Plan, error)
+
+// FromConfigPlan resolves a config plan at middleware execution time and loads the resulting files
+// via FromResolvedFiles, preserving config provenance metadata in parse-step history.
+func FromConfigPlan(plan *glazedconfig.Plan, options ...ConfigFileOption) Middleware {
+	return FromConfigPlanBuilder(func(context.Context, *values.Values) (*glazedconfig.Plan, error) {
+		return plan, nil
+	}, options...)
+}
+
+// FromConfigPlanBuilder resolves a config plan dynamically at middleware execution time and loads
+// the resulting files via FromResolvedFiles.
+func FromConfigPlanBuilder(resolver ConfigPlanResolver, options ...ConfigFileOption) Middleware {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(schema_ *schema.Schema, parsedValues *values.Values) error {
+			if err := next(schema_, parsedValues); err != nil {
+				return err
+			}
+			if resolver == nil {
+				return nil
+			}
+
+			ctx := context.Background()
+			plan, err := resolver(ctx, parsedValues)
+			if err != nil {
+				return err
+			}
+			if plan == nil {
+				return nil
+			}
+
+			files, _, err := plan.Resolve(ctx)
+			if err != nil {
+				return err
+			}
+			return FromResolvedFiles(files, options...)(func(*schema.Schema, *values.Values) error {
+				return nil
+			})(schema_, parsedValues)
 		}
 	}
 }
@@ -118,6 +199,16 @@ func WithParseOptions(options ...fields.ParseOption) ConfigFileOption {
 	return func(o *configFileOptions) {
 		o.ParseOptions = append(o.ParseOptions, options...)
 	}
+}
+
+func configParseOptions(base []fields.ParseOption, metadata map[string]interface{}) []fields.ParseOption {
+	ret := make([]fields.ParseOption, 0, len(base)+2)
+	ret = append(ret, base...)
+	ret = append(ret, fields.WithSource("config"))
+	if len(metadata) > 0 {
+		ret = append(ret, fields.WithMetadata(metadata))
+	}
+	return ret
 }
 
 func readConfigFileToSectionMap(filename string, mapper ConfigMapper) (map[string]map[string]interface{}, error) {

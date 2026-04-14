@@ -10,6 +10,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -83,13 +84,18 @@ func main() {
 		panic(err)
 	}
 
-	// Use a single explicit config path for simplicity
+	// Use a single explicit config plan for simplicity.
 	cobraCmd, err := cli.BuildCobraCommandFromCommand(
 		demo,
 		cli.WithParserConfig(cli.CobraParserConfig{
 			SkipCommandSettingsSection: true,
-			// Adjust path to your environment if needed
-			ConfigPath: "cmd/examples/config-single/config.yaml",
+			ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
+				return glazedconfig.NewPlan(
+					glazedconfig.WithLayerOrder(glazedconfig.LayerExplicit),
+				).Add(
+					glazedconfig.ExplicitFile("cmd/examples/config-single/config.yaml").Named("example-config"),
+				), nil
+			},
 		}),
 	)
 	if err != nil {

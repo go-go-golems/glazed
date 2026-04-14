@@ -16,6 +16,8 @@ SectionType: Tutorial
 
 This tutorial shows how to load configuration from one or more files using Glazed middlewares. You’ll see a simple single-file setup and a multi-file overlay with deterministic precedence. We’ll also show how to inspect parse steps using `--print-parsed-fields`.
 
+For CLIs, the normal entry point is `CobraParserConfig.ConfigPlanBuilder`. For library-style middleware execution, the equivalent direct APIs are `sources.FromConfigPlan(...)` and `sources.FromConfigPlanBuilder(...)`.
+
 ## Prerequisites
 
 - Go 1.19+
@@ -42,7 +44,13 @@ cmd := &DemoBareCommand{CommandDescription: desc}
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
         SkipCommandSettingsSection: true,
-        ConfigPath:               "./config.yaml",
+        ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+            return config.NewPlan(
+                config.WithLayerOrder(config.LayerExplicit),
+            ).Add(
+                config.ExplicitFile("./config.yaml").Named("single-config"),
+            ), nil
+        },
     }),
 )
 ```
@@ -69,17 +77,21 @@ api_key=cfg-one threshold=33
 
 ## 2. Multiple Files (Overlays)
 
-Use a resolver to return an ordered list of files (low → high precedence):
+Use a config plan to return an ordered set of files (low → high precedence):
 
 ```go
-resolver := func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-    return []string{"base.yaml", "env.yaml", "local.yaml"}, nil
-}
-
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
         SkipCommandSettingsSection: true,
-        ConfigFilesFunc:          resolver,
+        ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+            return config.NewPlan(
+                config.WithLayerOrder(config.LayerSystem, config.LayerUser, config.LayerCWD),
+            ).Add(
+                config.ExplicitFile("base.yaml").Named("base").InLayer(config.LayerSystem),
+                config.ExplicitFile("env.yaml").Named("env").InLayer(config.LayerUser),
+                config.ExplicitFile("local.yaml").Named("local").InLayer(config.LayerCWD),
+            ), nil
+        },
     }),
 )
 ```
@@ -117,6 +129,18 @@ Expected output:
 
 ```text
 api_key=local threshold=20
+```
+
+Under the hood, the Cobra parser now uses the same plan-loading middleware shape you can call directly in library code:
+
+```go
+sources.Execute(schema_, parsed,
+    sources.FromDefaults(),
+    sources.FromConfigPlan(plan),
+    sources.FromEnv("DEMO"),
+    sources.FromArgs(args),
+    sources.FromCobra(cmd),
+)
 ```
 
 ## 3. Inspect Parse Steps
@@ -262,7 +286,7 @@ err := sources.Execute(schema_, parsed,
 
 ## 9. Deprecated: Viper Integration
 
-Legacy Viper-based config parsing (e.g., `GatherFlagsFromViper`) is deprecated. Prefer config file middlewares plus env and flags:
+Older Viper-based config parsing helpers were removed. Prefer config file middlewares plus env and flags:
 
 ```go
 err := sources.Execute(schema_, parsed,

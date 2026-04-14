@@ -16,13 +16,16 @@ SectionType: GeneralTopic
 Glazed provides first-class support for reading configuration from one or more YAML/JSON files. Files are applied from low → high precedence, every file is recorded as its own parse step, and the result integrates cleanly with environment variables, positional args, and flags.
 
 - Precedence: Defaults < Config files (low→high) < Env < Positional Args < Flags
-- Traceability: Each config file write is logged with `source: config` and `{ config_file, index }` metadata and can be inspected with `--print-parsed-fields`.
+- Traceability: Each config file write is logged with `source: config` and metadata such as `{ config_file, index }`, and richer layered flows can also record `{ config_index, config_layer, config_source_name, config_source_kind }`.
+- Loading styles: You can load config via simple file middlewares (`FromFile`, `FromFiles`), via resolved layered inputs (`FromResolvedFiles`), or directly from declarative plans (`FromConfigPlan`, `FromConfigPlanBuilder`).
 
 This guide shows how to load single and multiple files, integrate with Cobra, implement app-level file resolution patterns, use pattern- and custom-mappers, inspect parse steps, and validate config files.
 
 ## Option A: Direct middlewares (library-only)
 
 Use this approach when you’re embedding Glazed into a service or library and you want explicit, programmatic control over where configuration comes from. You decide the exact order of sources and call the middleware execution yourself. This makes the precedence rules obvious in code and easy to unit test.
+
+If you already have a declarative `config.Plan`, you can either resolve it yourself and call `FromResolvedFiles(...)`, or load it directly with `FromConfigPlan(...)` / `FromConfigPlanBuilder(...)`.
 
 ```go
 package main
@@ -60,9 +63,9 @@ func run(cmd *cobra.Command, args []string) error {
 
 ## Option B: Cobra integration (recommended for CLIs)
 
-If you’re building a CLI, the Cobra integration wires configuration, environment variables, positional arguments, and flags into a predictable pipeline with minimal boilerplate. `CobraParserConfig` lets you enable app-wide env prefixes, resolve config files, or inject your own resolver logic. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
+If you’re building a CLI, the Cobra integration wires configuration, environment variables, positional arguments, and flags into a predictable pipeline with minimal boilerplate. `CobraParserConfig` lets you enable app-wide env prefixes and attach an explicit declarative config plan. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
 
-Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The parser config can auto-wire env and config discovery.
+Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The parser config auto-wires env parsing; config loading is explicit through `ConfigPlanBuilder`.
 
 ```go
 package main
@@ -84,15 +87,18 @@ func build() (*cobra.Command, error) {
     )
     desc := cmds.NewCommandDescription("demo", cmds.WithSectionsList(demo))
 
-    // AppName enables env overrides (prefix = APPNAME_) and config discovery
-    // ConfigPath uses an explicit path if provided
-    // ConfigFilesFunc can return multiple files low → high precedence
+    // AppName enables env overrides (prefix = APPNAME_)
+    // ConfigPlanBuilder defines config discovery explicitly
     return cli.BuildCobraCommandFromCommand(&DemoBare{desc},
         cli.WithParserConfig(cli.CobraParserConfig{
-            AppName:       "myapp",
-            ConfigPath:    "", // optional explicit file (can come from --config-file too)
-            ConfigFilesFunc: func(_ *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
-                return []string{"base.yaml", "local.yaml"}, nil
+            AppName: "myapp",
+            ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+                return config.NewPlan(
+                    config.WithLayerOrder(config.LayerSystem, config.LayerCWD),
+                ).Add(
+                    config.ExplicitFile("base.yaml").Named("base").InLayer(config.LayerSystem),
+                    config.ExplicitFile("local.yaml").Named("local").InLayer(config.LayerCWD),
+                ), nil
             },
         }),
     )
@@ -136,53 +142,127 @@ _ = sources.Execute(schema_, parsed,
 )
 ```
 
-## App-level config discovery and patterns
+## Declarative config plans
 
-Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). `ResolveAppConfigPath` encapsulates that search so your app can “just find” a config without hardcoding paths. Pair it with a `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery. For overlays, a resolver can add optional files like `<base>.override.yaml` if they exist, keeping configuration flexible without hidden magic.
+If your application needs more than “load these files in this order,” use a declarative config plan from `glazed/pkg/config`. This is the reusable API for expressing layered discovery such as system config, user config, repository-local config, working-directory config, and explicit overrides.
 
-Use `github.com/go-go-golems/glazed/pkg/config.ResolveAppConfigPath` to discover a per-app config file:
+A plan is built from named source specs and an explicit layer order:
 
 ```go
-package main
-
-import (
-    appconfig "github.com/go-go-golems/glazed/pkg/config"
+plan := config.NewPlan(
+    config.WithLayerOrder(
+        config.LayerSystem,
+        config.LayerUser,
+        config.LayerRepo,
+        config.LayerCWD,
+        config.LayerExplicit,
+    ),
+    config.WithDedupePaths(),
+).Add(
+    config.SystemAppConfig("myapp").Named("system-app-config"),
+    config.XDGAppConfig("myapp").Named("xdg-app-config"),
+    config.HomeAppConfig("myapp").Named("home-app-config"),
+    config.GitRootFile(".myapp.local.yaml").Named("git-root-local"),
+    config.WorkingDirFile(".myapp.local.yaml").Named("cwd-local"),
+    config.ExplicitFile(explicitPath).Named("explicit-config-file"),
 )
 
-configPath, err := appconfig.ResolveAppConfigPath("myapp", "")
-// Search order (first existing wins):
-// 1) $XDG_CONFIG_HOME/myapp/config.yaml
-// 2) $HOME/.myapp/config.yaml
-// 3) /etc/myapp/config.yaml
+files, report, err := plan.Resolve(context.Background())
+if err != nil {
+    return err
+}
+fmt.Println(report.String())
+
+err = sources.Execute(
+    schema_,
+    parsed,
+    sources.FromResolvedFiles(files),
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+)
 ```
 
-You can also implement overlay patterns like `<base>.override.yaml` or `<app>.local.yaml` in a resolver:
+If you do not need the explicit `files, report := plan.Resolve(...)` step, you can load the plan directly:
+
+```go
+err = sources.Execute(
+    schema_,
+    parsed,
+    sources.FromConfigPlan(plan),
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+)
+```
+
+Use the direct plan middlewares when you want Glazed to resolve and load the plan inside the middleware pipeline. Use `FromResolvedFiles(...)` when you want to inspect, test, print, or otherwise reuse the explicit `[]ResolvedConfigFile` output before loading.
+
+Use this approach when you want both:
+
+- explicit config source ordering that is easy to review in code
+- rich provenance in parsed field history, including `config_layer` and `config_source_name`
+
+See the dedicated topic [Declarative Config Plans](27-declarative-config-plans.md) and the runnable example `cmd/examples/config-plan` for the full pattern.
+
+## App-level config discovery and patterns
+
+Many CLIs have a conventional config location (XDG, home dotdir, or `/etc`). Express that policy directly through `config.Plan` so the search order and precedence are visible in code. Pair plan-based discovery with the `--config-file` flag (already provided by the `command-settings` section) so power users can override discovery explicitly.
+
+Use `github.com/go-go-golems/glazed/pkg/config` to build a plan that discovers a conventional app config plus explicit overrides:
 
 ```go
 package main
 
 import (
+    "context"
     "fmt"
     "os"
     "path/filepath"
     "strings"
 
     "github.com/go-go-golems/glazed/pkg/cli"
-    "github.com/go-go-golems/glazed/pkg/cmds/schema"
+    "github.com/go-go-golems/glazed/pkg/cmds/values"
+    glazedconfig "github.com/go-go-golems/glazed/pkg/config"
+    "github.com/spf13/cobra"
 )
 
-resolver := func(parsed *values.Values, _ *cobra.Command, _ []string) ([]string, error) {
+overrideSibling := func(path string) glazedconfig.SourceSpec {
+    return glazedconfig.SourceSpec{
+        Name:       "explicit-override",
+        Layer:      glazedconfig.LayerExplicit,
+        SourceKind: "computed-override-file",
+        Optional:   true,
+        Discover: func(context.Context) ([]string, error) {
+            if strings.TrimSpace(path) == "" {
+                return nil, nil
+            }
+            stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+            override := filepath.Join(filepath.Dir(path), fmt.Sprintf("%s.override.yaml", stem))
+            if _, err := os.Stat(override); err == nil {
+                return []string{override}, nil
+            } else if os.IsNotExist(err) {
+                return nil, nil
+            } else {
+                return nil, err
+            }
+        },
+    }
+}
+
+builder := func(parsed *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
     cs := &cli.CommandSettings{}
     _ = parsed.DecodeSectionInto(cli.CommandSettingsSlug, cs)
-    if cs.ConfigFile == "" { return nil, nil }
-    files := []string{cs.ConfigFile}
-    dir, base := filepath.Dir(cs.ConfigFile), filepath.Base(cs.ConfigFile)
-    stem := strings.TrimSuffix(base, filepath.Ext(base))
-    override := filepath.Join(dir, fmt.Sprintf("%s.override.yaml", stem))
-    if _, err := os.Stat(override); err == nil {
-        files = append(files, override)
-    }
-    return files, nil
+
+    return glazedconfig.NewPlan(
+        glazedconfig.WithLayerOrder(
+            glazedconfig.LayerSystem,
+            glazedconfig.LayerUser,
+            glazedconfig.LayerExplicit,
+        ),
+    ).Add(
+        glazedconfig.SystemAppConfig("myapp").Named("system-app-config"),
+        glazedconfig.XDGAppConfig("myapp").Named("xdg-app-config"),
+        glazedconfig.HomeAppConfig("myapp").Named("home-app-config"),
+        glazedconfig.ExplicitFile(cs.ConfigFile).Named("explicit-config"),
+        overrideSibling(cs.ConfigFile),
+    ), nil
 }
 ```
 
@@ -382,11 +462,18 @@ Use these as templates. Each example shows a minimal, focused scenario you can c
 - Pattern mapper: `cmd/examples/config-pattern-mapper`
 - Custom mapper: `cmd/examples/config-custom-mapper`
 - Validation script: `glazed/ttmp/2025-11-03/validate-config-examples.sh`
+- Declarative config plans: `cmd/examples/config-plan`
+
+## See Also
+
+- [Declarative Config Plans](27-declarative-config-plans.md)
+- [Declarative Config Plan Example](../examples/config/01-declarative-config-plan.md)
+- [Pattern-Based Config Mapping](23-pattern-based-config-mapping.md)
 
 ## Deprecated: Viper integration
 
 If you’re migrating from Viper-based setups, replace per-command file injection and env parsing with Glazed middlewares and `CobraParserConfig`. This typically reduces glue code while improving observability (traceable parse steps) and testability (deterministic precedence).
 
-Legacy Viper-based middlewares like `GatherFlagsFromViper` and per-command `--load-fields-from-file` are deprecated. Prefer config middlewares (`LoadFieldsFromFiles`) with resolvers and `--config-file`.
+Older Viper-based config parsing helpers have been removed. Prefer config middlewares (`FromFile` / `FromFiles` / `FromResolvedFiles` / `FromConfigPlan`) together with env updates and `--config-file`.
 
 
