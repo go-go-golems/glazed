@@ -24,8 +24,8 @@ The new system replaces Viper's automatic config discovery and merging with expl
 
 The migration involves three main areas:
 
-1. **Config File Loading**: Replace `GatherFlagsFromViper()` and `GatherFlagsFromCustomViper()` with `LoadFieldsFromFile()` or `LoadFieldsFromFiles()`
-2. **Logging Initialization**: Move from `InitLoggerFromViper()` to `InitLoggerFromCobra()` or `SetupLoggingFromValues()`
+1. **Config File Loading**: Replace older Viper-based loading with `LoadFieldsFromFile()` / `LoadFieldsFromFiles()` / `FromFiles()` and env updates
+2. **Logging Initialization**: Move to `InitLoggerFromCobra()` or `SetupLoggingFromValues()`
 3. **Cobra Integration**: Use `CobraParserConfig` to wire config discovery, environment variables, and file loading into your commands
 
 ## ⚠️ Critical: Config File Changes Required

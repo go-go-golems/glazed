@@ -440,6 +440,6 @@ Use these as templates. Each example shows a minimal, focused scenario you can c
 
 If you’re migrating from Viper-based setups, replace per-command file injection and env parsing with Glazed middlewares and `CobraParserConfig`. This typically reduces glue code while improving observability (traceable parse steps) and testability (deterministic precedence).
 
-Legacy Viper-based middlewares like `GatherFlagsFromViper` and per-command `--load-fields-from-file` are deprecated. Prefer config middlewares (`LoadFieldsFromFiles`) with resolvers and `--config-file`.
+Older Viper-based config parsing helpers have been removed. Prefer config middlewares (`LoadFieldsFromFiles` / `FromFiles` / `FromResolvedFiles`) together with env updates and `--config-file`.
 
 

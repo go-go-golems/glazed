@@ -14,6 +14,10 @@ import (
 //
 // If explicit is provided and exists, it is returned directly.
 // If no candidate exists, returns "" with nil error.
+//
+// Deprecated: prefer the declarative config-plan API in glazed/pkg/config (Plan, SourceSpec,
+// Resolve, and built-in sources such as XDGAppConfig, HomeAppConfig, SystemAppConfig,
+// WorkingDirFile, GitRootFile, and ExplicitFile).
 func ResolveAppConfigPath(appName string, explicit string) (string, error) {
 	if explicit != "" {
 		if fileExists(explicit) {

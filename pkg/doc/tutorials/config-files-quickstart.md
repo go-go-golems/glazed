@@ -262,7 +262,7 @@ err := sources.Execute(schema_, parsed,
 
 ## 9. Deprecated: Viper Integration
 
-Legacy Viper-based config parsing (e.g., `GatherFlagsFromViper`) is deprecated. Prefer config file middlewares plus env and flags:
+Older Viper-based config parsing helpers were removed. Prefer config file middlewares plus env and flags:
 
 ```go
 err := sources.Execute(schema_, parsed,
