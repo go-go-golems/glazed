@@ -16,7 +16,7 @@ SectionType: GeneralTopic
 Glazed provides first-class support for reading configuration from one or more YAML/JSON files. Files are applied from low → high precedence, every file is recorded as its own parse step, and the result integrates cleanly with environment variables, positional args, and flags.
 
 - Precedence: Defaults < Config files (low→high) < Env < Positional Args < Flags
-- Traceability: Each config file write is logged with `source: config` and `{ config_file, index }` metadata and can be inspected with `--print-parsed-fields`.
+- Traceability: Each config file write is logged with `source: config` and metadata such as `{ config_file, index }`, and richer layered flows can also record `{ config_index, config_layer, config_source_name, config_source_kind }`.
 
 This guide shows how to load single and multiple files, integrate with Cobra, implement app-level file resolution patterns, use pattern- and custom-mappers, inspect parse steps, and validate config files.
 
@@ -135,6 +135,52 @@ _ = sources.Execute(schema_, parsed,
     sources.FromFiles(files),
 )
 ```
+
+## Declarative config plans
+
+If your application needs more than “load these files in this order,” use a declarative config plan from `glazed/pkg/config`. This is the reusable API for expressing layered discovery such as system config, user config, repository-local config, working-directory config, and explicit overrides.
+
+A plan is built from named source specs and an explicit layer order:
+
+```go
+plan := config.NewPlan(
+    config.WithLayerOrder(
+        config.LayerSystem,
+        config.LayerUser,
+        config.LayerRepo,
+        config.LayerCWD,
+        config.LayerExplicit,
+    ),
+    config.WithDedupePaths(),
+).Add(
+    config.SystemAppConfig("myapp").Named("system-app-config"),
+    config.XDGAppConfig("myapp").Named("xdg-app-config"),
+    config.HomeAppConfig("myapp").Named("home-app-config"),
+    config.GitRootFile(".myapp.local.yaml").Named("git-root-local"),
+    config.WorkingDirFile(".myapp.local.yaml").Named("cwd-local"),
+    config.ExplicitFile(explicitPath).Named("explicit-config-file"),
+)
+
+files, report, err := plan.Resolve(context.Background())
+if err != nil {
+    return err
+}
+fmt.Println(report.String())
+
+err = sources.Execute(
+    schema_,
+    parsed,
+    sources.FromResolvedFiles(files),
+    sources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+)
+```
+
+Use this approach when you want both:
+
+- explicit config source ordering that is easy to review in code
+- rich provenance in parsed field history, including `config_layer` and `config_source_name`
+
+See the dedicated topic [Declarative Config Plans](27-declarative-config-plans.md) and the runnable example `cmd/examples/config-plan` for the full pattern.
 
 ## App-level config discovery and patterns
 
@@ -382,6 +428,13 @@ Use these as templates. Each example shows a minimal, focused scenario you can c
 - Pattern mapper: `cmd/examples/config-pattern-mapper`
 - Custom mapper: `cmd/examples/config-custom-mapper`
 - Validation script: `glazed/ttmp/2025-11-03/validate-config-examples.sh`
+- Declarative config plans: `cmd/examples/config-plan`
+
+## See Also
+
+- [Declarative Config Plans](27-declarative-config-plans.md)
+- [Declarative Config Plan Example](../examples/config/01-declarative-config-plan.md)
+- [Pattern-Based Config Mapping](23-pattern-based-config-mapping.md)
 
 ## Deprecated: Viper integration
 

@@ -1,0 +1,4 @@
+demo:
+  api-key: repo-secret
+  threshold: 11
+  profile: repo

@@ -1,0 +1,3 @@
+demo:
+  threshold: 22
+  profile: cwd
