@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layout"
@@ -15,12 +16,97 @@ import (
 
 type Option func(*CommandAlias)
 
+type AliasTarget []string
+
+func NewAliasTarget(parts ...string) AliasTarget {
+	ret := AliasTarget{}
+	for _, part := range parts {
+		ret = append(ret, splitAliasTargetPart(part)...)
+	}
+	return ret
+}
+
+func NewAliasTargetFromString(aliasFor string) AliasTarget {
+	return NewAliasTarget(aliasFor)
+}
+
+func (t AliasTarget) IsZero() bool {
+	return len(t) == 0
+}
+
+func (t AliasTarget) Segments() []string {
+	return append([]string(nil), t...)
+}
+
+func (t AliasTarget) String() string {
+	return strings.Join(t, " ")
+}
+
+func (t *AliasTarget) UnmarshalYAML(node *yaml.Node) error {
+	if node == nil {
+		*t = nil
+		return nil
+	}
+
+	ret := AliasTarget{}
+	switch node.Kind {
+	case yaml.ScalarNode:
+		ret = append(ret, splitAliasTargetPart(node.Value)...)
+	case yaml.SequenceNode:
+		for _, child := range node.Content {
+			if child.Kind != yaml.ScalarNode {
+				return errors.Errorf("aliasFor entries must be scalar, got YAML kind %d", child.Kind)
+			}
+			ret = append(ret, splitAliasTargetPart(child.Value)...)
+		}
+	case yaml.DocumentNode, yaml.MappingNode, yaml.AliasNode:
+		return errors.Errorf("aliasFor must be a scalar or sequence, got YAML kind %d", node.Kind)
+	default:
+		return errors.Errorf("aliasFor has unsupported YAML kind %d", node.Kind)
+	}
+
+	if len(ret) == 0 {
+		return errors.New("aliasFor must not be empty")
+	}
+	*t = ret
+	return nil
+}
+
+func (t AliasTarget) MarshalYAML() (interface{}, error) {
+	if len(t) == 0 {
+		return nil, nil
+	}
+	if len(t) == 1 {
+		return t[0], nil
+	}
+	return []string(t), nil
+}
+
+func splitAliasTargetPart(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == '/' || r == '\\' || r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	})
+	ret := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		ret = append(ret, part)
+	}
+	return ret
+}
+
 // CommandAlias defines a struct that should be able to define generic aliases
 // for any kind of command line applications, by providing overrides for certain
 // flags (prepopulating them with certain flags and arguments, basically)
 type CommandAlias struct {
 	Name      string            `yaml:"name"`
-	AliasFor  string            `yaml:"aliasFor"`
+	AliasFor  AliasTarget       `yaml:"aliasFor"`
 	Short     string            `yaml:"short,omitempty"`
 	Long      string            `yaml:"long,omitempty"`
 	Flags     map[string]string `yaml:"flags,omitempty"`
@@ -42,7 +128,13 @@ func WithName(name string) Option {
 
 func WithAliasFor(aliasFor string) Option {
 	return func(a *CommandAlias) {
-		a.AliasFor = aliasFor
+		a.AliasFor = NewAliasTargetFromString(aliasFor)
+	}
+}
+
+func WithAliasForPath(parts ...string) Option {
+	return func(a *CommandAlias) {
+		a.AliasFor = NewAliasTarget(parts...)
 	}
 }
 
@@ -121,7 +213,15 @@ var _ cmds.WriterCommand = (*CommandAlias)(nil)
 
 func (a *CommandAlias) String() string {
 	return fmt.Sprintf("CommandAlias{Name: %s, AliasFor: %s, Parents: %v, Source: %s}",
-		a.Name, a.AliasFor, a.Parents, a.Source)
+		a.Name, a.AliasFor.String(), a.Parents, a.Source)
+}
+
+func (a *CommandAlias) ResolveAliasedCommandPath() []string {
+	segments := a.AliasFor.Segments()
+	if len(segments) <= 1 {
+		return append(append([]string{}, a.Parents...), segments...)
+	}
+	return segments
 }
 
 func (a *CommandAlias) ToYAML(w io.Writer) error {
@@ -156,7 +256,7 @@ func (a *CommandAlias) RunIntoWriter(ctx context.Context, parsedValues *values.V
 }
 
 func (a *CommandAlias) IsValid() bool {
-	return a.Name != "" && a.AliasFor != ""
+	return a.Name != "" && !a.AliasFor.IsZero()
 }
 
 // Description returns the CommandDescription of an alias.
