@@ -116,7 +116,7 @@ func runCobraCommand(
 			if createSettings.CreateAlias != "" {
 				alias := &alias.CommandAlias{
 					Name:      createSettings.CreateAlias,
-					AliasFor:  s.Description().Name,
+					AliasFor:  alias.NewAliasTargetFromString(s.Description().Name),
 					Arguments: args,
 					Flags:     map[string]string{},
 				}
@@ -433,7 +433,8 @@ func AddCommandsToRootCommand(
 	}
 
 	for _, alias := range aliases {
-		path := strings.Join(append(append([]string{}, alias.Parents...), alias.AliasFor), " ")
+		resolvedPath := alias.ResolveAliasedCommandPath()
+		path := strings.Join(resolvedPath, " ")
 		aliasedCommand, ok := commandsByName[path]
 		if !ok {
 			return errors.Errorf("Command %s not found for alias %s", path, alias.Name)
