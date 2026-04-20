@@ -719,16 +719,19 @@ func GetCommandMiddlewares(
 }
 ```
 
+> **Warning:** A custom `MiddlewaresFunc` or `GetMiddlewares` replaces Glazed's default Cobra parser chain. Glazed does not merge the defaults for you. If you want env loading, config loading, profiles, or defaults, add those middlewares explicitly in the function you return.
+
 ## Key Points
 
 1. Middleware order determines priority (last middleware runs first)
-2. Use `WithCobraMiddlewaresFunc` or `CobraParserConfig` to add middleware to commands
+2. `WithCobraMiddlewaresFunc` or `CobraParserConfig.MiddlewaresFunc` replaces the default Cobra parser chain, so you own every source in that chain
 3. Common middleware order:
    - Config files (base overlays)
    - Environment
    - Positional arguments
    - Command-line flags (highest)
    - Defaults (lowest)
+4. Leave `MiddlewaresFunc` nil when you want Glazed's built-in env/config-aware Cobra parser path
 
 ## Section-Specific Configuration
 

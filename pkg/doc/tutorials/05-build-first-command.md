@@ -351,8 +351,8 @@ func main() {
     // Convert to Cobra command with enhanced options
     cobraListUsersCmd, err := cli.BuildCobraCommand(listUsersCmd,
         cli.WithParserConfig(cli.CobraParserConfig{
+            AppName:           "glazed-quickstart",
             ShortHelpSections: []string{schema.DefaultSlug},
-            MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
         }),
     )
     if err != nil {
@@ -413,19 +413,31 @@ Key points:
 
 1. **Root Command**: Creates a standard Cobra root command as the application entry point
 2. **Command Creation**: `NewListUsersCommand()` creates the Glazed command with configuration
-3. **Enhanced Cobra Bridge**: Use `cli.WithParserConfig` to pass a `CobraParserConfig` that customizes parser behavior (e.g., `ShortHelpSections`, `MiddlewaresFunc`).
+3. **Enhanced Cobra Bridge**: Use `cli.WithParserConfig` to pass a `CobraParserConfig` that customizes parser behavior (for example `AppName` for env loading and `ShortHelpSections` for help). Only set `MiddlewaresFunc` when you want to replace the built-in chain.
 4. **Registration**: Adds the converted command as a subcommand
 5. **Help System Setup**: `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand()` provide enhanced help functionality
 6. **Execution**: Starts the CLI application and processes command-line arguments
 
 **Built-in Command Features**
 
-The `CobraCommandDefaultMiddlewares` provides several useful debugging and configuration features automatically:
+The built-in Cobra parser path (leave `MiddlewaresFunc` nil) provides several useful debugging and configuration features automatically when you set `AppName`. `CobraCommandDefaultMiddlewares` is a lower-level helper for flags, args, and defaults only.
 
 - `--print-parsed-fields`: Shows how fields were parsed from different sources
 - `--print-yaml`: Outputs the command's configuration as YAML
 - `--print-schema`: Displays the command's field schema
 - `--config-file`: Explicit config file path (overlays supported via resolver)
+
+**Environment-Backed Settings**
+
+To read settings from environment variables, keep the default parser chain and use the `AppName` prefix:
+
+```bash
+export GLAZED_QUICKSTART_LIMIT=3
+export GLAZED_QUICKSTART_ACTIVE_ONLY=true
+./glazed-quickstart list-users --print-parsed-fields
+```
+
+The parsed-field output will show `env` entries alongside Cobra flags and defaults. If you supply a custom `MiddlewaresFunc`, you must re-add env loading yourself.
 
 **Enhanced Help System**
 

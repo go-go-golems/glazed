@@ -16,22 +16,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CobraMiddlewaresFunc is a function that returns a list of middlewares for a cobra command.
-// It can be used to overload the default middlewares for cobra commands.
-// It is mostly used to add a "load from json" section set in the GlazedCommandSettings.
+// CobraMiddlewaresFunc returns the full middleware chain for a Cobra command.
+// If you set it on CobraParserConfig, it replaces the built-in parser chain entirely.
+// That means you must re-add any sources you still want (for example env, config,
+// args, flags, or defaults) inside the custom function.
 type CobraMiddlewaresFunc func(
 	parsedCommandSections *values.Values,
 	cmd *cobra.Command,
 	args []string,
 ) ([]cmd_sources.Middleware, error)
 
-// CobraCommandDefaultMiddlewares is the default implementation for creating
-// the middlewares used in a Cobra command. It handles parsing fields
-// from Cobra flags, command line arguments, environment variables, and
-// default values. The middlewares gather all these fields into a
-// FieldValues object.
-//
-// If the commandSettings specify fields to be loaded from a file, this gets added as a middleware.
+// CobraCommandDefaultMiddlewares builds a minimal middleware chain for Cobra commands.
+// It reads Cobra flags and positional arguments, then applies defaults.
+// Use it when you want an explicit chain; if you also need env loading or config
+// file loading, add those middlewares yourself.
 func CobraCommandDefaultMiddlewares(
 	parsedCommandSections *values.Values,
 	cmd *cobra.Command,
@@ -70,13 +68,13 @@ func CobraCommandDefaultMiddlewares(
 // from the description.
 type CobraParser struct {
 	Sections *schema.Schema
-	// middlewaresFunc is called after the command has been executed, once the
-	// GlazedCommandSettings struct has been filled. At this point, cobra has done the parsing
-	// of CLI flags and arguments, but these haven't yet been parsed into Values
-	// by the glazed framework.
+	// middlewaresFunc builds the parser chain after GlazedCommandSettings has been parsed.
+	// At this point, Cobra has already parsed CLI flags and arguments, but the values
+	// have not yet been turned into Glazed Values.
 	//
-	// This hooks allows the implementor to specify additional ways of loading fields
-	// (for example, sqleton loads the dbt and sql connection fields from env as well).
+	// In the built-in parser path, Glazed wires in env/config loading when configured.
+	// If a custom function is supplied through CobraParserConfig, it replaces that
+	// built-in chain and must re-add any sources it still needs.
 	middlewaresFunc CobraMiddlewaresFunc
 	// List of sections to be shown in short help, empty: always show all
 	shortHelpSections []string
@@ -91,15 +89,18 @@ type CobraParser struct {
 type ConfigPlanBuilder func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) (*glazedConfig.Plan, error)
 
 type CobraParserConfig struct {
+	// MiddlewaresFunc replaces the default Cobra parser chain.
+	// Leave it nil to keep the built-in parser path, which can add env/config loading when configured.
 	MiddlewaresFunc                    CobraMiddlewaresFunc
 	ShortHelpSections                  []string
 	SkipCommandSettingsSection         bool
 	EnableProfileSettingsSection       bool
 	EnableCreateCommandSettingsSection bool
-	// AppName controls the default env prefix (strings.ToUpper(AppName)). It no longer implies config discovery.
+	// AppName controls the default env prefix (strings.ToUpper(AppName)) used by the
+	// built-in parser path. It enables env loading, but it does not imply config discovery.
 	AppName string
-	// ConfigPlanBuilder resolves explicit layered config policy for the command. If nil, the default
-	// Cobra parser path loads no config files automatically.
+	// ConfigPlanBuilder resolves explicit layered config policy for the command.
+	// It is only used by the built-in parser path; if nil, no config files are loaded automatically.
 	ConfigPlanBuilder ConfigPlanBuilder
 }
 
@@ -139,6 +140,7 @@ func NewCobraParserFromSections(
 		ret.skipCommandSettingsSection = cfg.SkipCommandSettingsSection
 		ret.enableProfileSettingsSection = cfg.EnableProfileSettingsSection
 		ret.enableCreateCommandSettingsSection = cfg.EnableCreateCommandSettingsSection
+		// Build the built-in env/config-aware chain only when the caller did not supply a custom middleware function.
 		if cfg.MiddlewaresFunc == nil {
 			cfgCopy := *cfg
 			ret.middlewaresFunc = func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]cmd_sources.Middleware, error) {
