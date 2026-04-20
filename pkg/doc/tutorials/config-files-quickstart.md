@@ -16,7 +16,7 @@ SectionType: Tutorial
 
 This tutorial shows how to load configuration from one or more files using Glazed middlewares. You’ll see a simple single-file setup and a multi-file overlay with deterministic precedence. We’ll also show how to inspect parse steps using `--print-parsed-fields`.
 
-For CLIs, the normal entry point is `CobraParserConfig.ConfigPlanBuilder`. For library-style middleware execution, the equivalent direct APIs are `sources.FromConfigPlan(...)` and `sources.FromConfigPlanBuilder(...)`.
+For CLIs, the normal entry point is `CobraParserConfig`: use `AppName` for env overrides and `ConfigPlanBuilder` for file discovery. For library-style middleware execution, the equivalent direct APIs are `sources.FromConfigPlan(...)` and `sources.FromConfigPlanBuilder(...)`.
 
 ## Prerequisites
 
@@ -43,6 +43,7 @@ cmd := &DemoBareCommand{CommandDescription: desc}
 
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
+        AppName:                   "demo",
         SkipCommandSettingsSection: true,
         ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
             return config.NewPlan(
@@ -82,6 +83,7 @@ Use a config plan to return an ordered set of files (low → high precedence):
 ```go
 cobraCmd, _ := cli.BuildCobraCommandFromCommand(cmd,
     cli.WithParserConfig(cli.CobraParserConfig{
+        AppName:                   "demo",
         SkipCommandSettingsSection: true,
         ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
             return config.NewPlan(
@@ -175,10 +177,24 @@ Precedence remains: Defaults < Config Files < Env < Args < Flags.
 
 ```bash
 # Env override
-DEMO_API_KEY=env-var go run ./cmd/examples/config-overlay overlay
+DEMO_API_KEY=env-var go run ./cmd/examples/config-overlay overlay --print-parsed-fields
 
 # Flag override
-go run ./cmd/examples/config-overlay overlay --demo-threshold 77
+go run ./cmd/examples/config-overlay overlay --demo-threshold 77 --print-parsed-fields
+```
+
+Example parse excerpt for the env override:
+
+```yaml
+demo:
+  api-key:
+    log:
+      - source: config
+        metadata: { config_file: base.yaml, index: 0 }
+        value: base
+      - source: env
+        value: env-var
+    value: env-var
 ```
 
 ## 5. Pattern: base + .override.yaml

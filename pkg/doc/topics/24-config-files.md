@@ -63,9 +63,9 @@ func run(cmd *cobra.Command, args []string) error {
 
 ## Option B: Cobra integration (recommended for CLIs)
 
-If you’re building a CLI, the Cobra integration wires configuration, environment variables, positional arguments, and flags into a predictable pipeline with minimal boilerplate. `CobraParserConfig` lets you enable app-wide env prefixes and attach an explicit declarative config plan. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
+If you’re building a CLI, the Cobra integration keeps environment-variable loading and config-file loading separate on purpose. `AppName` turns on the env prefix for the built-in parser path, while `ConfigPlanBuilder` adds explicit config-file discovery. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
 
-Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The parser config auto-wires env parsing; config loading is explicit through `ConfigPlanBuilder`.
+Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The default parser path wires env loading when `AppName` is set; config loading stays explicit through `ConfigPlanBuilder`. If you supply `MiddlewaresFunc`, you replace that built-in chain and must re-add any sources you still want.
 
 ```go
 package main
@@ -87,8 +87,8 @@ func build() (*cobra.Command, error) {
     )
     desc := cmds.NewCommandDescription("demo", cmds.WithSectionsList(demo))
 
-    // AppName enables env overrides (prefix = APPNAME_)
-    // ConfigPlanBuilder defines config discovery explicitly
+    // AppName enables env loading in the default parser path (prefix = APPNAME_)
+    // ConfigPlanBuilder defines config-file discovery explicitly
     return cli.BuildCobraCommandFromCommand(&DemoBare{desc},
         cli.WithParserConfig(cli.CobraParserConfig{
             AppName: "myapp",
@@ -450,7 +450,7 @@ These guidelines help keep your configuration predictable across environments an
 
 - Keep overlays small and ordered: `base.yaml`, `env.yaml`, `local.yaml`.
 - Prefer named captures over wildcards in pattern rules when collecting multiple values.
-- Use `AppName` in `CobraParserConfig` to enable env overrides automatically.
+- Use `AppName` in `CobraParserConfig` to enable env overrides automatically on the built-in parser path.
 - Record parse sources with `sources.WithSource("config")` (done for you by the config middlewares).
 
 ## Example projects and scripts
