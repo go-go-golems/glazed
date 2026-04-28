@@ -79,6 +79,16 @@ topics:
       description: Generating a static site artifact from structured source content
     - slug: static-render
       description: Static website rendering and export workflows for Glazed help content
+    - slug: export
+      description: Export functionality and data extraction
+    - slug: help-system
+      description: Glazed help system and help entries
+    - slug: sqlite
+      description: SQLite database storage
+    - slug: server
+      description: HTTP server and backend services
+    - slug: ui
+      description: User interface and frontend components
 docTypes:
     - slug: index
       description: Ticket index
