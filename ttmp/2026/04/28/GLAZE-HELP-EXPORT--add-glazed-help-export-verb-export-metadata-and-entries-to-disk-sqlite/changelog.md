@@ -144,3 +144,21 @@ Step 9: Uploaded updated bundle with serve external sources design and implement
 
 Ticket closed
 
+
+## 2026-04-28
+
+Step 10: Addressed PR #558 review comments: removed --from-cmd, rejected invalid export --type filters, and hardened file export paths
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-28/add-glazed-help-export/glazed/pkg/help/cmd/export.go — Reject invalid type filters and validate file export paths
+
+
+## 2026-04-28
+
+Step 10: Updated serve external sources design to remove arbitrary command loading
+
+### Related Files
+
+- /home/manuel/workspaces/2026-04-28/add-glazed-help-export/glazed/pkg/help/server/serve.go — Removed --from-cmd flag and loader wiring
+

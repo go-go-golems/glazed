@@ -756,6 +756,58 @@ This step revised the external-source design based on user feedback and implemen
 
 ---
 
+## Step 10: Address PR #558 Code Review Comments
+
+This step addressed the automated review comments on GitHub PR #558 and removed `--from-cmd` entirely as requested.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Address the code review comments from https://github.com/go-go-golems/glazed/pull/558, remove the --from-cmd entirely,"
+
+**Assistant interpretation:** The user wanted all PR review findings fixed, and explicitly wanted the arbitrary command source removed rather than adjusted.
+
+### What I did
+- Fetched PR #558 review comments with `gh`.
+- Removed `--from-cmd` from `ServeSettings`, `NewServeCommand`, loader construction, tests, and user docs.
+- Removed `CommandJSONLoader`, `NormalizeCommandList`, `runCommandForJSON`, and the quote-aware tokenizer from `pkg/help/loader/sources.go`.
+- Updated `pkg/doc/topics/29-serve-external-help-sources.md` and `design-doc/02-design-serve-external-sources.md` so supported source types are markdown paths, JSON, SQLite, and `--from-glazed-cmd` only.
+- Fixed invalid `--type` handling in `glaze help export`: unknown section types now return an explicit error instead of broadening the export.
+- Hardened `--format files` output against path traversal by validating section slugs and resolving output paths under the selected directory.
+- Added tests for invalid type errors and unsafe slug rejection.
+- Cherry-picked the fix onto the PR branch and committed: `12f0e28` — `fix: address help export and serve review feedback`.
+
+### Why
+- Arbitrary command strings do not fit safely with `fields.TypeStringList`, because the parser comma-splits values before loader code can preserve the original command.
+- Removing `--from-cmd` avoids ambiguous parsing and shell-tokenization edge cases. Users who need custom export flags can run `<binary> help export ... > file.json` and serve it with `--from-json`.
+- Path traversal and silent invalid filters are correctness/security issues in scripted export workflows.
+
+### What worked
+- `go test ./pkg/help/...` passes.
+- Pre-commit test/lint/security hooks passed on commit.
+- Manual checks confirmed `glaze serve --help` no longer exposes `--from-cmd` and invalid `--type tutorial` exits with an error.
+
+### What didn't work
+- I initially made the fix in the corporate-headquarters `main` worktree, then cherry-picked the resulting commit onto the actual PR branch worktree (`task/add-glazed-help-export`). The PR branch now has the fix as `12f0e28`.
+
+### What warrants a second pair of eyes
+- Review `safeSectionFilePath`; it intentionally rejects slugs containing `/` or `\\` rather than trying to sanitize them.
+- Verify that removing `--from-cmd` from docs is sufficient and there are no downstream examples expecting it.
+
+### Technical details
+- Review comments addressed:
+  - P1: `--from-cmd` StringList comma-splitting issue — resolved by removing `--from-cmd` entirely.
+  - P1: file export slug path traversal — resolved by `safeSectionFilePath` and tests.
+  - P2: invalid `--type` silently broadens exports — resolved by returning an explicit error.
+- Validation commands:
+  ```bash
+  go test ./pkg/help/... -count=1
+  go build -o /tmp/glaze-pr558-fix ./cmd/glaze
+  /tmp/glaze-pr558-fix serve --help | grep from-cmd  # exit 1
+  /tmp/glaze-pr558-fix help export --type tutorial --output json  # exit 1
+  ```
+
+---
+
 ## Session Summary
 
 | Deliverable | Path | Status |

@@ -58,10 +58,11 @@ glaze serve --from-glazed-cmd pinocchio,sqleton,xxx
 
 Then it parses the JSON output and inserts the exported help sections into the server's store. This makes cross-package help browsing easy: users do not need to remember the full `help export --output json` invocation for every tool.
 
-The more general form remains available:
+If users need custom export filters, they should export JSON explicitly and then serve the resulting file:
 
 ```bash
-glaze serve --from-cmd "pinocchio help export --output json"
+pinocchio help export --output json --topic database > pinocchio-database-help.json
+glaze serve --from-json pinocchio-database-help.json
 ```
 
 The final design supports five source families:
@@ -70,7 +71,7 @@ The final design supports five source families:
 2. Markdown files or directories from positional `paths`
 3. JSON files from `--from-json`
 4. SQLite databases from `--from-sqlite`
-5. Command outputs from `--from-cmd` and the convenience `--from-glazed-cmd`
+5. Live Glazed binary outputs from the convenience `--from-glazed-cmd`
 
 All list-like inputs must use `fields.TypeStringList` and `[]string` settings fields. The implementation should accept both repeated flags and comma-separated values where Glazed's string-list parsing permits it.
 
@@ -133,7 +134,7 @@ The earlier text first said external sources would replace embedded docs, then r
 
 ### Issue 2: It did not include `--from-glazed-cmd`
 
-The earlier draft only had `--from-cmd`, requiring users to type the full export command repeatedly. The revised design adds `--from-glazed-cmd` as the ergonomic default for Glazed-compatible binaries.
+The earlier draft included `--from-cmd`, but PR review showed that arbitrary command strings are unsafe and difficult to parse correctly with `TypeStringList`. The revised design removes `--from-cmd` entirely and keeps only `--from-glazed-cmd` for live Glazed-compatible binaries.
 
 ### Issue 3: It assumed JSON uses `section_type`
 
@@ -172,7 +173,7 @@ The previous `CommandLoader` used `defer cmd.Wait()` while decoding stdout. A re
 
 1. Make `glaze serve` a universal browser for Glazed help pages from many binaries.
 2. Add `--from-glazed-cmd` for the common case where each input is a Glazed binary name.
-3. Keep `--from-cmd` for advanced users who need a full command line.
+3. Do not support arbitrary command strings; use `--from-glazed-cmd` for live binaries and JSON/SQLite snapshots for custom exports.
 4. Load JSON exports, SQLite exports, and markdown directories.
 5. Let users combine several sources in one server instance.
 6. Preserve current behavior when no external source flags or paths are provided.
@@ -233,22 +234,6 @@ sqleton help export --output json
 xxx help export --output json
 ```
 
-### General command source: `--from-cmd`
-
-Use this when the command is not exactly `<binary> help export --output json`, or when you need extra flags.
-
-```bash
-glaze serve --from-cmd "pinocchio help export --output json --topic database"
-```
-
-This flag also uses `fields.TypeStringList`, so users can pass several commands:
-
-```bash
-glaze serve \
-  --from-cmd "pinocchio help export --output json" \
-  --from-cmd "sqleton help export --output json --with-content=true"
-```
-
 ### JSON source: `--from-json`
 
 ```bash
@@ -302,7 +287,6 @@ type ServeSettings struct {
     Paths         []string `glazed:"paths"`
     FromJSON      []string `glazed:"from-json"`
     FromSQLite    []string `glazed:"from-sqlite"`
-    FromCmd       []string `glazed:"from-cmd"`
     FromGlazedCmd []string `glazed:"from-glazed-cmd"`
     WithEmbedded  bool     `glazed:"with-embedded"`
 }
@@ -327,11 +311,6 @@ cmds.WithFlags(
         "from-sqlite",
         fields.TypeStringList,
         fields.WithHelp("SQLite help export databases to load"),
-    ),
-    fields.New(
-        "from-cmd",
-        fields.TypeStringList,
-        fields.WithHelp("Commands to run; stdout must be a JSON help export"),
     ),
     fields.New(
         "from-glazed-cmd",
@@ -411,8 +390,7 @@ Recommended order:
 2. Positional markdown `paths`
 3. `--from-json` sources, in normalized list order
 4. `--from-sqlite` sources, in normalized list order
-5. `--from-cmd` sources, in normalized list order
-6. `--from-glazed-cmd` sources, in normalized list order
+5. `--from-glazed-cmd` sources, in normalized list order
 
 Why put `--from-glazed-cmd` last? It is the most live/authoritative source for another binary. If a JSON snapshot and a live binary contain the same slug, the live binary should win.
 
@@ -624,59 +602,6 @@ func (l *SQLiteLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
 }
 ```
 
-### CommandJSONLoader
-
-`CommandJSONLoader` runs arbitrary user-provided commands whose stdout is expected to be JSON help export data.
-
-```go
-type CommandJSONLoader struct {
-    Commands []string
-}
-```
-
-This is the advanced form. It should be used when users need custom flags:
-
-```bash
-glaze serve --from-cmd "pinocchio help export --output json --topic orm"
-```
-
-A safe implementation must:
-
-1. Tokenize the command without invoking a shell.
-2. Start the process with `exec.CommandContext`.
-3. Capture stdout and stderr separately.
-4. Decode stdout as JSON.
-5. Wait for the process and check the exit status.
-6. Return stderr in the error message if the command fails.
-
-Pseudocode:
-
-```go
-func runCommandForJSON(ctx context.Context, command string) ([]byte, error) {
-    args, err := tokenizeCommand(command)
-    if err != nil {
-        return nil, err
-    }
-    if len(args) == 0 {
-        return nil, errors.New("empty command")
-    }
-
-    cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-    var stdout bytes.Buffer
-    var stderr bytes.Buffer
-    cmd.Stdout = &stdout
-    cmd.Stderr = &stderr
-
-    err = cmd.Run()
-    if err != nil {
-        return nil, fmt.Errorf("command %q failed: %w; stderr: %s", command, err, stderr.String())
-    }
-    return stdout.Bytes(), nil
-}
-```
-
-This simpler `cmd.Run()` form is preferable to manual `StdoutPipe` unless streaming is required. Help exports are finite and should fit in memory for MVP.
-
 ### GlazedCommandLoader
 
 `GlazedCommandLoader` is the ergonomic loader requested by the user. It accepts binary names or executable paths and constructs the export command automatically.
@@ -740,9 +665,6 @@ func buildLoaders(s *ServeSettings) []loader.ContentLoader {
     }
     if len(s.FromSQLite) > 0 {
         loaders = append(loaders, &loader.SQLiteLoader{Paths: normalizeStringList(s.FromSQLite)})
-    }
-    if len(s.FromCmd) > 0 {
-        loaders = append(loaders, &loader.CommandJSONLoader{Commands: normalizeStringList(s.FromCmd)})
     }
     if len(s.FromGlazedCmd) > 0 {
         loaders = append(loaders, &loader.GlazedCommandLoader{Binaries: normalizeStringList(s.FromGlazedCmd)})
@@ -877,8 +799,7 @@ This phase is safer than changing `model.SectionType.MarshalJSON` first, because
 2. Add `MarkdownPathLoader`.
 3. Add `JSONFileLoader` with `Paths []string`.
 4. Add `SQLiteLoader` with `Paths []string`.
-5. Add `CommandJSONLoader` with `Commands []string`.
-6. Add `GlazedCommandLoader` with `Binaries []string`.
+5. Add `GlazedCommandLoader` with `Binaries []string`.
 7. Add unit tests for each loader.
 
 ### Phase 3: Extend ServeCommand
@@ -969,22 +890,17 @@ glaze serve --from-sqlite /tmp/glaze-help.db --address :18102 &
 curl http://localhost:18102/api/health
 kill %1
 
-# 3. Serve from full command
-glaze serve --from-cmd "glaze help export --output json" --address :18103 &
-curl http://localhost:18103/api/health
-kill %1
-
-# 4. Serve from Glazed command shorthand
+# 3. Serve from Glazed command shorthand
 glaze serve --from-glazed-cmd glaze --address :18104 &
 curl http://localhost:18104/api/health
 kill %1
 
-# 5. Serve multiple Glazed commands using comma-separated syntax
+# 4. Serve multiple Glazed commands using comma-separated syntax
 glaze serve --from-glazed-cmd pinocchio,sqleton,xxx --address :18105 &
 curl http://localhost:18105/api/health
 kill %1
 
-# 6. Combine all source types
+# 5. Combine all source types
 glaze serve \
   --from-glazed-cmd glaze \
   --from-json /tmp/glaze-help.json \
@@ -1001,7 +917,6 @@ kill %1
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| `--from-cmd` command injection | Medium | High | Do not invoke a shell; tokenize and call `exec.CommandContext`. |
 | `--from-glazed-cmd` binary not found | Medium | Low | Return a clear error naming the binary. |
 | Export JSON shape mismatch | Medium | Medium | Import both `type` and `section_type`; add tests from real export output. |
 | Slug collisions hide earlier docs | Medium | Low | Last-write-wins, with warning logs. |
@@ -1013,7 +928,7 @@ kill %1
 
 ## Open Questions
 
-1. Should `--from-glazed-cmd` support extra arguments per binary? Recommendation: no for MVP. Use `--from-cmd` when extra arguments are needed.
+1. Should `--from-glazed-cmd` support extra arguments per binary? Recommendation: no for MVP. Users who need extra arguments should export JSON first and serve it with `--from-json`.
 2. Should `--from-glazed-cmd` run `--with-content=true` explicitly? Recommendation: yes if the export command supports it, but it is already the default. The explicit command could be `<binary> help export --with-content=true --output json` for clarity.
 3. Should JSON import skip invalid sections or fail the whole source? Recommendation: fail the source for invalid JSON shape, but skip individual sections only if we explicitly log and count skips. For MVP, fail fast is easier to debug.
 4. Should embedded docs be included by default with external sources? Decision: no. `--with-embedded` defaults to `false`, so explicit external sources replace embedded docs unless the user opts into merging them.
@@ -1030,7 +945,6 @@ type ServeSettings struct {
     Paths         []string `glazed:"paths"`
     FromJSON      []string `glazed:"from-json"`
     FromSQLite    []string `glazed:"from-sqlite"`
-    FromCmd       []string `glazed:"from-cmd"`
     FromGlazedCmd []string `glazed:"from-glazed-cmd"`
     WithEmbedded  bool     `glazed:"with-embedded"`
 }
@@ -1047,7 +961,6 @@ type ContentLoader interface {
 type MarkdownPathLoader struct{ Paths []string }
 type JSONFileLoader struct{ Paths []string }
 type SQLiteLoader struct{ Paths []string }
-type CommandJSONLoader struct{ Commands []string }
 type GlazedCommandLoader struct{ Binaries []string }
 ```
 
@@ -1094,12 +1007,6 @@ This is the main target workflow. Users provide binary names, not full commands.
 glaze serve --from-glazed-cmd pinocchio
 ```
 
-### Use a custom export command
-
-```bash
-glaze serve --from-cmd "pinocchio help export --output json --topic database"
-```
-
 ### Serve an archived SQLite snapshot
 
 ```bash
@@ -1133,6 +1040,6 @@ glaze help export --output json \
 glaze serve --from-glazed-cmd pinocchio,sqleton,xxx
 ```
 
-and get a single browser for several Glazed-based tools. The general loaders (`--from-json`, `--from-sqlite`, `--from-cmd`, and markdown paths) keep the design flexible, while `--from-glazed-cmd` makes the common case easy.
+and get a single browser for several Glazed-based tools. The general loaders (`--from-json`, `--from-sqlite`, and markdown paths) keep the design flexible, while `--from-glazed-cmd` makes the common case easy.
 
 The implementation should be modest: add list-valued source flags to `ServeCommand`, introduce a `ContentLoader` interface, add robust JSON import for the real export row shape, and run Glazed binaries directly with `exec.CommandContext(binary, "help", "export", "--output", "json")`. The existing HTTP API and React frontend do not need to change.
