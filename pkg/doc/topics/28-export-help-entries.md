@@ -226,7 +226,7 @@ glaze help export --format files --flatten-dirs --output-path ./recovered
 
 `glaze help export` is implemented as a `BareCommand` in `pkg/help/cmd/export.go`. It adds a glazed section to its schema so that `--output json/csv/table/yaml` flags are available, but bypasses the GlazeProcessor when `--format` is `files` or `sqlite` so it can write to disk instead of stdout.
 
-The command lives under the `help` subcommand tree. It is registered automatically when a binary calls `help_cmd.SetupCobraRootCommand(...)` followed by `help_cmd.AddExportCommand(...)`. The `glaze` binary does this in `cmd/glaze/main.go`, so the export verb is available out of the box.
+The command lives under the `help` subcommand tree. It is registered automatically when a binary calls `help_cmd.SetupCobraRootCommand(...)`. The `glaze` binary does this in `cmd/glaze/main.go`, so the export verb is available out of the box. Advanced integrations can still call `help_cmd.AddExportCommand(...)` directly when constructing a custom help command tree; the helper is idempotent and will not add a duplicate `export` child.
 
 ## Troubleshooting
 

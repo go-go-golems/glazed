@@ -335,6 +335,9 @@ func slugify(s string) string {
 
 // AddExportCommand wires the export command into the help subcommand tree.
 func AddExportCommand(helpCmd *cobra.Command, hs *help.HelpSystem) error {
+	if existing, _, err := helpCmd.Find([]string{"export"}); err == nil && existing != helpCmd {
+		return nil
+	}
 	exportGlazedCmd, err := NewExportCommand(hs)
 	if err != nil {
 		return err

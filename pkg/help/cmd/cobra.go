@@ -131,6 +131,10 @@ func withExtraPredicates(options *help.RenderOptions, extras ...store.Predicate)
 }
 
 func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
+	cobra.CheckErr(SetupCobraRootCommandE(hs, cmd))
+}
+
+func SetupCobraRootCommandE(hs *help.HelpSystem, cmd *cobra.Command) error {
 	helpFunc, usageFunc := getCobraHelpUsageFuncs(hs)
 	helpTemplate, usageTemplate := getCobraHelpUsageTemplates(hs)
 
@@ -142,8 +146,12 @@ func SetupCobraRootCommand(hs *help.HelpSystem, cmd *cobra.Command) {
 	cmd.SetUsageTemplate(usageTemplate)
 
 	helpCmd := NewCobraHelpCommand(hs)
+	if err := AddExportCommand(helpCmd, hs); err != nil {
+		return err
+	}
 	cmd.SetHelpCommand(helpCmd)
 	cmd.AddCommand(helpCmd)
+	return nil
 }
 
 func getCobraHelpUsageFuncs(hs *help.HelpSystem) (HelpFunc, UsageFunc) {

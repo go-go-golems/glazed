@@ -35,12 +35,6 @@ func main() {
 
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
-	// Add the export subcommand to help.
-	helpCmd, _, err := rootCmd.Find([]string{"help"})
-	cobra.CheckErr(err)
-	err = help_cmd.AddExportCommand(helpCmd, helpSystem)
-	cobra.CheckErr(err)
-
 	// Add the serve command (embeds the React SPA via pkg/web).
 	spaHandler, err := web.NewSPAHandler()
 	cobra.CheckErr(err)
