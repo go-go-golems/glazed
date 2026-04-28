@@ -139,3 +139,8 @@ Step 9: Uploaded updated bundle with serve external sources design and implement
 
 - /home/manuel/code/wesen/corporate-headquarters/glazed/pkg/doc/topics/29-serve-external-help-sources.md — Documented new serve external source workflow
 
+
+## 2026-04-28
+
+Ticket closed
+

@@ -1,7 +1,7 @@
 ---
 Title: 'Add glazed help export verb: export metadata and entries to disk/SQLite'
 Ticket: GLAZE-HELP-EXPORT
-Status: active
+Status: complete
 Topics:
     - glazed
     - help-system
@@ -14,10 +14,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-04-28T07:31:06.870604843-04:00
+LastUpdated: 2026-04-28T09:49:29.786093931-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add glazed help export verb: export metadata and entries to disk/SQLite
 
