@@ -35,8 +35,13 @@ var _ cmds.BareCommand = (*ServeCommand)(nil)
 
 // ServeSettings holds the parsed flag values for the serve command.
 type ServeSettings struct {
-	Address string   `glazed:"address"`
-	Paths   []string `glazed:"paths"`
+	Address       string   `glazed:"address"`
+	Paths         []string `glazed:"paths"`
+	FromJSON      []string `glazed:"from-json"`
+	FromSQLite    []string `glazed:"from-sqlite"`
+	FromCmd       []string `glazed:"from-cmd"`
+	FromGlazedCmd []string `glazed:"from-glazed-cmd"`
+	WithEmbedded  bool     `glazed:"with-embedded"`
 }
 
 // NewServeCommand creates a BareCommand that starts the help browser HTTP server.
@@ -49,10 +54,17 @@ func NewServeCommand(hs *help.HelpSystem, spaHandler http.Handler) (*ServeComman
 server that serves them with an optional React SPA frontend.
 
 Paths can be individual .md files or directories. Directories are walked
-recursively. When no paths are given, the server serves the built-in Glazed
-documentation already loaded into the help system. When one or more paths are
-given, the serve command clears any preloaded sections and serves only the
-sections discovered from those explicit paths.
+recursively. When no external sources are given, the server serves the built-in
+Glazed documentation already loaded into the help system. When one or more
+external sources are given, the serve command clears any preloaded sections by
+default and serves only the sections discovered from those explicit sources.
+Use --with-embedded to merge external sources with the built-in documentation.
+
+External sources can be JSON exports, SQLite exports, arbitrary commands that
+print JSON help exports, or Glazed-compatible binaries loaded through
+--from-glazed-cmd. For example:
+  glaze serve --from-glazed-cmd pinocchio,sqleton
+  glaze serve --from-json ./help.json --from-sqlite ./help.db
 
 The server listens on the address specified by --address (default :8088) and
 serves:
@@ -67,6 +79,32 @@ using MountPrefix or NewMountedHandler.`),
 					fields.TypeString,
 					fields.WithHelp("Address to listen on"),
 					fields.WithDefault(DefaultAddr),
+				),
+				fields.New(
+					"from-json",
+					fields.TypeStringList,
+					fields.WithHelp("JSON help export files to load; use - for stdin"),
+				),
+				fields.New(
+					"from-sqlite",
+					fields.TypeStringList,
+					fields.WithHelp("SQLite help export databases to load"),
+				),
+				fields.New(
+					"from-cmd",
+					fields.TypeStringList,
+					fields.WithHelp("Commands to run; stdout must be a JSON help export"),
+				),
+				fields.New(
+					"from-glazed-cmd",
+					fields.TypeStringList,
+					fields.WithHelp("Glazed binaries to load by running '<binary> help export --output json'"),
+				),
+				fields.New(
+					"with-embedded",
+					fields.TypeBool,
+					fields.WithHelp("Include embedded docs when external sources are provided"),
+					fields.WithDefault(false),
 				),
 			),
 			cmds.WithArguments(
@@ -94,22 +132,50 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 		return errors.New("HelpSystem.Store is nil")
 	}
 
-	// When no paths are given, the help system was already loaded with the
-	// built-in documentation (e.g. via doc.AddDocToHelpSystem). When explicit
-	// paths are given, they are authoritative: clear any preloaded sections and
-	// serve only the requested content.
-	if len(s.Paths) > 0 {
-		if err := helploader.ReplaceStoreWithPaths(ctx, hs, s.Paths); err != nil {
-			return err
+	loaders := buildServeLoaders(s)
+	if len(loaders) > 0 {
+		if !s.WithEmbedded {
+			if err := hs.Store.Clear(ctx); err != nil {
+				return fmt.Errorf("clearing preloaded sections: %w", err)
+			}
+		}
+		for _, l := range loaders {
+			log.Info().Str("source", l.String()).Msg("Loading help source")
+			if err := l.Load(ctx, hs); err != nil {
+				return fmt.Errorf("loading %s: %w", l.String(), err)
+			}
 		}
 	}
 
-	count, _ := hs.Store.Count(ctx)
+	count, err := hs.Store.Count(ctx)
+	if err != nil {
+		return fmt.Errorf("counting help sections: %w", err)
+	}
 	log.Info().Int64("sections", count).Msg("Loaded help sections")
 
 	deps := HandlerDeps{Store: hs.Store}
 	handler := NewServeHandler(deps, sc.spaHandler)
 	return serveHTTP(s.Address, handler)
+}
+
+func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
+	var loaders []helploader.ContentLoader
+	if len(helploader.NormalizeStringList(s.Paths)) > 0 {
+		loaders = append(loaders, &helploader.MarkdownPathLoader{Paths: s.Paths})
+	}
+	if len(helploader.NormalizeStringList(s.FromJSON)) > 0 {
+		loaders = append(loaders, &helploader.JSONFileLoader{Paths: s.FromJSON})
+	}
+	if len(helploader.NormalizeStringList(s.FromSQLite)) > 0 {
+		loaders = append(loaders, &helploader.SQLiteLoader{Paths: s.FromSQLite})
+	}
+	if len(helploader.NormalizeCommandList(s.FromCmd)) > 0 {
+		loaders = append(loaders, &helploader.CommandJSONLoader{Commands: s.FromCmd})
+	}
+	if len(helploader.NormalizeStringList(s.FromGlazedCmd)) > 0 {
+		loaders = append(loaders, &helploader.GlazedCommandLoader{Binaries: s.FromGlazedCmd})
+	}
+	return loaders
 }
 
 // NewServeHandler composes the API handler and optional SPA handler for use at
