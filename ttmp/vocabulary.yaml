@@ -128,3 +128,5 @@ intent:
 status:
     - slug: active
       description: In progress / active work
+    - slug: complete
+      description: Completed ticket
