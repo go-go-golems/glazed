@@ -146,6 +146,7 @@ Choose `serve` when you want a running server process. Choose `render-site` when
 
 ## See Also
 
+- `glaze help export-help-entries` — Export help sections to files, JSON, CSV, or SQLite
 - `glaze help serve-help-over-http`
 - `glaze help writing-help-entries`
 - `glaze help how-to-write-good-documentation-pages`

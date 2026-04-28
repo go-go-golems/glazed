@@ -34,6 +34,8 @@ The Glazed help system provides a structured, queryable approach to CLI document
 
 The help system stores sections in an SQLite-backed store, enabling fast queries, text search, and metadata filtering. You typically load documentation from markdown files with YAML frontmatter at startup, creating a self-contained help database that you can query from both the command line and Go code.
 
+You can also export the entire help tree—or a filtered slice of it—to JSON, CSV, YAML, individual markdown files, or a standalone SQLite database. This is useful for backups, external indexing, and shipping documentation alongside your application. See [`glaze help export-help-entries`](glaze help export-help-entries) for details.
+
 ## Section Types and Structure
 
 Help sections follow a type-based classification system that separates conceptual documentation from practical examples. This separation enables precise filtering and contextual help display, allowing users to find exactly the type of information they need based on their current task.
@@ -358,3 +360,11 @@ For more information about the query DSL syntax and capabilities:
 ```
 glaze help simple-query-dsl
 ```
+
+## See Also
+
+- [`glaze help export-help-entries`](glaze help export-help-entries) — Export help sections to files, JSON, CSV, or SQLite
+- [`glaze help serve-help-over-http`](glaze help serve-help-over-http) — Browse help in a web browser
+- [`glaze help export-help-static-website`](glaze help export-help-static-website) — Export help as a static website
+- [`glaze help writing-help-entries`](glaze help writing-help-entries) — How to write help sections
+- [`glaze help sections-guide`](glaze help sections-guide) — Deep dive into section metadata and query DSL
