@@ -249,6 +249,8 @@ If a page does not appear in the browser, the most common cause is that the mark
 
 ## See Also
 
+- `glaze help serve-external-help-sources` — Serve help exported from other Glazed binaries and snapshots
+- `glaze help export-help-entries` — Export help sections to files, JSON, CSV, or SQLite
 - `glaze help export-help-static-website`
 - `glaze help help-system`
 - `glaze help writing-help-entries`

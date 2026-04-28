@@ -95,6 +95,23 @@ func TestMountPrefix_RejectsOutsidePrefix(t *testing.T) {
 	}
 }
 
+func TestBuildServeLoaders_UsesAllExternalSources(t *testing.T) {
+	settings := &ServeSettings{
+		Paths:         []string{"./docs"},
+		FromJSON:      []string{"a.json,b.json"},
+		FromSQLite:    []string{"a.db"},
+		FromGlazedCmd: []string{"pinocchio,sqleton"},
+	}
+
+	loaders := buildServeLoaders(settings)
+	if len(loaders) != 4 {
+		t.Fatalf("expected 4 loaders, got %d", len(loaders))
+	}
+	if !strings.Contains(loaders[3].String(), "pinocchio") || !strings.Contains(loaders[3].String(), "sqleton") {
+		t.Fatalf("expected glazed command loader to include normalized binary list, got %q", loaders[3].String())
+	}
+}
+
 func TestReplaceStoreWithPaths_ClearsPreloadedSections(t *testing.T) {
 	hs := help.NewHelpSystem()
 	hs.AddSection(&model.Section{
