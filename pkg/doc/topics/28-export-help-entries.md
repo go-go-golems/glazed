@@ -241,6 +241,7 @@ The command lives under the `help` subcommand tree. It is registered automatical
 
 ## See Also
 
+- [`glaze help serve-external-help-sources`](glaze help serve-external-help-sources) — Serve exported help from other Glazed binaries and snapshots
 - [`glaze help help-system`](glaze help help-system) — Overview of the Glazed help system
 - [`glaze help serve-help-over-http`](glaze help serve-help-over-http) — Browse help in a web browser
 - [`glaze help export-help-static-website`](glaze help export-help-static-website) — Export help as a static site
