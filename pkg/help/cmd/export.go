@@ -95,7 +95,10 @@ func (c *ExportCommand) Run(ctx context.Context, parsedValues *values.Values) er
 		return errors.Errorf("unknown format: %s (expected glazed, files, or sqlite)", s.Format)
 	}
 
-	predicate := buildExportPredicate(s)
+	predicate, err := buildExportPredicate(s)
+	if err != nil {
+		return err
+	}
 	sections, err := c.helpSystem.Store.Find(ctx, predicate)
 	if err != nil {
 		return errors.Wrap(err, "failed to query sections")
@@ -162,14 +165,15 @@ func (c *ExportCommand) runGlazed(ctx context.Context, parsedValues *values.Valu
 }
 
 // buildExportPredicate constructs a store.Predicate from export settings.
-func buildExportPredicate(s *ExportSettings) store.Predicate {
+func buildExportPredicate(s *ExportSettings) (store.Predicate, error) {
 	var preds []store.Predicate
 
 	if s.Type != "" {
 		st, err := model.SectionTypeFromString(s.Type)
-		if err == nil {
-			preds = append(preds, store.IsType(st))
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid section type %q", s.Type)
 		}
+		preds = append(preds, store.IsType(st))
 	}
 	if s.Topic != "" {
 		preds = append(preds, store.HasTopic(s.Topic))
@@ -194,9 +198,9 @@ func buildExportPredicate(s *ExportSettings) store.Predicate {
 
 	base := store.OrderByOrder()
 	if len(preds) == 0 {
-		return base
+		return base, nil
 	}
-	return store.And(store.And(preds...), base)
+	return store.And(store.And(preds...), base), nil
 }
 
 // exportToFiles writes each section as an individual markdown file.
@@ -219,7 +223,10 @@ func exportToFiles(sections []*model.Section, s *ExportSettings) error {
 			}
 		}
 
-		path := filepath.Join(dir, section.Slug+".md")
+		path, err := safeSectionFilePath(dir, section.Slug)
+		if err != nil {
+			return err
+		}
 		data, err := reconstructMarkdown(section)
 		if err != nil {
 			return errors.Wrapf(err, "failed to reconstruct markdown for %s", section.Slug)
@@ -230,6 +237,33 @@ func exportToFiles(sections []*model.Section, s *ExportSettings) error {
 	}
 
 	return nil
+}
+
+func safeSectionFilePath(dir, slug string) (string, error) {
+	if slug == "" {
+		return "", errors.New("section slug is required for file export")
+	}
+	if slug == "." || slug == ".." || strings.ContainsAny(slug, `/\\`) {
+		return "", errors.Errorf("unsafe section slug for file export: %q", slug)
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", errors.Wrapf(err, "resolve output directory %s", dir)
+	}
+	path := filepath.Join(absDir, slug+".md")
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "resolve output path for slug %s", slug)
+	}
+	rel, err := filepath.Rel(absDir, absPath)
+	if err != nil {
+		return "", errors.Wrapf(err, "validate output path for slug %s", slug)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", errors.Errorf("section slug escapes output directory: %q", slug)
+	}
+	return absPath, nil
 }
 
 // exportToSQLite writes sections to a new SQLite database.

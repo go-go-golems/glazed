@@ -39,7 +39,6 @@ type ServeSettings struct {
 	Paths         []string `glazed:"paths"`
 	FromJSON      []string `glazed:"from-json"`
 	FromSQLite    []string `glazed:"from-sqlite"`
-	FromCmd       []string `glazed:"from-cmd"`
 	FromGlazedCmd []string `glazed:"from-glazed-cmd"`
 	WithEmbedded  bool     `glazed:"with-embedded"`
 }
@@ -60,9 +59,8 @@ external sources are given, the serve command clears any preloaded sections by
 default and serves only the sections discovered from those explicit sources.
 Use --with-embedded to merge external sources with the built-in documentation.
 
-External sources can be JSON exports, SQLite exports, arbitrary commands that
-print JSON help exports, or Glazed-compatible binaries loaded through
---from-glazed-cmd. For example:
+External sources can be JSON exports, SQLite exports, or Glazed-compatible
+binaries loaded through --from-glazed-cmd. For example:
   glaze serve --from-glazed-cmd pinocchio,sqleton
   glaze serve --from-json ./help.json --from-sqlite ./help.db
 
@@ -89,11 +87,6 @@ using MountPrefix or NewMountedHandler.`),
 					"from-sqlite",
 					fields.TypeStringList,
 					fields.WithHelp("SQLite help export databases to load"),
-				),
-				fields.New(
-					"from-cmd",
-					fields.TypeStringList,
-					fields.WithHelp("Commands to run; stdout must be a JSON help export"),
 				),
 				fields.New(
 					"from-glazed-cmd",
@@ -168,9 +161,6 @@ func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
 	}
 	if len(helploader.NormalizeStringList(s.FromSQLite)) > 0 {
 		loaders = append(loaders, &helploader.SQLiteLoader{Paths: s.FromSQLite})
-	}
-	if len(helploader.NormalizeCommandList(s.FromCmd)) > 0 {
-		loaders = append(loaders, &helploader.CommandJSONLoader{Commands: s.FromCmd})
 	}
 	if len(helploader.NormalizeStringList(s.FromGlazedCmd)) > 0 {
 		loaders = append(loaders, &helploader.GlazedCommandLoader{Binaries: s.FromGlazedCmd})

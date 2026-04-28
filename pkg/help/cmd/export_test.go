@@ -67,7 +67,8 @@ func setupTestHelpSystem(t *testing.T) *help.HelpSystem {
 
 func TestBuildExportPredicate_NoFilters(t *testing.T) {
 	s := &ExportSettings{}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	require.NotNil(t, pred)
 }
 
@@ -76,11 +77,19 @@ func TestBuildExportPredicate_ByType(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Type: "Example"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 1)
 	assert.Equal(t, "json-example", sections[0].Slug)
+}
+
+func TestBuildExportPredicate_InvalidType(t *testing.T) {
+	s := &ExportSettings{Type: "tutorial"}
+	_, err := buildExportPredicate(s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid section type")
 }
 
 func TestBuildExportPredicate_ByTopic(t *testing.T) {
@@ -88,7 +97,8 @@ func TestBuildExportPredicate_ByTopic(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Topic: "json"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 1)
@@ -100,7 +110,8 @@ func TestBuildExportPredicate_ByCommand(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Command: "csv"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 1)
@@ -112,7 +123,8 @@ func TestBuildExportPredicate_ByFlag(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Flag: "separator"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 1)
@@ -124,7 +136,8 @@ func TestBuildExportPredicate_BySlug(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Slug: "help-system"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 1)
@@ -136,7 +149,8 @@ func TestBuildExportPredicate_ByMultipleSlugs(t *testing.T) {
 	ctx := context.Background()
 
 	s := &ExportSettings{Slug: "help-system, json-example"}
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 	assert.Len(t, sections, 2)
@@ -153,7 +167,8 @@ func TestExportToFiles(t *testing.T) {
 		FlattenDirs: false,
 	}
 
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 
@@ -189,7 +204,8 @@ func TestExportToFiles_Flatten(t *testing.T) {
 		FlattenDirs: true,
 	}
 
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 
@@ -200,6 +216,27 @@ func TestExportToFiles_Flatten(t *testing.T) {
 	assert.FileExists(t, filepath.Join(tmpDir, "help-system.md"))
 	assert.FileExists(t, filepath.Join(tmpDir, "json-example.md"))
 	assert.FileExists(t, filepath.Join(tmpDir, "csv-tutorial.md"))
+}
+
+func TestExportToFiles_RejectsUnsafeSlug(t *testing.T) {
+	tmpDir := t.TempDir()
+	sections := []*model.Section{{
+		Slug:        "../escape",
+		Title:       "Unsafe",
+		SectionType: model.SectionGeneralTopic,
+	}}
+
+	err := exportToFiles(sections, &ExportSettings{Format: "files", OutputPath: tmpDir})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsafe section slug")
+	assert.NoFileExists(t, filepath.Join(tmpDir, "..", "escape.md"))
+}
+
+func TestSafeSectionFilePath_AllowsNormalSlug(t *testing.T) {
+	tmpDir := t.TempDir()
+	path, err := safeSectionFilePath(tmpDir, "help-system")
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(tmpDir, "help-system.md"), path)
 }
 
 func TestExportToSQLite(t *testing.T) {
@@ -213,7 +250,8 @@ func TestExportToSQLite(t *testing.T) {
 		OutputPath: dbPath,
 	}
 
-	pred := buildExportPredicate(s)
+	pred, err := buildExportPredicate(s)
+	require.NoError(t, err)
 	sections, err := hs.Store.Find(ctx, pred)
 	require.NoError(t, err)
 

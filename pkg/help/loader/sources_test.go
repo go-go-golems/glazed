@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -136,57 +135,4 @@ func TestSQLiteLoader_LoadsSections(t *testing.T) {
 	if section.SectionType != model.SectionApplication {
 		t.Fatalf("expected Application, got %s", section.SectionType.String())
 	}
-}
-
-func TestCommandJSONLoader_LoadsSections(t *testing.T) {
-	ctx := context.Background()
-	hs := help.NewHelpSystem()
-	jsonPayload, err := json.Marshal([]map[string]any{{
-		"slug":  "cmd-topic",
-		"title": "Command Topic",
-		"type":  "Tutorial",
-	}})
-	if err != nil {
-		t.Fatalf("json.Marshal: %v", err)
-	}
-
-	loader := &CommandJSONLoader{Commands: []string{"printf " + strconvQuote(string(jsonPayload))}}
-	if err := loader.Load(ctx, hs); err != nil {
-		t.Fatalf("loader.Load: %v", err)
-	}
-	section, err := hs.Store.GetBySlug(ctx, "cmd-topic")
-	if err != nil {
-		t.Fatalf("GetBySlug: %v", err)
-	}
-	if section.SectionType != model.SectionTutorial {
-		t.Fatalf("expected Tutorial, got %s", section.SectionType.String())
-	}
-}
-
-func TestTokenizeCommand_Quotes(t *testing.T) {
-	args, err := tokenizeCommand(`tool help export --query "topic:hello world"`)
-	if err != nil {
-		t.Fatalf("tokenizeCommand: %v", err)
-	}
-	want := []string{"tool", "help", "export", "--query", "topic:hello world"}
-	if len(args) != len(want) {
-		t.Fatalf("expected %v, got %v", want, args)
-	}
-	for i := range want {
-		if args[i] != want[i] {
-			t.Fatalf("expected %v, got %v", want, args)
-		}
-	}
-}
-
-func TestTokenizeCommand_UnterminatedQuote(t *testing.T) {
-	_, err := tokenizeCommand(`tool "oops`)
-	if err == nil {
-		t.Fatalf("expected unterminated quote error")
-	}
-}
-
-func strconvQuote(s string) string {
-	b, _ := json.Marshal(s)
-	return string(b)
 }

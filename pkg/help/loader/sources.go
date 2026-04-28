@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help"
@@ -33,19 +32,6 @@ func NormalizeStringList(values []string) []string {
 			if part != "" {
 				ret = append(ret, part)
 			}
-		}
-	}
-	return ret
-}
-
-// NormalizeCommandList trims command values without comma-splitting them.
-// Command strings may legitimately contain commas inside arguments.
-func NormalizeCommandList(values []string) []string {
-	ret := make([]string, 0, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value != "" {
-			ret = append(ret, value)
 		}
 	}
 	return ret
@@ -149,28 +135,6 @@ func (l *SQLiteLoader) String() string {
 	return "sqlite files: " + strings.Join(NormalizeStringList(l.Paths), ", ")
 }
 
-// CommandJSONLoader runs commands whose stdout is a JSON help export.
-type CommandJSONLoader struct {
-	Commands []string
-}
-
-func (l *CommandJSONLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
-	for _, command := range NormalizeCommandList(l.Commands) {
-		data, err := runCommandForJSON(ctx, command)
-		if err != nil {
-			return err
-		}
-		if err := importJSONBytes(ctx, hs, data, "command: "+command); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (l *CommandJSONLoader) String() string {
-	return "commands: " + strings.Join(NormalizeCommandList(l.Commands), ", ")
-}
-
 // GlazedCommandLoader runs '<binary> help export --output json' for each binary.
 type GlazedCommandLoader struct {
 	Binaries []string
@@ -191,26 +155,6 @@ func (l *GlazedCommandLoader) Load(ctx context.Context, hs *help.HelpSystem) err
 
 func (l *GlazedCommandLoader) String() string {
 	return "glazed commands: " + strings.Join(NormalizeStringList(l.Binaries), ", ")
-}
-
-func runCommandForJSON(ctx context.Context, command string) ([]byte, error) {
-	args, err := tokenizeCommand(command)
-	if err != nil {
-		return nil, err
-	}
-	if len(args) == 0 {
-		return nil, errors.New("empty command")
-	}
-
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return nil, errors.Wrapf(err, "command %q failed; stderr: %s", command, strings.TrimSpace(stderr.String()))
-	}
-	return stdout.Bytes(), nil
 }
 
 func runGlazedHelpExport(ctx context.Context, binary string) ([]byte, error) {
@@ -344,52 +288,4 @@ func parseSectionTypeRaw(raw json.RawMessage) (model.SectionType, error) {
 	}
 
 	return model.SectionGeneralTopic, fmt.Errorf("invalid section type %s", string(raw))
-}
-
-func tokenizeCommand(command string) ([]string, error) {
-	var args []string
-	var current strings.Builder
-	var quote rune
-	escaped := false
-
-	for _, r := range command {
-		if escaped {
-			current.WriteRune(r)
-			escaped = false
-			continue
-		}
-		if r == '\\' {
-			escaped = true
-			continue
-		}
-		if quote != 0 {
-			if r == quote {
-				quote = 0
-			} else {
-				current.WriteRune(r)
-			}
-			continue
-		}
-		switch r {
-		case '\'', '"':
-			quote = r
-		case ' ', '\t', '\n', '\r':
-			if current.Len() > 0 {
-				args = append(args, current.String())
-				current.Reset()
-			}
-		default:
-			current.WriteRune(r)
-		}
-	}
-	if escaped {
-		current.WriteRune('\\')
-	}
-	if quote != 0 {
-		return nil, fmt.Errorf("unterminated quote %s", strconv.QuoteRune(quote))
-	}
-	if current.Len() > 0 {
-		args = append(args, current.String())
-	}
-	return args, nil
 }

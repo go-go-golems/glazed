@@ -100,30 +100,15 @@ func TestBuildServeLoaders_UsesAllExternalSources(t *testing.T) {
 		Paths:         []string{"./docs"},
 		FromJSON:      []string{"a.json,b.json"},
 		FromSQLite:    []string{"a.db"},
-		FromCmd:       []string{"tool help export --output json"},
 		FromGlazedCmd: []string{"pinocchio,sqleton"},
 	}
 
 	loaders := buildServeLoaders(settings)
-	if len(loaders) != 5 {
-		t.Fatalf("expected 5 loaders, got %d", len(loaders))
+	if len(loaders) != 4 {
+		t.Fatalf("expected 4 loaders, got %d", len(loaders))
 	}
-	if !strings.Contains(loaders[4].String(), "pinocchio") || !strings.Contains(loaders[4].String(), "sqleton") {
-		t.Fatalf("expected glazed command loader to include normalized binary list, got %q", loaders[4].String())
-	}
-}
-
-func TestBuildServeLoaders_DoesNotSplitArbitraryCommandsOnComma(t *testing.T) {
-	settings := &ServeSettings{
-		FromCmd: []string{`tool help export --query "topic:a,b" --output json`},
-	}
-
-	loaders := buildServeLoaders(settings)
-	if len(loaders) != 1 {
-		t.Fatalf("expected 1 loader, got %d", len(loaders))
-	}
-	if !strings.Contains(loaders[0].String(), "topic:a,b") {
-		t.Fatalf("command was unexpectedly comma-split: %q", loaders[0].String())
+	if !strings.Contains(loaders[3].String(), "pinocchio") || !strings.Contains(loaders[3].String(), "sqleton") {
+		t.Fatalf("expected glazed command loader to include normalized binary list, got %q", loaders[3].String())
 	}
 }
 

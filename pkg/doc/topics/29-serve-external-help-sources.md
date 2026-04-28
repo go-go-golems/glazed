@@ -15,7 +15,6 @@ Commands:
 - export
 Flags:
 - from-glazed-cmd
-- from-cmd
 - from-json
 - from-sqlite
 - with-embedded
@@ -76,12 +75,11 @@ glaze serve \
 | Source | Flag | Example |
 |--------|------|---------|
 | Glazed binary shorthand | `--from-glazed-cmd` | `--from-glazed-cmd pinocchio,sqleton` |
-| Arbitrary JSON-producing command | `--from-cmd` | `--from-cmd "pinocchio help export --output json --topic db"` |
 | JSON export file | `--from-json` | `--from-json ./pinocchio-help.json` |
 | SQLite export database | `--from-sqlite` | `--from-sqlite ./pinocchio-help.db` |
 | Markdown files/directories | positional paths | `glaze serve ./docs ./more-docs` |
 
-Use `--from-glazed-cmd` for the normal case. Use `--from-cmd` only when you need extra export flags or a wrapper command.
+Use `--from-glazed-cmd` for live binaries and `--from-json` or `--from-sqlite` when you need a filtered or archived snapshot.
 
 ## Embedded documentation behavior
 
@@ -147,7 +145,7 @@ glaze serve \
   ./company-docs
 ```
 
-If two sources contain the same slug, the later source wins. The loading order is markdown paths, JSON files, SQLite files, arbitrary commands, then `--from-glazed-cmd` binaries.
+If two sources contain the same slug, the later source wins. The loading order is markdown paths, JSON files, SQLite files, then `--from-glazed-cmd` binaries.
 
 ## Troubleshooting
 
@@ -156,7 +154,6 @@ If two sources contain the same slug, the later source wins. The loading order i
 | `executable file not found` | A `--from-glazed-cmd` binary is not on `PATH` | Use an absolute path or install the binary. |
 | Browser shows only one tool's docs | Explicit sources clear embedded docs by default | Add more sources or use `--with-embedded=true` to include built-in Glazed docs. |
 | JSON import fails with missing type | The JSON file is not a Glazed help export | Generate it with `<binary> help export --output json`. |
-| Command source fails but works in a shell | `--from-cmd` does not run through a shell | Put shell pipelines in a wrapper script, or export to JSON first. |
 | Stdin source hangs | The process feeding stdin did not finish | Verify the upstream command exits and writes valid JSON. |
 | Duplicate pages disappear | Later sources overwrite earlier slugs | Rename slugs or change source order. |
 
