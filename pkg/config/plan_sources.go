@@ -125,6 +125,13 @@ func WorkingDirFile(name string) SourceSpec {
 	}
 }
 
+// GitRootFile discovers an optional config file relative to the Git worktree
+// containing the current process working directory. Discovery intentionally
+// ignores Git's local repository environment variables (the variables reported
+// by `git rev-parse --local-env-vars`, such as GIT_DIR and GIT_WORK_TREE) so
+// callers launched from Git hooks still discover the repository for their cwd
+// rather than the repository whose hook invoked them. General Git configuration
+// variables such as GIT_SSH_COMMAND and GIT_TRACE are preserved.
 func GitRootFile(name string) SourceSpec {
 	name = strings.TrimSpace(name)
 	return SourceSpec{
@@ -149,13 +156,47 @@ func GitRootFile(name string) SourceSpec {
 	}
 }
 
+// gitRoot returns the top-level worktree for the current working directory.
+// It scrubs only Git's local repository environment variables before invoking
+// git so inherited hook state cannot override cwd-based repository discovery.
 func gitRoot(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+	cmd.Env = scrubGitLocalEnv(os.Environ())
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+func scrubGitLocalEnv(env []string) []string {
+	ret := make([]string, 0, len(env))
+	for _, entry := range env {
+		key, _, ok := strings.Cut(entry, "=")
+		if ok && gitLocalEnvVars[key] {
+			continue
+		}
+		ret = append(ret, entry)
+	}
+	return ret
+}
+
+var gitLocalEnvVars = map[string]bool{
+	"GIT_ALTERNATE_OBJECT_DIRECTORIES": true,
+	"GIT_CONFIG":                       true,
+	"GIT_CONFIG_COUNT":                 true,
+	"GIT_CONFIG_PARAMETERS":            true,
+	"GIT_DIR":                          true,
+	"GIT_GRAFT_FILE":                   true,
+	"GIT_IMPLICIT_WORK_TREE":           true,
+	"GIT_INDEX_FILE":                   true,
+	"GIT_NO_REPLACE_OBJECTS":           true,
+	"GIT_OBJECT_DIRECTORY":             true,
+	"GIT_PREFIX":                       true,
+	"GIT_REPLACE_REF_BASE":             true,
+	"GIT_SHALLOW_FILE":                 true,
+	"GIT_COMMON_DIR":                   true,
+	"GIT_WORK_TREE":                    true,
 }
 
 func fileExists(path string) bool {
