@@ -2051,3 +2051,48 @@ N/A.
 ### What warrants a second pair of eyes
 
 The reload replacement still mutates the current store after staging succeeds; it avoids outage on loader failures, but a future shadow-store pointer swap would be the cleaner zero-gap approach.
+
+## Step 22: Refactor docsctl and docs-registry to Glazed command definitions
+
+A follow-up review request asked to use Glazed commands for `docsctl` and any remaining raw Cobra command from the Phase 1 publishing work. I refactored the publishing CLIs so their command schemas are now backed by Glazed `cmds.CommandDescription` structs and settings decoded from Glazed tags.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Use glazed commands for docsctl (and any other stray raw cobra command that might be laying around)`
+
+**Assistant interpretation:** Replace ad hoc Cobra flag definitions in the new Phase 1 CLIs with Glazed command structs, fields, settings structs, and Cobra integration.
+
+**Inferred user intent:** Keep the new CLIs consistent with the rest of the Glazed ecosystem and avoid raw Cobra-only commands.
+
+### What I did
+
+- Converted `docsctl validate` into `ValidateCommand`, a Glazed `cmds.WriterCommand`.
+- Converted `docsctl publish` into `PublishCommand`, a Glazed `cmds.WriterCommand`.
+- Converted `docs-registry` into `RegistryCommand`, a Glazed `cmds.BareCommand`.
+- Replaced direct `cmd.Flags().StringVar(...)` definitions with `fields.New(...)` definitions and `glazed` struct tags.
+- Kept the small `docsctl` root Cobra command as the application shell, but child command flags and parsing now come from Glazed command descriptions.
+- Added a custom docsctl Cobra wrapper around the Glazed parser so command tests can still capture command output and command errors instead of hitting `cobra.CheckErr`/`os.Exit` inside the default builder.
+- Updated docsctl tests to capture stdout robustly after the command path moved through Glazed writer commands.
+
+### Why
+
+The Phase 1 implementation initially used raw Cobra for the new helper CLIs. That worked, but it diverged from the repo’s command-authoring conventions. Using Glazed command descriptions gives us consistent schemas, settings decoding, help text, command debug flags, and future integration with Glazed command tooling.
+
+### Validation
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The focused tests pass after the refactor. `docsctl` still preserves the existing text and JSON outputs, while the command definitions are now Glazed-backed.
+
+### What didn't work
+
+The default `cli.BuildCobraCommandFromCommand` path calls `cobra.CheckErr` in its generated `Run`, which exits the process on command errors. That is not ideal for the existing docsctl command-level tests because they assert returned errors. I therefore used Glazed command descriptions and parser integration directly for docsctl child commands, while still keeping all flags/settings in Glazed schemas.
+
+### What warrants a second pair of eyes
+
+- Whether `docsctl` should eventually use standard Glazed output rows instead of preserving its current bespoke text/JSON outputs.
+- Whether `docs-registry` should get command-level tests now that it has a Glazed command wrapper.

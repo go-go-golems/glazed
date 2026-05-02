@@ -169,3 +169,8 @@ Step 20: pushed Glazed branch, built GHCR image sha-cca4dbf, synced docs-yolo in
 
 Step 21: addressed PR review comments by staging reloads before clearing live docs and generating unique repeated heading IDs across backend/frontend.
 
+
+## 2026-05-02
+
+Step 22: refactored docsctl validate/publish and docs-registry from raw Cobra flag definitions into Glazed command definitions and settings decoding.
+
