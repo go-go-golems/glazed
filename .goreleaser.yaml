@@ -28,6 +28,7 @@ builds:
       - arm64
     tags:
       - fts5
+      - embed
     ldflags:
       - -s -w -X main.version={{ .Version }}
   - id: glaze-darwin
@@ -42,6 +43,7 @@ builds:
       - arm64
     tags:
       - fts5
+      - embed
     ldflags:
       - -s -w -X main.version={{ .Version }}
 checksum:

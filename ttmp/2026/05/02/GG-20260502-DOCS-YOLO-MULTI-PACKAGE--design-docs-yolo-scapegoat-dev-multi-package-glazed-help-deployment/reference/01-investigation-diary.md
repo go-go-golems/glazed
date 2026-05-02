@@ -2051,3 +2051,250 @@ N/A.
 ### What warrants a second pair of eyes
 
 The reload replacement still mutates the current store after staging succeeds; it avoids outage on loader failures, but a future shadow-store pointer swap would be the cleaner zero-gap approach.
+
+## Step 22: Refactor docsctl and docs-registry to Glazed command definitions
+
+A follow-up review request asked to use Glazed commands for `docsctl` and any remaining raw Cobra command from the Phase 1 publishing work. I refactored the publishing CLIs so their command schemas are now backed by Glazed `cmds.CommandDescription` structs and settings decoded from Glazed tags.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Use glazed commands for docsctl (and any other stray raw cobra command that might be laying around)`
+
+**Assistant interpretation:** Replace ad hoc Cobra flag definitions in the new Phase 1 CLIs with Glazed command structs, fields, settings structs, and Cobra integration.
+
+**Inferred user intent:** Keep the new CLIs consistent with the rest of the Glazed ecosystem and avoid raw Cobra-only commands.
+
+### What I did
+
+- Converted `docsctl validate` into `ValidateCommand`, a Glazed `cmds.WriterCommand`.
+- Converted `docsctl publish` into `PublishCommand`, a Glazed `cmds.WriterCommand`.
+- Converted `docs-registry` into `RegistryCommand`, a Glazed `cmds.BareCommand`.
+- Replaced direct `cmd.Flags().StringVar(...)` definitions with `fields.New(...)` definitions and `glazed` struct tags.
+- Kept the small `docsctl` root Cobra command as the application shell, but child command flags and parsing now come from Glazed command descriptions.
+- Added a custom docsctl Cobra wrapper around the Glazed parser so command tests can still capture command output and command errors instead of hitting `cobra.CheckErr`/`os.Exit` inside the default builder.
+- Updated docsctl tests to capture stdout robustly after the command path moved through Glazed writer commands.
+
+### Why
+
+The Phase 1 implementation initially used raw Cobra for the new helper CLIs. That worked, but it diverged from the repo’s command-authoring conventions. Using Glazed command descriptions gives us consistent schemas, settings decoding, help text, command debug flags, and future integration with Glazed command tooling.
+
+### Validation
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The focused tests pass after the refactor. `docsctl` still preserves the existing text and JSON outputs, while the command definitions are now Glazed-backed.
+
+### What didn't work
+
+The default `cli.BuildCobraCommandFromCommand` path calls `cobra.CheckErr` in its generated `Run`, which exits the process on command errors. That is not ideal for the existing docsctl command-level tests because they assert returned errors. I therefore used Glazed command descriptions and parser integration directly for docsctl child commands, while still keeping all flags/settings in Glazed schemas.
+
+### What warrants a second pair of eyes
+
+- Whether `docsctl` should eventually use standard Glazed output rows instead of preserving its current bespoke text/JSON outputs.
+- Whether `docs-registry` should get command-level tests now that it has a Glazed command wrapper.
+
+## Step 23: Align web asset embedding with generated-at-build strategy
+
+After the Glazed-command cleanup, we revisited whether the generated Vite bundle should stay committed. The current embedded browser bundle was about 428 KiB, mostly a 407 KiB hashed JavaScript file. That is not huge for a deployment artifact, but it is a lot of generated code to review in every UI-affecting PR.
+
+I aligned the web build/embedding strategy with the Dagger pnpm pattern used in other Go+web repositories and removed committed `pkg/web/dist` assets from source control.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Ok, create a cleanup to align the build-web strategy and remove pkg/web/dist, because 400 kB is actually quite a bit of code.`
+
+**Assistant interpretation:** Stop committing generated frontend assets and make `go generate ./pkg/web` the production asset generation path.
+
+**Inferred user intent:** Keep source diffs focused on authored code, not large generated/minified bundles, while preserving reliable production embedding.
+
+### What I changed
+
+- Removed committed `pkg/web/dist` assets.
+- Added `pkg/web/embed.go` guarded by `//go:build embed`.
+- Added `pkg/web/embed_none.go` guarded by `//go:build !embed`.
+- Changed `pkg/web/static.go` to serve `PublicFS` instead of directly embedding `dist`.
+- Changed `cmd/build-web` to copy `web/dist` into `pkg/web/embed/public`.
+- Added Dagger `CacheVolume` support for the pnpm store:
+  - cache name: `glazed-help-browser-pnpm-store`
+  - mounted at `/pnpm/store`
+- Added `BUILD_WEB_LOCAL=1` support for explicitly forcing local pnpm builds.
+- Added `packageManager: pnpm@10.15.0` to `web/package.json` and made `cmd/build-web` read it.
+- Updated `.gitignore` to ignore generated `pkg/web/dist` and `pkg/web/embed/public`.
+- Updated Dockerfile to run `go generate ./pkg/web` and build `glaze` with `-tags embed`.
+- Updated GoReleaser build tags to include `embed` after its `go generate ./...` hook.
+- Updated Makefile `build` and `install` targets to run generation and build with `embed`.
+- Updated `pkg/help/site` frontend export to walk `web.PublicFS` instead of the old embedded `web.FS`.
+
+### New build model
+
+Development/test/default builds:
+
+```bash
+go test ./pkg/web
+go build ./cmd/glaze
+```
+
+These do not require generated assets. Without `-tags embed`, `pkg/web/embed_none.go` serves generated disk assets if present, otherwise a tiny fallback page that tells developers to run `go generate ./pkg/web`.
+
+Production/release/container builds:
+
+```bash
+go generate ./pkg/web
+go build -tags embed ./cmd/glaze
+```
+
+The generated assets live at:
+
+```text
+pkg/web/embed/public
+```
+
+but that directory is ignored by Git.
+
+### Validation
+
+```bash
+go test ./pkg/web ./cmd/build-web ./cmd/docsctl ./cmd/docs-registry ./pkg/help/server ./pkg/help/publish
+BUILD_WEB_LOCAL=1 go generate ./pkg/web
+du -sh pkg/web/embed/public
+go test -tags embed ./pkg/web
+go build ./cmd/glaze
+go build -tags embed ./cmd/glaze
+```
+
+Generated asset size remains:
+
+```text
+428K pkg/web/embed/public
+```
+
+but it is no longer committed.
+
+### What worked
+
+- Default Go tests/builds work without committed generated assets.
+- `go generate ./pkg/web` regenerates the Vite bundle into the ignored embed directory.
+- `go build -tags embed ./cmd/glaze` succeeds after generation.
+
+### What didn't work
+
+An initial `go build -tags embed ./cmd/glaze` failed because `pkg/help/site` still referenced the old `web.FS`. I updated it to use `web.PublicFS`.
+
+### What warrants a second pair of eyes
+
+- Whether the fallback non-embed page should stay minimal or be made more explicit in the UI.
+- Whether all release paths outside Docker/GoReleaser use `go generate` before `-tags embed`.
+
+## Step 24: Honor Glazed `--print-*` command settings in docsctl
+
+PR #562 received a review comment noting that the custom `docsctl` Glazed-parser wrapper exposed `--print-schema`, `--print-yaml`, and `--print-parsed-fields`, but did not honor them before dispatching to the command implementation. That meant `docsctl publish --print-schema` could still perform an upload if the normal required publish flags were present.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Address the code review comment on #562 regarding the --print-* flags`
+
+**Assistant interpretation:** Update the custom docsctl Glazed wrapper to match the default Glazed Cobra builder behavior for command-settings print flags, while still preserving testable `RunE` error returns.
+
+**Inferred user intent:** Fix the safety regression from exposing Glazed command settings without honoring them.
+
+### What I changed
+
+- Added `handleDocsctlPrintFlags` in `cmd/docsctl/main.go`.
+- After parsing, but before command execution, the wrapper now checks `cli.CommandSettingsSlug` and handles:
+  - `--print-parsed-fields`
+  - `--print-yaml`
+  - `--print-schema`
+- Added local `printDocsctlParsedFields` behavior equivalent to Glazed's default helper, but writing to the command writer instead of directly to `os.Stdout`.
+- Added regression tests proving publish side effects are skipped:
+  - `TestPublishCommandPrintSchemaDoesNotUpload`
+  - `TestPublishCommandPrintParsedFieldsDoesNotRequireTokenOrUpload`
+
+### Why
+
+These flags are intended to inspect the command and parsed values, not run the command. For `docsctl publish`, running the command would mean a real upload. The wrapper now returns immediately after printing, matching user expectations and Glazed conventions.
+
+### Validation
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The tests pass and the new tests guard both schema printing and parsed-field printing against accidental uploads.
+
+### What warrants a second pair of eyes
+
+The custom docsctl wrapper now mirrors a small subset of `cli.BuildCobraCommandFromCommand` behavior. If the upstream builder gains an error-returning mode later, docsctl could move back to the shared helper.
+
+## Step 25: Move `--print-*` handling into the Glazed CLI framework
+
+After I fixed the `docsctl --print-*` safety issue locally, the user correctly pointed out that this behavior belongs in the Glazed framework rather than being duplicated in `docsctl`. I checked the existing `glaze`/Glazed Cobra path: `cli.BuildCobraCommandFromCommand` handles `--print-parsed-fields`, `--print-yaml`, and `--print-schema` inside `runCobraCommand` before dispatching to the command implementation.
+
+I then refactored the framework so both the default builder and the custom `docsctl` wrapper share the same implementation.
+
+### Prompt Context
+
+**User prompt (verbatim):** `wait, how do other glazed commands do the print parsed values? that should be a framework kind of thing. Look for example at sqleton or pinocchio, or even just the glaze verb?`
+
+**Assistant interpretation:** Inspect how ordinary Glazed/Cobra commands handle print/debug command settings, then move the docsctl-specific duplicate into a shared framework helper.
+
+**Inferred user intent:** Avoid app-local reimplementation of framework behavior and make `docsctl` use the same semantics as normal Glazed commands.
+
+### What I found
+
+The normal Glazed path is:
+
+```text
+cli.BuildCobraCommandFromCommand
+  -> BuildCobraCommandFromCommandAndFunc
+  -> runCobraCommand
+```
+
+`runCobraCommand` parsed `cli.CommandSettingsSlug` and handled:
+
+- `PrintParsedFields`
+- `PrintYAML`
+- `PrintSchema`
+
+before any command `Run`/`RunIntoWriter` side effects.
+
+### What I changed
+
+- Added exported framework helper:
+
+```go
+cli.HandleCommandSettings(command cmds.Command, parsedValues *values.Values, w io.Writer) (handled bool, err error)
+```
+
+- Added exported writer-aware parsed-field helper:
+
+```go
+cli.PrintParsedFields(w io.Writer, parsedValues *values.Values) error
+```
+
+- Updated `runCobraCommand` to use `HandleCommandSettings` instead of its inline implementation.
+- Updated `docsctl` to call `cli.HandleCommandSettings` instead of its local duplicate.
+- Kept the existing internal `printParsedFields` wrapper for compatibility inside `cli`, but now it delegates to `PrintParsedFields(os.Stdout, ...)`.
+
+### Why
+
+This keeps docsctl aligned with the framework semantics while preserving the custom `RunE` error-returning docsctl wrapper needed by the tests.
+
+### Validation
+
+```bash
+go test ./pkg/cli ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The framework tests and docsctl tests pass. `docsctl publish --print-schema` and `--print-parsed-fields` still return before upload, but now through the same helper as normal Glazed commands.
+
+### What warrants a second pair of eyes
+
+Whether future callers should use `cli.HandleCommandSettings` directly or whether the framework should expose a more complete error-returning `BuildCobraCommandFromCommand` variant for test-friendly CLIs like docsctl.

@@ -2,7 +2,8 @@ doc/gifs/*gif
 /.env
 
 dist/
-!/pkg/web/dist/
+/pkg/web/dist/
+/pkg/web/embed/public/
 /web/node_modules/
 .bin/
 .history

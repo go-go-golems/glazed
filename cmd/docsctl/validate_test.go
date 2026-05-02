@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -66,7 +68,22 @@ func executeDocsctl(args ...string) (string, string, error) {
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	cmd.SetArgs(args)
+
+	originalStdout := os.Stdout
+	reader, writer, pipeErr := os.Pipe()
+	if pipeErr != nil {
+		return "", "", pipeErr
+	}
+	os.Stdout = writer
 	err := cmd.Execute()
+	_ = writer.Close()
+	os.Stdout = originalStdout
+	captured, readErr := io.ReadAll(reader)
+	_ = reader.Close()
+	if readErr != nil {
+		return "", stderr.String(), readErr
+	}
+	stdout.Write(captured)
 	return stdout.String(), stderr.String(), err
 }
 

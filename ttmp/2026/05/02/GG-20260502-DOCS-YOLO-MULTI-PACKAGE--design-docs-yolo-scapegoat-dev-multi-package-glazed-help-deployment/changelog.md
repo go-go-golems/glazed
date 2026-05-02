@@ -169,3 +169,23 @@ Step 20: pushed Glazed branch, built GHCR image sha-cca4dbf, synced docs-yolo in
 
 Step 21: addressed PR review comments by staging reloads before clearing live docs and generating unique repeated heading IDs across backend/frontend.
 
+
+## 2026-05-02
+
+Step 22: refactored docsctl validate/publish and docs-registry from raw Cobra flag definitions into Glazed command definitions and settings decoding.
+
+
+## 2026-05-02
+
+Step 23: aligned build-web with generated-at-build Dagger/pnpm strategy, removed committed pkg/web/dist assets, and switched production embedding to -tags embed.
+
+
+## 2026-05-02
+
+Step 24: honored docsctl Glazed --print-schema/--print-yaml/--print-parsed-fields flags before command execution and added no-upload regression tests.
+
+
+## 2026-05-02
+
+Step 25: moved docsctl --print-* handling into exported Glazed CLI helpers and reused them from both docsctl and the default Cobra runner.
+

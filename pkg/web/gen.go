@@ -10,4 +10,5 @@ package web
 //
 // This runs the Dagger builder in cmd/build-web/ (or falls back to a local
 // pnpm build if Dagger is unavailable). The resulting web/dist/ is copied
-// to pkg/web/dist/ and embedded by this package via //go:embed.
+// to pkg/web/embed/public/ and embedded by this package when built with
+// -tags embed.

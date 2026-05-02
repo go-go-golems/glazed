@@ -1,25 +1,28 @@
 // build-web is a Dagger-based build tool for the React frontend.
-// It runs entirely inside a container and does not require Node.js to be installed locally.
+// It runs inside a container when Dagger is available and falls back to local
+// pnpm when requested or when the Dagger engine is unavailable.
 //
 // The program walks up from the current working directory to find the repo root
-// (by locating go.mod), builds web/ with pnpm inside a node:22 container,
-// and copies the dist/ output to pkg/web/dist/ for embedding via //go:embed
-// in pkg/web. Generation is triggered by `go generate ./pkg/web`.
+// (by locating go.mod), builds web/ with pnpm, and copies the dist/ output to
+// pkg/web/embed/public/ for embedding in production builds via `go build -tags embed`.
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"dagger.io/dagger"
 )
 
+const defaultPNPMVersion = "10.15.0"
+
 func main() {
-	pnpmVersion := getenv("WEB_PNPM_VERSION", "10.15.0")
 	builderImage := getenv("WEB_BUILDER_IMAGE", "node:22")
 
 	wd, err := os.Getwd()
@@ -32,11 +35,21 @@ func main() {
 	}
 
 	webPath := filepath.Join(repoRoot, "web")
-	outPath := filepath.Join(repoRoot, "pkg", "web", "dist")
+	outPath := filepath.Join(repoRoot, "pkg", "web", "embed", "public")
+	pnpmVersion := getenv("WEB_PNPM_VERSION", packageManagerPNPMVersion(webPath, defaultPNPMVersion))
 
 	log.Printf("repo root: %s", repoRoot)
 	log.Printf("web source: %s", webPath)
 	log.Printf("build output: %s", outPath)
+	log.Printf("pnpm version: %s", pnpmVersion)
+
+	if getenv("BUILD_WEB_LOCAL", "") == "1" {
+		if err := buildLocal(webPath, outPath); err != nil {
+			log.Fatalf("local build failed: %v", err)
+		}
+		log.Printf("exported web dist to %s", outPath)
+		return
+	}
 
 	if err := buildWithDagger(webPath, outPath, pnpmVersion, builderImage); err != nil {
 		log.Printf("Dagger build failed (%v), falling back to local pnpm", err)
@@ -55,24 +68,29 @@ func buildWithDagger(webPath, outPath, pnpmVersion, builderImage string) error {
 	}
 	defer func() { _ = client.Close() }()
 
-	base := client.Container().From(builderImage)
+	storeCache := client.CacheVolume("glazed-help-browser-pnpm-store")
 	webDir := client.Host().Directory(webPath)
 
-	ctr := base.
+	ctr := client.Container().From(builderImage).
 		WithWorkdir("/src").
 		WithMountedDirectory("/src", webDir).
-		WithEnvVariable("PNPM_HOME", "/pnpm")
+		WithMountedCache("/pnpm/store", storeCache).
+		WithEnvVariable("PNPM_HOME", "/pnpm").
+		WithEnvVariable("COREPACK_ENABLE_DOWNLOAD_PROMPT", "0")
 
 	ctr = ctr.WithExec([]string{
 		"sh", "-lc",
-		fmt.Sprintf("corepack enable && corepack prepare pnpm@%s --activate", pnpmVersion),
+		fmt.Sprintf("corepack enable && corepack prepare pnpm@%s --activate && pnpm config set store-dir /pnpm/store", pnpmVersion),
 	})
 
 	ctr = ctr.
 		WithExec([]string{"sh", "-lc", "pnpm --version"}).
-		WithExec([]string{"sh", "-lc", "yes | pnpm install --reporter=append-only"}).
+		WithExec([]string{"sh", "-lc", "pnpm install --frozen-lockfile --reporter=append-only"}).
 		WithExec([]string{"sh", "-lc", "pnpm build"})
 
+	if err := os.RemoveAll(outPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove old embedded assets: %v", err)
+	}
 	dist := ctr.Directory("/src/dist")
 	if _, err := dist.Export(ctx, outPath); err != nil {
 		return fmt.Errorf("export dist to %s: %v", outPath, err)
@@ -86,10 +104,10 @@ func buildLocal(webPath, outPath string) error {
 	}
 
 	if err := os.RemoveAll(outPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove dist: %v", err)
+		return fmt.Errorf("remove embedded assets: %v", err)
 	}
 
-	for _, cmdStr := range []string{"yes | pnpm install", "pnpm build"} {
+	for _, cmdStr := range []string{"pnpm install --frozen-lockfile", "pnpm build"} {
 		cmd := exec.Command("sh", "-c", cmdStr)
 		cmd.Dir = webPath
 		cmd.Stdout = os.Stdout
@@ -138,6 +156,24 @@ func findRepoRoot(start string) (string, error) {
 		}
 		dir = parent
 	}
+}
+
+func packageManagerPNPMVersion(webPath, fallback string) string {
+	data, err := os.ReadFile(filepath.Join(webPath, "package.json"))
+	if err != nil {
+		return fallback
+	}
+	var pkg struct {
+		PackageManager string `json:"packageManager"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return fallback
+	}
+	pm := strings.TrimSpace(pkg.PackageManager)
+	if version, ok := strings.CutPrefix(pm, "pnpm@"); ok && strings.TrimSpace(version) != "" {
+		return strings.TrimSpace(version)
+	}
+	return fallback
 }
 
 func getenv(key, def string) string {

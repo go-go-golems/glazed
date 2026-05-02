@@ -50,6 +50,46 @@ func TestPublishCommandServerError(t *testing.T) {
 	}
 }
 
+func TestPublishCommandPrintSchemaDoesNotUpload(t *testing.T) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		http.Error(w, "unexpected upload", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+	path := createDocsctlHelpDB(t, "intro")
+	stdout, _, err := executeDocsctl("publish", "--server", server.URL, "--package", "pinocchio", "--version", "v1", "--file", path, "--token", "secret", "--print-schema")
+	if err != nil {
+		t.Fatalf("publish --print-schema: %v", err)
+	}
+	if called {
+		t.Fatalf("expected --print-schema to return before upload")
+	}
+	if !strings.Contains(stdout, "properties") || !strings.Contains(stdout, "package") {
+		t.Fatalf("unexpected schema stdout: %s", stdout)
+	}
+}
+
+func TestPublishCommandPrintParsedFieldsDoesNotRequireTokenOrUpload(t *testing.T) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		http.Error(w, "unexpected upload", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+	path := createDocsctlHelpDB(t, "intro")
+	stdout, _, err := executeDocsctl("publish", "--server", server.URL, "--package", "pinocchio", "--version", "v1", "--file", path, "--print-parsed-fields")
+	if err != nil {
+		t.Fatalf("publish --print-parsed-fields: %v", err)
+	}
+	if called {
+		t.Fatalf("expected --print-parsed-fields to return before upload")
+	}
+	if !strings.Contains(stdout, "default") || !strings.Contains(stdout, "pinocchio") {
+		t.Fatalf("unexpected parsed-fields stdout: %s", stdout)
+	}
+}
+
 func TestPublishCommandSuccess(t *testing.T) {
 	var gotAuth string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

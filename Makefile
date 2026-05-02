@@ -35,7 +35,7 @@ test:
 
 build:
 	go generate ./...
-	go build -tags "sqlite_fts5" -ldflags "$(LDFLAGS)" ./cmd/glaze
+	go build -tags "sqlite_fts5 embed" -ldflags "$(LDFLAGS)" ./cmd/glaze
 
 goreleaser:
 	GOWORK=off goreleaser release $(GORELEASER_ARGS) $(GORELEASER_TARGET)
@@ -62,5 +62,6 @@ bump-glazed:
 	go mod tidy
 
 install:
-	go build -tags "sqlite_fts5" -ldflags "$(LDFLAGS)" -o ./dist/glaze ./cmd/glaze && \
+	go generate ./... && \
+		go build -tags "sqlite_fts5 embed" -ldflags "$(LDFLAGS)" -o ./dist/glaze ./cmd/glaze && \
 		cp ./dist/glaze $(shell which glaze)

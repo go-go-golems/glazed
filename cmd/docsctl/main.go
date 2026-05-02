@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -23,10 +26,57 @@ tokens.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return logging.InitLoggerFromCobra(cmd)
+		},
 	}
-	cmd.AddCommand(newValidateCommand())
-	cmd.AddCommand(newPublishCommand())
+	if err := logging.AddLoggingSectionToRootCommand(cmd, "docsctl"); err != nil {
+		cobra.CheckErr(err)
+	}
+	for _, command := range []cmds.Command{mustCommand(NewValidateCommand()), mustCommand(NewPublishCommand())} {
+		cobraCmd, err := buildDocsctlCobraCommand(command)
+		if err != nil {
+			cobra.CheckErr(err)
+		}
+		cmd.AddCommand(cobraCmd)
+	}
 	return cmd
+}
+
+func buildDocsctlCobraCommand(command cmds.Command) (*cobra.Command, error) {
+	description := command.Description()
+	cmd := cli.NewCobraCommandFromCommandDescription(description)
+	parser, err := cli.NewCobraParserFromSections(description.Schema, &cli.CobraParserConfig{})
+	if err != nil {
+		return nil, err
+	}
+	if err := parser.AddToCobraCommand(cmd); err != nil {
+		return nil, err
+	}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		parsedValues, err := parser.Parse(cmd, args)
+		if err != nil {
+			return err
+		}
+		if handled, err := cli.HandleCommandSettings(command, parsedValues, cmd.OutOrStdout()); handled || err != nil {
+			return err
+		}
+		if writerCommand, ok := command.(cmds.WriterCommand); ok {
+			return writerCommand.RunIntoWriter(cmd.Context(), parsedValues, cmd.OutOrStdout())
+		}
+		if bareCommand, ok := command.(cmds.BareCommand); ok {
+			return bareCommand.Run(cmd.Context(), parsedValues)
+		}
+		return fmt.Errorf("unsupported docsctl command type %T", command)
+	}
+	return cmd, nil
+}
+
+func mustCommand(command cmds.Command, err error) cmds.Command {
+	if err != nil {
+		cobra.CheckErr(err)
+	}
+	return command
 }
 
 func main() {
