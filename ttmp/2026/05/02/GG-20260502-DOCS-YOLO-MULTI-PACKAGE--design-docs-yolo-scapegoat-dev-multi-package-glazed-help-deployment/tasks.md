@@ -80,17 +80,17 @@
 - [ ] Configure `glaze serve --from-sqlite-dir /var/lib/glazed-docs/packages` in the docs-yolo deployment.
 - [ ] Configure registry package root to the shared PVC path.
 - [ ] Add readiness/liveness probes for both docs browser and registry.
-- [ ] Add HTTP-01 TLS host `docs.yolo.scapegoat.dev` following the existing Glazed deployment pattern.
-- [ ] Render manifests with `kubectl kustomize` and record validation output.
-- [ ] Commit GitOps scaffold in the appropriate repository and relate it to this ticket.
+- [x] Add HTTP-01 TLS host `docs.yolo.scapegoat.dev` following the existing Glazed deployment pattern.
+- [x] Render manifests with `kubectl kustomize` and record validation output.
+- [x] Commit GitOps scaffold in the appropriate repository and relate it to this ticket.
 
 ## Phase 1H — End-to-end smoke validation and operational handoff
 
-- [ ] Generate at least two package/version SQLite exports locally.
-- [ ] Start docs registry and docs browser against a temporary package root.
-- [ ] Publish package A and package B with distinct package tokens.
-- [ ] Verify token A cannot publish package B.
-- [ ] Verify `/api/packages` shows both packages and expected versions.
+- [x] Generate at least two package/version SQLite exports locally.
+- [x] Start docs registry and docs browser against a temporary package root.
+- [x] Publish package A and package B with distinct package tokens.
+- [x] Verify token A cannot publish package B.
+- [x] Verify `/api/packages` shows both packages and expected versions.
 - [ ] Verify `/api/sections?package=<package>&version=<version>` returns expected sections.
 - [ ] Verify bad uploads do not replace existing valid DBs.
 - [ ] Document rollout restart or reload procedure for making newly published docs visible.

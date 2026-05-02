@@ -1355,3 +1355,123 @@ File-backed publisher catalog shape:
   ]
 }
 ```
+
+## Step 14: Add docs-yolo GitOps scaffold in the k3s repository
+
+Phase 1G required a Kubernetes deployment shape for the new docs hub. I added a `docs-yolo` Argo CD application and Kustomize package in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s`, following the existing `glaze-docs` production pattern but adding a PVC and a second container for the upload registry.
+
+The first scaffold keeps the public browser at `docs.yolo.scapegoat.dev` and keeps the registry as a cluster-internal service. The publisher catalog ConfigMap is empty by default; operators can populate it with token hashes when enabling package publishing.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Continue Phase 1 by adding the GitOps deployment scaffold in the k3s repository.
+
+**Inferred user intent:** Make the docs-yolo design deployable through the existing Argo CD/Kustomize platform conventions.
+
+### What I did
+
+In `/home/manuel/code/wesen/2026-03-27--hetzner-k3s`:
+
+- Added `gitops/applications/docs-yolo.yaml`.
+- Added `gitops/kustomize/docs-yolo/` with:
+  - `pvc.yaml`
+  - `publisher-catalog.yaml`
+  - `deployment.yaml`
+  - `service.yaml`
+  - `ingress.yaml`
+  - `kustomization.yaml`
+- The Deployment runs two containers from the Glazed image:
+  - `docs-browser`: `glaze serve --from-sqlite-dir /var/lib/glazed-docs/packages`
+  - `docs-registry`: `docs-registry --package-root /var/lib/glazed-docs/packages --publisher-catalog /etc/docs-yolo/publishers.json`
+- Added a shared PVC mounted read-only by the browser and read-write by the registry.
+- Added `docs.yolo.scapegoat.dev` Ingress with the existing `letsencrypt-prod` HTTP-01 pattern.
+- Rendered the Kustomize package.
+- Committed the k3s scaffold as `fb821557652c9a5225499976d19d5a4ac3658fc0`.
+
+Commands run:
+
+```bash
+cd /home/manuel/code/wesen/2026-03-27--hetzner-k3s
+kubectl kustomize gitops/kustomize/docs-yolo >/tmp/docs-yolo.yaml
+git add gitops/applications/docs-yolo.yaml gitops/kustomize/docs-yolo
+LEFTHOOK=0 git commit -m "Add docs yolo GitOps scaffold"
+```
+
+### Why
+
+The Phase 1 implementation should deploy through the same GitOps path as the existing Glazed docs deployment, but it needs persistent package storage and a registry process in addition to the public browser.
+
+### What worked
+
+- `kubectl kustomize gitops/kustomize/docs-yolo` rendered successfully.
+- The GitOps scaffold committed cleanly in the k3s repo.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The current Glazed container originally only copied `/usr/local/bin/glaze`, so I also updated the Glazed Dockerfile in a previous commit to include `/usr/local/bin/docsctl` and `/usr/local/bin/docs-registry`. Without that, the registry sidecar would not be runnable from the same image.
+
+### What was tricky to build
+
+The registry needs write access to the package root while the browser only needs read access. A two-container pod with one PVC keeps the first deployment simple and avoids cross-pod ReadWriteOnce scheduling concerns.
+
+### What warrants a second pair of eyes
+
+- Whether the registry should remain cluster-internal or receive a separate protected ingress such as `registry.docs.yolo.scapegoat.dev`.
+- Whether the image tag `sha-2310f54` should be updated after the current branch is pushed and a final container image exists.
+- Whether the empty publisher catalog should be replaced by a Vault/VSO-synced Secret or ConfigMap before applying to production.
+
+### What should be done in the future
+
+- Apply the Argo CD Application only after the corresponding Glazed image tag exists in GHCR.
+- Decide how operators will populate `publishers.json` from Vault token-hash records.
+
+### Code review instructions
+
+Review in the k3s repo:
+
+- `gitops/applications/docs-yolo.yaml`
+- `gitops/kustomize/docs-yolo/deployment.yaml`
+- `gitops/kustomize/docs-yolo/service.yaml`
+- `gitops/kustomize/docs-yolo/ingress.yaml`
+- `gitops/kustomize/docs-yolo/pvc.yaml`
+- `gitops/kustomize/docs-yolo/publisher-catalog.yaml`
+
+Validate:
+
+```bash
+cd /home/manuel/code/wesen/2026-03-27--hetzner-k3s
+kubectl kustomize gitops/kustomize/docs-yolo >/tmp/docs-yolo.yaml
+```
+
+### Technical details
+
+The docs browser container args are:
+
+```yaml
+args:
+  - serve
+  - --address
+  - :8088
+  - --from-sqlite-dir
+  - /var/lib/glazed-docs/packages
+```
+
+The registry container args are:
+
+```yaml
+command:
+  - /usr/local/bin/docs-registry
+args:
+  - --address
+  - :8090
+  - --package-root
+  - /var/lib/glazed-docs/packages
+  - --publisher-catalog
+  - /etc/docs-yolo/publishers.json
+```

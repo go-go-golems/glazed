@@ -129,3 +129,8 @@ Step 13: added DirectoryPackageStore, docsctl publish, file-backed publisher cat
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog_file.go — File-backed publisher catalog source for Phase 1 Vault-shaped token hashes.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/directory_store.go — Atomic directory publisher for package/version SQLite DBs.
 
+
+## 2026-05-02
+
+Step 14: added docs-yolo GitOps scaffold in k3s repo (commit fb821557652c9a5225499976d19d5a4ac3658fc0).
+
