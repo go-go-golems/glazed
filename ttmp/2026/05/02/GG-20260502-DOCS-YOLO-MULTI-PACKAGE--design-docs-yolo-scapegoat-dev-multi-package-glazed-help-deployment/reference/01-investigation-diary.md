@@ -472,3 +472,73 @@ Bundle name:
 ```text
 GG-20260502-DOCS-YOLO-MULTI-PACKAGE - complete ticket with Phase 1
 ```
+
+## Step 5: Expand the ticket into phased implementation tasks
+
+The ticket previously had design-completion tasks only. I expanded it into a full implementation backlog with phases for local validation, static token auth, registry upload, atomic PVC publication, `docsctl publish`, Vault/catalog integration, GitOps deployment, and end-to-end smoke validation.
+
+This turns the ticket from a research artifact into an executable checklist. The later GitHub OIDC and signed JWT work remains explicitly tracked by `GG-20260502-VAULT-OIDC-DOCS-PUBLISH`, while this ticket focuses on Phase 1 direct registry/PVC publishing with Vault-managed static package tokens.
+
+### Prompt Context
+
+**User prompt (verbatim):** "add detailed list of tasks for the whole ticket, in multiple phases. Then work on the first phase, task by task, committing at appropriate intervals, keeping a diary as you go"
+
+**Assistant interpretation:** Expand the current ticket task list into detailed multi-phase implementation tasks, then start executing Phase 1 in small committed slices with diary updates.
+
+**Inferred user intent:** Move from design into implementation without losing task granularity or progress traceability.
+
+### What I did
+
+- Rewrote `tasks.md` into sections:
+  - completed research/design setup;
+  - Phase 1A local validation and `docsctl` CLI foundation;
+  - Phase 1B static package-token auth;
+  - Phase 1C direct upload registry skeleton;
+  - Phase 1D PVC directory publisher and atomic writes;
+  - Phase 1E `docsctl publish` client;
+  - Phase 1F Vault token-hash integration;
+  - Phase 1G docs-yolo GitOps deployment scaffold;
+  - Phase 1H end-to-end smoke validation and handoff;
+  - later phases tracked separately.
+
+### Why
+
+The implementation needs enough task detail to support task-by-task work, focused commits, and diary entries. A single “implement Phase 1” task would be too coarse to review safely.
+
+### What worked
+
+The Phase 1A/1B split gives a clean starting point: first build local validation and CLI foundation, then add auth.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The best implementation order is to validate package DBs before introducing registry or Vault behavior. That keeps the first code slice independent and easy to test.
+
+### What was tricky to build
+
+The tricky part was keeping this ticket focused while still listing the whole path. The solution was to include Phase 2/3 only as references to the separate auth ticket and to keep all direct implementation tasks in Phase 1.
+
+### What warrants a second pair of eyes
+
+- Whether Phase 1F should choose direct Vault reads from the registry or a file-backed catalog first.
+- Whether GitOps tasks should be executed in this ticket or split into a paired k3s ticket before manifests are changed.
+
+### What should be done in the future
+
+Start Phase 1A with `cmd/docsctl`, name validation helpers, SQLite DB validator, and `docsctl validate`.
+
+### Code review instructions
+
+Review `tasks.md` first. It is now the implementation map for the ticket.
+
+### Technical details
+
+The first code slice should not require Kubernetes, Vault, or a running registry. It should be testable with:
+
+```bash
+go test ./pkg/help/publish/...
+go test ./cmd/docsctl/...
+```
