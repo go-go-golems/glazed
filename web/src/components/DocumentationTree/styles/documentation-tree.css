@@ -3,16 +3,24 @@
   overflow-y: auto;
   padding: 8px 6px 12px;
   font-size: 12px;
+  line-height: 1.35;
   background: #fff;
+}
+
+[data-part='documentation-tree-group'] + [data-part='documentation-tree-group'] {
+  margin-top: 6px;
 }
 
 [data-part='documentation-tree-row'] {
   width: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: 12px 16px minmax(0, 1fr);
   align-items: center;
-  gap: 4px;
+  column-gap: 4px;
   min-height: 22px;
-  border: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 0;
   background: transparent;
   color: #111;
   font: inherit;
@@ -22,39 +30,76 @@
 }
 
 [data-part='documentation-tree-row']:hover {
-  background: #eee;
+  background: #f1f5ff;
+  border-color: #b7c7e8;
 }
 
 [data-part='documentation-tree-row'][aria-selected='true'] {
-  color: #06c;
+  background: #dfeaff;
+  border-color: #7da4e8;
+  color: #043c8f;
   font-weight: 700;
+}
+
+[data-part='documentation-tree-row'][data-kind='group'] {
+  font-weight: 700;
+}
+
+[data-part='documentation-tree-row'][data-kind='heading'] {
+  min-height: 19px;
+  grid-template-columns: 12px 12px minmax(0, 1fr);
+  margin: 0;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  color: #3f4b5a;
+  font-size: 11px;
+}
+
+[data-part='documentation-tree-row'][data-kind='heading'][data-level='3'] {
+  padding-left: 12px;
+}
+
+[data-part='documentation-tree-row'][data-kind='heading'][data-level='4'] {
+  padding-left: 24px;
+}
+
+[data-part='documentation-tree-row'][data-kind='heading']:hover {
+  color: #043c8f;
 }
 
 [data-part='documentation-tree-disclosure'] {
   width: 12px;
+  min-height: 1px;
   display: inline-block;
-  color: #777;
+  color: #6d7785;
+  text-align: center;
 }
 
 [data-part='documentation-tree-icon'] {
   width: 16px;
   display: inline-block;
   text-align: center;
+  opacity: 0.82;
+}
+
+[data-part='documentation-tree-row'][data-kind='heading'] [data-part='documentation-tree-icon'] {
+  width: 12px;
+  color: #7a8794;
+  font-weight: 700;
+  opacity: 0.7;
 }
 
 [data-part='documentation-tree-label'] {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 [data-part='documentation-tree-children'] {
-  margin-left: 16px;
-}
-
-[data-part='documentation-tree-heading'] [data-part='documentation-tree-label'] {
-  color: #16823a;
-  font-size: 11px;
+  margin-left: 18px;
+  padding-left: 4px;
+  border-left: 1px dotted #c7ced8;
 }
 
 [data-part='documentation-tree-empty'] {

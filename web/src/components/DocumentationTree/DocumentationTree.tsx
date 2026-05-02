@@ -64,6 +64,7 @@ export function DocumentationTree({
             <button
               type="button"
               data-part={DocumentationTreeParts.row}
+              data-kind="group"
               role="treeitem"
               aria-expanded={groupExpanded}
               onClick={() => toggleGroup(group.id)}
@@ -82,6 +83,7 @@ export function DocumentationTree({
                       <button
                         type="button"
                         data-part={DocumentationTreeParts.row}
+                        data-kind="document"
                         role="treeitem"
                         aria-expanded={hasHeadings ? sectionExpanded : undefined}
                         aria-selected={activeSlug === section.slug}
@@ -107,14 +109,15 @@ export function DocumentationTree({
                             <button
                               type="button"
                               key={heading.id}
-                              data-part={`${DocumentationTreeParts.row} ${DocumentationTreeParts.heading}`}
+                              data-part={DocumentationTreeParts.row}
+                              data-kind="heading"
+                              data-level={heading.level}
                               role="treeitem"
                               aria-selected={activeSlug === section.slug && activeHeadingId === heading.id}
                               onClick={() => onSelectHeading(section.slug, heading.id)}
-                              style={{ paddingLeft: `${Math.max(0, heading.level - 1) * 8}px` }}
                             >
-                              <span data-part={DocumentationTreeParts.disclosure} />
-                              <span data-part={DocumentationTreeParts.icon}>ƒ</span>
+                              <span data-part={DocumentationTreeParts.disclosure} aria-hidden="true" />
+                              <span data-part={DocumentationTreeParts.icon} aria-hidden="true">#</span>
                               <span data-part={DocumentationTreeParts.label}>{heading.text}</span>
                             </button>
                           ))}

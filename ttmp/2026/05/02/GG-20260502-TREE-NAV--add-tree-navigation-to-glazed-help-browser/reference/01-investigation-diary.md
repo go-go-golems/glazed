@@ -193,3 +193,62 @@ Results: all passed.
 ### What was tricky
 
 React Router under `HashRouter` represents subsection navigation as a route hash inside the browser hash, for example `#/sections/alpha-section#overview`. The implementation uses `navigate('/sections/${slug}#${headingId}')`, which produces the expected URL in tests.
+
+## 2026-05-02 — Tree subsection styling cleanup, Storybook, and smoke validation
+
+### User feedback
+
+The first working tree implementation made subsection nodes look like a stack of native bordered buttons. The screenshot showed several concrete problems:
+
+- subsection rows were boxed individually instead of reading as a tree;
+- long subsection titles wrapped awkwardly into tall boxes;
+- the repeated `ƒ` marker looked cryptic for Markdown headings;
+- indentation and hierarchy guide lines were noisy.
+
+### What changed
+
+- Fixed `DocumentationTree` heading rows so they always use the base `documentation-tree-row` part and a separate `data-kind="heading"` marker. The earlier implementation emitted a space-separated `data-part` value, which meant exact `[data-part='documentation-tree-row']` selectors did not match heading rows.
+- Reworked subsection styling into compact grid rows with transparent borders, dotted hierarchy guide lines, stable truncation, and a simple `#` heading marker.
+- Added Storybook stories for both new widgets:
+  - `web/src/components/DocumentationTree/DocumentationTree.stories.tsx`
+  - `web/src/components/NavigationModeToggle/NavigationModeToggle.stories.tsx`
+- Rebuilt the web bundle and copied `web/dist` into `pkg/web/dist`.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+Smoke server was restarted in tmux:
+
+```bash
+tmux kill-session -t glazed-multi-help-smoke
+tmux new-session -d -s glazed-multi-help-smoke \
+  "go run ./cmd/glaze serve --from-sqlite-dir /tmp/glazed-multi-help-smoke --address :8099 2>&1 | tee /tmp/glazed-multi-help-smoke/server.log"
+```
+
+Smoke checks:
+
+- `GET /api/packages` returned both `glazed` and `pinocchio`.
+- `GET /api/sections?package=pinocchio&version=vtest&limit=5` returned 69 total sections and heading metadata.
+- Browser smoke at `http://127.0.0.1:8099` showed the cleaned tree and subsection rows.
+- Screenshot saved as `tree-subsections-cleaned.png`.
+
+Known cosmetic note: the browser console still reports a 404 for the external Chicago font CDN URL; this predates the tree work and does not affect tree behavior.
+
+### Additional Storybook validation
+
+Ran:
+
+```bash
+cd glazed/web && pnpm build-storybook
+```
+
+Result: passed. Storybook emitted its normal `src/**/*.mdx` absence warning and large chunk warning. The generated `web/storybook-static` output was removed after validation because it is a build artifact and should not be committed.

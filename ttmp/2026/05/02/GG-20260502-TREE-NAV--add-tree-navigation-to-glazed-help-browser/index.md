@@ -12,13 +12,22 @@ DocType: index
 Intent: long-term
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: web/src/components/DocumentationTree/DocumentationTree.stories.tsx
+      Note: Storybook examples for tree grouping
+    - Path: web/src/components/DocumentationTree/DocumentationTree.tsx
+      Note: Tree component markup now separates row part from data-kind so subsection rows inherit tree styling.
+    - Path: web/src/components/DocumentationTree/styles/documentation-tree.css
+      Note: Compact subsection row styling
+    - Path: web/src/components/NavigationModeToggle/NavigationModeToggle.stories.tsx
+      Note: Storybook examples for Tree and Search toggle states.
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-05-02T12:17:05.601847782-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add tree navigation to Glazed help browser
 

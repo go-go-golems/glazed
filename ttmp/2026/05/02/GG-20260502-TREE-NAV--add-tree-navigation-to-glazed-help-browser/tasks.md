@@ -13,4 +13,5 @@
 - [x] Style the tree/sidebar to match the provided Classic Mac documentation screenshot.
 - [x] Add frontend tests for tree building, mode switching, conditional tree/search rendering, and subsection navigation.
 - [x] Run Go help tests, frontend Vitest, TypeScript checks, web build, and embedded web asset generation.
-- [ ] Smoke test with the existing multi-package tmux setup and document the validation result in the diary.
+- [x] Smoke test with the existing multi-package tmux setup and document the validation result in the diary.
+- [x] Add Storybook stories for DocumentationTree and NavigationModeToggle.
