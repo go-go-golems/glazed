@@ -713,3 +713,95 @@ Versions match:
 ```text
 ^[A-Za-z0-9][A-Za-z0-9._+-]*$
 ```
+
+## Step 8: Add SQLite help DB validation
+
+The next Phase 1A slice added the local validator that `docsctl validate`, `docsctl publish`, and the registry upload endpoint will share. It opens a candidate help export read-only, verifies that it has a usable `sections` table, rejects empty or duplicate slugs, rejects empty databases, and reports warnings when embedded package metadata differs from the requested publish identity.
+
+This is the core safety gate for Phase 1. Publishing should not write anything into the package root until this validator succeeds.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue Phase 1A by implementing the SQLite help DB validator and its unit tests.
+
+**Inferred user intent:** Ensure uploaded package docs are structurally valid before registry storage or server reload is built.
+
+### What I did
+
+- Added `pkg/help/publish/sqlite_validator.go`.
+- Implemented `ValidateSQLiteHelpDB(ctx, path, opts)`.
+- Added `SQLiteValidationOptions` and `SQLiteValidationResult`.
+- The validator checks:
+  - non-empty file path;
+  - safe package/version options;
+  - read-only SQLite open;
+  - required `sections` table;
+  - required `slug` and `title` columns;
+  - non-zero section count;
+  - no empty slugs;
+  - no duplicate slugs;
+  - package metadata mismatch warnings.
+- Added `pkg/help/publish/sqlite_validator_test.go`.
+- Covered valid DBs, missing files, non-SQLite files, missing `sections`, empty DBs, missing slug column, empty slugs, duplicate slugs, invalid publish names, and metadata warnings.
+- Checked off the validator implementation and unit test tasks.
+
+Commands run:
+
+```bash
+gofmt -w pkg/help/publish/sqlite_validator.go pkg/help/publish/sqlite_validator_test.go
+go test ./pkg/help/publish
+```
+
+### Why
+
+The publish registry must reject bad docs before atomic publication. This validator gives both local CLI and server upload paths the same behavior.
+
+### What worked
+
+- Focused publish package tests pass.
+- Test fixtures can create intentionally malformed SQLite DBs that bypass the production store constraints, which lets the validator prove it catches duplicates and empty slugs.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+Opening SQLite with a `file:` DSN plus `mode=ro` and `_query_only=true` is a good default for upload validation. The validator should inspect uploads as data, not mutate them.
+
+### What was tricky to build
+
+The production Glazed store schema has uniqueness constraints, but uploaded DBs are untrusted and may have older, hand-written, or corrupt schemas. The tests therefore create minimal SQLite fixtures directly instead of relying only on the production store helper.
+
+### What warrants a second pair of eyes
+
+- Whether `slug` and `title` are sufficient required columns, or whether Phase 1 should also require the full current Glazed schema.
+- Whether package metadata mismatches should remain warnings or become hard errors for Phase 1.
+
+### What should be done in the future
+
+- Wire this validator into `docsctl validate` next.
+- Reuse this validator in the registry upload handler before `DirectoryPackageStore` writes to the package root.
+
+### Code review instructions
+
+Review:
+
+- `pkg/help/publish/sqlite_validator.go`
+- `pkg/help/publish/sqlite_validator_test.go`
+
+Validate:
+
+```bash
+go test ./pkg/help/publish
+```
+
+### Technical details
+
+Read-only SQLite DSN shape:
+
+```text
+file:/absolute/path/help.db?mode=ro&_query_only=true
+```

@@ -18,8 +18,8 @@
 
 - [x] Add a `docsctl` CLI entrypoint under `cmd/docsctl` with root help and version wiring.
 - [x] Implement package/version/path validation helpers for docs publishing names.
-- [ ] Implement a SQLite help DB validator that opens exports read-only and checks schema, section count, slugs, and duplicate slugs.
-- [ ] Add unit tests for valid DBs, missing files, non-SQLite files, empty DBs, missing `sections`, empty slugs, duplicate slugs, and invalid package/version names.
+- [x] Implement a SQLite help DB validator that opens exports read-only and checks schema, section count, slugs, and duplicate slugs.
+- [x] Add unit tests for valid DBs, missing files, non-SQLite files, empty DBs, missing `sections`, empty slugs, duplicate slugs, and invalid package/version names.
 - [ ] Add `docsctl validate --package --version --file --json` using the validator package.
 - [ ] Add CLI smoke tests or command-level tests for `docsctl validate` success and failure output.
 - [ ] Document `docsctl validate` usage in the ticket diary and commit the validation slice.

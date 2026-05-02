@@ -67,3 +67,13 @@ Step 7: added package/version validation helpers for safe docs publishing path c
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/validation.go — Package/version/path validation helpers for docs publishing.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/validation_test.go — Validation helper tests.
 
+
+## 2026-05-02
+
+Step 8: added read-only SQLite help DB validator and unit tests for publish safety.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/sqlite_validator.go — Read-only Glazed help DB validator.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/sqlite_validator_test.go — Validator tests for valid and invalid uploads.
+
