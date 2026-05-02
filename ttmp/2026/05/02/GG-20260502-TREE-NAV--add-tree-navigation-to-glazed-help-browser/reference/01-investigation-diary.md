@@ -107,3 +107,49 @@ When reviewing the eventual implementation, check:
 ### Verification so far
 
 This pass created the ticket and planning documents only. No implementation code has been changed for this ticket yet.
+
+## 2026-05-02 — Implementation started
+
+### Goal
+
+Implement the tree navigation ticket task-by-task, keeping commits focused and updating this diary after meaningful checkpoints.
+
+### Starting state
+
+`git status --short --untracked-files=all` showed unrelated Docker changes that must not be staged for this ticket:
+
+```text
+M Dockerfile
+?? .dockerignore
+```
+
+### Implementation plan for this pass
+
+1. Backend heading metadata: response contracts, extractor, tests.
+2. Frontend heading IDs and tree state/components.
+3. Wire Tree/Search mode into `App.tsx`.
+4. Run focused tests, rebuild web assets, smoke test.
+
+## 2026-05-02 — Backend heading metadata implemented
+
+### What changed
+
+Implemented the backend tree metadata foundation:
+
+- Added `SectionHeading` to `pkg/help/server/types.go`.
+- Added `Headings []SectionHeading` to `SectionSummary`.
+- Added `ExtractHeadings` and `SlugifyHeading` in `pkg/help/server/headings.go`.
+- The extractor supports ATX headings levels 1-4, ignores fenced code blocks, trims closing `#` markers, and skips a duplicate heading matching the document title.
+- Added server tests for heading extraction and list endpoint heading metadata.
+
+### Validation
+
+```bash
+cd glazed && go test ./pkg/help/server
+```
+
+Result: passed.
+
+### Notes
+
+This completes the first three ticket tasks: Go/TS contracts are only half complete so far for TypeScript, but the backend contract and API exposure are done. TypeScript contract will be checked together with the frontend heading-ID task.

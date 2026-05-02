@@ -2,9 +2,9 @@
 
 ## TODO
 
-- [ ] Add SectionHeading metadata to Go and TypeScript section summary contracts.
-- [ ] Implement and test backend Markdown heading extraction that ignores fenced code blocks and skips duplicate title headings.
-- [ ] Expose subsection heading metadata from GET /api/sections for each section summary.
+- [x] Add SectionHeading metadata to Go and TypeScript section summary contracts.
+- [x] Implement and test backend Markdown heading extraction that ignores fenced code blocks and skips duplicate title headings.
+- [x] Expose subsection heading metadata from GET /api/sections for each section summary.
 - [ ] Add stable heading IDs to Markdown rendering so subsection links can scroll to headings.
 - [ ] Create NavigationModeToggle component and wire Tree/Search mode state into App.tsx.
 - [ ] Create DocumentationTree component with document-type groups for GeneralTopic, Example, Application, and Tutorial.

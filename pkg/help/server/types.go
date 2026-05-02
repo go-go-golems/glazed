@@ -41,16 +41,23 @@ type ListSectionsParams struct {
 
 // SectionSummary is the public shape for a section in list/search results.
 // It intentionally omits the full `content` field to keep responses small.
+type SectionHeading struct {
+	ID    string `json:"id"`
+	Level int    `json:"level"`
+	Text  string `json:"text"`
+}
+
 type SectionSummary struct {
-	ID             int64    `json:"id"`
-	PackageName    string   `json:"packageName"`
-	PackageVersion string   `json:"packageVersion,omitempty"`
-	Slug           string   `json:"slug"`
-	Type           string   `json:"type"`
-	Title          string   `json:"title"`
-	Short          string   `json:"short"`
-	Topics         []string `json:"topics"`
-	IsTopLevel     bool     `json:"isTopLevel"`
+	ID             int64            `json:"id"`
+	PackageName    string           `json:"packageName"`
+	PackageVersion string           `json:"packageVersion,omitempty"`
+	Slug           string           `json:"slug"`
+	Type           string           `json:"type"`
+	Title          string           `json:"title"`
+	Short          string           `json:"short"`
+	Topics         []string         `json:"topics"`
+	IsTopLevel     bool             `json:"isTopLevel"`
+	Headings       []SectionHeading `json:"headings,omitempty"`
 }
 
 // SummaryFromModel converts a model.Section into a SectionSummary.
@@ -66,6 +73,7 @@ func SummaryFromModel(s *model.Section) SectionSummary {
 		Short:          s.Short,
 		Topics:         s.Topics,
 		IsTopLevel:     s.IsTopLevel,
+		Headings:       ExtractHeadings(s.Content, s.Title),
 	}
 }
 
