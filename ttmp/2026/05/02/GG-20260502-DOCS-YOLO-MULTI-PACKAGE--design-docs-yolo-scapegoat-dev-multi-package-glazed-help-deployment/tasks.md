@@ -16,7 +16,7 @@
 
 ## Phase 1A — Local validation and publisher CLI foundation
 
-- [ ] Add a `docsctl` CLI entrypoint under `cmd/docsctl` with root help and version wiring.
+- [x] Add a `docsctl` CLI entrypoint under `cmd/docsctl` with root help and version wiring.
 - [ ] Implement package/version/path validation helpers for docs publishing names.
 - [ ] Implement a SQLite help DB validator that opens exports read-only and checks schema, section count, slugs, and duplicate slugs.
 - [ ] Add unit tests for valid DBs, missing files, non-SQLite files, empty DBs, missing `sections`, empty slugs, duplicate slugs, and invalid package/version names.

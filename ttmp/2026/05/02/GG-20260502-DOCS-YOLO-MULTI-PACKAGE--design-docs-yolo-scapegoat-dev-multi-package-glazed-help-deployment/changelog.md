@@ -48,3 +48,12 @@ Uploaded complete updated Phase 1 ticket bundle to reMarkable and verified remot
 
 Expanded current ticket into detailed multi-phase Phase 1 implementation tasks.
 
+
+## 2026-05-02
+
+Step 6: added docsctl CLI root entrypoint with help and version wiring.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/main.go — New docs publishing CLI entrypoint.
+

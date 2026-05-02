@@ -542,3 +542,82 @@ The first code slice should not require Kubernetes, Vault, or a running registry
 go test ./pkg/help/publish/...
 go test ./cmd/docsctl/...
 ```
+
+## Step 6: Add the `docsctl` CLI entrypoint
+
+The first implementation task was intentionally small: create a dedicated `docsctl` command that can grow validation and publishing subcommands without changing the existing `glaze` CLI. This gives package maintainers and CI workflows a purpose-built tool surface for docs publishing.
+
+The command currently exposes root help and version output. Later Phase 1A tasks will add `docsctl validate`, and Phase 1E will add `docsctl publish`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Begin Phase 1A implementation task by task, starting with the CLI entrypoint.
+
+**Inferred user intent:** Establish a concrete command surface before implementing validation and registry upload behavior.
+
+### What I did
+
+- Added `cmd/docsctl/main.go`.
+- Created a Cobra root command with:
+  - `Use: docsctl`
+  - version wiring through a `version` variable;
+  - root help text explaining validation and publishing intent.
+- Ran focused validation commands.
+- Checked off the first Phase 1A task.
+
+Commands run:
+
+```bash
+go test ./cmd/docsctl
+go run ./cmd/docsctl --version
+```
+
+### Why
+
+A separate CLI avoids overloading `glaze serve` or `glaze help`. Package CI should call a tool with publishing semantics, not the general formatting CLI.
+
+### What worked
+
+- The new command package builds.
+- `docsctl --version` prints `docsctl version dev`.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The standalone Cobra entrypoint is minimal enough that future command tests can call `newRootCommand()` directly without invoking a subprocess.
+
+### What was tricky to build
+
+N/A. The key decision was naming and scope, not implementation complexity.
+
+### What warrants a second pair of eyes
+
+- Whether `docsctl` should live permanently in this repo or eventually move into a smaller docs publishing repo/tool.
+
+### What should be done in the future
+
+- Add `docsctl validate --package --version --file --json` after implementing validation helpers.
+- Add linker-based version injection if `docsctl` becomes a released binary.
+
+### Code review instructions
+
+Review:
+
+- `cmd/docsctl/main.go`
+
+Validate:
+
+```bash
+go test ./cmd/docsctl
+go run ./cmd/docsctl --help
+go run ./cmd/docsctl --version
+```
+
+### Technical details
+
+The root command returns `cmd.Help()` when invoked without subcommands, so plain `docsctl` is informative rather than a no-op.

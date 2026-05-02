@@ -13,6 +13,8 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: cmd/docsctl/main.go
+      Note: New docsctl CLI entrypoint for Phase 1 validation and publish commands.
     - Path: pkg/help/loader/sources.go
       Note: SQLiteDirLoader already maps package/version directory layouts into package metadata.
     - Path: pkg/help/server/handlers.go
@@ -29,6 +31,7 @@ LastUpdated: 2026-05-02T13:02:08.7165699-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
