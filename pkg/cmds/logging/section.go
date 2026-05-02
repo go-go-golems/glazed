@@ -59,7 +59,6 @@ func NewLoggingSection() (schema.Section, error) {
 				fields.WithHelp("Log to stdout even when log-file is set"),
 				fields.WithDefault(false),
 			),
-
 		),
 	)
 }

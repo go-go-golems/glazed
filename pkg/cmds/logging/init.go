@@ -62,7 +62,6 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		}
 	}
 
-
 	log.Logger = log.Output(logWriter)
 
 	// Set the default context logger
