@@ -249,3 +249,109 @@ Bundle:
 ```text
 GG-20260502-VAULT-OIDC-DOCS-PUBLISH - Vault OIDC docs publishing auth
 ```
+
+## Step 2: Rewrite the docs publishing auth target as clean Vault OIDC Option B
+
+The user clarified that the platform already has GitHub Actions OIDC login to Vault through HK3S-0028, so the docs publishing design should go straight to the clean long-term path instead of productionizing static package tokens. I wrote a new intern-facing implementation guide that treats static token publishing as a proven Phase 1 scaffold, not the desired production mechanism.
+
+The new design centers on Vault-issued short-lived package-scoped publish credentials. GitHub Actions authenticates to Vault using OIDC, Vault roles map trusted repositories to allowed package names, `docsctl publish` obtains or accepts a short-lived publish JWT, and `docs-registry` verifies the JWT directly before validating and storing the uploaded SQLite DB.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a full design / implementation document for the vault OIDC approach with option B (the clean long term solution). We want to basically go straight to the proper way of doing things to avoid accumulating backwards / step by step building complexity along the way that we would need to shed anyway. We've shown that the underlying mechanism works fine.
+
+ Create  a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the                                                                                      
+  system needed to understand what it is, with prose paragraphs and                                                                                                                                         
+bullet                                                                                                                                                                                                      
+  point sand pseudocode and diagrams and api references and                                                                                                                                                 
+file                                                                                                                                                                                                        
+                                                                                                                                                                                                            
+references.                                                                                                                                                                                                 
+    It should be very clear and technical. Store in the ticket and the nupload to remarkable."
+
+**Assistant interpretation:** Produce a new detailed ticket design for the long-term Vault/GitHub OIDC docs publishing architecture, explicitly avoiding a production dependency on static publisher tokens.
+
+**Inferred user intent:** Give future implementers a clear, evidence-backed blueprint for replacing the Phase 1 static token catalog with Vault-issued short-lived package-scoped publish credentials.
+
+### What I did
+
+- Read the existing docs publishing auth ticket and created a new design document:
+  - `design-doc/02-vault-oidc-docs-publishing-clean-long-term-implementation-guide.md`
+- Re-read the HK3S-0028 Vault/GitHub Actions OIDC article in the Obsidian vault.
+- Inspected current Glazed publisher auth and registry files:
+  - `pkg/help/publish/auth.go`
+  - `pkg/help/publish/registry.go`
+  - `cmd/docsctl/publish.go`
+- Inspected current k3s OIDC and docs-yolo files:
+  - `scripts/bootstrap-vault-github-actions-oidc.sh`
+  - `vault/roles/github-actions/bot-signup-gitops-pr.json`
+  - `gitops/kustomize/docs-yolo/deployment.yaml`
+  - `gitops/kustomize/docs-yolo/service.yaml`
+  - `gitops/kustomize/docs-yolo/ingress.yaml`
+  - `gitops/kustomize/docs-yolo/publisher-catalog.yaml`
+- Wrote a full implementation guide covering:
+  - current state with file evidence
+  - target sequence diagram
+  - publish JWT claim contract
+  - Vault role and policy shape
+  - registry JWT verification rules
+  - `docsctl publish` UX
+  - k3s deployment changes
+  - rollout and test plan
+  - risks and alternatives
+
+### Why
+
+The existing Phase 1 static token path works, but it would create operational complexity that the platform now has a better primitive to avoid. HK3S-0028 already proves that GitHub Actions can authenticate to Vault without GitHub-stored long-lived secrets, so docs publishing should use that identity path directly.
+
+### What worked
+
+- The current `PublisherAuth` interface is already a useful seam for a future `JWTPublisherAuth` implementation.
+- The registry already authorizes before reading the upload body, which is the right shape for a public or semi-public registry endpoint.
+- The k3s repo already has GitHub Actions OIDC role and policy conventions that docs publishing can copy.
+
+### What didn't work
+
+- No implementation was attempted in this step.
+- The exact Vault mechanism for minting constrained JWTs still needs to be selected during implementation. The design calls out direct Vault issuance, a broker/helper, and transit signing tradeoffs.
+
+### What I learned
+
+The important distinction is that Vault OIDC removes the need for GitHub-stored static docs tokens, but the system still needs an authorization mapping. In the clean model, that mapping moves from `publishers.json` into Vault roles/policies and signed package claims.
+
+### What was tricky to build
+
+The tricky part of the design is avoiding an unsafe "raw transit signing" shortcut. If CI can ask Vault transit to sign arbitrary bytes with a generic trusted key, it could potentially sign a JWT that claims a different package. The guide therefore recommends direct claim-constrained Vault issuance or a controlled broker/helper, and only allows transit signing if keys or registry verification are package-scoped.
+
+### What warrants a second pair of eyes
+
+- The final Vault JWT issuance mechanism.
+- The registry's JWKS/key rotation strategy.
+- Whether the registry should be exposed publicly at `registry.docs.yolo.scapegoat.dev` or reached through an in-cluster/self-hosted runner path.
+
+### What should be done in the future
+
+- Implement `JWTPublisherAuth` in Glazed.
+- Add Vault docs-publish roles/policies in the k3s repo.
+- Add `docsctl publish --auth-mode vault-jwt` support.
+- Update docs-yolo manifests to remove the static publisher catalog in production.
+- Run one live package CI publish using Vault OIDC.
+
+### Code review instructions
+
+Start with the new design document and compare it to:
+
+- `pkg/help/publish/auth.go` for the current auth seam.
+- `pkg/help/publish/registry.go` for upload authorization order.
+- `cmd/docsctl/publish.go` for current client credential UX.
+- `scripts/bootstrap-vault-github-actions-oidc.sh` for the platform OIDC role/policy pattern.
+- `gitops/kustomize/docs-yolo/deployment.yaml` for the production registry flags that will change.
+
+### Technical details
+
+The target invariant from the document is:
+
+```text
+GitHub repository X on trusted ref/event may publish only package Y,
+and docs-registry must verify that the signed package claim equals the route package.
+```
