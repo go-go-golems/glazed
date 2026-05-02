@@ -396,3 +396,79 @@ unknown token hash
 invalid version string
 path traversal package/version names
 ```
+
+## Step 4: Upload the updated Phase 1 ticket bundle to reMarkable
+
+After the Phase 1 static Vault-token addendum was added and committed, the user asked to upload the first ticket again. This upload includes the fuller ticket bundle, not just the design and diary, so the reMarkable copy has the index, task state, changelog, design guide, and diary together.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload the first ticket to remarkable, now that it's been updated with phase 1"
+
+**Assistant interpretation:** Upload the updated `GG-20260502-DOCS-YOLO-MULTI-PACKAGE` ticket bundle after the Phase 1 addendum.
+
+**Inferred user intent:** Ensure the reMarkable copy reflects the latest Phase 1 task and design state.
+
+### What I did
+
+- Prepared a bundle containing:
+  - `index.md`
+  - `tasks.md`
+  - `changelog.md`
+  - the Phase 1-updated design doc
+  - this diary
+- Ran a dry-run upload.
+- Uploaded the bundle to the existing ticket folder on reMarkable.
+- Verified the remote listing.
+
+### Why
+
+The earlier upload proved the updated design could be delivered, but this step creates a complete ticket-level bundle for review.
+
+### What worked
+
+- Dry-run upload showed the expected five bundle inputs: index, tasks, changelog, design doc, and diary.
+- Real upload succeeded.
+- Remote listing verified the new complete-ticket bundle alongside the earlier uploads.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+N/A.
+
+### What was tricky to build
+
+The only detail is naming: to avoid overwriting earlier PDFs, this upload uses a distinct bundle name ending in `complete ticket with Phase 1`.
+
+### What warrants a second pair of eyes
+
+N/A.
+
+### What should be done in the future
+
+N/A.
+
+### Code review instructions
+
+Verify the reMarkable folder:
+
+```bash
+remarquee cloud ls /ai/2026/05/02/GG-20260502-DOCS-YOLO-MULTI-PACKAGE --long --non-interactive
+```
+
+### Technical details
+
+Remote destination:
+
+```text
+/ai/2026/05/02/GG-20260502-DOCS-YOLO-MULTI-PACKAGE
+```
+
+Bundle name:
+
+```text
+GG-20260502-DOCS-YOLO-MULTI-PACKAGE - complete ticket with Phase 1
+```
