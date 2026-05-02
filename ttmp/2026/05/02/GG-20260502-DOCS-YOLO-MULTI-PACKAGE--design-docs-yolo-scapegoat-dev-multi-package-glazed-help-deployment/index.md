@@ -1,0 +1,73 @@
+---
+Title: Design docs.yolo.scapegoat.dev multi-package Glazed help deployment
+Ticket: GG-20260502-DOCS-YOLO-MULTI-PACKAGE
+Status: active
+Topics:
+    - glazed
+    - docs
+    - deploy
+    - kubernetes
+    - gitops
+DocType: index
+Intent: long-term
+Owners:
+    - manuel
+RelatedFiles:
+    - Path: pkg/help/loader/sources.go
+      Note: SQLiteDirLoader already maps package/version directory layouts into package metadata.
+    - Path: pkg/help/server/handlers.go
+      Note: Public API exposes health
+    - Path: pkg/help/server/serve.go
+      Note: Serve command supports external JSON/SQLite/SQLite directory sources but loads them only at startup today.
+    - Path: pkg/help/server/types.go
+      Note: API response contracts for package summaries
+    - Path: pkg/help/store/store.go
+      Note: SQLite schema stores package_name/package_version and unique package-version-slug identity.
+ExternalSources: []
+Summary: ""
+LastUpdated: 2026-05-02T13:02:08.7165699-04:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+
+
+# Design docs.yolo.scapegoat.dev multi-package Glazed help deployment
+
+## Overview
+
+<!-- Provide a brief overview of the ticket, its goals, and current status -->
+
+## Key Links
+
+- **Related Files**: See frontmatter RelatedFiles field
+- **External Sources**: See frontmatter ExternalSources field
+
+## Status
+
+Current status: **active**
+
+## Topics
+
+- glazed
+- docs
+- deploy
+- kubernetes
+- gitops
+
+## Tasks
+
+See [tasks.md](./tasks.md) for the current task list.
+
+## Changelog
+
+See [changelog.md](./changelog.md) for recent changes and decisions.
+
+## Structure
+
+- design/ - Architecture and design documents
+- reference/ - Prompt packs, API contracts, context summaries
+- playbooks/ - Command sequences and test procedures
+- scripts/ - Temporary code and tooling
+- various/ - Working notes and research
+- archive/ - Deprecated or reference-only artifacts

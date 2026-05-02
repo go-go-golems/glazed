@@ -91,6 +91,12 @@ topics:
       description: User interface and frontend components
     - slug: frontend
       description: Frontend UI code, browser applications, and client-side state.
+    - slug: deploy
+      description: Deployment, release, and production rollout planning.
+    - slug: gitops
+      description: GitOps workflows and Argo CD/Kustomize deployment manifests.
+    - slug: kubernetes
+      description: Kubernetes workloads, services, ingress, storage, and operations.
 docTypes:
     - slug: index
       description: Ticket index
