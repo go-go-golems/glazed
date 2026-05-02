@@ -271,3 +271,42 @@ The first smoke test showed unversioned packages encoded `versions: null`. That 
 ### Remaining caveat
 
 `codebase-browser help export --format sqlite` still fails with the installed binary because that binary lacks the `help export` subcommand. This is documented as compatibility evidence, not a blocker for the Glazed serving feature.
+
+## 2026-05-02 — Smoke test 500 fix
+
+### Problem
+
+Manual browser validation found that `GET /api/packages` could succeed, but `GET /api/sections?` returned HTTP 500. Server logs showed:
+
+```text
+no such table: sections
+failed to list sections
+```
+
+### Root cause
+
+The serve command uses the default in-memory help store. SQLite `:memory:` databases are per connection. The `database/sql` pool could open a different connection for later HTTP requests than the one used during loader import, so handlers sometimes saw a fresh empty in-memory database with no `sections` table.
+
+### Fix
+
+Updated `store.New` to call `db.SetMaxOpenConns(1)` so each store instance uses one SQLite connection. While testing this, `hasLegacySlugUniqueIndex` briefly deadlocked because it queried `PRAGMA index_info` while `PRAGMA index_list` rows were still open on the only connection. I fixed that by collecting unique index names, closing the first rows, then querying each index.
+
+Commit:
+
+```text
+8e7029f Keep help SQLite store on one connection
+```
+
+### Validation
+
+Restarted the tmux smoke server and verified:
+
+```bash
+curl http://127.0.0.1:8099/api/packages
+curl 'http://127.0.0.1:8099/api/sections?'
+```
+
+Observed:
+
+- `/api/packages` returns `glazed` and `pinocchio`.
+- `/api/sections?` returns HTTP 200 with `total=141`.
