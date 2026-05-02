@@ -1475,3 +1475,175 @@ args:
   - --publisher-catalog
   - /etc/docs-yolo/publishers.json
 ```
+
+## Step 15: Run end-to-end Phase 1 smoke validation
+
+This step validated the complete Phase 1 local path: generate or reuse package SQLite exports, start `docs-registry` with a file-backed publisher catalog, publish two packages with distinct tokens, reject a wrong-token publish attempt, then serve the resulting package root with `glaze serve --from-sqlite-dir` and verify the public help APIs see both packages.
+
+The smoke test used local ports and `/tmp/docs-yolo-phase1-smoke`, not the cluster. That keeps the validation fast and repeatable while proving the same package root layout that the GitOps deployment mounts at `/var/lib/glazed-docs/packages`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Finish the Phase 1 implementation path with end-to-end smoke validation and documentation.
+
+**Inferred user intent:** Prove the implemented pieces work together, not only as isolated unit tests.
+
+### What I did
+
+- Created `/tmp/docs-yolo-phase1-smoke`.
+- Created a file-backed publisher catalog with two token hashes:
+  - `pinocchio-token` -> `pinocchio`
+  - `glazed-token` -> `glazed`
+- Reused or generated SQLite exports:
+  - `/tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db`
+  - `/tmp/glazed-multi-help-smoke/glazed.db`
+- Started `docs-registry` on `:18090`.
+- Verified `/healthz`.
+- Verified a `pinocchio` token cannot publish package `glazed`.
+- Published `pinocchio@vtest`.
+- Published `glazed@vtest`.
+- Verified registry `/v1/packages` showed both packages.
+- Started `glaze serve --from-sqlite-dir /tmp/docs-yolo-phase1-smoke/package-root --address :18099`.
+- Verified `/api/packages` showed both `glazed` and `pinocchio` with version `vtest`.
+- Verified `/api/sections?package=pinocchio&version=vtest&limit=1` returned 69 total sections.
+- Verified an invalid DB does not replace the existing valid Pinocchio DB; local `docsctl publish` validation rejected the invalid file before upload and the published DB checksum stayed unchanged.
+
+Commands run included:
+
+```bash
+go run ./cmd/docs-registry \
+  --address :18090 \
+  --package-root /tmp/docs-yolo-phase1-smoke/package-root \
+  --publisher-catalog /tmp/docs-yolo-phase1-smoke/publishers.json
+```
+
+```bash
+go run ./cmd/docsctl publish \
+  --server http://127.0.0.1:18090 \
+  --package pinocchio \
+  --version vtest \
+  --file /tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db \
+  --token pinocchio-token
+```
+
+```bash
+go run ./cmd/glaze serve \
+  --from-sqlite-dir /tmp/docs-yolo-phase1-smoke/package-root \
+  --address :18099
+```
+
+### Why
+
+Phase 1 should be considered complete only if the CLI, registry, package store, token auth, and existing Glazed multi-package serving path work together.
+
+### What worked
+
+Registry package listing returned:
+
+```json
+{
+  "packages": [
+    {
+      "packageName": "glazed",
+      "version": "vtest",
+      "sectionCount": 72,
+      "slugCount": 72
+    },
+    {
+      "packageName": "pinocchio",
+      "version": "vtest",
+      "sectionCount": 69,
+      "slugCount": 69
+    }
+  ]
+}
+```
+
+Glazed serving returned:
+
+```json
+{
+  "packages": [
+    {
+      "name": "glazed",
+      "versions": ["vtest"],
+      "sectionCount": 72
+    },
+    {
+      "name": "pinocchio",
+      "versions": ["vtest"],
+      "sectionCount": 69
+    }
+  ]
+}
+```
+
+Pinocchio section check returned:
+
+```json
+{
+  "total": 69,
+  "first": "geppetto-playbook-add-tool"
+}
+```
+
+The package root contains:
+
+```text
+/tmp/docs-yolo-phase1-smoke/package-root/catalog.json
+/tmp/docs-yolo-phase1-smoke/package-root/glazed/vtest/glazed.db
+/tmp/docs-yolo-phase1-smoke/package-root/pinocchio/vtest/pinocchio.db
+```
+
+### What didn't work
+
+A later attempt to restart the registry on the same port failed because the original `go run` child process was still listening on `:18090`:
+
+```text
+listen tcp :18090: bind: address already in use
+```
+
+I found and killed the leftover `docs-registry` process. This is a smoke-script cleanup issue, not an application behavior issue.
+
+### What I learned
+
+`go run` background process cleanup can leave the compiled child process alive if the shell captures the wrapper PID rather than the final binary PID. Future smoke scripts should either use `exec` in the background command or clean up by port/process match.
+
+### What was tricky to build
+
+The smoke test starts two servers sequentially, so cleanup order matters. The registry must be stopped before a second registry attempt on the same port. The help server must be stopped after API checks. This should become a scripted smoke test if we repeat it often.
+
+### What warrants a second pair of eyes
+
+- Whether the registry should expose an admin endpoint for catalog reload instead of requiring restart when the publisher catalog changes.
+- Whether local validation rejecting bad DBs before upload is sufficient for the bad-upload smoke task, or whether we also want a raw `curl` invalid-upload check against the registry.
+
+### What should be done in the future
+
+- Add a scripted smoke test under `ttmp/.../scripts` or a repo test utility.
+- After a GHCR image with `docs-registry` exists, apply the `docs-yolo` Argo CD Application in the k3s cluster.
+
+### Code review instructions
+
+Review all Phase 1 implementation files and rerun focused tests:
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish
+```
+
+Manual smoke root:
+
+```text
+/tmp/docs-yolo-phase1-smoke
+```
+
+### Technical details
+
+The registry catalog used token hashes generated by:
+
+```bash
+printf '%s' "pinocchio-token" | sha256sum
+printf '%s' "glazed-token" | sha256sum
+```

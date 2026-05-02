@@ -75,11 +75,11 @@
 
 ## Phase 1G — docs-yolo GitOps deployment scaffold
 
-- [ ] Add or plan a paired k3s GitOps ticket if cluster manifests will live outside this repository.
-- [ ] Draft `docs-yolo` Kustomize manifests: namespace/application, deployment, service, ingress, PVC, and registry deployment/service.
-- [ ] Configure `glaze serve --from-sqlite-dir /var/lib/glazed-docs/packages` in the docs-yolo deployment.
-- [ ] Configure registry package root to the shared PVC path.
-- [ ] Add readiness/liveness probes for both docs browser and registry.
+- [x] Add or plan a paired k3s GitOps ticket if cluster manifests will live outside this repository.
+- [x] Draft `docs-yolo` Kustomize manifests: namespace/application, deployment, service, ingress, PVC, and registry deployment/service.
+- [x] Configure `glaze serve --from-sqlite-dir /var/lib/glazed-docs/packages` in the docs-yolo deployment.
+- [x] Configure registry package root to the shared PVC path.
+- [x] Add readiness/liveness probes for both docs browser and registry.
 - [x] Add HTTP-01 TLS host `docs.yolo.scapegoat.dev` following the existing Glazed deployment pattern.
 - [x] Render manifests with `kubectl kustomize` and record validation output.
 - [x] Commit GitOps scaffold in the appropriate repository and relate it to this ticket.
@@ -91,11 +91,11 @@
 - [x] Publish package A and package B with distinct package tokens.
 - [x] Verify token A cannot publish package B.
 - [x] Verify `/api/packages` shows both packages and expected versions.
-- [ ] Verify `/api/sections?package=<package>&version=<version>` returns expected sections.
-- [ ] Verify bad uploads do not replace existing valid DBs.
-- [ ] Document rollout restart or reload procedure for making newly published docs visible.
-- [ ] Upload the Phase 1 implementation bundle to reMarkable.
-- [ ] Run `docmgr doctor`, update diary/changelog, and commit final Phase 1 docs.
+- [x] Verify `/api/sections?package=<package>&version=<version>` returns expected sections.
+- [x] Verify bad uploads do not replace existing valid DBs.
+- [x] Document rollout restart or reload procedure for making newly published docs visible.
+- [x] Upload the Phase 1 implementation bundle to reMarkable.
+- [x] Run `docmgr doctor`, update diary/changelog, and commit final Phase 1 docs.
 
 ## Later phases tracked separately
 
