@@ -39,6 +39,7 @@ type ServeSettings struct {
 	Paths         []string `glazed:"paths"`
 	FromJSON      []string `glazed:"from-json"`
 	FromSQLite    []string `glazed:"from-sqlite"`
+	FromSQLiteDir []string `glazed:"from-sqlite-dir"`
 	FromGlazedCmd []string `glazed:"from-glazed-cmd"`
 	WithEmbedded  bool     `glazed:"with-embedded"`
 }
@@ -63,6 +64,12 @@ External sources can be JSON exports, SQLite exports, or Glazed-compatible
 binaries loaded through --from-glazed-cmd. For example:
   glaze serve --from-glazed-cmd pinocchio,sqleton
   glaze serve --from-json ./help.json --from-sqlite ./help.db
+  glaze serve --from-sqlite-dir ./help-dbs
+
+--from-sqlite-dir scans recursively for package/version layouts:
+  X.db       -> package X, no version
+  X/X.db     -> package X, no version
+  X/Y/X.db   -> package X, version Y
 
 The server listens on the address specified by --address (default :8088) and
 serves:
@@ -87,6 +94,11 @@ using MountPrefix or NewMountedHandler.`),
 					"from-sqlite",
 					fields.TypeStringList,
 					fields.WithHelp("SQLite help export databases to load"),
+				),
+				fields.New(
+					"from-sqlite-dir",
+					fields.TypeStringList,
+					fields.WithHelp("Directories to recursively scan for X.db, X/X.db, and X/Y/X.db SQLite help exports"),
 				),
 				fields.New(
 					"from-glazed-cmd",
@@ -126,6 +138,11 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 	}
 
 	loaders := buildServeLoaders(s)
+	if len(loaders) == 0 || s.WithEmbedded {
+		if err := hs.Store.SetDefaultPackage(ctx, "glazed", ""); err != nil {
+			return fmt.Errorf("assigning embedded package metadata: %w", err)
+		}
+	}
 	if len(loaders) > 0 {
 		if !s.WithEmbedded {
 			if err := hs.Store.Clear(ctx); err != nil {
@@ -161,6 +178,9 @@ func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
 	}
 	if len(helploader.NormalizeStringList(s.FromSQLite)) > 0 {
 		loaders = append(loaders, &helploader.SQLiteLoader{Paths: s.FromSQLite})
+	}
+	if len(helploader.NormalizeStringList(s.FromSQLiteDir)) > 0 {
+		loaders = append(loaders, &helploader.SQLiteDirLoader{Roots: s.FromSQLiteDir})
 	}
 	if len(helploader.NormalizeStringList(s.FromGlazedCmd)) > 0 {
 		loaders = append(loaders, &helploader.GlazedCommandLoader{Binaries: s.FromGlazedCmd})

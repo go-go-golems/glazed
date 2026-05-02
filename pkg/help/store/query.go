@@ -60,9 +60,10 @@ func (qc *QueryCompiler) SetOffset(offset int) {
 // BuildQuery builds the complete SQL query
 func (qc *QueryCompiler) BuildQuery() (string, []interface{}) {
 	baseQuery := `
-		SELECT s.id, s.slug, s.section_type, s.title, s.sub_title, s.short, s.content,
-			s.topics, s.flags, s.commands, s.is_top_level, s.is_template,
-			s.show_per_default, s.order_num, s.created_at, s.updated_at
+		SELECT s.id, s.package_name, s.package_version, s.slug, s.section_type,
+			s.title, s.sub_title, s.short, s.content, s.topics, s.flags,
+			s.commands, s.is_top_level, s.is_template, s.show_per_default,
+			s.order_num, s.created_at, s.updated_at
 		FROM sections s
 	`
 
@@ -169,6 +170,20 @@ func ShownByDefault() Predicate {
 func NotShownByDefault() Predicate {
 	return func(qc *QueryCompiler) {
 		qc.AddWhere("s.show_per_default = ?", false)
+	}
+}
+
+// InPackage filters sections by package name.
+func InPackage(packageName string) Predicate {
+	return func(qc *QueryCompiler) {
+		qc.AddWhere("s.package_name = ?", packageName)
+	}
+}
+
+// InPackageVersion filters sections by package name and version.
+func InPackageVersion(packageName, packageVersion string) Predicate {
+	return func(qc *QueryCompiler) {
+		qc.AddWhere("s.package_name = ? AND s.package_version = ?", packageName, packageVersion)
 	}
 }
 

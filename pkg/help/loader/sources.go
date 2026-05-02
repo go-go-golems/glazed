@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help"
@@ -21,6 +24,47 @@ import (
 type ContentLoader interface {
 	Load(ctx context.Context, hs *help.HelpSystem) error
 	String() string
+}
+
+// PackageRef identifies the help package/version assigned while importing a
+// source. Version is empty for unversioned package exports.
+type PackageRef struct {
+	Name    string
+	Version string
+	Source  string
+}
+
+// DiscoveredSQLitePackage is one SQLite help export found under a directory
+// scanned by SQLiteDirLoader.
+type DiscoveredSQLitePackage struct {
+	Path    string
+	Package string
+	Version string
+}
+
+func applyPackageRef(section *model.Section, ref PackageRef) {
+	if section.PackageName == "" {
+		section.PackageName = ref.Name
+	}
+	if section.PackageVersion == "" {
+		section.PackageVersion = ref.Version
+	}
+}
+
+func packageNameFromPath(path string) string {
+	if path == "" || path == "-" {
+		return ""
+	}
+	base := filepath.Base(path)
+	ext := filepath.Ext(base)
+	if ext != "" {
+		base = strings.TrimSuffix(base, ext)
+	}
+	return base
+}
+
+func packageNameFromBinary(binary string) string {
+	return strings.TrimSuffix(filepath.Base(binary), filepath.Ext(binary))
 }
 
 // NormalizeStringList trims values and expands comma-separated entries.
@@ -43,7 +87,16 @@ type MarkdownPathLoader struct {
 }
 
 func (l *MarkdownPathLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
-	return LoadPaths(ctx, hs, NormalizeStringList(l.Paths))
+	paths := NormalizeStringList(l.Paths)
+	if err := LoadPaths(ctx, hs, paths); err != nil {
+		return err
+	}
+	if len(paths) > 0 {
+		if err := hs.Store.SetDefaultPackage(ctx, packageNameFromPath(paths[0]), ""); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (l *MarkdownPathLoader) String() string {
@@ -88,7 +141,9 @@ func (l *JSONFileLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
 			return errors.Wrapf(closeErr, "close JSON source %s", path)
 		}
 
+		ref := PackageRef{Name: packageNameFromPath(path), Source: "json: " + path}
 		for _, section := range sections {
+			applyPackageRef(section, ref)
 			if err := upsertWithCollisionLog(ctx, hs, section, "json: "+path); err != nil {
 				return err
 			}
@@ -108,24 +163,33 @@ type SQLiteLoader struct {
 
 func (l *SQLiteLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
 	for _, path := range NormalizeStringList(l.Paths) {
-		sourceStore, err := store.New(path)
-		if err != nil {
-			return errors.Wrapf(err, "open SQLite source %s", path)
+		ref := PackageRef{Name: packageNameFromPath(path), Source: "sqlite: " + path}
+		if err := loadSQLitePath(ctx, hs, path, ref); err != nil {
+			return err
 		}
+	}
+	return nil
+}
 
-		sections, listErr := sourceStore.List(ctx, "")
-		closeErr := sourceStore.Close()
-		if listErr != nil {
-			return errors.Wrapf(listErr, "list sections from SQLite source %s", path)
-		}
-		if closeErr != nil {
-			return errors.Wrapf(closeErr, "close SQLite source %s", path)
-		}
+func loadSQLitePath(ctx context.Context, hs *help.HelpSystem, path string, ref PackageRef) error {
+	sourceStore, err := store.New(path)
+	if err != nil {
+		return errors.Wrapf(err, "open SQLite source %s", path)
+	}
 
-		for _, section := range sections {
-			if err := upsertWithCollisionLog(ctx, hs, section, "sqlite: "+path); err != nil {
-				return err
-			}
+	sections, listErr := sourceStore.List(ctx, "")
+	closeErr := sourceStore.Close()
+	if listErr != nil {
+		return errors.Wrapf(listErr, "list sections from SQLite source %s", path)
+	}
+	if closeErr != nil {
+		return errors.Wrapf(closeErr, "close SQLite source %s", path)
+	}
+
+	for _, section := range sections {
+		applyPackageRef(section, ref)
+		if err := upsertWithCollisionLog(ctx, hs, section, ref.Source); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -133,6 +197,101 @@ func (l *SQLiteLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
 
 func (l *SQLiteLoader) String() string {
 	return "sqlite files: " + strings.Join(NormalizeStringList(l.Paths), ", ")
+}
+
+// SQLiteDirLoader recursively scans directories for package/versioned SQLite
+// help exports. Accepted layouts relative to each root are X.db, X/X.db, and
+// X/Y/X.db, where X is the package name and Y is the optional version.
+type SQLiteDirLoader struct {
+	Roots []string
+}
+
+func (l *SQLiteDirLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
+	for _, root := range NormalizeStringList(l.Roots) {
+		discovered, err := DiscoverSQLitePackages(root)
+		if err != nil {
+			return err
+		}
+		for _, d := range discovered {
+			ref := PackageRef{Name: d.Package, Version: d.Version, Source: "sqlite-dir: " + d.Path}
+			if err := loadSQLitePath(ctx, hs, d.Path, ref); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (l *SQLiteDirLoader) String() string {
+	return "sqlite dirs: " + strings.Join(NormalizeStringList(l.Roots), ", ")
+}
+
+func DiscoverSQLitePackages(root string) ([]DiscoveredSQLitePackage, error) {
+	var discovered []DiscoveredSQLitePackage
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !isSQLiteHelpDB(path) {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		parts := splitPath(rel)
+		stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+
+		switch len(parts) {
+		case 1:
+			discovered = append(discovered, DiscoveredSQLitePackage{Path: path, Package: stem})
+		case 2:
+			pkg := parts[0]
+			if stem == pkg {
+				discovered = append(discovered, DiscoveredSQLitePackage{Path: path, Package: pkg})
+			}
+		case 3:
+			pkg := parts[0]
+			version := parts[1]
+			if stem == pkg {
+				discovered = append(discovered, DiscoveredSQLitePackage{Path: path, Package: pkg, Version: version})
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "scan SQLite help directory %s", root)
+	}
+	sort.Slice(discovered, func(i, j int) bool {
+		if discovered[i].Package != discovered[j].Package {
+			return discovered[i].Package < discovered[j].Package
+		}
+		if discovered[i].Version != discovered[j].Version {
+			return discovered[i].Version < discovered[j].Version
+		}
+		return discovered[i].Path < discovered[j].Path
+	})
+	return discovered, nil
+}
+
+func isSQLiteHelpDB(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".db", ".sqlite":
+		return true
+	default:
+		return false
+	}
+}
+
+func splitPath(path string) []string {
+	parts := strings.Split(filepath.ToSlash(filepath.Clean(path)), "/")
+	ret := parts[:0]
+	for _, part := range parts {
+		if part != "." && part != "" {
+			ret = append(ret, part)
+		}
+	}
+	return ret
 }
 
 // GlazedCommandLoader runs '<binary> help export --output json' for each binary.
@@ -146,7 +305,8 @@ func (l *GlazedCommandLoader) Load(ctx context.Context, hs *help.HelpSystem) err
 		if err != nil {
 			return err
 		}
-		if err := importJSONBytes(ctx, hs, data, "glazed command: "+binary); err != nil {
+		ref := PackageRef{Name: packageNameFromBinary(binary), Source: "glazed command: " + binary}
+		if err := importJSONBytes(ctx, hs, data, ref); err != nil {
 			return err
 		}
 	}
@@ -169,13 +329,14 @@ func runGlazedHelpExport(ctx context.Context, binary string) ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
-func importJSONBytes(ctx context.Context, hs *help.HelpSystem, data []byte, source string) error {
+func importJSONBytes(ctx context.Context, hs *help.HelpSystem, data []byte, ref PackageRef) error {
 	sections, err := DecodeSectionsJSON(bytes.NewReader(data))
 	if err != nil {
-		return errors.Wrapf(err, "decode %s", source)
+		return errors.Wrapf(err, "decode %s", ref.Source)
 	}
 	for _, section := range sections {
-		if err := upsertWithCollisionLog(ctx, hs, section, source); err != nil {
+		applyPackageRef(section, ref)
+		if err := upsertWithCollisionLog(ctx, hs, section, ref.Source); err != nil {
 			return err
 		}
 	}
@@ -186,8 +347,13 @@ func upsertWithCollisionLog(ctx context.Context, hs *help.HelpSystem, section *m
 	if err := section.Validate(); err != nil {
 		return errors.Wrapf(err, "invalid section from %s", source)
 	}
-	if existing, err := hs.Store.GetBySlug(ctx, section.Slug); err == nil && existing != nil {
-		log.Warn().Str("slug", section.Slug).Str("source", source).Msg("Replacing existing help section")
+	if existing, err := hs.Store.GetByPackageSlug(ctx, section.PackageName, section.PackageVersion, section.Slug); err == nil && existing != nil {
+		log.Warn().
+			Str("package", section.PackageName).
+			Str("version", section.PackageVersion).
+			Str("slug", section.Slug).
+			Str("source", source).
+			Msg("Replacing existing help section")
 	}
 	if err := hs.Store.Upsert(ctx, section); err != nil {
 		return errors.Wrapf(err, "upsert section %s from %s", section.Slug, source)
@@ -227,6 +393,10 @@ type sectionImportRow struct {
 	Topics         []string        `json:"topics"`
 	Flags          []string        `json:"flags"`
 	Commands       []string        `json:"commands"`
+	PackageName    string          `json:"package_name,omitempty"`
+	PackageNameAlt string          `json:"packageName,omitempty"`
+	PackageVersion string          `json:"package_version,omitempty"`
+	PackageVerAlt  string          `json:"packageVersion,omitempty"`
 	IsTopLevel     bool            `json:"is_top_level"`
 	IsTemplate     bool            `json:"is_template"`
 	ShowPerDefault bool            `json:"show_per_default"`
@@ -240,10 +410,20 @@ func (r sectionImportRow) ToSection() (*model.Section, error) {
 	if err != nil {
 		return nil, err
 	}
+	packageName := r.PackageName
+	if packageName == "" {
+		packageName = r.PackageNameAlt
+	}
+	packageVersion := r.PackageVersion
+	if packageVersion == "" {
+		packageVersion = r.PackageVerAlt
+	}
 	return &model.Section{
 		ID:             r.ID,
 		Slug:           r.Slug,
 		SectionType:    st,
+		PackageName:    packageName,
+		PackageVersion: packageVersion,
 		Title:          r.Title,
 		SubTitle:       r.SubTitle,
 		Short:          r.Short,

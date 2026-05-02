@@ -323,3 +323,66 @@ func TestContentTypeJSON(t *testing.T) {
 		t.Errorf("expected Content-Type=application/json, got %s", got)
 	}
 }
+
+func TestHandlePackagesAndPackageFilters(t *testing.T) {
+	st, err := store.NewInMemory()
+	if err != nil {
+		t.Fatalf("store.NewInMemory: %v", err)
+	}
+	ctx := context.Background()
+	for _, section := range []*model.Section{
+		{PackageName: "glazed", Slug: "intro", Title: "Glazed Intro", SectionType: model.SectionGeneralTopic},
+		{PackageName: "pinocchio", PackageVersion: "v1", Slug: "intro", Title: "Pinocchio Intro", SectionType: model.SectionTutorial},
+	} {
+		if err := st.Upsert(ctx, section); err != nil {
+			t.Fatalf("Upsert: %v", err)
+		}
+	}
+	handler := NewHandler(HandlerDeps{Store: st})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/packages", nil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	if rw.Code != http.StatusOK {
+		t.Fatalf("packages status = %d: %s", rw.Code, rw.Body.String())
+	}
+	var packages ListPackagesResponse
+	if err := json.Unmarshal(rw.Body.Bytes(), &packages); err != nil {
+		t.Fatalf("json.Unmarshal packages: %v", err)
+	}
+	if len(packages.Packages) != 2 {
+		t.Fatalf("expected 2 packages, got %#v", packages.Packages)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/sections?package=pinocchio&version=v1", nil)
+	rw = httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	var list ListSectionsResponse
+	if err := json.Unmarshal(rw.Body.Bytes(), &list); err != nil {
+		t.Fatalf("json.Unmarshal list: %v", err)
+	}
+	if list.Total != 1 || list.Sections[0].Title != "Pinocchio Intro" {
+		t.Fatalf("unexpected filtered list: %#v", list)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/sections/intro", nil)
+	rw = httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	if rw.Code != http.StatusBadRequest {
+		t.Fatalf("expected ambiguous slug 400, got %d", rw.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/sections/intro?package=glazed", nil)
+	rw = httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	if rw.Code != http.StatusOK {
+		t.Fatalf("expected package-qualified detail 200, got %d", rw.Code)
+	}
+	var detail SectionDetail
+	if err := json.Unmarshal(rw.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("json.Unmarshal detail: %v", err)
+	}
+	if detail.Title != "Glazed Intro" {
+		t.Fatalf("expected Glazed Intro, got %q", detail.Title)
+	}
+}

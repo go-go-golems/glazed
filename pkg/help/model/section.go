@@ -58,6 +58,11 @@ type Section struct {
 	Slug        string      `json:"slug"`
 	SectionType SectionType `json:"section_type"`
 
+	// Package metadata identifies the help package and optional version this
+	// section belongs to. Empty values preserve compatibility with older exports.
+	PackageName    string `json:"package_name,omitempty"`
+	PackageVersion string `json:"package_version,omitempty"`
+
 	Title    string `json:"title"`
 	SubTitle string `json:"sub_title"`
 	Short    string `json:"short"`

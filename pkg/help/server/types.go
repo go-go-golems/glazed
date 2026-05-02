@@ -14,6 +14,10 @@ import (
 // ListSectionsParams describes optional filters for GET /api/sections.
 // All fields are optional; zero values mean "no filter".
 type ListSectionsParams struct {
+	// PackageName filters by help package name.
+	PackageName string `json:"package,omitempty"`
+	// PackageVersion filters by package version. Empty means unversioned.
+	PackageVersion string `json:"version,omitempty"`
 	// SectionType filters by the section type (GeneralTopic, Example, Application, Tutorial).
 	// Zero value means "all types".
 	SectionType string `json:"section_type,omitempty"`
@@ -38,26 +42,30 @@ type ListSectionsParams struct {
 // SectionSummary is the public shape for a section in list/search results.
 // It intentionally omits the full `content` field to keep responses small.
 type SectionSummary struct {
-	ID         int64    `json:"id"`
-	Slug       string   `json:"slug"`
-	Type       string   `json:"type"`
-	Title      string   `json:"title"`
-	Short      string   `json:"short"`
-	Topics     []string `json:"topics"`
-	IsTopLevel bool     `json:"isTopLevel"`
+	ID             int64    `json:"id"`
+	PackageName    string   `json:"packageName"`
+	PackageVersion string   `json:"packageVersion,omitempty"`
+	Slug           string   `json:"slug"`
+	Type           string   `json:"type"`
+	Title          string   `json:"title"`
+	Short          string   `json:"short"`
+	Topics         []string `json:"topics"`
+	IsTopLevel     bool     `json:"isTopLevel"`
 }
 
 // SummaryFromModel converts a model.Section into a SectionSummary.
 // It is the only place where this conversion is defined.
 func SummaryFromModel(s *model.Section) SectionSummary {
 	return SectionSummary{
-		ID:         s.ID,
-		Slug:       s.Slug,
-		Type:       s.SectionType.String(), // "GeneralTopic" | "Example" | "Application" | "Tutorial"
-		Title:      s.Title,
-		Short:      s.Short,
-		Topics:     s.Topics,
-		IsTopLevel: s.IsTopLevel,
+		ID:             s.ID,
+		PackageName:    s.PackageName,
+		PackageVersion: s.PackageVersion,
+		Slug:           s.Slug,
+		Type:           s.SectionType.String(), // "GeneralTopic" | "Example" | "Application" | "Tutorial"
+		Title:          s.Title,
+		Short:          s.Short,
+		Topics:         s.Topics,
+		IsTopLevel:     s.IsTopLevel,
 	}
 }
 
@@ -75,15 +83,17 @@ type ListSectionsResponse struct {
 
 // SectionDetail is the full shape returned by GET /api/sections/:slug.
 type SectionDetail struct {
-	ID         int64    `json:"id"`
-	Slug       string   `json:"slug"`
-	Type       string   `json:"type"`
-	Title      string   `json:"title"`
-	Short      string   `json:"short"`
-	Topics     []string `json:"topics"`
-	Flags      []string `json:"flags"`
-	Commands   []string `json:"commands"`
-	IsTopLevel bool     `json:"isTopLevel"`
+	ID             int64    `json:"id"`
+	PackageName    string   `json:"packageName"`
+	PackageVersion string   `json:"packageVersion,omitempty"`
+	Slug           string   `json:"slug"`
+	Type           string   `json:"type"`
+	Title          string   `json:"title"`
+	Short          string   `json:"short"`
+	Topics         []string `json:"topics"`
+	Flags          []string `json:"flags"`
+	Commands       []string `json:"commands"`
+	IsTopLevel     bool     `json:"isTopLevel"`
 	// Content is the full rendered Markdown body.
 	Content string `json:"content"`
 }
@@ -91,17 +101,34 @@ type SectionDetail struct {
 // DetailFromModel converts a model.Section into a SectionDetail.
 func DetailFromModel(s *model.Section) SectionDetail {
 	return SectionDetail{
-		ID:         s.ID,
-		Slug:       s.Slug,
-		Type:       s.SectionType.String(),
-		Title:      s.Title,
-		Short:      s.Short,
-		Topics:     s.Topics,
-		Flags:      s.Flags,
-		Commands:   s.Commands,
-		IsTopLevel: s.IsTopLevel,
-		Content:    s.Content,
+		ID:             s.ID,
+		PackageName:    s.PackageName,
+		PackageVersion: s.PackageVersion,
+		Slug:           s.Slug,
+		Type:           s.SectionType.String(),
+		Title:          s.Title,
+		Short:          s.Short,
+		Topics:         s.Topics,
+		Flags:          s.Flags,
+		Commands:       s.Commands,
+		IsTopLevel:     s.IsTopLevel,
+		Content:        s.Content,
 	}
+}
+
+// PackageSummary is one package entry returned by GET /api/packages.
+type PackageSummary struct {
+	Name         string   `json:"name"`
+	DisplayName  string   `json:"displayName"`
+	Versions     []string `json:"versions"`
+	SectionCount int      `json:"sectionCount"`
+}
+
+// ListPackagesResponse is the shape of GET /api/packages.
+type ListPackagesResponse struct {
+	Packages       []PackageSummary `json:"packages"`
+	DefaultPackage string           `json:"defaultPackage,omitempty"`
+	DefaultVersion string           `json:"defaultVersion,omitempty"`
 }
 
 // HealthResponse is the shape of GET /api/health.

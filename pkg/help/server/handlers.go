@@ -23,7 +23,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
@@ -60,6 +62,7 @@ func NewHandler(deps HandlerDeps) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/health", h.handleHealth)
+	mux.HandleFunc("GET /api/packages", h.handleListPackages)
 	mux.HandleFunc("GET /api/sections/search", h.handleListSections)
 	mux.HandleFunc("GET /api/sections", h.handleListSections)
 	mux.HandleFunc("GET /api/sections/{slug}", h.handleGetSection)
@@ -103,6 +106,66 @@ func (h *Handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, HealthResponse{OK: true, Sections: int(count)})
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/packages
+// ---------------------------------------------------------------------------
+
+func (h *Handler) handleListPackages(w http.ResponseWriter, r *http.Request) {
+	infos, err := h.deps.Store.ListPackages(r.Context())
+	if err != nil {
+		h.deps.Logger.Error("failed to list packages", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal_error", "failed to list packages")
+		return
+	}
+
+	byName := map[string]*PackageSummary{}
+	for _, info := range infos {
+		name := info.Name
+		if name == "" {
+			name = "default"
+		}
+		pkg := byName[name]
+		if pkg == nil {
+			pkg = &PackageSummary{Name: name, DisplayName: displayPackageName(name)}
+			byName[name] = pkg
+		}
+		pkg.SectionCount += info.SectionCount
+		if info.Version != "" {
+			pkg.Versions = append(pkg.Versions, info.Version)
+		}
+	}
+
+	packages := make([]PackageSummary, 0, len(byName))
+	for _, pkg := range byName {
+		sort.Sort(sort.Reverse(sort.StringSlice(pkg.Versions)))
+		packages = append(packages, *pkg)
+	}
+	sort.Slice(packages, func(i, j int) bool { return packages[i].Name < packages[j].Name })
+
+	resp := ListPackagesResponse{Packages: packages}
+	if len(packages) > 0 {
+		resp.DefaultPackage = packages[0].Name
+		if len(packages[0].Versions) > 0 {
+			resp.DefaultVersion = packages[0].Versions[0]
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func displayPackageName(name string) string {
+	if name == "" || name == "default" {
+		return "Default"
+	}
+	parts := strings.FieldsFunc(name, func(r rune) bool { return r == '-' || r == '_' })
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, " ")
 }
 
 // ---------------------------------------------------------------------------
@@ -164,8 +227,29 @@ func (h *Handler) handleListSections(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetSection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	slug := r.PathValue("slug")
+	packageName := r.URL.Query().Get("package")
+	packageVersion := r.URL.Query().Get("version")
 
-	section, err := h.deps.Store.GetBySlug(ctx, slug)
+	var section *model.Section
+	var err error
+	if packageName != "" {
+		section, err = h.deps.Store.GetByPackageSlug(ctx, packageName, packageVersion, slug)
+	} else {
+		matches, findErr := h.deps.Store.Find(ctx, store.SlugEquals(slug))
+		if findErr != nil {
+			h.deps.Logger.Error("failed to get section", "slug", slug, "error", findErr)
+			writeError(w, http.StatusInternalServerError, "internal_error", "failed to get section")
+			return
+		}
+		if len(matches) == 0 {
+			err = store.ErrSectionNotFound
+		} else if len(matches) > 1 {
+			writeError(w, http.StatusBadRequest, "ambiguous_slug", "package is required for duplicate section slug: "+slug)
+			return
+		} else {
+			section = matches[0]
+		}
+	}
 	if err != nil {
 		if errors.Is(err, store.ErrSectionNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "section not found: "+slug)
@@ -187,13 +271,15 @@ func (h *Handler) handleGetSection(w http.ResponseWriter, r *http.Request) {
 func parseListParams(r *http.Request) ListSectionsParams {
 	q := r.URL.Query()
 	return ListSectionsParams{
-		SectionType: q.Get("type"),
-		Topic:       q.Get("topic"),
-		Command:     q.Get("command"),
-		Flag:        q.Get("flag"),
-		Search:      q.Get("q"),
-		Limit:       parseInt(q.Get("limit"), -1),
-		Offset:      parseInt(q.Get("offset"), 0),
+		PackageName:    q.Get("package"),
+		PackageVersion: q.Get("version"),
+		SectionType:    q.Get("type"),
+		Topic:          q.Get("topic"),
+		Command:        q.Get("command"),
+		Flag:           q.Get("flag"),
+		Search:         q.Get("q"),
+		Limit:          parseInt(q.Get("limit"), -1),
+		Offset:         parseInt(q.Get("offset"), 0),
 	}
 }
 
@@ -214,6 +300,9 @@ func parseInt(s string, def int) int {
 func buildPredicate(params ListSectionsParams) store.Predicate {
 	var preds []store.Predicate
 
+	if params.PackageName != "" {
+		preds = append(preds, store.InPackageVersion(params.PackageName, params.PackageVersion))
+	}
 	if params.SectionType != "" {
 		st, err := model.SectionTypeFromString(params.SectionType)
 		if err == nil {

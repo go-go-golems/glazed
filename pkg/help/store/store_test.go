@@ -302,3 +302,38 @@ func TestSectionType_Conversion(t *testing.T) {
 	assert.Equal(t, 1, model.SectionExample.ToInt())
 	assert.Equal(t, 3, model.SectionTutorial.ToInt())
 }
+
+func TestStore_DuplicateSlugsAcrossPackages(t *testing.T) {
+	ctx := context.Background()
+	st, err := NewInMemory()
+	if err != nil {
+		t.Fatalf("NewInMemory: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+
+	sections := []*model.Section{
+		{PackageName: "glazed", Slug: "intro", Title: "Glazed Intro", SectionType: model.SectionGeneralTopic},
+		{PackageName: "pinocchio", PackageVersion: "v1", Slug: "intro", Title: "Pinocchio Intro", SectionType: model.SectionTutorial},
+	}
+	for _, section := range sections {
+		if err := st.Upsert(ctx, section); err != nil {
+			t.Fatalf("Upsert: %v", err)
+		}
+	}
+
+	pin, err := st.GetByPackageSlug(ctx, "pinocchio", "v1", "intro")
+	if err != nil {
+		t.Fatalf("GetByPackageSlug: %v", err)
+	}
+	if pin.Title != "Pinocchio Intro" {
+		t.Fatalf("expected Pinocchio Intro, got %q", pin.Title)
+	}
+
+	packages, err := st.ListPackages(ctx)
+	if err != nil {
+		t.Fatalf("ListPackages: %v", err)
+	}
+	if len(packages) != 2 {
+		t.Fatalf("expected 2 package groups, got %d: %#v", len(packages), packages)
+	}
+}

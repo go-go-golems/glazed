@@ -136,3 +136,37 @@ func TestSQLiteLoader_LoadsSections(t *testing.T) {
 		t.Fatalf("expected Application, got %s", section.SectionType.String())
 	}
 }
+
+func TestDiscoverSQLitePackages(t *testing.T) {
+	root := t.TempDir()
+	paths := []string{
+		"glazed.db",
+		"pinocchio/pinocchio.db",
+		"geppetto/v5.1.0/geppetto.db",
+		"geppetto/v5.0.0/geppetto.sqlite",
+		"ignored/cache.db",
+		"wrong/v1/help.db",
+	}
+	for _, rel := range paths {
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("not opened by discovery"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+
+	discovered, err := DiscoverSQLitePackages(root)
+	if err != nil {
+		t.Fatalf("DiscoverSQLitePackages: %v", err)
+	}
+	got := make([]string, len(discovered))
+	for i, d := range discovered {
+		got[i] = d.Package + "@" + d.Version
+	}
+	want := []string{"geppetto@v5.0.0", "geppetto@v5.1.0", "glazed@", "pinocchio@"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
