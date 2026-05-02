@@ -28,6 +28,10 @@ func New(dbPath string) (*Store, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open database")
 	}
+	// A plain :memory: SQLite database is per connection. The store is often used
+	// in-memory by the help server, so keep one connection to avoid requests
+	// seeing a fresh empty database without the sections table.
+	db.SetMaxOpenConns(1)
 
 	store := &Store{db: db}
 	if err := store.createTables(); err != nil {
@@ -234,8 +238,8 @@ func (s *Store) hasLegacySlugUniqueIndex() bool {
 	if err != nil {
 		return false
 	}
-	defer func() { _ = rows.Close() }()
 
+	var uniqueIndexes []string
 	for rows.Next() {
 		var seq int
 		var name string
@@ -245,6 +249,11 @@ func (s *Store) hasLegacySlugUniqueIndex() bool {
 		if err := rows.Scan(&seq, &name, &unique, &origin, &partial); err != nil || unique == 0 {
 			continue
 		}
+		uniqueIndexes = append(uniqueIndexes, name)
+	}
+	_ = rows.Close()
+
+	for _, name := range uniqueIndexes {
 		infoRows, err := s.db.Query("PRAGMA index_info(" + name + ")")
 		if err != nil {
 			continue
