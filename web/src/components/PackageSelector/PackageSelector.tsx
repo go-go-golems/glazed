@@ -17,10 +17,11 @@ export function PackageSelector({
   onPackageChange,
   onVersionChange,
 }: PackageSelectorProps) {
-  const selected = packages.find((pkg) => pkg.name === selectedPackage);
+  const safePackages = packages ?? [];
+  const selected = safePackages.find((pkg) => pkg.name === selectedPackage);
   const versions = selected?.versions ?? [];
 
-  if (packages.length === 0) {
+  if (safePackages.length === 0) {
     return null;
   }
 
@@ -33,7 +34,7 @@ export function PackageSelector({
           value={selectedPackage}
           onChange={(event) => onPackageChange(event.target.value)}
         >
-          {packages.map((pkg) => (
+          {safePackages.map((pkg) => (
             <option key={pkg.name} value={pkg.name}>
               {pkg.displayName || pkg.name}
             </option>

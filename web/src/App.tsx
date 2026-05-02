@@ -29,20 +29,23 @@ export default function App() {
   const { data: packageData } = useListPackagesQuery();
   const packages = packageData?.packages ?? [];
   const currentPackage = packages.find((pkg) => pkg.name === selectedPackage);
-  const effectiveVersion = currentPackage?.versions.length ? selectedVersion : '';
+  const currentVersions = currentPackage?.versions ?? [];
+  const effectiveVersion = currentVersions.length ? selectedVersion : '';
 
   useEffect(() => {
     if (!packageData || selectedPackage) return;
     const initialPackage = packageData.defaultPackage || packageData.packages[0]?.name || '';
     const initial = packageData.packages.find((pkg) => pkg.name === initialPackage);
+    const initialVersions = initial?.versions ?? [];
     setSelectedPackage(initialPackage);
-    setSelectedVersion(packageData.defaultVersion || initial?.versions[0] || '');
+    setSelectedVersion(packageData.defaultVersion || initialVersions[0] || '');
   }, [packageData, selectedPackage]);
 
   const handlePackageChange = (value: string) => {
     const nextPackage = packages.find((pkg) => pkg.name === value);
+    const nextVersions = nextPackage?.versions ?? [];
     setSelectedPackage(value);
-    setSelectedVersion(nextPackage?.versions[0] || '');
+    setSelectedVersion(nextVersions[0] || '');
   };
 
   const { data: listData, isLoading, error } = useListSectionsQuery(
@@ -63,7 +66,7 @@ export default function App() {
   // Client-side filter — mirrors the JSX prototype logic.
   const filtered = useMemo(() => {
     if (!listData) return [];
-    return listData.sections.filter((s: SectionSummary) => {
+    return (listData.sections ?? []).filter((s: SectionSummary) => {
       if (filter !== 'All' && s.type !== filter) return false;
       if (!search) return true;
       const q = search.toLowerCase();
