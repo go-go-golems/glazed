@@ -1,0 +1,41 @@
+[data-part='navigation-mode-toggle-root'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+[data-part='navigation-mode-toggle-label'] {
+  color: #000;
+}
+
+[data-part='navigation-mode-toggle-buttons'] {
+  display: inline-flex;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #fff;
+}
+
+[data-part='navigation-mode-toggle-button'] {
+  min-width: 68px;
+  border: 0;
+  border-left: 1px solid #aaa;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+[data-part='navigation-mode-toggle-button']:first-child {
+  border-left: 0;
+}
+
+[data-part='navigation-mode-toggle-button'][aria-pressed='true'] {
+  background: #000;
+  color: #fff;
+}

@@ -153,3 +153,43 @@ Result: passed.
 ### Notes
 
 This completes the first three ticket tasks: Go/TS contracts are only half complete so far for TypeScript, but the backend contract and API exposure are done. TypeScript contract will be checked together with the frontend heading-ID task.
+
+## 2026-05-02 — Frontend tree navigation implemented
+
+### What changed
+
+Implemented the browser-side tree navigation:
+
+- Added `SectionHeading` to `web/src/types/index.ts`.
+- Added `slugifyHeading` and `textFromReactNode` helpers for stable heading IDs.
+- Updated `MarkdownContent` so h1-h4 headings render with stable `id` attributes.
+- Added `NavigationModeToggle` with `Tree` and `Search` modes.
+- Added `DocumentationTree` plus a tested tree builder/filter utility.
+- Wired `App.tsx` so Tree mode is default and Search mode preserves the existing flat `SectionList` behavior.
+- Added subsection hash navigation via `/sections/:slug#heading-id`.
+- Rebuilt the production web bundle and copied `web/dist` to `pkg/web/dist` for embedding.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed && go test ./pkg/help/...
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+`GOWORK=off go generate ./pkg/web` started the Dagger builder but timed out in this environment before completing. Since `pnpm build` completed successfully locally, I copied `web/dist` into `pkg/web/dist` manually to produce the same embedded asset update.
+
+### Tests added
+
+- Tree utility grouping/filtering tests.
+- App mode-switch test verifies Tree mode and Search mode.
+- App subsection navigation test verifies `#/sections/alpha-section#overview` navigation.
+
+### What was tricky
+
+React Router under `HashRouter` represents subsection navigation as a route hash inside the browser hash, for example `#/sections/alpha-section#overview`. The implementation uses `navigate('/sections/${slug}#${headingId}')`, which produces the expected URL in tests.

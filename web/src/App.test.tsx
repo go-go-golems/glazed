@@ -22,6 +22,7 @@ vi.mock('./services/api', () => ({
           short: 'Alpha short',
           topics: ['alpha'],
           isTopLevel: true,
+          headings: [{ id: 'overview', level: 2, text: 'Overview' }],
         },
         {
           id: 2,
@@ -56,6 +57,7 @@ vi.mock('./services/api', () => ({
         short: 'Alpha short',
         topics: ['alpha'],
         isTopLevel: true,
+        headings: [{ id: 'overview', level: 2, text: 'Overview' }],
         flags: ['--alpha'],
         commands: ['glaze alpha'],
         content: '# Alpha',
@@ -101,7 +103,7 @@ describe('App hash-route selection', () => {
   it('updates the hash route when a section is selected from the list', async () => {
     renderAppAt();
 
-    fireEvent.click(screen.getByRole('button', { name: /Beta Section/i }));
+    fireEvent.click(screen.getByRole('treeitem', { name: /Beta Section/i }));
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#/sections/beta-section');
@@ -117,5 +119,26 @@ describe('App package selector', () => {
 
     expect(await screen.findByLabelText('Package')).toBeTruthy();
     expect(screen.queryByLabelText('Version')).toBeNull();
+  });
+});
+
+describe('App tree navigation', () => {
+  it('switches between tree and search navigation modes', async () => {
+    renderAppAt();
+
+    expect(await screen.findByRole('tree', { name: 'Documentation tree' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(await screen.findByRole('listbox', { name: 'Sections' })).toBeTruthy();
+  });
+
+  it('navigates to subsection hashes from tree heading nodes', async () => {
+    renderAppAt();
+
+    fireEvent.click(await screen.findByRole('treeitem', { name: /Alpha Section/i }));
+    fireEvent.click(screen.getByText('Overview'));
+
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#/sections/alpha-section#overview');
+    });
   });
 });

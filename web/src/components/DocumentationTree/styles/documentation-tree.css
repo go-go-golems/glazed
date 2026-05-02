@@ -1,0 +1,64 @@
+[data-part='documentation-tree-root'] {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 6px 12px;
+  font-size: 12px;
+  background: #fff;
+}
+
+[data-part='documentation-tree-row'] {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  border: 0;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+[data-part='documentation-tree-row']:hover {
+  background: #eee;
+}
+
+[data-part='documentation-tree-row'][aria-selected='true'] {
+  color: #06c;
+  font-weight: 700;
+}
+
+[data-part='documentation-tree-disclosure'] {
+  width: 12px;
+  display: inline-block;
+  color: #777;
+}
+
+[data-part='documentation-tree-icon'] {
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+}
+
+[data-part='documentation-tree-label'] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-part='documentation-tree-children'] {
+  margin-left: 16px;
+}
+
+[data-part='documentation-tree-heading'] [data-part='documentation-tree-label'] {
+  color: #16823a;
+  font-size: 11px;
+}
+
+[data-part='documentation-tree-empty'] {
+  padding: 12px;
+  color: #777;
+  font-size: 12px;
+}
