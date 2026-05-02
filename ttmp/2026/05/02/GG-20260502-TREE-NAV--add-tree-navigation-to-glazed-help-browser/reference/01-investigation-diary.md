@@ -252,3 +252,31 @@ cd glazed/web && pnpm build-storybook
 ```
 
 Result: passed. Storybook emitted its normal `src/**/*.mdx` absence warning and large chunk warning. The generated `web/storybook-static` output was removed after validation because it is a build artifact and should not be committed.
+
+## 2026-05-02 — Tree entries now scroll the Markdown pane
+
+### User feedback
+
+Selecting an entry in the tree view should not only update the URL and active tree state; it should also jump the Markdown pane on the right to that location.
+
+### What changed
+
+- Added a scroll ref for the right-hand Markdown content pane in `web/src/App.tsx`.
+- Added a route/hash-driven scroll effect:
+  - when a subsection hash is present, find the rendered Markdown heading by ID and call `scrollIntoView({ block: 'start' })`;
+  - when a document node is selected without a subsection hash, reset the Markdown pane to the top by setting `scrollTop = 0`.
+- Added a frontend regression test that mocks `scrollIntoView` and verifies subsection tree clicks invoke it.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+Smoke server was restarted at `http://127.0.0.1:8099`. Browser validation clicked `Complete User Query DSL Reference` and then the `Boolean Operations` subsection in the tree. The browser ended at `#/sections/user-query-dsl#boolean-operations`, and Playwright measured the `#boolean-operations` Markdown heading near the top of the content pane.

@@ -24,3 +24,8 @@ Cleaned up tree subsection styling, added Storybook stories, rebuilt assets, and
 
 Validated new tree/navigation Storybook stories with pnpm build-storybook.
 
+
+## 2026-05-02
+
+Made tree subsection selection scroll the Markdown pane to the selected heading and added regression coverage.
+

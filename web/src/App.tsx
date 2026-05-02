@@ -1,5 +1,5 @@
 // App.tsx — root component: wires all components together with RTK Query state.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { SearchBar } from './components/SearchBar/SearchBar';
@@ -23,6 +23,7 @@ export default function App() {
   const [selectedVersion, setSelectedVersion] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
+  const contentScrollRef = useRef<HTMLDivElement>(null);
 
   const activeSlug = useMemo(() => {
     const match = matchPath('/sections/:slug', location.pathname);
@@ -70,6 +71,24 @@ export default function App() {
   const handleSelectHeading = (slug: string, headingId: string) => {
     navigate(`/sections/${slug}#${headingId}`);
   };
+
+  useEffect(() => {
+    if (!section) return;
+
+    requestAnimationFrame(() => {
+      if (activeHeadingId) {
+        const heading = document.getElementById(activeHeadingId);
+        if (heading) {
+          heading.scrollIntoView({ block: 'start' });
+          return;
+        }
+      }
+
+      if (contentScrollRef.current) {
+        contentScrollRef.current.scrollTop = 0;
+      }
+    });
+  }, [section, activeHeadingId]);
 
   // Client-side filter — mirrors the JSX prototype logic.
   const filtered = useMemo(() => {
@@ -148,7 +167,7 @@ export default function App() {
               </div>
             )}
             {!isLoading && !error && section && (
-              <div style={{ flex: 1, overflow: 'auto' }}>
+              <div ref={contentScrollRef} style={{ flex: 1, overflow: 'auto' }}>
                 <SectionView section={section} />
               </div>
             )}

@@ -1,7 +1,18 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+
+const scrollIntoViewMock = vi.fn();
+
+Object.defineProperty(Element.prototype, 'scrollIntoView', {
+  configurable: true,
+  value: scrollIntoViewMock,
+});
+
+beforeEach(() => {
+  scrollIntoViewMock.mockClear();
+});
 
 vi.mock('./services/api', () => ({
   useListPackagesQuery: () => ({
@@ -60,7 +71,7 @@ vi.mock('./services/api', () => ({
         headings: [{ id: 'overview', level: 2, text: 'Overview' }],
         flags: ['--alpha'],
         commands: ['glaze alpha'],
-        content: '# Alpha',
+        content: '# Alpha\n\n## Overview\n\nOverview text.',
       },
       'beta-section': {
         id: 2,
@@ -135,10 +146,21 @@ describe('App tree navigation', () => {
     renderAppAt();
 
     fireEvent.click(await screen.findByRole('treeitem', { name: /Alpha Section/i }));
-    fireEvent.click(screen.getByText('Overview'));
+    fireEvent.click(screen.getByRole('treeitem', { name: 'Overview' }));
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#/sections/alpha-section#overview');
+    });
+  });
+
+  it('scrolls the markdown pane to the selected subsection', async () => {
+    renderAppAt();
+
+    fireEvent.click(await screen.findByRole('treeitem', { name: /Alpha Section/i }));
+    fireEvent.click(screen.getByRole('treeitem', { name: 'Overview' }));
+
+    await waitFor(() => {
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: 'start' });
     });
   });
 });

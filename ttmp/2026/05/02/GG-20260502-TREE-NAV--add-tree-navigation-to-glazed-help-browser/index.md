@@ -13,6 +13,10 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: web/src/App.test.tsx
+      Note: Regression test for subsection tree clicks invoking scrollIntoView.
+    - Path: web/src/App.tsx
+      Note: Route/hash-driven Markdown pane scrolling for document and subsection tree selection.
     - Path: web/src/components/DocumentationTree/DocumentationTree.stories.tsx
       Note: Storybook examples for tree grouping
     - Path: web/src/components/DocumentationTree/DocumentationTree.tsx
@@ -27,6 +31,7 @@ LastUpdated: 2026-05-02T12:17:05.601847782-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Add tree navigation to Glazed help browser

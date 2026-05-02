@@ -15,3 +15,4 @@
 - [x] Run Go help tests, frontend Vitest, TypeScript checks, web build, and embedded web asset generation.
 - [x] Smoke test with the existing multi-package tmux setup and document the validation result in the diary.
 - [x] Add Storybook stories for DocumentationTree and NavigationModeToggle.
+- [x] Ensure tree subsection clicks scroll the Markdown pane to the selected heading.
