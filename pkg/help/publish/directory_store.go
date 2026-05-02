@@ -48,11 +48,16 @@ func (s *DirectoryPackageStore) Publish(ctx context.Context, packageName, versio
 	if !isPathUnderRoot(root, target) {
 		return nil, fmt.Errorf("target path escapes package root")
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+	targetDir := filepath.Dir(target)
+	if !isPathUnderRoot(root, targetDir) {
+		return nil, fmt.Errorf("target directory escapes package root")
+	}
+	// #nosec G703 -- targetDir is derived from validated package/version path segments and checked to remain under the configured package root.
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create package directory: %w", err)
 	}
 
-	tmp, err := os.CreateTemp(filepath.Dir(target), ".upload-*.db")
+	tmp, err := os.CreateTemp(targetDir, ".upload-*.db")
 	if err != nil {
 		return nil, fmt.Errorf("create temp package db: %w", err)
 	}
@@ -60,6 +65,7 @@ func (s *DirectoryPackageStore) Publish(ctx context.Context, packageName, versio
 	removeTmp := true
 	defer func() {
 		if removeTmp {
+			// #nosec G703 -- tmpPath is returned by os.CreateTemp in targetDir, which is checked to remain under the package root.
 			_ = os.Remove(tmpPath)
 		}
 	}()
@@ -83,11 +89,12 @@ func (s *DirectoryPackageStore) Publish(ctx context.Context, packageName, versio
 	if err := tmp.Close(); err != nil {
 		return nil, fmt.Errorf("close package db: %w", err)
 	}
+	// #nosec G703 -- tmpPath and target are both constrained to the validated package/version directory under the package root.
 	if err := os.Rename(tmpPath, target); err != nil {
 		return nil, fmt.Errorf("publish package db: %w", err)
 	}
 	removeTmp = false
-	_ = syncDir(filepath.Dir(target))
+	_ = syncDir(targetDir)
 
 	now := time.Now().UTC()
 	if s.Now != nil {
@@ -203,6 +210,7 @@ func isPathUnderRoot(root, target string) bool {
 }
 func startsWithDotDot(rel string) bool { return rel == ".." || len(rel) > 3 && rel[:3] == "../" }
 func syncDir(dir string) error {
+	// #nosec G703 -- callers pass directories derived from configured package roots and validated paths.
 	f, err := os.Open(dir)
 	if err != nil {
 		return err

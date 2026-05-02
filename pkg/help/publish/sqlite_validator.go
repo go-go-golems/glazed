@@ -266,7 +266,16 @@ func tableColumns(ctx context.Context, db *sql.DB, table string) (map[string]boo
 }
 
 func distinctNonEmptyValues(ctx context.Context, db *sql.DB, column string) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `SELECT DISTINCT `+column+` FROM sections WHERE COALESCE(`+column+`, '') != '' ORDER BY `+column)
+	var query string
+	switch column {
+	case "package_name":
+		query = `SELECT DISTINCT package_name FROM sections WHERE COALESCE(package_name, '') != '' ORDER BY package_name`
+	case "package_version":
+		query = `SELECT DISTINCT package_version FROM sections WHERE COALESCE(package_version, '') != '' ORDER BY package_version`
+	default:
+		return nil, fmt.Errorf("unsupported distinct metadata column %q", column)
+	}
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrapf(err, "query distinct %s values", column)
 	}
