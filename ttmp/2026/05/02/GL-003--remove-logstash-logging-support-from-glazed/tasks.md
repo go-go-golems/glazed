@@ -10,4 +10,4 @@
 - [x] Remove logstash fields/flags from glazed/pkg/cmds/logging/section.go
 - [x] Update glazed logging documentation (README, topics, tutorials)
 - [x] Delete glazed/pkg/cmds/logging/logstash_writer.go
-- [ ] Build and test both glazed and clay workspaces
+- [x] Build and test both glazed and clay workspaces
