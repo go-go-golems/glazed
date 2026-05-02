@@ -1825,3 +1825,19 @@ As before, `go run` process cleanup needs process-pattern cleanup rather than on
 ### Code review instructions
 
 Rerun the smoke manually from the diary if validating the reload feature.
+
+## Step 19: Upload reload-update bundle to reMarkable
+
+I uploaded a fresh reMarkable bundle after adding `--reload-interval`, updating the k3s docs-yolo deployment, and smoke-testing no-restart visibility for newly published package DBs.
+
+Upload destination:
+
+```text
+/ai/2026/05/02/GG-20260502-DOCS-YOLO-MULTI-PACKAGE
+```
+
+Bundle name:
+
+```text
+GG-20260502-DOCS-YOLO-MULTI-PACKAGE - Phase 1 reload update
+```

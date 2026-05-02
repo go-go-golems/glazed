@@ -154,3 +154,8 @@ Step 17: added glaze serve --reload-interval and enabled 30s package directory r
 
 Step 18: smoke-tested reload polling by publishing Pinocchio into an initially empty package root while the browser was already running.
 
+
+## 2026-05-02
+
+Uploaded Phase 1 reload update bundle to reMarkable after adding and smoke-testing help source reload polling.
+
