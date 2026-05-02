@@ -287,12 +287,7 @@ func prepareOutputDir(outputDir string, overwrite bool) error {
 }
 
 func exportFrontend(outputDir string) error {
-	sub, err := fs.Sub(web.FS, "dist")
-	if err != nil {
-		return errors.Wrap(err, "opening embedded web dist")
-	}
-
-	return fs.WalkDir(sub, ".", func(path string, d fs.DirEntry, walkErr error) error {
+	return fs.WalkDir(web.PublicFS, ".", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -300,7 +295,7 @@ func exportFrontend(outputDir string) error {
 		if d.IsDir() {
 			return os.MkdirAll(target, 0o755)
 		}
-		data, err := fs.ReadFile(sub, path)
+		data, err := fs.ReadFile(web.PublicFS, path)
 		if err != nil {
 			return err
 		}

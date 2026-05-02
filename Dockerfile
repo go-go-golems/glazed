@@ -16,7 +16,7 @@ RUN apt-get update \
   && npm install -g corepack@latest \
   && corepack enable \
   && go generate ./pkg/web \
-  && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/glaze ./cmd/glaze \
+  && CGO_ENABLED=1 GOOS=linux go build -tags embed -trimpath -ldflags='-s -w' -o /out/glaze ./cmd/glaze \
   && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docsctl ./cmd/docsctl \
   && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docs-registry ./cmd/docs-registry
 

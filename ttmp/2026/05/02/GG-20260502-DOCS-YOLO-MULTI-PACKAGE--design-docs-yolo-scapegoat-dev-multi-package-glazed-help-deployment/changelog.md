@@ -174,3 +174,8 @@ Step 21: addressed PR review comments by staging reloads before clearing live do
 
 Step 22: refactored docsctl validate/publish and docs-registry from raw Cobra flag definitions into Glazed command definitions and settings decoding.
 
+
+## 2026-05-02
+
+Step 23: aligned build-web with generated-at-build Dagger/pnpm strategy, removed committed pkg/web/dist assets, and switched production embedding to -tags embed.
+

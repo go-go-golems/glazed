@@ -2096,3 +2096,95 @@ The default `cli.BuildCobraCommandFromCommand` path calls `cobra.CheckErr` in it
 
 - Whether `docsctl` should eventually use standard Glazed output rows instead of preserving its current bespoke text/JSON outputs.
 - Whether `docs-registry` should get command-level tests now that it has a Glazed command wrapper.
+
+## Step 23: Align web asset embedding with generated-at-build strategy
+
+After the Glazed-command cleanup, we revisited whether the generated Vite bundle should stay committed. The current embedded browser bundle was about 428 KiB, mostly a 407 KiB hashed JavaScript file. That is not huge for a deployment artifact, but it is a lot of generated code to review in every UI-affecting PR.
+
+I aligned the web build/embedding strategy with the Dagger pnpm pattern used in other Go+web repositories and removed committed `pkg/web/dist` assets from source control.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Ok, create a cleanup to align the build-web strategy and remove pkg/web/dist, because 400 kB is actually quite a bit of code.`
+
+**Assistant interpretation:** Stop committing generated frontend assets and make `go generate ./pkg/web` the production asset generation path.
+
+**Inferred user intent:** Keep source diffs focused on authored code, not large generated/minified bundles, while preserving reliable production embedding.
+
+### What I changed
+
+- Removed committed `pkg/web/dist` assets.
+- Added `pkg/web/embed.go` guarded by `//go:build embed`.
+- Added `pkg/web/embed_none.go` guarded by `//go:build !embed`.
+- Changed `pkg/web/static.go` to serve `PublicFS` instead of directly embedding `dist`.
+- Changed `cmd/build-web` to copy `web/dist` into `pkg/web/embed/public`.
+- Added Dagger `CacheVolume` support for the pnpm store:
+  - cache name: `glazed-help-browser-pnpm-store`
+  - mounted at `/pnpm/store`
+- Added `BUILD_WEB_LOCAL=1` support for explicitly forcing local pnpm builds.
+- Added `packageManager: pnpm@10.15.0` to `web/package.json` and made `cmd/build-web` read it.
+- Updated `.gitignore` to ignore generated `pkg/web/dist` and `pkg/web/embed/public`.
+- Updated Dockerfile to run `go generate ./pkg/web` and build `glaze` with `-tags embed`.
+- Updated GoReleaser build tags to include `embed` after its `go generate ./...` hook.
+- Updated Makefile `build` and `install` targets to run generation and build with `embed`.
+- Updated `pkg/help/site` frontend export to walk `web.PublicFS` instead of the old embedded `web.FS`.
+
+### New build model
+
+Development/test/default builds:
+
+```bash
+go test ./pkg/web
+go build ./cmd/glaze
+```
+
+These do not require generated assets. Without `-tags embed`, `pkg/web/embed_none.go` serves generated disk assets if present, otherwise a tiny fallback page that tells developers to run `go generate ./pkg/web`.
+
+Production/release/container builds:
+
+```bash
+go generate ./pkg/web
+go build -tags embed ./cmd/glaze
+```
+
+The generated assets live at:
+
+```text
+pkg/web/embed/public
+```
+
+but that directory is ignored by Git.
+
+### Validation
+
+```bash
+go test ./pkg/web ./cmd/build-web ./cmd/docsctl ./cmd/docs-registry ./pkg/help/server ./pkg/help/publish
+BUILD_WEB_LOCAL=1 go generate ./pkg/web
+du -sh pkg/web/embed/public
+go test -tags embed ./pkg/web
+go build ./cmd/glaze
+go build -tags embed ./cmd/glaze
+```
+
+Generated asset size remains:
+
+```text
+428K pkg/web/embed/public
+```
+
+but it is no longer committed.
+
+### What worked
+
+- Default Go tests/builds work without committed generated assets.
+- `go generate ./pkg/web` regenerates the Vite bundle into the ignored embed directory.
+- `go build -tags embed ./cmd/glaze` succeeds after generation.
+
+### What didn't work
+
+An initial `go build -tags embed ./cmd/glaze` failed because `pkg/help/site` still referenced the old `web.FS`. I updated it to use `web.PublicFS`.
+
+### What warrants a second pair of eyes
+
+- Whether the fallback non-embed page should stay minimal or be made more explicit in the UI.
+- Whether all release paths outside Docker/GoReleaser use `go generate` before `-tags embed`.
