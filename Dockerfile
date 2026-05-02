@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
 FROM golang:1.25-bookworm AS builder
+ENV CI=true \
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /src
 
 # Copy the full repository because the embedded React help browser is generated

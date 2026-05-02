@@ -1,0 +1,12 @@
+.git
+.gitignore
+.github
+node_modules
+**/node_modules
+web/dist
+pkg/web/dist
+coverage
+.DS_Store
+.tmp
+tmp
+ttmp
