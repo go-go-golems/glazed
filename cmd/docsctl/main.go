@@ -24,6 +24,7 @@ tokens.`,
 			return cmd.Help()
 		},
 	}
+	cmd.AddCommand(newValidateCommand())
 	return cmd
 }
 

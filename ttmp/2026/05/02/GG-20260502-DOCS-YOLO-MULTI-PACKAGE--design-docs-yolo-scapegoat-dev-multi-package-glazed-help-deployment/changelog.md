@@ -77,3 +77,13 @@ Step 8: added read-only SQLite help DB validator and unit tests for publish safe
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/sqlite_validator.go — Read-only Glazed help DB validator.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/sqlite_validator_test.go — Validator tests for valid and invalid uploads.
 
+
+## 2026-05-02
+
+Step 9: wired docsctl validate with JSON output, command tests, and real DB smoke validation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/validate.go — docsctl validate command implementation.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/validate_test.go — Command-level validate tests.
+

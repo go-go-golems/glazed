@@ -805,3 +805,113 @@ Read-only SQLite DSN shape:
 ```text
 file:/absolute/path/help.db?mode=ro&_query_only=true
 ```
+
+## Step 9: Wire `docsctl validate`
+
+This step connected the validation library to the new `docsctl` CLI. Package maintainers can now validate a generated help SQLite export locally before any registry upload exists. The command supports both human-readable output and JSON output for CI.
+
+This completes the Phase 1A validation slice: we have a CLI entrypoint, safe package/version path validation, a read-only SQLite validator, unit tests, command tests, and a smoke run against an existing Pinocchio export.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Finish the Phase 1A local validation command and document the validation slice.
+
+**Inferred user intent:** Give package CI a concrete first tool command that can be tested independently from the future registry.
+
+### What I did
+
+- Added `cmd/docsctl/validate.go`.
+- Wired `newValidateCommand()` into the docsctl root command.
+- Added flags:
+  - `--package`
+  - `--version`
+  - `--file`
+  - `--json`
+- Added command tests in `cmd/docsctl/validate_test.go` covering:
+  - text success output;
+  - JSON success output;
+  - validation failure;
+  - required flag failure.
+- Ran focused tests.
+- Smoke-tested against the existing Pinocchio smoke DB.
+- Checked off the Phase 1A `docsctl validate`, command test, and validation-slice documentation tasks.
+
+Commands run:
+
+```bash
+gofmt -w cmd/docsctl/main.go cmd/docsctl/validate.go cmd/docsctl/validate_test.go
+go test ./cmd/docsctl ./pkg/help/publish
+go run ./cmd/docsctl validate --package pinocchio --version vtest --file /tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db --json
+```
+
+Smoke output included:
+
+```json
+{
+  "path": "/tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db",
+  "packageName": "pinocchio",
+  "version": "vtest",
+  "sectionCount": 69,
+  "slugCount": 69
+}
+```
+
+### Why
+
+Local validation should be available before registry upload. It gives package maintainers fast feedback and gives CI a cheap preflight step.
+
+### What worked
+
+- Command tests pass.
+- The command validates a real exported Pinocchio help DB and reports 69 sections / 69 slugs.
+- JSON output is suitable for CI parsing.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The existing smoke DBs are useful as realistic fixtures for command-level smoke testing, even though unit tests should keep using isolated temp DBs.
+
+### What was tricky to build
+
+The command needs to use Cobra's output streams (`cmd.OutOrStdout`) so tests can capture output without subprocesses. This also keeps the command reusable for future tests.
+
+### What warrants a second pair of eyes
+
+- Whether `--version` should remain required in Phase 1. The current publishing model is versioned by design, so the command requires it.
+- Whether JSON output should include warnings as strings only or structured warning codes later.
+
+### What should be done in the future
+
+- Start Phase 1B with `PublisherAuth`, token hashing, and static package-token authorization.
+- Later, `docsctl publish --dry-run` should call the same validation path.
+
+### Code review instructions
+
+Review:
+
+- `cmd/docsctl/main.go`
+- `cmd/docsctl/validate.go`
+- `cmd/docsctl/validate_test.go`
+- `pkg/help/publish/sqlite_validator.go`
+
+Validate:
+
+```bash
+go test ./cmd/docsctl ./pkg/help/publish
+go run ./cmd/docsctl validate --package pinocchio --version vtest --file /tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db --json
+```
+
+### Technical details
+
+Human output shape:
+
+```text
+OK: /path/help.db is a valid Glazed help database for pinocchio@vtest (69 sections, 69 slugs)
+```
+
+JSON output shape uses `SQLiteValidationResult`.
