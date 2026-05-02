@@ -2002,3 +2002,52 @@ kubectl get all,ingress,pvc -n docs-yolo -o wide
 curl -k -fsS https://docs.yolo.scapegoat.dev/api/health
 curl -k -fsS https://docs.yolo.scapegoat.dev/api/packages
 ```
+
+## Step 21: Address PR review comments
+
+PR #561 received two automated review comments. I addressed both in code and added regression tests.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Address PR code review comments.`
+
+**Assistant interpretation:** Fetch the inline PR review comments, fix the issues, validate locally, and push the branch update.
+
+**Inferred user intent:** Make PR #561 ready for another review pass by addressing concrete review feedback, not just explaining it.
+
+### Review comments addressed
+
+1. `pkg/help/server/serve.go`: avoid clearing docs before reload succeeds.
+   - Problem: `--reload-interval` with external sources cleared the live store before trying to reload. A transient loader error could leave production with an empty docs browser until a later successful reload.
+   - Fix: when `clearBeforeLoad` is true, reload into a staging `HelpSystem` first. Only after all loaders succeed do we replace the live store contents from staged sections.
+   - Regression test: `TestLoadServeSources_DoesNotClearExistingSectionsWhenStagingFails`.
+
+2. `web/src/components/Markdown/MarkdownContent.tsx`: generate unique heading IDs for repeated headings.
+   - Problem: repeated headings produced duplicate DOM IDs, so hash navigation could jump to the first matching heading instead of the intended later heading.
+   - Fix: backend heading extraction and frontend Markdown rendering now use `base`, `base-2`, `base-3`, ... IDs for repeated heading slugs.
+   - Regression tests:
+     - `TestExtractHeadingsMakesDuplicateIDsUnique`
+     - `MarkdownContent.test.tsx` unique repeated heading IDs test.
+
+### Validation
+
+```bash
+go test ./pkg/help/server ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish
+cd web && pnpm test -- --run MarkdownContent.test.tsx
+cd web && pnpm exec tsc --noEmit
+cd web && pnpm build
+```
+
+I rebuilt the embedded browser assets by copying `web/dist` into `pkg/web/dist` after the Vite build.
+
+### What worked
+
+The focused Go tests, frontend test suite, TypeScript check, and Vite production build all passed.
+
+### What didn't work
+
+N/A.
+
+### What warrants a second pair of eyes
+
+The reload replacement still mutates the current store after staging succeeds; it avoids outage on loader failures, but a future shadow-store pointer swap would be the cleaner zero-gap approach.

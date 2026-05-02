@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -18,6 +19,7 @@ func ExtractHeadings(content, sectionTitle string) []SectionHeading {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	inFence := false
 	fenceMarker := ""
+	seenIDs := map[string]int{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -47,7 +49,7 @@ func ExtractHeadings(content, sectionTitle string) []SectionHeading {
 			continue
 		}
 		headings = append(headings, SectionHeading{
-			ID:    SlugifyHeading(text),
+			ID:    uniqueHeadingID(SlugifyHeading(text), seenIDs),
 			Level: level,
 			Text:  text,
 		})
@@ -67,6 +69,14 @@ func SlugifyHeading(text string) string {
 		return "section"
 	}
 	return lower
+}
+
+func uniqueHeadingID(base string, seen map[string]int) string {
+	seen[base]++
+	if seen[base] == 1 {
+		return base
+	}
+	return base + "-" + strconv.Itoa(seen[base])
 }
 
 func isFenceLine(trimmed string) bool {

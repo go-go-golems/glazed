@@ -164,3 +164,8 @@ Uploaded Phase 1 reload update bundle to reMarkable after adding and smoke-testi
 
 Step 20: pushed Glazed branch, built GHCR image sha-cca4dbf, synced docs-yolo in Argo CD, bootstrapped Glazed/Pinocchio vtest DBs, and opened PR #561.
 
+
+## 2026-05-02
+
+Step 21: addressed PR review comments by staging reloads before clearing live docs and generating unique repeated heading IDs across backend/frontend.
+

@@ -10,6 +10,12 @@ export function slugifyHeading(text: string): string {
   return slug || 'section';
 }
 
+export function uniqueHeadingId(base: string, seen: Map<string, number>): string {
+  const count = (seen.get(base) ?? 0) + 1;
+  seen.set(base, count);
+  return count === 1 ? base : `${base}-${count}`;
+}
+
 export function textFromReactNode(node: ReactNode): string {
   if (node == null || typeof node === 'boolean') return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);

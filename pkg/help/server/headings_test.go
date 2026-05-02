@@ -34,6 +34,29 @@ Some text.
 	}
 }
 
+func TestExtractHeadingsMakesDuplicateIDsUnique(t *testing.T) {
+	content := `## Install
+
+### Install
+
+## Install
+`
+	headings := ExtractHeadings(content, "Package")
+	want := []SectionHeading{
+		{ID: "install", Level: 2, Text: "Install"},
+		{ID: "install-2", Level: 3, Text: "Install"},
+		{ID: "install-3", Level: 2, Text: "Install"},
+	}
+	if len(headings) != len(want) {
+		t.Fatalf("expected %d headings, got %d: %#v", len(want), len(headings), headings)
+	}
+	for i := range want {
+		if headings[i] != want[i] {
+			t.Fatalf("heading %d: expected %#v, got %#v", i, want[i], headings[i])
+		}
+	}
+}
+
 func TestSlugifyHeading(t *testing.T) {
 	tests := map[string]string{
 		"Events, Streaming, and Watermill": "events-streaming-and-watermill",

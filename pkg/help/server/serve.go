@@ -19,6 +19,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	helploader "github.com/go-go-golems/glazed/pkg/help/loader"
+	"github.com/go-go-golems/glazed/pkg/help/store"
 	"github.com/rs/zerolog/log"
 )
 
@@ -183,14 +184,41 @@ func loadServeSources(ctx context.Context, hs *help.HelpSystem, loaders []helplo
 		defer mu.Unlock()
 	}
 	if clearBeforeLoad {
-		if err := hs.Store.Clear(ctx); err != nil {
-			return fmt.Errorf("clearing preloaded sections: %w", err)
+		staging := help.NewHelpSystem()
+		if err := loadIntoHelpSystem(ctx, staging, loaders); err != nil {
+			_ = staging.Store.Close()
+			return err
 		}
+		defer func() { _ = staging.Store.Close() }()
+		if err := replaceStoreSections(ctx, hs, staging); err != nil {
+			return err
+		}
+		return nil
 	}
+	return loadIntoHelpSystem(ctx, hs, loaders)
+}
+
+func loadIntoHelpSystem(ctx context.Context, hs *help.HelpSystem, loaders []helploader.ContentLoader) error {
 	for _, l := range loaders {
 		log.Info().Str("source", l.String()).Msg("Loading help source")
 		if err := l.Load(ctx, hs); err != nil {
 			return fmt.Errorf("loading %s: %w", l.String(), err)
+		}
+	}
+	return nil
+}
+
+func replaceStoreSections(ctx context.Context, target, source *help.HelpSystem) error {
+	sections, err := source.Store.Find(ctx, func(*store.QueryCompiler) {})
+	if err != nil {
+		return fmt.Errorf("reading staged sections: %w", err)
+	}
+	if err := target.Store.Clear(ctx); err != nil {
+		return fmt.Errorf("clearing preloaded sections: %w", err)
+	}
+	for _, section := range sections {
+		if err := target.Store.Upsert(ctx, section); err != nil {
+			return fmt.Errorf("replacing staged section %q: %w", section.Slug, err)
 		}
 	}
 	return nil
