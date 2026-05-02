@@ -1115,3 +1115,115 @@ Vault-shaped Phase 1 record:
   "revokedAt": ""
 }
 ```
+
+## Step 12: Add direct upload registry skeleton
+
+This step started Phase 1C by adding a standalone `docs-registry` command and the first HTTP registry handler. The registry skeleton has health and package-list endpoints, plus a package/version SQLite upload route that already performs authorization, upload size limiting, temporary file handling, read-only DB validation, and structured JSON error responses.
+
+The storage backend is still a test fake at this point. Phase 1D will implement the real PVC directory publisher. This split keeps request handling and validation testable before filesystem publication semantics are added.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue Phase 1 implementation by building the direct upload registry skeleton and tests.
+
+**Inferred user intent:** Move from local CLI/auth primitives toward the server that packages will publish to.
+
+### What I did
+
+- Added `cmd/docs-registry/main.go`.
+- Added `pkg/help/publish/registry.go`.
+- Added `pkg/help/publish/registry_test.go`.
+- Implemented registry routes:
+  - `GET /healthz`
+  - `GET /v1/packages`
+  - `PUT /v1/packages/{package}/versions/{version}/sqlite`
+- Added `PackageStore` interface for the future Phase 1D storage backend.
+- Added upload handling with:
+  - bearer token extraction;
+  - `PublisherAuth` authorization before upload processing;
+  - request size limits;
+  - temp file creation and cleanup;
+  - read-only SQLite validation;
+  - structured JSON errors.
+- Added handler tests for:
+  - health and package listing;
+  - successful publish through a fake store;
+  - forbidden package;
+  - invalid DB;
+  - oversized upload;
+  - store failure.
+- Checked off the Phase 1C registry skeleton tasks.
+
+Commands run:
+
+```bash
+gofmt -w pkg/help/publish/registry.go pkg/help/publish/registry_test.go cmd/docs-registry/main.go
+go test ./pkg/help/publish ./cmd/docs-registry
+```
+
+### Why
+
+The registry is the entrypoint for third-party package publishing. Building it behind interfaces lets us add the real directory store next without changing request-level auth and validation behavior.
+
+### What worked
+
+- Focused tests pass for `pkg/help/publish` and `cmd/docs-registry`.
+- The upload endpoint rejects wrong-package tokens before validating or publishing the DB.
+- The upload endpoint rejects malformed DBs before calling the store.
+
+### What didn't work
+
+The first test run failed because `registry_test.go` referenced `readFileBytes` before I added the helper:
+
+```text
+pkg/help/publish/registry_test.go:48:10: undefined: readFileBytes
+pkg/help/publish/registry_test.go:75:10: undefined: readFileBytes
+pkg/help/publish/registry_test.go:126:10: undefined: readFileBytes
+```
+
+I added the helper and reran the focused tests successfully.
+
+### What I learned
+
+The Go 1.22 `http.ServeMux` path variable support is enough for the registry route shape, so the first skeleton does not need chi or another HTTP router.
+
+### What was tricky to build
+
+The important ordering invariant is authorize first, then read upload content, then validate, then store. That prevents unauthorized callers from making the server spend time parsing large SQLite uploads.
+
+### What warrants a second pair of eyes
+
+- Whether `MaxUploadBytes` should default lower than 64 MiB.
+- Whether store failures should return a generic message only, as currently implemented, or include a safe error code for operators.
+- Whether `docs-registry` should start with auth/store nil for skeleton only, or whether the command should refuse to start until configured once Phase 1D/F are complete.
+
+### What should be done in the future
+
+- Implement `DirectoryPackageStore` in Phase 1D and wire it into `cmd/docs-registry`.
+- Add config for static token catalog loading before production use.
+
+### Code review instructions
+
+Review:
+
+- `cmd/docs-registry/main.go`
+- `pkg/help/publish/registry.go`
+- `pkg/help/publish/registry_test.go`
+
+Validate:
+
+```bash
+go test ./pkg/help/publish ./cmd/docs-registry
+```
+
+### Technical details
+
+Upload route:
+
+```http
+PUT /v1/packages/{package}/versions/{version}/sqlite
+Authorization: Bearer <publish-token>
+Content-Type: application/vnd.sqlite3
+```

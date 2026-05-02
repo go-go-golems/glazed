@@ -13,6 +13,8 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: cmd/docs-registry/main.go
+      Note: Standalone registry server entrypoint for Phase 1 direct uploads.
     - Path: cmd/docsctl/main.go
       Note: New docsctl CLI entrypoint for Phase 1 validation and publish commands.
     - Path: cmd/docsctl/validate.go
@@ -29,6 +31,10 @@ RelatedFiles:
       Note: Vault-shaped token records and reloadable publisher auth catalog.
     - Path: pkg/help/publish/catalog_test.go
       Note: Tests for revoked records
+    - Path: pkg/help/publish/registry.go
+      Note: HTTP registry skeleton for authorized SQLite uploads.
+    - Path: pkg/help/publish/registry_test.go
+      Note: Tests for health
     - Path: pkg/help/publish/sqlite_validator.go
       Note: Read-only SQLite help DB validator shared by docsctl and registry publishing.
     - Path: pkg/help/publish/sqlite_validator_test.go
@@ -51,6 +57,7 @@ LastUpdated: 2026-05-02T13:02:08.7165699-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

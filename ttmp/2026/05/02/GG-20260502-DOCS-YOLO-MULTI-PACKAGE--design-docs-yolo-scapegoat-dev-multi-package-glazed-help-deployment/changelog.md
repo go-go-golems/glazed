@@ -107,3 +107,14 @@ Step 11: added Vault-shaped publisher token records and reloadable static auth c
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog.go — Publisher token record and reloadable catalog implementation.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog_test.go — Catalog validation and reload behavior tests.
 
+
+## 2026-05-02
+
+Step 12: added docs-registry skeleton with health/list/upload routes, auth, validation, and handler tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docs-registry/main.go — New docs registry command skeleton.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/registry.go — Registry HTTP handler and upload route.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/registry_test.go — Registry route tests.
+

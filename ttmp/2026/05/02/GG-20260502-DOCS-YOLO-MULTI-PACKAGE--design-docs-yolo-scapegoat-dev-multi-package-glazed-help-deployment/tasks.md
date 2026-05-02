@@ -36,13 +36,13 @@
 
 ## Phase 1C — Direct upload registry skeleton
 
-- [ ] Add `cmd/docs-registry` with HTTP server configuration for listen address, package root, auth mode, and optional Vault settings.
-- [ ] Add registry routes for `GET /healthz`, `GET /v1/packages`, and `PUT /v1/packages/{package}/versions/{version}/sqlite`.
-- [ ] Wire publish endpoint authorization through `PublisherAuth` before reading or writing upload content.
-- [ ] Reuse the SQLite validator on uploaded DBs before publication.
-- [ ] Implement structured JSON error responses for unauthorized, forbidden, invalid upload, validation failure, and publish failure.
-- [ ] Add request size limits and temporary upload file handling.
-- [ ] Add registry handler tests with `httptest` for success, forbidden package, invalid DB, and oversized request.
+- [x] Add `cmd/docs-registry` with HTTP server configuration for listen address, package root, auth mode, and optional Vault settings.
+- [x] Add registry routes for `GET /healthz`, `GET /v1/packages`, and `PUT /v1/packages/{package}/versions/{version}/sqlite`.
+- [x] Wire publish endpoint authorization through `PublisherAuth` before reading or writing upload content.
+- [x] Reuse the SQLite validator on uploaded DBs before publication.
+- [x] Implement structured JSON error responses for unauthorized, forbidden, invalid upload, validation failure, and publish failure.
+- [x] Add request size limits and temporary upload file handling.
+- [x] Add registry handler tests with `httptest` for success, forbidden package, invalid DB, and oversized request.
 - [ ] Document registry API behavior and commit the registry skeleton slice.
 
 ## Phase 1D — PVC directory publisher and atomic writes
