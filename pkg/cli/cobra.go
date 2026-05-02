@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -58,33 +57,9 @@ func runCobraCommand(
 		}
 
 		// Minimal command settings: debug flags
-		commandSettings := &CommandSettings{}
-		if commandSettingsValues, ok := parsedValues.Get(CommandSettingsSlug); ok {
-			var printYAML, shouldPrintParsedFields, printSchema bool
-			err = commandSettingsValues.DecodeInto(commandSettings)
+		if handled, err := HandleCommandSettings(s, parsedValues, os.Stdout); handled || err != nil {
 			cobra.CheckErr(err)
-			printYAML = commandSettings.PrintYAML
-			shouldPrintParsedFields = commandSettings.PrintParsedFields
-			printSchema = commandSettings.PrintSchema
-
-			if shouldPrintParsedFields {
-				printParsedFields(parsedValues)
-				return
-			}
-			if printYAML {
-				err = s.ToYAML(os.Stdout)
-				cobra.CheckErr(err)
-				return
-			}
-			if printSchema {
-				schema, err := s.Description().ToJsonSchema()
-				cobra.CheckErr(err)
-				encoder := json.NewEncoder(os.Stdout)
-				encoder.SetIndent("", "  ")
-				err = encoder.Encode(schema)
-				cobra.CheckErr(err)
-				return
-			}
+			return
 		}
 
 		// Create command settings: cliopatra, alias, create

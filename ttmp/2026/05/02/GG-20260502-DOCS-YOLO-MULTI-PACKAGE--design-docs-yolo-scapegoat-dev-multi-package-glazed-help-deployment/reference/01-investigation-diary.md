@@ -2230,3 +2230,71 @@ The tests pass and the new tests guard both schema printing and parsed-field pri
 ### What warrants a second pair of eyes
 
 The custom docsctl wrapper now mirrors a small subset of `cli.BuildCobraCommandFromCommand` behavior. If the upstream builder gains an error-returning mode later, docsctl could move back to the shared helper.
+
+## Step 25: Move `--print-*` handling into the Glazed CLI framework
+
+After I fixed the `docsctl --print-*` safety issue locally, the user correctly pointed out that this behavior belongs in the Glazed framework rather than being duplicated in `docsctl`. I checked the existing `glaze`/Glazed Cobra path: `cli.BuildCobraCommandFromCommand` handles `--print-parsed-fields`, `--print-yaml`, and `--print-schema` inside `runCobraCommand` before dispatching to the command implementation.
+
+I then refactored the framework so both the default builder and the custom `docsctl` wrapper share the same implementation.
+
+### Prompt Context
+
+**User prompt (verbatim):** `wait, how do other glazed commands do the print parsed values? that should be a framework kind of thing. Look for example at sqleton or pinocchio, or even just the glaze verb?`
+
+**Assistant interpretation:** Inspect how ordinary Glazed/Cobra commands handle print/debug command settings, then move the docsctl-specific duplicate into a shared framework helper.
+
+**Inferred user intent:** Avoid app-local reimplementation of framework behavior and make `docsctl` use the same semantics as normal Glazed commands.
+
+### What I found
+
+The normal Glazed path is:
+
+```text
+cli.BuildCobraCommandFromCommand
+  -> BuildCobraCommandFromCommandAndFunc
+  -> runCobraCommand
+```
+
+`runCobraCommand` parsed `cli.CommandSettingsSlug` and handled:
+
+- `PrintParsedFields`
+- `PrintYAML`
+- `PrintSchema`
+
+before any command `Run`/`RunIntoWriter` side effects.
+
+### What I changed
+
+- Added exported framework helper:
+
+```go
+cli.HandleCommandSettings(command cmds.Command, parsedValues *values.Values, w io.Writer) (handled bool, err error)
+```
+
+- Added exported writer-aware parsed-field helper:
+
+```go
+cli.PrintParsedFields(w io.Writer, parsedValues *values.Values) error
+```
+
+- Updated `runCobraCommand` to use `HandleCommandSettings` instead of its inline implementation.
+- Updated `docsctl` to call `cli.HandleCommandSettings` instead of its local duplicate.
+- Kept the existing internal `printParsedFields` wrapper for compatibility inside `cli`, but now it delegates to `PrintParsedFields(os.Stdout, ...)`.
+
+### Why
+
+This keeps docsctl aligned with the framework semantics while preserving the custom `RunE` error-returning docsctl wrapper needed by the tests.
+
+### Validation
+
+```bash
+go test ./pkg/cli ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The framework tests and docsctl tests pass. `docsctl publish --print-schema` and `--print-parsed-fields` still return before upload, but now through the same helper as normal Glazed commands.
+
+### What warrants a second pair of eyes
+
+Whether future callers should use `cli.HandleCommandSettings` directly or whether the framework should expose a more complete error-returning `BuildCobraCommandFromCommand` variant for test-friendly CLIs like docsctl.
