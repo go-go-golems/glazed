@@ -6,7 +6,7 @@
 // which Vite proxies to localhost:8088.
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { ListSectionsResponse, SectionDetail, HealthResponse } from '../types';
+import type { ListSectionsResponse, SectionDetail, HealthResponse, ListPackagesResponse } from '../types';
 
 export interface GlazeSiteConfig {
   mode?: 'server' | 'static';
@@ -58,6 +58,18 @@ const runtimeMode = resolveRuntimeMode(runtimeConfig);
 const isStaticMode = runtimeMode === 'static';
 const baseUrl = resolveRuntimeBaseUrl(window.location.pathname, runtimeConfig);
 
+export interface ListSectionsQueryArgs {
+  q?: string;
+  packageName?: string;
+  version?: string;
+}
+
+export interface GetSectionQueryArgs {
+  slug: string;
+  packageName?: string;
+  version?: string;
+}
+
 export const helpApi = createApi({
   reducerPath: 'helpApi',
   baseQuery: fetchBaseQuery({ baseUrl }),
@@ -68,12 +80,23 @@ export const helpApi = createApi({
       query: () => ({ url: isStaticMode ? '/health.json' : '/health' }),
     }),
 
+    // GET /api/packages
+    listPackages: builder.query<ListPackagesResponse, void>({
+      query: () => ({ url: isStaticMode ? '/packages.json' : '/packages' }),
+    }),
+
     // GET /api/sections
-    // Optional query params: type, topic, command, flag, q (search), limit, offset
-    listSections: builder.query<ListSectionsResponse, string | void>({
-      query: (q) => ({
+    // Optional query params: type, topic, command, flag, q (search), package, version, limit, offset
+    listSections: builder.query<ListSectionsResponse, ListSectionsQueryArgs | void>({
+      query: (args) => ({
         url: isStaticMode ? '/sections.json' : '/sections',
-        params: isStaticMode ? undefined : (q ? { q } : undefined),
+        params: isStaticMode
+          ? undefined
+          : {
+              ...(args?.q ? { q: args.q } : {}),
+              ...(args?.packageName ? { package: args.packageName } : {}),
+              ...(args?.version ? { version: args.version } : {}),
+            },
       }),
       providesTags: (result) =>
         result
@@ -85,13 +108,21 @@ export const helpApi = createApi({
     }),
 
     // GET /api/sections/:slug
-    getSection: builder.query<SectionDetail, string>({
-      query: (slug) => ({
+    getSection: builder.query<SectionDetail, GetSectionQueryArgs>({
+      query: ({ slug, packageName, version }) => ({
         url: isStaticMode
           ? `/sections/${encodeURIComponent(slug)}.json`
           : `/sections/${encodeURIComponent(slug)}`,
+        params: isStaticMode
+          ? undefined
+          : {
+              ...(packageName ? { package: packageName } : {}),
+              ...(version ? { version } : {}),
+            },
       }),
-      providesTags: (_result, _error, slug) => [{ type: 'Section' as const, id: slug }],
+      providesTags: (_result, _error, { slug, packageName, version }) => [
+        { type: 'Section' as const, id: `${packageName ?? ''}:${version ?? ''}:${slug}` },
+      ],
     }),
   }),
 });
@@ -99,6 +130,7 @@ export const helpApi = createApi({
 // Auto-generated React hooks — use these in components instead of the raw endpoints.
 export const {
   useHealthCheckQuery,
+  useListPackagesQuery,
   useListSectionsQuery,
   useGetSectionQuery,
 } = helpApi;

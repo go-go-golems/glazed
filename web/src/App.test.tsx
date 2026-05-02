@@ -4,11 +4,18 @@ import { describe, expect, it, vi } from 'vitest';
 import App from './App';
 
 vi.mock('./services/api', () => ({
+  useListPackagesQuery: () => ({
+    data: {
+      packages: [{ name: 'glazed', displayName: 'Glazed', versions: [], sectionCount: 2 }],
+      defaultPackage: 'glazed',
+    },
+  }),
   useListSectionsQuery: () => ({
     data: {
       sections: [
         {
           id: 1,
+          packageName: 'glazed',
           slug: 'alpha-section',
           type: 'GeneralTopic',
           title: 'Alpha Section',
@@ -18,6 +25,7 @@ vi.mock('./services/api', () => ({
         },
         {
           id: 2,
+          packageName: 'glazed',
           slug: 'beta-section',
           type: 'Tutorial',
           title: 'Beta Section',
@@ -33,14 +41,15 @@ vi.mock('./services/api', () => ({
     isLoading: false,
     error: undefined,
   }),
-  useGetSectionQuery: (slug: string, options?: { skip?: boolean }) => {
-    if (options?.skip || !slug) {
+  useGetSectionQuery: (args: { slug: string }, options?: { skip?: boolean }) => {
+    if (options?.skip || !args?.slug) {
       return { data: undefined };
     }
 
     const detailBySlug: Record<string, object> = {
       'alpha-section': {
         id: 1,
+        packageName: 'glazed',
         slug: 'alpha-section',
         type: 'GeneralTopic',
         title: 'Alpha Section',
@@ -53,6 +62,7 @@ vi.mock('./services/api', () => ({
       },
       'beta-section': {
         id: 2,
+        packageName: 'glazed',
         slug: 'beta-section',
         type: 'Tutorial',
         title: 'Beta Section',
@@ -65,7 +75,7 @@ vi.mock('./services/api', () => ({
       },
     };
 
-    return { data: detailBySlug[slug] };
+    return { data: detailBySlug[args.slug] };
   },
 }));
 
@@ -98,5 +108,14 @@ describe('App hash-route selection', () => {
     });
 
     expect(await screen.findByRole('heading', { name: 'Beta Section' })).toBeTruthy();
+  });
+});
+
+describe('App package selector', () => {
+  it('shows package selector but hides version selector for unversioned packages', async () => {
+    renderAppAt();
+
+    expect(await screen.findByLabelText('Package')).toBeTruthy();
+    expect(screen.queryByLabelText('Version')).toBeNull();
   });
 });

@@ -1,0 +1,27 @@
+[data-part='package-selector-root'] {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+[data-part='package-selector-row'] {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+[data-part='package-selector-label'] {
+  color: #000;
+}
+
+[data-part='package-selector-select'] {
+  width: 100%;
+  border: 2px solid #777;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  padding: 4px 24px 4px 8px;
+  min-height: 30px;
+}

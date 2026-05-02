@@ -5,6 +5,8 @@
 /** Short summary shape returned in list/search results. */
 export interface SectionSummary {
   id: number;
+  packageName?: string;
+  packageVersion?: string;
   slug: string;
   /** "GeneralTopic" | "Example" | "Application" | "Tutorial" */
   type: string;
@@ -31,6 +33,21 @@ export interface ListSectionsResponse {
   limit: number;
   /** Requested offset. */
   offset: number;
+}
+
+/** Package entry returned by GET /api/packages. */
+export interface PackageSummary {
+  name: string;
+  displayName: string;
+  versions: string[];
+  sectionCount: number;
+}
+
+/** Shape of GET /api/packages. */
+export interface ListPackagesResponse {
+  packages: PackageSummary[];
+  defaultPackage?: string;
+  defaultVersion?: string;
 }
 
 /** Shape of GET /api/health. */

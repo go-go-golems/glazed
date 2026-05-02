@@ -1,20 +1,23 @@
 // App.tsx — root component: wires all components together with RTK Query state.
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import { TypeFilter, type FilterValue } from './components/TypeFilter/TypeFilter';
+import { PackageSelector } from './components/PackageSelector/PackageSelector';
 import { SectionList } from './components/SectionList/SectionList';
 import { SectionView } from './components/SectionView/SectionView';
 import { EmptyState } from './components/EmptyState/EmptyState';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { AppLayout } from './components/AppLayout/AppLayout';
-import { useListSectionsQuery, useGetSectionQuery } from './services/api';
+import { useListPackagesQuery, useListSectionsQuery, useGetSectionQuery } from './services/api';
 import type { SectionSummary } from './types';
 
 export default function App() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
+  const [selectedPackage, setSelectedPackage] = useState('');
+  const [selectedVersion, setSelectedVersion] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -23,9 +26,34 @@ export default function App() {
     return match?.params.slug ?? null;
   }, [location.pathname]);
 
-  const { data: listData, isLoading, error } = useListSectionsQuery();
-  const { data: section } = useGetSectionQuery(activeSlug!, {
-    skip: !activeSlug,
+  const { data: packageData } = useListPackagesQuery();
+  const packages = packageData?.packages ?? [];
+  const currentPackage = packages.find((pkg) => pkg.name === selectedPackage);
+  const effectiveVersion = currentPackage?.versions.length ? selectedVersion : '';
+
+  useEffect(() => {
+    if (!packageData || selectedPackage) return;
+    const initialPackage = packageData.defaultPackage || packageData.packages[0]?.name || '';
+    const initial = packageData.packages.find((pkg) => pkg.name === initialPackage);
+    setSelectedPackage(initialPackage);
+    setSelectedVersion(packageData.defaultVersion || initial?.versions[0] || '');
+  }, [packageData, selectedPackage]);
+
+  const handlePackageChange = (value: string) => {
+    const nextPackage = packages.find((pkg) => pkg.name === value);
+    setSelectedPackage(value);
+    setSelectedVersion(nextPackage?.versions[0] || '');
+  };
+
+  const { data: listData, isLoading, error } = useListSectionsQuery(
+    selectedPackage ? { packageName: selectedPackage, version: effectiveVersion } : undefined,
+  );
+  const { data: section } = useGetSectionQuery({
+    slug: activeSlug!,
+    packageName: selectedPackage,
+    version: effectiveVersion,
+  }, {
+    skip: !activeSlug || !selectedPackage,
   });
 
   const handleSelect = (slug: string) => {
@@ -58,6 +86,13 @@ export default function App() {
               <div style={{ marginBottom: 8 }}>
                 <SearchBar value={search} onChange={setSearch} />
               </div>
+              <PackageSelector
+                packages={packages}
+                selectedPackage={selectedPackage}
+                selectedVersion={effectiveVersion}
+                onPackageChange={handlePackageChange}
+                onVersionChange={setSelectedVersion}
+              />
               <TypeFilter value={filter} onChange={setFilter} />
             </div>
             <SectionList
