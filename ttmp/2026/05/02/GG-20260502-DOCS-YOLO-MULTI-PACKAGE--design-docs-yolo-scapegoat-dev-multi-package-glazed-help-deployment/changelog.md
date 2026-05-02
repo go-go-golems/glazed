@@ -179,3 +179,8 @@ Step 22: refactored docsctl validate/publish and docs-registry from raw Cobra fl
 
 Step 23: aligned build-web with generated-at-build Dagger/pnpm strategy, removed committed pkg/web/dist assets, and switched production embedding to -tags embed.
 
+
+## 2026-05-02
+
+Step 24: honored docsctl Glazed --print-schema/--print-yaml/--print-parsed-fields flags before command execution and added no-upload regression tests.
+

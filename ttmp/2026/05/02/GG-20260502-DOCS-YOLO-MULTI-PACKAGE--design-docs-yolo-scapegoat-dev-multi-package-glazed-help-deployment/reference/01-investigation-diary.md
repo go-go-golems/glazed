@@ -2188,3 +2188,45 @@ An initial `go build -tags embed ./cmd/glaze` failed because `pkg/help/site` sti
 
 - Whether the fallback non-embed page should stay minimal or be made more explicit in the UI.
 - Whether all release paths outside Docker/GoReleaser use `go generate` before `-tags embed`.
+
+## Step 24: Honor Glazed `--print-*` command settings in docsctl
+
+PR #562 received a review comment noting that the custom `docsctl` Glazed-parser wrapper exposed `--print-schema`, `--print-yaml`, and `--print-parsed-fields`, but did not honor them before dispatching to the command implementation. That meant `docsctl publish --print-schema` could still perform an upload if the normal required publish flags were present.
+
+### Prompt Context
+
+**User prompt (verbatim):** `Address the code review comment on #562 regarding the --print-* flags`
+
+**Assistant interpretation:** Update the custom docsctl Glazed wrapper to match the default Glazed Cobra builder behavior for command-settings print flags, while still preserving testable `RunE` error returns.
+
+**Inferred user intent:** Fix the safety regression from exposing Glazed command settings without honoring them.
+
+### What I changed
+
+- Added `handleDocsctlPrintFlags` in `cmd/docsctl/main.go`.
+- After parsing, but before command execution, the wrapper now checks `cli.CommandSettingsSlug` and handles:
+  - `--print-parsed-fields`
+  - `--print-yaml`
+  - `--print-schema`
+- Added local `printDocsctlParsedFields` behavior equivalent to Glazed's default helper, but writing to the command writer instead of directly to `os.Stdout`.
+- Added regression tests proving publish side effects are skipped:
+  - `TestPublishCommandPrintSchemaDoesNotUpload`
+  - `TestPublishCommandPrintParsedFieldsDoesNotRequireTokenOrUpload`
+
+### Why
+
+These flags are intended to inspect the command and parsed values, not run the command. For `docsctl publish`, running the command would mean a real upload. The wrapper now returns immediately after printing, matching user expectations and Glazed conventions.
+
+### Validation
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish ./pkg/help/server
+```
+
+### What worked
+
+The tests pass and the new tests guard both schema printing and parsed-field printing against accidental uploads.
+
+### What warrants a second pair of eyes
+
+The custom docsctl wrapper now mirrors a small subset of `cli.BuildCobraCommandFromCommand` behavior. If the upstream builder gains an error-returning mode later, docsctl could move back to the shared helper.
