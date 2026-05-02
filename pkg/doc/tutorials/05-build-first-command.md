@@ -395,7 +395,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-    // Add logging flags (log-level, log-format, logstash-*) to the root command
+    // Add logging flags (log-level, log-format) to the root command
     _ = logging.AddLoggingSectionToRootCommand(rootCmd, "glazed-quickstart")
 
     // ... register commands, help system, etc.

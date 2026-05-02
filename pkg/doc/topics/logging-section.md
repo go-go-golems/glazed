@@ -17,14 +17,14 @@ SectionType: GeneralTopic
 
 ## Overview
 
-The Glazed logging section provides comprehensive logging configuration for CLI applications through command-line fields, environment variables, and configuration files. The section handles setup for console output, file logging, and centralized log aggregation while supporting multiple output formats and verbosity levels.
+The Glazed logging section provides comprehensive logging configuration for CLI applications through command-line fields, environment variables, and configuration files. The section handles setup for console output and file logging while supporting multiple output formats and verbosity levels.
 
 ### Key Capabilities
 
-- **Multiple output targets**: Console, file, and Logstash integration
+- **Multiple output targets**: Console and file
 - **Structured logging**: JSON and text formats with contextual fields
 - **Automatic configuration**: Single function call for complete setup
-- **Production features**: Log rotation, centralized collection, performance optimization
+- **Production features**: Log rotation, performance optimization
 
 ## Architecture
 
@@ -33,11 +33,9 @@ graph TD
     A[CLI Fields] --> B[Logging Section]
     B --> C[Console Output]
     B --> D[File Output]
-    B --> E[Logstash/ELK]
     
     C --> F[Human-readable text]
     D --> G[Rotating log files]
-    E --> H[Centralized monitoring]
 ```
 
 The logging section transforms command-line fields into configured log outputs, supporting development, testing, and production deployment scenarios.
@@ -157,12 +155,7 @@ func processUser(userID string) error {
 | `--log-file` | string | `""` | Output file path with automatic rotation |
 | `--with-caller` | bool | `false` | Include source file and line number |
 | `--log-to-stdout` | bool | `false` | Force output to stdout regardless of other settings |
-| `--logstash-enabled` | bool | `false` | Enable Logstash output |
-| `--logstash-host` | string | `""` | Logstash server hostname |
-| `--logstash-port` | int | `5044` | Logstash server port |
-| `--logstash-protocol` | string | `tcp` | Connection protocol |
-| `--logstash-app-name` | string | `""` | Application identifier in logs |
-| `--logstash-environment` | string | `""` | Environment tag (dev, staging, prod) |
+
 
 ### Log Levels
 
@@ -207,19 +200,7 @@ File logging features:
 - **Retention**: 3 backup files, 28-day retention
 - **Thread safety**: Atomic writes for concurrent operations
 
-### Centralized Logging
 
-Send logs directly to ELK stack:
-
-```bash
-myapp process-data \
-    --log-level info \
-    --log-format json \
-    --logstash-host logs.company.com \
-    --logstash-port 5044 \
-    --logstash-app-name myapp \
-    --logstash-environment production
-```
 
 ### Environment Variables
 
@@ -229,8 +210,6 @@ Configure logging through environment variables:
 export MYAPP_LOG_LEVEL=info
 export MYAPP_LOG_FORMAT=json
 export MYAPP_LOG_FILE=/var/log/myapp.log
-export MYAPP_LOGSTASH_HOST=logs.company.com
-export MYAPP_LOGSTASH_PORT=5044
 ```
 
 ## API Reference
@@ -241,17 +220,11 @@ export MYAPP_LOGSTASH_PORT=5044
 
 ```go
 type LoggingSettings struct {
-    WithCaller          bool   `glazed:"with-caller"`
-    LogLevel            string `glazed:"log-level"`
-    LogFormat           string `glazed:"log-format"`
-    LogFile             string `glazed:"log-file"`
-    LogToStdout         bool   `glazed:"log-to-stdout"`
-    LogstashEnabled     bool   `glazed:"logstash-enabled"`
-    LogstashHost        string `glazed:"logstash-host"`
-    LogstashPort        int    `glazed:"logstash-port"`
-    LogstashProtocol    string `glazed:"logstash-protocol"`
-    LogstashAppName     string `glazed:"logstash-app-name"`
-    LogstashEnvironment string `glazed:"logstash-environment"`
+    WithCaller  bool   `glazed:"with-caller"`
+    LogLevel    string `glazed:"log-level"`
+    LogFormat   string `glazed:"log-format"`
+    LogFile     string `glazed:"log-file"`
+    LogToStdout bool   `glazed:"log-to-stdout"`
 }
 ```
 
@@ -300,9 +273,7 @@ if err := parsedSections.DecodeSectionInto(logging.LoggingSectionSlug, &settings
 }
 
 // Custom validation
-if settings.LogstashHost != "" && settings.LogstashPort <= 0 {
-    return fmt.Errorf("invalid logstash configuration")
-}
+
 
 return logging.SetupLogging(settings)
 ```
@@ -369,11 +340,6 @@ logging:
   log-level: info
   log-format: json
   log-file: /var/log/application.log
-  logstash-enabled: true
-  logstash-host: logs.company.com
-  logstash-port: 5044
-  logstash-app-name: myapp
-  logstash-environment: production
 ```
 
 ## Common Issues
@@ -401,15 +367,7 @@ logging:
 2. Check environment variables: `LOG_FORMAT` may override settings
 3. Verify configuration file format settings
 
-### Logstash Connection Failures
 
-**Symptoms**: Cannot connect to Logstash server
-
-**Solutions**:
-1. Test network connectivity: `telnet logstash-host 5044`
-2. Verify firewall rules and network policies
-3. Ensure Logstash TCP input configuration
-4. Check DNS resolution for hostnames
 
 ## See Also
 
