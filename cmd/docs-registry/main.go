@@ -17,9 +17,11 @@ import (
 var version = "dev"
 
 type settings struct {
-	address        string
-	maxUploadBytes int64
-	tempDir        string
+	address          string
+	maxUploadBytes   int64
+	tempDir          string
+	packageRoot      string
+	publisherCatalog string
 }
 
 func newRootCommand() *cobra.Command {
@@ -41,11 +43,24 @@ is completed in later Phase 1 tasks.`,
 	cmd.Flags().StringVar(&s.address, "address", ":8090", "HTTP listen address")
 	cmd.Flags().Int64Var(&s.maxUploadBytes, "max-upload-bytes", 64<<20, "Maximum SQLite upload size in bytes")
 	cmd.Flags().StringVar(&s.tempDir, "temp-dir", "", "Directory for temporary uploads")
+	cmd.Flags().StringVar(&s.packageRoot, "package-root", "", "Root directory where package/version SQLite DBs are published")
+	cmd.Flags().StringVar(&s.publisherCatalog, "publisher-catalog", "", "JSON file with static publisher token hashes")
 	return cmd
 }
 
 func run(ctx context.Context, s *settings) error {
-	h := publish.NewRegistryHandler(nil, nil)
+	if s.packageRoot == "" {
+		return fmt.Errorf("--package-root is required")
+	}
+	if s.publisherCatalog == "" {
+		return fmt.Errorf("--publisher-catalog is required")
+	}
+	catalog := publish.NewReloadablePublisherCatalog(publish.FilePublisherCatalogSource{Path: s.publisherCatalog})
+	if err := catalog.Reload(ctx); err != nil {
+		return fmt.Errorf("load publisher catalog: %w", err)
+	}
+	store := publish.NewDirectoryPackageStore(s.packageRoot)
+	h := publish.NewRegistryHandler(catalog, store)
 	h.MaxUploadBytes = s.maxUploadBytes
 	h.TempDir = s.tempDir
 

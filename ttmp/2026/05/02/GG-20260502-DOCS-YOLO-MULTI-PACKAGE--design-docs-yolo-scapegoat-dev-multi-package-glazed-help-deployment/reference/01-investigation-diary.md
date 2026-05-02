@@ -1227,3 +1227,131 @@ PUT /v1/packages/{package}/versions/{version}/sqlite
 Authorization: Bearer <publish-token>
 Content-Type: application/vnd.sqlite3
 ```
+
+## Step 13: Add directory publisher, docsctl publish, and file-backed publisher catalog
+
+This step completed the remaining local Phase 1 implementation pieces before GitOps and end-to-end smoke testing. The registry can now be configured with a package root and publisher catalog, publish validated DBs into the `package/version/package.db` directory layout, and maintain a small JSON catalog with checksum and publish metadata. `docsctl publish` can now validate locally, dry-run, resolve a publish token, and upload to the registry.
+
+For Vault integration, I made the Phase 1 decision concrete: the registry starts with a file-backed publisher catalog that mirrors the Vault token-hash record shape. Direct Vault reads are deferred so local smoke tests and registry development do not require live Vault.
+
+### Prompt Context
+
+**User prompt (verbatim):** "do all of phase 1"
+
+**Assistant interpretation:** Continue implementing the full Phase 1 path, not just the earlier validator/auth skeleton.
+
+**Inferred user intent:** Finish the MVP publish loop so packages can validate and upload docs into a registry-backed package root.
+
+### What I did
+
+- Added `DirectoryPackageStore` in `pkg/help/publish/directory_store.go`.
+- Added atomic write behavior:
+  - copy upload to temp file in target dir;
+  - fsync file;
+  - atomic rename to `package/version/package.db`;
+  - update `catalog.json` through temp file + rename.
+- Added catalog metadata fields to `PublishedPackage`:
+  - path;
+  - sha256;
+  - publishedBy;
+  - publishedAt.
+- Added `FilePublisherCatalogSource` for JSON catalog files that mirror Vault publisher records.
+- Wired `cmd/docs-registry` flags:
+  - `--package-root`
+  - `--publisher-catalog`
+- Added `docsctl publish` with:
+  - `--server`
+  - `--package`
+  - `--version`
+  - `--file`
+  - `--token`
+  - `--token-file`
+  - `--json`
+  - `--dry-run`
+- Token precedence for `docsctl publish`:
+  1. `--token`
+  2. `DOCS_YOLO_PUBLISH_TOKEN`
+  3. `--token-file`
+- Added tests for directory publishing, file catalog loading, and publish command behavior.
+- Updated the design doc with the Phase 1F file-backed catalog decision.
+
+Commands run:
+
+```bash
+gofmt -w cmd/docsctl/main.go cmd/docsctl/publish.go cmd/docsctl/publish_test.go \
+  cmd/docs-registry/main.go \
+  pkg/help/publish/catalog_file.go pkg/help/publish/catalog_file_test.go \
+  pkg/help/publish/directory_store.go pkg/help/publish/directory_store_test.go \
+  pkg/help/publish/registry.go
+
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish
+```
+
+### Why
+
+The direct upload registry skeleton needed a real `PackageStore` before an end-to-end publish smoke test was possible. The CLI also needed `publish` so package workflows can exercise the same validation and upload path that CI will use.
+
+### What worked
+
+- Focused tests pass.
+- `DirectoryPackageStore` writes the loader-compatible path shape:
+
+```text
+pinocchio/v1/pinocchio.db
+```
+
+- The file-backed publisher catalog keeps the Phase 1 Vault record shape without requiring live Vault.
+
+### What didn't work
+
+N/A after the earlier missing-helper test issue from Step 12.
+
+### What I learned
+
+The most useful Phase 1 abstraction is now in place: auth source, upload handler, and package store are separate. This should make the later Vault and storage upgrades smaller.
+
+### What was tricky to build
+
+The subtle part was catalog consistency. The DB file and `catalog.json` are two writes, so there is still a tiny window where the DB has been published and catalog update can fail. For Phase 1 this is acceptable because `glaze serve --from-sqlite-dir` discovers DBs from the directory layout, not from `catalog.json`. The catalog is operational metadata, not the serving source of truth.
+
+### What warrants a second pair of eyes
+
+- Whether the token precedence should prefer `--token-file` over the environment variable for CI safety.
+- Whether the registry command should support periodic catalog reload now or in a follow-up.
+- Whether the catalog write should include a previous checksum for auditability.
+
+### What should be done in the future
+
+- Add GitOps manifests for `docs-yolo` and the registry.
+- Run an end-to-end smoke test by starting the registry, publishing multiple DBs, and serving the package root with `glaze serve --from-sqlite-dir`.
+
+### Code review instructions
+
+Review:
+
+- `pkg/help/publish/directory_store.go`
+- `pkg/help/publish/catalog_file.go`
+- `cmd/docsctl/publish.go`
+- `cmd/docs-registry/main.go`
+
+Validate:
+
+```bash
+go test ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish
+```
+
+### Technical details
+
+File-backed publisher catalog shape:
+
+```json
+{
+  "publishers": [
+    {
+      "package": "pinocchio",
+      "subject": "repo:go-go-golems/pinocchio",
+      "tokenHash": "sha256:<digest>"
+    }
+  ]
+}
+```

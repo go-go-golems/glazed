@@ -118,3 +118,14 @@ Step 12: added docs-registry skeleton with health/list/upload routes, auth, vali
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/registry.go — Registry HTTP handler and upload route.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/registry_test.go — Registry route tests.
 
+
+## 2026-05-02
+
+Step 13: added DirectoryPackageStore, docsctl publish, file-backed publisher catalog, and registry wiring.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/publish.go — docsctl publish client command.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog_file.go — File-backed publisher catalog source for Phase 1 Vault-shaped token hashes.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/directory_store.go — Atomic directory publisher for package/version SQLite DBs.
+

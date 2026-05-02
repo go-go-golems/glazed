@@ -43,35 +43,35 @@
 - [x] Implement structured JSON error responses for unauthorized, forbidden, invalid upload, validation failure, and publish failure.
 - [x] Add request size limits and temporary upload file handling.
 - [x] Add registry handler tests with `httptest` for success, forbidden package, invalid DB, and oversized request.
-- [ ] Document registry API behavior and commit the registry skeleton slice.
+- [x] Document registry API behavior and commit the registry skeleton slice.
 
 ## Phase 1D — PVC directory publisher and atomic writes
 
-- [ ] Implement a `PackageStore` / publisher interface for materializing validated DBs.
-- [ ] Implement `DirectoryPackageStore` that writes `packages/<package>/<version>/<package>.db` under a configured root.
-- [ ] Use write-to-temp + fsync + atomic rename so failed uploads do not replace existing docs.
-- [ ] Reject path traversal and unsafe package/version values before building filesystem paths.
-- [ ] Write or update a local catalog/manifest entry with package, version, sha256, section count, source, and publish timestamp.
-- [ ] Add tests for atomic replacement, path traversal rejection, manifest update, and preserving old DB on failed validation.
-- [ ] Document the on-disk layout and commit the directory-publisher slice.
+- [x] Implement a `PackageStore` / publisher interface for materializing validated DBs.
+- [x] Implement `DirectoryPackageStore` that writes `packages/<package>/<version>/<package>.db` under a configured root.
+- [x] Use write-to-temp + fsync + atomic rename so failed uploads do not replace existing docs.
+- [x] Reject path traversal and unsafe package/version values before building filesystem paths.
+- [x] Write or update a local catalog/manifest entry with package, version, sha256, section count, source, and publish timestamp.
+- [x] Add tests for atomic replacement, path traversal rejection, manifest update, and preserving old DB on failed validation.
+- [x] Document the on-disk layout and commit the directory-publisher slice.
 
 ## Phase 1E — `docsctl publish` client
 
-- [ ] Add `docsctl publish --server --package --version --file --token --json --dry-run`.
-- [ ] Make `docsctl publish --dry-run` run local validation and print the target upload URL without sending the DB.
-- [ ] Implement HTTP upload with bearer token and useful error reporting.
-- [ ] Support reading token from `--token`, `DOCS_YOLO_PUBLISH_TOKEN`, or a token file, with precedence documented.
-- [ ] Add command tests for missing token, dry-run validation failure, server error reporting, and successful upload against `httptest`.
-- [ ] Add an example GitHub Actions snippet to the ticket diary/design guide and commit the publish client slice.
+- [x] Add `docsctl publish --server --package --version --file --token --json --dry-run`.
+- [x] Make `docsctl publish --dry-run` run local validation and print the target upload URL without sending the DB.
+- [x] Implement HTTP upload with bearer token and useful error reporting.
+- [x] Support reading token from `--token`, `DOCS_YOLO_PUBLISH_TOKEN`, or a token file, with precedence documented.
+- [x] Add command tests for missing token, dry-run validation failure, server error reporting, and successful upload against `httptest`.
+- [x] Add an example GitHub Actions snippet to the ticket diary/design guide and commit the publish client slice.
 
 ## Phase 1F — Vault token-hash integration
 
-- [ ] Decide whether the registry reads token hashes directly from Vault or starts with a file-backed catalog plus operator sync; record the decision in the design doc.
-- [ ] If direct Vault read is chosen, add a `VaultPublisherCatalog` loader with configurable address, mount, prefix, and refresh interval.
-- [ ] If file-backed catalog is chosen first, add a documented YAML/JSON catalog format that mirrors the Vault record shape.
-- [ ] Add tests using fake Vault/client or fixture catalog data.
-- [ ] Add operator runbook commands for creating, rotating, and revoking package tokens.
-- [ ] Document the selected integration and commit the Vault/catalog slice.
+- [x] Decide whether the registry reads token hashes directly from Vault or starts with a file-backed catalog plus operator sync; record the decision in the design doc.
+- [x] Record that direct Vault reads are deferred; file-backed catalog is the Phase 1 implementation.
+- [x] If file-backed catalog is chosen first, add a documented YAML/JSON catalog format that mirrors the Vault record shape.
+- [x] Add tests using fake Vault/client or fixture catalog data.
+- [x] Add operator runbook commands for creating, rotating, and revoking package tokens.
+- [x] Document the selected integration and commit the Vault/catalog slice.
 
 ## Phase 1G — docs-yolo GitOps deployment scaffold
 

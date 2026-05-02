@@ -1313,3 +1313,47 @@ Add these tasks to the implementation backlog:
 8. Add tests proving a token for package A cannot publish package B.
 
 Phase 2 and Phase 3 should not be squeezed into this ticket's implementation scope. They are important enough to deserve their own design ticket and implementation guide.
+
+## Phase 1F decision: file-backed publisher catalog before direct Vault reads
+
+For the first implementation, the registry uses a JSON publisher catalog file that mirrors the Vault record shape. Operators can generate this file from Vault token-hash records or maintain it as a local fixture for development. Direct Vault reads remain a later Phase 1F extension.
+
+Decision:
+
+```text
+Phase 1 registry auth source = file-backed catalog
+Future extension = VaultPublisherCatalog loader
+```
+
+Why this is the best first implementation:
+
+- It makes registry development and tests independent from live Vault.
+- It keeps the token-hash record shape aligned with the Vault plan.
+- It allows local smoke tests with no cluster dependencies.
+- It still supports the operator workflow where Vault is the human source of truth for token creation/rotation.
+- It avoids blocking Phase 1 registry and upload work on Vault networking, Kubernetes auth, or Vault Secrets Operator wiring.
+
+Catalog file shape:
+
+```json
+{
+  "publishers": [
+    {
+      "package": "pinocchio",
+      "subject": "repo:go-go-golems/pinocchio",
+      "tokenHash": "sha256:<64-hex-chars>",
+      "notes": "GitHub Actions secret DOCS_YOLO_PUBLISH_TOKEN"
+    }
+  ]
+}
+```
+
+Operator flow remains Vault-centered:
+
+1. Generate raw token.
+2. Store only `sha256:<digest>` and metadata in Vault.
+3. Give raw token once to the package owner.
+4. Render or sync the non-secret token-hash catalog into the registry deployment.
+5. Restart or reload the registry catalog.
+
+The registry should never need the raw token in configuration.

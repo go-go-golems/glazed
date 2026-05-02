@@ -21,6 +21,9 @@ type PublishedPackage struct {
 	Version      string    `json:"version"`
 	SectionCount int       `json:"sectionCount"`
 	SlugCount    int       `json:"slugCount"`
+	Path         string    `json:"path,omitempty"`
+	SHA256       string    `json:"sha256,omitempty"`
+	PublishedBy  string    `json:"publishedBy,omitempty"`
 	PublishedAt  time.Time `json:"publishedAt,omitempty"`
 }
 

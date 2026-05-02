@@ -17,6 +17,10 @@ RelatedFiles:
       Note: Standalone registry server entrypoint for Phase 1 direct uploads.
     - Path: cmd/docsctl/main.go
       Note: New docsctl CLI entrypoint for Phase 1 validation and publish commands.
+    - Path: cmd/docsctl/publish.go
+      Note: docsctl publish client with dry-run
+    - Path: cmd/docsctl/publish_test.go
+      Note: Publish command tests.
     - Path: cmd/docsctl/validate.go
       Note: docsctl validate command uses shared SQLite publish validator.
     - Path: cmd/docsctl/validate_test.go
@@ -29,8 +33,14 @@ RelatedFiles:
       Note: Tests proving token/package scoping behavior.
     - Path: pkg/help/publish/catalog.go
       Note: Vault-shaped token records and reloadable publisher auth catalog.
+    - Path: pkg/help/publish/catalog_file.go
+      Note: File-backed publisher catalog source that mirrors Vault record shape.
     - Path: pkg/help/publish/catalog_test.go
       Note: Tests for revoked records
+    - Path: pkg/help/publish/directory_store.go
+      Note: Atomic directory PackageStore implementation for Phase 1 PVC materialization.
+    - Path: pkg/help/publish/directory_store_test.go
+      Note: Tests for directory publishing
     - Path: pkg/help/publish/registry.go
       Note: HTTP registry skeleton for authorized SQLite uploads.
     - Path: pkg/help/publish/registry_test.go
@@ -57,6 +67,7 @@ LastUpdated: 2026-05-02T13:02:08.7165699-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
