@@ -15,7 +15,6 @@ The logging section provides:
 - **Log Format**: Choose between text and JSON formats  
 - **Log File**: Specify output file (defaults to stderr)
 - **Caller Info**: Include caller information in logs
-- **Logstash Integration**: Send logs to centralized servers
 
 ## Quick Usage
 

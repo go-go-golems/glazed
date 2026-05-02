@@ -28,7 +28,7 @@ This tutorial covers:
 
 - **Reusable logging section implementation** with comprehensive field definitions
 - **Type-safe configuration structures** using struct tags for field binding
-- **Production features** including file output, JSON formatting, and Logstash integration
+- **Production features** including file output and JSON formatting
 - **Command composition patterns** demonstrating section reuse across multiple commands
 - **Validation and error handling** for robust configuration management
 
@@ -49,7 +49,7 @@ Comprehensive logging configuration for production applications requires multipl
 
 **Production Features:**
 - Caller information for debugging
-- Centralized logging (Logstash, fluentd, etc.)
+- Environment variable integration
 - Environment variable integration
 - Configuration file support
 
@@ -67,7 +67,7 @@ Production logging sections require fields that address both developer and opera
 - **Verbose mode**: Shortcut flag for debug-level logging
 
 **Production Fields:**
-- **Centralized logging**: Logstash integration for log aggregation
+- **Environment integration**: Support for environment variable configuration
 - **Environment integration**: Support for environment variable configuration
 - **Sensible defaults**: Configuration that works without customization
 - **Input validation**: Clear error messages for invalid field combinations
@@ -130,9 +130,7 @@ type LoggingSettings struct {
     WithCaller bool   `glazed:"with-caller"`
     Verbose    bool   `glazed:"verbose"`
     
-    // Production/enterprise features
-    LogstashHost string `glazed:"logstash-host"`
-    LogstashPort int    `glazed:"logstash-port"`
+
 }
 
 // Validate checks if the logging settings are valid.
@@ -152,10 +150,6 @@ func (s *LoggingSettings) Validate() error {
             s.Format, strings.Join(validFormats, ", "))
     }
     
-    // Validate logstash configuration - partial config leads to confusion
-    if s.LogstashHost != "" && (s.LogstashPort < 1 || s.LogstashPort > 65535) {
-        return fmt.Errorf("logstash port must be between 1 and 65535, got %d", s.LogstashPort)
-    }
     
     return nil
 }
@@ -321,19 +315,7 @@ func NewLoggingSection() (schema.Section, error) {
                 fields.WithShortFlag("v"), // Classic Unix convention
             ),
             
-            // Enterprise/production features
-            fields.New(
-                "logstash-host",
-                fields.TypeString,
-                fields.WithHelp("Logstash server host for centralized logging"),
-                fields.WithDefault(""), // Optional feature - empty disables
-            ),
-            fields.New(
-                "logstash-port",
-                fields.TypeInteger,
-                fields.WithHelp("Logstash server port"),
-                fields.WithDefault(5044), // Standard Logstash Beats port
-            ),
+
         ),
     )
 }
@@ -341,9 +323,8 @@ func NewLoggingSection() (schema.Section, error) {
 // NewLoggingSectionWithOptions creates a logging section with customization options
 func NewLoggingSectionWithOptions(opts ...LoggingSectionOption) (schema.Section, error) {
     config := &loggingSectionConfig{
-        includeLogstash: false,
-        defaultLevel:    "info",
-        defaultFormat:   "text",
+        defaultLevel:  "info",
+        defaultFormat: "text",
     }
     
     // Apply options
@@ -379,19 +360,11 @@ func NewLoggingSectionWithOptions(opts ...LoggingSectionOption) (schema.Section,
 
 // Configuration options for the logging section
 type loggingSectionConfig struct {
-    includeLogstash bool
-    defaultLevel    string
-    defaultFormat   string
+    defaultLevel  string
+    defaultFormat string
 }
 
 type LoggingSectionOption func(*loggingSectionConfig)
-
-// WithLogstash includes Logstash configuration fields
-func WithLogstash() LoggingSectionOption {
-    return func(c *loggingSectionConfig) {
-        c.includeLogstash = true
-    }
-}
 
 // WithDefaultLevel sets the default log level
 func WithDefaultLevel(level string) LoggingSectionOption {
@@ -576,7 +549,6 @@ func NewProcessDataCommand() (*ProcessDataCommand, error) {
     loggingSection, err := logging.NewLoggingSectionWithOptions(
         logging.WithDefaultLevel("info"),
         logging.WithDefaultFormat("text"),
-        // logging.WithLogstash(), // Uncomment to include Logstash options
     )
     if err != nil {
         return nil, err

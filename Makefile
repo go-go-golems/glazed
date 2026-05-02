@@ -14,7 +14,7 @@ docker-lint:
 
 golangci-lint-install:
 	mkdir -p $(dir $(GOLANGCI_LINT_BIN))
-	GOBIN=$(dir $(GOLANGCI_LINT_BIN)) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI_LINT_BIN)) $(GOLANGCI_LINT_VERSION)
 
 lint: golangci-lint-install
 	$(GOLANGCI_LINT_BIN) run -v

@@ -62,34 +62,6 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		}
 	}
 
-	// Configure Logstash logging if enabled
-	if settings.LogstashEnabled {
-		// Use a stable fallback app name if not specified explicitly.
-		appName := settings.LogstashAppName
-		if appName == "" {
-			appName = "app"
-		}
-
-		logstashWriter := SetupLogstashLogger(
-			settings.LogstashHost,
-			settings.LogstashPort,
-			settings.LogstashProtocol,
-			appName,
-			settings.LogstashEnvironment,
-		)
-
-		// Create a multi-writer that logs to both the existing writer and Logstash
-		logWriter = zerolog.MultiLevelWriter(logWriter, logstashWriter)
-
-		log.Info().
-			Str("host", settings.LogstashHost).
-			Int("port", settings.LogstashPort).
-			Str("protocol", settings.LogstashProtocol).
-			Str("app", appName).
-			Str("environment", settings.LogstashEnvironment).
-			Msg("Logging to Logstash")
-	}
-
 	log.Logger = log.Output(logWriter)
 
 	// Set the default context logger
@@ -114,7 +86,6 @@ func InitLoggerFromSettings(settings *LoggingSettings) error {
 		Str("level", settings.LogLevel).
 		Str("file", settings.LogFile).
 		Bool("logToStdout", settings.LogToStdout).
-		Bool("logstash", settings.LogstashEnabled).
 		Msg("Logger initialized")
 
 	return nil
@@ -130,7 +101,6 @@ func InitLoggerFromCobra(cmd *cobra.Command) error {
 
 	getString := func(name string) (string, error) { return cmd.Flags().GetString(name) }
 	getBool := func(name string) (bool, error) { return cmd.Flags().GetBool(name) }
-	getInt := func(name string) (int, error) { return cmd.Flags().GetInt(name) }
 
 	logLevel, err := getString("log-level")
 	if err != nil {
@@ -152,43 +122,13 @@ func InitLoggerFromCobra(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Wrap(err, "reading --log-to-stdout")
 	}
-	lsEnabled, err := getBool("logstash-enabled")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-enabled")
-	}
-	lsHost, err := getString("logstash-host")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-host")
-	}
-	lsPort, err := getInt("logstash-port")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-port")
-	}
-	lsProto, err := getString("logstash-protocol")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-protocol")
-	}
-	lsAppName, err := getString("logstash-app-name")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-app-name")
-	}
-	lsEnv, err := getString("logstash-environment")
-	if err != nil {
-		return errors.Wrap(err, "reading --logstash-environment")
-	}
 
 	settings := &LoggingSettings{
-		LogLevel:            logLevel,
-		LogFile:             logFile,
-		LogFormat:           logFormat,
-		WithCaller:          withCaller,
-		LogToStdout:         logToStdout,
-		LogstashEnabled:     lsEnabled,
-		LogstashHost:        lsHost,
-		LogstashPort:        lsPort,
-		LogstashProtocol:    lsProto,
-		LogstashAppName:     lsAppName,
-		LogstashEnvironment: lsEnv,
+		LogLevel:    logLevel,
+		LogFile:     logFile,
+		LogFormat:   logFormat,
+		WithCaller:  withCaller,
+		LogToStdout: logToStdout,
 	}
 
 	return InitLoggerFromSettings(settings)
