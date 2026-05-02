@@ -16,7 +16,9 @@ RUN apt-get update \
   && npm install -g corepack@latest \
   && corepack enable \
   && go generate ./pkg/web \
-  && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/glaze ./cmd/glaze
+  && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/glaze ./cmd/glaze \
+  && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docsctl ./cmd/docsctl \
+  && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docs-registry ./cmd/docs-registry
 
 FROM debian:bookworm-slim
 RUN apt-get update \
@@ -24,6 +26,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && useradd --system --uid 65532 --gid nogroup --home-dir /nonexistent --shell /usr/sbin/nologin nonroot
 COPY --from=builder /out/glaze /usr/local/bin/glaze
+COPY --from=builder /out/docsctl /usr/local/bin/docsctl
+COPY --from=builder /out/docs-registry /usr/local/bin/docs-registry
 USER nonroot:nogroup
 EXPOSE 8088
 ENTRYPOINT ["/usr/local/bin/glaze"]
