@@ -17,6 +17,10 @@ RelatedFiles:
       Note: New docsctl CLI entrypoint for Phase 1 validation and publish commands.
     - Path: pkg/help/loader/sources.go
       Note: SQLiteDirLoader already maps package/version directory layouts into package metadata.
+    - Path: pkg/help/publish/validation.go
+      Note: Package/version/path validation helpers for safe docs publishing.
+    - Path: pkg/help/publish/validation_test.go
+      Note: Tests for safe and unsafe package/version names.
     - Path: pkg/help/server/handlers.go
       Note: Public API exposes health
     - Path: pkg/help/server/serve.go
@@ -31,6 +35,7 @@ LastUpdated: 2026-05-02T13:02:08.7165699-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

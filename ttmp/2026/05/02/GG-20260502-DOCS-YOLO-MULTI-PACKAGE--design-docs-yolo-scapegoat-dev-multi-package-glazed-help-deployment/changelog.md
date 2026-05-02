@@ -57,3 +57,13 @@ Step 6: added docsctl CLI root entrypoint with help and version wiring.
 
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/main.go — New docs publishing CLI entrypoint.
 
+
+## 2026-05-02
+
+Step 7: added package/version validation helpers for safe docs publishing path construction.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/validation.go — Package/version/path validation helpers for docs publishing.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/validation_test.go — Validation helper tests.
+

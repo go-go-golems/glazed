@@ -621,3 +621,95 @@ go run ./cmd/docsctl --version
 ### Technical details
 
 The root command returns `cmd.Help()` when invoked without subcommands, so plain `docsctl` is informative rather than a no-op.
+
+## Step 7: Add package/version validation helpers
+
+The next Phase 1A task was to define the naming rules that every later publishing path will rely on. Package and version names are both identities and filesystem path segments, so validation has to reject path traversal, empty values, whitespace-padded values, separators, and unsafe leading characters before registry or PVC code starts constructing paths.
+
+This is a small package, but it is security-relevant: every future upload endpoint and directory publisher should call these helpers before authorizing or writing files.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue Phase 1A task execution with the package/version/path validation helper task.
+
+**Inferred user intent:** Build safe foundations before accepting package-uploaded SQLite files.
+
+### What I did
+
+- Added `pkg/help/publish/validation.go`.
+- Implemented:
+  - `ValidatePackageName`
+  - `ValidateVersion`
+  - `ValidatePackageVersion`
+  - `DBFileName`
+  - `PackageVersionDir`
+  - `PackageVersionDBPath`
+- Added tests in `pkg/help/publish/validation_test.go` for valid names and unsafe values.
+- Ran focused tests.
+- Checked off the Phase 1A validation-helper task.
+
+Commands run:
+
+```bash
+gofmt -w pkg/help/publish/validation.go pkg/help/publish/validation_test.go
+go test ./pkg/help/publish
+```
+
+### Why
+
+The registry must not build filesystem paths from unvalidated request parameters. A malicious package like `../../glazed` or version `v1/v2` should be rejected before authorization and storage logic.
+
+### What worked
+
+- Focused tests pass.
+- The helper functions produce the canonical relative DB path `pinocchio/v1.2.3/pinocchio.db`.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The package and version validation rules should be similar but not identical: versions allow `+` for build metadata, while package names do not.
+
+### What was tricky to build
+
+The main subtlety was making the helpers path-segment oriented rather than URL oriented. They reject both `/` and `\\` separators so the same validation is safe on Linux and on developer machines that may use Windows path conventions.
+
+### What warrants a second pair of eyes
+
+- Whether uppercase letters should remain allowed. They are currently allowed for compatibility and display flexibility, but the registry may later choose to canonicalize package names to lowercase.
+- Whether mutable versions like `main` and `current` should be allowed in Phase 1. They are currently allowed by the generic version rules.
+
+### What should be done in the future
+
+- Reuse these helpers in `docsctl validate`, `docsctl publish`, registry authorization, and `DirectoryPackageStore` path construction.
+
+### Code review instructions
+
+Review:
+
+- `pkg/help/publish/validation.go`
+- `pkg/help/publish/validation_test.go`
+
+Validate:
+
+```bash
+go test ./pkg/help/publish
+```
+
+### Technical details
+
+Package names match:
+
+```text
+^[A-Za-z0-9][A-Za-z0-9._-]*$
+```
+
+Versions match:
+
+```text
+^[A-Za-z0-9][A-Za-z0-9._+-]*$
+```
