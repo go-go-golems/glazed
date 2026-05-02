@@ -89,6 +89,8 @@ topics:
       description: HTTP server and backend services
     - slug: ui
       description: User interface and frontend components
+    - slug: frontend
+      description: Frontend UI code, browser applications, and client-side state.
 docTypes:
     - slug: index
       description: Ticket index
