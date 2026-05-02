@@ -159,3 +159,8 @@ Step 18: smoke-tested reload polling by publishing Pinocchio into an initially e
 
 Uploaded Phase 1 reload update bundle to reMarkable after adding and smoke-testing help source reload polling.
 
+
+## 2026-05-02
+
+Step 20: pushed Glazed branch, built GHCR image sha-cca4dbf, synced docs-yolo in Argo CD, bootstrapped Glazed/Pinocchio vtest DBs, and opened PR #561.
+
