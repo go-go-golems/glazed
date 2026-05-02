@@ -128,7 +128,7 @@ func (h *Handler) handleListPackages(w http.ResponseWriter, r *http.Request) {
 		}
 		pkg := byName[name]
 		if pkg == nil {
-			pkg = &PackageSummary{Name: name, DisplayName: displayPackageName(name)}
+			pkg = &PackageSummary{Name: name, DisplayName: displayPackageName(name), Versions: []string{}}
 			byName[name] = pkg
 		}
 		pkg.SectionCount += info.SectionCount
