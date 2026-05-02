@@ -1088,3 +1088,228 @@ GitOps repo:
 External write-up:
 
 - `/home/manuel/code/wesen/obsidian-vault/Projects/2026/05/02/ARTICLE - Deploying Glazed Help Browser to Argo CD - Production Deep Dive.md`
+
+## Phase 1 addendum: static package publishing tokens stored in Vault
+
+This addendum narrows the first implementation phase. The broader design above describes several storage and reload options. For the first shippable publishing path, use a deliberately small authentication model: **one static publish token per package, stored and rotated through Vault, enforced by the docs registry**.
+
+This is not the final identity model. It is the simplest safe bridge between no upload service and the later GitHub OIDC/Vault flow. It gives every package a separate credential and lets the registry enforce package scoping immediately, while avoiding the operational work of exposing Vault JWT auth to GitHub-hosted runners on day one.
+
+### Phase 1 responsibilities
+
+Phase 1 has four pieces:
+
+1. **Vault-held package token inventory**
+   - Vault stores one generated token per package.
+   - The raw token is only shown when created or rotated.
+   - The registry stores or reads only token hashes where possible.
+
+2. **Package-scoped registry authorization**
+   - A token maps to exactly one package name.
+   - A `pinocchio` token cannot publish `glazed`.
+   - A `glazed` token cannot publish `pinocchio`.
+
+3. **Direct upload to registry or operator-mediated local publish**
+   - `docsctl publish --package X --version Y --file X.db --token ...` uploads the SQLite DB.
+   - The registry validates the DB before writing it into the package/version directory.
+
+4. **Restart-based reload**
+   - After a successful publish, Phase 1 either prints the required rollout restart command or invokes an operator-controlled reload hook.
+   - Hot reload is intentionally deferred.
+
+### Phase 1 package maintainer workflow
+
+A package maintainer gets a token through an operator-approved process. In GitHub Actions, that token is stored as a repository secret, for example:
+
+```text
+DOCS_YOLO_PUBLISH_TOKEN
+```
+
+A release workflow then runs:
+
+```bash
+mkdir -p dist/help
+
+pinocchio help export \
+  --format sqlite \
+  --output-path dist/help/pinocchio.db
+
+docsctl publish \
+  --server https://registry.docs.yolo.scapegoat.dev \
+  --package pinocchio \
+  --version "${GITHUB_REF_NAME}" \
+  --file dist/help/pinocchio.db \
+  --token "${DOCS_YOLO_PUBLISH_TOKEN}"
+```
+
+The registry checks the token before accepting the file.
+
+### Phase 1 Vault layout
+
+Use a predictable Vault path per package. Exact mount names can change to match the existing Vault conventions, but the logical structure should be:
+
+```text
+kv/docs-yolo/publishers/<package>
+```
+
+Example secret payload:
+
+```json
+{
+  "package": "pinocchio",
+  "token_hash": "sha256:...",
+  "created_at": "2026-05-02T18:00:00Z",
+  "created_by": "manuel",
+  "rotated_at": "",
+  "notes": "GitHub Actions secret DOCS_YOLO_PUBLISH_TOKEN in go-go-golems/pinocchio"
+}
+```
+
+The raw token should not be stored in plaintext if avoidable. A practical first implementation may store it temporarily while bootstrapping, but the desired model is:
+
+```text
+operator generates token -> stores hash in Vault -> gives raw token once to package owner
+```
+
+### Phase 1 registry token table
+
+The registry needs a fast way to map tokens to packages. Two acceptable implementations exist:
+
+#### Option A: registry reads Vault on startup
+
+On startup, the registry reads all allowed package token hashes from Vault and keeps them in memory:
+
+```go
+type StaticPublisher struct {
+    Package   string
+    TokenHash string
+}
+```
+
+Pros:
+
+- Vault remains the source of truth.
+- Registry does not need a separate database for token metadata.
+
+Cons:
+
+- Token rotation needs registry reload or periodic refresh.
+- Registry needs read access to the Vault path containing token hashes.
+
+#### Option B: registry has its own token table, populated by operator command
+
+The registry stores package token hashes in its own small SQLite/Postgres table:
+
+```sql
+CREATE TABLE publisher_tokens (
+  id TEXT PRIMARY KEY,
+  package_name TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  revoked_at TEXT
+);
+```
+
+Pros:
+
+- Registry can authorize without Vault during request handling.
+- Token rotation can be handled by registry admin API.
+
+Cons:
+
+- Vault is no longer the only source of truth unless the operator process writes both.
+
+For the first implementation, prefer **Option A** if Vault access from the registry pod is already straightforward. Prefer **Option B** if registry simplicity matters more than Vault coupling.
+
+### Phase 1 authorization pseudocode
+
+```go
+type StaticTokenAuth struct {
+    publishers map[string]PublisherIdentity // token hash -> identity
+}
+
+func (a *StaticTokenAuth) AuthorizePublish(ctx context.Context, rawToken string, req PublishRequest) (*PublisherIdentity, error) {
+    if rawToken == "" {
+        return nil, ErrUnauthorized
+    }
+
+    hash := HashToken(rawToken)
+    identity, ok := a.publishers[hash]
+    if !ok {
+        return nil, ErrUnauthorized
+    }
+
+    if identity.Package != req.Package {
+        return nil, ErrForbidden
+    }
+
+    if !ValidVersion(req.Version) {
+        return nil, ErrForbidden
+    }
+
+    return &identity, nil
+}
+```
+
+### Phase 1 token creation runbook
+
+Operator flow:
+
+```bash
+PACKAGE=pinocchio
+TOKEN="$(openssl rand -base64 48)"
+TOKEN_HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+
+vault kv put kv/docs-yolo/publishers/${PACKAGE} \
+  package="${PACKAGE}" \
+  token_hash="sha256:${TOKEN_HASH}" \
+  created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  created_by="$(whoami)"
+
+printf 'Raw token for %s, store once in GitHub Actions secret DOCS_YOLO_PUBLISH_TOKEN:\n%s\n' "$PACKAGE" "$TOKEN"
+```
+
+Package owner adds the raw token to the package repository secret. The raw token should not be committed, logged, or copied into the docmgr ticket.
+
+### Phase 1 token rotation runbook
+
+```bash
+PACKAGE=pinocchio
+NEW_TOKEN="$(openssl rand -base64 48)"
+NEW_HASH="$(printf '%s' "$NEW_TOKEN" | sha256sum | awk '{print $1}')"
+
+vault kv patch kv/docs-yolo/publishers/${PACKAGE} \
+  token_hash="sha256:${NEW_HASH}" \
+  rotated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+printf 'New raw token for %s:\n%s\n' "$PACKAGE" "$NEW_TOKEN"
+```
+
+Then update the GitHub Actions secret and restart or refresh the registry token cache.
+
+### Phase 1 limitations
+
+This model is intentionally limited:
+
+- It uses long-lived repository secrets.
+- It does not prove which GitHub workflow used the token.
+- It does not automatically bind publishing to tags or protected branches.
+- Token leakage requires rotation.
+- It does not produce the same quality of audit trail as GitHub OIDC to Vault.
+
+These limitations are acceptable only because Phase 2 and Phase 3 are explicitly tracked separately.
+
+### Phase 1 implementation tasks
+
+Add these tasks to the implementation backlog:
+
+1. Define `docsctl validate` for SQLite DB validation.
+2. Define `docsctl publish` with `--server`, `--package`, `--version`, `--file`, and `--token`.
+3. Add registry token hashing and package-scope authorization.
+4. Add Vault-backed token-hash loading or an operator token table.
+5. Add package DB validation before publication.
+6. Add atomic write into `packages/<package>/<version>/<package>.db`.
+7. Add post-publish operator instructions for rollout restart.
+8. Add tests proving a token for package A cannot publish package B.
+
+Phase 2 and Phase 3 should not be squeezed into this ticket's implementation scope. They are important enough to deserve their own design ticket and implementation guide.

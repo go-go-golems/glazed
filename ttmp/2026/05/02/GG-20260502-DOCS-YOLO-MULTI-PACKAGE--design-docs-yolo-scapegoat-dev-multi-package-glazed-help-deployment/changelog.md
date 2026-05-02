@@ -23,3 +23,13 @@ Created multi-package docs.yolo.scapegoat.dev deployment research ticket, wrote 
 
 Validated ticket and uploaded design/diary bundle to reMarkable at /ai/2026/05/02/GG-20260502-DOCS-YOLO-MULTI-PACKAGE.
 
+
+## 2026-05-02
+
+Added Phase 1 static Vault-token publishing addendum and split Phase 2/3 Vault OIDC auth into ticket GG-20260502-VAULT-OIDC-DOCS-PUBLISH.
+
+
+## 2026-05-02
+
+Uploaded updated Phase 1 Vault token addendum bundle to reMarkable.
+

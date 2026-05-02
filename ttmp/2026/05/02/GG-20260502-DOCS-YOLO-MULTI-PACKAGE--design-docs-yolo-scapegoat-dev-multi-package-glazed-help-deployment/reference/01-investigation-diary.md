@@ -299,3 +299,100 @@ Bundle name:
 ```text
 GG-20260502-DOCS-YOLO-MULTI-PACKAGE - docs.yolo multi-package Glazed docs design
 ```
+
+## Step 3: Add Phase 1 static Vault-token publishing scope
+
+The current ticket now explicitly owns Phase 1 of publishing authentication. The goal is to keep the first implementation tractable: use one package-scoped static publish token per package, store and rotate token hashes through Vault, and enforce package scoping in the registry.
+
+This does not replace the stronger GitHub OIDC design. Instead, the Phase 2/3 design moved into a separate ticket, `GG-20260502-VAULT-OIDC-DOCS-PUBLISH`, so that the current ticket can proceed task by task on the static-token MVP.
+
+### Prompt Context
+
+**User prompt (verbatim):** "update the current ticket design and the tasks with phase 1.
+
+but also store all the phase 2 and phase 3 stuff in a deteailed implementation guide in a new docmgr ticket.
+
+ Create a new docmgr to write the tool, and  reate a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the                                             
+  system needed to understand what it is, with prose paragraphs and bullet                                                                                                                                    
+  point sand pseudocode and diagrams and api references and file                                                                                                                                             
+    references.                                                                                                                                                                                              
+    It should be very clear and technical. Store in the ticket and the nupload to remarkable.       
+
+---
+
+After that, work on the current ticket, task by task, committing at appropriate intervals, keeping a clean diary."
+
+**Assistant interpretation:** Update the current docs-yolo ticket with the Phase 1 static-token publishing model, create a separate Phase 2/3 auth ticket, upload it, and keep a clean diary while proceeding through tasks.
+
+**Inferred user intent:** Avoid losing the ambitious Vault/GitHub OIDC plan while making the immediate implementation small enough to execute.
+
+### What I did
+
+- Appended a Phase 1 addendum to the current design doc.
+- Added current-ticket tasks for:
+  - static Vault-stored package publish token model;
+  - `docsctl validate/publish` contract;
+  - token-hash-to-package registry authorization;
+  - token creation/rotation runbooks;
+  - diary/changelog/re-upload.
+- Checked off the completed documentation tasks for Phase 1.
+- Created the separate Phase 2/3 ticket `GG-20260502-VAULT-OIDC-DOCS-PUBLISH`.
+
+### Why
+
+The static-token Phase 1 is the fastest way to prove the docs registry and upload flow without introducing GitHub OIDC, Vault JWT auth mounts, token issuer services, or public Vault reachability decisions.
+
+### What worked
+
+- The Phase 1 addendum now gives enough implementation detail for an intern to build static package-token authorization.
+- Phase 2/3 is no longer mixed into the Phase 1 task list.
+
+### What didn't work
+
+A task check command initially checked the wrong subset of Phase 1 task IDs. I read `tasks.md`, corrected the remaining unchecked task IDs, and checked the appropriate completed items.
+
+### What I learned
+
+The Phase 1 registry can still use Vault meaningfully without GitHub OIDC: Vault can be the operator source of truth for package token hashes and rotation metadata.
+
+### What was tricky to build
+
+The tricky part was making Phase 1 useful without pretending it is the final model. The design now explicitly lists Phase 1 limitations and points to the separate Phase 2/3 ticket for repository-scoped short-lived credentials.
+
+### What warrants a second pair of eyes
+
+- Whether the Phase 1 registry should read token hashes directly from Vault or maintain its own token table populated by an operator command.
+- Whether static tokens should be accepted for all internal packages or only for the first one or two pilot packages.
+
+### What should be done in the future
+
+- Implement `docsctl validate` first.
+- Then implement static-token registry authorization tests before wiring real upload storage.
+
+### Code review instructions
+
+Start with the Phase 1 addendum at the bottom of the current design doc. Then review `tasks.md` and this diary step.
+
+Validation:
+
+```bash
+docmgr doctor --ticket GG-20260502-DOCS-YOLO-MULTI-PACKAGE --stale-after 30
+```
+
+### Technical details
+
+The central Phase 1 invariant is:
+
+```text
+hash(token) -> exactly one package
+```
+
+Registry authorization should reject:
+
+```text
+pinocchio token publishing glazed
+empty token
+unknown token hash
+invalid version string
+path traversal package/version names
+```
