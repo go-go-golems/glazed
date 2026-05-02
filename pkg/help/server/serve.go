@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	stdpath "path"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -35,13 +36,14 @@ var _ cmds.BareCommand = (*ServeCommand)(nil)
 
 // ServeSettings holds the parsed flag values for the serve command.
 type ServeSettings struct {
-	Address       string   `glazed:"address"`
-	Paths         []string `glazed:"paths"`
-	FromJSON      []string `glazed:"from-json"`
-	FromSQLite    []string `glazed:"from-sqlite"`
-	FromSQLiteDir []string `glazed:"from-sqlite-dir"`
-	FromGlazedCmd []string `glazed:"from-glazed-cmd"`
-	WithEmbedded  bool     `glazed:"with-embedded"`
+	Address        string   `glazed:"address"`
+	Paths          []string `glazed:"paths"`
+	FromJSON       []string `glazed:"from-json"`
+	FromSQLite     []string `glazed:"from-sqlite"`
+	FromSQLiteDir  []string `glazed:"from-sqlite-dir"`
+	FromGlazedCmd  []string `glazed:"from-glazed-cmd"`
+	WithEmbedded   bool     `glazed:"with-embedded"`
+	ReloadInterval string   `glazed:"reload-interval"`
 }
 
 // NewServeCommand creates a BareCommand that starts the help browser HTTP server.
@@ -70,6 +72,11 @@ binaries loaded through --from-glazed-cmd. For example:
   X.db       -> package X, no version
   X/X.db     -> package X, no version
   X/Y/X.db   -> package X, version Y
+
+Use --reload-interval with external sources to periodically reload them. This is
+intended for directory-backed deployments such as docs.yolo.scapegoat.dev where
+a registry process writes new SQLite package versions into a shared directory.
+Example: --reload-interval 30s.
 
 The server listens on the address specified by --address (default :8088) and
 serves:
@@ -111,6 +118,11 @@ using MountPrefix or NewMountedHandler.`),
 					fields.WithHelp("Include embedded docs when external sources are provided"),
 					fields.WithDefault(false),
 				),
+				fields.New(
+					"reload-interval",
+					fields.TypeString,
+					fields.WithHelp("Periodically reload external sources, for example 30s or 5m; disabled by default"),
+				),
 			),
 			cmds.WithArguments(
 				fields.New(
@@ -143,18 +155,15 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 			return fmt.Errorf("assigning embedded package metadata: %w", err)
 		}
 	}
+	var reloadMu sync.Mutex
 	if len(loaders) > 0 {
-		if !s.WithEmbedded {
-			if err := hs.Store.Clear(ctx); err != nil {
-				return fmt.Errorf("clearing preloaded sections: %w", err)
-			}
+		if err := loadServeSources(ctx, hs, loaders, !s.WithEmbedded, &reloadMu); err != nil {
+			return err
 		}
-		for _, l := range loaders {
-			log.Info().Str("source", l.String()).Msg("Loading help source")
-			if err := l.Load(ctx, hs); err != nil {
-				return fmt.Errorf("loading %s: %w", l.String(), err)
-			}
-		}
+	}
+
+	if err := startServeReloadLoop(ctx, hs, loaders, s, &reloadMu); err != nil {
+		return err
 	}
 
 	count, err := hs.Store.Count(ctx)
@@ -166,6 +175,64 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 	deps := HandlerDeps{Store: hs.Store}
 	handler := NewServeHandler(deps, sc.spaHandler)
 	return serveHTTP(s.Address, handler)
+}
+
+func loadServeSources(ctx context.Context, hs *help.HelpSystem, loaders []helploader.ContentLoader, clearBeforeLoad bool, mu *sync.Mutex) error {
+	if mu != nil {
+		mu.Lock()
+		defer mu.Unlock()
+	}
+	if clearBeforeLoad {
+		if err := hs.Store.Clear(ctx); err != nil {
+			return fmt.Errorf("clearing preloaded sections: %w", err)
+		}
+	}
+	for _, l := range loaders {
+		log.Info().Str("source", l.String()).Msg("Loading help source")
+		if err := l.Load(ctx, hs); err != nil {
+			return fmt.Errorf("loading %s: %w", l.String(), err)
+		}
+	}
+	return nil
+}
+
+func startServeReloadLoop(ctx context.Context, hs *help.HelpSystem, loaders []helploader.ContentLoader, s *ServeSettings, mu *sync.Mutex) error {
+	if strings.TrimSpace(s.ReloadInterval) == "" {
+		return nil
+	}
+	if len(loaders) == 0 {
+		return fmt.Errorf("--reload-interval requires at least one external source")
+	}
+	interval, err := time.ParseDuration(s.ReloadInterval)
+	if err != nil {
+		return fmt.Errorf("parsing --reload-interval: %w", err)
+	}
+	if interval <= 0 {
+		return fmt.Errorf("--reload-interval must be greater than zero")
+	}
+	clearBeforeLoad := !s.WithEmbedded
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := loadServeSources(ctx, hs, loaders, clearBeforeLoad, mu); err != nil {
+					log.Error().Err(err).Msg("Reloading help sources failed")
+					continue
+				}
+				count, err := hs.Store.Count(ctx)
+				if err != nil {
+					log.Error().Err(err).Msg("Counting help sections after reload failed")
+					continue
+				}
+				log.Info().Int64("sections", count).Msg("Reloaded help sources")
+			}
+		}
+	}()
+	return nil
 }
 
 func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {

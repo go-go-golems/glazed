@@ -144,3 +144,8 @@ Step 15: completed local end-to-end Phase 1 smoke validation for docsctl publish
 
 Step 16: uploaded Phase 1 implementation complete bundle to reMarkable and completed final ticket validation tasks.
 
+
+## 2026-05-02
+
+Step 17: added glaze serve --reload-interval and enabled 30s package directory reload polling in the docs-yolo GitOps deployment.
+
