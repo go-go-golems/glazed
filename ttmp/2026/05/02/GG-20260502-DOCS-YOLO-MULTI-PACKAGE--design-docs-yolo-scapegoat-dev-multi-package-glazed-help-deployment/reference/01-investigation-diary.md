@@ -1738,3 +1738,90 @@ Run:
 go test ./pkg/help/server ./cmd/docsctl ./cmd/docs-registry ./pkg/help/publish
 kubectl kustomize gitops/kustomize/docs-yolo >/tmp/docs-yolo.yaml
 ```
+
+## Step 18: Smoke-test reload polling without restarting the browser
+
+I added the follow-up integration smoke that Step 17 identified as useful: start the registry and browser against an initially empty package root, publish a package, and wait until the already-running browser sees the new package via reload polling.
+
+### Prompt Context
+
+**User prompt (verbatim):** `continue`
+
+**Assistant interpretation:** Validate the reload behavior that was just added.
+
+**Inferred user intent:** Keep moving from implementation to proof and operational confidence.
+
+### What I did
+
+- Created `/tmp/docs-yolo-reload-smoke` with an empty package root.
+- Started `docs-registry` on `:18190`.
+- Started `glaze serve --from-sqlite-dir /tmp/docs-yolo-reload-smoke/package-root --reload-interval 1s --address :18199`.
+- Published `pinocchio@vtest` after the browser was already running.
+- Polled `/api/packages` until it showed `pinocchio` version `vtest`.
+- Cleaned up the background `go run` children by process pattern.
+
+Command shape:
+
+```bash
+go run ./cmd/glaze serve \
+  --from-sqlite-dir /tmp/docs-yolo-reload-smoke/package-root \
+  --reload-interval 1s \
+  --address :18199
+
+go run ./cmd/docsctl publish \
+  --server http://127.0.0.1:18190 \
+  --package pinocchio \
+  --version vtest \
+  --file /tmp/glazed-multi-help-smoke/pinocchio/vtest/pinocchio.db \
+  --token pinocchio-token
+```
+
+### Why
+
+This proves that the docs-yolo browser no longer requires a pod restart after a successful registry upload.
+
+### What worked
+
+The already-running browser returned:
+
+```json
+{
+  "packages": [
+    {
+      "name": "pinocchio",
+      "versions": ["vtest"],
+      "sectionCount": 69
+    }
+  ]
+}
+```
+
+The smoke command ended with:
+
+```text
+reload smoke passed
+```
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The reload loop handles an initially empty package directory and picks up later-published package/version DBs, which is the exact Phase 1 docs-yolo deployment shape.
+
+### What was tricky to build
+
+As before, `go run` process cleanup needs process-pattern cleanup rather than only shell PID cleanup.
+
+### What warrants a second pair of eyes
+
+- Whether reload polling should log package/version deltas instead of only total section count.
+
+### What should be done in the future
+
+- Turn this smoke into a checked-in script if docs-yolo deployment work continues.
+
+### Code review instructions
+
+Rerun the smoke manually from the diary if validating the reload feature.

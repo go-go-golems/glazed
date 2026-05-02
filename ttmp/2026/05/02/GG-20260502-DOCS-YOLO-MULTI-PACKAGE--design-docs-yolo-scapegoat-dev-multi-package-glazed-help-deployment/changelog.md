@@ -149,3 +149,8 @@ Step 16: uploaded Phase 1 implementation complete bundle to reMarkable and compl
 
 Step 17: added glaze serve --reload-interval and enabled 30s package directory reload polling in the docs-yolo GitOps deployment.
 
+
+## 2026-05-02
+
+Step 18: smoke-tested reload polling by publishing Pinocchio into an initially empty package root while the browser was already running.
+
