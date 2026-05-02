@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -109,6 +110,49 @@ func TestBuildServeLoaders_UsesAllExternalSources(t *testing.T) {
 	}
 	if !strings.Contains(loaders[3].String(), "pinocchio") || !strings.Contains(loaders[3].String(), "sqleton") {
 		t.Fatalf("expected glazed command loader to include normalized binary list, got %q", loaders[3].String())
+	}
+}
+
+type testContentLoader struct {
+	name string
+	fn   func(context.Context, *help.HelpSystem) error
+}
+
+func (l testContentLoader) Load(ctx context.Context, hs *help.HelpSystem) error {
+	return l.fn(ctx, hs)
+}
+
+func (l testContentLoader) String() string { return l.name }
+
+func TestLoadServeSources_DoesNotClearExistingSectionsWhenStagingFails(t *testing.T) {
+	hs := help.NewHelpSystem()
+	hs.AddSection(&model.Section{
+		Slug:        "existing-topic",
+		Title:       "Existing Topic",
+		SectionType: model.SectionGeneralTopic,
+	})
+
+	err := loadServeSources(context.Background(), hs, []helploader.ContentLoader{
+		testContentLoader{
+			name: "failing loader",
+			fn: func(context.Context, *help.HelpSystem) error {
+				return fmt.Errorf("transient read failure")
+			},
+		},
+	}, true, nil)
+	if err == nil {
+		t.Fatalf("expected failing staged reload to return an error")
+	}
+
+	count, err := hs.Store.Count(context.Background())
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected existing section to survive failed reload, got count %d", count)
+	}
+	if _, err := hs.GetSectionWithSlug("existing-topic"); err != nil {
+		t.Fatalf("expected existing-topic to survive failed reload: %v", err)
 	}
 }
 

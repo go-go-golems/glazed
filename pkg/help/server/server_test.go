@@ -103,6 +103,40 @@ func TestHandleListSections(t *testing.T) {
 	// Content should be omitted in list view (validated by type: no Content field).
 }
 
+func TestHandleListSections_IncludesHeadingMetadata(t *testing.T) {
+	st, handler := setupTestServer(t)
+	ctx := context.Background()
+	section, err := st.GetBySlug(ctx, "intro")
+	if err != nil {
+		t.Fatalf("GetBySlug: %v", err)
+	}
+	section.Content = "# Introduction\n\n## First Steps\n\n```\n## Ignored\n```\n\n### Details"
+	if err := st.Update(ctx, section); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/sections", nil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+
+	var resp ListSectionsResponse
+	if err := json.Unmarshal(rw.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	var intro SectionSummary
+	for _, section := range resp.Sections {
+		if section.Slug == "intro" {
+			intro = section
+		}
+	}
+	if len(intro.Headings) != 2 {
+		t.Fatalf("expected 2 headings, got %#v", intro.Headings)
+	}
+	if intro.Headings[0].ID != "first-steps" || intro.Headings[1].ID != "details" {
+		t.Fatalf("unexpected headings: %#v", intro.Headings)
+	}
+}
+
 func TestHandleListSections_FilterByType(t *testing.T) {
 	_, handler := setupTestServer(t)
 

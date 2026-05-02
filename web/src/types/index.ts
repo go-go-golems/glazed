@@ -2,6 +2,13 @@
 // TypeScript interfaces that mirror the Go response types in pkg/help/server/types.go.
 // Keep these in sync with the server types; the JSON field tags are authoritative.
 
+/** Markdown heading metadata returned for tree navigation. */
+export interface SectionHeading {
+  id: string;
+  level: number;
+  text: string;
+}
+
 /** Short summary shape returned in list/search results. */
 export interface SectionSummary {
   id: number;
@@ -14,6 +21,7 @@ export interface SectionSummary {
   short: string;
   topics: string[];
   isTopLevel: boolean;
+  headings?: SectionHeading[];
 }
 
 /** Full shape returned by GET /api/sections/:slug. */

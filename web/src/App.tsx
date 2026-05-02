@@ -1,10 +1,12 @@
 // App.tsx — root component: wires all components together with RTK Query state.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import { TypeFilter, type FilterValue } from './components/TypeFilter/TypeFilter';
 import { PackageSelector } from './components/PackageSelector/PackageSelector';
+import { NavigationModeToggle, type NavigationMode } from './components/NavigationModeToggle/NavigationModeToggle';
+import { DocumentationTree } from './components/DocumentationTree/DocumentationTree';
 import { SectionList } from './components/SectionList/SectionList';
 import { SectionView } from './components/SectionView/SectionView';
 import { EmptyState } from './components/EmptyState/EmptyState';
@@ -16,15 +18,18 @@ import type { SectionSummary } from './types';
 export default function App() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
+  const [navigationMode, setNavigationMode] = useState<NavigationMode>('tree');
   const [selectedPackage, setSelectedPackage] = useState('');
   const [selectedVersion, setSelectedVersion] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
+  const contentScrollRef = useRef<HTMLDivElement>(null);
 
   const activeSlug = useMemo(() => {
     const match = matchPath('/sections/:slug', location.pathname);
     return match?.params.slug ?? null;
   }, [location.pathname]);
+  const activeHeadingId = location.hash ? location.hash.replace(/^#/, '') : '';
 
   const { data: packageData } = useListPackagesQuery();
   const packages = packageData?.packages ?? [];
@@ -63,6 +68,28 @@ export default function App() {
     navigate(`/sections/${slug}`);
   };
 
+  const handleSelectHeading = (slug: string, headingId: string) => {
+    navigate(`/sections/${slug}#${headingId}`);
+  };
+
+  useEffect(() => {
+    if (!section) return;
+
+    requestAnimationFrame(() => {
+      if (activeHeadingId) {
+        const heading = document.getElementById(activeHeadingId);
+        if (heading) {
+          heading.scrollIntoView({ block: 'start' });
+          return;
+        }
+      }
+
+      if (contentScrollRef.current) {
+        contentScrollRef.current.scrollTop = 0;
+      }
+    });
+  }, [section, activeHeadingId]);
+
   // Client-side filter — mirrors the JSX prototype logic.
   const filtered = useMemo(() => {
     if (!listData) return [];
@@ -84,11 +111,8 @@ export default function App() {
       <AppLayout
         sidebar={
           <>
-            <TitleBar title="📁 Sections" />
+            <TitleBar title="📖 Documentation" />
             <div style={{ padding: '10px 10px 8px', borderBottom: '2px solid #000' }}>
-              <div style={{ marginBottom: 8 }}>
-                <SearchBar value={search} onChange={setSearch} />
-              </div>
               <PackageSelector
                 packages={packages}
                 selectedPackage={selectedPackage}
@@ -96,14 +120,31 @@ export default function App() {
                 onPackageChange={handlePackageChange}
                 onVersionChange={setSelectedVersion}
               />
-              <TypeFilter value={filter} onChange={setFilter} />
+              <div style={{ marginBottom: 8 }}>
+                <SearchBar value={search} onChange={setSearch} placeholder="Search documentation…" />
+              </div>
+              <NavigationModeToggle value={navigationMode} onChange={setNavigationMode} />
+              {navigationMode === 'search' && (
+                <TypeFilter value={filter} onChange={setFilter} />
+              )}
             </div>
-            <SectionList
-              sections={filtered}
-              activeSlug={activeSlug}
-              onSelect={handleSelect}
-            />
-            <StatusBar count={filtered.length} />
+            {navigationMode === 'tree' ? (
+              <DocumentationTree
+                sections={listData?.sections ?? []}
+                search={search}
+                activeSlug={activeSlug}
+                activeHeadingId={activeHeadingId}
+                onSelectDocument={handleSelect}
+                onSelectHeading={handleSelectHeading}
+              />
+            ) : (
+              <SectionList
+                sections={filtered}
+                activeSlug={activeSlug}
+                onSelect={handleSelect}
+              />
+            )}
+            <StatusBar count={navigationMode === 'tree' ? (listData?.sections.length ?? 0) : filtered.length} />
           </>
         }
         content={
@@ -126,7 +167,7 @@ export default function App() {
               </div>
             )}
             {!isLoading && !error && section && (
-              <div style={{ flex: 1, overflow: 'auto' }}>
+              <div ref={contentScrollRef} style={{ flex: 1, overflow: 'auto' }}>
                 <SectionView section={section} />
               </div>
             )}

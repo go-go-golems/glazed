@@ -107,3 +107,176 @@ When reviewing the eventual implementation, check:
 ### Verification so far
 
 This pass created the ticket and planning documents only. No implementation code has been changed for this ticket yet.
+
+## 2026-05-02 — Implementation started
+
+### Goal
+
+Implement the tree navigation ticket task-by-task, keeping commits focused and updating this diary after meaningful checkpoints.
+
+### Starting state
+
+`git status --short --untracked-files=all` showed unrelated Docker changes that must not be staged for this ticket:
+
+```text
+M Dockerfile
+?? .dockerignore
+```
+
+### Implementation plan for this pass
+
+1. Backend heading metadata: response contracts, extractor, tests.
+2. Frontend heading IDs and tree state/components.
+3. Wire Tree/Search mode into `App.tsx`.
+4. Run focused tests, rebuild web assets, smoke test.
+
+## 2026-05-02 — Backend heading metadata implemented
+
+### What changed
+
+Implemented the backend tree metadata foundation:
+
+- Added `SectionHeading` to `pkg/help/server/types.go`.
+- Added `Headings []SectionHeading` to `SectionSummary`.
+- Added `ExtractHeadings` and `SlugifyHeading` in `pkg/help/server/headings.go`.
+- The extractor supports ATX headings levels 1-4, ignores fenced code blocks, trims closing `#` markers, and skips a duplicate heading matching the document title.
+- Added server tests for heading extraction and list endpoint heading metadata.
+
+### Validation
+
+```bash
+cd glazed && go test ./pkg/help/server
+```
+
+Result: passed.
+
+### Notes
+
+This completes the first three ticket tasks: Go/TS contracts are only half complete so far for TypeScript, but the backend contract and API exposure are done. TypeScript contract will be checked together with the frontend heading-ID task.
+
+## 2026-05-02 — Frontend tree navigation implemented
+
+### What changed
+
+Implemented the browser-side tree navigation:
+
+- Added `SectionHeading` to `web/src/types/index.ts`.
+- Added `slugifyHeading` and `textFromReactNode` helpers for stable heading IDs.
+- Updated `MarkdownContent` so h1-h4 headings render with stable `id` attributes.
+- Added `NavigationModeToggle` with `Tree` and `Search` modes.
+- Added `DocumentationTree` plus a tested tree builder/filter utility.
+- Wired `App.tsx` so Tree mode is default and Search mode preserves the existing flat `SectionList` behavior.
+- Added subsection hash navigation via `/sections/:slug#heading-id`.
+- Rebuilt the production web bundle and copied `web/dist` to `pkg/web/dist` for embedding.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed && go test ./pkg/help/...
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+`GOWORK=off go generate ./pkg/web` started the Dagger builder but timed out in this environment before completing. Since `pnpm build` completed successfully locally, I copied `web/dist` into `pkg/web/dist` manually to produce the same embedded asset update.
+
+### Tests added
+
+- Tree utility grouping/filtering tests.
+- App mode-switch test verifies Tree mode and Search mode.
+- App subsection navigation test verifies `#/sections/alpha-section#overview` navigation.
+
+### What was tricky
+
+React Router under `HashRouter` represents subsection navigation as a route hash inside the browser hash, for example `#/sections/alpha-section#overview`. The implementation uses `navigate('/sections/${slug}#${headingId}')`, which produces the expected URL in tests.
+
+## 2026-05-02 — Tree subsection styling cleanup, Storybook, and smoke validation
+
+### User feedback
+
+The first working tree implementation made subsection nodes look like a stack of native bordered buttons. The screenshot showed several concrete problems:
+
+- subsection rows were boxed individually instead of reading as a tree;
+- long subsection titles wrapped awkwardly into tall boxes;
+- the repeated `ƒ` marker looked cryptic for Markdown headings;
+- indentation and hierarchy guide lines were noisy.
+
+### What changed
+
+- Fixed `DocumentationTree` heading rows so they always use the base `documentation-tree-row` part and a separate `data-kind="heading"` marker. The earlier implementation emitted a space-separated `data-part` value, which meant exact `[data-part='documentation-tree-row']` selectors did not match heading rows.
+- Reworked subsection styling into compact grid rows with transparent borders, dotted hierarchy guide lines, stable truncation, and a simple `#` heading marker.
+- Added Storybook stories for both new widgets:
+  - `web/src/components/DocumentationTree/DocumentationTree.stories.tsx`
+  - `web/src/components/NavigationModeToggle/NavigationModeToggle.stories.tsx`
+- Rebuilt the web bundle and copied `web/dist` into `pkg/web/dist`.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+Smoke server was restarted in tmux:
+
+```bash
+tmux kill-session -t glazed-multi-help-smoke
+tmux new-session -d -s glazed-multi-help-smoke \
+  "go run ./cmd/glaze serve --from-sqlite-dir /tmp/glazed-multi-help-smoke --address :8099 2>&1 | tee /tmp/glazed-multi-help-smoke/server.log"
+```
+
+Smoke checks:
+
+- `GET /api/packages` returned both `glazed` and `pinocchio`.
+- `GET /api/sections?package=pinocchio&version=vtest&limit=5` returned 69 total sections and heading metadata.
+- Browser smoke at `http://127.0.0.1:8099` showed the cleaned tree and subsection rows.
+- Screenshot saved as `tree-subsections-cleaned.png`.
+
+Known cosmetic note: the browser console still reports a 404 for the external Chicago font CDN URL; this predates the tree work and does not affect tree behavior.
+
+### Additional Storybook validation
+
+Ran:
+
+```bash
+cd glazed/web && pnpm build-storybook
+```
+
+Result: passed. Storybook emitted its normal `src/**/*.mdx` absence warning and large chunk warning. The generated `web/storybook-static` output was removed after validation because it is a build artifact and should not be committed.
+
+## 2026-05-02 — Tree entries now scroll the Markdown pane
+
+### User feedback
+
+Selecting an entry in the tree view should not only update the URL and active tree state; it should also jump the Markdown pane on the right to that location.
+
+### What changed
+
+- Added a scroll ref for the right-hand Markdown content pane in `web/src/App.tsx`.
+- Added a route/hash-driven scroll effect:
+  - when a subsection hash is present, find the rendered Markdown heading by ID and call `scrollIntoView({ block: 'start' })`;
+  - when a document node is selected without a subsection hash, reset the Markdown pane to the top by setting `scrollTop = 0`.
+- Added a frontend regression test that mocks `scrollIntoView` and verifies subsection tree clicks invoke it.
+
+### Validation
+
+Commands run:
+
+```bash
+cd glazed/web && pnpm test -- --run
+cd glazed/web && pnpm exec tsc --noEmit
+cd glazed/web && pnpm build
+```
+
+Results: all passed.
+
+Smoke server was restarted at `http://127.0.0.1:8099`. Browser validation clicked `Complete User Query DSL Reference` and then the `Boolean Operations` subsection in the tree. The browser ended at `#/sections/user-query-dsl#boolean-operations`, and Playwright measured the `#boolean-operations` Markdown heading near the top of the content pane.

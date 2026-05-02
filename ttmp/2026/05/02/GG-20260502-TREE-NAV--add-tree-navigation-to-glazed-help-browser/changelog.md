@@ -14,3 +14,18 @@ Created tree navigation ticket, design/implementation guide, diary, related-file
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/ttmp/2026/05/02/GG-20260502-TREE-NAV--add-tree-navigation-to-glazed-help-browser/design-doc/01-tree-navigation-design-and-implementation-guide.md — Primary design and implementation guide
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/ttmp/2026/05/02/GG-20260502-TREE-NAV--add-tree-navigation-to-glazed-help-browser/reference/01-investigation-diary.md — Investigation diary
 
+
+## 2026-05-02
+
+Cleaned up tree subsection styling, added Storybook stories, rebuilt assets, and restarted smoke server.
+
+
+## 2026-05-02
+
+Validated new tree/navigation Storybook stories with pnpm build-storybook.
+
+
+## 2026-05-02
+
+Made tree subsection selection scroll the Markdown pane to the selected heading and added regression coverage.
+
