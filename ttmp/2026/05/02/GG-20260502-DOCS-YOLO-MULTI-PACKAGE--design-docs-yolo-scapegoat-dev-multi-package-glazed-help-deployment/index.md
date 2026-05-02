@@ -25,6 +25,10 @@ RelatedFiles:
       Note: PublisherAuth interface and static token hash authorization implementation.
     - Path: pkg/help/publish/auth_test.go
       Note: Tests proving token/package scoping behavior.
+    - Path: pkg/help/publish/catalog.go
+      Note: Vault-shaped token records and reloadable publisher auth catalog.
+    - Path: pkg/help/publish/catalog_test.go
+      Note: Tests for revoked records
     - Path: pkg/help/publish/sqlite_validator.go
       Note: Read-only SQLite help DB validator shared by docsctl and registry publishing.
     - Path: pkg/help/publish/sqlite_validator_test.go
@@ -47,6 +51,7 @@ LastUpdated: 2026-05-02T13:02:08.7165699-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

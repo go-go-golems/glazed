@@ -30,9 +30,9 @@
 - [x] Implement token hashing with constant-time comparison and no raw-token logging.
 - [x] Implement `StaticTokenAuth` that maps token hashes to exactly one package.
 - [x] Add tests proving an unknown token is rejected, an empty token is rejected, a package A token cannot publish package B, and a package A token can publish package A.
-- [ ] Add Vault token-hash record structs and parsing helpers for `kv/docs-yolo/publishers/<package>` payloads.
-- [ ] Add a reloadable in-memory publisher-token catalog abstraction so Phase 1 can start with file/env fixtures and later read from Vault.
-- [ ] Document Phase 1 token auth behavior and commit the auth slice.
+- [x] Add Vault token-hash record structs and parsing helpers for `kv/docs-yolo/publishers/<package>` payloads.
+- [x] Add a reloadable in-memory publisher-token catalog abstraction so Phase 1 can start with file/env fixtures and later read from Vault.
+- [x] Document Phase 1 token auth behavior and commit the auth slice.
 
 ## Phase 1C — Direct upload registry skeleton
 

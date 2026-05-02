@@ -1017,3 +1017,101 @@ Stored token hashes use this format:
 ```text
 sha256:<64 hex chars>
 ```
+
+## Step 11: Add publisher token records and reloadable catalog
+
+This step completed the Phase 1B auth slice by adding a catalog layer around static package tokens. The registry will eventually read token-hash records from Vault or a fixture file, convert non-revoked records into static auth entries, and atomically reload the active authorization implementation only after the new catalog validates.
+
+The important behavior is that a failed catalog reload does not drop the previous valid authorization state. That is essential for token rotation and later Vault integration.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Finish Phase 1B with Vault-shaped token records, an in-memory reloadable catalog, tests, and documentation.
+
+**Inferred user intent:** Prepare for Vault-backed token inventory without blocking on real Vault integration yet.
+
+### What I did
+
+- Added `pkg/help/publish/catalog.go`.
+- Defined `PublisherTokenRecord` with fields matching the Phase 1 Vault/static record shape.
+- Added conversion from non-revoked records to `StaticPublisherToken`.
+- Added `PublisherCatalogSource` interface.
+- Added `ReloadablePublisherCatalog` that implements `PublisherAuth` by delegating to a currently loaded auth implementation.
+- Added `StaticPublisherCatalogSource` for tests and local fixtures.
+- Added `pkg/help/publish/catalog_test.go` covering:
+  - revoked records are skipped;
+  - invalid packages/hashes fail validation;
+  - catalog must reload before authorizing;
+  - successful reload enables authorization;
+  - failed reload keeps previous auth active.
+- Checked off the remaining Phase 1B tasks.
+
+Commands run:
+
+```bash
+gofmt -w pkg/help/publish/catalog.go pkg/help/publish/catalog_test.go
+go test ./pkg/help/publish
+```
+
+### Why
+
+Phase 1 says Vault stores token hashes, but the registry should not hard-code Vault as the only source. A catalog source interface lets us start with fixtures and later add Vault loading without changing registry authorization call sites.
+
+### What worked
+
+- Focused publish package tests pass.
+- The reloadable catalog preserves old auth on failed reload, which is the desired safe behavior.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+The static-token auth core is now independent from catalog loading. That makes future file-backed, Vault-backed, or database-backed catalogs straightforward.
+
+### What was tricky to build
+
+The subtle behavior is reload failure. Replacing active auth before all records validate would create an outage or accidental authorization changes. The implementation constructs and validates the new `StaticTokenAuth` first, then swaps under a mutex only after success.
+
+### What warrants a second pair of eyes
+
+- Whether `RevokedAt` should be enough for Phase 1 or whether records should also have an explicit `enabled` boolean.
+- Whether `Subject` should be mandatory once GitHub repository ownership is known.
+
+### What should be done in the future
+
+- Use `ReloadablePublisherCatalog` in the registry server.
+- Add a file-backed catalog if we want local registry smoke tests before Vault.
+- Add a Vault-backed catalog loader in Phase 1F.
+
+### Code review instructions
+
+Review:
+
+- `pkg/help/publish/catalog.go`
+- `pkg/help/publish/catalog_test.go`
+- `pkg/help/publish/auth.go`
+
+Validate:
+
+```bash
+go test ./pkg/help/publish
+```
+
+### Technical details
+
+Vault-shaped Phase 1 record:
+
+```json
+{
+  "package": "pinocchio",
+  "subject": "repo:go-go-golems/pinocchio",
+  "tokenHash": "sha256:...",
+  "createdAt": "2026-05-02T18:00:00Z",
+  "rotatedAt": "",
+  "revokedAt": ""
+}
+```

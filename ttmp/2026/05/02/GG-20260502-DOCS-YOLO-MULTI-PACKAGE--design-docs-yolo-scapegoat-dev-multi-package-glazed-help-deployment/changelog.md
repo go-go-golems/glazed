@@ -97,3 +97,13 @@ Step 10: added PublisherAuth interface, static token hash auth, and package-scop
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/auth.go — Static package-token authorization core.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/auth_test.go — Auth tests for package scoping and token hashing.
 
+
+## 2026-05-02
+
+Step 11: added Vault-shaped publisher token records and reloadable static auth catalog.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog.go — Publisher token record and reloadable catalog implementation.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/catalog_test.go — Catalog validation and reload behavior tests.
+
