@@ -87,3 +87,13 @@ Step 9: wired docsctl validate with JSON output, command tests, and real DB smok
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/validate.go — docsctl validate command implementation.
 - /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/cmd/docsctl/validate_test.go — Command-level validate tests.
 
+
+## 2026-05-02
+
+Step 10: added PublisherAuth interface, static token hash auth, and package-scope authorization tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/auth.go — Static package-token authorization core.
+- /home/manuel/workspaces/2026-05-02/multi-package-hosting-glazed/glazed/pkg/help/publish/auth_test.go — Auth tests for package scoping and token hashing.
+

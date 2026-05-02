@@ -915,3 +915,105 @@ OK: /path/help.db is a valid Glazed help database for pinocchio@vtest (69 sectio
 ```
 
 JSON output shape uses `SQLiteValidationResult`.
+
+## Step 10: Add static package-token authorization core
+
+With local DB validation in place, I started Phase 1B by adding the registry authorization abstraction and the first implementation: static package tokens represented as SHA-256 hashes. This lets the future registry authorize a publish request without storing or logging raw tokens.
+
+The important invariant is now encoded in code and tests: one token hash maps to one package, and a token for package A cannot publish package B.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue into Phase 1B with the auth interface, token hashing, static package-token implementation, and tests.
+
+**Inferred user intent:** Build the Phase 1 Vault-static-token model as a reusable auth core before the registry HTTP layer exists.
+
+### What I did
+
+- Added `pkg/help/publish/auth.go`.
+- Defined:
+  - `PublisherAuth`
+  - `PublishRequest`
+  - `PublisherIdentity`
+  - `StaticPublisherToken`
+  - `StaticTokenAuth`
+- Implemented:
+  - `HashPublishToken`
+  - `NormalizeTokenHash`
+  - `ConstantTimeTokenHashEqual`
+  - `StaticTokenAuth.AuthorizePublish`
+- Added sentinel errors:
+  - `ErrUnauthorized`
+  - `ErrForbidden`
+- Added `pkg/help/publish/auth_test.go` covering:
+  - matching token/package success;
+  - unknown token rejection;
+  - empty token rejection;
+  - package A token rejected for package B;
+  - invalid request rejection;
+  - duplicate token hash rejection;
+  - token hash normalization;
+  - constant-time equality behavior.
+- Checked off the first four Phase 1B auth tasks.
+
+Commands run:
+
+```bash
+gofmt -w pkg/help/publish/auth.go pkg/help/publish/auth_test.go
+go test ./pkg/help/publish
+```
+
+### Why
+
+The registry upload handler should not own auth details directly. A `PublisherAuth` interface lets Phase 1 use static token hashes, Phase 2 use Vault capabilities, and Phase 3 use signed JWTs without rewriting upload handling.
+
+### What worked
+
+- Focused publish package tests pass.
+- Package-scoped denial is covered directly by tests.
+- Duplicate token hashes are rejected at construction time so one token cannot ambiguously map to multiple packages.
+
+### What didn't work
+
+N/A.
+
+### What I learned
+
+Iterating over token hashes instead of doing a direct map lookup makes it straightforward to use constant-time comparison for the presented token hash. The token catalog will be small in Phase 1, so this is acceptable.
+
+### What was tricky to build
+
+The subtle part is error semantics. Unknown or missing tokens return `ErrUnauthorized`; recognized tokens used for the wrong package return `ErrForbidden`. This distinction is useful internally and in tests, but registry HTTP responses should still avoid leaking too much information to callers.
+
+### What warrants a second pair of eyes
+
+- Whether the registry should collapse all auth failures into a generic 403 externally.
+- Whether SHA-256 token hashes are sufficient or whether Phase 1 should use HMAC with a server-side pepper.
+
+### What should be done in the future
+
+- Add Vault token-hash record structs and catalog reload behavior next.
+- Wire `StaticTokenAuth` into the registry upload endpoint when Phase 1C begins.
+
+### Code review instructions
+
+Review:
+
+- `pkg/help/publish/auth.go`
+- `pkg/help/publish/auth_test.go`
+
+Validate:
+
+```bash
+go test ./pkg/help/publish
+```
+
+### Technical details
+
+Stored token hashes use this format:
+
+```text
+sha256:<64 hex chars>
+```
