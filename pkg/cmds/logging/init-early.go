@@ -12,19 +12,13 @@ import (
 // expected before we register all cobra subcommands).
 func filterEarlyLoggingArgs(args []string) []string {
 	allowedKV := map[string]struct{}{
-		"--log-level":            {},
-		"--log-file":             {},
-		"--log-format":           {},
-		"--logstash-host":        {},
-		"--logstash-port":        {},
-		"--logstash-protocol":    {},
-		"--logstash-app-name":    {},
-		"--logstash-environment": {},
+		"--log-level":  {},
+		"--log-file":   {},
+		"--log-format": {},
 	}
 	allowedBool := map[string]struct{}{
-		"--with-caller":      {},
-		"--log-to-stdout":    {},
-		"--logstash-enabled": {},
+		"--with-caller":   {},
+		"--log-to-stdout": {},
 	}
 
 	out := make([]string, 0, len(args))
@@ -96,13 +90,6 @@ func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	withCaller := fs.Bool("with-caller", false, "Log caller information")
 	logToStdout := fs.Bool("log-to-stdout", false, "Log to stdout even when log-file is set")
 
-	logstashEnabled := fs.Bool("logstash-enabled", false, "Enable logging to Logstash")
-	logstashHost := fs.String("logstash-host", "logstash", "Logstash host")
-	logstashPort := fs.Int("logstash-port", 5044, "Logstash port")
-	logstashProtocol := fs.String("logstash-protocol", "tcp", "Logstash protocol (tcp, udp)")
-	logstashAppName := fs.String("logstash-app-name", appName, "Application name for Logstash logs")
-	logstashEnvironment := fs.String("logstash-environment", "development", "Environment name for Logstash logs (development, staging, production)")
-
 	fs.ParseErrorsAllowlist.UnknownFlags = true
 	// Always attempt parsing, but never fail early logging init on parsing errors.
 	// The critical behavior is: default to info-level logging (quiet), and if we
@@ -111,16 +98,10 @@ func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	_ = fs.Parse(filteredArgs)
 
 	return InitLoggerFromSettings(&LoggingSettings{
-		LogLevel:            *logLevel,
-		LogFile:             *logFile,
-		LogFormat:           *logFormat,
-		WithCaller:          *withCaller,
-		LogToStdout:         *logToStdout,
-		LogstashEnabled:     *logstashEnabled,
-		LogstashHost:        *logstashHost,
-		LogstashPort:        *logstashPort,
-		LogstashProtocol:    *logstashProtocol,
-		LogstashAppName:     *logstashAppName,
-		LogstashEnvironment: *logstashEnvironment,
+		LogLevel:    *logLevel,
+		LogFile:     *logFile,
+		LogFormat:   *logFormat,
+		WithCaller:  *withCaller,
+		LogToStdout: *logToStdout,
 	})
 }

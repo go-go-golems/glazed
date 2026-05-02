@@ -12,17 +12,11 @@ import (
 
 // LoggingSettings holds the logging configuration fields
 type LoggingSettings struct {
-	WithCaller          bool   `glazed:"with-caller"`
-	LogLevel            string `glazed:"log-level"`
-	LogFormat           string `glazed:"log-format"`
-	LogFile             string `glazed:"log-file"`
-	LogToStdout         bool   `glazed:"log-to-stdout"`
-	LogstashEnabled     bool   `glazed:"logstash-enabled"`
-	LogstashHost        string `glazed:"logstash-host"`
-	LogstashPort        int    `glazed:"logstash-port"`
-	LogstashProtocol    string `glazed:"logstash-protocol"`
-	LogstashAppName     string `glazed:"logstash-app-name"`
-	LogstashEnvironment string `glazed:"logstash-environment"`
+	WithCaller  bool   `glazed:"with-caller"`
+	LogLevel    string `glazed:"log-level"`
+	LogFormat   string `glazed:"log-format"`
+	LogFile     string `glazed:"log-file"`
+	LogToStdout bool   `glazed:"log-to-stdout"`
 }
 
 const LoggingSectionSlug = "logging"
@@ -65,44 +59,7 @@ func NewLoggingSection() (schema.Section, error) {
 				fields.WithHelp("Log to stdout even when log-file is set"),
 				fields.WithDefault(false),
 			),
-			fields.New(
-				"logstash-enabled",
-				fields.TypeBool,
-				fields.WithHelp("Enable logging to Logstash"),
-				fields.WithDefault(false),
-			),
-			fields.New(
-				"logstash-host",
-				fields.TypeString,
-				fields.WithHelp("Logstash host"),
-				fields.WithDefault("logstash"),
-			),
-			fields.New(
-				"logstash-port",
-				fields.TypeInteger,
-				fields.WithHelp("Logstash port"),
-				fields.WithDefault(5044),
-			),
-			fields.New(
-				"logstash-protocol",
-				fields.TypeChoice,
-				fields.WithHelp("Logstash protocol (tcp, udp)"),
-				fields.WithDefault("tcp"),
-				fields.WithChoices("tcp", "udp"),
-			),
-			fields.New(
-				"logstash-app-name",
-				fields.TypeString,
-				fields.WithHelp("Application name for Logstash logs"),
-				fields.WithDefault(""),
-			),
-			fields.New(
-				"logstash-environment",
-				fields.TypeString,
-				fields.WithHelp("Environment name for Logstash logs (development, staging, production)"),
-				fields.WithDefault("development"),
-				fields.WithChoices("development", "staging", "production"),
-			),
+
 		),
 	)
 }
@@ -139,14 +96,6 @@ func AddLoggingSectionToRootCommand(rootCmd *cobra.Command, appName string) erro
 	rootCmd.PersistentFlags().String("log-format", "text", "Log format (json, text)")
 	rootCmd.PersistentFlags().Bool("with-caller", false, "Log caller information")
 	rootCmd.PersistentFlags().Bool("log-to-stdout", false, "Log to stdout even when log-file is set")
-
-	// Add logstash flags
-	rootCmd.PersistentFlags().Bool("logstash-enabled", false, "Enable logging to Logstash")
-	rootCmd.PersistentFlags().String("logstash-host", "logstash", "Logstash host")
-	rootCmd.PersistentFlags().Int("logstash-port", 5044, "Logstash port")
-	rootCmd.PersistentFlags().String("logstash-protocol", "tcp", "Logstash protocol (tcp, udp)")
-	rootCmd.PersistentFlags().String("logstash-app-name", appName, "Application name for Logstash logs")
-	rootCmd.PersistentFlags().String("logstash-environment", "development", "Environment name for Logstash logs (development, staging, production)")
 
 	return nil
 }
