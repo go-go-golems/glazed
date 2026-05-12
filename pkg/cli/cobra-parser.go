@@ -269,12 +269,54 @@ func (c *CobraParser) Parse(
 	}
 
 	parsedSections := values.New()
-	err = cmd_sources.Execute(c.Sections, parsedSections, middlewares_...)
+	parsedSchema, err := cmd_sources.ExecuteWithSchema(c.Sections, parsedSections, middlewares_...)
 	if err != nil {
 		return nil, err
 	}
 
+	validateRequired, err := shouldValidateRequiredFields(cmd, parsedCommandSections)
+	if err != nil {
+		return nil, err
+	}
+	if validateRequired {
+		if err := cmd_sources.ValidateRequiredValues(parsedSchema, parsedSections); err != nil {
+			return nil, err
+		}
+	}
+
 	return parsedSections, nil
+}
+
+func shouldValidateRequiredFields(cmd *cobra.Command, parsedCommandSections *values.Values) (bool, error) {
+	if isHelpRequested(cmd) {
+		return false, nil
+	}
+
+	commandSettings := &CommandSettings{}
+	if err := parsedCommandSections.DecodeSectionInto(CommandSettingsSlug, commandSettings); err != nil {
+		return false, err
+	}
+	if commandSettings.PrintParsedFields || commandSettings.PrintYAML || commandSettings.PrintSchema {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func isHelpRequested(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
+	}
+	if helpFlag := cmd.Flags().Lookup("help"); helpFlag != nil && helpFlag.Changed {
+		return true
+	}
+	if helpFlag := cmd.InheritedFlags().Lookup("help"); helpFlag != nil && helpFlag.Changed {
+		return true
+	}
+	if helpFlag := cmd.PersistentFlags().Lookup("help"); helpFlag != nil && helpFlag.Changed {
+		return true
+	}
+	return false
 }
 
 // ParseGlazedCommandSection parses the global glazed settings from the given cobra.Command, if not nil,
