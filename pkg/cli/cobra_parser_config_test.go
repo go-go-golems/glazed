@@ -7,6 +7,7 @@ import (
 
 	fields "github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	cmdsources "github.com/go-go-golems/glazed/pkg/cmds/sources"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	glazedconfig "github.com/go-go-golems/glazed/pkg/config"
 	"github.com/spf13/cobra"
@@ -196,6 +197,42 @@ func TestCobraParserRequiredFieldMissingDoesNotFailForPrintParsedFields(t *testi
 	parser := newRequiredDefaultSectionParserForTest(t)
 
 	parsed := executeParserForTest(t, parser, []string{"--print-parsed-fields"})
+	require.NotNil(t, parsed)
+	_, ok := parsed.GetField(schema.DefaultSlug, "required-name")
+	require.False(t, ok)
+}
+
+func TestCobraParserRequiredFieldMissingDoesNotFailForPrintYAML(t *testing.T) {
+	parser := newRequiredDefaultSectionParserForTest(t)
+
+	parsed := executeParserForTest(t, parser, []string{"--print-yaml"})
+	require.NotNil(t, parsed)
+	_, ok := parsed.GetField(schema.DefaultSlug, "required-name")
+	require.False(t, ok)
+}
+
+func TestCobraParserRequiredFieldMissingDoesNotFailForPrintSchema(t *testing.T) {
+	parser := newRequiredDefaultSectionParserForTest(t)
+
+	parsed := executeParserForTest(t, parser, []string{"--print-schema"})
+	require.NotNil(t, parsed)
+	_, ok := parsed.GetField(schema.DefaultSlug, "required-name")
+	require.False(t, ok)
+}
+
+func TestCobraParserRequiredValidationUsesFilteredSchema(t *testing.T) {
+	parser := newRequiredDefaultSectionParserForTest(t)
+	parser.middlewaresFunc = func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]cmdsources.Middleware, error) {
+		middlewares, err := CobraCommandDefaultMiddlewares(parsedCommandSections, cmd, args)
+		require.NoError(t, err)
+		return append([]cmdsources.Middleware{
+			cmdsources.BlacklistSectionFieldsFirst(map[string][]string{
+				schema.DefaultSlug: {"required-name"},
+			}),
+		}, middlewares...), nil
+	}
+
+	parsed := executeParserForTest(t, parser, nil)
 	require.NotNil(t, parsed)
 	_, ok := parsed.GetField(schema.DefaultSlug, "required-name")
 	require.False(t, ok)

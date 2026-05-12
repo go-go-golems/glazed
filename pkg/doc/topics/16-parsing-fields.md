@@ -188,7 +188,7 @@ if err != nil {
 }
 ```
 
-For Cobra-based commands, `fields.WithRequired(true)` is validated against the final merged value after configured sources have run. That means a required field may be satisfied by a config file, an environment variable, a positional argument, or a Cobra flag. The parser validates required values after source resolution, and it skips that final required-value validation for control/diagnostic paths such as `--help` and `--print-parsed-fields`.
+For Cobra-based commands, `fields.WithRequired(true)` is validated against the final merged value after configured sources have run. That means a required field may be satisfied by a config file, an environment variable, a positional argument, or a Cobra flag. The parser validates required values after source resolution, and it skips that final required-value validation for control/diagnostic paths such as `--help`, `--print-parsed-fields`, `--print-yaml`, and `--print-schema`.
 
 ## Advanced Features
 

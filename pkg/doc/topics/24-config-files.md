@@ -67,7 +67,7 @@ If you’re building a CLI, the Cobra integration keeps environment-variable loa
 
 Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The default parser path wires env loading when `AppName` is set; config loading stays explicit through `ConfigPlanBuilder`. If you supply `MiddlewaresFunc`, you replace that built-in chain and must re-add any sources you still want.
 
-Required fields are validated after source resolution in the Cobra parser path. A field declared with `fields.WithRequired(true)` can therefore be satisfied by config or env as well as by a Cobra flag. Missing required values still fail normal command execution, but `--print-parsed-fields` and `--help` do not run final required-value validation so diagnostics and help remain available while you are debugging configuration.
+Required fields are validated after source resolution in the Cobra parser path. A field declared with `fields.WithRequired(true)` can therefore be satisfied by config or env as well as by a Cobra flag. Missing required values still fail normal command execution, but `--print-parsed-fields`, `--print-yaml`, `--print-schema`, and `--help` do not run final required-value validation so diagnostics and help remain available while you are debugging configuration.
 
 ```go
 package main

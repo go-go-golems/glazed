@@ -676,3 +676,71 @@ OK: uploaded GLAZED_556_Required_Env_Design.pdf -> /ai/2026/05/12/GLAZED-556-REQ
 
 ### Technical details
 - Upload command used `remarquee upload bundle` with the ticket index, design doc, diary, issue source summary, changelog, and tasks.
+
+## Step 10: Address PR 573 code review comments
+
+Codex reviewed PR 573 and raised two follow-up issues: final validation used the original parser schema instead of the middleware-filtered schema, and validation skipped only `--print-parsed-fields` rather than all non-executing diagnostic flags. I updated the implementation and tests for both review comments.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Address the code review comments in https://github.com/go-go-golems/glazed/pull/573
+
+Commit and answer the comments, push."
+
+**Assistant interpretation:** Read PR review threads, implement requested changes, commit them, reply to the review comments, and push the branch.
+
+**Inferred user intent:** Get PR 573 review-ready by resolving automated review feedback with code, tests, and explicit comment replies.
+
+### What I did
+- Retrieved PR review threads through the GitHub GraphQL API.
+- Added `sources.ExecuteWithSchema`, which behaves like `Execute` but returns the cloned schema that middleware operated on.
+- Updated `CobraParser.Parse` to validate required fields against the returned parsed schema rather than the original `c.Sections`.
+- Extended diagnostic skip behavior to include `--print-yaml` and `--print-schema` in addition to `--print-parsed-fields` and help.
+- Added tests for:
+  - filtered schema validation with `BlacklistSectionFieldsFirst`,
+  - `--print-yaml` skipping required validation,
+  - `--print-schema` skipping required validation.
+- Updated docs to mention all diagnostic skip flags.
+
+### Why
+- Source middlewares can intentionally narrow schema before parsing. Final validation must respect that same narrowed schema or commands fail on fields the middleware intentionally excluded.
+- `--print-yaml` and `--print-schema` are non-executing diagnostic/control paths handled after parse, so missing application-level required fields should not block them.
+
+### What worked
+- Focused tests passed:
+
+```bash
+go test ./pkg/cli ./pkg/cmds/sources -count=1
+```
+
+- Full repository tests passed:
+
+```bash
+go test ./... -count=1
+```
+
+### What didn't work
+- No implementation failures in this step.
+
+### What I learned
+- `sources.Execute` already clones the schema internally; returning that clone is enough to let the parser validate against schema mutations made by whitelist/blacklist middlewares.
+- The non-executing command settings should be treated consistently for required validation.
+
+### What was tricky to build
+- The tricky part was preserving the existing `Execute` API while making the filtered schema available. Adding `ExecuteWithSchema` avoids breaking existing callers and lets `Execute` remain a small wrapper.
+
+### What warrants a second pair of eyes
+- Confirm that returning the post-middleware cloned schema is the desired contract for all future validation callers, including after-middlewares that mutate schema after parsing.
+
+### What should be done in the future
+- If more diagnostic flags are added to `CommandSettings`, revisit `shouldValidateRequiredFields` to keep non-executing paths consistent.
+
+### Code review instructions
+- Review `pkg/cmds/sources/middlewares.go` first for the new `ExecuteWithSchema` helper.
+- Then review `pkg/cli/cobra-parser.go` for validation against `parsedSchema` and diagnostic skip behavior.
+- Then review `pkg/cli/cobra_parser_config_test.go` for the new regression tests.
+
+### Technical details
+- PR review comments addressed:
+  - Validate required fields against the filtered schema.
+  - Bypass validation for all diagnostic flags.

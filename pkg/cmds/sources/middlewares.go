@@ -54,6 +54,15 @@ func Chain(ms ...Middleware) Middleware {
 //     call `next` last. This means that the middlewares further down the list will
 //     get the newly updated schema and thus potentially restrict which fields they parse.
 func Execute(schema_ *schema.Schema, parsedValues *values.Values, middlewares ...Middleware) error {
+	_, err := ExecuteWithSchema(schema_, parsedValues, middlewares...)
+	return err
+}
+
+// ExecuteWithSchema executes middlewares like Execute and returns the cloned
+// schema instance that the middleware chain operated on. This is useful for
+// callers that need to validate against schema changes made by source
+// middlewares, such as field/section whitelist or blacklist middlewares.
+func ExecuteWithSchema(schema_ *schema.Schema, parsedValues *values.Values, middlewares ...Middleware) (*schema.Schema, error) {
 	handler := Identity
 	reversedMiddlewares := make([]Middleware, len(middlewares))
 	for i, m_ := range middlewares {
@@ -64,5 +73,5 @@ func Execute(schema_ *schema.Schema, parsedValues *values.Values, middlewares ..
 	}
 
 	clonedSchema := schema_.Clone()
-	return handler(clonedSchema, parsedValues)
+	return clonedSchema, handler(clonedSchema, parsedValues)
 }

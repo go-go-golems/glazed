@@ -78,3 +78,15 @@ Re-uploaded refreshed ticket bundle to reMarkable after implementation and docs 
 
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records refreshed reMarkable upload
 
+
+## 2026-05-12
+
+Addressed PR 573 review comments: validate against middleware-filtered schema and skip required validation for all diagnostic command settings.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cli/cobra-parser.go — Uses filtered schema for required validation and skips print-yaml/print-schema
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cli/cobra_parser_config_test.go — Adds filtered-schema and diagnostic skip regression tests
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cmds/sources/middlewares.go — Adds ExecuteWithSchema for validation against the middleware-mutated schema clone
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records PR review response step
+

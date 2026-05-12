@@ -269,7 +269,7 @@ func (c *CobraParser) Parse(
 	}
 
 	parsedSections := values.New()
-	err = cmd_sources.Execute(c.Sections, parsedSections, middlewares_...)
+	parsedSchema, err := cmd_sources.ExecuteWithSchema(c.Sections, parsedSections, middlewares_...)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (c *CobraParser) Parse(
 		return nil, err
 	}
 	if validateRequired {
-		if err := cmd_sources.ValidateRequiredValues(c.Sections, parsedSections); err != nil {
+		if err := cmd_sources.ValidateRequiredValues(parsedSchema, parsedSections); err != nil {
 			return nil, err
 		}
 	}
@@ -296,7 +296,7 @@ func shouldValidateRequiredFields(cmd *cobra.Command, parsedCommandSections *val
 	if err := parsedCommandSections.DecodeSectionInto(CommandSettingsSlug, commandSettings); err != nil {
 		return false, err
 	}
-	if commandSettings.PrintParsedFields {
+	if commandSettings.PrintParsedFields || commandSettings.PrintYAML || commandSettings.PrintSchema {
 		return false, nil
 	}
 
