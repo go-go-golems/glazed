@@ -7,6 +7,9 @@ before:
     - go mod tidy
     # you may remove this if you don't need go generate
     - go generate ./...
+    # Package the built SPA frontend as a release artifact so that other
+    # Go binaries (pinocchio, sqleton, etc.) can download and embed it.
+    - sh -c "if [ -d pkg/web/embed/public ] && [ -f pkg/web/embed/public/index.html ]; then tar czf glazed-spa.tar.gz -C pkg/web/embed/public .; fi"
 builds:
   - id: glaze-linux
     env:
@@ -53,6 +56,11 @@ signs:
   - artifacts: checksum
     # setup for github actions according to https://goreleaser.com/ci/actions/
     args: [ "--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}" ]
+
+release:
+  extra_files:
+    - glob: ./glazed-spa.tar.gz
+      name_template: glazed-spa-{{ .Version }}.tar.gz
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
