@@ -179,7 +179,7 @@ ageParam := fields.New(
 )
 ```
 
-During parsing, an error is returned if a required field is missing. If an optional field is missing, its default value is used.
+At the individual field parser level, an error is returned if a required field is parsed from no input. If an optional field is missing, its default value is used.
 
 ```go
 parsedParam, err := ageParam.ParseField([]string{})
@@ -187,6 +187,8 @@ if err != nil {
     // Since 'age' is required, an error is expected
 }
 ```
+
+For Cobra-based commands, `fields.WithRequired(true)` is validated against the final merged value after configured sources have run. That means a required field may be satisfied by a config file, an environment variable, a positional argument, or a Cobra flag. The parser validates required values after source resolution, and it skips that final required-value validation for control/diagnostic paths such as `--help` and `--print-parsed-fields`.
 
 ## Advanced Features
 

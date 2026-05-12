@@ -582,3 +582,50 @@ go test ./... -count=1
 
 ### Technical details
 - Full test suite passed on 2026-05-12 after implementing final required validation.
+
+## Step 8: Update user-facing documentation
+
+After the code fix and tests passed, I updated the public Glazed docs that explain field parsing and config/env loading. The docs now state that Cobra parser required fields are validated against final merged values, and that help / parsed-field diagnostics skip final required validation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Keep implementation docs and user-facing docs aligned with the behavior change.
+
+**Inferred user intent:** Make the new semantics discoverable so downstream CLI authors can rely on `WithRequired(true)` with env/config sources.
+
+### What I did
+- Updated `pkg/doc/topics/16-parsing-fields.md` in the required fields section.
+- Updated `pkg/doc/topics/24-config-files.md` in the Cobra integration section.
+- Added a ticket task for this user-facing docs update.
+
+### Why
+- The code behavior changed from source-local required checking to final merged-value required checking.
+- CLI authors need to know that config/env can satisfy `WithRequired(true)` and that `--print-parsed-fields` remains available for diagnostics.
+
+### What worked
+- The docs were small, targeted edits rather than a broad documentation rewrite.
+
+### What didn't work
+- No command failure in this step.
+
+### What I learned
+- `16-parsing-fields.md` covers low-level field parser behavior, so the docs need to distinguish low-level `ParseField([]string{})` from Cobra parser final validation.
+
+### What was tricky to build
+- The tricky wording was avoiding the implication that all low-level parsing APIs now ignore required fields. The final-value semantics are specifically for the Cobra parser path after source resolution.
+
+### What warrants a second pair of eyes
+- Review docs for whether `--print-schema` should also be mentioned as a diagnostic skip if future code adds that behavior.
+
+### What should be done in the future
+- Add examples showing a required env-backed field once the release notes are prepared.
+
+### Code review instructions
+- Review the changed paragraphs in:
+  - `pkg/doc/topics/16-parsing-fields.md`
+  - `pkg/doc/topics/24-config-files.md`
+
+### Technical details
+- No additional code tests were required for docs-only edits after the full suite had already passed.

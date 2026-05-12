@@ -14,3 +14,4 @@
 - [x] Add final required-value validator with empty-value policy
 - [x] Wire conditional validation into CobraParser.Parse
 - [x] Run focused tests and update diary/changelog
+- [x] Update user-facing docs for final required-value validation semantics

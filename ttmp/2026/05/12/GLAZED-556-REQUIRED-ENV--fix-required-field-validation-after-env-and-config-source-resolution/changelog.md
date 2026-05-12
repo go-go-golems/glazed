@@ -58,3 +58,14 @@ Ran full repository validation for required-env fix: go test ./... -count=1 pass
 
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records full-test validation
 
+
+## 2026-05-12
+
+Updated user-facing docs for final required-value validation and diagnostic skip behavior.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/doc/topics/16-parsing-fields.md — Clarifies low-level required parsing versus Cobra final-value validation
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/doc/topics/24-config-files.md — Documents config/env satisfying required fields and diagnostic skip behavior
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records docs update step
+
