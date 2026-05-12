@@ -40,7 +40,7 @@ Design doc at `design-doc/01-implementation-guide-spa-release-asset-and-help-ser
 
 **Why the guard:** Local dev builds without the SPA shouldn't fail. The `if [ -d ... ]` check ensures the tar only runs when `go generate` actually produced the SPA.
 
-**Committed:** 82c2cf3
+**Committed:** `d574dd4` (`goreleaser: publish SPA as glazed-spa.tar.gz release asset`).
 
 ### Task 3: Tag and release glazed — SKIPPED
 
@@ -103,6 +103,20 @@ Built pinocchio without `-tags embed` (no SPA assets), started `pinocchio serve 
 
 **53 sections loaded.** The API works correctly. The SPA serves a placeholder (expected — glazed v1.2.7 hasn't been released with the SPA tarball yet). Once glazed is released with the SPA artifact and pinocchio bumps to that version, `make fetch-spa` will download the real SPA and it'll work end-to-end.
 
+### Commit and validation notes
+
+**Glazed commits:**
+- `d574dd4` — `goreleaser: publish SPA as glazed-spa.tar.gz release asset`
+- `d223255` — `Update GLZ-SPA-RELEASE ticket: tasks 2,4-9 complete, diary written`
+
+**Pinocchio commit:**
+- `47da68e` — `Add pinocchio serve command with embedded help browser SPA`
+
+**Pre-commit validation:**
+- First pinocchio commit attempt failed on `gofmt` for `cmd/pinocchio/cmds/help_loader.go`.
+- Fixed with `gofmt -w cmd/pinocchio/cmds/help_loader.go`.
+- Second commit attempt passed lefthook: `go generate ./...`, `go build ./...`, `golangci-lint`, geppetto vet, and `go test ./...`.
+
 ### Summary
 
-All implementation tasks complete (Tasks 4-9). Task 3 (tag and release glazed) is a manual CI step that requires pushing a tag. The end-to-end test confirms the API works and the #571 fix (auto-assign default package) is functioning correctly in pinocchio's context.
+All implementation tasks complete except Task 3. Task 3 (tag and release glazed) is a manual CI step that requires pushing a tag. The end-to-end test confirms the API works and the #571 fix (auto-assign default package) is functioning correctly in pinocchio's context. The next practical step is to publish a glazed release that contains `glazed-spa-<version>.tar.gz`, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.

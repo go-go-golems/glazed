@@ -16,14 +16,6 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
-    - Path: ../../../../../../pinocchio/.goreleaser.yaml
-      Note: Needs make fetch-spa in before hooks and -tags embed
-    - Path: ../../../../../../pinocchio/Makefile
-      Note: Needs fetch-spa and build-with-spa targets
-    - Path: ../../../../../../pinocchio/cmd/pinocchio/main.go
-      Note: Main entry point
-    - Path: ../../../../../../pinocchio/pkg/doc/doc.go
-      Note: Existing doc loading
     - Path: .github/workflows/release.yaml
       Note: GoReleaser split release
     - Path: .goreleaser.yaml
@@ -36,6 +28,9 @@ LastUpdated: 2026-05-12T15:54:40.048118715-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
+
 
 
 
