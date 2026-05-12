@@ -16,8 +16,6 @@ RelatedFiles:
       Note: Ticket-local evidence collection script
     - Path: ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/scripts/02-reproduce-required-env-parser.sh
       Note: Ticket-local reproduction script for required env failure
-    - Path: ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/scripts/evidence/02-reproduce-required-env-parser.log
-      Note: Captured failing reproduction output
     - Path: ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/sources/01-github-issue-556.md
       Note: Issue summary used as external source material
 ExternalSources:
@@ -142,15 +140,7 @@ The next step was to inspect the parser construction path, the source middleware
   - `NewCobraParserFromSections`
 - Created and ran:
   - `scripts/01-collect-required-env-evidence.sh`
-- The script wrote line-numbered evidence to:
-  - `scripts/evidence/pkg__cli__cobra-parser.go.nl.txt`
-  - `scripts/evidence/pkg__cmds__fields__cobra.go.nl.txt`
-  - `scripts/evidence/pkg__cmds__schema__section-impl.go.nl.txt`
-  - `scripts/evidence/pkg__cmds__sources__update.go.nl.txt`
-  - `scripts/evidence/pkg__cmds__sources__middlewares.go.nl.txt`
-  - `scripts/evidence/pkg__cmds__sources__update_test.go.nl.txt`
-  - `scripts/evidence/pkg__cli__cobra_parser_config_test.go.nl.txt`
-  - `scripts/evidence/rg-required-env.txt`
+- The script can regenerate line-numbered evidence locally under `scripts/evidence/`; generated evidence snapshots are intentionally not kept in git.
 
 ### Why
 
@@ -220,8 +210,7 @@ After mapping the code, I created a small reproduction script that injects a tem
 
 - Created:
   - `scripts/02-reproduce-required-env-parser.sh`
-- Ran it and stored output in:
-  - `scripts/evidence/02-reproduce-required-env-parser.log`
+- Ran it and captured the output in the diary below instead of keeping generated log files in git.
 - The script creates two temporary tests:
   - `TestReproIssue556RequiredEnvBackedField`
   - `TestReproIssue556OptionalEnvBackedField`
@@ -237,7 +226,7 @@ The GitHub issue already has a reproduction, but having a ticket-local reproduct
 
 ### What didn't work
 
-The reproduction script intentionally fails before implementation:
+The reproduction script intentionally failed before implementation. The captured output was:
 
 ```text
 === RUN   TestReproIssue556RequiredEnvBackedField
@@ -810,3 +799,49 @@ go test ./pkg/cmds/sources ./pkg/cli -count=1
 
 ### Technical details
 - Local lint output: `0 issues.`
+
+## Step 12: Remove generated evidence snapshots from git
+
+After review, the line-numbered evidence snapshots under `scripts/evidence/` were deemed too bulky for the PR. I removed the generated evidence files and updated the ticket docs to keep the useful reproduction output inline in the diary/design instead of as checked-in generated files.
+
+### Prompt Context
+
+**User prompt (verbatim):** "remove them."
+
+**Assistant interpretation:** Remove the generated `scripts/evidence/*` files from the PR while keeping the scripts and useful documentation.
+
+**Inferred user intent:** Keep the pull request focused on source changes and curated docs, not generated investigation snapshots.
+
+### What I did
+- Removed all tracked files under `scripts/evidence/`.
+- Updated the diary frontmatter to remove the related-file entry for the deleted reproduction log.
+- Updated the diary/design references so they no longer point at deleted evidence files.
+- Kept the reproduction and evidence collection scripts themselves.
+
+### Why
+- The generated evidence snapshots were useful during investigation but add noise to the PR.
+- The scripts can regenerate local evidence if needed, while the committed docs now contain the important observations inline.
+
+### What worked
+- `docmgr doctor --ticket GLAZED-556-REQUIRED-ENV --stale-after 30` still passes after removing the generated files.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Investigation output should usually stay out of the PR unless it is a curated artifact.
+
+### What was tricky to build
+- The docs had several references to the generated evidence files, so they needed to be cleaned up with the deletion to avoid stale links.
+
+### What warrants a second pair of eyes
+- Confirm whether the remaining `scripts/01-collect-required-env-evidence.sh` should stay or also be removed. It no longer has checked-in outputs.
+
+### What should be done in the future
+- Prefer keeping reproducible scripts and inline summaries over committing large generated snapshots.
+
+### Code review instructions
+- Review the deletion list under `scripts/evidence/` and the small doc reference cleanup in the design doc/diary.
+
+### Technical details
+- Removed `scripts/evidence/*.txt` and `scripts/evidence/*.log` from the ticket.

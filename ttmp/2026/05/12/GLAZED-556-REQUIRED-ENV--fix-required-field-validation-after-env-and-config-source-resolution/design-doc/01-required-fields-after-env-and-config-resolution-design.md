@@ -206,7 +206,7 @@ The ticket script `scripts/02-reproduce-required-env-parser.sh` injects a tempor
 - `required-name`: `fields.WithRequired(true)`, env var set, no flag.
 - `optional-name`: no required marker, env var set, no flag.
 
-Observed result stored in `scripts/evidence/02-reproduce-required-env-parser.log`:
+Observed result from the reproduction script:
 
 ```text
 === RUN   TestReproIssue556RequiredEnvBackedField
@@ -1000,7 +1000,6 @@ Rejected because an explicit final validator is cleaner and easier to test.
 - `/home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/sources/01-github-issue-556.md`
 - `/home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/scripts/01-collect-required-env-evidence.sh`
 - `/home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/scripts/02-reproduce-required-env-parser.sh`
-- `/home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/scripts/evidence/02-reproduce-required-env-parser.log`
 
 ### External source
 

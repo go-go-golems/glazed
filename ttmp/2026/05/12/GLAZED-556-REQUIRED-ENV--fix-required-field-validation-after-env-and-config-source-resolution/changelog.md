@@ -100,3 +100,13 @@ Fixed golangci-lint exhaustive warnings in required-value emptiness checks.
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cmds/sources/validate_required.go — Adds exhaustive ignore comments for intentional partial switches
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records lint fix and validation
 
+
+## 2026-05-12
+
+Removed generated scripts/evidence snapshots from the PR and cleaned up stale doc references.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/design-doc/01-required-fields-after-env-and-config-resolution-design.md — Removes references to deleted generated evidence files
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records evidence snapshot cleanup
+
