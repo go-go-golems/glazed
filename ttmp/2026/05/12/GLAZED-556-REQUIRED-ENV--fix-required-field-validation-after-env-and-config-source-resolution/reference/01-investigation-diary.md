@@ -629,3 +629,50 @@ After the code fix and tests passed, I updated the public Glazed docs that expla
 
 ### Technical details
 - No additional code tests were required for docs-only edits after the full suite had already passed.
+
+## Step 9: Re-upload updated ticket bundle to reMarkable
+
+After implementation and documentation updates, I refreshed the reMarkable bundle so the device copy includes the final design, updated diary, task list, and changelog.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Keep external deliverables in sync after code and documentation changes.
+
+**Inferred user intent:** Ensure the reMarkable copy reflects the implemented fix, not only the initial design package.
+
+### What I did
+- Re-uploaded the ticket bundle with `--force` to the same destination:
+  - `/ai/2026/05/12/GLAZED-556-REQUIRED-ENV`
+
+### Why
+- The original upload happened before the implementation steps and docs updates. Re-uploading keeps the review bundle current.
+
+### What worked
+- Upload succeeded:
+
+```text
+OK: uploaded GLAZED_556_Required_Env_Design.pdf -> /ai/2026/05/12/GLAZED-556-REQUIRED-ENV
+```
+
+### What didn't work
+- No failure in this step.
+
+### What I learned
+- Use `--force` when refreshing an existing bundle at the same reMarkable destination/name.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- Re-upload again only if more ticket docs change materially.
+
+### Code review instructions
+- No code review needed for this delivery step.
+
+### Technical details
+- Upload command used `remarquee upload bundle` with the ticket index, design doc, diary, issue source summary, changelog, and tasks.
