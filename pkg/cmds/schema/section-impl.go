@@ -238,14 +238,16 @@ func (p *SectionImpl) ParseSectionFromCobraCommand(
 	options ...fields.ParseOption,
 ) (*values.SectionValues, error) {
 	ps, err := p.Definitions.GatherFlagsFromCobraCommand(
-		// TODO(manuel, 2024-01-05) We probably need to move the required check to a higher level middleware, because
-		// we are not relying on cobra so much anymore since we introduced middlewares
+		// Required value validation happens after all configured sources have
+		// merged into values.Values. A required field may be satisfied by env or
+		// config even when the Cobra flag was not changed, so source collection must
+		// ignore requiredness here.
 		//
 		// NOTE(manuel, 2024-01-17) I'm moving onlyProvided back to false because we need the default values when adding flags to individual manual commands.
 		// See MD WHITE (2) p.26
 		// NOTE(manuel, 2024-01-17) I'm setting it back to true, because we want each middleware (including ParseFromCobraCommand) to only override the defaults
 		// because defaults are now set through a middleware as well.
-		cmd, true, false, p.Prefix,
+		cmd, true, true, p.Prefix,
 		options...,
 	)
 	if err != nil {

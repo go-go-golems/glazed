@@ -438,3 +438,147 @@ Before changing code, I updated the design to explicitly cover `--print-parsed-f
 ### Technical details
 - Changelog entry added for design/task update.
 - Task 6 checked after the guide update.
+
+## Step 6: Implement final required-value validation and parser skip policy
+
+I implemented the issue 556 fix in the parser path. Cobra source collection now ignores requiredness while gathering changed flags, and `CobraParser.Parse` validates required fields only after all configured sources have merged. The parser also skips this final required validation for `--print-parsed-fields` and help/control paths.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Build the documented design in focused code changes and keep concrete validation notes.
+
+**Inferred user intent:** Land an implementation that fixes env/config-backed required fields without breaking parser diagnostics.
+
+### What I did
+- Added regression coverage in `pkg/cli/cobra_parser_config_test.go` for:
+  - required field satisfied by env,
+  - required field satisfied by config,
+  - missing required field still failing normally,
+  - required field with empty string default still failing,
+  - explicit flag overriding env,
+  - `--print-parsed-fields` skipping final required validation,
+  - `--help` not running parser/validation.
+- Changed `pkg/cmds/schema/section-impl.go` so Cobra source parsing passes `ignoreRequired=true` to `GatherFlagsFromCobraCommand`.
+- Added `pkg/cmds/sources/validate_required.go` with `ValidateRequiredValues` and a middleware wrapper.
+- Updated `pkg/cli/cobra-parser.go` to call final required validation after `cmd_sources.Execute`, guarded by `shouldValidateRequiredFields`.
+
+### Why
+- Required values can come from config/env/args/flags, so source-specific parsing cannot decide whether a required field is missing.
+- `--print-parsed-fields` must be able to show partial parser state for debugging.
+- Help should not be blocked by missing runtime inputs.
+
+### What worked
+- The focused parser tests now pass.
+- The package-level validation set now passes:
+  - `go test ./pkg/cmds/sources ./pkg/cmds/schema ./pkg/cmds/fields ./pkg/cli -count=1`
+
+### What didn't work
+- First focused test run failed before implementation, confirming the regression tests captured the bug:
+
+```text
+Field required-name is required
+```
+
+- The first implementation attempted to use `cmd.HelpFlag()`, but the repository's Cobra version does not expose that method:
+
+```text
+pkg/cli/cobra-parser.go:310:21: cmd.HelpFlag undefined (type *cobra.Command has no field or method HelpFlag)
+```
+
+The fix was to use `cmd.Flags().Lookup("help")`, `cmd.InheritedFlags().Lookup("help")`, and `cmd.PersistentFlags().Lookup("help")` defensively.
+
+### What I learned
+- `ParseCommandSettingsSection` already gives access to `PrintParsedFields`, so the validation skip can be decided without reparsing all command fields.
+- Cobra help normally exits before `RunE`; the test confirms the parser is not called for `--help` in the standard execution path.
+- Empty string defaults require explicit emptiness handling in final validation; merely checking field presence would be incorrect.
+
+### What was tricky to build
+- The tricky part was preserving missing-required failures while no longer failing inside Cobra source parsing. Changing `ignoreRequired` alone would have made missing required values pass; the final validator is what restores correctness at the proper layer.
+- The help skip had to be defensive without relying on a method absent from the current Cobra dependency.
+
+### What warrants a second pair of eyes
+- Review the empty-value policy in `isRequiredValueEmpty`, especially for file-like values and collection types.
+- Confirm whether other command-control flags such as `--print-schema` or `--print-yaml` should skip required validation in a follow-up.
+- Review whether direct users of `cmd_sources.Execute` should adopt `ValidateRequiredValues` explicitly.
+
+### What should be done in the future
+- Update user-facing docs to state that `WithRequired(true)` validates the final merged value, not only explicit Cobra flags.
+- Consider adding source-package unit tests for `ValidateRequiredValues` itself if more field-type edge cases arise.
+
+### Code review instructions
+- Start in `pkg/cli/cobra_parser_config_test.go` to understand the expected behavior matrix.
+- Then review `pkg/cmds/schema/section-impl.go` for the source-collection change.
+- Then review `pkg/cmds/sources/validate_required.go` for the final validation contract.
+- Finish with `pkg/cli/cobra-parser.go` for the conditional validation wiring.
+- Validate with:
+
+```bash
+go test ./pkg/cmds/sources ./pkg/cmds/schema ./pkg/cmds/fields ./pkg/cli -count=1
+```
+
+### Technical details
+- Focused test command that initially failed and then passed:
+
+```bash
+go test ./pkg/cli -run 'TestCobraParserRequiredField|TestCobraParserConfigPlanBuilderLoadsConfigFiles|TestCobraParserDoesNotImplicitly' -count=1 -v
+```
+
+- Broader targeted test command:
+
+```bash
+go test ./pkg/cmds/sources ./pkg/cmds/schema ./pkg/cmds/fields ./pkg/cli -count=1
+```
+
+## Step 7: Run full repository tests before committing implementation
+
+After the targeted parser/source packages passed, I ran the full repository test suite to catch regressions outside the immediate parser path. The full suite passed.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Validate each implementation step before committing.
+
+**Inferred user intent:** Avoid landing a narrow fix that passes only the new tests but breaks unrelated Glazed packages.
+
+### What I did
+- Ran:
+
+```bash
+go test ./... -count=1
+```
+
+### Why
+- The fix changes parser behavior in a shared code path, so downstream package tests are important.
+- `section-impl.go` and `cobra-parser.go` are central enough that unrelated command tests could reveal assumptions about required fields.
+
+### What worked
+- The full repository test suite passed.
+
+### What didn't work
+- No failure in this step.
+
+### What I learned
+- Existing packages tolerate moving required validation from Cobra source collection to final parser validation.
+- The new error message still satisfies tests because no existing tests appear to assert the previous exact string for this parser path.
+
+### What was tricky to build
+- The full test output includes old `ttmp` test packages with no test files. They are harmless but make the output longer.
+
+### What warrants a second pair of eyes
+- Review whether the new validator should live in `sources` long-term or move to a more neutral package if non-middleware callers adopt it widely.
+
+### What should be done in the future
+- If this behavior is released, downstream apps that removed `WithRequired(true)` as a workaround can restore declarative required metadata.
+
+### Code review instructions
+- In addition to focused tests, run the full suite before merging:
+
+```bash
+go test ./... -count=1
+```
+
+### Technical details
+- Full test suite passed on 2026-05-12 after implementing final required validation.

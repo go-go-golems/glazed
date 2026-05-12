@@ -36,3 +36,25 @@ Updated design guide with --print-parsed-fields and --help required-validation s
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/design-doc/01-required-fields-after-env-and-config-resolution-design.md — Guide updated for control-path validation policy
 - /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/tasks.md — Detailed implementation tasks added
 
+
+## 2026-05-12
+
+Implemented final required-value validation after source merging, with env/config regression tests and validation skips for print-parsed-fields/help.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cli/cobra-parser.go — Wires conditional final required validation after source execution
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cli/cobra_parser_config_test.go — Adds issue 556 regression coverage
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cmds/schema/section-impl.go — Makes Cobra source collection ignore requiredness
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/pkg/cmds/sources/validate_required.go — Adds final required-value validator
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records implementation step
+
+
+## 2026-05-12
+
+Ran full repository validation for required-env fix: go test ./... -count=1 passed.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-required-fields-env/glazed/ttmp/2026/05/12/GLAZED-556-REQUIRED-ENV--fix-required-field-validation-after-env-and-config-source-resolution/reference/01-investigation-diary.md — Records full-test validation
+
