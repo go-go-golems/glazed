@@ -1,0 +1,68 @@
+     1	package sources
+     2	
+     3	import (
+     4		"github.com/go-go-golems/glazed/pkg/cmds/schema"
+     5		"github.com/go-go-golems/glazed/pkg/cmds/values"
+     6	)
+     7	
+     8	type HandlerFunc func(schema_ *schema.Schema, parsedValues *values.Values) error
+     9	
+    10	type Middleware func(HandlerFunc) HandlerFunc
+    11	
+    12	// section middlewares:
+    13	// - [x] whitelist (sections, fields)
+    14	// - [x] blacklist (sections, fields)
+    15	// - [x] override (updateFromMap)
+    16	// - [ ] set defaults explicitly
+    17	// - [x] fill from json (updateFromMap)
+    18	// - [x] from field definition defaults
+    19	// - [x] fill from cobra (flags, arguments)
+    20	// - [x] fill from viper
+    21	
+    22	func Identity(schema_ *schema.Schema, parsedValues *values.Values) error {
+    23		return nil
+    24	}
+    25	
+    26	// Chain chains together a list of middlewares into a single middleware.
+    27	// It does this by iteratively wrapping each middleware around the next handler.
+    28	func Chain(ms ...Middleware) Middleware {
+    29		return func(next HandlerFunc) HandlerFunc {
+    30			for _, m_ := range ms {
+    31				next = m_(next)
+    32			}
+    33			return next
+    34		}
+    35	}
+    36	
+    37	// Execute executes a chain of middlewares with the given schema.
+    38	// It starts with an initial empty handler, then iteratively wraps it with each middleware.
+    39	// Finally, it calls the resulting handler with the provided schema and parsed values.
+    40	//
+    41	// Middlewares basically get executed in the reverse order they are provided,
+    42	// which means the first given middleware's handler will be called first.
+    43	//
+    44	// [f1, f2, f3] will be executed as f1(f2(f3(handler)))(schema_, parsedValues).
+    45	//
+    46	// How they call the next handler is up to them, but they should always call it.
+    47	//
+    48	// Usually, the following rules of thumbs work well
+    49	//   - if all you do is modify parsed values, call `next` first.
+    50	//     This means parsed values will be modified in the order of the middlewares.
+    51	//     For example, executeMiddlewares(SetFromArgs(), SetFromEnv(), FromDefaults())
+    52	//     will first set the defaults, then the environment value, and finally the command line arguments.
+    53	//   - if you want to modify the schema before parsing,
+    54	//     call `next` last. This means that the middlewares further down the list will
+    55	//     get the newly updated schema and thus potentially restrict which fields they parse.
+    56	func Execute(schema_ *schema.Schema, parsedValues *values.Values, middlewares ...Middleware) error {
+    57		handler := Identity
+    58		reversedMiddlewares := make([]Middleware, len(middlewares))
+    59		for i, m_ := range middlewares {
+    60			reversedMiddlewares[len(middlewares)-1-i] = m_
+    61		}
+    62		for _, m_ := range reversedMiddlewares {
+    63			handler = m_(handler)
+    64		}
+    65	
+    66		clonedSchema := schema_.Clone()
+    67		return handler(clonedSchema, parsedValues)
+    68	}

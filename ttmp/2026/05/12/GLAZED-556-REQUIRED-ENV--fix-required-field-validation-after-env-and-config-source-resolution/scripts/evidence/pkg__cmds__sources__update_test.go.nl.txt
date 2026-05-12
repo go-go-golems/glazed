@@ -1,0 +1,140 @@
+     1	package sources
+     2	
+     3	import (
+     4		"os"
+     5		"testing"
+     6		"time"
+     7	
+     8		"github.com/go-go-golems/glazed/pkg/cmds/fields"
+     9		"github.com/go-go-golems/glazed/pkg/cmds/schema"
+    10		"github.com/go-go-golems/glazed/pkg/cmds/values"
+    11		"github.com/stretchr/testify/require"
+    12	)
+    13	
+    14	func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
+    15		// Define a section with a prefix so env keys are: PREFIX + "_" + UPPER(prefix+name)
+    16		cfgSection, err := schema.NewSection("cfg", "Config",
+    17			schema.WithPrefix("cfg-"),
+    18			schema.WithFields(
+    19				fields.New("verbose", fields.TypeBool),
+    20				fields.New("retries", fields.TypeInteger),
+    21				fields.New("ratio", fields.TypeFloat),
+    22				fields.New("start", fields.TypeDate),
+    23				fields.New("mode", fields.TypeChoice, fields.WithChoices("a", "b")),
+    24				fields.New("names", fields.TypeStringList),
+    25				fields.New("nums", fields.TypeIntegerList),
+    26				fields.New("floats", fields.TypeFloatList),
+    27				fields.New("labels", fields.TypeKeyValue),
+    28				fields.New("user", fields.TypeString),
+    29			),
+    30		)
+    31		require.NoError(t, err)
+    32	
+    33		schema_ := schema.NewSchema(schema.WithSections(cfgSection))
+    34		parsed := values.New()
+    35	
+    36		// Set env vars
+    37		env := map[string]string{
+    38			"APP_CFG_VERBOSE": "true",
+    39			"APP_CFG_RETRIES": "3",
+    40			"APP_CFG_RATIO":   "0.5",
+    41			"APP_CFG_START":   "2025-01-02",
+    42			"APP_CFG_MODE":    "a",
+    43			"APP_CFG_NAMES":   "alice,bob",
+    44			"APP_CFG_NUMS":    "1,2,3",
+    45			"APP_CFG_FLOATS":  "0.1,2.3",
+    46			"APP_CFG_LABELS":  "k1:v1,k2:v2",
+    47			"APP_CFG_USER":    "manuel",
+    48		}
+    49		// remember old env and restore
+    50		prev := map[string]*string{}
+    51		for k, v := range env {
+    52			if old, ok := os.LookupEnv(k); ok {
+    53				prev[k] = &old
+    54			} else {
+    55				prev[k] = nil
+    56			}
+    57			err := os.Setenv(k, v)
+    58			require.NoError(t, err)
+    59		}
+    60		t.Cleanup(func() {
+    61			for k, v := range prev {
+    62				if v == nil {
+    63					_ = os.Unsetenv(k)
+    64				} else {
+    65					_ = os.Setenv(k, *v)
+    66				}
+    67			}
+    68		})
+    69	
+    70		err = Execute(schema_, parsed,
+    71			FromEnv("APP", fields.WithSource("env")),
+    72		)
+    73		require.NoError(t, err)
+    74	
+    75		sectionValues, ok := parsed.Get("cfg")
+    76		require.True(t, ok)
+    77	
+    78		get := func(name string) interface{} {
+    79			v, ok := sectionValues.Fields.Get(name)
+    80			require.True(t, ok, "field %s should be set", name)
+    81			return v.Value
+    82		}
+    83	
+    84		require.Equal(t, true, get("verbose"))
+    85		require.Equal(t, 3, get("retries"))
+    86		require.InDelta(t, 0.5, get("ratio").(float64), 1e-9)
+    87		require.Equal(t, "a", get("mode"))
+    88		require.Equal(t, "manuel", get("user"))
+    89	
+    90		// Date: compare YYYY-MM-DD
+    91		d := get("start").(time.Time)
+    92		require.Equal(t, "2025-01-02", d.Format("2006-01-02"))
+    93	
+    94		// Lists and key-value
+    95		require.Equal(t, []string{"alice", "bob"}, get("names"))
+    96		require.Equal(t, []int{1, 2, 3}, get("nums"))
+    97		require.InDeltaSlice(t, []float64{0.1, 2.3}, get("floats").([]float64), 1e-9)
+    98		require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, get("labels"))
+    99	
+   100		// Check env_key metadata exists on one param (verbose)
+   101		vp, ok := sectionValues.Fields.Get("verbose")
+   102		require.True(t, ok)
+   103		require.NotEmpty(t, vp.Log)
+   104		found := false
+   105		for _, step := range vp.Log {
+   106			if step.Source == "env" && step.Metadata != nil {
+   107				if ek, ok := step.Metadata["env_key"]; ok && ek == "APP_CFG_VERBOSE" {
+   108					found = true
+   109					break
+   110				}
+   111			}
+   112		}
+   113		require.True(t, found, "expected env_key metadata on verbose")
+   114	}
+   115	
+   116	func TestUpdateFromEnvInvalidChoice(t *testing.T) {
+   117		cfgSection, err := schema.NewSection("cfg", "Config",
+   118			schema.WithPrefix("cfg-"),
+   119			schema.WithFields(
+   120				fields.New("mode", fields.TypeChoice, fields.WithChoices("a", "b")),
+   121			),
+   122		)
+   123		require.NoError(t, err)
+   124	
+   125		schema_ := schema.NewSchema(schema.WithSections(cfgSection))
+   126		parsed := values.New()
+   127	
+   128		prev, had := os.LookupEnv("APP_CFG_MODE")
+   129		_ = os.Setenv("APP_CFG_MODE", "c") // invalid
+   130		t.Cleanup(func() {
+   131			if had {
+   132				_ = os.Setenv("APP_CFG_MODE", prev)
+   133			} else {
+   134				_ = os.Unsetenv("APP_CFG_MODE")
+   135			}
+   136		})
+   137	
+   138		err = Execute(schema_, parsed, FromEnv("APP"))
+   139		require.Error(t, err, "should error on invalid choice")
+   140	}

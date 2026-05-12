@@ -1,0 +1,161 @@
+pkg/doc/topics/24-config-files.md:20:- Loading styles: You can load config via simple file middlewares (`FromFile`, `FromFiles`), via resolved layered inputs (`FromResolvedFiles`), or directly from declarative plans (`FromConfigPlan`, `FromConfigPlanBuilder`).
+pkg/doc/topics/24-config-files.md:28:If you already have a declarative `config.Plan`, you can either resolve it yourself and call `FromResolvedFiles(...)`, or load it directly with `FromConfigPlan(...)` / `FromConfigPlanBuilder(...)`.
+pkg/doc/topics/24-config-files.md:56:        sources.FromEnv("MYAPP"),                           // Env (prefix)
+pkg/doc/topics/24-config-files.md:66:If you’re building a CLI, the Cobra integration keeps environment-variable loading and config-file loading separate on purpose. `AppName` turns on the env prefix for the built-in parser path, while `ConfigPlanBuilder` adds explicit config-file discovery. This keeps your command code focused on business logic while Glazed handles the parsing pipeline and debug flags (like `--print-parsed-fields`).
+pkg/doc/topics/24-config-files.md:68:Use `github.com/go-go-golems/glazed/pkg/cli` to build Cobra commands and attach config processing. The default parser path wires env loading when `AppName` is set; config loading stays explicit through `ConfigPlanBuilder`. If you supply `MiddlewaresFunc`, you replace that built-in chain and must re-add any sources you still want.
+pkg/doc/topics/24-config-files.md:90:    // AppName enables env loading in the default parser path (prefix = APPNAME_)
+pkg/doc/topics/24-config-files.md:91:    // ConfigPlanBuilder defines config-file discovery explicitly
+pkg/doc/topics/24-config-files.md:94:            AppName: "myapp",
+pkg/doc/topics/24-config-files.md:95:            ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*config.Plan, error) {
+pkg/doc/topics/24-config-files.md:453:- Use `AppName` in `CobraParserConfig` to enable env overrides automatically on the built-in parser path.
+pkg/cmds/json-schema.go:16:	Required             bool                           `json:"-"`
+pkg/cmds/json-schema.go:26:	Required    []string                       `json:"required,omitempty"`
+pkg/cmds/json-schema.go:33:		Required:    param.Required,
+pkg/cmds/json-schema.go:157:		Required:    []string{},
+pkg/cmds/json-schema.go:167:		if flag.Required {
+pkg/cmds/json-schema.go:168:			schema.Required = append(schema.Required, flag.Name)
+pkg/cmds/json-schema.go:183:		if arg.Required {
+pkg/cmds/json-schema.go:184:			schema.Required = append(schema.Required, arg.Name)
+pkg/cli/helpers.go:35:	parser, err := NewCobraParserFromSections(schema_, &CobraParserConfig{
+pkg/cli/helpers.go:36:		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
+pkg/cli/cobra.go:252:	cobraParser, err := NewCobraParserFromSections(description.Schema, &cfg.ParserCfg)
+pkg/cli/cobra.go:302:		if argDef.Required && !ok {
+pkg/cli/cobra-parser.go:29:// CobraCommandDefaultMiddlewares builds a minimal middleware chain for Cobra commands.
+pkg/cli/cobra-parser.go:33:func CobraCommandDefaultMiddlewares(
+pkg/cli/cobra-parser.go:89:type ConfigPlanBuilder func(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) (*glazedConfig.Plan, error)
+pkg/cli/cobra-parser.go:99:	// AppName controls the default env prefix (strings.ToUpper(AppName)) used by the
+pkg/cli/cobra-parser.go:101:	AppName string
+pkg/cli/cobra-parser.go:102:	// ConfigPlanBuilder resolves explicit layered config policy for the command.
+pkg/cli/cobra-parser.go:104:	ConfigPlanBuilder ConfigPlanBuilder
+pkg/cli/cobra-parser.go:118:// NewCobraParserFromSections creates a new CobraParser instance from a
+pkg/cli/cobra-parser.go:121:func NewCobraParserFromSections(
+pkg/cli/cobra-parser.go:128:		middlewaresFunc:                    CobraCommandDefaultMiddlewares,
+pkg/cli/cobra-parser.go:162:				if cfgCopy.AppName != "" {
+pkg/cli/cobra-parser.go:163:					envPrefix := strings.ToUpper(cfgCopy.AppName)
+pkg/cli/cobra-parser.go:165:						cmd_sources.FromEnv(envPrefix,
+pkg/cli/cobra-parser.go:171:				if cfgCopy.ConfigPlanBuilder != nil {
+pkg/cli/cobra-parser.go:173:						cmd_sources.FromConfigPlanBuilder(
+pkg/cli/cobra-parser.go:175:								return cfgCopy.ConfigPlanBuilder(parsedCommandSections, cmd, args)
+pkg/cli/cobra_parser_config_test.go:52:func TestCobraParserConfigPlanBuilderLoadsConfigFiles(t *testing.T) {
+pkg/cli/cobra_parser_config_test.go:59:	parser, err := NewCobraParserFromSections(schema_, &CobraParserConfig{
+pkg/cli/cobra_parser_config_test.go:61:		ConfigPlanBuilder: func(_ *values.Values, _ *cobra.Command, _ []string) (*glazedconfig.Plan, error) {
+pkg/cli/cobra_parser_config_test.go:84:	parser, err := NewCobraParserFromSections(schema_, &CobraParserConfig{
+pkg/cli/cobra_parser_config_test.go:85:		AppName: "myapp",
+pkg/cmds/fields/gather-fields.go:51:				if p.Required {
+pkg/cmds/fields/gather-arguments.go:15:// Required arguments missing from the input will result in an error.
+pkg/cmds/fields/gather-arguments.go:26:	ignoreRequired bool,
+pkg/cmds/fields/gather-arguments.go:43:			if argument.Required {
+pkg/cmds/fields/gather-arguments.go:44:				if ignoreRequired {
+pkg/cmds/fields/strings.go:19:// ignoreRequired controls whether required flags are enforced.
+pkg/cmds/fields/strings.go:29:	ignoreRequired bool,
+pkg/cmds/fields/strings.go:133:		if param.Required && !ignoreRequired {
+pkg/cmds/fields/initialize-struct.go:95://		fields.WithRequired(true),
+pkg/cmds/fields/strings_test.go:19:		ignoreRequired bool
+pkg/cmds/fields/strings_test.go:436:			name: "Required argument",
+pkg/cmds/fields/strings_test.go:439:				{Name: "required", ShortFlag: "r", Type: TypeString, Required: true},
+pkg/cmds/fields/strings_test.go:448:			name: "Required argument missing",
+pkg/cmds/fields/strings_test.go:451:				{Name: "required", ShortFlag: "r", Type: TypeString, Required: true},
+pkg/cmds/fields/strings_test.go:491:			got_, args, err := tt.params.GatherFlagsFromStringList(tt.args, tt.onlyProvided, tt.ignoreRequired, tt.prefix)
+pkg/cmds/fields/cobra.go:15://   - Required fields are enclosed in '<>'.
+pkg/cmds/fields/cobra.go:41:		if arg.Required {
+pkg/cmds/fields/cobra.go:56://   - Required arguments (argument.Required == true) should come before the optional.
+pkg/cmds/fields/cobra.go:90:		if argument.Required {
+pkg/cmds/fields/cobra.go:400:// GatherFlagsFromCobraCommand gathers the flags from the cobra command, and parses them according
+pkg/cmds/fields/cobra.go:413:func (pds *Definitions) GatherFlagsFromCobraCommand(
+pkg/cmds/fields/cobra.go:416:	ignoreRequired bool,
+pkg/cmds/fields/cobra.go:436:			if pd.Required {
+pkg/cmds/fields/cobra.go:437:				if ignoreRequired {
+pkg/cmds/fields/definitions_test.go:50:			Required: true,
+pkg/cmds/sources/update.go:143:func updateFromEnv(
+pkg/cmds/sources/update.go:213:func FromEnv(prefix string, options ...fields.ParseOption) Middleware {
+pkg/cmds/sources/update.go:221:			return updateFromEnv(schema_, parsedValues, prefix, options...)
+pkg/cmds/fields/parse.go:87:		if p.Required {
+pkg/cmds/sources/config_files_test.go:90:func TestFromConfigPlanBuilderUsesParsedValues(t *testing.T) {
+pkg/cmds/sources/config_files_test.go:111:		sources.FromConfigPlanBuilder(func(_ context.Context, parsedValues *values.Values) (*glazedconfig.Plan, error) {
+pkg/cmds/fields/gather-arguments_test.go:19:func TestGatherArguments_RequiredMissing(t *testing.T) {
+pkg/cmds/fields/gather-arguments_test.go:23:			Required:   true,
+pkg/cmds/fields/gather-arguments_test.go:445:func TestGenerateUseString_RequiredArguments(t *testing.T) {
+pkg/cmds/fields/gather-arguments_test.go:448:		[]*Definition{{Name: "name", IsArgument: true, Required: true}}))
+pkg/cmds/fields/gather-arguments_test.go:461:func TestGenerateUseString_RequiredAndOptionalArguments(t *testing.T) {
+pkg/cmds/fields/gather-arguments_test.go:464:		{Name: "name", Required: true, IsArgument: true},
+pkg/cmds/fields/gather-arguments_test.go:487:func TestGenerateUseString_RequiredWithMultipleValues(t *testing.T) {
+pkg/cmds/fields/gather-arguments_test.go:490:		{Name: "name", Required: true, IsArgument: true, Type: TypeStringList},
+pkg/cmds/sources/load-fields-from-config.go:130:	return FromConfigPlanBuilder(func(context.Context, *values.Values) (*glazedconfig.Plan, error) {
+pkg/cmds/sources/load-fields-from-config.go:135:// FromConfigPlanBuilder resolves a config plan dynamically at middleware execution time and loads
+pkg/cmds/sources/load-fields-from-config.go:137:func FromConfigPlanBuilder(resolver ConfigPlanResolver, options ...ConfigFileOption) Middleware {
+pkg/cmds/helpers/test-helpers.go:158:const TestMiddlewareUpdateFromEnv = "updateFromEnv"
+pkg/cmds/helpers/test-helpers.go:214:		case TestMiddlewareUpdateFromEnv:
+pkg/cmds/helpers/test-helpers.go:215:			ret = append(ret, sources.FromEnv(*m.Prefix, options...))
+pkg/cmds/sources/middlewares.go:51://     For example, executeMiddlewares(SetFromArgs(), SetFromEnv(), FromDefaults())
+pkg/cmds/sources/profiles.go:102://	    middlewares.WithProfileAppName("other-app"),
+pkg/cmds/sources/profiles.go:129:				if config.Required {
+pkg/cmds/sources/profiles.go:142:				if profileName != "default" && config.Required {
+pkg/cmds/sources/profiles.go:157:	AppName      string
+pkg/cmds/sources/profiles.go:158:	Required     bool
+pkg/cmds/sources/profiles.go:172:// WithProfileAppName sets the app name to use for loading profiles from standard locations
+pkg/cmds/sources/profiles.go:173:func WithProfileAppName(appName string) ProfileOption {
+pkg/cmds/sources/profiles.go:175:		c.AppName = appName
+pkg/cmds/sources/profiles.go:179:// WithProfileRequired sets whether the profile file and profile must exist
+pkg/cmds/sources/profiles.go:180:func WithProfileRequired(required bool) ProfileOption {
+pkg/cmds/sources/profiles.go:182:		c.Required = required
+pkg/cmds/sources/profiles.go:198:	} else if config.AppName != "" {
+pkg/cmds/sources/profiles.go:204:		return filepath.Join(xdgConfigPath, config.AppName, "profiles.yaml"), nil
+pkg/cmds/sources/profiles.go:207:		return "", errors.New("either ProfileFile or AppName must be specified")
+pkg/cmds/sources/update_test.go:14:func TestUpdateFromEnvParsesTypedValues(t *testing.T) {
+pkg/cmds/sources/update_test.go:71:		FromEnv("APP", fields.WithSource("env")),
+pkg/cmds/sources/update_test.go:116:func TestUpdateFromEnvInvalidChoice(t *testing.T) {
+pkg/cmds/sources/update_test.go:138:	err = Execute(schema_, parsed, FromEnv("APP"))
+pkg/cmds/sources/custom-profiles_test.go:171:func TestGatherFlagsFromCustomProfilesWithAppName(t *testing.T) {
+pkg/cmds/sources/custom-profiles_test.go:192:		WithProfileAppName("non-existent-app"),
+pkg/cmds/sources/custom-profiles_test.go:237:		WithProfileRequired(true),
+pkg/cmds/sources/custom-profiles_test.go:255:	// Test WithProfileAppName
+pkg/cmds/sources/custom-profiles_test.go:256:	WithProfileAppName("test-app")(config)
+pkg/cmds/sources/custom-profiles_test.go:257:	assert.Equal(t, "test-app", config.AppName)
+pkg/cmds/sources/custom-profiles_test.go:259:	// Test WithProfileRequired
+pkg/cmds/sources/custom-profiles_test.go:260:	WithProfileRequired(true)(config)
+pkg/cmds/sources/custom-profiles_test.go:261:	assert.True(t, config.Required)
+pkg/cmds/fields/test-data/gather-fields.yaml:149:- title: "Test Missing Required Arguments"
+pkg/cmds/fields/test-data/gather-fields.yaml:166:- title: "Test Single Missing Required Argument"
+pkg/cmds/fields/test-data/gather-fields.yaml:182:- title: "Test All Missing Required Arguments"
+pkg/cmds/fields/test-data/gather-fields.yaml:196:- title: "Test Multiple Missing Required Arguments with Defaults"
+pkg/cmds/cobra_test.go:27:func TestAddSingleRequiredArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:34:				Required: true,
+pkg/cmds/cobra_test.go:64:func TestAddTwoRequiredArguments(t *testing.T) {
+pkg/cmds/cobra_test.go:70:				Required: true,
+pkg/cmds/cobra_test.go:75:				Required: true,
+pkg/cmds/cobra_test.go:111:func TestOneRequiredOneOptionalArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:117:				Required: true,
+pkg/cmds/cobra_test.go:302:func TestFailAddingRequiredAfterOptional(t *testing.T) {
+pkg/cmds/cobra_test.go:311:				Required: true,
+pkg/cmds/cobra_test.go:320:func TestAddStringListRequiredArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:326:				Required: true,
+pkg/cmds/cobra_test.go:399:func TestAddIntegerListRequiredArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:405:				Required: true,
+pkg/cmds/cobra_test.go:420:func TestAddStringListRequiredAfterRequiredArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:426:				Required: true,
+pkg/cmds/cobra_test.go:431:				Required: true,
+pkg/cmds/cobra_test.go:445:func TestAddStringListOptionalAfterRequiredArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:451:				Required: true,
+pkg/cmds/cobra_test.go:495:func TestAddStringListRequiredAfterOptionalArgument(t *testing.T) {
+pkg/cmds/cobra_test.go:505:				Required: true,
+pkg/cmds/cobra_test.go:598:			flagFields, flagsError = desc.GetDefaultFlags().GatherFlagsFromCobraCommand(cmd, false, false, "")
+pkg/cmds/fields/definitions.go:19:// it also specifies a Type, a Default value and if it is Required.
+pkg/cmds/fields/definitions.go:27:	Required   bool         `yaml:"required,omitempty"`
+pkg/cmds/fields/definitions.go:57:func WithRequired(required bool) Option {
+pkg/cmds/fields/definitions.go:59:		p.Required = required
+pkg/cmds/fields/definitions.go:98:		Required:   p.Required,
+pkg/cmds/sources/patternmapper/loader.go:24:	Required      bool          `yaml:"required" json:"required"`
+pkg/cmds/sources/patternmapper/loader.go:33:		Required:      mr.Required,
+pkg/cmds/sources/vault.go:83:			FromEnv(prefix, fields.WithSource("env")),
+pkg/cmds/runner/run.go:170:			cmd_sources.FromEnv(opts.EnvPrefix,
+pkg/cmds/sources/vault_test.go:249:		FromEnv("MYAPP", fields.WithSource("env")),
+pkg/cmds/sources/patternmapper/pattern_mapper.go:20://   - Required: Whether the pattern must match (default: false)
+pkg/cmds/sources/patternmapper/pattern_mapper.go:43:	// If Required is true, pattern must match or an error is returned
+pkg/cmds/sources/patternmapper/pattern_mapper.go:44:	Required bool
+pkg/cmds/sources/patternmapper/pattern_mapper.go:356:	if len(matches) == 0 && compiled.rule.Required {
+pkg/cmds/sources/patternmapper/pattern_mapper_edge_cases_test.go:291:					Required:      true,
+pkg/cmds/sources/patternmapper/pattern_mapper_builder.go:24:// If required is provided and true, the rule will be marked as Required.
+pkg/cmds/sources/patternmapper/pattern_mapper_builder.go:32:		r.Required = true
+pkg/cmds/sources/patternmapper/pattern_mapper_test.go:393:					Required:      true,
+pkg/cmds/sources/patternmapper/pattern_mapper_test.go:413:					Required:      false,
+pkg/cmds/schema/section-impl.go:240:	ps, err := p.Definitions.GatherFlagsFromCobraCommand(

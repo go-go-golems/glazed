@@ -1,0 +1,8 @@
+=== RUN   TestReproIssue556RequiredEnvBackedField
+    required_env_repro_test.go:37: BUG REPRODUCED: required env-backed field failed before env could satisfy it: Field required-name is required
+--- FAIL: TestReproIssue556RequiredEnvBackedField (0.00s)
+=== RUN   TestReproIssue556OptionalEnvBackedField
+--- PASS: TestReproIssue556OptionalEnvBackedField (0.00s)
+FAIL
+FAIL	github.com/go-go-golems/glazed/pkg/cli	0.007s
+FAIL

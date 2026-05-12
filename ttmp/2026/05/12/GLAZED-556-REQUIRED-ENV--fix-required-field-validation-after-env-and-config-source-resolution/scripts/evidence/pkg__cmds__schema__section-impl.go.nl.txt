@@ -1,0 +1,281 @@
+     1	package schema
+     2	
+     3	import (
+     4		"github.com/go-go-golems/glazed/pkg/cmds/fields"
+     5		"github.com/go-go-golems/glazed/pkg/cmds/values"
+     6		"github.com/spf13/cobra"
+     7		"gopkg.in/yaml.v3"
+     8	)
+     9	
+    10	// SectionImpl is a straight forward simple implementation of Section
+    11	// that can easily be reused in more complex implementations.
+    12	type SectionImpl struct {
+    13		Name          string              `yaml:"name"`
+    14		Slug          string              `yaml:"slug"`
+    15		Description   string              `yaml:"description"`
+    16		Prefix        string              `yaml:"prefix"`
+    17		Definitions   *fields.Definitions `yaml:"flags,omitempty"`
+    18		ChildSections []Section           `yaml:"childSections,omitempty"`
+    19	}
+    20	
+    21	var _ Section = &SectionImpl{}
+    22	var _ CobraSection = &SectionImpl{}
+    23	
+    24	func (p *SectionImpl) GetName() string {
+    25		return p.Name
+    26	}
+    27	
+    28	func (p *SectionImpl) GetSlug() string {
+    29		return p.Slug
+    30	}
+    31	
+    32	func (p *SectionImpl) GetDescription() string {
+    33		return p.Description
+    34	}
+    35	
+    36	func (p *SectionImpl) GetPrefix() string {
+    37		return p.Prefix
+    38	}
+    39	
+    40	func (p *SectionImpl) UnmarshalYAML(unmarshal func(interface{}) error) error {
+    41		var raw struct {
+    42			Name        string              `yaml:"name"`
+    43			Slug        string              `yaml:"slug"`
+    44			Description string              `yaml:"description"`
+    45			Flags       *fields.Definitions `yaml:"flags,omitempty"`
+    46		}
+    47		raw.Flags = fields.NewDefinitions()
+    48		if err := unmarshal(&raw); err != nil {
+    49			return err
+    50		}
+    51		p.Name = raw.Name
+    52		p.Slug = raw.Slug
+    53		p.Description = raw.Description
+    54		p.Definitions = raw.Flags
+    55		return nil
+    56	}
+    57	
+    58	type SectionOption func(*SectionImpl) error
+    59	
+    60	func NewSection(slug string, name string, options ...SectionOption) (*SectionImpl, error) {
+    61		ret := &SectionImpl{
+    62			Slug:        slug,
+    63			Name:        name,
+    64			Definitions: fields.NewDefinitions(),
+    65		}
+    66	
+    67		for _, o := range options {
+    68			err := o(ret)
+    69			if err != nil {
+    70				return nil, err
+    71			}
+    72		}
+    73	
+    74		return ret, nil
+    75	}
+    76	
+    77	func WithPrefix(prefix string) SectionOption {
+    78		return func(p *SectionImpl) error {
+    79			p.Prefix = prefix
+    80			return nil
+    81		}
+    82	}
+    83	
+    84	func WithName(name string) SectionOption {
+    85		return func(p *SectionImpl) error {
+    86			p.Name = name
+    87			return nil
+    88		}
+    89	}
+    90	
+    91	func WithDescription(description string) SectionOption {
+    92		return func(p *SectionImpl) error {
+    93			p.Description = description
+    94			return nil
+    95		}
+    96	}
+    97	
+    98	func WithDefaults(s interface{}) SectionOption {
+    99		return func(p *SectionImpl) error {
+   100			// if s is a map[string]interface{} then we can just use that
+   101	
+   102			if m, ok := s.(map[string]interface{}); ok {
+   103				return p.InitializeDefaultsFromFields(m)
+   104			} else {
+   105				return p.InitializeDefaultsFromStruct(s)
+   106			}
+   107		}
+   108	}
+   109	
+   110	func WithFields(definitions ...*fields.Definition) SectionOption {
+   111		return func(p *SectionImpl) error {
+   112			for _, f := range definitions {
+   113				p.Definitions.Set(f.Name, f)
+   114			}
+   115			return nil
+   116		}
+   117	}
+   118	
+   119	func WithArguments(arguments ...*fields.Definition) SectionOption {
+   120		return func(p *SectionImpl) error {
+   121			for _, a := range arguments {
+   122				a.IsArgument = true
+   123				p.Definitions.Set(a.Name, a)
+   124			}
+   125			return nil
+   126		}
+   127	}
+   128	
+   129	func (p *SectionImpl) LoadFromYAML(s []byte) error {
+   130		err := yaml.Unmarshal(s, p)
+   131		if err != nil {
+   132			return err
+   133		}
+   134	
+   135		for f_ := p.Definitions.Oldest(); f_ != nil; f_ = f_.Next() {
+   136			_, err := f_.Value.CheckDefaultValueValidity()
+   137			if err != nil {
+   138				return err
+   139			}
+   140		}
+   141	
+   142		return nil
+   143	}
+   144	
+   145	func NewSectionFromYAML(s []byte, options ...SectionOption) (*SectionImpl, error) {
+   146		ret := &SectionImpl{}
+   147		err := ret.LoadFromYAML(s)
+   148		if err != nil {
+   149			return nil, err
+   150		}
+   151	
+   152		for _, o := range options {
+   153			err = o(ret)
+   154			if err != nil {
+   155				return nil, err
+   156			}
+   157		}
+   158	
+   159		return ret, nil
+   160	}
+   161	
+   162	func (p *SectionImpl) AddFields(flag ...*fields.Definition) {
+   163		for _, f := range flag {
+   164			p.Definitions.Set(f.Name, f)
+   165		}
+   166	}
+   167	
+   168	// GetDefinitions returns a map that maps all fields (flags and arguments) to their name.
+   169	// I'm not sure if this is worth caching, but if we hook this up like something like
+   170	// a lambda that might become more relevant.
+   171	func (p *SectionImpl) GetDefinitions() *fields.Definitions {
+   172		ret := fields.NewDefinitions()
+   173		for f := p.Definitions.Oldest(); f != nil; f = f.Next() {
+   174			ret.Set(f.Key, f.Value)
+   175		}
+   176		return ret
+   177	}
+   178	
+   179	// InitializeDefaultsFromStruct initializes the `Definition` of the section,
+   180	// which are often defined at compile time and loaded from a YAML file, with fresh
+   181	// ones from the struct.
+   182	// This is in some ways the opposite of `InitializeStructFromFieldDefaults`.
+   183	// The struct fields of `defaults` with a struct tag of `glazed` are used
+   184	// to initialize the `Definition` with a matching name. If no matching
+   185	// `Definition` is found, an error is returned.
+   186	func (p *SectionImpl) InitializeDefaultsFromStruct(defaults interface{}) error {
+   187		// check if defaults is a nil pointer
+   188		if defaults == nil {
+   189			return nil
+   190		}
+   191		ps := p.GetDefinitions()
+   192		err := ps.InitializeDefaultsFromStruct(defaults)
+   193		return err
+   194	}
+   195	
+   196	// InitializeDefaultsFromFields initializes the field definitions
+   197	// of the section from the given map of field values. The field definitions
+   198	// are updated in-place.
+   199	func (p *SectionImpl) InitializeDefaultsFromFields(
+   200		ps map[string]interface{},
+   201	) error {
+   202		pds := p.GetDefinitions()
+   203		err := pds.InitializeDefaultsFromMap(ps)
+   204		return err
+   205	}
+   206	
+   207	func (p *SectionImpl) InitializeStructFromFieldDefaults(s interface{}) error {
+   208		if s == nil {
+   209			return nil
+   210		}
+   211		pds := p.GetDefinitions()
+   212		err := pds.InitializeStructFromDefaults(s)
+   213		return err
+   214	}
+   215	
+   216	// AddSectionToCobraCommand adds all flags of the section to the given Cobra command.
+   217	// It also creates a flag group representing the section and adds it to the command.
+   218	// If the section has a prefix, the flags are added with that prefix.
+   219	func (p *SectionImpl) AddSectionToCobraCommand(cmd *cobra.Command) error {
+   220		err := p.Definitions.AddFieldsToCobraCommand(cmd, p.Prefix)
+   221		if err != nil {
+   222			return err
+   223		}
+   224	
+   225		AddFlagGroupToCobraCommand(cmd, p.Slug, p.Name, p.Definitions, p.Prefix)
+   226	
+   227		return nil
+   228	}
+   229	
+   230	// ParseSectionFromCobraCommand parses the flags of the section from the given Cobra command.
+   231	// If the section has a prefix, the flags are parsed with that prefix (meaning, the prefix
+   232	// is stripped from the flag names before they are added to the returned map).
+   233	//
+   234	// This will return a map containing the value (or default value) of each flag
+   235	// of the section.
+   236	func (p *SectionImpl) ParseSectionFromCobraCommand(
+   237		cmd *cobra.Command,
+   238		options ...fields.ParseOption,
+   239	) (*values.SectionValues, error) {
+   240		ps, err := p.Definitions.GatherFlagsFromCobraCommand(
+   241			// TODO(manuel, 2024-01-05) We probably need to move the required check to a higher level middleware, because
+   242			// we are not relying on cobra so much anymore since we introduced middlewares
+   243			//
+   244			// NOTE(manuel, 2024-01-17) I'm moving onlyProvided back to false because we need the default values when adding flags to individual manual commands.
+   245			// See MD WHITE (2) p.26
+   246			// NOTE(manuel, 2024-01-17) I'm setting it back to true, because we want each middleware (including ParseFromCobraCommand) to only override the defaults
+   247			// because defaults are now set through a middleware as well.
+   248			cmd, true, false, p.Prefix,
+   249			options...,
+   250		)
+   251		if err != nil {
+   252			return nil, err
+   253		}
+   254	
+   255		return &values.SectionValues{
+   256			Section: p,
+   257			Fields:  ps,
+   258		}, nil
+   259	}
+   260	
+   261	func (p *SectionImpl) GatherFieldsFromMap(
+   262		m map[string]interface{}, onlyProvided bool,
+   263		options ...fields.ParseOption,
+   264	) (*fields.FieldValues, error) {
+   265		return p.Definitions.GatherFieldsFromMap(m, onlyProvided, options...)
+   266	}
+   267	
+   268	func (p *SectionImpl) Clone() Section {
+   269		ret := &SectionImpl{
+   270			Name:        p.Name,
+   271			Slug:        p.Slug,
+   272			Description: p.Description,
+   273			Prefix:      p.Prefix,
+   274			Definitions: fields.NewDefinitions(),
+   275		}
+   276		for v := p.Definitions.Oldest(); v != nil; v = v.Next() {
+   277			ret.Definitions.Set(v.Key, v.Value.Clone())
+   278		}
+   279		return ret
+   280	
+   281	}
