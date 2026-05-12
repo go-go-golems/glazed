@@ -115,18 +115,49 @@ Returns a full section, including markdown content.
 curl http://localhost:18100/api/sections/help-system
 ```
 
-## Reuse the API and SPA in your own server
+## Embed the help API in your own server
 
-If you already have an HTTP server, you do not need to shell out to `glaze serve`. You can compose the help API and the shared SPA directly from Go.
+If you already have an HTTP server, you can embed the Glazed help JSON API directly into your Go application. You do not need to shell out to `glaze serve`.
 
-The two building blocks are:
+The building block is:
 
-- `web.NewSPAHandler()` for the embedded frontend
-- `server.NewServeHandler(...)` or `server.NewMountedHandler(...)` for API + SPA composition
+- `server.NewServeHandler(...)` or `server.NewMountedHandler(...)` for the REST API
 
-### Mount at the server root
+### API-only mode (recommended for external consumers)
 
-Use this when help is the whole server or when you want the help browser to own `/`.
+Pass `nil` as the SPA handler to serve only the JSON endpoints. This is the recommended approach for binaries that depend on glazed as a library, since the embedded browser UI assets are only available when building from within the glazed repository.
+
+```go
+package main
+
+import (
+    "net/http"
+
+    "github.com/go-go-golems/glazed/pkg/help"
+    helpserver "github.com/go-go-golems/glazed/pkg/help/server"
+)
+
+func main() {
+    hs := help.NewHelpSystem()
+
+    // Load your own help pages here.
+    // err := hs.LoadSectionsFromFS(...)
+
+    // nil = API-only mode, no browser UI.
+    handler := helpserver.NewServeHandler(
+        helpserver.HandlerDeps{Store: hs.Store},
+        nil,
+    )
+
+    _ = http.ListenAndServe(":18100", handler)
+}
+```
+
+This serves the full JSON API (`/api/health`, `/api/sections`, `/api/packages`) without the browser UI. You can build your own frontend, or use `glaze serve --from-glazed-cmd` to browse help from multiple tools in a single web interface.
+
+### With the browser UI (in-repo only)
+
+If you are building within the glazed repository, you can include the embedded React SPA:
 
 ```go
 package main
@@ -141,9 +172,6 @@ import (
 
 func main() {
     hs := help.NewHelpSystem()
-
-    // Load your own help pages here.
-    // err := hs.LoadSectionsFromFS(...)
 
     spaHandler, err := web.NewSPAHandler()
     if err != nil {
@@ -159,62 +187,42 @@ func main() {
 }
 ```
 
+**Note:** The SPA assets are built by `go generate ./pkg/web` (using Dagger/pnpm) and embedded via `//go:embed`. This only works when building from the glazed repository with `-tags embed`. External binaries that depend on glazed as a Go module cannot access these assets — use API-only mode or `glaze serve --from-glazed-cmd` instead.
+
 ### Mount under a prefix such as `/help`
 
-Use this when you already have an HTTP server and want help to live under a sub-route.
+Use `NewMountedHandler` to serve the help API under a sub-route of an existing HTTP server:
 
 ```go
-package main
+mux := http.NewServeMux()
+deps := helpserver.HandlerDeps{Store: hs.Store}
 
-import (
-    "net/http"
-
-    "github.com/go-go-golems/glazed/pkg/help"
-    helpserver "github.com/go-go-golems/glazed/pkg/help/server"
-    "github.com/go-go-golems/glazed/pkg/web"
-)
-
-func main() {
-    hs := help.NewHelpSystem()
-
-    spaHandler, err := web.NewSPAHandler()
-    if err != nil {
-        panic(err)
-    }
-
-    deps := helpserver.HandlerDeps{Store: hs.Store}
-
-    mux := http.NewServeMux()
-    mounted := helpserver.NewMountedHandler("/help", deps, spaHandler)
-    mux.Handle("/help", mounted)
-    mux.Handle("/help/", mounted)
-
-    _ = http.ListenAndServe(":18100", mux)
-}
+// Mount API-only at /help
+mounted := helpserver.NewMountedHandler("/help", deps, nil)
+mux.Handle("/help", mounted)
+mux.Handle("/help/", mounted)
 ```
 
-With this setup:
+This serves:
+- `/help/api/health` — health check
+- `/help/api/sections` — section listing
+- `/help/api/packages` — package listing
 
-- `/help/` serves the SPA
-- `/help/api/health` serves the API
-- `/help/api/sections` lists sections
+### Browsing help from multiple tools
 
-## API-only usage
+The recommended pattern for viewing help from multiple Glazed-based tools in a browser is:
 
-If you want to serve the JSON endpoints without the embedded browser UI, pass `nil` as the SPA handler to `NewServeHandler`.
-
-```go
-handler := helpserver.NewServeHandler(
-    helpserver.HandlerDeps{Store: hs.Store},
-    nil,
-)
+```bash
+glaze serve --from-glazed-cmd pinocchio,sqleton
 ```
 
-This is useful when:
+This loads each tool's help data via `help export --output json` and serves it in a single browser UI. You don't need to embed the SPA in each individual binary.
 
-- your frontend is separate,
-- you want a custom UI,
-- or you only need a programmatic documentation API.
+## Package names and section visibility
+
+Help sections are grouped by package name. When sections are loaded from embedded markdown files (via `LoadSectionsFromFS`), they get an empty package name. `NewServeHandler` automatically assigns these sections a default package name so that they appear correctly in the API responses.
+
+If you are using the Store directly (without `NewServeHandler`), you can call `Store.SetDefaultPackage(ctx, "myapp", "")` after loading your sections to assign them a package name. This is required for the package filter in the help API to work correctly.
 
 ## Loading help pages correctly
 
@@ -242,6 +250,8 @@ If a page does not appear in the browser, the most common cause is that the mark
 | Problem | Cause | Solution |
 | --- | --- | --- |
 | Browser shows a blank page or error | The SPA assets were not generated or embedded | Run `GOWORK=off go generate ./pkg/web`, then rebuild `glaze` |
+| SPA shows "assets have not been generated" | Building from outside the glazed repository | The SPA is only available when building from the glazed repo. Use API-only mode (pass `nil` as SPA handler) or `glaze serve --from-glazed-cmd` |
+| SPA shows "0 sections" but `/api/sections` returns data | Sections have no package name; the SPA filters by package | `NewServeHandler` auto-assigns a default package. For direct Store usage, call `hs.Store.SetDefaultPackage(ctx, "myapp", "")` after loading docs |
 | `/api/health` works but no sections appear | The supplied markdown files were not loaded or were skipped | Verify the path exists, the files end in `.md`, and the frontmatter has fields like `Title`, `Slug`, and `SectionType` |
 | `glaze serve` exits immediately | Invalid path or startup error | Re-run with valid file/directory arguments and inspect the error output |
 | Mounted `/help` route returns 404 | Prefix mounting was not wired correctly in the outer mux | Register both `/help` and `/help/`, and use `server.NewMountedHandler("/help", ...)` |
