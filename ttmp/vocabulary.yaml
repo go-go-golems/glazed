@@ -109,6 +109,14 @@ topics:
       description: HTTP server serving
     - slug: spa
       description: Single Page Application (React frontend)
+    - slug: release
+      description: Release pipeline and GoReleaser configuration
+    - slug: goreleaser
+      description: GoReleaser build and release tool
+    - slug: pinocchio
+      description: The pinocchio CLI tool
+    - slug: distribution
+      description: Artifact distribution and packaging
 docTypes:
     - slug: index
       description: Ticket index
