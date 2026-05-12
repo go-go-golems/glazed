@@ -54,6 +54,11 @@ signs:
     # setup for github actions according to https://goreleaser.com/ci/actions/
     args: [ "--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}" ]
 
+release:
+  extra_files:
+    - glob: ./glazed-spa.tar.gz
+      name_template: glazed-spa-{{ .Version }}.tar.gz
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 
