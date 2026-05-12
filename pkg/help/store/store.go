@@ -672,6 +672,14 @@ func (s *Store) ListPackages(ctx context.Context) ([]PackageInfo, error) {
 }
 
 // SetDefaultPackage assigns package metadata to sections that do not have it yet.
+// It updates all rows where package_name is empty, setting them to the given
+// packageName and packageVersion.
+//
+// This is necessary because sections loaded from embedded markdown files (via
+// LoadSectionsFromFS) get package_name = "". The SPA's package filter queries
+// by name, so sections without a package name won't appear in the sidebar.
+// NewServeHandler calls this automatically with package "default", so most
+// callers do not need to invoke it directly.
 func (s *Store) SetDefaultPackage(ctx context.Context, packageName, packageVersion string) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE sections

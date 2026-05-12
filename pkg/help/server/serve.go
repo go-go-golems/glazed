@@ -286,7 +286,28 @@ func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
 // NewServeHandler composes the API handler and optional SPA handler for use at
 // the server root (/). The returned handler already includes CORS because
 // NewHandler applies it internally.
+//
+// If the Store contains sections with an empty package_name (as happens when
+// loading via LoadSectionsFromFS), this function automatically assigns them the
+// package name "default" so that the SPA's package filter can find them. This is
+// a no-op when sections already have a package name.
+//
+// Pass nil as spaHandler for API-only mode (no browser UI). External binaries
+// that depend on glazed as a library should use API-only mode, since the full
+// SPA assets are only available when building from the glazed repository.
+// Use `glaze serve --from-glazed-cmd` to browse help from multiple tools.
 func NewServeHandler(deps HandlerDeps, spaHandler http.Handler) http.Handler {
+	// Auto-assign a default package name to sections loaded without one.
+	// Sections loaded via LoadSectionsFromFS get package_name = "", but the
+	// SPA's package filter queries by name. Without this, the SPA shows
+	// "0 sections" even though /api/sections (unfiltered) returns data.
+	// This is a no-op when sections already have a package name (e.g. from
+	// ServeCommand.Run which calls SetDefaultPackage explicitly).
+	ctx := context.Background()
+	if err := deps.Store.SetDefaultPackage(ctx, "default", ""); err != nil {
+		log.Warn().Err(err).Msg("Failed to auto-assign default package")
+	}
+
 	apiHandler := NewHandler(deps)
 	if spaHandler == nil {
 		return apiHandler

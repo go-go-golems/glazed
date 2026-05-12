@@ -32,6 +32,11 @@ import (
 )
 
 // HandlerDeps holds the dependencies for all HTTP handlers.
+//
+// Store is the only required field. It should be populated with help sections
+// before creating the handler. NewServeHandler automatically assigns a default
+// package name to any sections that have an empty package_name, so most callers
+// do not need to call Store.SetDefaultPackage manually.
 type HandlerDeps struct {
 	Store  *store.Store
 	Logger *slog.Logger
