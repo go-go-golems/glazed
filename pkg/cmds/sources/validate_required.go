@@ -74,6 +74,7 @@ func isRequiredValueEmpty(def *fields.Definition, value interface{}) bool {
 	// For human-entered scalar text values, an empty or whitespace-only string is
 	// not a meaningful required value. Numeric zero and boolean false are valid
 	// provided values and are handled by the generic fallback below.
+	//exhaustive:ignore
 	switch def.Type {
 	case fields.TypeString,
 		fields.TypeSecret,
@@ -87,6 +88,7 @@ func isRequiredValueEmpty(def *fields.Definition, value interface{}) bool {
 	}
 
 	rv := reflect.ValueOf(value)
+	//exhaustive:ignore
 	switch rv.Kind() {
 	case reflect.Slice, reflect.Array, reflect.Map:
 		return rv.Len() == 0

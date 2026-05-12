@@ -744,3 +744,69 @@ go test ./... -count=1
 - PR review comments addressed:
   - Validate required fields against the filtered schema.
   - Bypass validation for all diagnostic flags.
+
+## Step 11: Fix golangci-lint exhaustive warnings
+
+CI reported two `exhaustive` linter warnings in `validate_required.go`: one for the intentionally partial `fields.Type` switch and one for the intentionally partial `reflect.Kind` switch. I added explicit `//exhaustive:ignore` comments to document that both switches handle only the cases where emptiness needs special treatment.
+
+### Prompt Context
+
+**User prompt (verbatim):** "run golangci-lint
+  Running [/home/runner/golangci-lint-2.11.2-linux-amd64/golangci-lint config path] in [/home/runner/work/glazed/glazed] ...
+  Running [/home/runner/golangci-lint-2.11.2-linux-amd64/golangci-lint config verify] in [/home/runner/work/glazed/glazed] ...
+  Running [/home/runner/golangci-lint-2.11.2-linux-amd64/golangci-lint run  --timeout=5m] in [/home/runner/work/glazed/glazed] ...
+  Error: pkg/cmds/sources/validate_required.go:77:2: missing cases in switch of type fields.Type: fields.TypeFileList, fields.TypeObjectListFromFile, fields.TypeObjectListFromFiles, fields.TypeObjectFromFile, fields.TypeStringListFromFile, fields.TypeStringListFromFiles, fields.TypeKeyValue, fields.TypeInteger, fields.TypeFloat, fields.TypeBool, fields.TypeDate, fields.TypeStringList, fields.TypeIntegerList, fields.TypeFloatList, fields.TypeChoiceList (exhaustive)
+      switch def.Type {
+      ^
+  Error: pkg/cmds/sources/validate_required.go:90:2: missing cases in switch of type reflect.Kind: reflect.Invalid, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128, reflect.Chan, reflect.Func, reflect.String, reflect.Struct, reflect.UnsafePointer (exhaustive)
+      switch rv.Kind() {
+      ^
+  2 issues:
+  * exhaustive: 2"
+
+**Assistant interpretation:** Fix the CI golangci-lint failures caused by exhaustive switch checks.
+
+**Inferred user intent:** Make PR 573 pass lint CI and push a small follow-up commit.
+
+### What I did
+- Added `//exhaustive:ignore` before the partial `fields.Type` switch.
+- Added `//exhaustive:ignore` before the partial `reflect.Kind` switch.
+- Ran `gofmt`.
+
+### Why
+- These switches are intentionally not exhaustive. They only need to special-case string-like field types and collection/nil-able reflect kinds; all other values fall through to `false` so numeric zero and boolean false remain valid required values.
+
+### What worked
+- `golangci-lint run --timeout=5m` passed with `0 issues`.
+- Focused tests passed:
+
+```bash
+go test ./pkg/cmds/sources ./pkg/cli -count=1
+```
+
+### What didn't work
+- No new failure locally. The failure came from CI and matched the pasted `exhaustive` output exactly.
+
+### What I learned
+- This repository uses `exhaustive` for enum-like switches and already uses `//exhaustive:ignore` in similar intentional partial switches.
+
+### What was tricky to build
+- The fix needed to silence the linter without changing required-value semantics. Adding exhaustive default cases for every field type would make the function noisier without improving correctness.
+
+### What warrants a second pair of eyes
+- Confirm the comments are acceptable style for this repository; they match existing `//exhaustive:ignore` usage in field type switches.
+
+### What should be done in the future
+- If more field-specific emptiness rules are added, convert the `fields.Type` switch into explicit cases with tests.
+
+### Code review instructions
+- Review only `pkg/cmds/sources/validate_required.go` for this lint fix.
+- Validate with:
+
+```bash
+golangci-lint run --timeout=5m
+go test ./pkg/cmds/sources ./pkg/cli -count=1
+```
+
+### Technical details
+- Local lint output: `0 issues.`
