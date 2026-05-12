@@ -139,6 +139,35 @@ This recreates the platform-independent SPA tarball in the exact job where relea
 
 Validation: ran `goreleaser check`; configuration is valid, but GoReleaser exits nonzero because existing unrelated deprecated properties are present (`snapshot.name_template`, `brews`). No new schema error was introduced.
 
+### 2026-05-12 — v1.2.10 release failure: pnpm missing on macOS
+
+After merging PR #574 and tagging `v1.2.10`, the release workflow failed before publishing a GitHub Release. `gh release view v1.2.10` returned `release not found`, while `git ls-remote --tags` showed the tag exists.
+
+The failing job was `goreleaser-darwin`. The relevant log:
+
+```text
+Dagger build failed ... driver for scheme "image" was not available
+falling back to local pnpm
+local build also failed: pnpm not found in PATH
+pkg/web/gen.go:1: running "go": exit status 1
+```
+
+Root cause: `go generate ./...` runs `cmd/build-web`, which tries Dagger first and then local `pnpm`. On GitHub macOS runners, Dagger's image driver is unavailable and `pnpm` was not installed. The linux job succeeded, but the darwin split job failed, so the merge/publish job was skipped and no release asset was created.
+
+**Fix applied:** updated `.github/workflows/release.yaml` to set up Node 22 and activate `pnpm@10.15.0` in all three release jobs (`goreleaser-linux`, `goreleaser-darwin`, and `goreleaser-merge`) before any `go generate` / GoReleaser invocation:
+
+```yaml
+- uses: actions/setup-node@v6
+  with:
+    node-version: '22'
+    cache: pnpm
+    cache-dependency-path: web/pnpm-lock.yaml
+- name: Enable pnpm
+  run: corepack enable && corepack prepare pnpm@10.15.0 --activate
+```
+
+This makes the local fallback path in `cmd/build-web` work when Dagger is unavailable, and also supports the merge job's `go generate ./pkg/web` step.
+
 ### Summary
 
-All implementation tasks complete except Task 3. Task 3 (tag and release glazed) is a manual CI step that requires pushing a tag. The end-to-end test confirms the API works and the #571 fix (auto-assign default package) is functioning correctly in pinocchio's context. The next practical step is to publish a glazed release that contains `glazed-spa-<version>.tar.gz`, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
+All implementation tasks complete except the release verification portion of Task 3. The first `v1.2.10` tag attempt failed before publishing because macOS release workers lacked pnpm. After this workflow fix is merged, cut a new glazed tag (or rerun with an updated tag such as `v1.2.11`), verify `glazed-spa-<version>.tar.gz` appears on the GitHub Release, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
