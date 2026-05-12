@@ -117,6 +117,28 @@ Built pinocchio without `-tags embed` (no SPA assets), started `pinocchio serve 
 - Fixed with `gofmt -w cmd/pinocchio/cmds/help_loader.go`.
 - Second commit attempt passed lefthook: `go generate ./...`, `go build ./...`, `golangci-lint`, geppetto vet, and `go test ./...`.
 
+### 2026-05-12 — Split-release review fix
+
+A review pointed out a real issue in the first GoReleaser implementation: this repository uses split/merge releases. The linux/darwin jobs run `goreleaser release --clean --split`, upload only `dist/`, and the merge job runs `goreleaser continue --merge` from a fresh checkout plus downloaded artifacts. `before.hooks` run in the split jobs, but `release.extra_files` is evaluated in the merge/publish job.
+
+That means a root-level `glazed-spa.tar.gz` created in `.goreleaser.yaml` `before.hooks` would be missing in the merge job where GoReleaser tries to publish it.
+
+**Fix applied:**
+- Removed the `tar czf glazed-spa.tar.gz ...` hook from `.goreleaser.yaml`.
+- Kept `release.extra_files` in `.goreleaser.yaml`, pointing at `./glazed-spa.tar.gz`.
+- Added a `Build SPA release asset` step to `.github/workflows/release.yaml` inside `goreleaser-merge`, immediately before `goreleaser continue --merge`:
+
+```yaml
+- name: Build SPA release asset
+  run: |
+    go generate ./pkg/web
+    tar czf glazed-spa.tar.gz -C pkg/web/embed/public .
+```
+
+This recreates the platform-independent SPA tarball in the exact job where release publishing happens.
+
+Validation: ran `goreleaser check`; configuration is valid, but GoReleaser exits nonzero because existing unrelated deprecated properties are present (`snapshot.name_template`, `brews`). No new schema error was introduced.
+
 ### Summary
 
 All implementation tasks complete except Task 3. Task 3 (tag and release glazed) is a manual CI step that requires pushing a tag. The end-to-end test confirms the API works and the #571 fix (auto-assign default package) is functioning correctly in pinocchio's context. The next practical step is to publish a glazed release that contains `glazed-spa-<version>.tar.gz`, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.

@@ -91,58 +91,40 @@ The SPA is already built during `go generate ./...` in the `before: hooks` of Go
 
 ## Part 2: Changes to the Glazed Repo
 
-### 2.1 Modify `.goreleaser.yaml` to attach the SPA tarball
+### 2.1 Attach the SPA tarball in a split/merge GoReleaser release
 
-**Current before hooks:**
+**Important split-release detail:** This repository uses GoReleaser's split/merge flow. The linux and darwin jobs run `goreleaser release --clean --split`, upload only `dist/`, and the merge job runs `goreleaser continue --merge` from a fresh checkout plus downloaded `dist` artifacts. GoReleaser `before.hooks` do **not** rerun during `continue --merge`, while `release.extra_files` is evaluated in the merge/publish phase.
+
+Therefore, do **not** create `./glazed-spa.tar.gz` in `.goreleaser.yaml` `before.hooks`: it would exist only in the linux/darwin split-job filesystem and would be missing in the merge job. Instead:
+
+1. Keep `go generate ./...` in `.goreleaser.yaml` so the split jobs can embed SPA assets into the `glaze` binaries.
+2. Add `release.extra_files` in `.goreleaser.yaml` to publish `./glazed-spa.tar.gz`.
+3. Rebuild/package the SPA tarball in `.github/workflows/release.yaml` in the `goreleaser-merge` job immediately before `goreleaser continue --merge`.
+
+**`.goreleaser.yaml`:**
 
 ```yaml
 before:
   hooks:
     - go mod tidy
     - go generate ./...
-```
 
-**New before hooks:**
-
-```yaml
-before:
-  hooks:
-    - go mod tidy
-    - go generate ./...
-    - sh -c "tar czf glazed-spa.tar.gz -C pkg/web/embed/public ."
-```
-
-This creates `glazed-spa.tar.gz` in the repo root after the SPA is built.
-
-**Add extra_files to the release section:**
-
-```yaml
 release:
   extra_files:
     - glob: ./glazed-spa.tar.gz
+      name_template: glazed-spa-{{ .Version }}.tar.gz
 ```
 
-GoReleaser's `release.extra_files` attaches additional files to the GitHub Release alongside the binaries. The `glob` field matches the tarball we just created.
-
-**Full .goreleaser.yaml change:**
+**`.github/workflows/release.yaml` (inside `goreleaser-merge`, before `goreleaser continue --merge`):**
 
 ```yaml
-# Add to the existing before: hooks
-before:
-  hooks:
-    - go mod tidy
-    - go generate ./...
-    - sh -c "if [ -d pkg/web/embed/public ]; then tar czf glazed-spa.tar.gz -C pkg/web/embed/public .; fi"
-
-# Add a release: section (or modify existing)
-release:
-  extra_files:
-    - glob: ./glazed-spa.tar.gz
+      - name: Build SPA release asset
+        run: |
+          go generate ./pkg/web
+          tar czf glazed-spa.tar.gz -C pkg/web/embed/public .
 ```
 
-The `if [ -d ... ]` guard prevents the tar command from failing if the SPA wasn't built (e.g., in a test build without Dagger available).
-
-**Why a guard?** The `go generate ./...` hook runs the Dagger-based build tool, which falls back to local pnpm. In CI, Dagger is available. In local dev, pnpm might not be. Without the guard, `tar` would fail on an empty directory and break the release.
+This guarantees the tarball exists in the exact job where GoReleaser evaluates `release.extra_files` and publishes release assets.
 
 ### 2.2 What the release will look like after the change
 
@@ -747,8 +729,8 @@ pinocchio serve --address :9999
 
 ### Phase 1: Glazed repo changes
 
-- [ ] Modify `.goreleaser.yaml`: add `tar czf` to before hooks, add `release.extra_files`
-- [ ] Test locally: run `go generate ./pkg/web && tar czf glazed-spa.tar.gz -C pkg/web/embed/public .` and verify the tarball
+- [ ] Modify `.goreleaser.yaml`: keep `go generate ./...` in before hooks and add `release.extra_files` for `./glazed-spa.tar.gz`
+- [ ] Modify `.github/workflows/release.yaml`: in `goreleaser-merge`, run `go generate ./pkg/web && tar czf glazed-spa.tar.gz -C pkg/web/embed/public .` before `goreleaser continue --merge`
 - [ ] Tag and release: verify the tarball appears on the GitHub Release
 - [ ] Verify the download URL works: `curl -L https://github.com/go-go-golems/glazed/releases/download/vX.Y.Z/glazed-spa.tar.gz`
 
@@ -779,7 +761,8 @@ Follow the same pattern as pinocchio:
 
 | File | Change |
 |------|--------|
-| `.goreleaser.yaml` | Add `tar czf` to before hooks, add `release.extra_files` |
+| `.goreleaser.yaml` | Add `release.extra_files` for `./glazed-spa.tar.gz`; keep `go generate ./...` for binary embedding |
+| `.github/workflows/release.yaml` | Build/package `glazed-spa.tar.gz` in the merge job before `goreleaser continue --merge` |
 
 ### Pinocchio repo (new files)
 

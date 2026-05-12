@@ -104,6 +104,11 @@ jobs:
             fi
           done
 
+      - name: Build SPA release asset
+        run: |
+          go generate ./pkg/web
+          tar czf glazed-spa.tar.gz -C pkg/web/embed/public .
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v7
