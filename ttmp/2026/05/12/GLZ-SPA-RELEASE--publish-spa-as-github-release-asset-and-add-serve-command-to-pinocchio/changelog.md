@@ -57,3 +57,12 @@ Addressed P1 review on PR #575: split setup-node so Node is installed first, pnp
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Fixes release job pnpm cache ordering
 
+
+## 2026-05-12
+
+Diagnosed v1.2.11 release failure: linux GoReleaser completed and uploaded dist-linux, but setup-node failed in post-job pnpm cache save because the cache path did not exist. Removed release-job pnpm caching and kept Node 22 + Corepack pnpm activation only.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Removes fragile setup-node pnpm cache from release jobs
+
