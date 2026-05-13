@@ -611,7 +611,7 @@ The new help topic, `distribute-help-browser-spa`, captures the exact lessons fr
 
 **Inferred user intent:** Preserve the operational knowledge from this debugging session in the canonical Glazed documentation, not only in ticket notes.
 
-**Commit (code):** pending — Glazed help docs update.
+**Commit (code):** 0be08aa — "Document downstream Help SPA distribution workflow"
 
 #### What I did
 - Created `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/30-distribute-help-browser-spa.md`.
