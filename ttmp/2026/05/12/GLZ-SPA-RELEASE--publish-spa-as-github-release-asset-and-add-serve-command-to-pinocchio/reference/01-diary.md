@@ -244,6 +244,81 @@ The intended per-job order is:
     cache-dependency-path: web/pnpm-lock.yaml
 ```
 
+### 2026-05-12 — Release attempt v1.2.11: setup-node pnpm cache post-job failure
+
+A second release attempt progressed farther: the linux split job completed `go generate ./...`, built both linux targets, and uploaded the `dist-linux` artifact. The job then failed during setup-node post-job cache cleanup, not during the actual build.
+
+The relevant log from run `25769721655`, job `75689991088`:
+
+```text
+goreleaser-linux Run goreleaser/goreleaser-action@v7 ... release succeeded after 2m14s
+goreleaser-linux Run actions/upload-artifact@v7 ... Artifact dist-linux has been successfully uploaded!
+goreleaser-linux Post Run actions/setup-node@v6 Post job cleanup.
+Error: Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.
+```
+
+#### Prompt Context
+
+**User prompt (verbatim):** "this time th elinux build has an issue in post run setup-node 
+0s
+Post job cleanup.
+Error: Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.
+
+
+https://github.com/go-go-golems/glazed/actions/runs/25769721655/job/75689991088"
+
+**Assistant interpretation:** Diagnose and fix the new release workflow failure where setup-node's pnpm cache save fails after a successful linux build.
+
+**Inferred user intent:** Remove the remaining CI release blocker so the next Glazed tag can publish the release and SPA asset.
+
+**Commit (code):** pending — remove release-job pnpm caching.
+
+#### What I did
+- Fetched the linux job log with `gh run view 25769721655 --repo go-go-golems/glazed --job 75689991088 --log`.
+- Confirmed GoReleaser itself succeeded and uploaded artifacts before setup-node's post-job cache step failed.
+- Removed `cache: pnpm` setup-node invocations from all release jobs and kept only Node 22 setup plus Corepack activation of `pnpm@10.15.0`.
+
+#### Why
+- The release workflow needs pnpm availability for macOS/merge fallback SPA generation, but dependency caching is not required for correctness.
+- On linux, Dagger handled `go generate`, so local pnpm did not necessarily create a pnpm store path. setup-node then tried to save a cache for a path that did not exist and failed the otherwise-successful job.
+
+#### What worked
+- The log proved that the actual release build path was healthy up to artifact upload.
+- Removing caching eliminates both ordering and empty-cache-path failure modes while preserving the pnpm fallback executable.
+
+#### What didn't work
+- The prior two-step setup-node cache pattern fixed pre-run pnpm availability but introduced a post-run failure when no pnpm store was created.
+
+#### What I learned
+- In this workflow, pnpm is a fallback dependency for release jobs, not a guaranteed dependency installer in every job.
+- setup-node's built-in cache is too strict for a conditional pnpm usage path unless we also force creation/use of the store.
+
+#### What was tricky to build
+- The release jobs differ by platform behavior: linux can complete generation via Dagger without local pnpm usage, while macOS needs local pnpm after Dagger fails. A global setup-node pnpm cache therefore sees inconsistent filesystem state. Removing cache is safer than forcing fake cache directories because correctness depends only on pnpm availability, not cache persistence.
+
+#### What warrants a second pair of eyes
+- Confirm the release workflow's extra few seconds/minutes without pnpm caching are acceptable.
+- Confirm macOS still reaches local pnpm fallback successfully after removing setup-node cache.
+
+#### What should be done in the future
+- If release runtime becomes a problem, add explicit `pnpm store path` + `mkdir -p` + `actions/cache` around jobs that actually run local pnpm, or change `cmd/build-web` to expose a deterministic cacheable path.
+
+#### Code review instructions
+- Review `.github/workflows/release.yaml`: each release job should now have exactly one setup-node step and one Corepack pnpm activation step, with no `cache: pnpm`.
+- Validate by checking the next tagged release run; the linux job should no longer fail in setup-node post-job cleanup.
+
+#### Technical details
+
+The intended per-job order is now intentionally minimal:
+
+```yaml
+- uses: actions/setup-node@v6
+  with:
+    node-version: '22'
+- name: Enable pnpm
+  run: corepack enable && corepack prepare pnpm@10.15.0 --activate
+```
+
 ### Summary
 
-All implementation tasks complete except the release verification portion of Task 3. The first `v1.2.10` tag attempt failed before publishing because macOS release workers lacked pnpm; the follow-up review fix now ensures pnpm is activated before setup-node tries to restore the pnpm cache. After this workflow fix is merged, cut a new glazed tag (or rerun with an updated tag such as `v1.2.11`), verify `glazed-spa-<version>.tar.gz` appears on the GitHub Release, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
+All implementation tasks complete except the release verification portion of Task 3. The first `v1.2.10` tag attempt failed before publishing because macOS release workers lacked pnpm; the `v1.2.11` attempt got through linux GoReleaser but failed in setup-node's pnpm cache post-job cleanup because no pnpm store path existed. The workflow now installs pnpm without enabling setup-node's pnpm cache. After this workflow fix is merged, cut a new glazed tag such as `v1.2.12`, verify `glazed-spa-<version>.tar.gz` appears on the GitHub Release, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
