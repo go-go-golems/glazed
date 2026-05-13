@@ -75,3 +75,12 @@ Diagnosed v1.2.12 release: GitHub Release and glazed-spa-1.2.12.tar.gz were publ
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.goreleaser.yaml — Restricts Fury custom publisher to package artifacts
 
+
+## 2026-05-12
+
+Adjusted Pinocchio fetch-spa for Glazed v1.2.13 asset naming. Release tag remains v1.2.13, but asset filename is glazed-spa-1.2.13.tar.gz, so Makefile now strips the leading v only for the filename. Verified make fetch-spa, embedded build, and serve smoke test with 53 sections.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — Fetches versioned Glazed SPA release asset
+
