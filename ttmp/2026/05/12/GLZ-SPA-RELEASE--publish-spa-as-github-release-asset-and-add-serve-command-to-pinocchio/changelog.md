@@ -114,3 +114,13 @@ Added Glazed user documentation for the completed end-to-end SPA distribution wo
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/25-serving-help-over-http.md — References release asset workflow from existing serve docs
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/30-distribute-help-browser-spa.md — New end-to-end downstream SPA distribution guide
 
+
+## 2026-05-12
+
+Addressed Pinocchio PR #151 review: serve now reuses the initialized HelpSystem from main so repository docs loaded during command discovery are included, and assigns empty-package docs to package pinocchio before serving. Verified package-filtered API returns 53 sections.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/cmd/pinocchio/cmds/serve.go — Uses initialized help system and assigns package metadata
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/cmd/pinocchio/main.go — Passes initialized help system into serve command
+

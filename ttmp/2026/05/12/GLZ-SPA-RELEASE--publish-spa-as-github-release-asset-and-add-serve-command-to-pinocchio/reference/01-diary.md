@@ -664,6 +664,76 @@ var embeddedAssets embed.FS
 var Assets fs.FS = mustSub(embeddedAssets, "dist")
 ```
 
+### 2026-05-12 — Pinocchio PR review: serve the initialized HelpSystem and package as pinocchio
+
+Codex review on Pinocchio PR #151 found two serve-command correctness issues. First, `pinocchio serve` was rebuilding a reduced help system inside the command instead of serving the already initialized `HelpSystem` from `main()`. That would drop prompt repository docs loaded by `initAllCommands(helpSystem)`. Second, the serve command was relying on the Glazed handler to assign default package metadata; to make Pinocchio's API behavior explicit and stable, it now assigns empty-package sections to package `pinocchio` before constructing the handler.
+
+The resulting smoke test confirms the advertised package is usable for filtered queries: `/api/packages` reports default package `pinocchio`, `/api/sections?package=pinocchio` returns 53 sections, `/api/health` returns 53 sections, and the SPA root still returns HTML.
+
+#### Prompt Context
+
+**User prompt (verbatim):** "Address these issues: https://github.com/go-go-golems/pinocchio/pull/151 (which might come from glazed)"
+
+**Assistant interpretation:** Inspect PR #151 review comments, decide whether they originate in Pinocchio or Glazed, and patch the implementation accordingly.
+
+**Inferred user intent:** Resolve reviewer-identified behavior gaps so the Pinocchio serve implementation is correct before merging.
+
+**Commit (code):** pending — Pinocchio serve command review fixes.
+
+#### What I did
+- Read PR #151 review comments via `gh api repos/go-go-golems/pinocchio/pulls/151/comments`.
+- Reacted 👍 to both Codex comments.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/cmd/pinocchio/cmds/serve.go` so `NewServeCommand` accepts the initialized `*help.HelpSystem` and `runServe` uses it directly.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/cmd/pinocchio/main.go` to call `pinocchio_cmds.NewServeCommand(helpSystem)`.
+- Added an explicit `hs.Store.SetDefaultPackage(ctx, "pinocchio", "")` before constructing `helpserver.NewServeHandler`.
+
+#### Why
+- Repository docs and dynamically loaded command docs are attached to the help system created in `main()`, so `serve` must use that instance.
+- Using package `pinocchio` makes `/api/packages` and `/api/sections?package=pinocchio` agree and avoids ambiguity around `default` versus a product-specific package name.
+
+#### What worked
+- `go test ./cmd/pinocchio/... ./pkg/spa -count=1` passed.
+- Embedded serve smoke test passed with package filtering:
+  - `/api/packages` -> `defaultPackage: "pinocchio"`, section count 53.
+  - `/api/sections?package=pinocchio` -> 53 sections.
+  - `/api/health` -> `{"ok":true,"sections":53}`.
+
+#### What didn't work
+- N/A; both review comments mapped cleanly to Pinocchio changes.
+
+#### What I learned
+- The package assignment concern can be solved in Pinocchio even if Glazed also has a default-package safety net. Product-specific package names are better API output than generic `default` for standalone downstream servers.
+
+#### What was tricky to build
+- The initialized help system is created before dynamic command loading, but `initAllCommands(helpSystem)` mutates the same pointer before Cobra executes the subcommand. Capturing that pointer in `NewServeCommand(helpSystem)` is therefore sufficient; creating a new help system in `runServe` was the part that lost repository docs.
+
+#### What warrants a second pair of eyes
+- Confirm that `run-command` special handling does not need a different serve-command behavior. Normal `pinocchio serve` goes through `initAllCommands(helpSystem)` before execution.
+- Confirm `pinocchio` is the desired package name for all empty-package sections, including optional workspace sessionstream docs.
+
+#### What should be done in the future
+- Add a regression test for `runServe` package assignment if the server startup loop is refactored to be easier to test without binding a real listener.
+
+#### Code review instructions
+- Review `cmd/pinocchio/main.go:initRootCmd` and `cmd/pinocchio/cmds/serve.go:NewServeCommand/runServe`.
+- Validate with `go test ./cmd/pinocchio/... ./pkg/spa -count=1`, then `go build -tags embed -o ./pinocchio ./cmd/pinocchio` and a local `pinocchio serve` smoke test.
+
+#### Technical details
+
+The serve command now uses the initialized help system:
+
+```go
+rootCmd.AddCommand(pinocchio_cmds.NewServeCommand(helpSystem))
+```
+
+and assigns a product package before creating the handler:
+
+```go
+if err := hs.Store.SetDefaultPackage(ctx, "pinocchio", ""); err != nil {
+    return fmt.Errorf("assigning default help package: %w", err)
+}
+```
+
 ### Summary
 
-All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, Pinocchio fetches and embeds it correctly, and Glazed now documents the end-to-end downstream workflow in `glaze help distribute-help-browser-spa`.
+All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, Pinocchio fetches and embeds it correctly, Glazed documents the workflow, and Pinocchio PR #151 review issues are addressed locally.
