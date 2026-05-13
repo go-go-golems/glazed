@@ -189,7 +189,7 @@ Useful? React with 👍 / 👎."
 
 **Inferred user intent:** Make PR #575 robust enough to fix the original macOS release failure instead of replacing it with an earlier setup-node cache failure.
 
-**Commit (code):** 30f846c — "Fix pnpm cache ordering in release workflow"
+**Commit (code):** 829ea9e — "Fix pnpm cache ordering in release workflow"
 
 #### What I did
 - Reacted 👍 to PR review comment `3230549754`.
