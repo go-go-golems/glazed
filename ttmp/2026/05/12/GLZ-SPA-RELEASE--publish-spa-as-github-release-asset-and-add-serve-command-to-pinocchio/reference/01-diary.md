@@ -319,6 +319,97 @@ The intended per-job order is now intentionally minimal:
   run: corepack enable && corepack prepare pnpm@10.15.0 --activate
 ```
 
+### 2026-05-12 — Release attempt v1.2.12: GitHub Release published, Fury publisher tried SPA
+
+The third release attempt got all the way through split builds, merge, SPA generation, GitHub release upload, and Homebrew formula publishing. The important success is that the GitHub Release exists and contains `glazed-spa-1.2.12.tar.gz`.
+
+The remaining failure happened after GitHub publishing, in the custom Fury publisher. GoReleaser invoked the Fury `curl` publisher for `glazed-spa-1.2.12.tar.gz` even though the publisher is intended only for nfpm `.deb`/`.rpm` artifacts. The local file is `glazed-spa.tar.gz`; GoReleaser's release asset name is `glazed-spa-1.2.12.tar.gz`, so `curl -F package=@{{ .ArtifactName }}` could not open that local filename.
+
+Relevant log from run `25770477640`, job `75692688757`:
+
+```text
+uploading to release name=glazed-spa-1.2.12.tar.gz
+release published url=https://github.com/go-go-golems/glazed/releases/tag/v1.2.12
+custom publisher
+publishing cmd=curl artifact=glazed-spa-1.2.12.tar.gz
+continue failed after 8s error=custom publisher: failed to publish artifacts: exit status 26 message=publishing failed cmd=curl
+output=
+│ curl: (26) Failed to open/read local data from file/application
+```
+
+#### Prompt Context
+
+**User prompt (verbatim):** "• pushing                                      repository=go-go-golems/homebrew-go-go-go branch= file=glaze.rb
+    • custom publisher
+      • publishing                                   cmd=curl artifact=glaze_1.2.12_linux_amd64.deb
+      • publishing                                   cmd=curl artifact=glaze_1.2.12_linux_arm64.deb
+      • publishing                                   cmd=curl artifact=glaze_1.2.12_linux_arm64.rpm
+      • publishing                                   cmd=curl artifact=glaze_1.2.12_linux_amd64.rpm
+      • publishing                                   cmd=curl artifact=glazed-spa-1.2.12.tar.gz
+  ⨯ continue failed after 8s                         error=custom publisher: failed to publish artifacts: exit status 26 message=publishing failed cmd=curl
+    output=
+    │ curl: (26) Failed to open/read local data from file/application
+Error: The process '/opt/hostedtoolcache/goreleaser-action/2.15.4/x64/goreleaser' failed with exit code 1
+ https://github.com/go-go-golems/glazed/actions/runs/25770477640/job/75692688757
+
+getting further"
+
+**Assistant interpretation:** Diagnose the new GoReleaser merge failure and patch the release configuration so Fury publishing does not fail on the SPA release asset.
+
+**Inferred user intent:** Finish stabilizing the release pipeline while preserving the already-successful GitHub Release SPA asset publication.
+
+**Commit (code):** pending — guard Fury publisher to package artifacts only.
+
+#### What I did
+- Inspected the merge job log with `gh run view 25770477640 --repo go-go-golems/glazed --job 75692688757 --log`.
+- Verified `gh release view v1.2.12` succeeds and lists `glazed-spa-1.2.12.tar.gz` among release assets.
+- Updated `.goreleaser.yaml` so the Fury custom publisher shell command only uploads `*.deb` and `*.rpm` artifacts, and explicitly skips non-package artifacts such as the SPA tarball.
+- Ran `goreleaser check`; the configuration parses, and the only reported issues are pre-existing deprecated properties (`snapshot.name_template`, `brews`).
+
+#### Why
+- Fury is a package repository and should only receive nfpm package artifacts.
+- The SPA tarball is only meant to be a GitHub Release asset for downstream Go projects to fetch/embed.
+- Skipping non-package artifacts in the publisher command is robust even if GoReleaser still invokes the custom publisher for extra release files.
+
+#### What worked
+- v1.2.12 confirmed that the Node/pnpm, split job, merge job, and GitHub asset upload problems are solved.
+- The release asset is present at `https://github.com/go-go-golems/glazed/releases/tag/v1.2.12`.
+
+#### What didn't work
+- GoReleaser still treated the SPA extra file as an artifact for the custom publisher path.
+- The old publisher command used `{{ .ArtifactName }}` as a local filename. That breaks for assets whose published name differs from the local path, and it was also semantically wrong for the SPA because the SPA should not be pushed to Fury.
+
+#### What I learned
+- `release.extra_files.name_template` affects the GitHub Release asset name, but custom publishers may still see that artifact name.
+- Publisher `ids` did not prevent the SPA extra file from reaching this custom publisher in the merge phase, so the command itself needs a defensive artifact-type guard.
+
+#### What was tricky to build
+- The failure happened after GitHub release publication, so the CI status is failed even though the primary SPA distribution objective succeeded. The fix must avoid breaking that successful path while stopping the later Fury step from treating the SPA as a package artifact.
+
+#### What warrants a second pair of eyes
+- Confirm the shell quoting in `.goreleaser.yaml` works under GoReleaser's publisher execution environment.
+- Confirm Fury should never receive the SPA tarball; current assumption is yes, because it is not a deb/rpm package.
+
+#### What should be done in the future
+- Consider replacing the custom Fury publisher with a built-in package publisher configuration if GoReleaser provides a narrower artifact selector.
+- Consider fixing unrelated GoReleaser deprecations (`snapshot.name_template`, `brews`) separately.
+
+#### Code review instructions
+- Review `.goreleaser.yaml` under `publishers:` and verify only `*.deb`/`*.rpm` invoke `curl`.
+- Validate by cutting a follow-up tag such as `v1.2.13`; GitHub should publish the SPA asset and the custom publisher should skip it without failing.
+
+#### Technical details
+
+The publisher command now guards by artifact filename:
+
+```yaml
+cmd: >-
+  sh -c 'case "$1" in
+    *.deb|*.rpm) curl -F package=@"$1" "https://$FURY_TOKEN@push.fury.io/go-go-golems/" ;;
+    *) echo "skipping non-package artifact $1 for fury.io" ;;
+  esac' -- "{{ .ArtifactName }}"
+```
+
 ### Summary
 
-All implementation tasks complete except the release verification portion of Task 3. The first `v1.2.10` tag attempt failed before publishing because macOS release workers lacked pnpm; the `v1.2.11` attempt got through linux GoReleaser but failed in setup-node's pnpm cache post-job cleanup because no pnpm store path existed. The workflow now installs pnpm without enabling setup-node's pnpm cache. After this workflow fix is merged, cut a new glazed tag such as `v1.2.12`, verify `glazed-spa-<version>.tar.gz` appears on the GitHub Release, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
+All implementation tasks are complete from the SPA distribution perspective: v1.2.12 published a GitHub Release containing `glazed-spa-1.2.12.tar.gz`. The release workflow still reported failure because the Fury custom publisher tried to upload the SPA tarball as if it were a package. The current fix guards the Fury command so only `.deb`/`.rpm` files are uploaded; a follow-up tag such as `v1.2.13` should validate the full release pipeline exits green.

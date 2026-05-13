@@ -121,7 +121,11 @@ publishers:
     ids:
       - packages
     dir: "{{ dir .ArtifactPath }}"
-    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/go-go-golems/
+    cmd: >-
+      sh -c 'case "$1" in
+        *.deb|*.rpm) curl -F package=@"$1" "https://$FURY_TOKEN@push.fury.io/go-go-golems/" ;;
+        *) echo "skipping non-package artifact $1 for fury.io" ;;
+      esac' -- "{{ .ArtifactName }}"
 
 # modelines, feel free to remove those if you don't want/use them:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json

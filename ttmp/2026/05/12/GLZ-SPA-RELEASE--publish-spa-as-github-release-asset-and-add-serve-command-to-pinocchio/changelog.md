@@ -66,3 +66,12 @@ Diagnosed v1.2.11 release failure: linux GoReleaser completed and uploaded dist-
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Removes fragile setup-node pnpm cache from release jobs
 
+
+## 2026-05-12
+
+Diagnosed v1.2.12 release: GitHub Release and glazed-spa-1.2.12.tar.gz were published successfully, but the Fury custom publisher failed because it tried to curl the SPA asset as a local package filename. Guarded the Fury publisher command so only .deb/.rpm artifacts are uploaded and non-package artifacts are skipped.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.goreleaser.yaml — Restricts Fury custom publisher to package artifacts
+
