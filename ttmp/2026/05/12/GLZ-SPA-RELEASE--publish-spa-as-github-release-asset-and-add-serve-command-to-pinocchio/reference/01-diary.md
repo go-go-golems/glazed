@@ -271,7 +271,7 @@ https://github.com/go-go-golems/glazed/actions/runs/25769721655/job/75689991088"
 
 **Inferred user intent:** Remove the remaining CI release blocker so the next Glazed tag can publish the release and SPA asset.
 
-**Commit (code):** pending — remove release-job pnpm caching.
+**Commit (code):** a4f860d — "Remove pnpm cache from release workflow"
 
 #### What I did
 - Fetched the linux job log with `gh run view 25769721655 --repo go-go-golems/glazed --job 75689991088 --log`.
