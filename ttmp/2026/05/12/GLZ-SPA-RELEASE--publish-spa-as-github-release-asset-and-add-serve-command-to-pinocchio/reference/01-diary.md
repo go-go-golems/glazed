@@ -358,7 +358,7 @@ getting further"
 
 **Inferred user intent:** Finish stabilizing the release pipeline while preserving the already-successful GitHub Release SPA asset publication.
 
-**Commit (code):** pending — guard Fury publisher to package artifacts only.
+**Commit (code):** 15ce479 — "Guard Fury publisher against SPA release asset"
 
 #### What I did
 - Inspected the merge job log with `gh run view 25770477640 --repo go-go-golems/glazed --job 75692688757 --log`.
