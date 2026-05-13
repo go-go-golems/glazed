@@ -104,3 +104,13 @@ Fixed Pinocchio embedded SPA filesystem root. go:embed dist preserved the dist/ 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa writes ./pinocchio explicitly
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/pkg/spa/embed.go — Exposes embedded dist directory as SPA filesystem root
 
+
+## 2026-05-12
+
+Added Glazed user documentation for the completed end-to-end SPA distribution workflow. New help topic distribute-help-browser-spa documents the versioned GitHub Release asset naming, downstream Makefile fetch pattern, fs.Sub embed root requirement, serve integration, and smoke tests; serve-help-over-http now links to it and updates external-consumer guidance.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/25-serving-help-over-http.md — References release asset workflow from existing serve docs
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/30-distribute-help-browser-spa.md — New end-to-end downstream SPA distribution guide
+

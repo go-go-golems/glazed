@@ -123,9 +123,9 @@ The building block is:
 
 - `server.NewServeHandler(...)` or `server.NewMountedHandler(...)` for the REST API
 
-### API-only mode (recommended for external consumers)
+### API-only mode
 
-Pass `nil` as the SPA handler to serve only the JSON endpoints. This is the recommended approach for binaries that depend on glazed as a library, since the embedded browser UI assets are only available when building from within the glazed repository.
+Pass `nil` as the SPA handler to serve only the JSON endpoints. This is the simplest integration mode for binaries that depend on glazed as a library, because it does not require bundling browser assets.
 
 ```go
 package main
@@ -153,7 +153,7 @@ func main() {
 }
 ```
 
-This serves the full JSON API (`/api/health`, `/api/sections`, `/api/packages`) without the browser UI. You can build your own frontend, or use `glaze serve --from-glazed-cmd` to browse help from multiple tools in a single web interface.
+This serves the full JSON API (`/api/health`, `/api/sections`, `/api/packages`) without the browser UI. You can build your own frontend, use `glaze serve --from-glazed-cmd` to browse help from multiple tools in a single web interface, or fetch the versioned `glazed-spa` release asset and embed it in your own binary.
 
 ### With the browser UI (in-repo only)
 
@@ -187,7 +187,7 @@ func main() {
 }
 ```
 
-**Note:** The SPA assets are built by `go generate ./pkg/web` (using Dagger/pnpm) and embedded via `//go:embed`. This only works when building from the glazed repository with `-tags embed`. External binaries that depend on glazed as a Go module cannot access these assets — use API-only mode or `glaze serve --from-glazed-cmd` instead.
+**Note:** The SPA assets are built by `go generate ./pkg/web` (using Dagger/pnpm) and embedded into the `glaze` binary via `//go:embed` when building from the glazed repository with `-tags embed`. External binaries cannot import those embedded files directly from the Glazed Go module. If an external binary wants the same browser UI, fetch the versioned GitHub Release asset such as `glazed-spa-1.2.13.tar.gz`, extract it into an ignored local `dist/` directory, and embed that directory in the downstream binary. See `glaze help distribute-help-browser-spa` for the complete pattern.
 
 ### Mount under a prefix such as `/help`
 
@@ -216,7 +216,7 @@ The recommended pattern for viewing help from multiple Glazed-based tools in a b
 glaze serve --from-glazed-cmd pinocchio,sqleton
 ```
 
-This loads each tool's help data via `help export --output json` and serves it in a single browser UI. You don't need to embed the SPA in each individual binary.
+This loads each tool's help data via `help export --output json` and serves it in a single browser UI. You don't need to embed the SPA in each individual binary. If a tool does need its own standalone browser UI, use the release-asset workflow described in `glaze help distribute-help-browser-spa`.
 
 ## Package names and section visibility
 
@@ -250,15 +250,16 @@ If a page does not appear in the browser, the most common cause is that the mark
 | Problem | Cause | Solution |
 | --- | --- | --- |
 | Browser shows a blank page or error | The SPA assets were not generated or embedded | Run `GOWORK=off go generate ./pkg/web`, then rebuild `glaze` |
-| SPA shows "assets have not been generated" | Building from outside the glazed repository | The SPA is only available when building from the glazed repo. Use API-only mode (pass `nil` as SPA handler) or `glaze serve --from-glazed-cmd` |
+| SPA shows "assets have not been generated" | Building from outside the glazed repository without fetching a SPA asset | Use API-only mode, `glaze serve --from-glazed-cmd`, or fetch and embed the versioned `glazed-spa-<version>.tar.gz` release asset |
 | SPA shows "0 sections" but `/api/sections` returns data | Sections have no package name; the SPA filters by package | `NewServeHandler` auto-assigns a default package. For direct Store usage, call `hs.Store.SetDefaultPackage(ctx, "myapp", "")` after loading docs |
 | `/api/health` works but no sections appear | The supplied markdown files were not loaded or were skipped | Verify the path exists, the files end in `.md`, and the frontmatter has fields like `Title`, `Slug`, and `SectionType` |
 | `glaze serve` exits immediately | Invalid path or startup error | Re-run with valid file/directory arguments and inspect the error output |
 | Mounted `/help` route returns 404 | Prefix mounting was not wired correctly in the outer mux | Register both `/help` and `/help/`, and use `server.NewMountedHandler("/help", ...)` |
-| API calls work but browser routes fail | SPA handler was not mounted | Use `web.NewSPAHandler()` and pass it into `server.NewServeHandler(...)` or `server.NewMountedHandler(...)` |
+| API calls work but browser routes fail | SPA handler was not mounted or the embedded filesystem root is wrong | Use `web.NewSPAHandler()` in Glazed itself; in downstream binaries, make sure `//go:embed dist` is exposed with `fs.Sub(..., "dist")` so `index.html` is at the root |
 
 ## See Also
 
+- `glaze help distribute-help-browser-spa` — Fetch and embed the versioned SPA release asset in another Go binary
 - `glaze help serve-external-help-sources` — Serve help exported from other Glazed binaries and snapshots
 - `glaze help export-help-entries` — Export help sections to files, JSON, CSV, or SQLite
 - `glaze help export-help-static-website`

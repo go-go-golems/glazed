@@ -597,6 +597,73 @@ var embeddedAssets embed.FS
 var Assets fs.FS = mustSub(embeddedAssets, "dist")
 ```
 
+### 2026-05-12 — Glazed docs: document the end-to-end SPA distribution workflow
+
+Now that the full path works in practice, I added user-facing Glazed documentation for the release-asset workflow. The existing `serve-help-over-http` page now points external consumers to the new workflow instead of implying that API-only mode is the only reasonable downstream option.
+
+The new help topic, `distribute-help-browser-spa`, captures the exact lessons from the Pinocchio integration: release tag versus asset filename version forms, `go.mod` parsing, `fs.Sub` for `//go:embed dist`, avoiding broad `go generate`, and the smoke test that proves the SPA and API both work.
+
+#### Prompt Context
+
+**User prompt (verbatim):** "nice, it works. Do we have appropriate documentation in glazed? we should definitely either update or create one now that we have done an end to end."
+
+**Assistant interpretation:** Add or update Glazed's embedded help docs so future downstream consumers can reproduce the completed end-to-end SPA release asset workflow.
+
+**Inferred user intent:** Preserve the operational knowledge from this debugging session in the canonical Glazed documentation, not only in ticket notes.
+
+**Commit (code):** pending — Glazed help docs update.
+
+#### What I did
+- Created `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/30-distribute-help-browser-spa.md`.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/25-serving-help-over-http.md` to reference the release-asset workflow.
+- Ran `go test ./pkg/doc ./pkg/help/... -count=1`.
+- Ran `go run ./cmd/glaze help distribute-help-browser-spa` to verify the help topic is discoverable and renders.
+
+#### Why
+- The previous docs correctly described API-only and in-repo SPA usage, but did not document the now-validated external-consumer path.
+- The hardest parts were operational details that are easy to get wrong: `glazed-spa-1.2.13.tar.gz` naming, stripping the leading `v` only for the filename, embedding `dist/` with `fs.Sub`, and not running downstream `go generate` unnecessarily.
+
+#### What worked
+- The new topic renders through `glaze help distribute-help-browser-spa`.
+- The targeted doc/help tests pass.
+
+#### What didn't work
+- N/A for this docs-only change.
+
+#### What I learned
+- The final documentation should distinguish three viable paths: API-only, centralized browsing via `glaze serve --from-glazed-cmd`, and standalone downstream SPA embedding via the release asset.
+
+#### What was tricky to build
+- The docs needed to correct earlier assumptions without overloading the existing `serve-help-over-http` page. A separate tutorial keeps the end-to-end downstream workflow focused while the existing page remains the conceptual/API reference.
+
+#### What warrants a second pair of eyes
+- Confirm the Makefile snippet matches the final Pinocchio implementation and should intentionally remain generic (`mytool`) rather than Pinocchio-specific.
+- Confirm whether the doc should mention the current minimum Glazed version (`v1.2.13`) explicitly as the first known-good release.
+
+#### What should be done in the future
+- Add a small release checklist to the GoReleaser docs or project README if more downstream tools adopt the pattern.
+
+#### Code review instructions
+- Start with `pkg/doc/topics/30-distribute-help-browser-spa.md`, then review the cross-links in `pkg/doc/topics/25-serving-help-over-http.md`.
+- Validate with `go test ./pkg/doc ./pkg/help/... -count=1` and `go run ./cmd/glaze help distribute-help-browser-spa`.
+
+#### Technical details
+
+The new topic covers this canonical asset URL shape:
+
+```text
+https://github.com/go-go-golems/glazed/releases/download/v1.2.13/glazed-spa-1.2.13.tar.gz
+```
+
+and this embed-root invariant:
+
+```go
+//go:embed dist
+var embeddedAssets embed.FS
+
+var Assets fs.FS = mustSub(embeddedAssets, "dist")
+```
+
 ### Summary
 
-All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, and Pinocchio now fetches that asset name, embeds it with the correct filesystem root, and serves `/` as the SPA with 53 help sections.
+All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, Pinocchio fetches and embeds it correctly, and Glazed now documents the end-to-end downstream workflow in `glaze help distribute-help-browser-spa`.
