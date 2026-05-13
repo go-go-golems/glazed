@@ -48,3 +48,12 @@ Investigated failed glazed v1.2.10 release. Tag exists but no GitHub Release bec
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Installs pnpm in linux
 
+
+## 2026-05-12
+
+Addressed P1 review on PR #575: split setup-node so Node is installed first, pnpm is activated via Corepack, and pnpm cache restore runs only after pnpm exists.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Fixes release job pnpm cache ordering
+
