@@ -39,3 +39,21 @@ Fixed split/merge GoReleaser issue from review: removed SPA tar creation from .g
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Builds glazed-spa.tar.gz in merge job before release.extra_files is evaluated
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.goreleaser.yaml — release.extra_files remains
 
+
+## 2026-05-12
+
+Investigated failed glazed v1.2.10 release. Tag exists but no GitHub Release because goreleaser-darwin failed: Dagger unavailable on macOS and pnpm missing for local fallback. Added setup-node@v6 + corepack pnpm@10.15.0 to all release jobs before GoReleaser/go generate.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Installs pnpm in linux
+
+
+## 2026-05-12
+
+Addressed P1 review on PR #575: split setup-node so Node is installed first, pnpm is activated via Corepack, and pnpm cache restore runs only after pnpm exists.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml — Fixes release job pnpm cache ordering
+

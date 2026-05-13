@@ -1,9 +1,8 @@
 ---
-title: Implementation Diary
-doc_type: reference
-status: active
-intent: long-term
-topics:
+Title: Implementation Diary
+Ticket: GLZ-SPA-RELEASE
+Status: active
+Topics:
   - help
   - serve
   - http
@@ -12,10 +11,14 @@ topics:
   - goreleaser
   - pinocchio
   - distribution
-owners:
+DocType: reference
+Intent: long-term
+Owners:
   - manuel
-ticket: GLZ-SPA-RELEASE
-created: "2026-05-12"
+RelatedFiles:
+  - Path: /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml
+    Note: Release workflow Node/Corepack/pnpm cache ordering recorded in diary
+Created: "2026-05-12"
 ---
 
 # Implementation Diary
@@ -139,6 +142,108 @@ This recreates the platform-independent SPA tarball in the exact job where relea
 
 Validation: ran `goreleaser check`; configuration is valid, but GoReleaser exits nonzero because existing unrelated deprecated properties are present (`snapshot.name_template`, `brews`). No new schema error was introduced.
 
+### 2026-05-12 — v1.2.10 release failure: pnpm missing on macOS
+
+After merging PR #574 and tagging `v1.2.10`, the release workflow failed before publishing a GitHub Release. `gh release view v1.2.10` returned `release not found`, while `git ls-remote --tags` showed the tag exists.
+
+The failing job was `goreleaser-darwin`. The relevant log:
+
+```text
+Dagger build failed ... driver for scheme "image" was not available
+falling back to local pnpm
+local build also failed: pnpm not found in PATH
+pkg/web/gen.go:1: running "go": exit status 1
+```
+
+Root cause: `go generate ./...` runs `cmd/build-web`, which tries Dagger first and then local `pnpm`. On GitHub macOS runners, Dagger's image driver is unavailable and `pnpm` was not installed. The linux job succeeded, but the darwin split job failed, so the merge/publish job was skipped and no release asset was created.
+
+**Fix applied:** updated `.github/workflows/release.yaml` to set up Node 22 and activate `pnpm@10.15.0` in all three release jobs (`goreleaser-linux`, `goreleaser-darwin`, and `goreleaser-merge`) before any `go generate` / GoReleaser invocation:
+
+```yaml
+- uses: actions/setup-node@v6
+  with:
+    node-version: '22'
+    cache: pnpm
+    cache-dependency-path: web/pnpm-lock.yaml
+- name: Enable pnpm
+  run: corepack enable && corepack prepare pnpm@10.15.0 --activate
+```
+
+This makes the local fallback path in `cmd/build-web` work when Dagger is unavailable, and also supports the merge job's `go generate ./pkg/web` step.
+
+### 2026-05-12 — P1 review fix: install pnpm before pnpm cache lookup
+
+The first workflow fix installed pnpm, but it asked `actions/setup-node@v6` to restore the `pnpm` cache before Corepack activated pnpm. Codex correctly flagged this as still fragile because setup-node's pnpm cache lookup expects the package manager to be available before cache setup.
+
+The workflow now uses a two-step setup in each release job: first install Node 22 without cache, then enable `pnpm@10.15.0` via Corepack, then invoke setup-node again with `cache: pnpm`. This preserves dependency caching while ensuring pnpm is installed before setup-node resolves the pnpm cache path.
+
+#### Prompt Context
+
+**User prompt (verbatim):** "P1 Badge Install pnpm before enabling setup-node caching
+
+In each added release job, actions/setup-node is asked to restore the pnpm cache before the following corepack enable step makes pnpm available. The setup-node v6 docs state that the package manager for cache should be pre-installed, and its pnpm cache path lookup will fail on runners like the macOS runner that already lacked pnpm, so the workflow can still stop before reaching the fallback build. Move pnpm/corepack setup before the cached setup-node step, or split setup-node without cache from a later cache restore after pnpm is installed.
+
+Useful? React with 👍 / 👎."
+
+**Assistant interpretation:** Treat the review as valid, react with 👍, and update the release workflow so cache restoration happens only after pnpm exists.
+
+**Inferred user intent:** Make PR #575 robust enough to fix the original macOS release failure instead of replacing it with an earlier setup-node cache failure.
+
+**Commit (code):** 829ea9e — "Fix pnpm cache ordering in release workflow"
+
+#### What I did
+- Reacted 👍 to PR review comment `3230549754`.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.github/workflows/release.yaml` in all release jobs.
+- Replaced `setup-node(cache: pnpm) -> corepack enable` with `setup-node(no cache) -> corepack enable pnpm@10.15.0 -> setup-node(cache: pnpm)`.
+
+#### Why
+- `actions/setup-node` resolves the pnpm cache path during the action execution.
+- On runners without preinstalled pnpm, requesting `cache: pnpm` before Corepack activation can fail before the workflow reaches `go generate`.
+
+#### What worked
+- The fix keeps the intended pnpm cache behavior and avoids needing a separate `actions/cache` shell step.
+- The same pattern applies cleanly to linux, darwin, and merge jobs.
+
+#### What didn't work
+- The previous patch was incomplete because it assumed setup-node could configure pnpm caching before pnpm was available.
+- My first validation command used a relative `ttmp/...` path from inside the repo, and docmgr resolved it as `.../glazed/ttmp/ttmp/...`, failing with `open ... no such file or directory`; rerunning with the absolute doc path worked.
+- `docmgr doc relate` rewrote the diary frontmatter into empty schema keys (`Title: ""`, `Ticket: ""`, `DocType: ""`), so `docmgr validate frontmatter` failed with `missing required fields: Title, Ticket, DocType`; I restored the frontmatter using the docmgr-required uppercase keys and revalidated successfully.
+
+#### What I learned
+- For setup-node's package-manager cache modes, the package manager must already be installed or activated.
+- Corepack activation requires Node first, so the ordering must be Node without cache, Corepack/pnpm, then cache-aware setup-node or equivalent cache restore.
+
+#### What was tricky to build
+- The ordering has a dependency cycle at first glance: Corepack needs Node, while pnpm caching needs pnpm. Splitting setup-node into a no-cache Node setup followed by Corepack activation and a second cache-aware setup-node call breaks that cycle without introducing a custom cache path script.
+
+#### What warrants a second pair of eyes
+- Confirm that running `actions/setup-node@v6` twice in one job is acceptable for this repository's release workflow and does not unexpectedly reset PATH or Node state.
+- Confirm whether `pnpm@10.15.0` should remain pinned here or be derived from `web/packageManager` if that is later added to `package.json`.
+
+#### What should be done in the future
+- If setup-node double invocation proves noisy, replace the second setup-node call with `actions/cache` and `pnpm store path` after Corepack activation.
+
+#### Code review instructions
+- Start with `.github/workflows/release.yaml` and inspect the Node/Corepack/cache ordering in `goreleaser-linux`, `goreleaser-darwin`, and `goreleaser-merge`.
+- Validate by checking PR #575 CI and, after merge, cutting a new release tag so the macOS split job reaches and completes `go generate ./...`.
+
+#### Technical details
+
+The intended per-job order is:
+
+```yaml
+- uses: actions/setup-node@v6
+  with:
+    node-version: '22'
+- name: Enable pnpm
+  run: corepack enable && corepack prepare pnpm@10.15.0 --activate
+- uses: actions/setup-node@v6
+  with:
+    node-version: '22'
+    cache: pnpm
+    cache-dependency-path: web/pnpm-lock.yaml
+```
+
 ### Summary
 
-All implementation tasks complete except Task 3. Task 3 (tag and release glazed) is a manual CI step that requires pushing a tag. The end-to-end test confirms the API works and the #571 fix (auto-assign default package) is functioning correctly in pinocchio's context. The next practical step is to publish a glazed release that contains `glazed-spa-<version>.tar.gz`, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
+All implementation tasks complete except the release verification portion of Task 3. The first `v1.2.10` tag attempt failed before publishing because macOS release workers lacked pnpm; the follow-up review fix now ensures pnpm is activated before setup-node tries to restore the pnpm cache. After this workflow fix is merged, cut a new glazed tag (or rerun with an updated tag such as `v1.2.11`), verify `glazed-spa-<version>.tar.gz` appears on the GitHub Release, then bump pinocchio's `github.com/go-go-golems/glazed` dependency to that released version and rerun `make fetch-spa`.
