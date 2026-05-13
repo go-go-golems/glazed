@@ -527,6 +527,76 @@ build-with-spa: fetch-spa
 	go build -tags embed ./cmd/pinocchio
 ```
 
+### 2026-05-12 — Pinocchio embed root: expose dist/ as fs root
+
+The first no-generate Pinocchio build still served API-only when running `./pinocchio serve`. The binary had embedded `pkg/spa/dist`, but `//go:embed dist` makes paths appear under `dist/index.html`; the SPA handler reads `index.html` at the filesystem root. Without an `fs.Sub`, embedded builds could not find the index page.
+
+The embed build now stores the raw embedded filesystem in `embeddedAssets` and exposes `Assets` as `fs.Sub(embeddedAssets, "dist")`, matching the non-embed dev fallback's `os.DirFS(pkg/spa/dist)` behavior. I also made `build-with-spa` write `-o ./pinocchio` explicitly so the command the user runs is definitely the freshly rebuilt binary.
+
+#### Prompt Context
+
+**User prompt (verbatim):** "❯ make fetch-spa build-with-spa
+Fetching SPA assets for glazed v1.2.13...
+go build -tags embed ./cmd/pinocchio
+pinocchio on  task/fix-serve-http-docs via 🐹 v1.26.1 with 🐃 v1.55.1 
+❯ ./pinocchio serve            
+2026-05-12T21:07:48.782992578-04:00 WRN SPA handler not available, serving API only error=\"reading SPA assets: open index.html: file does not exist (run 'make fetch-spa' and rebuild with -tags embed)\"
+2026-05-12T21:07:48.783777716-04:00 INF Loaded help sections sections=53
+2026-05-12T21:07:48.783796972-04:00 INF Pinocchio help browser listening address=:8088
+^C2026-05-12T21:07:49.773785547-04:00 INF Shutting down signal=interrupt"
+
+**Assistant interpretation:** Fix the remaining embedded filesystem path mismatch so the freshly built Pinocchio binary serves the real SPA instead of API-only mode.
+
+**Inferred user intent:** Make the final local workflow work exactly as typed: `make fetch-spa build-with-spa && ./pinocchio serve`.
+
+**Commit (code):** 662a44d — "Fix embedded SPA filesystem root"
+
+#### What I did
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/pkg/spa/embed.go` to expose `dist/` as the root `fs.FS` via `fs.Sub`.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile` so `build-with-spa` runs `go build -tags embed -o ./pinocchio ./cmd/pinocchio`.
+- Validated with `make build-with-spa`, `./pinocchio serve --address :18893`, `curl -I /`, and `/api/health`.
+
+#### Why
+- The SPA handler expects `Assets` to contain `index.html` at root.
+- `//go:embed dist` embeds the directory with the prefix preserved, so the root path was `dist/index.html`.
+- Non-embed fallback already exposes `pkg/spa/dist` as root, so embed mode should behave the same way.
+
+#### What worked
+- After the fix, `/` returns `HTTP/1.1 200 OK` and `Content-Type: text/html; charset=utf-8`.
+- `/api/health` returns `{"ok":true,"sections":53}`.
+- Startup logs no longer contain the `SPA handler not available` warning.
+
+#### What didn't work
+- Before the fix, embedded builds included the files but under the wrong path prefix, causing `open index.html: file does not exist`.
+- The earlier `go build ./cmd/pinocchio` target was less explicit about the output binary than the workflow the user expected, so `-o ./pinocchio` is clearer.
+
+#### What I learned
+- Embed mode and dev fallback mode must expose identical filesystem roots; otherwise the shared HTTP handler behaves differently between build tags.
+
+#### What was tricky to build
+- The failure looked like missing assets, but the files were present in the embedded filesystem under `dist/`. The symptom was identical to an absent tarball, so checking the `go:embed` path semantics was the key.
+
+#### What warrants a second pair of eyes
+- Confirm that panicking from `mustSub` is acceptable for a build-time invariant. Since `dist` is named in `go:embed`, this should only fail if the source layout changes.
+
+#### What should be done in the future
+- Add a small `pkg/spa` test under the `embed` build tag once CI has fetched assets, or add a script-level smoke test that asserts `/` returns HTML after `make build-with-spa`.
+
+#### Code review instructions
+- Review `pkg/spa/embed.go`, `pkg/spa/spa.go`, and `Makefile` target `build-with-spa`.
+- Validate with `make fetch-spa build-with-spa && ./pinocchio serve`, then `curl -I http://localhost:8088/` and `curl -s http://localhost:8088/api/health`.
+
+#### Technical details
+
+The embed file now normalizes root paths like this:
+
+```go
+//go:embed dist
+var embeddedAssets embed.FS
+
+var Assets fs.FS = mustSub(embeddedAssets, "dist")
+```
+
 ### Summary
 
-All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, and Pinocchio now fetches that asset name by stripping the leading `v` only for the filename. `make build-with-spa` now consumes the fetched asset and compiles `./cmd/pinocchio` without running `go generate`.
+All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, and Pinocchio now fetches that asset name, embeds it with the correct filesystem root, and serves `/` as the SPA with 53 help sections.

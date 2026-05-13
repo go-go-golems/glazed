@@ -94,3 +94,13 @@ Removed broad go generate from Pinocchio's SPA consumer build path. make build-w
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/.goreleaser.yaml — release before hooks no longer run go generate
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa no longer runs go generate
 
+
+## 2026-05-12
+
+Fixed Pinocchio embedded SPA filesystem root. go:embed dist preserved the dist/ prefix while the handler reads index.html at root; embed mode now exposes fs.Sub(embeddedAssets, "dist"), and build-with-spa writes ./pinocchio explicitly. Verified / returns HTML and /api/health reports 53 sections.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa writes ./pinocchio explicitly
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/pkg/spa/embed.go — Exposes embedded dist directory as SPA filesystem root
+
