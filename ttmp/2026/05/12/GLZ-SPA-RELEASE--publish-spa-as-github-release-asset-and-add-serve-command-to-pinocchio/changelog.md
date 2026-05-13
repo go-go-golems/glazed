@@ -75,3 +75,42 @@ Diagnosed v1.2.12 release: GitHub Release and glazed-spa-1.2.12.tar.gz were publ
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/.goreleaser.yaml — Restricts Fury custom publisher to package artifacts
 
+
+## 2026-05-12
+
+Adjusted Pinocchio fetch-spa for Glazed v1.2.13 asset naming. Release tag remains v1.2.13, but asset filename is glazed-spa-1.2.13.tar.gz, so Makefile now strips the leading v only for the filename. Verified make fetch-spa, embedded build, and serve smoke test with 53 sections.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — Fetches versioned Glazed SPA release asset
+
+
+## 2026-05-12
+
+Removed broad go generate from Pinocchio's SPA consumer build path. make build-with-spa now fetches the Glazed SPA release asset and builds only ./cmd/pinocchio with -tags embed; Pinocchio GoReleaser before hooks no longer run go generate ./... for this release path.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/.goreleaser.yaml — release before hooks no longer run go generate
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa no longer runs go generate
+
+
+## 2026-05-12
+
+Fixed Pinocchio embedded SPA filesystem root. go:embed dist preserved the dist/ prefix while the handler reads index.html at root; embed mode now exposes fs.Sub(embeddedAssets, "dist"), and build-with-spa writes ./pinocchio explicitly. Verified / returns HTML and /api/health reports 53 sections.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa writes ./pinocchio explicitly
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/pkg/spa/embed.go — Exposes embedded dist directory as SPA filesystem root
+
+
+## 2026-05-12
+
+Added Glazed user documentation for the completed end-to-end SPA distribution workflow. New help topic distribute-help-browser-spa documents the versioned GitHub Release asset naming, downstream Makefile fetch pattern, fs.Sub embed root requirement, serve integration, and smoke tests; serve-help-over-http now links to it and updates external-consumer guidance.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/25-serving-help-over-http.md — References release asset workflow from existing serve docs
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/glazed/pkg/doc/topics/30-distribute-help-browser-spa.md — New end-to-end downstream SPA distribution guide
+
