@@ -84,3 +84,13 @@ Adjusted Pinocchio fetch-spa for Glazed v1.2.13 asset naming. Release tag remain
 
 - /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — Fetches versioned Glazed SPA release asset
 
+
+## 2026-05-12
+
+Removed broad go generate from Pinocchio's SPA consumer build path. make build-with-spa now fetches the Glazed SPA release asset and builds only ./cmd/pinocchio with -tags embed; Pinocchio GoReleaser before hooks no longer run go generate ./... for this release path.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/.goreleaser.yaml — release before hooks no longer run go generate
+- /home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile — build-with-spa no longer runs go generate
+

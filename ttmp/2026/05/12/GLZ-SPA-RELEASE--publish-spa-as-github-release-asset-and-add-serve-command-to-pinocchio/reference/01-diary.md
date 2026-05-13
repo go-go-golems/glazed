@@ -469,6 +469,64 @@ The expected URL for `github.com/go-go-golems/glazed v1.2.13` is:
 https://github.com/go-go-golems/glazed/releases/download/v1.2.13/glazed-spa-1.2.13.tar.gz
 ```
 
+### 2026-05-12 — Pinocchio build-with-spa: stop running go generate
+
+`make build-with-spa` still ran `go generate ./...` after fetching the prebuilt Glazed SPA. That defeats the point of distributing the SPA as a release asset: this path should consume already-built assets and compile the Pinocchio binary, not trigger frontend generation pipelines.
+
+The Makefile now makes `build-with-spa` depend on `fetch-spa` and then builds only the Pinocchio command with the `embed` tag. The Pinocchio GoReleaser config also no longer runs `go generate ./...` in `before.hooks`, because the release builds only `./cmd/pinocchio` and the required help browser SPA is fetched from Glazed.
+
+#### Prompt Context
+
+**User prompt (verbatim):** "go generate still seems to run the dagger pipeline even when using make build-with-spa ."
+
+**Assistant interpretation:** Remove `go generate` from the Pinocchio SPA build/release path so consuming the release asset does not trigger Dagger/frontend builds.
+
+**Inferred user intent:** Make the downstream consumer workflow simple and reliable: fetch the published SPA tarball and compile, with no local SPA build pipeline.
+
+**Commit (code):** 0d3545a — "Avoid go generate in SPA embed build"
+
+#### What I did
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/Makefile` so `build-with-spa` runs only `go build -tags embed ./cmd/pinocchio` after `fetch-spa`.
+- Updated `/home/manuel/workspaces/2026-05-12/fix-serve-http-docs/pinocchio/.goreleaser.yaml` to remove `go generate ./...` from release `before.hooks`.
+- Validated with `make build-with-spa`.
+
+#### Why
+- Pinocchio is not supposed to rebuild the Glazed help SPA; it should embed the release asset.
+- `go generate ./...` is broad and can trigger unrelated frontend build scripts/pipelines.
+- GoReleaser builds only `./cmd/pinocchio`, so release generation is unnecessary for this path once `fetch-spa` has populated `pkg/spa/dist`.
+
+#### What worked
+- `make build-with-spa` now prints only the SPA fetch and `go build -tags embed ./cmd/pinocchio`; it no longer runs `go generate`.
+
+#### What didn't work
+- The previous target still mixed “fetch prebuilt assets” with “generate local assets”, which was both redundant and surprising.
+
+#### What I learned
+- The downstream build should be narrower than the general repo `build` target. `build-with-spa` is specifically for the `pinocchio` command with embedded help browser assets, not for regenerating all project assets.
+
+#### What was tricky to build
+- Pinocchio still has unrelated `go generate` usage for `cmd/web-chat`; removing generation only from the SPA build/release path avoids changing the normal development `build` target while fixing the release-asset consumer workflow.
+
+#### What warrants a second pair of eyes
+- Confirm that Pinocchio release builds do not require any generated files beyond what is already committed or fetched by `make fetch-spa`.
+- Confirm whether `.goreleaser.yaml` should also add `make FETCH_SPA_REQUIRED=1 fetch-spa` later to fail fast if the SPA asset is missing.
+
+#### What should be done in the future
+- Add a required-fetch mode for release builds so missing SPA assets fail at `fetch-spa`, not at Go embed time.
+
+#### Code review instructions
+- Review `Makefile` target `build-with-spa` and `.goreleaser.yaml` `before.hooks`.
+- Validate with `make build-with-spa`; it should not run `go generate` and should build `./cmd/pinocchio` with `-tags embed`.
+
+#### Technical details
+
+New target shape:
+
+```makefile
+build-with-spa: fetch-spa
+	go build -tags embed ./cmd/pinocchio
+```
+
 ### Summary
 
-All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, and Pinocchio now fetches that asset name by stripping the leading `v` only for the filename. The local Pinocchio embed build and serve smoke test pass with 53 help sections.
+All implementation tasks are complete from the SPA distribution perspective: Glazed `v1.2.13` publishes the versioned SPA asset, and Pinocchio now fetches that asset name by stripping the leading `v` only for the filename. `make build-with-spa` now consumes the fetched asset and compiles `./cmd/pinocchio` without running `go generate`.
