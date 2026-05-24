@@ -44,7 +44,7 @@ func init() {
 	Analyzer.Flags.StringVar(
 		&allowPathsFlag,
 		"allow-paths",
-		"pkg/analysis/,pkg/cli/,pkg/cmds/fields/,pkg/cmds/logging/,pkg/help/cmd/",
+		"pkg/analysis/,pkg/cli/,pkg/cmds/fields/,pkg/cmds/logging/,pkg/cmds/sources/,pkg/help/",
 		"comma-separated slash-normalized path fragments to skip, for framework bridge code",
 	)
 }

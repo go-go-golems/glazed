@@ -146,7 +146,7 @@ The vettool exposes analyzer flags through `go vet` using the analyzer name as a
 go vet -vettool=/tmp/glazed-lint \
   -glazedclilint.allow-tests=true \
   -glazedclilint.allow-generated=true \
-  -glazedclilint.allow-paths='pkg/cli/,pkg/help/cmd/' \
+  -glazedclilint.allow-paths='pkg/analysis/,pkg/cli/,pkg/cmds/fields/,pkg/cmds/logging/,pkg/cmds/sources/,pkg/help/' \
   ./cmd/... ./pkg/...
 ```
 
@@ -156,7 +156,7 @@ go vet -vettool=/tmp/glazed-lint \
 | `allow-generated` | `true` | Skip files with standard `Code generated ... DO NOT EDIT` comments. |
 | `allow-paths` | framework bridge paths | Comma-separated path fragments where raw Cobra/env usage is allowed. |
 
-The default allowlist exists because Glazed's framework bridge packages must use Cobra and pflag internally to turn schemas into executable commands. Application verbs should still use `cmds.WithFlags` and Glazed sections.
+The default allowlist exists because Glazed's framework bridge packages must use Cobra, pflag, analyzer flags, environment-backed source adapters, and rendering-library environment conventions internally. Application verbs and examples under `cmd/` should still use `cmds.WithFlags` and Glazed sections.
 
 ## How to fix findings
 
