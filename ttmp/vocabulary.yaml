@@ -117,6 +117,10 @@ topics:
       description: The pinocchio CLI tool
     - slug: distribution
       description: Artifact distribution and packaging
+    - slug: linting
+      description: Static analysis and lint tooling for enforcing repository policy
+    - slug: intern-onboarding
+      description: Intern-oriented guides and onboarding documentation for implementation work
 docTypes:
     - slug: index
       description: Ticket index
