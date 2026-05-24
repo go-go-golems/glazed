@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/settings"
@@ -103,10 +104,56 @@ func getExtensions(cmd *cobra.Command) ([]goldmark.Extender, error) {
 	return extensions, nil
 }
 
-func addExtensionFlags(cmd *cobra.Command) {
+func extensionFieldDefinitions() []*fields.Definition {
+	definitions := make([]*fields.Definition, 0, len(extensionFlags))
 	for _, ext := range extensionFlags {
-		cmd.Flags().Bool(ext.FlagName, false, ext.FlagDesc)
+		definitions = append(definitions, fields.New(
+			ext.FlagName,
+			fields.TypeBool,
+			fields.WithDefault(false),
+			fields.WithHelp(ext.FlagDesc),
+		))
 	}
+	return definitions
+}
+
+func newMarkdownParseSection() (schema.CobraSection, error) {
+	definitions := []*fields.Definition{
+		fields.New(
+			"parser",
+			fields.TypeString,
+			fields.WithDefault("simple"),
+			fields.WithShortFlag("t"),
+			fields.WithHelp("Type of output to generate"),
+		),
+	}
+	definitions = append(definitions, extensionFieldDefinitions()...)
+	return schema.NewSection(
+		"markdown-parse",
+		"Markdown parse flags",
+		schema.WithFields(definitions...),
+	)
+}
+
+func newMarkdownSplitSection() (schema.CobraSection, error) {
+	return schema.NewSection(
+		"markdown-split",
+		"Markdown split flags",
+		schema.WithFields(
+			fields.New(
+				"keep-empty-headings",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Keep empty headings"),
+			),
+			fields.New(
+				"level",
+				fields.TypeInteger,
+				fields.WithDefault(2),
+				fields.WithHelp("Heading level to split by"),
+			),
+		),
+	)
 }
 
 // What functionality to I want for a markdown command:
@@ -438,9 +485,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	// parser can be "simple" or "dom"
-	parseCmd.Flags().StringP("parser", "t", "simple", "Type of output to generate")
-	addExtensionFlags(parseCmd)
+	parseSection, err := newMarkdownParseSection()
+	if err != nil {
+		panic(err)
+	}
+	err = parseSection.AddSectionToCobraCommand(parseCmd)
+	if err != nil {
+		panic(err)
+	}
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
@@ -448,7 +500,13 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	splitByHeadingCmd.Flags().Bool("keep-empty-headings", false, "Keep empty headings")
-	splitByHeadingCmd.Flags().Int("level", 2, "Heading level to split by")
+	splitSection, err := newMarkdownSplitSection()
+	if err != nil {
+		panic(err)
+	}
+	err = splitSection.AddSectionToCobraCommand(splitByHeadingCmd)
+	if err != nil {
+		panic(err)
+	}
 	MarkdownCmd.AddCommand(splitByHeadingCmd)
 }

@@ -6,7 +6,10 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/logging"
+	cmdsources "github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +49,9 @@ tokens.`,
 func buildDocsctlCobraCommand(command cmds.Command) (*cobra.Command, error) {
 	description := command.Description()
 	cmd := cli.NewCobraCommandFromCommandDescription(description)
-	parser, err := cli.NewCobraParserFromSections(description.Schema, &cli.CobraParserConfig{})
+	parser, err := cli.NewCobraParserFromSections(description.Schema, &cli.CobraParserConfig{
+		MiddlewaresFunc: docsctlMiddlewares,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +75,15 @@ func buildDocsctlCobraCommand(command cmds.Command) (*cobra.Command, error) {
 		return fmt.Errorf("unsupported docsctl command type %T", command)
 	}
 	return cmd, nil
+}
+
+func docsctlMiddlewares(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]cmdsources.Middleware, error) {
+	return []cmdsources.Middleware{
+		cmdsources.FromCobra(cmd, fields.WithSource("cobra")),
+		cmdsources.FromArgs(args, fields.WithSource("arguments")),
+		cmdsources.FromEnv("DOCSCTL", fields.WithSource("env")),
+		cmdsources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+	}, nil
 }
 
 func mustCommand(command cmds.Command, err error) cmds.Command {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	schema "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/spf13/cobra"
@@ -112,9 +113,37 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	extractCmd.Flags().StringSlice("heading", []string{"h1", "h2", "h3", "h4", "h5", "h6"}, "Heading tags to split on")
-	extractCmd.Flags().StringSlice("remove", []string{"span"}, "Tags to remove from the output")
-	extractCmd.Flags().Bool("extract-title", true, "Extract the title from the sections")
+	extractSection, err := schema.NewSection(
+		"html-extract",
+		"HTML extract flags",
+		schema.WithFields(
+			fields.New(
+				"heading",
+				fields.TypeStringList,
+				fields.WithDefault([]string{"h1", "h2", "h3", "h4", "h5", "h6"}),
+				fields.WithHelp("Heading tags to split on"),
+			),
+			fields.New(
+				"remove",
+				fields.TypeStringList,
+				fields.WithDefault([]string{"span"}),
+				fields.WithHelp("Tags to remove from the output"),
+			),
+			fields.New(
+				"extract-title",
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Extract the title from the sections"),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+	err = extractSection.AddSectionToCobraCommand(extractCmd)
+	if err != nil {
+		return nil, err
+	}
 
 	err = cobraSection.AddSectionToCobraCommand(extractCmd)
 	if err != nil {
