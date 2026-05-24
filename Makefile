@@ -1,4 +1,4 @@
-.PHONY: all test build lint lintmax docker-lint golangci-lint-install gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
+.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
 
 all: test build
 
@@ -8,6 +8,8 @@ GORELEASER_ARGS ?= --skip=sign --snapshot --clean
 GORELEASER_TARGET ?= --single-target
 GOLANGCI_LINT_VERSION ?= $(shell cat .golangci-lint-version)
 GOLANGCI_LINT_BIN ?= $(CURDIR)/.bin/golangci-lint
+GLAZED_LINT_BIN ?= /tmp/glazed-lint
+GLAZEDCLILINT_BIN ?= /tmp/glazedclilint
 
 docker-lint:
 	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run -v
@@ -21,6 +23,16 @@ lint: golangci-lint-install
 
 lintmax: golangci-lint-install
 	$(GOLANGCI_LINT_BIN) run -v --max-same-issues=100
+
+glazed-lint-build:
+	go build -o $(GLAZED_LINT_BIN) ./cmd/tools/glazed-lint
+
+glazed-lint: glazed-lint-build
+	go vet -vettool=$(GLAZED_LINT_BIN) ./cmd/... ./pkg/...
+
+glazedclilint:
+	go build -o $(GLAZEDCLILINT_BIN) ./cmd/tools/glazedclilint
+	go vet -vettool=$(GLAZEDCLILINT_BIN) ./cmd/... ./pkg/...
 
 gosec:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest

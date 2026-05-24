@@ -42,13 +42,13 @@ func NewPublishCommand() (*PublishCommand, error) {
 		cmds.WithLong(`Publish validates a Glazed help SQLite export locally, then uploads it to
 a docs registry using a package-scoped bearer token.
 
-Token precedence is --token, DOCS_YOLO_PUBLISH_TOKEN, then --token-file.`),
+Token precedence is --token, DOCSCTL_TOKEN, then --token-file.`),
 		cmds.WithFlags(
 			fields.New("server", fields.TypeString, fields.WithHelp("Docs registry base URL"), fields.WithRequired(true)),
 			fields.New("package", fields.TypeString, fields.WithHelp("Package name"), fields.WithRequired(true)),
 			fields.New("version", fields.TypeString, fields.WithHelp("Package version"), fields.WithRequired(true)),
 			fields.New("file", fields.TypeString, fields.WithHelp("SQLite help export file"), fields.WithRequired(true)),
-			fields.New("token", fields.TypeString, fields.WithHelp("Publish token (or DOCS_YOLO_PUBLISH_TOKEN)"), fields.WithDefault("")),
+			fields.New("token", fields.TypeString, fields.WithHelp("Publish token (or DOCSCTL_TOKEN)"), fields.WithDefault("")),
 			fields.New("token-file", fields.TypeString, fields.WithHelp("File containing publish token"), fields.WithDefault("")),
 			fields.New("json", fields.TypeBool, fields.WithHelp("Emit JSON"), fields.WithDefault(false)),
 			fields.New("dry-run", fields.TypeBool, fields.WithHelp("Validate locally and print target without uploading"), fields.WithDefault(false)),
@@ -110,9 +110,6 @@ func resolvePublishToken(opts *publishOptions) (string, error) {
 	if opts.Token != "" {
 		return opts.Token, nil
 	}
-	if env := os.Getenv("DOCS_YOLO_PUBLISH_TOKEN"); env != "" {
-		return env, nil
-	}
 	if opts.TokenFile != "" {
 		data, err := os.ReadFile(opts.TokenFile)
 		if err != nil {
@@ -122,7 +119,7 @@ func resolvePublishToken(opts *publishOptions) (string, error) {
 			return token, nil
 		}
 	}
-	return "", fmt.Errorf("publish token is required via --token, DOCS_YOLO_PUBLISH_TOKEN, or --token-file")
+	return "", fmt.Errorf("publish token is required via --token, DOCSCTL_TOKEN, or --token-file")
 }
 
 func writePublishResult(w io.Writer, jsonOutput bool, payload any, format string, args ...any) error {

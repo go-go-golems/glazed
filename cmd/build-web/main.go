@@ -18,46 +18,135 @@ import (
 	"strings"
 
 	"dagger.io/dagger"
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	cmdsources "github.com/go-go-golems/glazed/pkg/cmds/sources"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	"github.com/spf13/cobra"
 )
 
 const defaultPNPMVersion = "10.15.0"
 
+type BuildWebCommand struct {
+	*cmds.CommandDescription
+}
+
+type BuildWebSettings struct {
+	BuilderImage string `glazed:"builder-image"`
+	PNPMVersion  string `glazed:"pnpm-version"`
+	Local        bool   `glazed:"local"`
+}
+
+var _ cmds.BareCommand = (*BuildWebCommand)(nil)
+
+func NewBuildWebCommand() (*BuildWebCommand, error) {
+	return &BuildWebCommand{CommandDescription: cmds.NewCommandDescription(
+		"build-web",
+		cmds.WithShort("Build the Glazed help browser frontend"),
+		cmds.WithLong(`Build the React frontend in web/ and copy its dist/ output into
+pkg/web/embed/public/ for go:embed production builds.
+
+Configuration can come from flags or environment:
+  --builder-image / WEB_BUILDER_IMAGE
+  --pnpm-version  / WEB_PNPM_VERSION
+  --local         / BUILD_WEB_LOCAL or WEB_LOCAL`),
+		cmds.WithFlags(
+			fields.New(
+				"builder-image",
+				fields.TypeString,
+				fields.WithDefault("node:22"),
+				fields.WithHelp("Container image used by the Dagger build"),
+			),
+			fields.New(
+				"pnpm-version",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("pnpm version to activate; defaults to packageManager in web/package.json, then 10.15.0"),
+			),
+			fields.New(
+				"local",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Run local pnpm instead of Dagger"),
+			),
+		),
+	)}, nil
+}
+
 func main() {
-	builderImage := getenv("WEB_BUILDER_IMAGE", "node:22")
+	command, err := NewBuildWebCommand()
+	cobra.CheckErr(err)
+
+	cobraCommand, err := cli.BuildCobraCommandFromCommand(
+		command,
+		cli.WithParserConfig(cli.CobraParserConfig{MiddlewaresFunc: buildWebMiddlewares}),
+	)
+	cobra.CheckErr(err)
+
+	if err := cobraCommand.Execute(); err != nil {
+		log.Fatalf("build-web failed: %v", err)
+	}
+}
+
+func buildWebMiddlewares(parsedCommandSections *values.Values, cmd *cobra.Command, args []string) ([]cmdsources.Middleware, error) {
+	return []cmdsources.Middleware{
+		cmdsources.FromCobra(cmd, fields.WithSource("cobra")),
+		cmdsources.FromArgs(args, fields.WithSource("arguments")),
+		cmdsources.FromEnv("WEB", fields.WithSource("env")),
+		cmdsources.FromEnv("BUILD_WEB", fields.WithSource("env")),
+		cmdsources.FromDefaults(fields.WithSource(fields.SourceDefaults)),
+	}, nil
+}
+
+func (c *BuildWebCommand) Run(ctx context.Context, parsedValues *values.Values) error {
+	settings := &BuildWebSettings{}
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
+		return err
+	}
 
 	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("getwd: %v", err)
+		return fmt.Errorf("getwd: %v", err)
 	}
 	repoRoot, err := findRepoRoot(wd)
 	if err != nil {
-		log.Fatalf("find repo root: %v", err)
+		return fmt.Errorf("find repo root: %v", err)
 	}
 
 	webPath := filepath.Join(repoRoot, "web")
 	outPath := filepath.Join(repoRoot, "pkg", "web", "embed", "public")
-	pnpmVersion := getenv("WEB_PNPM_VERSION", packageManagerPNPMVersion(webPath, defaultPNPMVersion))
+	pnpmVersion := strings.TrimSpace(settings.PNPMVersion)
+	if pnpmVersion == "" {
+		pnpmVersion = packageManagerPNPMVersion(webPath, defaultPNPMVersion)
+	}
+	builderImage := strings.TrimSpace(settings.BuilderImage)
+	if builderImage == "" {
+		builderImage = "node:22"
+	}
 
 	log.Printf("repo root: %s", repoRoot)
 	log.Printf("web source: %s", webPath)
 	log.Printf("build output: %s", outPath)
 	log.Printf("pnpm version: %s", pnpmVersion)
 
-	if getenv("BUILD_WEB_LOCAL", "") == "1" {
+	if settings.Local {
 		if err := buildLocal(webPath, outPath); err != nil {
-			log.Fatalf("local build failed: %v", err)
+			return fmt.Errorf("local build failed: %v", err)
 		}
 		log.Printf("exported web dist to %s", outPath)
-		return
+		return nil
 	}
 
 	if err := buildWithDagger(webPath, outPath, pnpmVersion, builderImage); err != nil {
 		log.Printf("Dagger build failed (%v), falling back to local pnpm", err)
 		if err := buildLocal(webPath, outPath); err != nil {
-			log.Fatalf("local build also failed: %v", err)
+			return fmt.Errorf("local build also failed: %v", err)
 		}
 	}
 	log.Printf("exported web dist to %s", outPath)
+	return nil
 }
 
 func buildWithDagger(webPath, outPath, pnpmVersion, builderImage string) error {
@@ -174,11 +263,4 @@ func packageManagerPNPMVersion(webPath, fallback string) string {
 		return strings.TrimSpace(version)
 	}
 	return fallback
-}
-
-func getenv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
 }

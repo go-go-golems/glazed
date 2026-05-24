@@ -26,15 +26,30 @@ func main() {
 		Short: "Demonstrate declarative config plans and provenance-aware loading",
 	}
 
-	var explicit string
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Resolve the config plan, load the files, and print settings + parse history",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			explicit, err := cmd.Flags().GetString("explicit")
+			if err != nil {
+				return err
+			}
 			return runShow(explicit)
 		},
 	}
-	showCmd.Flags().StringVar(&explicit, "explicit", "", "Optional explicit config file applied last")
+	explicitSection, err := schema.NewSection(
+		"explicit",
+		"Explicit config",
+		schema.WithFields(fields.New("explicit", fields.TypeString, fields.WithHelp("Optional explicit config file applied last"))),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating explicit section: %v\n", err)
+		os.Exit(1)
+	}
+	if err := explicitSection.AddSectionToCobraCommand(showCmd); err != nil {
+		fmt.Fprintf(os.Stderr, "Error adding explicit section: %v\n", err)
+		os.Exit(1)
+	}
 	rootCmd.AddCommand(showCmd)
 
 	if err := rootCmd.Execute(); err != nil {

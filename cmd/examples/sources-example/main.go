@@ -35,6 +35,10 @@ func NewSourcesExampleCommand() (*SourcesExampleCommand, error) {
 		schema.WithPrefix("config-"),
 		schema.WithDescription("Configuration settings"),
 		schema.WithFields(
+			fields.New("file", fields.TypeString,
+				fields.WithHelp("Config file path"),
+				fields.WithDefault(""),
+			),
 			fields.New("api-key", fields.TypeString,
 				fields.WithHelp("API key for authentication"),
 				fields.WithDefault("default-key"),
@@ -67,7 +71,7 @@ execute middleware chains for value resolution from multiple sources:
 - Environment variables (APP_CONFIG_API_KEY=env-key)
 - Custom map (programmatic overrides)
 - Config file (JSON/YAML)
-- Cobra flags (--config-api-key=flag-key)
+- Glazed/Cobra flags generated from the config section (--config-api-key=flag-key)
 
 Precedence order (lowest to highest):
 1. Defaults
@@ -116,11 +120,20 @@ func main() {
 	// Get the schema from the command
 	cmdSchema := cmd.Schema
 
-	// Register flags manually
-	root.Flags().String("config-file", "", "Config file path")
-	root.Flags().String("config-api-key", "", "API key")
-	root.Flags().Int("config-timeout", 0, "Timeout")
-	root.Flags().Bool("config-debug", false, "Debug mode")
+	// Register flags from the Glazed schema instead of using raw Cobra flag
+	// definitions. The config section has prefix "config-", so fields named
+	// "file", "api-key", "timeout", and "debug" become --config-file,
+	// --config-api-key, --config-timeout, and --config-debug.
+	if err := cmdSchema.ForEachE(func(_ string, section schema.Section) error {
+		cobraSection, ok := section.(schema.CobraSection)
+		if !ok {
+			return fmt.Errorf("section %s is not a Cobra section", section.GetSlug())
+		}
+		return cobraSection.AddSectionToCobraCommand(root)
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "Error registering Glazed flags: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Parse command line
 	if err := root.ParseFlags(os.Args[1:]); err != nil {
