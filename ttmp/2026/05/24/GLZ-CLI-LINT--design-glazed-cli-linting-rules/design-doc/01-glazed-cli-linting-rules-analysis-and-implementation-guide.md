@@ -20,12 +20,26 @@ RelatedFiles:
       Note: Primary go/analysis analyzer precedent for traversal
     - Path: geppetto/pkg/doc/topics/12-turnsdatalint.md
       Note: Contributor documentation precedent for custom project linters
+    - Path: glazed/Makefile
+      Note: Build and run targets for glazed-lint and glazedclilint
+    - Path: glazed/cmd/tools/glazed-lint/main.go
+      Note: Multichecker wrapper for bundled Glazed custom vettools
+    - Path: glazed/cmd/tools/glazedclilint/main.go
+      Note: Singlechecker wrapper for focused analyzer debugging
+    - Path: glazed/pkg/analysis/glazedclilint/analyzer.go
+      Note: Implemented analyzer for raw env reads
+    - Path: glazed/pkg/analysis/glazedclilint/analyzer_test.go
+      Note: Analysistest entry point for the new analyzer
+    - Path: glazed/pkg/analysis/glazedclilint/testdata/src/a/a.go
+      Note: Primary positive and negative analyzer fixtures
     - Path: glazed/pkg/cli/cobra-parser.go
       Note: Defines parser middleware chain and env/config/default value sources
     - Path: glazed/pkg/cli/cobra.go
       Note: Defines Cobra build/execution path and Glaze mode dispatch
     - Path: glazed/pkg/cmds/cmds.go
       Note: Defines Glazed command descriptions
+    - Path: glazed/pkg/doc/topics/31-glazed-cli-lint.md
+      Note: Contributor-facing help topic for running and fixing glazedclilint findings
     - Path: glazed/pkg/settings/glazed_section.go
       Note: Defines the Glazed output section that the proposed analyzer must recognize
     - Path: pinocchio/Makefile
@@ -44,6 +58,7 @@ LastUpdated: 2026-05-24T12:35:00-04:00
 WhatFor: Use this to implement a custom Glazed CLI policy linter from scratch.
 WhenToUse: When adding pkg/analysis/glazedclilint, wiring a glazed-lint vettool, or explaining the rule semantics to a new contributor.
 ---
+
 
 
 # Glazed CLI linting rules analysis and implementation guide
