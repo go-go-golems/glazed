@@ -313,13 +313,9 @@ func (p *Definition) ParseField(v []string, options ...ParseOption) (*FieldValue
 		default:
 			ret_ := map[string]interface{}{}
 			for _, arg := range v {
-				// TODO(2023-02-11): The separator could be stored in the field itself?
-				// It was configurable before.
-				//
-				// See https://github.com/go-go-golems/glazed/issues/129
-				parts := strings.Split(arg, ":")
-				if len(parts) != 2 {
-					return nil, errors.Errorf("Could not parse argument %s as key=value pair", arg)
+				parts, err := splitKeyValueArgument(arg)
+				if err != nil {
+					return nil, err
 				}
 				ret_[parts[0]] = parts[1]
 			}
@@ -689,6 +685,22 @@ func (p *Definition) parseObjectListFromReader(
 	}
 
 	return ret, nil
+}
+
+func splitKeyValueArgument(arg string) ([]string, error) {
+	for _, separator := range []string{":", "="} {
+		key, value, ok := strings.Cut(arg, separator)
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" || value == "" {
+			return nil, errors.Errorf("Could not parse argument %s as key=value pair: empty key or value", arg)
+		}
+		return []string{key, value}, nil
+	}
+	return nil, errors.Errorf("Could not parse argument %s as key=value pair", arg)
 }
 
 // refTime is used to set a reference time for natural date parsing for unit test purposes
