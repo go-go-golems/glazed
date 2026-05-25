@@ -1,10 +1,11 @@
 package files
 
 import (
-	"github.com/pkg/errors"
-	"log"
+	stdlog "log"
 	"os"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestGarbageCollectTemporaryFiles(t *testing.T) {
@@ -70,13 +71,13 @@ func TestGarbageCollectTemporaryFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir, _, err := initTest(t, "", "temp", tt.numFiles, "file*")
 			if err != nil {
-				log.Fatalf("Failed to create temp directory: %v", err)
+				stdlog.Fatalf("Failed to create temp directory: %v", err)
 			}
 
 			defer func(path string) {
 				err := os.RemoveAll(path)
 				if err != nil {
-					log.Fatalf("Failed to remove temp directory: %v", err)
+					stdlog.Fatalf("Failed to remove temp directory: %v", err)
 				}
 			}(tempDir)
 			// Call GarbageCollectTemporaryFiles
@@ -130,7 +131,7 @@ func TestGarbageCollectTemporaryFilesWithInvalidMask(t *testing.T) {
 	defer func(path string) {
 		err := os.RemoveAll(path)
 		if err != nil {
-			log.Fatalf("Failed to remove temp directory: %v", err)
+			stdlog.Fatalf("Failed to remove temp directory: %v", err)
 		}
 	}(tempDir)
 
@@ -151,14 +152,14 @@ func TestGarbageCollectTemporaryFilesWithUnreadableDirError(t *testing.T) {
 	defer func(path string) {
 		err := os.RemoveAll(path)
 		if err != nil {
-			log.Fatalf("Failed to remove temp directory: %v", err)
+			stdlog.Fatalf("Failed to remove temp directory: %v", err)
 		}
 	}(tempDir)
 
 	n := 2
 	err = os.Chmod(tempDir, 0000)
 	if err != nil {
-		log.Fatalf("Failed to change permissions on temp directory: %v", err)
+		stdlog.Fatalf("Failed to change permissions on temp directory: %v", err)
 	} // remove all permissions
 	_, err = GarbageCollectTemporaryFiles(tempDir, "file*", n)
 	if !errors.Is(err, os.ErrPermission) {
@@ -166,6 +167,6 @@ func TestGarbageCollectTemporaryFilesWithUnreadableDirError(t *testing.T) {
 	}
 	err = os.Chmod(tempDir, 0755)
 	if err != nil {
-		log.Fatalf("Failed to change permissions on temp directory: %v", err)
+		stdlog.Fatalf("Failed to change permissions on temp directory: %v", err)
 	} // restore permissions
 }

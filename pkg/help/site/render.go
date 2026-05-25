@@ -20,7 +20,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/store"
 	"github.com/go-go-golems/glazed/pkg/web"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 const (

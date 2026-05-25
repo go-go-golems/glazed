@@ -11,7 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
@@ -52,8 +52,8 @@ func initLoggerFromMergedSettings(settings *LoggingSettings) error {
 	// global logger and on logcopter's per-area child loggers. This lets one area
 	// emit trace while another remains at warn.
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	log.Logger = base.Level(defaultLevel)
-	zerolog.DefaultContextLogger = &log.Logger
+	zlog.Logger = base.Level(defaultLevel)
+	zerolog.DefaultContextLogger = &zlog.Logger
 
 	areas := mergeStringMaps(settings.Areas, settings.LogAreas)
 	if err := logcopter.Configure(base, logcopter.Config{
@@ -68,7 +68,7 @@ func initLoggerFromMergedSettings(settings *LoggingSettings) error {
 		return err
 	}
 
-	log.Logger.Debug().Str("format", settings.LogFormat).
+	zlog.Logger.Debug().Str("format", settings.LogFormat).
 		Str("level", settings.LogLevel).
 		Str("file", settings.LogFile).
 		Bool("logToStdout", settings.LogToStdout).

@@ -10,7 +10,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 // ErrSectionNotFound is returned by GetBySlug and GetByID when no matching

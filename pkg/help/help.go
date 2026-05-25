@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/dsl"
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
-	"github.com/rs/zerolog/log"
 )
 
 func LoadSectionFromMarkdown(markdownBytes []byte) (*model.Section, error) {

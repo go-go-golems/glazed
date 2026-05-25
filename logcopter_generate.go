@@ -1,0 +1,3 @@
+package glazed
+
+//go:generate go tool logcopter-gen -area-prefix go-go-golems.glazed -strip-prefix github.com/go-go-golems/glazed ./pkg/...
