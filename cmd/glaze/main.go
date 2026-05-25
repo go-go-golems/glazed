@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -32,6 +34,7 @@ func main() {
 	helpSystem := help.NewHelpSystem()
 	err = doc.AddDocToHelpSystem(helpSystem)
 	cobra.CheckErr(err)
+	cobra.CheckErr(addLogcopterDocs(helpSystem))
 
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
@@ -95,4 +98,19 @@ func main() {
 	rootCmd.AddCommand(htmlCommand)
 
 	_ = rootCmd.Execute()
+}
+
+func addLogcopterDocs(helpSystem *help.HelpSystem) error {
+	for _, candidate := range []string{
+		"../logcopter/pkg/doc",
+		"../../logcopter/pkg/doc",
+		"logcopter/pkg/doc",
+	} {
+		info, err := os.Stat(candidate)
+		if err != nil || !info.IsDir() {
+			continue
+		}
+		return helpSystem.LoadSectionsFromFS(os.DirFS(candidate), ".")
+	}
+	return nil
 }
