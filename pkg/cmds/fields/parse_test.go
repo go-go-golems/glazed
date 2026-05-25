@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -361,6 +362,21 @@ func TestParseField(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestTypeKeyValueParsesPflagStringSliceCommaValues(t *testing.T) {
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	values := fs.StringSlice("log-area", []string{}, "")
+	require.NoError(t, fs.Parse([]string{"--log-area", "app.view=debug,app.db=warn", "--log-area", "lib.parser:trace"}))
+
+	field := New("log-area", TypeKeyValue)
+	got, err := field.ParseField(*values)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"app.view":   "debug",
+		"app.db":     "warn",
+		"lib.parser": "trace",
+	}, got.Value)
 }
 
 func TestParseStringListFromReader(t *testing.T) {

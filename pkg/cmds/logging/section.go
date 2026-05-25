@@ -12,11 +12,15 @@ import (
 
 // LoggingSettings holds the logging configuration fields
 type LoggingSettings struct {
-	WithCaller  bool   `glazed:"with-caller"`
-	LogLevel    string `glazed:"log-level"`
-	LogFormat   string `glazed:"log-format"`
-	LogFile     string `glazed:"log-file"`
-	LogToStdout bool   `glazed:"log-to-stdout"`
+	WithCaller     bool              `glazed:"with-caller" yaml:"with-caller" json:"with-caller"`
+	LogLevel       string            `glazed:"log-level" yaml:"log-level" json:"log-level"`
+	LogFormat      string            `glazed:"log-format" yaml:"log-format" json:"log-format"`
+	LogFile        string            `glazed:"log-file" yaml:"log-file" json:"log-file"`
+	LogToStdout    bool              `glazed:"log-to-stdout" yaml:"log-to-stdout" json:"log-to-stdout"`
+	LogConfigFiles []string          `glazed:"log-config" yaml:"log-config" json:"log-config"`
+	LogAreas       map[string]string `glazed:"log-area" yaml:"log-area" json:"log-area"`
+	Areas          map[string]string `glazed:"areas" yaml:"areas" json:"areas"`
+	StrictAreas    bool              `glazed:"strict-log-areas" yaml:"strict-log-areas" json:"strict-log-areas"`
 }
 
 const LoggingSectionSlug = "logging"
@@ -59,6 +63,30 @@ func NewLoggingSection() (schema.Section, error) {
 				fields.WithHelp("Log to stdout even when log-file is set"),
 				fields.WithDefault(false),
 			),
+			fields.New(
+				"log-config",
+				fields.TypeStringList,
+				fields.WithHelp("Additional logcopter profile/config file; repeatable"),
+				fields.WithDefault([]string{}),
+			),
+			fields.New(
+				"log-area",
+				fields.TypeKeyValue,
+				fields.WithHelp("Per-area log level override, for example app.view:debug or app.db=warn"),
+				fields.WithDefault(map[string]string{}),
+			),
+			fields.New(
+				"areas",
+				fields.TypeKeyValue,
+				fields.WithHelp("Per-area log level map for configuration files"),
+				fields.WithDefault(map[string]string{}),
+			),
+			fields.New(
+				"strict-log-areas",
+				fields.TypeBool,
+				fields.WithHelp("Fail when configured log areas do not match known generated logcopter areas"),
+				fields.WithDefault(false),
+			),
 		),
 	)
 }
@@ -95,6 +123,9 @@ func AddLoggingSectionToRootCommand(rootCmd *cobra.Command, appName string) erro
 	rootCmd.PersistentFlags().String("log-format", "text", "Log format (json, text)")
 	rootCmd.PersistentFlags().Bool("with-caller", false, "Log caller information")
 	rootCmd.PersistentFlags().Bool("log-to-stdout", false, "Log to stdout even when log-file is set")
+	rootCmd.PersistentFlags().StringSlice("log-config", []string{}, "Additional logcopter profile/config file; repeatable")
+	rootCmd.PersistentFlags().StringSlice("log-area", []string{}, "Per-area log level override, for example app.view:debug or app.db=warn")
+	rootCmd.PersistentFlags().Bool("strict-log-areas", false, "Fail when configured log areas do not match known generated logcopter areas")
 
 	return nil
 }

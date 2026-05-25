@@ -15,10 +15,13 @@ func filterEarlyLoggingArgs(args []string) []string {
 		"--log-level":  {},
 		"--log-file":   {},
 		"--log-format": {},
+		"--log-config": {},
+		"--log-area":   {},
 	}
 	allowedBool := map[string]struct{}{
-		"--with-caller":   {},
-		"--log-to-stdout": {},
+		"--with-caller":      {},
+		"--log-to-stdout":    {},
+		"--strict-log-areas": {},
 	}
 
 	out := make([]string, 0, len(args))
@@ -89,6 +92,9 @@ func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	logFormat := fs.String("log-format", "text", "Log format (json, text)")
 	withCaller := fs.Bool("with-caller", false, "Log caller information")
 	logToStdout := fs.Bool("log-to-stdout", false, "Log to stdout even when log-file is set")
+	logConfig := fs.StringSlice("log-config", []string{}, "Additional logcopter profile/config file; repeatable")
+	logArea := fs.StringSlice("log-area", []string{}, "Per-area log level override, for example app.view:debug or app.db=warn")
+	strictAreas := fs.Bool("strict-log-areas", false, "Fail when configured log areas do not match known generated logcopter areas")
 
 	fs.ParseErrorsAllowlist.UnknownFlags = true
 	// Always attempt parsing, but never fail early logging init on parsing errors.
@@ -97,11 +103,36 @@ func InitEarlyLoggingFromArgs(args []string, appName string) error {
 	filteredArgs := filterEarlyLoggingArgs(args)
 	_ = fs.Parse(filteredArgs)
 
-	return InitLoggerFromSettings(&LoggingSettings{
-		LogLevel:    *logLevel,
-		LogFile:     *logFile,
-		LogFormat:   *logFormat,
-		WithCaller:  *withCaller,
-		LogToStdout: *logToStdout,
-	})
+	settings := DefaultLoggingSettings()
+	settings.LogConfigFiles = *logConfig
+	merged, err := MergeLoggingSettings(DefaultLoggingSettings(), settings)
+	if err != nil {
+		return err
+	}
+	if fs.Changed("log-level") {
+		merged.LogLevel = *logLevel
+	}
+	if fs.Changed("log-file") {
+		merged.LogFile = *logFile
+	}
+	if fs.Changed("log-format") {
+		merged.LogFormat = *logFormat
+	}
+	if fs.Changed("with-caller") {
+		merged.WithCaller = *withCaller
+	}
+	if fs.Changed("log-to-stdout") {
+		merged.LogToStdout = *logToStdout
+	}
+	if fs.Changed("strict-log-areas") {
+		merged.StrictAreas = *strictAreas
+	}
+	if fs.Changed("log-area") {
+		areas, err := ParseAreaOverrides(*logArea)
+		if err != nil {
+			return err
+		}
+		merged.LogAreas = mergeStringMaps(merged.LogAreas, areas)
+	}
+	return initLoggerFromMergedSettings(merged)
 }
