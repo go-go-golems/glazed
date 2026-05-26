@@ -165,24 +165,67 @@ The key distinction is ownership. Package diagnostics belong to logcopter; expli
 
 ## Step 7: add fast generation checks
 
-Add a Makefile target or CI step that checks freshness without rewriting files:
+The repository root `logcopter_generate.go` should make `go generate ./...` run the generator through the Go tool mechanism:
+
+```go
+package <repo>
+
+//go:generate go tool logcopter-gen -area-prefix go-go-golems.<repo> -strip-prefix github.com/go-go-golems/<repo> ./pkg/...
+```
+
+That means contributors only need this mutating command when they intentionally refresh generated files:
 
 ```make
 logcopter-generate:
 	go generate ./...
+```
 
+For verification, add a separate check target that does **not** rewrite files:
+
+```make
 logcopter-check:
 	go tool logcopter-gen -area-prefix go-go-golems.<repo> -strip-prefix github.com/go-go-golems/<repo> -check ./pkg/...
 ```
 
-For repositories that generate command packages too, keep the same package patterns in both places:
+For repositories that generate command packages too, keep the same package patterns in the `go:generate` directive and the check target:
+
+```go
+//go:generate go tool logcopter-gen -area-prefix go-go-golems.pinocchio -strip-prefix github.com/go-go-golems/pinocchio ./pkg/... ./cmd/...
+```
 
 ```make
 logcopter-check:
 	go tool logcopter-gen -area-prefix go-go-golems.pinocchio -strip-prefix github.com/go-go-golems/pinocchio -check ./pkg/... ./cmd/...
 ```
 
-Run the check in CI before the test suite so generated-file drift fails early.
+In CI, run `logcopter-check` **before** any mutating `go generate ./...` step. Otherwise the workflow can hide stale generated files: `go generate` rewrites `pkg/**/logcopter.go` first, and the later `-check` only validates the regenerated workspace instead of the checked-in PR contents.
+
+Use this ordering:
+
+```yaml
+-
+  name: verify logcopter package loggers
+  run: make logcopter-check
+-
+  name: generate assets
+  run: go generate ./...
+-
+  name: run unit tests
+  run: go test ./...
+```
+
+Do not use this ordering for drift checks:
+
+```yaml
+-
+  name: generate assets
+  run: go generate ./...
+-
+  name: verify logcopter package loggers
+  run: make logcopter-check
+```
+
+The second form is only useful for validating that the generator can run; it does not prove the committed generated files were fresh.
 
 ## Step 8: add standalone smoke coverage
 
