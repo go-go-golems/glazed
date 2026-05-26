@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds"
 	"github.com/go-go-golems/glazed/cmd/glaze/cmds/html"
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -13,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/server"
 	"github.com/go-go-golems/glazed/pkg/help/site"
 	"github.com/go-go-golems/glazed/pkg/web"
+	logcopterdoc "github.com/go-go-golems/logcopter/pkg/doc"
 	"github.com/spf13/cobra"
 )
 
@@ -101,16 +100,5 @@ func main() {
 }
 
 func addLogcopterDocs(helpSystem *help.HelpSystem) error {
-	for _, candidate := range []string{
-		"../logcopter/pkg/doc",
-		"../../logcopter/pkg/doc",
-		"logcopter/pkg/doc",
-	} {
-		info, err := os.Stat(candidate)
-		if err != nil || !info.IsDir() {
-			continue
-		}
-		return helpSystem.LoadSectionsFromFS(os.DirFS(candidate), ".")
-	}
-	return nil
+	return helpSystem.LoadSectionsFromFS(logcopterdoc.FS, ".")
 }
