@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -29,7 +30,10 @@ type settings struct {
 	MaxUploadBytes   int64  `glazed:"max-upload-bytes"`
 	TempDir          string `glazed:"temp-dir"`
 	PackageRoot      string `glazed:"package-root"`
+	AuthMode         string `glazed:"auth-mode"`
 	PublisherCatalog string `glazed:"publisher-catalog"`
+	JWTIssuer        string `glazed:"jwt-issuer"`
+	JWTClientID      string `glazed:"jwt-client-id"`
 }
 
 var _ cmds.BareCommand = (*RegistryCommand)(nil)
@@ -38,16 +42,23 @@ func NewRegistryCommand() (*RegistryCommand, error) {
 	return &RegistryCommand{CommandDescription: cmds.NewCommandDescription(
 		"docs-registry",
 		cmds.WithShort("Accept versioned Glazed help database uploads"),
-		cmds.WithLong(`docs-registry is the Phase 1 upload service for docs.yolo.scapegoat.dev.
+		cmds.WithLong(`docs-registry is the upload service for docs.yolo.scapegoat.dev.
 
 It authorizes package publishers, validates uploaded Glazed help SQLite
-databases, and publishes them into a package/version storage backend.`),
+databases, and publishes them into a package/version storage backend.
+
+The registry supports two publisher auth modes:
+  static-catalog  — read package-scoped static token hashes from publishers.json
+  vault-oidc-jwt  — validate Vault Identity/OIDC publish JWTs via discovery/JWKS`),
 		cmds.WithFlags(
 			fields.New("address", fields.TypeString, fields.WithHelp("HTTP listen address"), fields.WithDefault(":8090")),
 			fields.New("max-upload-bytes", fields.TypeInteger, fields.WithHelp("Maximum SQLite upload size in bytes"), fields.WithDefault(64<<20)),
 			fields.New("temp-dir", fields.TypeString, fields.WithHelp("Directory for temporary uploads"), fields.WithDefault("")),
 			fields.New("package-root", fields.TypeString, fields.WithHelp("Root directory where package/version SQLite DBs are published"), fields.WithRequired(true)),
-			fields.New("publisher-catalog", fields.TypeString, fields.WithHelp("JSON file with static publisher token hashes"), fields.WithRequired(true)),
+			fields.New("auth-mode", fields.TypeString, fields.WithHelp("Publisher auth mode: static-catalog or vault-oidc-jwt"), fields.WithDefault("static-catalog")),
+			fields.New("publisher-catalog", fields.TypeString, fields.WithHelp("JSON file with static publisher token hashes; required for --auth-mode static-catalog"), fields.WithDefault("")),
+			fields.New("jwt-issuer", fields.TypeString, fields.WithHelp("Expected OIDC issuer URL for --auth-mode vault-oidc-jwt, for example https://vault.example/v1/identity/oidc"), fields.WithDefault("")),
+			fields.New("jwt-client-id", fields.TypeString, fields.WithHelp("Expected JWT audience/client ID for --auth-mode vault-oidc-jwt"), fields.WithDefault("")),
 		),
 	)}, nil
 }
@@ -81,12 +92,12 @@ func newRootCommand() *cobra.Command {
 }
 
 func run(ctx context.Context, s *settings) error {
-	catalog := publish.NewReloadablePublisherCatalog(publish.FilePublisherCatalogSource{Path: s.PublisherCatalog})
-	if err := catalog.Reload(ctx); err != nil {
-		return fmt.Errorf("load publisher catalog: %w", err)
+	auth, err := buildPublisherAuth(ctx, s)
+	if err != nil {
+		return err
 	}
 	store := publish.NewDirectoryPackageStore(s.PackageRoot)
-	h := publish.NewRegistryHandler(catalog, store)
+	h := publish.NewRegistryHandler(auth, store)
 	h.MaxUploadBytes = s.MaxUploadBytes
 	h.TempDir = s.TempDir
 
@@ -112,6 +123,34 @@ func run(ctx context.Context, s *settings) error {
 			return nil
 		}
 		return err
+	}
+}
+
+func buildPublisherAuth(ctx context.Context, s *settings) (publish.PublisherAuth, error) {
+	switch s.AuthMode {
+	case "", "static-catalog":
+		if s.PublisherCatalog == "" {
+			return nil, errors.New("--publisher-catalog is required for --auth-mode static-catalog")
+		}
+		catalog := publish.NewReloadablePublisherCatalog(publish.FilePublisherCatalogSource{Path: s.PublisherCatalog})
+		if err := catalog.Reload(ctx); err != nil {
+			return nil, fmt.Errorf("load publisher catalog: %w", err)
+		}
+		return catalog, nil
+	case "vault-oidc-jwt":
+		if s.JWTIssuer == "" {
+			return nil, errors.New("--jwt-issuer is required for --auth-mode vault-oidc-jwt")
+		}
+		if s.JWTClientID == "" {
+			return nil, errors.New("--jwt-client-id is required for --auth-mode vault-oidc-jwt")
+		}
+		auth, err := publish.NewJWTPublisherAuth(ctx, s.JWTIssuer, s.JWTClientID)
+		if err != nil {
+			return nil, fmt.Errorf("configure JWT publisher auth: %w", err)
+		}
+		return auth, nil
+	default:
+		return nil, fmt.Errorf("unknown --auth-mode %q", s.AuthMode)
 	}
 }
 
