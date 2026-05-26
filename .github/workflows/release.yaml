@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
   # packages: write
   # issues: write
 
@@ -81,6 +82,24 @@ jobs:
         with:
           name: dist-darwin
           path: dist
+
+  publish-docs:
+    name: Publish docs
+    needs:
+      - goreleaser-merge
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+    with:
+      package_name: glazed
+      package_version: ${{ github.ref_name }}
+      export_command: go run ./cmd/glaze help export --format sqlite --output-path .docsctl/help.sqlite
+      sqlite_path: .docsctl/help.sqlite
+      docsctl_install_command: go install github.com/go-go-golems/glazed/cmd/docsctl@latest
+      vault_role: docsctl-glazed-publisher
+      vault_token_role: docsctl-glazed-publisher
+      registry_url: https://docs-registry.yolo.scapegoat.dev
+      verify_packages_url: https://docs.yolo.scapegoat.dev/api/packages
+      verify_publish: true
 
   goreleaser-merge:
     runs-on: ubuntu-latest
