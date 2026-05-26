@@ -16,11 +16,21 @@ Owners:
     - manuel
 RelatedFiles:
     - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/main.tf
-      Note: Existing Terraform Vault GitHub Actions JWT role pattern
+      Note: |-
+        Existing Terraform Vault GitHub Actions JWT role pattern
+        Vault Identity/OIDC and GitHub Actions roles for package-scoped publish JWTs (commit 04451fe795314065d872f22c8710044682525963)
+    - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/variables.tf
+      Note: Reusable workflow ref variable for docsctl publish JWT auth (commit 04451fe795314065d872f22c8710044682525963)
     - Path: cmd/docs-registry/main.go
-      Note: Registry command boot path used to design auth-mode flags
+      Note: |-
+        Registry command boot path used to design auth-mode flags
+        docs-registry auth mode flags and wiring (commit aa6946a40f2156689e81a831a10e634398102261)
     - Path: pkg/help/publish/auth.go
       Note: PublisherAuth interface that should receive the JWT implementation
+    - Path: pkg/help/publish/jwt_auth.go
+      Note: Vault OIDC JWT publisher auth implementation (commit aa6946a40f2156689e81a831a10e634398102261)
+    - Path: pkg/help/publish/jwt_auth_test.go
+      Note: JWT auth unit tests covering issuer/audience/package/expiry/tamper failures (commit aa6946a40f2156689e81a831a10e634398102261)
     - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/design-doc/01-vault-identity-oidc-publish-jwt-implementation-guide.md
       Note: |-
         Primary design document created for this ticket
@@ -48,6 +58,7 @@ LastUpdated: 2026-05-26T07:51:07.835369732-04:00
 WhatFor: Use this to resume or review the investigation behind DOCSCTL-VAULT-OIDC-JWT.
 WhenToUse: Read before implementing the Vault Identity Token Terraform, registry JWT auth mode, or reusable workflow changes.
 ---
+
 
 
 
