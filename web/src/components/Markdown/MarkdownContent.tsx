@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { slugifyHeading, textFromReactNode, uniqueHeadingId } from '../../utils/slugify';
 import { MarkdownContentParts } from './parts';
+import { CodeBlock } from './CodeBlock';
 import './styles/markdown.css';
 
 interface MarkdownContentProps {
@@ -32,6 +33,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
     h2: createHeading('h2', seenIDs),
     h3: createHeading('h3', seenIDs),
     h4: createHeading('h4', seenIDs),
+    pre: CodeBlock,
   };
 
   return (
