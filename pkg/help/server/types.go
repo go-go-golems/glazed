@@ -126,10 +126,11 @@ func DetailFromModel(s *model.Section) SectionDetail {
 
 // PackageSummary is one package entry returned by GET /api/packages.
 type PackageSummary struct {
-	Name         string   `json:"name"`
-	DisplayName  string   `json:"displayName"`
-	Versions     []string `json:"versions"`
-	SectionCount int      `json:"sectionCount"`
+	Name          string   `json:"name"`
+	DisplayName   string   `json:"displayName"`
+	Versions      []string `json:"versions"`
+	LatestVersion string   `json:"latestVersion,omitempty"`
+	SectionCount  int      `json:"sectionCount"`
 }
 
 // ListPackagesResponse is the shape of GET /api/packages.

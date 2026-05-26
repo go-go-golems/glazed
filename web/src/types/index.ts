@@ -48,6 +48,8 @@ export interface PackageSummary {
   name: string;
   displayName: string;
   versions: string[];
+  /** Explicit latest version from the server (lexicographically highest). */
+  latestVersion?: string;
   sectionCount: number;
 }
 

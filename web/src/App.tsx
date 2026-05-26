@@ -90,8 +90,12 @@ export default function App() {
 
   const handlePackageChange = (value: string) => {
     const nextPackage = packages.find((pkg) => pkg.name === value);
-    const nextVersions = nextPackage?.versions ?? [];
-    const newVersion = nextVersions[0] || '';
+    // Prefer explicit latestVersion from the API; fall back to versions[0].
+    // The server reverse-sorts versions so versions[0] is the latest, but
+    // latestVersion makes the contract explicit.
+    const newVersion = nextPackage?.latestVersion
+      || nextPackage?.versions?.[0]
+      || '';
     navigate(`/${value}/${versionToUrl(newVersion)}`);
   };
 

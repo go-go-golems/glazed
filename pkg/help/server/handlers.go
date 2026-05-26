@@ -145,6 +145,12 @@ func (h *Handler) handleListPackages(w http.ResponseWriter, r *http.Request) {
 	packages := make([]PackageSummary, 0, len(byName))
 	for _, pkg := range byName {
 		sort.Sort(sort.Reverse(sort.StringSlice(pkg.Versions)))
+		// After reverse-sorting, versions[0] is the lexicographically highest version.
+		// For standard semver (vX.Y.Z), this is the latest version. The LatestVersion
+		// field makes this contract explicit so the frontend doesn't rely on array order.
+		if len(pkg.Versions) > 0 {
+			pkg.LatestVersion = pkg.Versions[0]
+		}
 		packages = append(packages, *pkg)
 	}
 	sort.Slice(packages, func(i, j int) bool { return packages[i].Name < packages[j].Name })
