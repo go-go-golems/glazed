@@ -35,3 +35,12 @@ Phase 2: added request IDs, access logs, rate limits, concurrency limits, and ha
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_middleware.go — Request ID/access log/rate limiter implementation
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_test.go — Hardening tests
 
+
+## 2026-05-26
+
+Phase 2 deployed to docs-yolo with explicit registry body, rate, and concurrency settings (Glazed e50da7e, k3s 99e3f5f)
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production image and registry hardening args
+

@@ -13,6 +13,8 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml
+      Note: Deployed sha-e50da7e images and made registry body/rate/concurrency flags explicit (k3s commit 99e3f5f)
     - Path: cmd/docs-registry/main.go
       Note: Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
     - Path: pkg/help/publish/registry.go
@@ -27,6 +29,7 @@ LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 # Diary
@@ -328,4 +331,115 @@ New error response for rate limiting:
   "error": "rate_limited",
   "message": "too many requests"
 }
+```
+
+## Step 4: Deploy Phase 2 registry limits to docs-yolo
+
+This step carried the Phase 2 registry hardening from code into the production `docs-yolo` deployment. The registry now runs the new image and the deployment explicitly documents the upload size, concurrency, and rate-limit settings instead of relying only on source-code defaults.
+
+The rollout completed and smoke checks confirmed that the registry health endpoint still works, request IDs are returned, and structured request logs are being emitted from the new pod.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Continue the hardening implementation with focused commits and diary updates, including deployment configuration when appropriate.
+
+**Inferred user intent:** The user wants the implemented hardening work to become operationally real, not only committed in source.
+
+**Commit (code):** e50da7e — "DOCSCTL-REGISTRY-HARDENING: record phase 2 limits"; includes code commit f68238b in history.
+
+**Commit (k3s):** 99e3f5f — "docs-yolo: deploy registry request limits"
+
+### What I did
+
+- Pushed Glazed `e50da7e` to `origin/main` to trigger container builds.
+- Waited for the container workflow to succeed:
+  - GitHub Actions run `26480958739`, job `build-and-push`, succeeded.
+- Updated k3s `docs-yolo` deployment images to:
+  - `ghcr.io/go-go-golems/glazed:sha-e50da7e`,
+  - `ghcr.io/go-go-golems/glazed-ssr:sha-e50da7e`.
+- Made registry hardening settings explicit in `deployment.yaml`:
+  - `--max-upload-bytes 67108864`,
+  - `--max-concurrent-uploads 2`,
+  - `--rate-limit-requests-per-minute 60`,
+  - `--rate-limit-burst 10`.
+- Pushed k3s commit `99e3f5f` to `main`.
+- Forced Argo CD hard refresh for `docs-yolo`.
+- Waited for `deploy/docs-yolo` rollout to complete.
+- Validated production with:
+  - `GET https://docs-registry.yolo.scapegoat.dev/healthz`,
+  - `GET https://docs.yolo.scapegoat.dev/api/health`,
+  - `HEAD/GET` smoke checks with `X-Request-ID`,
+  - Kubernetes logs from the new `docs-registry` container.
+
+### Why
+
+- The design explicitly called out that upload/body/rate/concurrency settings should be visible in GitOps, not hidden only in Go defaults.
+- Deployment validation ensures the new flags are accepted by the running container and do not break registry or docs-browser health.
+
+### What worked
+
+- Container build succeeded for `sha-e50da7e`.
+- Argo CD picked up the k3s GitOps commit after a hard refresh.
+- Rollout completed successfully.
+- Production health checks returned:
+  - registry: `{"ok":true}`,
+  - docs browser API: `{"ok":true,"sections":333}`.
+- Response headers preserved smoke-test request IDs, for example:
+  - `x-request-id: hardening-smoke-1`.
+- New structured registry logs appeared, including entries such as:
+  - `docs registry request request_id=hardening-smoke-2 method=GET path=/healthz route_class=health status=200 ... user_agent=curl/8.5.0`.
+
+### What didn't work
+
+- The first immediate `rollout status` command returned success while the deployment still showed old image tags. This was a timing issue: Argo CD had not yet reconciled the hard refresh into the `docs-yolo` Deployment spec.
+- I fixed that by polling the Deployment image tags until they contained `sha-e50da7e`, then running `kubectl rollout status` again.
+
+### What I learned
+
+- For Argo CD-managed resources, `rollout status` can report the current deployment as healthy before Argo has applied the newest Git revision. The safer sequence is: force refresh, poll for the expected image tag in the Deployment spec, then wait for rollout.
+- Registry probe traffic appears with `client_ip=10.42.0.1`, so the chosen `60/minute` and burst `10` limits are safe for current health probe frequency.
+
+### What was tricky to build
+
+- The deployment has multiple containers using the Glazed image family. The Go runtime image must be updated for both `docs-browser` and `docs-registry`, while `docs-ssr` must use the matching `glazed-ssr` tag.
+- The new flags could not be added to GitOps until an image containing the new `docs-registry` CLI flags existed. Passing the flags to the previous `sha-ad51382` image would have risked a crashloop due unknown arguments.
+
+### What warrants a second pair of eyes
+
+- The production rate limit currently applies per client IP and route class inside the pod. Because Traefik forwards traffic from cluster IPs, reviewers should confirm whether `X-Forwarded-For` is preserved as expected for external clients.
+- The current settings are conservative but not empirically tuned for future onboarding bursts.
+
+### What should be done in the future
+
+- Move to Phase 3: immutable release versions and storage quotas.
+- Add explicit negative proof scripts after immutability and richer audit claims are implemented.
+
+### Code review instructions
+
+- Review k3s deployment diff at:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml`
+- Confirm runtime images and args:
+  - `docs-browser=ghcr.io/go-go-golems/glazed:sha-e50da7e`,
+  - `docs-registry=ghcr.io/go-go-golems/glazed:sha-e50da7e`,
+  - `docs-ssr=ghcr.io/go-go-golems/glazed-ssr:sha-e50da7e`.
+- Validate with:
+  - `curl -sS https://docs-registry.yolo.scapegoat.dev/healthz`,
+  - `curl -sS https://docs.yolo.scapegoat.dev/api/health`,
+  - `kubectl -n docs-yolo logs <new-pod> -c docs-registry --tail=50`.
+
+### Technical details
+
+Production registry args now include:
+
+```yaml
+- --max-upload-bytes
+- "67108864"
+- --max-concurrent-uploads
+- "2"
+- --rate-limit-requests-per-minute
+- "60"
+- --rate-limit-burst
+- "10"
 ```

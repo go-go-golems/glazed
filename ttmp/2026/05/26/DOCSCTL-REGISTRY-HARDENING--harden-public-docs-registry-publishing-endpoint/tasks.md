@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Phase 2: Add request ID, structured access logs, explicit production body limit, publish concurrency limit, and basic rate limiting.
+- [x] Phase 2: Add request ID, structured access logs, explicit production body limit, publish concurrency limit, and basic rate limiting.
 - [ ] Phase 3: Add immutable release-version policy with idempotent same-SHA retries and quota checks.
 - [ ] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
 - [ ] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
@@ -18,4 +18,4 @@
 - [x] Phase 2.1: Add request IDs and structured access logging around registry handlers
 - [x] Phase 2.2: Add publish concurrency limiting and basic per-IP route-class rate limiting
 - [x] Phase 2.3: Add handler tests for rate limiting, concurrency, and explicit body-limit edge cases
-- [ ] Phase 2.4: Make production docs-registry upload/body/rate/concurrency settings explicit in k3s GitOps
+- [x] Phase 2.4: Make production docs-registry upload/body/rate/concurrency settings explicit in k3s GitOps
