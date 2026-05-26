@@ -221,6 +221,36 @@ func TestRegistryPublishConcurrencyLimit(t *testing.T) {
 	wg.Wait()
 }
 
+func TestRegistryPublishSQLiteVersionAlreadyExists(t *testing.T) {
+	store := &fakePackageStore{publishErr: &VersionAlreadyExistsError{PackageName: "pinocchio", Version: "v1"}}
+	h := NewRegistryHandler(newRegistryTestAuth(t), store).Handler()
+	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusConflict {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRegistryPublishSQLitePackageQuotaExceeded(t *testing.T) {
+	store := &fakePackageStore{publishErr: &PackageQuotaExceededError{PackageName: "pinocchio", MaxBytes: 1, Projected: 2}}
+	h := NewRegistryHandler(newRegistryTestAuth(t), store).Handler()
+	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusInsufficientStorage {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestRegistryPublishSQLiteStoreFailure(t *testing.T) {
 	store := &fakePackageStore{publishErr: errors.New("boom")}
 	h := NewRegistryHandler(newRegistryTestAuth(t), store).Handler()

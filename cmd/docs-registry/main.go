@@ -37,6 +37,9 @@ type settings struct {
 	MaxConcurrentUploads    int    `glazed:"max-concurrent-uploads"`
 	RateLimitRequestsPerMin int    `glazed:"rate-limit-requests-per-minute"`
 	RateLimitBurst          int    `glazed:"rate-limit-burst"`
+	AllowOverwrite          bool   `glazed:"allow-overwrite"`
+	MaxPackageBytes         int64  `glazed:"max-package-bytes"`
+	MaxVersionsPerPackage   int    `glazed:"max-versions-per-package"`
 }
 
 var _ cmds.BareCommand = (*RegistryCommand)(nil)
@@ -65,6 +68,9 @@ The registry supports two publisher auth modes:
 			fields.New("max-concurrent-uploads", fields.TypeInteger, fields.WithHelp("Maximum concurrent publish uploads; 0 disables the limit"), fields.WithDefault(2)),
 			fields.New("rate-limit-requests-per-minute", fields.TypeInteger, fields.WithHelp("Per-client per-route request rate limit; 0 disables rate limiting"), fields.WithDefault(60)),
 			fields.New("rate-limit-burst", fields.TypeInteger, fields.WithHelp("Per-client per-route rate limit burst size; ignored when rate limiting is disabled"), fields.WithDefault(10)),
+			fields.New("allow-overwrite", fields.TypeBool, fields.WithHelp("Allow publishing different bytes over an existing package version; disabled by default"), fields.WithDefault(false)),
+			fields.New("max-package-bytes", fields.TypeInteger, fields.WithHelp("Maximum total stored bytes per package; 0 disables the quota"), fields.WithDefault(0)),
+			fields.New("max-versions-per-package", fields.TypeInteger, fields.WithHelp("Maximum stored versions per package; 0 disables the quota"), fields.WithDefault(0)),
 		),
 	)}, nil
 }
@@ -103,6 +109,9 @@ func run(ctx context.Context, s *settings) error {
 		return err
 	}
 	store := publish.NewDirectoryPackageStore(s.PackageRoot)
+	store.AllowOverwrite = s.AllowOverwrite
+	store.MaxPackageBytes = s.MaxPackageBytes
+	store.MaxVersionsPerPackage = s.MaxVersionsPerPackage
 	h := publish.NewRegistryHandler(auth, store)
 	h.MaxUploadBytes = s.MaxUploadBytes
 	h.TempDir = s.TempDir

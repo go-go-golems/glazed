@@ -174,7 +174,7 @@ func (h *RegistryHandler) handlePublishSQLite(w http.ResponseWriter, r *http.Req
 
 	published, err := h.Store.Publish(r.Context(), packageName, version, tmpPath, result, identity)
 	if err != nil {
-		writeRegistryError(w, http.StatusInternalServerError, "publish_failed", "failed to publish package")
+		writePublishError(w, err)
 		return
 	}
 	writeRegistryJSON(w, http.StatusOK, publishResponse{OK: true, Package: *published, Result: result, Actor: identity})
@@ -246,6 +246,19 @@ func bearerToken(r *http.Request) string {
 		return ""
 	}
 	return strings.TrimSpace(parts[1])
+}
+
+func writePublishError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrVersionAlreadyExists):
+		writeRegistryError(w, http.StatusConflict, "version_already_exists", err.Error())
+	case errors.Is(err, ErrPackageQuotaExceeded):
+		writeRegistryError(w, http.StatusInsufficientStorage, "quota_exceeded", err.Error())
+	case errors.Is(err, ErrPackageVersionQuotaExceeded):
+		writeRegistryError(w, http.StatusConflict, "version_quota_exceeded", err.Error())
+	default:
+		writeRegistryError(w, http.StatusInternalServerError, "publish_failed", "failed to publish package")
+	}
 }
 
 func writeAuthError(w http.ResponseWriter, err error) {
