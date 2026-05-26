@@ -32,13 +32,13 @@
 
 ## Phase 3: reusable GitHub Actions workflow integration
 
-- [ ] Locate or create the shared workflow home for `publish-docsctl.yml`.
-- [ ] Add workflow inputs for package name, version, export command, Vault role, Vault token role, Vault audience, and registry URL.
-- [ ] Add a Vault login step using `hashicorp/vault-action@v3` and `id-token: write`.
-- [ ] Add a publish JWT minting step using `GET /v1/identity/oidc/token/<role>`.
-- [ ] Publish with `docsctl publish --token-file`.
-- [ ] Verify the published package/version through `https://docs.yolo.scapegoat.dev/api/packages`.
-- [ ] Commit the reusable workflow implementation in the appropriate repository.
+- [x] Locate or create the shared workflow home for `publish-docsctl.yml`.
+- [x] Add workflow inputs for package name, version, export command, Vault role, Vault token role, Vault audience, and registry URL.
+- [x] Add a Vault login step using `hashicorp/vault-action@v3` and `id-token: write`.
+- [x] Add a publish JWT minting step using `GET /v1/identity/oidc/token/<role>`.
+- [x] Publish with `docsctl publish --token-file`.
+- [x] Verify the published package/version through `https://docs.yolo.scapegoat.dev/api/packages`.
+- [x] Commit the reusable workflow implementation in the appropriate repository.
 
 ## Phase 4: live proof for one package
 

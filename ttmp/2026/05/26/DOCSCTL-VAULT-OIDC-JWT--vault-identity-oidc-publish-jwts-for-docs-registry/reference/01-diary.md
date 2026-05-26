@@ -15,12 +15,17 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml
+      Note: Reusable GitHub Actions workflow for Vault OIDC docsctl publishing (commit a95c5d5a08539d6b691b0c1ebb4c086132707808)
     - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/main.tf
       Note: |-
         Existing Terraform Vault GitHub Actions JWT role pattern
         Vault Identity/OIDC and GitHub Actions roles for package-scoped publish JWTs (commit 04451fe795314065d872f22c8710044682525963)
+        Applied Vault Identity/OIDC docsctl publisher resources and fixed live template/issuer validation (commit 2e56b7eb4cefd543df7e789af26b2eaedaf39c2a)
     - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/variables.tf
       Note: Reusable workflow ref variable for docsctl publish JWT auth (commit 04451fe795314065d872f22c8710044682525963)
+    - Path: .github/workflows/publish-docs.yml
+      Note: Glazed caller workflow for publish-docsctl reusable workflow (commit 209ee884288cf086a4751044040c244d98aa61d2)
     - Path: cmd/docs-registry/main.go
       Note: |-
         Registry command boot path used to design auth-mode flags
@@ -58,6 +63,7 @@ LastUpdated: 2026-05-26T07:51:07.835369732-04:00
 WhatFor: Use this to resume or review the investigation behind DOCSCTL-VAULT-OIDC-JWT.
 WhenToUse: Read before implementing the Vault Identity Token Terraform, registry JWT auth mode, or reusable workflow changes.
 ---
+
 
 
 
@@ -955,4 +961,237 @@ The successful plan showed the following high-level resource count:
 4 x vault_identity_oidc_role.docsctl_publish
 4 x vault_policy.docsctl_publish
 4 x vault_jwt_auth_backend_role.docsctl_publish
+```
+
+## Step 9: Apply Terraform, fix live Vault validation errors, and re-apply
+
+I applied the saved Terraform plan after the user approved it. The first apply partially succeeded: Vault created the `docs-registry-publish` signing key, then rejected the Identity/OIDC issuer configuration and all package token role templates. I fixed both issues in Terraform, planned again, and the second apply succeeded.
+
+The key correction is that Vault's Identity/OIDC configuration resource accepts only a scheme, host, and optional port for `issuer`, even though the Identity Token discovery document is later served from `/v1/identity/oidc/.well-known/openid-configuration` and reports the token issuer as `https://vault.yolo.scapegoat.dev/v1/identity/oidc`. The second correction is that Vault Identity Token templates expect templated values to be unquoted JSON fragments, because Vault inserts JSON-encoded strings during token rendering.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, apply, then continue."
+
+**Assistant interpretation:** Apply the approved Terraform plan, fix any live apply issues, then continue implementing the next project phase.
+
+**Inferred user intent:** The user wants the Vault resources actually created, not only planned, and then wants implementation to proceed toward CI workflow integration.
+
+**Commit (code):** `2e56b7eb4cefd543df7e789af26b2eaedaf39c2a` — `vault: fix docsctl publish token templates`
+
+### What I did
+
+- Sourced `/home/manuel/code/wesen/terraform/.envrc` for the AWS backend profile.
+- Ran `terraform apply /tmp/docsctl-vault-oidc-jwt.tfplan`.
+- Observed live Vault validation failures.
+- Updated `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf`:
+  - changed `vault_identity_oidc.docs_registry.issuer` from `${var.vault_addr}/v1/identity/oidc` to `var.vault_addr`;
+  - removed quotes around dynamic Vault Identity template expressions.
+- Ran a new plan to `/tmp/docsctl-vault-oidc-jwt-v2.tfplan`.
+- Applied the corrected plan.
+- Ran a final `terraform plan -detailed-exitcode` and confirmed exit code `0` / no changes.
+- Committed the Terraform correction.
+
+### Why
+
+- The first failures came from Vault server-side validation rules that are stricter/different than Terraform syntax validation.
+- The partial first apply had already created the signing key, so the corrected second plan had `13 to add` rather than the original `14 to add`.
+
+### What worked
+
+- Corrected apply succeeded:
+
+```text
+Apply complete! Resources: 13 added, 0 changed, 0 destroyed.
+```
+
+- Final clean plan succeeded:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+- Public Vault Identity Token discovery endpoints are reachable:
+
+```text
+https://vault.yolo.scapegoat.dev/v1/identity/oidc/.well-known/openid-configuration -> HTTP 200
+https://vault.yolo.scapegoat.dev/v1/identity/oidc/.well-known/keys -> HTTP 200
+```
+
+### What didn't work
+
+The first apply failed with:
+
+```text
+Error: error writing IdentityOidc https://vault.yolo.scapegoat.dev: Error making API request.
+URL: PUT https://vault.yolo.scapegoat.dev/v1/identity/oidc/config
+Code: 400. Errors:
+* invalid issuer, which must include only a scheme, host, and optional port (e.g. https://example.com:8200)
+```
+
+It also failed for each package role with:
+
+```text
+Error: error writing IdentityOidcRole identity/oidc/role/docsctl-<package>-publisher: Error making API request.
+URL: PUT https://vault.yolo.scapegoat.dev/v1/identity/oidc/role/docsctl-<package>-publisher
+Code: 400. Errors:
+* error parsing template JSON: invalid character '"' after object key:value pair
+```
+
+### What I learned
+
+- `vault_identity_oidc.issuer` config is the public host base, while the Identity Token OIDC discovery URL remains `/v1/identity/oidc/.well-known/openid-configuration`.
+- Vault Identity Token templates are JSON-like templates, not plain Terraform-interpolated JSON. Dynamic template placeholders should be unquoted when the referenced value is a JSON string.
+
+### What was tricky to build
+
+- The first apply partially succeeded. I checked Terraform state and confirmed `vault_identity_oidc_key.docs_registry_publish` was already managed before producing the second plan.
+- The registry should still use JWT issuer `https://vault.yolo.scapegoat.dev/v1/identity/oidc`, because that is what Vault's discovery endpoint reports, even though Terraform's `vault_identity_oidc` config accepts only `https://vault.yolo.scapegoat.dev`.
+
+### What warrants a second pair of eyes
+
+- Review the distinction between the Vault Identity/OIDC config issuer and the OIDC discovery issuer before wiring k3s registry flags.
+- Review the unquoted template placeholders in Terraform; they are intentional and follow Vault's Identity Token template examples.
+
+### What should be done in the future
+
+- Prove a real GitHub Actions login and token mint from the `glazed` repository after the workflow commits are pushed.
+- Keep using the discovery issuer `https://vault.yolo.scapegoat.dev/v1/identity/oidc` for docs-registry JWT validation.
+
+### Code review instructions
+
+- Review Terraform commit `2e56b7eb4cefd543df7e789af26b2eaedaf39c2a`.
+- Validate with:
+
+```bash
+cd /home/manuel/code/wesen/terraform
+source ./.envrc
+cd /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s
+terraform plan -input=false -detailed-exitcode
+```
+
+### Technical details
+
+The corrected token template uses this form:
+
+```json
+{
+  "repository": {{identity.entity.aliases.<accessor>.metadata.repository}}
+}
+```
+
+not this form:
+
+```json
+{
+  "repository": "{{identity.entity.aliases.<accessor>.metadata.repository}}"
+}
+```
+
+## Step 10: Add the reusable docsctl publish workflow and Glazed caller workflow
+
+I added the reusable GitHub Actions workflow that callers can use to export a Glazed help SQLite database, authenticate to Vault with GitHub OIDC, mint a package-scoped docs-registry publish JWT, and run `docsctl publish --token-file`. I then added a Glazed caller workflow that uses that reusable workflow for the `glazed` package.
+
+This completes the static implementation of Phase 3. The next proof step requires pushing the infra-tooling and Glazed workflow commits so GitHub Actions can produce a real OIDC token with the expected `workflow_ref` and `job_workflow_ref` claims.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Continue after Terraform apply by implementing the reusable CI workflow and a first package caller.
+
+**Inferred user intent:** The user wants the Vault resources exercised by the intended GitHub Actions path rather than left as unused infrastructure.
+
+**Commit (code):** `a95c5d5a08539d6b691b0c1ebb4c086132707808` — `actions: add docsctl publish workflow`
+
+**Commit (code):** `209ee884288cf086a4751044040c244d98aa61d2` — `ci: add docsctl publish workflow`
+
+### What I did
+
+- Created `/home/manuel/code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml`.
+- Created `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/.github/workflows/publish-docs.yml`.
+- The reusable workflow accepts inputs for:
+  - package name;
+  - package version;
+  - export command;
+  - SQLite path;
+  - docsctl install command;
+  - Vault address/auth path/role/audience/token role;
+  - docs-registry URL;
+  - docs API verification URL.
+- The workflow performs:
+  - checkout;
+  - Go setup;
+  - docsctl install;
+  - SQLite export;
+  - Vault login using `hashicorp/vault-action@v3` and GitHub OIDC;
+  - publish JWT mint via `GET /v1/identity/oidc/token/<role>`;
+  - non-sensitive JWT claim decoding for logs;
+  - `docsctl publish --token-file`;
+  - post-publish package/version verification through the docs API.
+- The Glazed caller workflow uses:
+
+```text
+go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+```
+
+and exports with:
+
+```bash
+go run ./cmd/glaze help export --format sqlite --output-path .docsctl/help.sqlite
+```
+
+### Why
+
+- This workflow is the bridge between the Terraform Vault roles and the docs-registry JWT auth implementation.
+- Keeping publish logic in `infra-tooling` avoids duplicating the Vault/token/publish dance across all package repositories.
+
+### What worked
+
+- Both workflow files were created and committed in focused commits.
+- The Glazed caller workflow path matches the Terraform-bound caller workflow path:
+
+```text
+go-go-golems/glazed/.github/workflows/publish-docs.yml@refs/heads/main
+```
+
+### What didn't work
+
+- I have not run a live GitHub Actions proof yet. That requires the commits to be pushed to their corresponding GitHub repositories, and the reusable workflow must be addressable at the ref used by the caller.
+
+### What I learned
+
+- The live proof is the next point where the exact GitHub OIDC claim values will be confirmed. Static workflow files can be reviewed locally, but they cannot prove `job_workflow_ref` until GitHub runs the reusable workflow.
+
+### What was tricky to build
+
+- The reusable workflow needs to avoid exposing the publish JWT while still leaving enough evidence for debugging. It masks the JWT and prints only non-sensitive decoded claims.
+- Defaulting the Vault role and token role from `package_name` keeps callers simple while still allowing overrides.
+
+### What warrants a second pair of eyes
+
+- Review whether `go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main` will produce `job_workflow_ref` with `@refs/heads/main`, as Terraform expects.
+- Review whether the public registry URL should be `https://docs-registry.yolo.scapegoat.dev`; if the registry is not exposed yet, Phase 4 will fail until ingress or a self-hosted runner path exists.
+- Review whether `workflow_dispatch` with `package_version = manual` should publish to `manual` or a test version like `vtest-jwt`.
+
+### What should be done in the future
+
+- Push `infra-tooling` commit `a95c5d5a08539d6b691b0c1ebb4c086132707808` to `main`.
+- Push Glazed commit `209ee884288cf086a4751044040c244d98aa61d2` to the branch/repository intended for proof.
+- Run the Glazed workflow manually with a test package version.
+
+### Code review instructions
+
+- Start with the reusable workflow in `infra-tooling`.
+- Then review the Glazed caller workflow and compare its path/ref to the Terraform `workflow_ref` bound claim.
+- The live validation step is a GitHub Actions run, not a local unit test.
+
+### Technical details
+
+The reusable workflow mints the publish JWT with:
+
+```bash
+curl --fail-with-body --silent --show-error \
+  --header "X-Vault-Token: ${VAULT_TOKEN}" \
+  "${VAULT_ADDR}/v1/identity/oidc/token/${VAULT_TOKEN_ROLE}"
 ```
