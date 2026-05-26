@@ -1,22 +1,9 @@
 name: publish-docs
 
 on:
-  workflow_dispatch:
-    inputs:
-      package_version:
-        description: Version to publish to docs.yolo.scapegoat.dev
-        required: false
-        type: string
-        default: manual
-  push:
-    branches:
-      - main
-    paths:
-      - cmd/**
-      - pkg/**
-      - go.mod
-      - go.sum
-      - .github/workflows/publish-docs.yml
+  release:
+    types:
+      - published
 
 permissions:
   contents: read
@@ -24,10 +11,11 @@ permissions:
 
 jobs:
   publish-docs:
+    if: github.event.release.prerelease == false && startsWith(github.event.release.tag_name, 'v')
     uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
     with:
       package_name: glazed
-      package_version: ${{ github.event_name == 'workflow_dispatch' && inputs.package_version || github.ref_name }}
+      package_version: ${{ github.event.release.tag_name }}
       export_command: go run ./cmd/glaze help export --format sqlite --output-path .docsctl/help.sqlite
       sqlite_path: .docsctl/help.sqlite
       docsctl_install_command: go install github.com/go-go-golems/glazed/cmd/docsctl@latest
