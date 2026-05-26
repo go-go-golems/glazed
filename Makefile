@@ -1,4 +1,4 @@
-.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
+.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
 
 all: test build
 
@@ -39,6 +39,10 @@ logcopter-generate:
 
 logcopter-check:
 	go tool logcopter-gen -area-prefix go-go-golems.glazed -strip-prefix github.com/go-go-golems/glazed -check ./pkg/...
+
+logcopter-smoke:
+	GOWORK=off go test ./cmd/glaze ./pkg/cmds/logging ./pkg/cmds/fields
+	GOWORK=off go run ./cmd/glaze help logcopter-logging-architecture >/tmp/glazed-logcopter-help-smoke.txt
 
 gosec:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest

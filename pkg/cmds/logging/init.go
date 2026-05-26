@@ -136,7 +136,7 @@ func InitLoggerFromCobra(cmd *cobra.Command) error {
 		return errors.Errorf("nil cobra command passed to InitLoggerFromCobra")
 	}
 
-	settings := DefaultLoggingSettings()
+	settings := &LoggingSettings{}
 	if v, err := cmd.Flags().GetStringSlice("log-config"); err == nil {
 		settings.LogConfigFiles = v
 	}
@@ -296,9 +296,9 @@ func ParseAreaOverrides(values []string) (map[string]string, error) {
 			if entry == "" {
 				continue
 			}
-			key, level, ok := strings.Cut(entry, ":")
+			key, level, ok := strings.Cut(entry, "=")
 			if !ok {
-				key, level, ok = strings.Cut(entry, "=")
+				key, level, ok = strings.Cut(entry, ":")
 			}
 			key = strings.TrimSpace(key)
 			level = strings.TrimSpace(level)

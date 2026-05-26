@@ -688,7 +688,7 @@ func (p *Definition) parseObjectListFromReader(
 }
 
 func splitKeyValueArgument(arg string) ([]string, error) {
-	for _, separator := range []string{":", "="} {
+	for _, separator := range []string{"=", ":"} {
 		key, value, ok := strings.Cut(arg, separator)
 		if !ok {
 			continue

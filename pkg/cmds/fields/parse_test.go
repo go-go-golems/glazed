@@ -334,6 +334,7 @@ func TestParseField(t *testing.T) {
 			Cases: []FieldTestCase{
 				{Name: "Valid single colon key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
 				{Name: "Valid single equals key-value pair, no error expected", Input: []string{"test=test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid equals key-value pair with colon-containing URL value, no error expected", Input: []string{"DATABASE_URL=postgres://db:5432/app"}, Expected: map[string]string{"DATABASE_URL": "postgres://db:5432/app"}, WantErr: ErrorNotExpected},
 				{Name: "Valid mixed key-value pairs, no error expected", Input: []string{"test:test", "test2=test2"}, Expected: map[string]string{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
 				{Name: "Valid key-value pair with spaces, no error expected", Input: []string{" test = test "}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
 				{Name: "Invalid input without separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
@@ -367,15 +368,16 @@ func TestParseField(t *testing.T) {
 func TestTypeKeyValueParsesPflagStringSliceCommaValues(t *testing.T) {
 	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	values := fs.StringSlice("log-area", []string{}, "")
-	require.NoError(t, fs.Parse([]string{"--log-area", "app.view=debug,app.db=warn", "--log-area", "lib.parser:trace"}))
+	require.NoError(t, fs.Parse([]string{"--log-area", "app.view=debug,app.db=warn", "--log-area", "lib.parser:trace", "--log-area", "DATABASE_URL=postgres://db:5432/app"}))
 
 	field := New("log-area", TypeKeyValue)
 	got, err := field.ParseField(*values)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
-		"app.view":   "debug",
-		"app.db":     "warn",
-		"lib.parser": "trace",
+		"app.view":     "debug",
+		"app.db":       "warn",
+		"lib.parser":   "trace",
+		"DATABASE_URL": "postgres://db:5432/app",
 	}, got.Value)
 }
 

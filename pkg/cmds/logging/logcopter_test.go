@@ -1,11 +1,15 @@
 package logging
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-go-golems/logcopter/pkg/logcopter"
+	"github.com/rs/zerolog"
+	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -68,6 +72,60 @@ areas:
 	}
 	if direct.LogLevel != "warn" || direct.LogFormat != "text" || !direct.LogToStdout || !direct.WithCaller || !direct.StrictAreas || direct.Areas["app.db"] != "error" {
 		t.Fatalf("unexpected direct settings: %#v", direct)
+	}
+}
+
+func TestInitLoggerFromCobraUsesProfileValuesWhenFlagsAreNotChanged(t *testing.T) {
+	_ = logcopter.Package("app.profile")
+	dir := t.TempDir()
+	logFile := filepath.Join(dir, "profile.log")
+	profilePath := filepath.Join(dir, "profile.yaml")
+	if err := os.WriteFile(profilePath, []byte(`logging:
+  log-level: warn
+  log-format: json
+  log-file: `+logFile+`
+  areas:
+    app.profile: error
+`), 0o644); err != nil {
+		t.Fatalf("write profile: %v", err)
+	}
+
+	cmd := &cobra.Command{Use: "test"}
+	if err := AddLoggingSectionToRootCommand(cmd, "test"); err != nil {
+		t.Fatalf("AddLoggingSectionToRootCommand returned error: %v", err)
+	}
+	if err := cmd.ParseFlags([]string{"--log-config", profilePath}); err != nil {
+		t.Fatalf("ParseFlags returned error: %v", err)
+	}
+	if err := InitLoggerFromCobra(cmd); err != nil {
+		t.Fatalf("InitLoggerFromCobra returned error: %v", err)
+	}
+
+	if got := zlog.Logger.GetLevel(); got != zerolog.WarnLevel {
+		t.Fatalf("global logger level = %s, want warn", got)
+	}
+	if got := logcopter.EffectiveLevel("app.other").String(); got != "warn" {
+		t.Fatalf("default logcopter level = %s, want warn", got)
+	}
+	if got := logcopter.EffectiveLevel("app.profile").String(); got != "error" {
+		t.Fatalf("app.profile level = %s, want error", got)
+	}
+
+	zlog.Logger.Warn().Str("source", "profile").Msg("profile json smoke")
+	b, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read profile log file: %v", err)
+	}
+	line := strings.TrimSpace(string(b))
+	if line == "" {
+		t.Fatalf("expected profile log file to contain one JSON log line")
+	}
+	var entry map[string]interface{}
+	if err := json.Unmarshal([]byte(line), &entry); err != nil {
+		t.Fatalf("profile log output was not JSON: %v\nline: %s", err, line)
+	}
+	if entry["level"] != "warn" || entry["message"] != "profile json smoke" || entry["source"] != "profile" {
+		t.Fatalf("unexpected profile log entry: %#v", entry)
 	}
 }
 
