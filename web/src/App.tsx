@@ -1,6 +1,14 @@
 // App.tsx — root component: wires all components together with RTK Query state.
+//
+// URL scheme: /{package}/{version}/sections/{slug}#{heading-id}
+//
+// Package and version are always in the URL path. For unversioned packages,
+// the version segment is "_" (a placeholder meaning "no version").
+// The slug is optional; when absent, the section list is shown with EmptyState.
+// The heading fragment (#heading-id) scrolls to a subsection after the section loads.
+
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { matchPath, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { SearchBar } from './components/SearchBar/SearchBar';
 import { TypeFilter, type FilterValue } from './components/TypeFilter/TypeFilter';
@@ -15,42 +23,80 @@ import { AppLayout } from './components/AppLayout/AppLayout';
 import { useListPackagesQuery, useListSectionsQuery, useGetSectionQuery } from './services/api';
 import type { SectionSummary } from './types';
 
+/** URL segment used for packages that have no version. */
+const NO_VERSION = '_';
+
+/**
+ * Convert a version string from the URL to the API representation.
+ * The URL uses "_" as a placeholder for "no version", which the API
+ * expects as an empty string.
+ */
+function versionFromUrl(urlVersion: string | undefined): string {
+  if (!urlVersion || urlVersion === NO_VERSION) return '';
+  return urlVersion;
+}
+
+/**
+ * Convert a version string from the API to the URL representation.
+ * Empty versions become "_" so the URL always has two segments after the root.
+ */
+function versionToUrl(apiVersion: string): string {
+  return apiVersion || NO_VERSION;
+}
+
 export default function App() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
   const [navigationMode, setNavigationMode] = useState<NavigationMode>('tree');
-  const [selectedPackage, setSelectedPackage] = useState('');
-  const [selectedVersion, setSelectedVersion] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const contentScrollRef = useRef<HTMLDivElement>(null);
 
-  const activeSlug = useMemo(() => {
-    const match = matchPath('/sections/:slug', location.pathname);
-    return match?.params.slug ?? null;
-  }, [location.pathname]);
+  // Extract package, version, and slug from URL params.
+  const params = useParams();
+  const urlPackage = params['package'] ?? '';
+  const urlVersion = params.version ?? '';
+  const activeSlug = params.slug ?? null;
   const activeHeadingId = location.hash ? location.hash.replace(/^#/, '') : '';
+
+  const selectedPackage = urlPackage;
+  const selectedVersion = versionFromUrl(urlVersion);
+  const effectiveVersion = selectedVersion;
 
   const { data: packageData } = useListPackagesQuery();
   const packages = packageData?.packages ?? [];
-  const currentPackage = packages.find((pkg) => pkg.name === selectedPackage);
-  const currentVersions = currentPackage?.versions ?? [];
-  const effectiveVersion = currentVersions.length ? selectedVersion : '';
 
+  // When landing on / (no package in URL), redirect to the default package/version.
   useEffect(() => {
     if (!packageData || selectedPackage) return;
-    const initialPackage = packageData.defaultPackage || packageData.packages[0]?.name || '';
-    const initial = packageData.packages.find((pkg) => pkg.name === initialPackage);
-    const initialVersions = initial?.versions ?? [];
-    setSelectedPackage(initialPackage);
-    setSelectedVersion(packageData.defaultVersion || initialVersions[0] || '');
-  }, [packageData, selectedPackage]);
+    const defaultPkg = packageData.defaultPackage || packageData.packages[0]?.name || 'default';
+    const defaultPkgInfo = packageData.packages.find((pkg) => pkg.name === defaultPkg);
+    const defaultVersions = defaultPkgInfo?.versions ?? [];
+    const defaultVer = defaultVersions[0] || '';
+    navigate(`/${defaultPkg}/${versionToUrl(defaultVer)}`, { replace: true });
+  }, [packageData, selectedPackage, navigate]);
+
+  // When landing on a package that doesn't exist, redirect to default.
+  useEffect(() => {
+    if (!packageData || !selectedPackage) return;
+    const exists = packages.some((pkg) => pkg.name === selectedPackage);
+    if (!exists && packages.length > 0) {
+      const defaultPkg = packageData.defaultPackage || packages[0].name;
+      const defaultPkgInfo = packages.find((pkg) => pkg.name === defaultPkg);
+      const defaultVer = defaultPkgInfo?.versions?.[0] || '';
+      navigate(`/${defaultPkg}/${versionToUrl(defaultVer)}`, { replace: true });
+    }
+  }, [packageData, selectedPackage, packages, navigate]);
 
   const handlePackageChange = (value: string) => {
     const nextPackage = packages.find((pkg) => pkg.name === value);
     const nextVersions = nextPackage?.versions ?? [];
-    setSelectedPackage(value);
-    setSelectedVersion(nextVersions[0] || '');
+    const newVersion = nextVersions[0] || '';
+    navigate(`/${value}/${versionToUrl(newVersion)}`);
+  };
+
+  const handleVersionChange = (value: string) => {
+    navigate(`/${selectedPackage}/${versionToUrl(value)}`);
   };
 
   const { data: listData, isLoading, error } = useListSectionsQuery(
@@ -65,11 +111,11 @@ export default function App() {
   });
 
   const handleSelect = (slug: string) => {
-    navigate(`/sections/${slug}`);
+    navigate(`/${selectedPackage}/${versionToUrl(effectiveVersion)}/sections/${slug}`);
   };
 
   const handleSelectHeading = (slug: string, headingId: string) => {
-    navigate(`/sections/${slug}#${headingId}`);
+    navigate(`/${selectedPackage}/${versionToUrl(effectiveVersion)}/sections/${slug}#${headingId}`);
   };
 
   useEffect(() => {
@@ -118,7 +164,7 @@ export default function App() {
                 selectedPackage={selectedPackage}
                 selectedVersion={effectiveVersion}
                 onPackageChange={handlePackageChange}
-                onVersionChange={setSelectedVersion}
+                onVersionChange={handleVersionChange}
               />
               <div style={{ marginBottom: 8 }}>
                 <SearchBar value={search} onChange={setSearch} placeholder="Search documentation…" />

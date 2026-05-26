@@ -30,6 +30,7 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
   },
 
-  // Use HashRouter in the app so no server-side route fallback is needed.
-  // SPA routes will be #/sections/database etc.
+  // Use BrowserRouter in the app. The Go server serves index.html for all
+  // non-/api paths (SPA fallback), so no server-side route configuration is
+  // needed. URL scheme: /{package}/{version}/sections/{slug}#{heading-id}
 });

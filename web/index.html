@@ -7,6 +7,26 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Legacy HashRouter redirect: if someone has a bookmarked #/sections/slug URL
+      from before the BrowserRouter migration, redirect them to the new URL format.
+      This runs before React hydrates so there's no flash of wrong content.
+      The script defaults the package to "default" and version to "_" since the
+      old hash URLs didn't encode package/version.
+    -->
+    <script>
+      (function () {
+        var hash = window.location.hash;
+        if (!hash || hash.indexOf('#/') !== 0) return;
+        var match = hash.match(/^#\/sections\/([^#]+)(?:#(.+))?$/);
+        if (!match) return;
+        var slug = match[1];
+        var heading = match[2] || '';
+        var newPath = '/default/_/sections/' + slug;
+        if (heading) newPath += '#' + heading;
+        window.location.replace(newPath);
+      })();
+    </script>
     <script src="./site-config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -30,6 +30,16 @@ describe('helpApi runtime configuration', () => {
     expect(resolveRuntimeBaseUrl('/help', config)).toBe('/help/api');
   });
 
+  it('prefers explicit apiBaseUrl over pathname-derived URL', () => {
+    const config: GlazeSiteConfig = {
+      mode: 'server',
+      apiBaseUrl: '/api',
+    };
+
+    // Even with a deep BrowserRouter pathname, the explicit apiBaseUrl wins.
+    expect(resolveRuntimeBaseUrl('/pinocchio/v1.2.15/sections/slug', config)).toBe('/api');
+  });
+
   it('reads the runtime config from window when present', () => {
     window.__GLAZE_SITE_CONFIG__ = {
       mode: 'static',
