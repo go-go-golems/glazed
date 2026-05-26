@@ -16,19 +16,19 @@
 - [x] Keep current `--publisher-catalog` static mode as the default migration/rollback path.
 - [x] Add `--jwt-issuer` and `--jwt-client-id` flags for JWT mode.
 - [x] Run targeted Go tests for `pkg/help/publish`, `cmd/docs-registry`, and related packages.
-- [ ] Commit the Glazed implementation.
+- [x] Commit the Glazed implementation.
 
 ## Phase 2: Terraform Vault Identity/OIDC resources
 
-- [ ] Extend the Vault GitHub Actions Terraform environment with docsctl publisher locals.
-- [ ] Add a Vault Identity/OIDC issuer configuration if needed.
-- [ ] Add a `docs-registry-publish` OIDC signing key.
-- [ ] Add one Vault Identity OIDC role per package (`glazed`, `pinocchio`, `remarquee`, `sqleton`).
-- [ ] Add package-specific policies allowing each GitHub Actions role to mint only its own publish JWT.
-- [ ] Add GitHub Actions JWT roles with `repository`, `repository_id`, `ref`, `event_name`, and `job_workflow_ref` bound claims.
-- [ ] Add claim mappings for repository/workflow/run metadata.
-- [ ] Run `terraform fmt` and best-effort validation/plan checks without leaking credentials.
-- [ ] Commit the Terraform implementation.
+- [x] Extend the Vault GitHub Actions Terraform environment with docsctl publisher locals.
+- [x] Add a Vault Identity/OIDC issuer configuration if needed.
+- [x] Add a `docs-registry-publish` OIDC signing key.
+- [x] Add one Vault Identity OIDC role per package (`glazed`, `pinocchio`, `remarquee`, `sqleton`).
+- [x] Add package-specific policies allowing each GitHub Actions role to mint only its own publish JWT.
+- [x] Add GitHub Actions JWT roles with `repository`, `repository_id`, `ref`, `event_name`, and `job_workflow_ref` bound claims.
+- [x] Add claim mappings for repository/workflow/run metadata.
+- [x] Run `terraform fmt` and best-effort validation/plan checks without leaking credentials.
+- [x] Commit the Terraform implementation.
 
 ## Phase 3: reusable GitHub Actions workflow integration
 

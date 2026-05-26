@@ -537,3 +537,214 @@ docs-registry \
   --address :8090 \
   --package-root /var/lib/glazed-docs/packages
 ```
+
+## Step 5: Commit the Glazed JWT implementation after full pre-commit validation
+
+I committed the Glazed JWT implementation after the repository pre-commit hook ran the broader test, lint, gosec, and govulncheck checks. The first commit attempt failed because an existing untracked `wellknown.go` file in the working tree had lint issues. I fixed those lint-only issues in the untracked file so the repository could pass validation, then committed only the staged JWT implementation files.
+
+This is important because Go tooling sees untracked `.go` files when it loads packages. Even though `wellknown.go` was not staged for the JWT commit, the linter and tests still compiled/linted it because it sits in `pkg/help/server`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Make a focused Glazed commit for the registry JWT implementation and record any validation friction.
+
+**Inferred user intent:** The user wants focused commits and a diary that explains not only the happy path but also why failures happened.
+
+**Commit (code):** `aa6946a40f2156689e81a831a10e634398102261` — `docs-registry: add Vault OIDC JWT auth mode`
+
+### What I did
+
+- Staged only:
+  - `cmd/docs-registry/main.go`
+  - `go.mod`
+  - `go.sum`
+  - `pkg/help/publish/jwt_auth.go`
+  - `pkg/help/publish/jwt_auth_test.go`
+- Attempted commit with the normal pre-commit hook.
+- Fixed two lint issues in the existing untracked `pkg/help/server/wellknown.go`:
+  - replaced `b.WriteString(fmt.Sprintf(...))` with `fmt.Fprintf(...)`;
+  - removed named returns from `isMarkdownSuffixURL`.
+- Re-ran the commit.
+
+### Why
+
+- The JWT implementation should be reviewable independently from the previously-existing server/A14Y working-tree changes.
+- Skipping hooks would have hidden the fact that the current checkout could not pass lint with the untracked server file present.
+
+### What worked
+
+- The second commit passed the full hook:
+  - `go test` package set passed;
+  - `golangci-lint` reported `0 issues`;
+  - `gosec` reported `Issues: 0`;
+  - `govulncheck` reported no called vulnerabilities.
+
+### What didn't work
+
+The first commit attempt failed in the `lint` hook with:
+
+```text
+pkg/help/server/wellknown.go:385:1: named return "pkgName" with type "string" found (nonamedreturns)
+func isMarkdownSuffixURL(path string) (pkgName, version, slug string, ok bool) {
+^
+pkg/help/server/wellknown.go:300:3: QF1012: Use fmt.Fprintf(...) instead of WriteString(fmt.Sprintf(...)) (staticcheck)
+		b.WriteString(fmt.Sprintf("## %s\n\n", name))
+		^
+2 issues:
+* nonamedreturns: 1
+* staticcheck: 1
+make: *** [Makefile:25: lintmax] Error 1
+```
+
+### What I learned
+
+- A focused Git commit can still be blocked by unrelated untracked Go files because package-level tooling scans the whole package directory, not only staged files.
+- The right fix here was not to bypass validation, but to make the checkout lint-clean while staging only the intended commit contents.
+
+### What was tricky to build
+
+- The tricky part was preserving commit hygiene. `wellknown.go` had to be lint-fixed in the working tree so hooks could pass, but it was intentionally not included in the JWT commit. I verified the staged file list before committing.
+
+### What warrants a second pair of eyes
+
+- Review the staged commit independently of the untracked `wellknown.go` state. The commit hash above should include only JWT auth files plus module dependency updates.
+
+### What should be done in the future
+
+- Finish or separately commit the pre-existing help-server/A14Y changes so future commits are not affected by untracked package files.
+
+### Code review instructions
+
+- Review commit `aa6946a40f2156689e81a831a10e634398102261` directly.
+- Confirm it does not include the unrelated help-server file.
+- Validate with `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl` or the repository pre-commit hook.
+
+### Technical details
+
+The commit command that ultimately passed was:
+
+```bash
+git commit -m "docs-registry: add Vault OIDC JWT auth mode"
+```
+
+## Step 6: Add Terraform Vault roles for docsctl publish JWT issuance
+
+I added Terraform resources to the existing Vault GitHub Actions auth environment for package-scoped docsctl publish JWTs. The configuration now defines the package list, the Vault Identity/OIDC issuer, a signing key for docs-registry tokens, one Vault Identity OIDC role per package, one policy per package, and one GitHub Actions JWT auth role per package.
+
+The Terraform side is intentionally package-scoped. A `glazed` workflow can mint only the `docsctl-glazed-publisher` token, and the resulting publish JWT carries `package = "glazed"`. The registry code from Step 4 then rejects that JWT if it is used against another package URL.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Implement the Vault/Terraform phase after the Glazed registry can validate Vault-issued OIDC JWTs.
+
+**Inferred user intent:** The user wants the infrastructure repository to contain the Vault resources needed for real CI publishing, not only application code.
+
+**Commit (code):** `04451fe795314065d872f22c8710044682525963` — `vault: add docsctl publish JWT roles`
+
+### What I did
+
+- Modified `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf`.
+- Added `local.docsctl_publishers` for:
+  - `glazed` / repository id `565461475`;
+  - `pinocchio` / repository id `802670903`;
+  - `remarquee` / repository id `1116463013`;
+  - `sqleton` / repository id `579241534`.
+- Added `vault_identity_oidc.docs_registry` with issuer `${var.vault_addr}/v1/identity/oidc`.
+- Added `vault_identity_oidc_key.docs_registry_publish` with `RS256`, `allowed_client_ids = ["docs-registry"]`, daily rotation, and seven-day verification TTL.
+- Added `vault_identity_oidc_role.docsctl_publish` for one role per package.
+- Added `vault_policy.docsctl_publish` so each GitHub Actions role can read only its package token endpoint.
+- Added `vault_jwt_auth_backend_role.docsctl_publish` with bound claims for repository owner, repository, repository id, ref, event name, workflow ref, and reusable workflow ref.
+- Added `docsctl_publish_job_workflow_ref` variable.
+- Ran `terraform fmt`.
+- Ran validation in a temporary backend-free copy because the real environment requires S3 backend credentials.
+
+### Why
+
+- The GitHub Actions OIDC JWT proves which repository/workflow is calling Vault.
+- The Vault auth role turns that proof into a short-lived Vault token with only one policy.
+- The policy allows reading only one Vault Identity/OIDC token endpoint.
+- The Vault Identity/OIDC role signs the docs-registry publish JWT with a package claim that the registry can verify.
+
+### What worked
+
+- `terraform fmt main.tf variables.tf` completed successfully.
+- Backend-free validation in a temporary copy passed:
+
+```text
+Success! The configuration is valid.
+```
+
+- The Terraform commit was created in `/home/manuel/code/wesen/terraform`:
+
+```text
+04451fe795314065d872f22c8710044682525963 vault: add docsctl publish JWT roles
+```
+
+### What didn't work
+
+Running Terraform initialization directly in the real environment failed because the S3 backend credentials are not available in this shell:
+
+```text
+Error: No valid credential sources found
+
+Please see https://developer.hashicorp.com/terraform/language/backend/s3
+for more information about providing credentials.
+
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, request canceled, context deadline
+exceeded
+```
+
+To validate syntax/provider compatibility without touching the remote backend, I copied the environment to a temporary directory, removed the `backend "s3"` block only in the temporary copy, ran `terraform init -backend=false`, and then ran `terraform validate`.
+
+### What I learned
+
+- The local shell still cannot access the Terraform S3 backend, so apply/plan must be done from an environment with the correct AWS credentials.
+- `gh api repos/<owner>/<repo>` provided the numeric GitHub repository ids that the GitHub OIDC `repository_id` claim should use.
+
+### What was tricky to build
+
+- Vault Identity Token templates need Vault's alias metadata path, which depends on the GitHub Actions auth mount accessor. The Terraform template uses `${vault_jwt_auth_backend.github_actions.accessor}` so Vault can later render values from the entity alias metadata populated by `claim_mappings`.
+- Terraform validation was tricky because backend access failed before normal validation could proceed. The workaround validated a backend-free temporary copy without modifying the real checked-in backend configuration.
+
+### What warrants a second pair of eyes
+
+- Confirm that the deployed Vault version supports the Identity/OIDC resources exactly as modeled.
+- Confirm that Vault template rendering accepts the alias metadata paths as written.
+- Confirm that the future reusable workflow ref should be `go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@refs/heads/main`, or update `docsctl_publish_job_workflow_ref` before applying.
+- Confirm that the package repositories will use `.github/workflows/publish-docs.yml@refs/heads/main` as the caller workflow file.
+
+### What should be done in the future
+
+- Run `terraform plan` and `terraform apply` from a credentialed environment.
+- After apply, manually mint one token through Vault for `glazed` and inspect non-sensitive claims.
+- If the shared reusable workflow repository/name changes, update `docsctl_publish_job_workflow_ref` before applying.
+
+### Code review instructions
+
+- Start in `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf` at `local.docsctl_publishers`.
+- Review the relationship between `vault_jwt_auth_backend_role.docsctl_publish`, `vault_policy.docsctl_publish`, and `vault_identity_oidc_role.docsctl_publish`.
+- Validate from a credentialed Terraform environment with:
+
+```bash
+terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s init
+terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s plan
+```
+
+### Technical details
+
+Backend-free validation command pattern used locally:
+
+```bash
+tmp=$(mktemp -d)
+cp -a /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/. "$tmp"
+# Remove only the backend "s3" block in the temporary copy.
+cd "$tmp"
+rm -rf .terraform
+terraform init -backend=false -input=false
+terraform validate
+```
