@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { renderToString } from 'react-dom/server';
+import { Routes, Route } from 'react-router-dom';
 import { StaticRouter } from 'react-router-dom/server';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -47,7 +48,11 @@ export function renderApp(
     <React.StrictMode>
       <Provider store={store}>
         <StaticRouter location={url}>
-          <App />
+          <Routes>
+            <Route path="/:package/:version/sections/:slug" element={<App />} />
+            <Route path="/:package/:version" element={<App />} />
+            <Route path="*" element={<App />} />
+          </Routes>
         </StaticRouter>
       </Provider>
     </React.StrictMode>,

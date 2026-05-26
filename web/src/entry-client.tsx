@@ -8,7 +8,7 @@
 import React from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { store } from './store';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -35,7 +35,11 @@ hydrateRoot(
     <Provider store={store}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ErrorBoundary>
-          <App />
+          <Routes>
+            <Route path="/:package/:version/sections/:slug" element={<App />} />
+            <Route path="/:package/:version" element={<App />} />
+            <Route path="*" element={<App />} />
+          </Routes>
         </ErrorBoundary>
       </BrowserRouter>
     </Provider>
