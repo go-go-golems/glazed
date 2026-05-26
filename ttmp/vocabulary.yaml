@@ -131,6 +131,8 @@ topics:
       description: TypeScript implementation
     - slug: urls
       description: URL structure and deep linking
+    - slug: ux
+      description: User experience and usability improvements
 docTypes:
     - slug: index
       description: Ticket index
