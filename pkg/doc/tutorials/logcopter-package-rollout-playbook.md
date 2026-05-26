@@ -71,8 +71,8 @@ Keep path components such as `pkg` and `cmd` unless the repository has an explic
 From the repository root, add logcopter and register the generator as a Go tool:
 
 ```bash
-go get github.com/go-go-golems/logcopter@v0.0.1
-go get -tool github.com/go-go-golems/logcopter/cmd/logcopter-gen@v0.0.1
+go get github.com/go-go-golems/logcopter@latest
+go get -tool github.com/go-go-golems/logcopter/cmd/logcopter-gen@latest
 go mod tidy
 go tool logcopter-gen -h
 ```
@@ -81,10 +81,12 @@ If the repository has a local `replace github.com/go-go-golems/logcopter => ...`
 
 ## Step 3: add the go generate entry point
 
-Create a small file at the repository root. Name it `logcopter_generate.go`:
+Create a small file at the repository root. Name it `logcopter_generate.go`.
+
+Use the repository's root package name, not `package main`, unless the repository root is already a real command package. A root `package main` file in a library module causes `go build ./...` to fail with `function main is undeclared in the main package`.
 
 ```go
-package main
+package <repo>
 
 //go:generate go tool logcopter-gen -area-prefix go-go-golems.<repo> -strip-prefix github.com/go-go-golems/<repo> ./pkg/...
 ```
@@ -92,7 +94,7 @@ package main
 Replace `<repo>` with the module's repository name. For example, Geppetto uses:
 
 ```go
-package main
+package geppetto
 
 //go:generate go tool logcopter-gen -area-prefix go-go-golems.geppetto -strip-prefix github.com/go-go-golems/geppetto ./pkg/...
 ```
@@ -100,7 +102,7 @@ package main
 Pinocchio may generate both library packages and command packages:
 
 ```go
-package main
+package pinocchio
 
 //go:generate go tool logcopter-gen -area-prefix go-go-golems.pinocchio -strip-prefix github.com/go-go-golems/pinocchio ./pkg/... ./cmd/...
 ```
@@ -182,7 +184,21 @@ logcopter-check:
 
 Run the check in CI before the test suite so generated-file drift fails early.
 
-## Step 8: validate compilation and behavior
+## Step 8: add standalone smoke coverage
+
+For repositories that import logcopter docs or other newly published cross-repository symbols, add a fast smoke target that disables the local workspace:
+
+```make
+logcopter-smoke:
+	GOWORK=off go test ./cmd/<app> ./pkg/cmds/logging ./pkg/cmds/fields
+	GOWORK=off go run ./cmd/<app> help logcopter-logging-architecture >/tmp/<repo>-logcopter-help-smoke.txt
+```
+
+Use `GOWORK=off` deliberately. It catches failures where local `go.work` makes a symbol available but the published module version in `go.mod` does not. Glazed uses this to verify that the imported embedded `github.com/go-go-golems/logcopter/pkg/doc.FS` is available from the required logcopter version.
+
+Run this in CI after the generated-file check and before the broader test suite.
+
+## Step 9: validate compilation and behavior
 
 Start with narrow tests around changed packages:
 
@@ -201,6 +217,7 @@ Also verify explicit logcopter config files. A minimal profile can be written as
 ```yaml
 logging:
   level: warn
+  format: json
   areas:
     go-go-golems.<repo>.pkg.some.package: debug
 ```
@@ -211,9 +228,30 @@ Then run:
 go run ./cmd/<app> --log-config /tmp/logcopter-profile.yaml <safe-command>
 ```
 
-The exact command should be safe, deterministic, and should not require network credentials. Help commands are usually good smoke tests.
+Use `format: json` when checking fields mechanically. Generated logcopter package logs include an `area` field, for example:
 
-## Step 9: commit in layers
+```json
+{"level":"debug","area":"go-go-golems.glazed.pkg.help","message":"Failed to load section from file"}
+```
+
+Global zerolog logs do not have an `area` field. If a smoke command emits `DBG Logger initialized` or another global logger message without `area`, that is expected; use a generated package area that actually emits during the command if you need to see `area=...` in text output.
+
+The global `--log-level` or profile `logging.level` sets the default logcopter level. Area overrides can still lower one package area to `debug` or `trace` while the default remains `warn` or `info`:
+
+```yaml
+logging:
+  level: warn
+  areas:
+    go-go-golems.glazed.pkg.help: debug
+```
+
+This should emit debug logs from `go-go-golems.glazed.pkg.help` without turning every area to debug.
+
+Use `--strict-log-areas` to validate configured area names, but remember that strict validation only sees packages linked into the running binary.
+
+The exact smoke command should be safe, deterministic, and should not require network credentials. Help commands are usually good smoke tests.
+
+## Step 10: commit in layers
 
 Use focused commits:
 
@@ -228,10 +266,12 @@ This makes generated-file diffs easier to review and lets downstream repositorie
 | Problem | Cause | Solution |
 | --- | --- | --- |
 | `log already declared through import of package log` | A file in the same package imports a package whose local name is `log`. | Remove `github.com/rs/zerolog/log` diagnostic imports, or alias real imports as `zlog`/`stdlog`. |
-| `go tool logcopter-gen: no such tool` | The generator was not registered with `go get -tool`. | Run `go get -tool github.com/go-go-golems/logcopter/cmd/logcopter-gen@v0.0.1`. |
+| `go tool logcopter-gen: no such tool` | The generator was not registered with `go get -tool`. | Run `go get -tool github.com/go-go-golems/logcopter/cmd/logcopter-gen@latest` or pin the current approved logcopter version. |
 | `-check` fails after a clean generation | The check command uses different package patterns or prefixes than `go:generate`. | Keep `-area-prefix`, `-strip-prefix`, and package patterns identical. |
-| Area overrides do nothing | The CLI did not initialize Glazed logging, or the area name is different from the generated path. | Inspect generated `logcopter.go` files and verify the root command calls Glazed logging initialization. |
-| Trace/debug logs remain hidden | The default level is higher than the package area level, or output format hides the fields you expect. | Set the exact package area with `--log-area area=debug` or in a `--log-config` file. |
+| Area overrides do nothing | The CLI did not initialize Glazed logging, the area name is different from the generated path, or the package is not linked into the running binary. | Inspect generated `logcopter.go` files, verify the root command calls Glazed logging initialization, and test with an area known to emit during the command. |
+| Trace/debug logs remain hidden | The default level is higher than the package area level, or output format hides the fields you expect. | Set the exact package area with `--log-area area=debug` or in a `--log-config` file; use `format: json` to inspect fields. |
+| `--log-level debug` shows logs without `area` | Those records are emitted through the global zerolog logger, not a generated logcopter package logger. | This is expected. Only generated package loggers include `area`. Convert package diagnostics if they should be area-scoped. |
+| `GOWORK=off` fails but workspace tests pass | The repo relies on a local checkout that has symbols not present in the required published version. | Publish the dependency version first, update `go.mod`, then rerun `GOWORK=off` smoke tests. |
 | Same-package tests fail after generation | Test files import standard library `log` in the same package. | Alias the import as `stdlog`. |
 
 ## Review checklist
@@ -246,6 +286,8 @@ Before merging a conversion, verify:
 - No package diagnostics still import `github.com/rs/zerolog/log` without a deliberate reason.
 - Concrete `zerolog.Logger` APIs remain intact.
 - CLI smoke tests cover both `--log-area` and `--log-config`.
+- At least one smoke test uses `GOWORK=off` when cross-repository imports are involved.
+- Area field visibility is verified with JSON output or by checking `area=...` in text output from a generated package logger.
 - The ticket diary records failures and exact validation commands.
 
 ## See Also
