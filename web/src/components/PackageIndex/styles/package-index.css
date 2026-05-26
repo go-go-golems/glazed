@@ -1,0 +1,52 @@
+/* package-index.css — styles for the PackageIndex component. */
+
+[data-part='package-index'] {
+  padding: 16px 24px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-part='package-index-heading'] {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+[data-part='package-index-count'] {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+[data-part='package-index-group'] {
+  margin-bottom: 20px;
+}
+
+[data-part='package-index-group-heading'] {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+[data-part='package-index-section-item'] {
+  margin-bottom: 8px;
+}
+
+[data-part='package-index-section-link'] {
+  color: var(--color-accent, #0078d4);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+[data-part='package-index-section-link']:hover {
+  text-decoration: underline;
+}
+
+[data-part='package-index-section-short'] {
+  color: #555;
+  font-size: 12px;
+  margin: 2px 0 0;
+}

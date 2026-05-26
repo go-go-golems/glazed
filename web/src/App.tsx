@@ -18,6 +18,7 @@ import { DocumentationTree } from './components/DocumentationTree/DocumentationT
 import { SectionList } from './components/SectionList/SectionList';
 import { SectionView } from './components/SectionView/SectionView';
 import { EmptyState } from './components/EmptyState/EmptyState';
+import { PackageIndex } from './components/PackageIndex/PackageIndex';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { AppLayout } from './components/AppLayout/AppLayout';
 import { useListPackagesQuery, useListSectionsQuery, useGetSectionQuery } from './services/api';
@@ -225,7 +226,15 @@ export default function App() {
                 <SectionView section={section} />
               </div>
             )}
-            {!isLoading && !error && !section && (
+            {!isLoading && !error && !section && listData && listData.sections.length > 0 && (
+              <div ref={contentScrollRef} style={{ flex: 1, overflow: 'auto' }}>
+                <PackageIndex
+                  sections={listData.sections}
+                  onSelect={handleSelect}
+                />
+              </div>
+            )}
+            {!isLoading && !error && !section && (!listData || listData.sections.length === 0) && (
               <EmptyState />
             )}
           </>

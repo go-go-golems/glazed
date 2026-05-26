@@ -119,12 +119,15 @@ describe('App route selection', () => {
     expect(screen.getByText('alpha-section')).toBeTruthy();
   });
 
-  it('shows EmptyState when no section slug is in the URL', async () => {
+  it('shows PackageIndex when no section slug is in the URL but sections are loaded', async () => {
     renderAppAt('/glazed/_');
 
-    // Should show the "Select a section from the list." empty state text
+    // Should show the PackageIndex with grouped sections
     await waitFor(() => {
-      expect(screen.getByText('Select a section from the list.')).toBeTruthy();
+      expect(screen.getByText('Documentation Index')).toBeTruthy();
+      // Section titles appear both in the sidebar tree and in the PackageIndex
+      expect(screen.getAllByText('Alpha Section').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('Beta Section').length).toBeGreaterThanOrEqual(2);
     });
   });
 });
