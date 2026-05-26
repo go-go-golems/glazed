@@ -759,3 +759,101 @@ rm -rf .terraform
 terraform init -backend=false -input=false
 terraform validate
 ```
+
+## Step 7: Try the k3s `.envrc` for Terraform credentials
+
+I tried to use the k3s repository `.envrc` as the user suggested, then re-ran Terraform initialization from the Vault GitHub Actions Terraform environment. The `.envrc` does set cluster- and application-related variables such as `VAULT_ADDR`, `KUBECONFIG`, and docs/GitOps tokens, but it does not set AWS credentials or an AWS profile for the S3 Terraform backend.
+
+As a result, the Terraform remote backend remains blocked from this shell. I did not attempt a Terraform apply with a backend-free local state, because that would be unsafe and could diverge from the real managed state.
+
+### Prompt Context
+
+**User prompt (verbatim):** "use the ~/code/wesen/2026-03-27--hetzner-k3s/.envrc for keys."
+
+**Assistant interpretation:** Source the k3s `.envrc` before running Terraform so the missing credentials from the previous step may become available.
+
+**Inferred user intent:** The user wants the Terraform plan/apply work to proceed using the environment variables already stored in the k3s repository.
+
+**Commit (code):** N/A — no code changed in this step.
+
+### What I did
+
+- Sourced `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/.envrc`.
+- Re-ran `terraform init` in `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s`.
+- Repeated the source from inside the k3s directory so `$PWD`-based exports such as `KUBECONFIG` resolve correctly.
+- Checked only whether credential-related environment variables were set, without recording secret values in the diary.
+
+### Why
+
+- The previous Terraform validation step could not initialize the real S3 backend because AWS credentials were unavailable.
+- The user pointed at the k3s `.envrc` as the likely source for the required keys.
+
+### What worked
+
+- The `.envrc` sourced successfully.
+- It set `VAULT_ADDR` and cluster/application token variables.
+- Sourcing from inside the k3s directory correctly set the kubeconfig path.
+
+### What didn't work
+
+- The `.envrc` did not set these Terraform S3 backend credential variables:
+
+```text
+AWS_ACCESS_KEY_ID=unset
+AWS_SECRET_ACCESS_KEY=unset
+AWS_SESSION_TOKEN=unset
+AWS_PROFILE=unset
+AWS_DEFAULT_PROFILE=unset
+AWS_REGION=unset
+AWS_DEFAULT_REGION=unset
+VAULT_TOKEN=unset
+```
+
+- `terraform init` still failed with:
+
+```text
+Error: No valid credential sources found
+
+Please see https://developer.hashicorp.com/terraform/language/backend/s3
+for more information about providing credentials.
+
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, access disabled to EC2 IMDS via
+client option, or "AWS_EC2_METADATA_DISABLED" environment variable
+```
+
+### What I learned
+
+- The k3s `.envrc` is useful for cluster and docs/GitOps operations, but it is not sufficient for Terraform S3 backend access in this environment.
+- The real Terraform plan/apply still needs AWS backend credentials or an AWS profile supplied from elsewhere.
+
+### What was tricky to build
+
+- Sourcing `.envrc` from the wrong working directory can produce incorrect `$PWD`-based paths. I retried from inside the k3s repository so `KUBECONFIG=$PWD/.cache/...` would be accurate.
+- Terraform fails during backend initialization before provider-level Vault credentials matter, so `VAULT_ADDR` alone does not unblock planning.
+
+### What warrants a second pair of eyes
+
+- Confirm where AWS credentials for the `go-go-golems-tf-state` S3 backend are expected to come from on this workstation.
+- Review the `.envrc` storage pattern for plaintext long-lived tokens; those should ideally be moved to a secret manager or rotated if they were exposed in logs.
+
+### What should be done in the future
+
+- Provide or load an AWS profile/credentials for the Terraform backend, then run:
+
+```bash
+cd /home/manuel/code/wesen/2026-03-27--hetzner-k3s
+source ./.envrc
+cd /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s
+terraform init -input=false
+terraform plan -input=false -out=/tmp/docsctl-vault-oidc-jwt.tfplan
+```
+
+### Code review instructions
+
+- No code review is needed for this step.
+- Review the next Terraform plan once backend credentials are available.
+
+### Technical details
+
+I did not use `terraform init -backend=false` against the real checkout for apply. Backend-free validation remains acceptable for syntax checks only, not for changing live Vault resources.
