@@ -15,3 +15,7 @@
 - [x] Write intern-oriented analysis/design/implementation guide.
 - [x] Relate core source, workflow, Terraform, and k3s files to the design doc.
 - [x] Upload guide to reMarkable.
+- [x] Phase 2.1: Add request IDs and structured access logging around registry handlers
+- [x] Phase 2.2: Add publish concurrency limiting and basic per-IP route-class rate limiting
+- [x] Phase 2.3: Add handler tests for rate limiting, concurrency, and explicit body-limit edge cases
+- [ ] Phase 2.4: Make production docs-registry upload/body/rate/concurrency settings explicit in k3s GitOps

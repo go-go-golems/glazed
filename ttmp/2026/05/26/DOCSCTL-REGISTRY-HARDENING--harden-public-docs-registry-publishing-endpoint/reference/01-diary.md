@@ -12,13 +12,22 @@ DocType: reference
 Intent: long-term
 Owners:
     - manuel
-RelatedFiles: []
+RelatedFiles:
+    - Path: cmd/docs-registry/main.go
+      Note: Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
+    - Path: pkg/help/publish/registry.go
+      Note: Wired request ID/access-log/rate-limit middleware and publish concurrency gate into registry handler (commit f68238b)
+    - Path: pkg/help/publish/registry_middleware.go
+      Note: New request ID
+    - Path: pkg/help/publish/registry_test.go
+      Note: Added tests for request IDs
 ExternalSources: []
-Summary: "Chronological diary for docs-registry hardening design and implementation."
+Summary: Chronological diary for docs-registry hardening design and implementation.
 LastUpdated: 2026-05-26T19:20:00-04:00
-WhatFor: "Use this to resume hardening work and understand what was created, validated, and uploaded."
-WhenToUse: "Before implementing future DOCSCTL-REGISTRY-HARDENING phases."
+WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
+WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 # Diary
 
@@ -200,4 +209,123 @@ remarquee upload bundle \
   --remote-dir "/ai/2026/05/26/DOCSCTL-REGISTRY-HARDENING" \
   --toc-depth 2 \
   --non-interactive
+```
+
+## Step 3: Add Phase 2 registry request limits and access logs
+
+This step implemented the first executable hardening layer around the public registry API. The registry now assigns or preserves a request ID, emits a structured access log event for each request, can reject request bursts with a simple per-client token bucket, and can reject excess concurrent publish uploads before the expensive authorization/upload/SQLite-validation path runs.
+
+This does not complete all registry hardening. It creates the foundation for bounded request handling and auditability while keeping the existing publish API stable.
+
+### Prompt Context
+
+**User prompt (verbatim):** "go ahead, add tasks, keep a detailed diary as you work, commit at appropriate intervals."
+
+**Assistant interpretation:** Break the hardening work into actionable tasks, start implementation, record detailed diary entries while working, and make focused commits.
+
+**Inferred user intent:** The user wants the hardening ticket to move from design into implementation while preserving reviewable history and documentation.
+
+**Commit (code):** f68238b — "docs-registry: add request limits and access logs"
+
+### What I did
+
+- Added granular Phase 2 tasks for:
+  - request IDs and access logs,
+  - publish concurrency and rate limiting,
+  - handler test coverage,
+  - explicit k3s production settings.
+- Added CLI flags to `cmd/docs-registry/main.go`:
+  - `--max-concurrent-uploads` with default `2`,
+  - `--rate-limit-requests-per-minute` with default `60`,
+  - `--rate-limit-burst` with default `10`.
+- Added middleware in `pkg/help/publish/registry_middleware.go`:
+  - request ID propagation via `X-Request-ID`,
+  - generated request IDs when absent,
+  - structured access logging through `slog.Info`,
+  - client IP extraction from `X-Forwarded-For`, `X-Real-IP`, or `RemoteAddr`,
+  - route classification for `publish`, `list`, `health`, and `other`,
+  - a small in-process token-bucket rate limiter.
+- Updated `pkg/help/publish/registry.go`:
+  - wraps the registry mux with request ID, access-log, and rate-limit middleware,
+  - creates a publish semaphore when `MaxConcurrentUploads > 0`,
+  - rejects excess concurrent uploads with `429` and error code `too_many_concurrent_uploads`.
+- Added tests in `pkg/help/publish/registry_test.go` for:
+  - unknown-length oversized uploads,
+  - request ID response header preservation,
+  - per-client route-class rate limiting,
+  - concurrent publish rejection while a first publish is in progress.
+
+### Why
+
+- A public registry must cheaply reject abusive or accidental bursts instead of allowing every request to reach JWT validation, disk writes, and SQLite validation.
+- Request IDs make it possible to correlate client-facing failures with server logs.
+- Structured logs are the first audit/observability layer before a full metrics implementation.
+- Concurrency limiting protects the single PVC-backed registry from multiple simultaneous expensive publish paths.
+
+### What worked
+
+- Local validation passed:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+- Pre-commit checks passed during commit:
+  - targeted tests,
+  - golangci-lint,
+  - gosec,
+  - govulncheck.
+- The new middleware did not require changing the public API or `docsctl publish` client contract.
+
+### What didn't work
+
+- N/A for this step. The first implementation passed the targeted test suite after formatting.
+
+### What I learned
+
+- The existing handler shape made it easy to wrap the mux and keep hardening orthogonal to the core publish flow.
+- The concurrency gate belongs at the beginning of `handlePublishSQLite`, before auth and upload reads, because it is intended to protect the whole expensive path.
+- A one-replica in-process token bucket is acceptable for the current deployment, but it must be revisited if the registry is scaled horizontally.
+
+### What was tricky to build
+
+- The concurrency test needed a fake store that blocks after the first request reaches `Publish`. That proves the semaphore remains held through validation and storage publication, and a second upload receives `429` while the first is in progress.
+- The rate limiter needed to key by both client IP and route class. Without the route class, health/list/publish requests from the same client would consume the same bucket, which is not the behavior described in the design.
+- The middleware order matters: request ID wrapping is outermost so the access logger and downstream handler see the same request ID and the response carries the same `X-Request-ID` value.
+
+### What warrants a second pair of eyes
+
+- Default rate limit values (`60/min`, burst `10`) should be reviewed against real GitHub Actions behavior and any health-check traffic that reaches the registry host.
+- The current in-process limiter is deliberately simple and not distributed. That is fine for one replica but insufficient for horizontal scaling.
+- The concurrency limiter currently returns `429`; reviewers may prefer `503` with `Retry-After` for overload semantics.
+
+### What should be done in the future
+
+- Make production settings explicit in the k3s deployment once a new image containing these flags is built.
+- Add richer publish-specific audit events with JWT claims in Phase 4.
+- Add metrics/alerts in Phase 5.
+
+### Code review instructions
+
+- Start with `pkg/help/publish/registry.go` to see how the middleware and semaphore are wired.
+- Then review `pkg/help/publish/registry_middleware.go` for request ID, access logging, client IP extraction, route classification, and token-bucket logic.
+- Review `cmd/docs-registry/main.go` to confirm CLI defaults are safe and documented.
+- Review `pkg/help/publish/registry_test.go` for expected status codes and failure behavior.
+- Validate with:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+
+### Technical details
+
+New error response for concurrent publish overload:
+
+```json
+{
+  "error": "too_many_concurrent_uploads",
+  "message": "too many concurrent uploads"
+}
+```
+
+New error response for rate limiting:
+
+```json
+{
+  "error": "rate_limited",
+  "message": "too many requests"
+}
 ```

@@ -23,3 +23,15 @@ Uploaded hardening guide bundle to reMarkable
 
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/reference/01-diary.md — Records successful reMarkable upload
 
+
+## 2026-05-26
+
+Phase 2: added request IDs, access logs, rate limits, concurrency limits, and handler tests (commit f68238b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/cmd/docs-registry/main.go — New hardening CLI flags
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry.go — Middleware and publish semaphore wiring
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_middleware.go — Request ID/access log/rate limiter implementation
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_test.go — Hardening tests
+
