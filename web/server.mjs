@@ -106,6 +106,15 @@ function getIndexHtml() {
   }
 }
 
+function serializeForInlineScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 // Cache the index.html template
 let indexHtmlTemplate = null;
 
@@ -144,9 +153,10 @@ app.get('{*path}', async (req, res) => {
       );
     }
 
-    // 3. Render React to HTML
-    const { html } = renderApp(url, { packages, sections, section });
-    const preloadedState = JSON.stringify({ packages, sections, section }).replace(/</g, '\\u003c');
+    // 3. Render React to HTML. renderApp returns the actual Redux/RTK Query
+    // store state used for the render; the browser hydrates from the same state.
+    const { html, preloadedState } = await renderApp(url, { packages, sections, section });
+    const serializedPreloadedState = serializeForInlineScript(preloadedState);
 
     // 4. Determine page title and description
     const title = section?.title
@@ -255,7 +265,7 @@ app.get('{*path}', async (req, res) => {
 
     htmlPage = htmlPage.replace(
       '</head>',
-      `<script>window.__PRELOADED_STATE__=${preloadedState};</script>
+      `<script>window.__PRELOADED_STATE__=${serializedPreloadedState};</script>
   <meta name="description" content="${description.replace(/"/g, '&quot;')}" />
   <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
   <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />

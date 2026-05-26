@@ -13,10 +13,16 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ttmp/2026/05/26/DOCSCTL-REACT-SSR-HTML--render-full-react-documentation-html-in-ssr-sidecar/sources/01-baseline-ssr-html-evidence.md
+      Note: Baseline curl evidence before data-backed SSR implementation
     - Path: web/server.mjs
       Note: Current sidecar fetch/serialization logic to connect to Redux state
+    - Path: web/src/AppRoutes.tsx
+      Note: Shared route table for dev
     - Path: web/src/entry-client.tsx
       Note: Current implementation deletes preloaded state instead of hydrating from it
+    - Path: web/src/entry-server.test.tsx
+      Note: Regression tests proving React SSR renders package index and article body from prefetched RTK Query data
     - Path: web/src/entry-server.tsx
       Note: Current implementation ignores prefetched data and defines the next implementation seam
     - Path: web/src/store.ts
@@ -27,6 +33,7 @@ LastUpdated: 2026-05-26T18:35:00-04:00
 WhatFor: Use this diary to resume the React SSR HTML work and understand what was planned before implementation.
 WhenToUse: Read before editing the React SSR entrypoints, Redux store setup, Node sidecar serialization, or production rollout manifests.
 ---
+
 
 
 # Diary
@@ -130,4 +137,130 @@ curl -sS https://docs.yolo.scapegoat.dev/glazed/v1.2.15/sections/exposing-a-simp
 
 ```text
 server fetches data -> request-scoped store -> RTK Query cache entries -> renderToString -> serialized store -> client makeStore(preloadedState) -> hydrate
+```
+
+## Step 2: Implement request-scoped RTK Query SSR rendering
+
+I implemented the first real React SSR pass. The server renderer now creates a fresh Redux store per request, inserts the data that `server.mjs` already fetched from the Go API into the RTK Query cache, renders the shared application route tree with that hydrated cache, and returns the actual Redux state used by the render. The browser hydration entry now reads `window.__PRELOADED_STATE__` and creates its store from that state instead of deleting it before use.
+
+This changes the SSR sidecar from "HTML shell plus parallel JSON" to "React render backed by the same RTK Query cache that the client hydrates." Local curl checks against the built sidecar now show the package index and known article body text in the initial HTML before browser JavaScript executes.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, add detailed tasks, then build it task by task, committing at appropriate intervals, keeping a detailed diary"
+
+**Assistant interpretation:** Expand the ticket tasks into an actionable implementation checklist, then implement the SSR work incrementally with validation, commits, and detailed diary updates.
+
+**Inferred user intent:** Continue from planning into execution while preserving reviewable checkpoints and enough diary detail to understand failures and decisions later.
+
+### What I did
+- Captured baseline production SSR evidence in `sources/01-baseline-ssr-html-evidence.md`.
+- Expanded `tasks.md` with detailed substeps and marked completed local phases.
+- Added `web/src/AppRoutes.tsx` so dev, SSR, and hydration entries share the same route table.
+- Refactored `web/src/store.ts` to expose `makeStore(preloadedState?)` while preserving the browser/dev singleton `store` export.
+- Updated `web/src/main.tsx` to use `AppRoutes`.
+- Updated `web/src/entry-client.tsx` to:
+  - read `window.__PRELOADED_STATE__`;
+  - delete it only after reading;
+  - create the browser store with `makeStore(preloadedState)`;
+  - hydrate shared `AppRoutes`.
+- Reworked `web/src/entry-server.tsx` to:
+  - parse docs routes consistently;
+  - create a request-scoped store;
+  - await `helpApi.util.upsertQueryData` cache inserts for `listPackages`, `listSections`, and `getSection`;
+  - render `AppRoutes` under `StaticRouter`;
+  - return both `html` and `preloadedState`.
+- Updated `web/server.mjs` to:
+  - await `renderApp`;
+  - serialize the actual returned Redux state;
+  - use a dedicated inline-script JSON serializer that escapes `<`, `>`, `&`, U+2028, and U+2029.
+- Added `web/src/entry-server.test.tsx` covering route parsing, package index SSR, and section article SSR.
+
+### Why
+- `App.tsx` already renders the correct tree/article UI from RTK Query hooks. The missing piece was making those hooks see cache hits during server rendering.
+- A request-scoped store avoids leaking one request's package/version/section data into another SSR request.
+- Shared `AppRoutes` prevents route drift between dev, server render, and client hydration. Route drift already caused a previous production bug.
+- Serializing the actual Redux state eliminates the parallel-state mismatch where `server.mjs` had one JSON object while React rendered from an empty store.
+
+### What worked
+- `cd web && pnpm test` passed with the new SSR tests:
+  - 5 test files passed;
+  - 19 tests passed.
+- `cd web && pnpm build && pnpm build:ssr` passed after a TypeScript store typing fix.
+- `go test ./pkg/help/server ./pkg/web ./cmd/docs-registry ./cmd/docsctl` passed.
+- Local Node sidecar smoke test against the live API passed:
+  - package page contained `Documentation Index`;
+  - package page contained `Exposing a simple SQL table using glaze`;
+  - section page contained `Exposing a simple SQL table using glaze`;
+  - section page contained `TODO(manuel, 2022-12-10)`;
+  - both pages contained `window.__PRELOADED_STATE__`.
+- Local Docker SSR image build passed:
+  - `docker build --target ssr -t glazed-ssr:react-html .`
+- Local Docker sidecar smoke test against the live API passed with the same section title/body/preloaded-state checks.
+
+### What didn't work
+- The first attempt to preload RTK Query with `store.dispatch(helpApi.util.upsertQueryData(...))` and immediately call `renderToString()` still rendered `Loading…`. The SSR tests failed with HTML showing `No documentation matches.` and `Loading…`.
+- The cause was that `upsertQueryData` dispatches asynchronous RTK Query work. The store did not contain fulfilled cache entries at render time until those dispatch results were awaited.
+- `pnpm build` initially failed in `web/src/store.ts` because the generic `preloadedState` type confused the `configureStore` overload and middleware tuple inference. The error was a long TS2322/TS2719 overload mismatch around `reducer`, `middleware`, and `preloadedState`.
+- The fix was to keep strong exported store/result types but use a pragmatic `config as any` at the factory boundary, with `preloadedState` conditionally included only when present.
+- React prints `useLayoutEffect does nothing on the server` warnings during SSR tests. These warnings come from React/React-Redux/server rendering behavior and did not fail the tests. They warrant review if production hydration warnings appear, but they did not block the local SSR acceptance criteria.
+
+### What I learned
+- RTK Query cache upserts must be awaited for SSR. Treating them as synchronous produced the exact failure mode this ticket is meant to remove: hooks rendered loading state despite data being available outside React.
+- The right state to serialize is `store.getState()`, not a hand-built `{ packages, sections, section }` object. The client needs RTK Query's cache state shape, not the domain data shape alone.
+- The existing Node sidecar fetch logic can remain simple. It fetches the data; `entry-server.tsx` is responsible for making that data visible to React through the cache.
+- TypeScript's `configureStore` types can become a distraction when making a generic store factory. A narrow escape hatch at the factory boundary is acceptable if tests and exported store types remain useful.
+
+### What was tricky to build
+- The hardest part was realizing the cache insert operation was asynchronous. The symptom was a confusing test failure: the preloaded state JSON contained endpoint names after render, but the rendered HTML still showed loading state. Awaiting the dispatch results fixed the ordering.
+- It was also tricky to keep route/version normalization exact. `App.tsx` treats `_` as an empty API version; SSR cache keys must do the same or the hooks miss the cache.
+- Another sharp edge was preserving the safe serialization and metadata behavior in `server.mjs` while changing the state source. The code now serializes the Redux state but keeps canonical links, alternate markdown links, JSON-LD, and hidden/noscript helpers intact.
+
+### What warrants a second pair of eyes
+- Review the `makeStore(preloadedState?)` typing compromise in `web/src/store.ts`.
+- Review `parseDocsRoute()` in `entry-server.tsx` against the Go server and `App.tsx` URL semantics.
+- Review the inline serializer in `web/server.mjs` for script-injection safety.
+- Review whether the server-side `useLayoutEffect` warnings should be addressed with an isomorphic layout effect helper or left as known harmless warnings.
+
+### What should be done in the future
+- Commit this local implementation checkpoint.
+- Push and wait for GHCR runtime/SSR image builds.
+- Roll the new images into k3s and validate production with curl and Playwright.
+- Record final production evidence in `sources/02-production-ssr-html-evidence.md`.
+
+### Code review instructions
+- Start with `web/src/entry-server.tsx`; verify the cache upsert keys match `App.tsx` hook arguments.
+- Then review `web/src/entry-client.tsx` and `web/src/store.ts`; verify the browser uses the serialized state.
+- Review `web/server.mjs`; verify it awaits `renderApp` and serializes returned Redux state safely.
+- Run:
+  - `cd web && pnpm test && pnpm build && pnpm build:ssr`
+  - `go test ./pkg/help/server ./pkg/web ./cmd/docs-registry ./cmd/docsctl`
+  - `docker build --target ssr -t glazed-ssr:react-html .`
+
+### Technical details
+- First failed SSR test symptom:
+
+```text
+expected '<div class="app-root"><div data-part=…' to contain 'Documentation Index'
+Received HTML included: No documentation matches. ... Loading…
+```
+
+- TypeScript build failure summary:
+
+```text
+src/store.ts(15,5): error TS2322: Type '{ helpApi: Reducer<CombinedState<...>> }' is not assignable to type 'Reducer<...>'
+src/store.ts(16,5): error TS2719: Type '(getDefaultMiddleware: GetDefaultMiddleware<...>) => Tuple<...>' is not assignable ...
+```
+
+- Local acceptance commands that passed:
+
+```bash
+cd /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web
+pnpm test
+pnpm build
+pnpm build:ssr
+
+cd /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed
+go test ./pkg/help/server ./pkg/web ./cmd/docs-registry ./cmd/docsctl
+docker build --target ssr -t glazed-ssr:react-html .
 ```

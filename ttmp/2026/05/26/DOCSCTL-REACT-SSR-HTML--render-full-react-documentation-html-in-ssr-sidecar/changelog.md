@@ -15,3 +15,15 @@ Created continuation ticket, tasks, diary, and React SSR HTML rendering implemen
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-client.tsx — Primary implementation target for client store hydration
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.tsx — Primary implementation target for RTK Query cache preloading
 
+
+## 2026-05-26
+
+Implemented local data-backed React SSR: shared routes, request-scoped store factory, RTK Query cache preloading, client hydration from serialized Redux state, safe sidecar serialization, SSR tests, and local Node/Docker validation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/server.mjs — Await renderApp and serialize returned Redux state safely
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-client.tsx — Client hydration from preloaded Redux state
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.test.tsx — SSR package and section HTML regression tests
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.tsx — Request-scoped SSR store and RTK Query cache preloading
+
