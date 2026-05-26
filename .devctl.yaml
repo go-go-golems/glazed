@@ -1,0 +1,6 @@
+plugins:
+  - id: glazed
+    path: python3
+    args:
+      - ./plugins/glazed.py
+    priority: 10

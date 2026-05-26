@@ -34,7 +34,7 @@ export default defineConfig({
   // Produces dist/ssr/entry-server.js — a CJS/ESM module that the
   // Node.js sidecar (server.mjs) imports to render React on the server.
   ssr: {
-    noExternal: ['react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux'],
+    noExternal: ['react', 'react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux', 'use-sync-external-store'],
   },
 
   test: {

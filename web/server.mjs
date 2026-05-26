@@ -9,14 +9,37 @@
 // In production (k3s), this runs as a sidecar container in the same pod
 // as the Go server. In local dev, it runs alongside the Vite dev server
 // and Go server.
+//
+// IMPORTANT: We use dynamic import() for the SSR bundle because ESM
+// static imports are hoisted and execute before any runtime code. The
+// SSR bundle (entry-server.js) transitively imports api.ts, which reads
+// `window.__GLAZE_SITE_CONFIG__` and `window.location.pathname` at module-
+// load time. We must set up a `window` mock *before* the import runs.
 
 import express from 'express';
-import { renderApp } from './dist/ssr/entry-server.js';
+import { readFileSync } from 'fs';
 
+// --- Config ---
 const PORT = parseInt(process.env.SSR_PORT || '8089', 10);
 const API_BASE = process.env.API_BASE || 'http://localhost:8088/api';
 const BASE_URL = process.env.BASE_URL || 'https://docs.yolo.scapegoat.dev';
 
+// --- Set up `window` mock before loading the SSR bundle ---
+if (typeof globalThis.window === 'undefined') {
+  globalThis.window = {
+    __GLAZE_SITE_CONFIG__: {
+      mode: 'server',
+      apiBaseUrl: API_BASE,
+      siteTitle: 'Glazed Help Browser',
+    },
+    location: { pathname: '/' },
+  };
+}
+
+// --- Dynamic import of the SSR bundle (after window mock is set up) ---
+const { renderApp } = await import('./dist/ssr/entry-server.js');
+
+// --- Express app ---
 const app = express();
 
 // Health check endpoint — used by Go server and k8s probes
@@ -60,11 +83,8 @@ function parseDocUrl(pathname) {
 }
 
 // Read the SPA index.html shell (built by Vite)
-// In production, this is the same index.html served by the Go server
-async function getIndexHtml() {
-  // Try to read from the built assets
+function getIndexHtml() {
   try {
-    const { readFileSync } = await import('fs');
     return readFileSync('./dist/index.html', 'utf-8');
   } catch {
     // Fallback: minimal shell
@@ -89,13 +109,15 @@ async function getIndexHtml() {
 // Cache the index.html template
 let indexHtmlTemplate = null;
 
-app.get('*', async (req, res) => {
+// Express 5 wildcard: {*name} is the new syntax for catch-all routes.
+// req.params.path captures the matched path.
+app.get('{*path}', async (req, res) => {
   try {
     const url = req.originalUrl;
 
     // Load template once
     if (!indexHtmlTemplate) {
-      indexHtmlTemplate = await getIndexHtml();
+      indexHtmlTemplate = getIndexHtml();
     }
 
     // 1. Parse the URL to determine what data to fetch
