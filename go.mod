@@ -16,7 +16,7 @@ require (
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/dave/jennifer v1.7.0
-	github.com/go-go-golems/logcopter v0.0.1
+	github.com/go-go-golems/logcopter v0.1.0
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/itchyny/gojq v0.12.12
