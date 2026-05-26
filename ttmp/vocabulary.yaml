@@ -141,6 +141,8 @@ topics:
       description: GitHub Actions workflow automation
     - slug: oidc
       description: OpenID Connect identity and token-based authentication
+    - slug: ssr
+      description: Server-side rendering of frontend routes and HTML
 docTypes:
     - slug: index
       description: Ticket index
