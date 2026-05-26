@@ -19,3 +19,6 @@
 - [x] Phase 2.2: Add publish concurrency limiting and basic per-IP route-class rate limiting
 - [x] Phase 2.3: Add handler tests for rate limiting, concurrency, and explicit body-limit edge cases
 - [x] Phase 2.4: Make production docs-registry upload/body/rate/concurrency settings explicit in k3s GitOps
+- [x] Phase 3.1: Enforce immutable package versions with idempotent same-SHA retries
+- [x] Phase 3.2: Add per-package byte and version-count quotas with stable API errors
+- [ ] Phase 3.3: Make production quota and overwrite settings explicit in k3s GitOps

@@ -44,3 +44,15 @@ Phase 2 deployed to docs-yolo with explicit registry body, rate, and concurrency
 
 - /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production image and registry hardening args
 
+
+## 2026-05-26
+
+Phase 3: added immutable version policy, idempotent retries, package quotas, and stable publish policy errors (commit 4d519f8)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/cmd/docs-registry/main.go — New overwrite/quota CLI flags
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store.go — Immutability and quota enforcement
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store_test.go — Storage policy tests
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/publish_policy.go — Policy error contracts
+

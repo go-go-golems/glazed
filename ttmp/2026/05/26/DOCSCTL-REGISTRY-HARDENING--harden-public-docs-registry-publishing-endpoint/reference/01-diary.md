@@ -16,9 +16,19 @@ RelatedFiles:
     - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml
       Note: Deployed sha-e50da7e images and made registry body/rate/concurrency flags explicit (k3s commit 99e3f5f)
     - Path: cmd/docs-registry/main.go
-      Note: Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
+      Note: |-
+        Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
+        Adds overwrite and quota CLI flags (commit 4d519f8)
+    - Path: pkg/help/publish/directory_store.go
+      Note: Enforces immutable versions
+    - Path: pkg/help/publish/directory_store_test.go
+      Note: Tests immutable publish behavior
+    - Path: pkg/help/publish/publish_policy.go
+      Note: Defines stable publish policy sentinel errors and typed quota/immutability errors (commit 4d519f8)
     - Path: pkg/help/publish/registry.go
-      Note: Wired request ID/access-log/rate-limit middleware and publish concurrency gate into registry handler (commit f68238b)
+      Note: |-
+        Wired request ID/access-log/rate-limit middleware and publish concurrency gate into registry handler (commit f68238b)
+        Maps publish policy errors to stable HTTP status and JSON error codes (commit 4d519f8)
     - Path: pkg/help/publish/registry_middleware.go
       Note: New request ID
     - Path: pkg/help/publish/registry_test.go
@@ -29,6 +39,7 @@ LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -442,4 +453,148 @@ Production registry args now include:
 - "60"
 - --rate-limit-burst
 - "10"
+```
+
+## Step 5: Add immutable publish policy and storage quotas
+
+This step implemented the Phase 3 storage-side hardening policy. Published package versions are now immutable by default: a retry with identical bytes is accepted as idempotent, but a retry with different bytes for the same `{package, version}` is rejected with a stable conflict error. The store also supports per-package byte quotas and per-package version-count quotas.
+
+The registry still keeps an explicit emergency/admin override flag, `--allow-overwrite`, but it defaults to `false`. That preserves an operator escape hatch without allowing silent mutation of release-tag documentation in the normal production path.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue implementing the next hardening phase, keeping the diary and commits focused.
+
+**Inferred user intent:** The user wants the hardening work to proceed beyond Phase 2 into storage policy controls.
+
+**Commit (code):** 4d519f8 — "docs-registry: enforce immutable versions and quotas"
+
+### What I did
+
+- Added granular Phase 3 tasks for:
+  - immutable versions with same-SHA idempotent retries,
+  - per-package byte and version-count quotas,
+  - explicit production GitOps quota/overwrite settings.
+- Added `pkg/help/publish/publish_policy.go` with stable sentinel/typed errors:
+  - `ErrVersionAlreadyExists`,
+  - `ErrPackageQuotaExceeded`,
+  - `ErrPackageVersionQuotaExceeded`,
+  - `VersionAlreadyExistsError`,
+  - `PackageQuotaExceededError`,
+  - `PackageVersionQuotaExceededError`.
+- Extended `DirectoryPackageStore` with:
+  - `AllowOverwrite bool`,
+  - `MaxPackageBytes int64`,
+  - `MaxVersionsPerPackage int`.
+- Changed publish behavior in `directory_store.go`:
+  - if target version exists and new SHA matches existing SHA, return success as an idempotent retry,
+  - if target version exists and new SHA differs, reject unless `AllowOverwrite` is true,
+  - check projected package byte usage before publishing,
+  - check projected package version count before publishing,
+  - keep atomic temp-file-to-target rename behavior for allowed writes.
+- Extended `docs-registry` CLI flags:
+  - `--allow-overwrite`, default `false`,
+  - `--max-package-bytes`, default `0` disabled,
+  - `--max-versions-per-package`, default `0` disabled.
+- Mapped store policy errors to stable HTTP JSON responses:
+  - `409 version_already_exists`,
+  - `507 quota_exceeded`,
+  - `409 version_quota_exceeded`.
+- Added tests for:
+  - rejecting different-content overwrites,
+  - accepting same-content idempotent publish retries,
+  - allowing overwrite only when `AllowOverwrite = true`,
+  - rejecting package byte quota excess,
+  - rejecting version-count quota excess,
+  - mapping version conflict and quota errors through the HTTP handler.
+
+### Why
+
+- Release-tag documentation should be stable. A URL like `glazed@v1.3.4` should not silently point to different SQLite content after a later CI retry or operator mistake.
+- Quotas prevent a valid publisher from exhausting the shared package PVC by accident.
+- Stable API errors make negative proof tests and CI behavior easier to reason about.
+
+### What worked
+
+- Targeted tests passed:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+- Pre-commit checks passed after the gosec annotations were fixed:
+  - tests,
+  - golangci-lint,
+  - gosec,
+  - govulncheck.
+
+### What didn't work
+
+- The first commit attempt failed in the pre-commit gosec step with G703 path traversal warnings:
+
+```text
+[/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store.go:268] - G703 (CWE-22): Path traversal via taint analysis
+  f, err := os.Open(path)
+
+[/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store.go:223] - G703 (CWE-22): Path traversal via taint analysis
+  err := filepath.WalkDir(packageDir, func(path string, d os.DirEntry, err error) error {
+
+[/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store.go:218] - G703 (CWE-22): Path traversal via taint analysis
+  if _, err := os.Stat(packageDir); os.IsNotExist(err) {
+
+[/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store.go:63] - G703 (CWE-22): Path traversal via taint analysis
+  existingInfo, existingErr := os.Stat(target)
+```
+
+- I fixed this by adding targeted `#nosec G703` comments only where paths are derived from validated package/version segments and already checked to remain below the configured package root, or where the path is a trusted temporary upload path.
+
+### What I learned
+
+- The existing store already had path validation around the final target path, but adding quota scans introduced new filesystem operations that gosec could not infer as safe.
+- Same-SHA idempotency is easiest to implement before quota checks: if the exact same bytes already exist, there is no new storage pressure and no release mutation.
+- Keeping overwrite as an explicit flag makes the default safe while still allowing a controlled emergency procedure.
+
+### What was tricky to build
+
+- Idempotent same-content publish must not be confused with a normal overwrite. The store compares SHA-256 of the incoming validated DB and the existing target DB. Only matching SHA is treated as a retry.
+- Quota projection has to subtract the existing file size when overwrite is explicitly allowed; otherwise replacing a file could be incorrectly counted as adding a second full copy.
+- Version-count quota has to count directories under the package root and only increment the projected count when the requested version is new.
+
+### What warrants a second pair of eyes
+
+- The quota scan walks the package directory at publish time. This is simple and acceptable for low-volume publishing, but reviewers should confirm it remains acceptable if packages grow substantially.
+- The idempotent retry path returns existing catalog metadata if available; if the catalog entry is missing, it reconstructs and upserts metadata. Review whether that fallback should preserve original publication time differently.
+- `--allow-overwrite` exists for emergencies; operators should avoid enabling it in production except for a documented incident/rollback.
+
+### What should be done in the future
+
+- Deploy the new image and set explicit production quota/overwrite flags in k3s GitOps.
+- Decide final production quota values; initial suggested values are `512 MiB` per package and `25` versions per package.
+- Add live negative proof after rollout, especially duplicate-version different-content rejection.
+
+### Code review instructions
+
+- Start with `pkg/help/publish/directory_store.go` and review `Publish`, `checkQuota`, `scanPackageUsage`, and SHA comparison helpers.
+- Review `pkg/help/publish/publish_policy.go` for stable error contracts.
+- Review `pkg/help/publish/registry.go` for HTTP mapping of policy errors.
+- Review `cmd/docs-registry/main.go` for the new CLI flags and defaults.
+- Validate with:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+
+### Technical details
+
+New production-relevant flags:
+
+```text
+--allow-overwrite=false
+--max-package-bytes=<bytes, 0 disables>
+--max-versions-per-package=<count, 0 disables>
+```
+
+New stable API error examples:
+
+```json
+{"error":"version_already_exists","message":"glazed@v1.3.4 is already published with different content"}
+```
+
+```json
+{"error":"quota_exceeded","message":"glazed would exceed configured storage quota"}
 ```
