@@ -121,6 +121,16 @@ topics:
       description: Static analysis and lint tooling for enforcing repository policy
     - slug: intern-onboarding
       description: Intern-oriented guides and onboarding documentation for implementation work
+    - slug: docsctl
+      description: docsctl CLI and publishing pipeline
+    - slug: go
+      description: Go language implementation
+    - slug: routing
+      description: URL routing and navigation
+    - slug: typescript
+      description: TypeScript implementation
+    - slug: urls
+      description: URL structure and deep linking
 docTypes:
     - slug: index
       description: Ticket index
