@@ -3,7 +3,8 @@
 
 @font-face {
   font-family: 'Chicago_';
-  src: url('https://cdn.jsdelivr.net/gh/polgfred/mac-fonts@main/Chicago.woff2') format('woff2');
+  src: url('/fonts/ChicagoFLF.woff2') format('woff2');
+  font-display: swap;
 }
 
 *,

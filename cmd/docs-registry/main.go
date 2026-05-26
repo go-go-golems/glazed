@@ -26,14 +26,17 @@ type RegistryCommand struct {
 }
 
 type settings struct {
-	Address          string `glazed:"address"`
-	MaxUploadBytes   int64  `glazed:"max-upload-bytes"`
-	TempDir          string `glazed:"temp-dir"`
-	PackageRoot      string `glazed:"package-root"`
-	AuthMode         string `glazed:"auth-mode"`
-	PublisherCatalog string `glazed:"publisher-catalog"`
-	JWTIssuer        string `glazed:"jwt-issuer"`
-	JWTClientID      string `glazed:"jwt-client-id"`
+	Address                 string `glazed:"address"`
+	MaxUploadBytes          int64  `glazed:"max-upload-bytes"`
+	TempDir                 string `glazed:"temp-dir"`
+	PackageRoot             string `glazed:"package-root"`
+	AuthMode                string `glazed:"auth-mode"`
+	PublisherCatalog        string `glazed:"publisher-catalog"`
+	JWTIssuer               string `glazed:"jwt-issuer"`
+	JWTClientID             string `glazed:"jwt-client-id"`
+	MaxConcurrentUploads    int    `glazed:"max-concurrent-uploads"`
+	RateLimitRequestsPerMin int    `glazed:"rate-limit-requests-per-minute"`
+	RateLimitBurst          int    `glazed:"rate-limit-burst"`
 }
 
 var _ cmds.BareCommand = (*RegistryCommand)(nil)
@@ -59,6 +62,9 @@ The registry supports two publisher auth modes:
 			fields.New("publisher-catalog", fields.TypeString, fields.WithHelp("JSON file with static publisher token hashes; required for --auth-mode static-catalog"), fields.WithDefault("")),
 			fields.New("jwt-issuer", fields.TypeString, fields.WithHelp("Expected OIDC issuer URL for --auth-mode vault-oidc-jwt, for example https://vault.example/v1/identity/oidc"), fields.WithDefault("")),
 			fields.New("jwt-client-id", fields.TypeString, fields.WithHelp("Expected JWT audience/client ID for --auth-mode vault-oidc-jwt"), fields.WithDefault("")),
+			fields.New("max-concurrent-uploads", fields.TypeInteger, fields.WithHelp("Maximum concurrent publish uploads; 0 disables the limit"), fields.WithDefault(2)),
+			fields.New("rate-limit-requests-per-minute", fields.TypeInteger, fields.WithHelp("Per-client per-route request rate limit; 0 disables rate limiting"), fields.WithDefault(60)),
+			fields.New("rate-limit-burst", fields.TypeInteger, fields.WithHelp("Per-client per-route rate limit burst size; ignored when rate limiting is disabled"), fields.WithDefault(10)),
 		),
 	)}, nil
 }
@@ -100,6 +106,9 @@ func run(ctx context.Context, s *settings) error {
 	h := publish.NewRegistryHandler(auth, store)
 	h.MaxUploadBytes = s.MaxUploadBytes
 	h.TempDir = s.TempDir
+	h.MaxConcurrentUploads = s.MaxConcurrentUploads
+	h.RateLimitRequestsPerMin = s.RateLimitRequestsPerMin
+	h.RateLimitBurst = s.RateLimitBurst
 
 	srv := &http.Server{
 		Addr:              s.Address,

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -121,6 +122,105 @@ func TestRegistryPublishSQLiteOversized(t *testing.T) {
 	}
 }
 
+func TestRegistryPublishSQLiteUnknownLengthOversized(t *testing.T) {
+	store := &fakePackageStore{}
+	h := NewRegistryHandler(newRegistryTestAuth(t), store)
+	h.MaxUploadBytes = 4
+	server := h.Handler()
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader([]byte("too large")))
+	req.ContentLength = -1
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	rr := httptest.NewRecorder()
+
+	server.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	if store.publishCalls != 0 {
+		t.Fatalf("store should not be called for oversized upload")
+	}
+}
+
+func TestRegistryRequestIDHeader(t *testing.T) {
+	h := NewRegistryHandler(newRegistryTestAuth(t), &fakePackageStore{}).Handler()
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req.Header.Set(requestIDHeader, "test-request-id")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := rr.Header().Get(requestIDHeader); got != "test-request-id" {
+		t.Fatalf("request id header = %q", got)
+	}
+}
+
+func TestRegistryRateLimit(t *testing.T) {
+	h := NewRegistryHandler(newRegistryTestAuth(t), &fakePackageStore{})
+	h.RateLimitRequestsPerMin = 1
+	h.RateLimitBurst = 1
+	server := h.Handler()
+
+	first := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/packages", nil)
+	req.RemoteAddr = "203.0.113.10:1234"
+	server.ServeHTTP(first, req)
+	if first.Code != http.StatusOK {
+		t.Fatalf("first status = %d body=%s", first.Code, first.Body.String())
+	}
+
+	second := httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/v1/packages", nil)
+	req.RemoteAddr = "203.0.113.10:1234"
+	server.ServeHTTP(second, req)
+	if second.Code != http.StatusTooManyRequests {
+		t.Fatalf("second status = %d body=%s", second.Code, second.Body.String())
+	}
+}
+
+func TestRegistryPublishConcurrencyLimit(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	store := &fakePackageStore{entered: entered, release: release}
+	h := NewRegistryHandler(newRegistryTestAuth(t), store)
+	h.MaxConcurrentUploads = 1
+	server := h.Handler()
+	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer pinocchio-token")
+		rr := httptest.NewRecorder()
+		server.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("first status = %d body=%s", rr.Code, rr.Body.String())
+		}
+	}()
+
+	select {
+	case <-entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("first publish did not enter store")
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v2/sqlite", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	rr := httptest.NewRecorder()
+	server.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTooManyRequests {
+		t.Fatalf("second status = %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	close(release)
+	wg.Wait()
+}
+
 func TestRegistryPublishSQLiteStoreFailure(t *testing.T) {
 	store := &fakePackageStore{publishErr: errors.New("boom")}
 	h := NewRegistryHandler(newRegistryTestAuth(t), store).Handler()
@@ -151,9 +251,17 @@ type fakePackageStore struct {
 	publishCalls int
 	lastPackage  string
 	lastVersion  string
+	entered      chan struct{}
+	release      chan struct{}
 }
 
 func (s *fakePackageStore) Publish(ctx context.Context, packageName, version, dbPath string, result *SQLiteValidationResult, identity *PublisherIdentity) (*PublishedPackage, error) {
+	if s.entered != nil {
+		s.entered <- struct{}{}
+	}
+	if s.release != nil {
+		<-s.release
+	}
 	if s.publishErr != nil {
 		return nil, s.publishErr
 	}

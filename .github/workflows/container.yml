@@ -27,7 +27,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
+      - name: Docker metadata (Go runtime)
         id: meta
         uses: docker/metadata-action@v6
         with:
@@ -37,13 +37,36 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
-      - name: Build and push
+      - name: Docker metadata (SSR sidecar)
+        id: meta_ssr
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/go-go-golems/glazed-ssr
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
+      - name: Build and push Go runtime
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
+          target: runtime
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=glazed-runtime
+          cache-to: type=gha,mode=max,scope=glazed-runtime
+
+      - name: Build and push SSR sidecar
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ssr
+          push: true
+          tags: ${{ steps.meta_ssr.outputs.tags }}
+          labels: ${{ steps.meta_ssr.outputs.labels }}
+          cache-from: type=gha,scope=glazed-ssr
+          cache-to: type=gha,mode=max,scope=glazed-ssr

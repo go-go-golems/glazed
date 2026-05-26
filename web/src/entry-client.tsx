@@ -9,8 +9,8 @@ import React from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { store } from './store';
-import App from './App';
+import { makeStore } from './store';
+import { AppRoutes } from './AppRoutes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/global.css';
 
@@ -22,12 +22,10 @@ declare global {
   }
 }
 
-// If the SSR server injected preloaded state, we could use it to
-// initialize the store. For now, the RTK Query cache will be populated
-// by the client-side hooks on mount — the SSR-rendered HTML already has
-// the content visible, so there's no flash even if the hooks re-fetch.
-// Future optimization: parse __PRELOADED_STATE__ and pass as preloadedState.
+const preloadedState = window.__PRELOADED_STATE__;
 delete window.__PRELOADED_STATE__;
+
+const store = makeStore(preloadedState);
 
 hydrateRoot(
   document.getElementById('root')!,
@@ -35,7 +33,7 @@ hydrateRoot(
     <Provider store={store}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ErrorBoundary>
-          <App />
+          <AppRoutes />
         </ErrorBoundary>
       </BrowserRouter>
     </Provider>

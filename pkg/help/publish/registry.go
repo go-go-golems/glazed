@@ -35,10 +35,15 @@ type PackageStore interface {
 
 // RegistryHandler serves the Phase 1 docs publishing registry API.
 type RegistryHandler struct {
-	Auth           PublisherAuth
-	Store          PackageStore
-	MaxUploadBytes int64
-	TempDir        string
+	Auth                    PublisherAuth
+	Store                   PackageStore
+	MaxUploadBytes          int64
+	TempDir                 string
+	MaxConcurrentUploads    int
+	RateLimitRequestsPerMin int
+	RateLimitBurst          int
+
+	publishSem chan struct{}
 }
 
 type registryError struct {
@@ -65,12 +70,45 @@ func NewRegistryHandler(auth PublisherAuth, store PackageStore) *RegistryHandler
 	return &RegistryHandler{Auth: auth, Store: store, MaxUploadBytes: defaultMaxUploadBytes}
 }
 
+func (h *RegistryHandler) acquirePublishSlot() bool {
+	if h.MaxConcurrentUploads <= 0 {
+		return true
+	}
+	if h.publishSem == nil {
+		return true
+	}
+	select {
+	case h.publishSem <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+
+func (h *RegistryHandler) releasePublishSlot() {
+	if h.MaxConcurrentUploads <= 0 || h.publishSem == nil {
+		return
+	}
+	select {
+	case <-h.publishSem:
+	default:
+	}
+}
+
 func (h *RegistryHandler) Handler() http.Handler {
+	if h.MaxConcurrentUploads > 0 && h.publishSem == nil {
+		h.publishSem = make(chan struct{}, h.MaxConcurrentUploads)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", h.handleHealth)
 	mux.HandleFunc("GET /v1/packages", h.handleListPackages)
 	mux.HandleFunc("PUT /v1/packages/{package}/versions/{version}/sqlite", h.handlePublishSQLite)
-	return mux
+
+	var handler http.Handler = mux
+	handler = withRateLimit(handler, NewSimpleRateLimiter(h.RateLimitRequestsPerMin, h.RateLimitBurst))
+	handler = withAccessLog(handler)
+	handler = withRequestID(handler)
+	return handler
 }
 
 func (h *RegistryHandler) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +129,12 @@ func (h *RegistryHandler) handleListPackages(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *RegistryHandler) handlePublishSQLite(w http.ResponseWriter, r *http.Request) {
+	if !h.acquirePublishSlot() {
+		writeRegistryError(w, http.StatusTooManyRequests, "too_many_concurrent_uploads", "too many concurrent uploads")
+		return
+	}
+	defer h.releasePublishSlot()
+
 	if h.Auth == nil {
 		writeRegistryError(w, http.StatusServiceUnavailable, "auth_not_configured", "publisher auth is not configured")
 		return

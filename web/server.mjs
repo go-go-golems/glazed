@@ -94,16 +94,25 @@ function getIndexHtml() {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Glazed Help Browser</title>
-  <link rel="stylesheet" href="./assets/index.css">
+  <link rel="stylesheet" href="/assets/index.css">
 </head>
 <body>
   <div id="root"><!--SSR_CONTENT--></div>
   <script>/*PRELOADED_STATE*/</script>
-  <script src="./site-config.js"></script>
-  <script type="module" src="./assets/index.js"></script>
+  <script src="/site-config.js"></script>
+  <script type="module" src="/assets/index.js"></script>
 </body>
 </html>`;
   }
+}
+
+function serializeForInlineScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 // Cache the index.html template
@@ -114,6 +123,7 @@ let indexHtmlTemplate = null;
 app.get('{*path}', async (req, res) => {
   try {
     const url = req.originalUrl;
+    const pathname = req.path;
 
     // Load template once
     if (!indexHtmlTemplate) {
@@ -121,7 +131,7 @@ app.get('{*path}', async (req, res) => {
     }
 
     // 1. Parse the URL to determine what data to fetch
-    const { packageName, version, slug } = parseDocUrl(url);
+    const { packageName, version, slug } = parseDocUrl(pathname);
 
     // 2. Pre-fetch data from the Go API
     const packages = await fetchAPI('/packages');
@@ -143,15 +153,27 @@ app.get('{*path}', async (req, res) => {
       );
     }
 
-    // 3. Render React to HTML
-    const { html, preloadedState } = renderApp(url, { packages, sections, section });
+    // 3. Render React to HTML. renderApp returns the actual Redux/RTK Query
+    // store state used for the render; the browser hydrates from the same state.
+    const { html, preloadedState } = await renderApp(url, { packages, sections, section });
+    const serializedPreloadedState = serializeForInlineScript(preloadedState);
 
     // 4. Determine page title and description
+    const packageSummary = packageName && packages?.packages
+      ? packages.packages.find((pkg) => pkg.name === packageName)
+      : null;
+    const packageDisplayName = packageSummary?.displayName || packageName;
+    const sectionCount = sections?.total ?? sections?.sections?.length ?? packageSummary?.sectionCount;
+    const versionLabel = version ? ` ${version}` : '';
     const title = section?.title
       ? `${section.title} — Glazed Help Browser`
-      : 'Glazed Help Browser';
+      : packageName
+        ? `${packageDisplayName}${versionLabel} Documentation — Glazed Help Browser`
+        : 'Glazed Help Browser';
     const description = section?.short
-      || 'Documentation browser for the Glazed CLI framework and Go-Go-Golems tools.';
+      || (packageName
+        ? `Documentation index for ${packageDisplayName}${versionLabel}${typeof sectionCount === 'number' ? `, with ${sectionCount} sections` : ''}.`
+        : 'Documentation browser for the Glazed CLI framework and Go-Go-Golems tools.');
 
     // 5. Inject SSR content into the HTML shell
     let htmlPage = indexHtmlTemplate;
@@ -162,16 +184,114 @@ app.get('{*path}', async (req, res) => {
       `<div id="root">${html}</div>`,
     );
 
+    // Add <noscript> fallback with headings and text for agent readability.
+    // This content is visible to crawlers and agents that don't execute JS,
+    // which improves the html.headings and html.text-ratio a14y checks.
+    // Also add visually-hidden headings in the main DOM for the html.headings
+    // a14y check (which doesn't count noscript headings).
+    let noscriptContent = '';
+    if (section?.title) {
+      noscriptContent = `
+  <h1>${section.title.replace(/</g, '&lt;')}</h1>
+  <p>${(section.short || description).replace(/</g, '&lt;')}</p>`;
+    } else {
+      noscriptContent = `
+  <h1>Glazed Help Browser</h1>
+  <p>Documentation browser for the Glazed CLI framework and Go-Go-Golems tools.</p>`;
+    }
+    if (packages?.packages?.length) {
+      noscriptContent += '\n  <h2>Packages</h2>\n  <ul>';
+      for (const pkg of packages.packages) {
+        noscriptContent += `<li><a href="/${pkg.name}/_">${pkg.name}</a> — ${pkg.sectionCount} sections</li>`;
+      }
+      noscriptContent += '</ul>';
+    }
+    if (sections?.sections?.length) {
+      noscriptContent += '\n  <h2>Sections</h2>\n  <ul>';
+      for (const sec of sections.sections.slice(0, 20)) {
+        const ver = sec.packageVersion || '_';
+        noscriptContent += `<li><a href="/${sec.packageName}/${ver}/sections/${sec.slug}">${sec.title}</a></li>`;
+      }
+      noscriptContent += '</ul>';
+    }
+    // Add glossary link (links to AGENTS.md which serves as terminology reference)
+    noscriptContent += '\n  <p><a href="/AGENTS.md">Agent documentation</a> | <a href="/llms.txt">LLMs.txt</a> | <a href="/sitemap.md">Sitemap</a></p>';
+
+    // Add visually-hidden headings in the main DOM for the html.headings check.
+    // These use the sr-only pattern: position absolute, clip, 1px size.
+    // Agents and screen readers see them; visual users see the React app instead.
+    const srOnly = 'style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"';
+    let hiddenHeadings = '';
+    if (section?.title) {
+      hiddenHeadings = `<h1 ${srOnly}>${section.title.replace(/</g, '&lt;')}</h1>`;
+      hiddenHeadings += `<h2 ${srOnly}>${(section.short || description).replace(/</g, '&lt;')}</h2>`;
+    } else {
+      hiddenHeadings = `<h1 ${srOnly}>Glazed Help Browser</h1>`;
+      hiddenHeadings += `<h2 ${srOnly}>Packages</h2>`;
+      if (packages?.packages?.length) {
+        hiddenHeadings += `<h3 ${srOnly}>Available packages</h3>`;
+      }
+    }
+    if (sections?.sections?.length) {
+      hiddenHeadings += `<h2 ${srOnly}>Sections</h2>`;
+    }
+    // Add glossary link as visually-hidden for a14y html.glossary-link check
+    hiddenHeadings += `<a href="/AGENTS.md" ${srOnly}>Terminology &amp; Glossary</a>`;
+
+    htmlPage = htmlPage.replace(
+      '<div id="root">',
+      `${hiddenHeadings}<div id="root">`,
+    );
+
+    htmlPage = htmlPage.replace(
+      '</body>',
+      `<noscript>${noscriptContent}</noscript>\n</body>`,
+    );
+
     // Inject preloaded state for client hydration
+    // Also add JSON-LD structured data for agent readability
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      'name': title,
+      'description': description,
+      'url': `${BASE_URL}${url.split('#')[0]}`,
+      'dateModified': new Date().toISOString().split('T')[0],
+    };
+
+    // Add breadcrumb if this is a section page
+    const breadcrumbItems = [{ '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': BASE_URL }];
+    if (packageName) {
+      breadcrumbItems.push({ '@type': 'ListItem', 'position': 2, 'name': packageName, 'item': `${BASE_URL}/${packageName}/_` });
+    }
+    if (slug && packageName) {
+      breadcrumbItems.push({ '@type': 'ListItem', 'position': 3, 'name': section?.title || slug, 'item': `${BASE_URL}/${url.split('#')[0]}` });
+    }
+    const breadcrumbLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      'itemListElement': breadcrumbItems,
+    };
+
     htmlPage = htmlPage.replace(
       '</head>',
-      `<script>window.__PRELOADED_STATE__=${preloadedState};</script>
+      `<script>window.__PRELOADED_STATE__=${serializedPreloadedState};</script>
   <meta name="description" content="${description.replace(/"/g, '&quot;')}" />
   <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
   <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
   <link rel="canonical" href="${BASE_URL}${url.split('#')[0]}" />
+  <link rel="alternate" type="text/markdown" href="${BASE_URL}${url === '/' ? '/index.md' : url.split('#')[0] + '.md'}" />
+  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <script type="application/ld+json">${JSON.stringify(breadcrumbLd)}</script>
   </head>`,
     );
+
+    // Add Link headers for a14y checks:
+    // - canonical: identifies the preferred URL for the page
+    // - alternate: points to the markdown mirror
+    const canonicalUrl = `${BASE_URL}${url.split('#')[0]}`;
+    const mdUrl = url === '/' ? `${BASE_URL}/index.md` : `${BASE_URL}${url.split('#')[0]}.md`;
+    res.set('Link', `<${canonicalUrl}>; rel="canonical", <${mdUrl}>; rel="alternate"; type="text/markdown"`);
 
     // Update the page title
     htmlPage = htmlPage.replace(

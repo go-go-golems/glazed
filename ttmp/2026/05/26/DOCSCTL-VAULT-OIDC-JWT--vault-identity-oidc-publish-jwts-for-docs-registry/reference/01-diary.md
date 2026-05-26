@@ -15,8 +15,14 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml
+      Note: Production docs-registry JWT auth mode migration (commit 9dbab32539483d29c7a3fd04b5f4915be414a454)
+    - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/ingress.yaml
+      Note: Public docs-registry host and TLS certificate for GitHub-hosted runner publish proof (commit 9dbab32539483d29c7a3fd04b5f4915be414a454)
     - Path: ../../../../../../../../../../code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml
-      Note: Reusable GitHub Actions workflow for Vault OIDC docsctl publishing (commit a95c5d5a08539d6b691b0c1ebb4c086132707808)
+      Note: |-
+        Reusable GitHub Actions workflow for Vault OIDC docsctl publishing (commit a95c5d5a08539d6b691b0c1ebb4c086132707808)
+        Reusable workflow verification fixes and retry loop (commits fabe3933d997bc36cdf0c1a0dd27cd747aac8c79
     - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/main.tf
       Note: |-
         Existing Terraform Vault GitHub Actions JWT role pattern
@@ -26,6 +32,8 @@ RelatedFiles:
       Note: Reusable workflow ref variable for docsctl publish JWT auth (commit 04451fe795314065d872f22c8710044682525963)
     - Path: .github/workflows/publish-docs.yml
       Note: Glazed caller workflow for publish-docsctl reusable workflow (commit 209ee884288cf086a4751044040c244d98aa61d2)
+    - Path: .github/workflows/release.yaml
+      Note: Release-tag workflow that calls docsctl publisher and produced successful v1.3.4 proof (commit 384ad100b1441f1eecbba34489262aced24e8755)
     - Path: cmd/docs-registry/main.go
       Note: |-
         Registry command boot path used to design auth-mode flags
@@ -63,6 +71,7 @@ LastUpdated: 2026-05-26T07:51:07.835369732-04:00
 WhatFor: Use this to resume or review the investigation behind DOCSCTL-VAULT-OIDC-JWT.
 WhenToUse: Read before implementing the Vault Identity Token Terraform, registry JWT auth mode, or reusable workflow changes.
 ---
+
 
 
 
@@ -1195,3 +1204,84 @@ curl --fail-with-body --silent --show-error \
   --header "X-Vault-Token: ${VAULT_TOKEN}" \
   "${VAULT_ADDR}/v1/identity/oidc/token/${VAULT_TOKEN_ROLE}"
 ```
+
+## Step 11: Prove release-tag docs publishing and migrate docs-yolo registry ingress
+
+I tested the real Glazed release path with `make tag-patch release` and moved docs publishing into the existing release workflow instead of relying on a separate `release.published` workflow. The release workflow successfully authenticated to Vault through GitHub OIDC, minted a package-scoped Vault Identity/OIDC publish JWT, and published `glazed` documentation versions to `docs-registry`.
+
+The live proof exposed two deployment/verification gaps that only appeared once the GitHub-hosted runner used the public registry endpoint. First, `docs-registry.yolo.scapegoat.dev` was reaching Traefik without a host-specific certificate, so Go rejected the default Traefik certificate. Second, the reusable workflow assumed `/api/packages` returned a top-level array with one row per package/version, while the deployed docs API returns an object with a `packages` array and per-package `versions`. I fixed both issues, reran the failed docs job, and confirmed the `v1.3.4` release workflow completed successfully.
+
+### Prompt Context
+
+**User prompt (verbatim):** "The conversation history before this point was compacted into the following summary:\n\n<summary>\n## Goal\n- Create and document a reusable GitHub CI/CD path for publishing Glazed help docs to `docs.yolo.scapegoat.dev` using `docsctl`.\n- Design and implement a secure `docs-registry` authentication evolution from static `publishers.json` package tokens to Vault-backed GitHub OIDC and Vault Identity/OIDC publish JWTs.\n- Explain the system and cryptography/OIDC details in intern-ready, textbook-style design docs.\n- Store all work in docmgr tickets and upload final bundles to reMarkable.\n- Fix a `glazed` test/build issue involving `handleMarkdownMirror`.\n- Produce and print almanach summaries about the ticket and `docs-registry`.\n- Implement phased work across Glazed, Terraform, infra-tooling, and eventually k3s/GitOps, with focused commits and detailed customer-format diary entries.\n- Adjust docs publish automation so package docs publish only from GitHub Releases and use the release tag as the docs package version.\n...\n</summary>"
+
+**Assistant interpretation:** Resume the live release proof after the compacted context, diagnose the failed docs publish job, and finish the release-tag publish path.
+
+**Inferred user intent:** Validate the production CI/CD flow end-to-end rather than only proving local code and Terraform configuration.
+
+**Commit (code):** `9dbab32539483d29c7a3fd04b5f4915be414a454` — "docs-yolo: expose JWT registry endpoint"
+
+**Commit (code):** `fabe3933d997bc36cdf0c1a0dd27cd747aac8c79` — "actions: verify docsctl package versions"
+
+**Commit (code):** `f3314084753db030ec4ad00363b7d3943de83ba0` — "actions: retry docsctl publish verification"
+
+### What I did
+- Updated `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/ingress.yaml` to route `docs-registry.yolo.scapegoat.dev` to the `docs-yolo-registry` service and request a dedicated `docs-yolo-registry-tls` certificate.
+- Updated `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml` to run image `ghcr.io/go-go-golems/glazed:v1.3.3` and start `docs-registry` with `--auth-mode vault-oidc-jwt`, `--jwt-issuer https://vault.yolo.scapegoat.dev/v1/identity/oidc`, and `--jwt-client-id docs-registry`.
+- Accidentally applied the kustomization once to the `default` namespace, then deleted the stray default-namespace `docs-yolo` deployment, services, ingress, service account, and PVC.
+- Applied the kustomization to namespace `docs-yolo`, waited for rollout, and verified certificate issuance plus `GET https://docs-registry.yolo.scapegoat.dev/healthz` with strict TLS validation.
+- Fixed `/home/manuel/code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml` verification to understand both API shapes: a direct package array and the deployed `{ packages: [...] }` object with `versions` arrays.
+- Added retry logic to the reusable workflow verification because the docs browser reloads package files on an interval and may not expose a just-published version immediately.
+- Reran the failed `v1.3.3` job enough to prove publish success, then created release tag `v1.3.4` with `make tag-patch release` and reran its failed publish job after the verification retry fix.
+
+### Why
+- GitHub-hosted runners must reach `docs-registry` over a public HTTPS endpoint with a certificate whose SAN matches `docs-registry.yolo.scapegoat.dev`; the default Traefik certificate is intentionally rejected by Go TLS verification.
+- The registry had to be migrated from static publisher catalog mode before a Vault-minted JWT could be accepted in production.
+- The reusable workflow should verify the actual deployed API contract and tolerate the browser sidecar reload delay so a successful publish is not marked failed by a race.
+
+### What worked
+- Vault GitHub OIDC login succeeded in the release workflow.
+- Vault minted a publish JWT with non-sensitive claims including `iss`, `aud`, `token_use`, `package`, `repository`, `repository_id`, `workflow_ref`, `job_workflow_ref`, and `run_id`.
+- `docsctl publish` succeeded against `https://docs-registry.yolo.scapegoat.dev` after the k3s ingress and registry auth-mode migration.
+- `curl -v https://docs-registry.yolo.scapegoat.dev/healthz` verified the Let's Encrypt certificate for `docs-registry.yolo.scapegoat.dev` and returned `{"ok":true}`.
+- Release run `26473600516` for `v1.3.4` completed successfully after rerunning the failed publish job.
+
+### What didn't work
+- The original `v1.3.3` publish job failed with:
+  - `tls: failed to verify certificate: x509: certificate is valid for 0b396939a3d416d36559137df5d4c43c.c2f8d224a3626ef940df7a0249b2b1fd.traefik.default, not docs-registry.yolo.scapegoat.dev`
+- After TLS and JWT mode were fixed, `v1.3.3` publish succeeded but verification failed with:
+  - `jq: error (at <stdin>:1): Cannot index array with string "name"`
+- The first `v1.3.4` run used the corrected API-shape jq expression and published successfully, but verification still failed because the docs API had not reloaded the new package version yet.
+- I accidentally ran `kubectl apply -k gitops/kustomize/docs-yolo` without `-n docs-yolo`, creating temporary default-namespace docs-yolo resources; I removed them immediately.
+
+### What I learned
+- A rerun of a job that calls a reusable workflow may continue to use the reusable workflow content resolved for that run; a new release/tag is cleaner when testing reusable workflow changes.
+- The docs browser API shape is `{ packages: [{ name, versions, latestVersion, ... }], defaultPackage, defaultVersion }`, not one flat row per package/version.
+- Successful registry upload can precede API visibility because the browser sidecar reloads the package directory asynchronously.
+
+### What was tricky to build
+- The TLS failure looked like a registry problem in the publish step, but the root cause was Ingress host/TLS configuration: Traefik served its default certificate because no `docs-registry.yolo.scapegoat.dev` TLS host was configured.
+- The verification failure was not an auth or upload failure. The upload log said `OK: published`, and the real bug was the verifier's jq expression assuming the wrong JSON shape.
+- The final verification race came from two separate processes sharing a PVC: `docs-registry` writes the SQLite file immediately, while `docs-browser` discovers it on its reload interval.
+
+### What warrants a second pair of eyes
+- The public registry ingress should be reviewed for rate limits, body-size limits, logging, and overwrite/storage policy before broader onboarding.
+- The accidental default-namespace apply was cleaned up, but a reviewer should confirm no default-namespace docs-yolo resources remain.
+- The registry now runs without the static publisher catalog mount; rollback instructions should be documented before removing old secrets/resources.
+
+### What should be done in the future
+- Add explicit public ingress hardening for `docs-registry.yolo.scapegoat.dev`.
+- Add negative live proof jobs or manual commands for wrong package and wrong repository/workflow cases.
+- Onboard `pinocchio`, `remarquee`, and `sqleton` only after the hardening and rollback notes are complete.
+
+### Code review instructions
+- Start with `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/ingress.yaml` and verify the new host, service backend, and TLS secret.
+- Review `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml` for `docs-registry` args and image tag.
+- Review `/home/manuel/code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml` for the verification jq expression and retry loop.
+- Validate with `curl -v https://docs-registry.yolo.scapegoat.dev/healthz` and `curl -sS https://docs.yolo.scapegoat.dev/api/packages | jq '.packages[] | select(.name=="glazed") | .versions'`.
+
+### Technical details
+- Successful release proof run: `https://github.com/go-go-golems/glazed/actions/runs/26473600516`
+- Successful docs publish job after rerun: `Publish docs / publish-docs`, job ID `77954577190`.
+- Published versions observed in docs API: `v1.3.3` and `v1.3.4`.
+- Production registry health check: `GET https://docs-registry.yolo.scapegoat.dev/healthz` returned `{"ok":true}` with a certificate whose subject/SAN matches `docs-registry.yolo.scapegoat.dev`.
