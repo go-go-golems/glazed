@@ -13,8 +13,12 @@ Intent: long-term
 Owners:
     - manuel
 RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml
+      Note: Production rollout to sha-981a6db runtime and SSR images
     - Path: ttmp/2026/05/26/DOCSCTL-REACT-SSR-HTML--render-full-react-documentation-html-in-ssr-sidecar/sources/01-baseline-ssr-html-evidence.md
       Note: Baseline curl evidence before data-backed SSR implementation
+    - Path: ttmp/2026/05/26/DOCSCTL-REACT-SSR-HTML--render-full-react-documentation-html-in-ssr-sidecar/sources/02-production-ssr-html-evidence.md
+      Note: Final production curl
     - Path: web/server.mjs
       Note: Current sidecar fetch/serialization logic to connect to Redux state
     - Path: web/src/AppRoutes.tsx
@@ -33,6 +37,7 @@ LastUpdated: 2026-05-26T18:35:00-04:00
 WhatFor: Use this diary to resume the React SSR HTML work and understand what was planned before implementation.
 WhenToUse: Read before editing the React SSR entrypoints, Redux store setup, Node sidecar serialization, or production rollout manifests.
 ---
+
 
 
 
@@ -263,4 +268,167 @@ pnpm build:ssr
 cd /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed
 go test ./pkg/help/server ./pkg/web ./cmd/docs-registry ./cmd/docsctl
 docker build --target ssr -t glazed-ssr:react-html .
+```
+
+## Step 3: Roll out the React SSR HTML build to production
+
+I committed the local React SSR implementation, pushed it to Glazed `main`, waited for the container workflow to publish the runtime and SSR sidecar images, then updated the k3s `docs-yolo` deployment to use the new immutable image tags. After forcing an Argo CD refresh, the deployment rolled out successfully with all three containers ready.
+
+Production now satisfies the curl-level acceptance criteria that motivated this ticket. Package pages contain the visible documentation index and section titles in the initial HTML, and direct section pages contain the visible article title and body text before browser JavaScript executes.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue implementing task by task, commit at checkpoints, and record the rollout and validation details in the diary.
+
+**Inferred user intent:** Complete the production deployment and evidence capture, not just local implementation.
+
+**Commit (code):** `981a6db` — "docs-yolo: render React SSR from preloaded state"
+
+**Commit (GitOps):** `2a27cdb` — "docs-yolo: deploy React SSR HTML rendering"
+
+### What I did
+- Committed the Glazed implementation checkpoint:
+  - `981a6db` — `docs-yolo: render React SSR from preloaded state`.
+- Pushed the commit to `go-go-golems/glazed@main`.
+- Watched the container workflow:
+  - `https://github.com/go-go-golems/glazed/actions/runs/26479116597`
+  - result: success.
+- Updated k3s docs-yolo image tags from `sha-a6d688b` to `sha-981a6db` in:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml`.
+- Rendered manifests with `kubectl kustomize gitops/kustomize/docs-yolo` and confirmed the new image tags and `docs-ssr` container appeared.
+- Committed and pushed the k3s GitOps change:
+  - `2a27cdb` — `docs-yolo: deploy React SSR HTML rendering`.
+- Forced Argo CD to refresh:
+  - `kubectl -n argocd annotate application docs-yolo argocd.argoproj.io/refresh=hard --overwrite`.
+- Watched rollout:
+  - `kubectl -n docs-yolo rollout status deploy/docs-yolo --timeout=300s`.
+- Captured production evidence in:
+  - `sources/02-production-ssr-html-evidence.md`.
+- Validated with curl and Playwright.
+
+### Why
+- The local implementation needed production proof because this ticket's acceptance criteria are about public initial HTML, not only local unit tests.
+- The deployment uses immutable `sha-*` image tags, so k3s needed an explicit GitOps image update after GHCR images were published.
+- Argo CD had previously reconciled from a cached revision during the SSR sidecar work, so forcing a hard refresh is the known safe rollout sequence.
+
+### What worked
+- Glazed container workflow succeeded:
+  - runtime image: `ghcr.io/go-go-golems/glazed:sha-981a6db`;
+  - SSR image: `ghcr.io/go-go-golems/glazed-ssr:sha-981a6db`.
+- k3s rollout succeeded with final images:
+  - `docs-browser => ghcr.io/go-go-golems/glazed:sha-981a6db`;
+  - `docs-registry => ghcr.io/go-go-golems/glazed:sha-981a6db`;
+  - `docs-ssr => ghcr.io/go-go-golems/glazed-ssr:sha-981a6db`.
+- Production curl checks passed:
+  - `/glazed/v1.2.15` contains `Documentation Index`;
+  - `/glazed/v1.2.15` contains `Exposing a simple SQL table using glaze`;
+  - `/glazed/v1.2.15/sections/exposing-a-simple-sql-table` contains `TODO(manuel, 2022-12-10)`;
+  - production HTML contains `window.__PRELOADED_STATE__` and RTK Query state markers such as `queries`.
+- Static/API regression checks passed:
+  - root JS asset returned `content-type: text/javascript`;
+  - nested JS asset returned `content-type: text/javascript`;
+  - CSS asset returned `content-type: text/css`;
+  - section markdown mirror returned `content-type: text/markdown`;
+  - `/api/health` returned `{"ok":true,"sections":333}`;
+  - registry `/healthz` returned `{"ok":true}`.
+- Playwright direct navigation to the section page hydrated successfully with visible article content.
+
+### What didn't work
+- There were no CI/container workflow failures in this rollout.
+- The browser console still reports the known unrelated Chicago font 404 from `cdn.jsdelivr.net`. There were no module MIME errors and no hydration mismatch warnings observed through Playwright.
+
+### What I learned
+- The data-backed SSR implementation survives the production sidecar/container boundary; the same checks that passed locally pass through the public Go proxy and Node sidecar.
+- The initial HTML now contains visible React-rendered content, not only hidden/noscript helper text and parallel JSON.
+- The existing static asset normalization remains important even after full React SSR because hydration still needs the JS and CSS assets.
+
+### What was tricky to build
+- The rollout had to wait for the container workflow because the k3s manifests use immutable image tags. Updating k3s before GHCR had the tag would risk image pull failures.
+- The validation needed to distinguish content that appears in visible React markup from content that appears in metadata or preloaded JSON. The final evidence uses multiple checks: package index text, known section titles, known article body text, and RTK Query state markers.
+
+### What warrants a second pair of eyes
+- Review whether package/version page metadata should now be made more specific. The visible HTML is fixed, but `<title>` may still be generic for package landing pages.
+- Review the known external font 404 and decide whether to vendor the font, change the URL, or remove the dependency.
+- Review the public registry hardening tasks, which remain outside this SSR ticket.
+
+### What should be done in the future
+- Run `docmgr doctor` and re-upload the final ticket bundle to reMarkable.
+- Consider adding production-like Playwright SSR acceptance tests to CI.
+- Consider eliminating the `useLayoutEffect` SSR warnings observed during local tests.
+
+### Code review instructions
+- For the Glazed code commit, start at `web/src/entry-server.tsx`, then `web/src/store.ts`, `web/src/entry-client.tsx`, and `web/server.mjs`.
+- For the production rollout, review `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml` commit `2a27cdb`.
+- Validate production with:
+
+```bash
+curl -sS https://docs.yolo.scapegoat.dev/glazed/v1.2.15 | grep 'Documentation Index'
+curl -sS https://docs.yolo.scapegoat.dev/glazed/v1.2.15/sections/exposing-a-simple-sql-table | grep 'TODO(manuel, 2022-12-10)'
+```
+
+### Technical details
+- Successful container workflow:
+  - `https://github.com/go-go-golems/glazed/actions/runs/26479116597`
+- Production evidence file:
+  - `ttmp/2026/05/26/DOCSCTL-REACT-SSR-HTML--render-full-react-documentation-html-in-ssr-sidecar/sources/02-production-ssr-html-evidence.md`
+
+## Step 4: Final ticket validation and reMarkable delivery
+
+I completed the ticket bookkeeping after production validation. The evidence source files needed docmgr frontmatter, so I added frontmatter to both the baseline and production evidence documents, reran `docmgr doctor`, and uploaded the completed bundle to reMarkable with `--force`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Keep documentation and delivery artifacts current as implementation finishes.
+
+**Inferred user intent:** Leave the ticket in a complete, reviewable state with the final evidence available on reMarkable.
+
+### What I did
+- Added YAML frontmatter to:
+  - `sources/01-baseline-ssr-html-evidence.md`
+  - `sources/02-production-ssr-html-evidence.md`
+- Ran `docmgr doctor --ticket DOCSCTL-REACT-SSR-HTML --stale-after 30` successfully.
+- Re-uploaded the completed bundle to reMarkable:
+  - `DOCSCTL React SSR HTML Guide.pdf`
+  - remote path: `/ai/2026/05/26/DOCSCTL-REACT-SSR-HTML`
+- Marked final documentation/delivery tasks complete.
+
+### Why
+- `docmgr doctor` treats Markdown files under the ticket as managed docs and requires valid frontmatter.
+- The reMarkable bundle should include the final implementation diary, task status, changelog, and validation evidence, not only the initial design guide.
+
+### What worked
+- `docmgr doctor` passed after adding frontmatter.
+- `remarquee upload bundle ... --force --non-interactive` succeeded with:
+  - `OK: uploaded DOCSCTL React SSR HTML Guide.pdf -> /ai/2026/05/26/DOCSCTL-REACT-SSR-HTML`
+
+### What didn't work
+- The first `docmgr doctor` run failed because the two evidence files were plain Markdown without frontmatter:
+  - `frontmatter delimiters '---' not found`
+- Adding standard ticket frontmatter fixed the issue.
+
+### What I learned
+- Even source/evidence Markdown files in ticket workspaces should include frontmatter if they are meant to be committed as managed ticket documents.
+
+### What was tricky to build
+- N/A; this was final documentation hygiene rather than code implementation.
+
+### What warrants a second pair of eyes
+- Review whether the evidence files should remain `DocType: reference` or use a dedicated source/evidence doc type if the vocabulary supports it in the future.
+
+### What should be done in the future
+- N/A for this ticket.
+
+### Code review instructions
+- Confirm the final ticket docs pass `docmgr doctor`.
+- Confirm the production evidence source includes the final image tags and curl checks.
+
+### Technical details
+
+```bash
+docmgr doctor --ticket DOCSCTL-REACT-SSR-HTML --stale-after 30
+remarquee upload bundle ... --name "DOCSCTL React SSR HTML Guide" --remote-dir "/ai/2026/05/26/DOCSCTL-REACT-SSR-HTML" --toc-depth 2 --force --non-interactive
 ```

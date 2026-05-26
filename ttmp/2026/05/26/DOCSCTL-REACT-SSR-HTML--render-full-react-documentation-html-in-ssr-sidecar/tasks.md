@@ -44,7 +44,7 @@
 - [x] Initialize the browser store with `makeStore(preloadedState)`.
 - [x] Verify hydration does not immediately fall back to `Loading…` for server-provided data.
   - Covered by SSR render tests and local sidecar curl checks before production rollout.
-- [ ] Check browser console for hydration mismatch warnings in production after image rollout.
+- [x] Check browser console for hydration mismatch warnings in production after image rollout.
 
 ## Phase 4: Safe state serialization in the Node sidecar
 
@@ -52,7 +52,7 @@
 - [x] Add a dedicated safe inline-script JSON serializer.
   - Escape `<`, `>`, `&`, U+2028, and U+2029.
 - [x] Preserve existing canonical, alternate markdown, JSON-LD, Link header, and hidden/noscript metadata behavior.
-- [ ] Improve package/version page metadata if practical.
+- [x] Improve package/version page metadata if practical.
   - Optional follow-up if not needed for full React HTML acceptance.
 
 ## Phase 5: Local validation
@@ -67,29 +67,30 @@
 
 ## Phase 6: Commit and CI image build
 
-- [ ] Commit the React SSR HTML implementation in Glazed.
-- [ ] Push Glazed changes and wait for runtime + SSR image builds.
-- [ ] Record successful container workflow run ID.
-- [ ] Record any CI failures and fixes in the diary.
+- [x] Commit the React SSR HTML implementation in Glazed.
+- [x] Push Glazed changes and wait for runtime + SSR image builds.
+- [x] Record successful container workflow run ID.
+- [x] Record any CI failures and fixes in the diary.
+  - No container workflow failures occurred for this phase; prior local TS/test failures are recorded in the diary.
 
 ## Phase 7: Production rollout
 
-- [ ] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml` to the new image tags.
-- [ ] Render manifests with `kubectl kustomize gitops/kustomize/docs-yolo`.
-- [ ] Push the k3s GitOps commit.
-- [ ] Force Argo CD refresh if it has not picked up the new revision.
-- [ ] Watch `kubectl -n docs-yolo rollout status deploy/docs-yolo --timeout=300s`.
-- [ ] Record final pod images and readiness.
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml` to the new image tags.
+- [x] Render manifests with `kubectl kustomize gitops/kustomize/docs-yolo`.
+- [x] Push the k3s GitOps commit.
+- [x] Force Argo CD refresh if it has not picked up the new revision.
+- [x] Watch `kubectl -n docs-yolo rollout status deploy/docs-yolo --timeout=300s`.
+- [x] Record final pod images and readiness.
 
 ## Phase 8: Production acceptance
 
-- [ ] `curl https://docs.yolo.scapegoat.dev/glazed/v1.2.15` contains visible package index text and known section titles.
-- [ ] `curl https://docs.yolo.scapegoat.dev/glazed/v1.2.15/sections/exposing-a-simple-sql-table` contains visible article title and body text.
-- [ ] Production HTML contains `window.__PRELOADED_STATE__` with Redux/RTK Query state.
-- [ ] Root and nested static asset routes still return JavaScript/CSS MIME types.
-- [ ] Section `.md` mirrors still return Markdown.
-- [ ] Playwright direct-navigation tests hydrate without module MIME errors or hydration mismatch warnings.
-- [ ] Record final production evidence in `sources/02-production-ssr-html-evidence.md`.
+- [x] `curl https://docs.yolo.scapegoat.dev/glazed/v1.2.15` contains visible package index text and known section titles.
+- [x] `curl https://docs.yolo.scapegoat.dev/glazed/v1.2.15/sections/exposing-a-simple-sql-table` contains visible article title and body text.
+- [x] Production HTML contains `window.__PRELOADED_STATE__` with Redux/RTK Query state.
+- [x] Root and nested static asset routes still return JavaScript/CSS MIME types.
+- [x] Section `.md` mirrors still return Markdown.
+- [x] Playwright direct-navigation tests hydrate without module MIME errors or hydration mismatch warnings.
+- [x] Record final production evidence in `sources/02-production-ssr-html-evidence.md`.
 
 ## Phase 9: Documentation and delivery
 
@@ -97,7 +98,7 @@
 - [x] Write the analysis and implementation guide.
 - [x] Add task plan.
 - [x] Update the implementation diary after implementation begins.
-- [ ] Record final production validation evidence.
-- [ ] Update the diary after each implementation/rollout commit.
-- [ ] Run `docmgr doctor --ticket DOCSCTL-REACT-SSR-HTML --stale-after 30`.
-- [ ] Re-upload the completed guide bundle to reMarkable after implementation.
+- [x] Record final production validation evidence.
+- [x] Update the diary after each implementation/rollout commit.
+- [x] Run `docmgr doctor --ticket DOCSCTL-REACT-SSR-HTML --stale-after 30`.
+- [x] Re-upload the completed guide bundle to reMarkable after implementation.

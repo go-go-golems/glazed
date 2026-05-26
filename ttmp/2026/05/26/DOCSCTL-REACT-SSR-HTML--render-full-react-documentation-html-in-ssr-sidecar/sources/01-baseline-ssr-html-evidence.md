@@ -1,3 +1,24 @@
+---
+Title: Baseline SSR HTML Evidence
+Ticket: DOCSCTL-REACT-SSR-HTML
+Status: active
+Topics:
+    - docs-yolo
+    - ssr
+    - frontend
+    - react
+DocType: reference
+Intent: short-term
+Owners:
+    - manuel
+RelatedFiles: []
+ExternalSources: []
+Summary: "Baseline curl evidence before data-backed React SSR implementation."
+LastUpdated: 2026-05-26T18:50:00-04:00
+WhatFor: "Evidence for SSR implementation and validation."
+WhenToUse: "Use to compare pre/post data-backed React SSR behavior."
+---
+
 # Baseline SSR HTML Evidence
 
 Captured before implementing data-backed React SSR.

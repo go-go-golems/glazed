@@ -27,3 +27,14 @@ Implemented local data-backed React SSR: shared routes, request-scoped store fac
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.test.tsx — SSR package and section HTML regression tests
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.tsx — Request-scoped SSR store and RTK Query cache preloading
 
+
+## 2026-05-26
+
+Rolled data-backed React SSR to production with Glazed sha-981a6db and k3s commit 2a27cdb; verified curl-level package index/article HTML, preloaded RTK Query state, static asset MIME types, markdown mirrors, API health, registry health, and Playwright hydration.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production image rollout to sha-981a6db (commit 2a27cdb)
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REACT-SSR-HTML--render-full-react-documentation-html-in-ssr-sidecar/sources/02-production-ssr-html-evidence.md — Production acceptance evidence
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/web/src/entry-server.tsx — Production SSR data-backed render implementation (commit 981a6db)
+
