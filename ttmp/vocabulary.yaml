@@ -143,6 +143,8 @@ topics:
       description: OpenID Connect identity and token-based authentication
     - slug: ssr
       description: Server-side rendering of frontend routes and HTML
+    - slug: backend
+      description: Backend services, APIs, persistence, and operational server-side implementation details
 docTypes:
     - slug: index
       description: Ticket index
