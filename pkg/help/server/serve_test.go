@@ -27,6 +27,9 @@ func TestNewServeHandler_NormalizesNestedStaticAssetPaths(t *testing.T) {
 		case "/site-config.js":
 			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 			_, _ = w.Write([]byte("window.__GLAZE_SITE_CONFIG__ = {}"))
+		case "/fonts/ChicagoFLF.woff2":
+			w.Header().Set("Content-Type", "font/woff2")
+			_, _ = w.Write([]byte("font-bytes"))
 		default:
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write([]byte("<html>spa shell</html>"))
@@ -41,6 +44,8 @@ func TestNewServeHandler_NormalizesNestedStaticAssetPaths(t *testing.T) {
 	}{
 		{name: "root asset", path: "/assets/main.js", want: "console.log('ok')"},
 		{name: "nested asset", path: "/glazed/v1.3.4/assets/main.js", want: "console.log('ok')"},
+		{name: "root font", path: "/fonts/ChicagoFLF.woff2", want: "font-bytes"},
+		{name: "nested font", path: "/glazed/v1.3.4/fonts/ChicagoFLF.woff2", want: "font-bytes"},
 		{name: "nested site config", path: "/glazed/v1.3.4/site-config.js", want: "window.__GLAZE_SITE_CONFIG__"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

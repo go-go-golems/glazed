@@ -537,6 +537,14 @@ func normalizeStaticAssetPath(path string) (string, bool) {
 		return path[idx:], true
 	}
 
+	// Vendored public assets copied by Vite from web/public, such as fonts.
+	if strings.HasPrefix(path, "/fonts/") {
+		return path, true
+	}
+	if idx := strings.LastIndex(path, "/fonts/"); idx >= 0 {
+		return path[idx:], true
+	}
+
 	// Runtime config and other root-level static files. Also normalize nested
 	// forms such as /glazed/v1.3.4/site-config.js.
 	for _, name := range []string{"/site-config.js", "/favicon.ico", "/favicon.svg"} {
