@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	stdpath "path"
@@ -44,6 +46,7 @@ type ServeSettings struct {
 	FromGlazedCmd  []string `glazed:"from-glazed-cmd"`
 	WithEmbedded   bool     `glazed:"with-embedded"`
 	ReloadInterval string   `glazed:"reload-interval"`
+	SSRURL         string   `glazed:"ssr-url"`
 }
 
 // NewServeCommand creates a BareCommand that starts the help browser HTTP server.
@@ -82,6 +85,10 @@ The server listens on the address specified by --address (default :8088) and
 serves:
   GET /api/*   — REST API for section listing and retrieval
   GET /*       — React SPA (serves index.html for all other paths, if configured)
+
+When --ssr-url is set, page requests are reverse-proxied to a Node.js SSR
+sidecar for server-side rendering. If the sidecar is unavailable, the server
+falls back to serving the SPA shell (index.html) directly.
 
 The resulting handler is also mountable under prefixes such as /help or /docs
 using MountPrefix or NewMountedHandler.`),
@@ -122,6 +129,11 @@ using MountPrefix or NewMountedHandler.`),
 					"reload-interval",
 					fields.TypeString,
 					fields.WithHelp("Periodically reload external sources, for example 30s or 5m; disabled by default"),
+				),
+				fields.New(
+					"ssr-url",
+					fields.TypeString,
+					fields.WithHelp("URL of the SSR sidecar (e.g. http://localhost:8089). When set, page requests are reverse-proxied to the SSR server for server-side rendering. When empty, the SPA fallback serves index.html directly."),
 				),
 			),
 			cmds.WithArguments(
@@ -173,7 +185,12 @@ func (sc *ServeCommand) Run(ctx context.Context, parsedValues *values.Values) er
 	log.Info().Int64("sections", count).Msg("Loaded help sections")
 
 	deps := HandlerDeps{Store: hs.Store}
-	handler := NewServeHandler(deps, sc.spaHandler)
+	opts := []ServeOption{}
+	if s.SSRURL != "" {
+		opts = append(opts, WithSSRURL(s.SSRURL))
+		log.Info().Str("ssr_url", s.SSRURL).Msg("SSR sidecar proxy enabled")
+	}
+	handler := NewServeHandler(deps, sc.spaHandler, opts...)
 	return serveHTTP(s.Address, handler)
 }
 
@@ -282,6 +299,22 @@ func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
 	return loaders
 }
 
+// ServeOption configures the behavior of NewServeHandler.
+type ServeOption func(*serveHandlerConfig)
+
+type serveHandlerConfig struct {
+	ssrURL string
+}
+
+// WithSSRURL configures the serve handler to reverse-proxy page requests
+// to a Node.js SSR sidecar at the given URL. When the sidecar is unavailable
+// or returns an error, the handler falls back to the SPA (index.html).
+func WithSSRURL(url string) ServeOption {
+	return func(c *serveHandlerConfig) {
+		c.ssrURL = url
+	}
+}
+
 // NewServeHandler composes the API handler and optional SPA handler for use at
 // the server root (/). The returned handler already includes CORS because
 // NewHandler applies it internally.
@@ -295,7 +328,16 @@ func buildServeLoaders(s *ServeSettings) []helploader.ContentLoader {
 // that depend on glazed as a library should use API-only mode, since the full
 // SPA assets are only available when building from the glazed repository.
 // Use `glaze serve --from-glazed-cmd` to browse help from multiple tools.
-func NewServeHandler(deps HandlerDeps, spaHandler http.Handler) http.Handler {
+//
+// When opts includes WithSSRURL, page requests (non-API, non-static-asset)
+// are reverse-proxied to the SSR sidecar. If the sidecar is unavailable,
+// the handler falls back to the SPA.
+func NewServeHandler(deps HandlerDeps, spaHandler http.Handler, opts ...ServeOption) http.Handler {
+	cfg := &serveHandlerConfig{}
+	for _, o := range opts {
+		o(cfg)
+	}
+
 	// Auto-assign a default package name to sections loaded without one.
 	// Sections loaded via LoadSectionsFromFS get package_name = "", but the
 	// SPA's package filter queries by name. Without this, the SPA shows
@@ -312,12 +354,26 @@ func NewServeHandler(deps HandlerDeps, spaHandler http.Handler) http.Handler {
 		return apiHandler
 	}
 
+	// Build the SSR reverse proxy if configured.
+	var ssrProxy http.Handler
+	if cfg.ssrURL != "" {
+		ssrProxy = newSSRProxy(cfg.ssrURL, spaHandler)
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cleanPath := stdpath.Clean("/" + r.URL.Path)
 		if cleanPath == "/api" || strings.HasPrefix(cleanPath, "/api/") {
 			apiHandler.ServeHTTP(w, r)
 			return
 		}
+
+		// If SSR proxy is configured, forward page requests to the sidecar.
+		// The proxy internally falls back to the SPA handler on SSR errors.
+		if ssrProxy != nil {
+			ssrProxy.ServeHTTP(w, r)
+			return
+		}
+
 		spaHandler.ServeHTTP(w, r)
 	})
 }
@@ -406,4 +462,72 @@ func normalizePrefix(prefix string) string {
 		return "/"
 	}
 	return strings.TrimSuffix(prefix, "/")
+}
+
+// ---------------------------------------------------------------------------
+// SSR reverse proxy
+// ---------------------------------------------------------------------------
+
+// newSSRProxy returns an http.Handler that reverse-proxies requests to the
+// SSR sidecar. If the sidecar returns an error (connection refused, timeout,
+// 5xx), the handler falls back to the spaHandler so the site stays functional
+// even when the sidecar is unavailable.
+func newSSRProxy(ssrURL string, spaHandler http.Handler) http.Handler {
+	// Parse the SSR URL once at setup time.
+	ssrEndpoint, err := url.Parse(ssrURL)
+	if err != nil {
+		log.Error().Err(err).Str("ssr_url", ssrURL).Msg("Invalid SSR URL, falling back to SPA")
+		return spaHandler
+	}
+
+	proxy := &http.Client{Timeout: 10 * time.Second}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Build the proxy request to the SSR sidecar.
+		proxyURL := ssrEndpoint.ResolveReference(&url.URL{Path: r.URL.Path, RawQuery: r.URL.RawQuery})
+
+		proxyReq, err := http.NewRequestWithContext(r.Context(), r.Method, proxyURL.String(), nil)
+		if err != nil {
+			log.Warn().Err(err).Msg("SSR proxy: failed to create request, falling back to SPA")
+			spaHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// Forward useful headers.
+		for _, h := range []string{"Accept", "Accept-Language", "User-Agent", "Cookie"} {
+			if v := r.Header.Get(h); v != "" {
+				proxyReq.Header.Set(h, v)
+			}
+		}
+
+		// Send the request to the SSR sidecar.
+		resp, err := proxy.Do(proxyReq) // #nosec G704 -- ssrURL comes from --ssr-url CLI flag (admin-controlled), not user input.
+		if err != nil {
+			log.Debug().Err(err).Msg("SSR proxy: sidecar unavailable, falling back to SPA")
+			spaHandler.ServeHTTP(w, r)
+			return
+		}
+		defer resp.Body.Close()
+
+		// If the SSR server returns a server error, fall back to SPA.
+		if resp.StatusCode >= 500 {
+			log.Warn().Int("status", resp.StatusCode).Msg("SSR proxy: server error, falling back to SPA")
+			spaHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// Copy response headers from the SSR server.
+		for k, vs := range resp.Header {
+			for _, v := range vs {
+				w.Header().Add(k, v)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+
+		// Stream the response body.
+		if _, err := io.Copy(w, resp.Body); err != nil {
+			log.Debug().Err(err).Msg("SSR proxy: error streaming response")
+		}
+	})
 }

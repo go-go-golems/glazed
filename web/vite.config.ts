@@ -23,6 +23,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: './index.html',
+      },
+    },
+  },
+
+  // SSR build configuration.
+  // Produces dist/ssr/entry-server.js — a CJS/ESM module that the
+  // Node.js sidecar (server.mjs) imports to render React on the server.
+  ssr: {
+    noExternal: ['react-dom', 'react-router-dom', '@reduxjs/toolkit', 'react-redux'],
   },
 
   test: {
