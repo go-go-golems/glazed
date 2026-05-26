@@ -1,5 +1,16 @@
 # syntax=docker/dockerfile:1
 
+FROM node:22-bookworm-slim AS web-builder
+ENV CI=true \
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+WORKDIR /src/web
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN corepack enable \
+  && corepack prepare pnpm@10.15.0 --activate \
+  && pnpm install --frozen-lockfile --reporter=append-only
+COPY web/ ./
+RUN pnpm build:all
+
 FROM golang:1.25-bookworm AS builder
 ENV CI=true \
   COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -20,7 +31,7 @@ RUN apt-get update \
   && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docsctl ./cmd/docsctl \
   && CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/docs-registry ./cmd/docs-registry
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/* \
@@ -32,3 +43,18 @@ USER nonroot:nogroup
 EXPOSE 8088
 ENTRYPOINT ["/usr/local/bin/glaze"]
 CMD ["serve", "--address", ":8088"]
+
+FROM node:22-bookworm-slim AS ssr
+ENV NODE_ENV=production \
+  SSR_PORT=8089 \
+  COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+WORKDIR /app
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN corepack enable \
+  && corepack prepare pnpm@10.15.0 --activate \
+  && pnpm install --prod --frozen-lockfile --reporter=append-only \
+  && pnpm store prune
+COPY web/server.mjs ./server.mjs
+COPY --from=web-builder /src/web/dist ./dist
+EXPOSE 8089
+CMD ["node", "server.mjs"]

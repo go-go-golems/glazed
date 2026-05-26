@@ -4,7 +4,11 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  // Production docs.yolo.scapegoat.dev is served from the domain root.
+  // Use absolute asset URLs so direct BrowserRouter deep links such as
+  // /glazed/v1.3.4/sections/foo load /assets/*.js instead of resolving
+  // ./assets relative to the nested route.
+  base: '/',
 
   // API proxy: during development, forward /api requests to the Go server.
   // In production the SPA is embedded in the Go binary and served same-origin.

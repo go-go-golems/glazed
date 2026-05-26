@@ -17,6 +17,119 @@ import (
 	"github.com/go-go-golems/glazed/pkg/web"
 )
 
+func TestNewServeHandler_NormalizesNestedStaticAssetPaths(t *testing.T) {
+	st, _ := setupTestServer(t)
+	spaHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/assets/main.js":
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+			_, _ = w.Write([]byte("console.log('ok')"))
+		case "/site-config.js":
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+			_, _ = w.Write([]byte("window.__GLAZE_SITE_CONFIG__ = {}"))
+		default:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte("<html>spa shell</html>"))
+		}
+	})
+	h := NewServeHandler(HandlerDeps{Store: st}, spaHandler)
+
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "root asset", path: "/assets/main.js", want: "console.log('ok')"},
+		{name: "nested asset", path: "/glazed/v1.3.4/assets/main.js", want: "console.log('ok')"},
+		{name: "nested site config", path: "/glazed/v1.3.4/site-config.js", want: "window.__GLAZE_SITE_CONFIG__"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rw := httptest.NewRecorder()
+			h.ServeHTTP(rw, req)
+
+			if rw.Code != http.StatusOK {
+				t.Fatalf("expected status 200, got %d", rw.Code)
+			}
+			if got := rw.Body.String(); !strings.Contains(got, tc.want) {
+				t.Fatalf("expected %q in body, got %q", tc.want, got)
+			}
+			if strings.Contains(rw.Body.String(), "spa shell") {
+				t.Fatalf("expected static asset, got SPA shell: %q", rw.Body.String())
+			}
+		})
+	}
+}
+
+func TestNewServeHandler_RoutesPagesToSSRButNotAPIOrAssets(t *testing.T) {
+	st, _ := setupTestServer(t)
+	spaHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("spa fallback"))
+	})
+
+	var ssrPaths []string
+	ssr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ssrPaths = append(ssrPaths, r.URL.String())
+		_, _ = w.Write([]byte("ssr page"))
+	}))
+	defer ssr.Close()
+
+	h := NewServeHandler(HandlerDeps{Store: st}, spaHandler, WithSSRURL(ssr.URL))
+
+	pageReq := httptest.NewRequest(http.MethodGet, "/glazed/v1.3.4/sections/foo", nil)
+	pageRW := httptest.NewRecorder()
+	h.ServeHTTP(pageRW, pageReq)
+	if !strings.Contains(pageRW.Body.String(), "ssr page") {
+		t.Fatalf("expected SSR response, got %q", pageRW.Body.String())
+	}
+	if len(ssrPaths) != 1 || ssrPaths[0] != "/glazed/v1.3.4/sections/foo" {
+		t.Fatalf("expected one SSR request for page, got %v", ssrPaths)
+	}
+
+	apiReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	apiRW := httptest.NewRecorder()
+	h.ServeHTTP(apiRW, apiReq)
+	if apiRW.Code != http.StatusOK || !strings.Contains(apiRW.Body.String(), `"ok":true`) {
+		t.Fatalf("expected API health response, got status %d body %q", apiRW.Code, apiRW.Body.String())
+	}
+	if len(ssrPaths) != 1 {
+		t.Fatalf("expected API request not to hit SSR, got %v", ssrPaths)
+	}
+
+	assetReq := httptest.NewRequest(http.MethodGet, "/assets/main.js", nil)
+	assetRW := httptest.NewRecorder()
+	h.ServeHTTP(assetRW, assetReq)
+	if !strings.Contains(assetRW.Body.String(), "spa fallback") {
+		t.Fatalf("expected asset to be handled by SPA/static handler, got %q", assetRW.Body.String())
+	}
+	if len(ssrPaths) != 1 {
+		t.Fatalf("expected asset request not to hit SSR, got %v", ssrPaths)
+	}
+}
+
+func TestNewServeHandler_SSRFailureFallsBackToSPA(t *testing.T) {
+	st, _ := setupTestServer(t)
+	spaHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("spa fallback"))
+	})
+	ssr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "broken", http.StatusBadGateway)
+	}))
+	defer ssr.Close()
+
+	h := NewServeHandler(HandlerDeps{Store: st}, spaHandler, WithSSRURL(ssr.URL))
+	req := httptest.NewRequest(http.MethodGet, "/glazed/v1.3.4", nil)
+	rw := httptest.NewRecorder()
+	h.ServeHTTP(rw, req)
+
+	if rw.Code != http.StatusOK {
+		t.Fatalf("expected fallback status 200, got %d", rw.Code)
+	}
+	if !strings.Contains(rw.Body.String(), "spa fallback") {
+		t.Fatalf("expected SPA fallback, got %q", rw.Body.String())
+	}
+}
+
 func TestNewServeHandler_ServesEmbeddedSPAAtRoot(t *testing.T) {
 	st, _ := setupTestServer(t)
 	spaHandler, err := web.NewSPAHandler()

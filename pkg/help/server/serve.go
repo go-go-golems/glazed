@@ -350,6 +350,7 @@ func NewServeHandler(deps HandlerDeps, spaHandler http.Handler, opts ...ServeOpt
 	}
 
 	apiHandler := NewHandler(deps)
+	wellKnownHandler := NewWellKnownHandler(deps)
 	if spaHandler == nil {
 		return apiHandler
 	}
@@ -365,6 +366,60 @@ func NewServeHandler(deps HandlerDeps, spaHandler http.Handler, opts ...ServeOpt
 		if cleanPath == "/api" || strings.HasPrefix(cleanPath, "/api/") {
 			apiHandler.ServeHTTP(w, r)
 			return
+		}
+
+		// Intercept well-known agent files (llms.txt, robots.txt, AGENTS.md,
+		// sitemap.xml, sitemap.md, index.md) before the SPA or SSR proxy.
+		if wellKnownHandler.CanHandle(cleanPath) {
+			wellKnownHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// Markdown suffix URLs (for example /glazed/_/sections/foo.md)
+		// are agent-facing content mirrors. Handle them before static assets
+		// and before the SPA/SSR fallback so they never render index.html.
+		if pkgName, ver, slug, ok := isMarkdownSuffixURL(cleanPath); ok {
+			handleMarkdownSuffix(deps, w, r, pkgName, ver, slug)
+			return
+		}
+
+		// Static assets (JS, CSS, images, site-config.js) must be served
+		// directly from the embedded filesystem, NOT through the SSR proxy.
+		// The SSR proxy only renders page requests; it does not serve files.
+		// Normalize nested asset URLs defensively so old relative-asset HTML
+		// (for example /glazed/v1.3.4/assets/main.js) still resolves to the
+		// embedded /assets/main.js file instead of returning index.html.
+		if assetPath, ok := normalizeStaticAssetPath(cleanPath); ok {
+			r2 := r.Clone(r.Context())
+			urlCopy := *r.URL
+			r2.URL = &urlCopy
+			r2.URL.Path = assetPath
+			spaHandler.ServeHTTP(w, r2)
+			return
+		}
+
+		// Markdown content negotiation: when Accept: text/markdown is sent,
+		// return the section's raw markdown instead of HTML.
+		if wantsMarkdown(r) {
+			if cleanPath == "/" {
+				handleRootMarkdownMirror(deps, w, r)
+				return
+			}
+			pkgName, ver, slug, isSection := parseSectionURL(cleanPath)
+			if isSection {
+				handleMarkdownMirror(deps, w, r, pkgName, ver, slug)
+				return
+			}
+		}
+
+		// For HTML responses to section pages, inject alternate link headers.
+		_, _, _, isSection := parseSectionURL(cleanPath)
+		if isSection {
+			w = &alternateLinkWriter{
+				ResponseWriter: w,
+				path:           cleanPath,
+				baseURL:        deriveBaseURL(r),
+			}
 		}
 
 		// If SSR proxy is configured, forward page requests to the sidecar.
@@ -467,6 +522,31 @@ func normalizePrefix(prefix string) string {
 // ---------------------------------------------------------------------------
 // SSR reverse proxy
 // ---------------------------------------------------------------------------
+
+// normalizeStaticAssetPath returns the embedded static asset path for requests
+// that should be served directly from the SPA filesystem, not through the SSR
+// proxy. It accepts canonical root assets (/assets/main.js, /site-config.js)
+// and nested asset URLs that browsers may request from older relative-asset
+// HTML (/glazed/v1.3.4/assets/main.js).
+func normalizeStaticAssetPath(path string) (string, bool) {
+	// Vite-built assets: /assets/*.js, /assets/*.css, /assets/*.svg, etc.
+	if strings.HasPrefix(path, "/assets/") {
+		return path, true
+	}
+	if idx := strings.LastIndex(path, "/assets/"); idx >= 0 {
+		return path[idx:], true
+	}
+
+	// Runtime config and other root-level static files. Also normalize nested
+	// forms such as /glazed/v1.3.4/site-config.js.
+	for _, name := range []string{"/site-config.js", "/favicon.ico", "/favicon.svg"} {
+		if path == name || strings.HasSuffix(path, name) {
+			return name, true
+		}
+	}
+
+	return "", false
+}
 
 // newSSRProxy returns an http.Handler that reverse-proxies requests to the
 // SSR sidecar. If the sidecar returns an error (connection refused, timeout,
