@@ -159,11 +159,21 @@ app.get('{*path}', async (req, res) => {
     const serializedPreloadedState = serializeForInlineScript(preloadedState);
 
     // 4. Determine page title and description
+    const packageSummary = packageName && packages?.packages
+      ? packages.packages.find((pkg) => pkg.name === packageName)
+      : null;
+    const packageDisplayName = packageSummary?.displayName || packageName;
+    const sectionCount = sections?.total ?? sections?.sections?.length ?? packageSummary?.sectionCount;
+    const versionLabel = version ? ` ${version}` : '';
     const title = section?.title
       ? `${section.title} — Glazed Help Browser`
-      : 'Glazed Help Browser';
+      : packageName
+        ? `${packageDisplayName}${versionLabel} Documentation — Glazed Help Browser`
+        : 'Glazed Help Browser';
     const description = section?.short
-      || 'Documentation browser for the Glazed CLI framework and Go-Go-Golems tools.';
+      || (packageName
+        ? `Documentation index for ${packageDisplayName}${versionLabel}${typeof sectionCount === 'number' ? `, with ${sectionCount} sections` : ''}.`
+        : 'Documentation browser for the Glazed CLI framework and Go-Go-Golems tools.');
 
     // 5. Inject SSR content into the HTML shell
     let htmlPage = indexHtmlTemplate;
