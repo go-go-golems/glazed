@@ -43,20 +43,20 @@
 ## Phase 4: live proof for one package
 
 - [ ] Run the workflow for `glazed` against a test version such as `vtest-jwt`.
-- [ ] Decode and inspect non-sensitive publish JWT claims in a temporary proof log.
+- [x] Decode and inspect non-sensitive publish JWT claims in a temporary proof log.
 - [ ] Confirm wrong repository/branch/event/workflow cases are denied by Vault.
-- [ ] Confirm docs-registry accepts a valid publish JWT.
+- [x] Confirm docs-registry accepts a valid publish JWT.
 - [ ] Confirm docs-registry rejects mismatched package JWTs.
-- [ ] Record proof output and failures in the diary.
+- [x] Record proof output and failures in the diary.
 
 ## Phase 5: k3s docs-yolo migration
 
-- [ ] Build and publish a new Glazed image containing JWT auth mode.
-- [ ] Update docs-yolo registry args to `--auth-mode vault-oidc-jwt`.
-- [ ] Add `--jwt-issuer` and `--jwt-client-id` args.
-- [ ] Remove the publisher catalog mount after rollback is no longer needed.
+- [x] Build and publish a new Glazed image containing JWT auth mode.
+- [x] Update docs-yolo registry args to `--auth-mode vault-oidc-jwt`.
+- [x] Add `--jwt-issuer` and `--jwt-client-id` args.
+- [x] Remove the publisher catalog mount after rollback is no longer needed.
 - [ ] Keep static-catalog rollback instructions in the ticket.
-- [ ] Commit the GitOps deployment change.
+- [x] Commit the GitOps deployment change.
 
 ## Phase 6: complete onboarding and delivery
 

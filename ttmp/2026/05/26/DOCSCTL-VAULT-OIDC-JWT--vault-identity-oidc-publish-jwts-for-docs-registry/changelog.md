@@ -48,3 +48,14 @@ Applied Vault docsctl publish JWT resources, fixed live Vault issuer/template va
 - /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf — Applied Vault docsctl publish resources
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/.github/workflows/publish-docs.yml — Glazed caller workflow
 
+
+## 2026-05-26
+
+Live proof: migrated docs-yolo registry to Vault OIDC JWT mode, fixed public registry TLS and reusable workflow verification, and published glazed v1.3.4 successfully via release workflow.
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — docs-registry JWT auth mode
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/ingress.yaml — docs-registry public TLS host
+- /home/manuel/code/wesen/go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml — API verification shape and retry fixes
+
