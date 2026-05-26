@@ -18,7 +18,6 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"

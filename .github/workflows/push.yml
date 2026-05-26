@@ -19,5 +19,11 @@ jobs:
           go-version: '>=1.19.5'
           cache: true
       -
+        name: Check generated logcopter package loggers
+        run: go tool logcopter-gen -area-prefix go-go-golems.glazed -strip-prefix github.com/go-go-golems/glazed -check ./pkg/...
+      -
+        name: Smoke test standalone logcopter integration
+        run: make logcopter-smoke
+      -
         name: Run unit tests
         run: go test ./...

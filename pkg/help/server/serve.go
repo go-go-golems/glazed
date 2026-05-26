@@ -20,7 +20,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help"
 	helploader "github.com/go-go-golems/glazed/pkg/help/loader"
 	"github.com/go-go-golems/glazed/pkg/help/store"
-	"github.com/rs/zerolog/log"
 )
 
 // DefaultAddr is the TCP address used by the serve command when no --address is supplied.

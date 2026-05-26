@@ -155,7 +155,79 @@ func processUser(userID string) error {
 | `--log-file` | string | `""` | Output file path with automatic rotation |
 | `--with-caller` | bool | `false` | Include source file and line number |
 | `--log-to-stdout` | bool | `false` | Force output to stdout regardless of other settings |
+| `--log-config` | string list | `[]` | Additional logcopter profile/config files, loaded in command-line order |
+| `--log-area` | key-value | `{}` | Per-area log level override, for example `app.view:debug` or `app.db=warn` |
+| `--strict-log-areas` | bool | `false` | Fail if configured areas do not match known generated logcopter areas |
 
+
+### Area-scoped log levels with logcopter
+
+Glazed configures logcopter's default manager in-place. Applications keep using
+`github.com/go-go-golems/glazed/pkg/cmds/logging`; generated package loggers use
+`github.com/go-go-golems/logcopter/pkg/logcopter`.
+
+Application YAML can use a canonical `logging.areas` map:
+
+```yaml
+logging:
+  log-level: info
+  log-format: text
+  areas:
+    app.view.render: trace
+    app.db: warn
+    lib.protocol: debug
+```
+
+CLI overrides accept both colon and equals syntax:
+
+```bash
+myapp serve \
+  --log-area app.view:debug \
+  --log-area app.db=warn
+```
+
+`--log-area` is a repeatable key-value flag. Cobra/pflag also accepts comma
+splitting for `StringSlice` flags:
+
+```bash
+myapp serve --log-area app.view=debug,app.db=warn
+```
+
+Reusable logcopter profile files can be loaded explicitly with `--log-config`:
+
+```bash
+myapp serve --log-config ~/.config/logcopter/profiles/dev.yaml
+```
+
+Glazed supports both application-style wrapped profiles:
+
+```yaml
+logging:
+  log-level: info
+  areas:
+    app.view.render: trace
+    app.db: warn
+```
+
+and direct logcopter-only profiles:
+
+```yaml
+level: info
+format: text
+areas:
+  app.view.render: trace
+  app.db: warn
+```
+
+In the Cobra initialization path, merge order is:
+
+1. defaults;
+2. explicit `--log-config` files, in command-line order;
+3. direct CLI flags such as `--log-level` and `--log-area`.
+
+Logcopter uses per-area child logger levels. Glazed therefore keeps zerolog's
+global level permissive enough not to suppress a trace-enabled area while the
+conventional global logger remains filtered at `--log-level`.
 
 ### Log Levels
 
@@ -220,11 +292,15 @@ export MYAPP_LOG_FILE=/var/log/myapp.log
 
 ```go
 type LoggingSettings struct {
-    WithCaller  bool   `glazed:"with-caller"`
-    LogLevel    string `glazed:"log-level"`
-    LogFormat   string `glazed:"log-format"`
-    LogFile     string `glazed:"log-file"`
-    LogToStdout bool   `glazed:"log-to-stdout"`
+    WithCaller     bool              `glazed:"with-caller"`
+    LogLevel       string            `glazed:"log-level"`
+    LogFormat      string            `glazed:"log-format"`
+    LogFile        string            `glazed:"log-file"`
+    LogToStdout    bool              `glazed:"log-to-stdout"`
+    LogConfigFiles []string          `glazed:"log-config"`
+    LogAreas       map[string]string `glazed:"log-area"`
+    Areas          map[string]string `glazed:"areas"`
+    StrictAreas    bool              `glazed:"strict-log-areas"`
 }
 ```
 

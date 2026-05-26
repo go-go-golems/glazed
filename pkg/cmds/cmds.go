@@ -10,7 +10,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 

@@ -1,4 +1,4 @@
-.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
+.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
 
 all: test build
 
@@ -33,6 +33,16 @@ glazed-lint: glazed-lint-build
 glazedclilint:
 	go build -o $(GLAZEDCLILINT_BIN) ./cmd/tools/glazedclilint
 	go vet -vettool=$(GLAZEDCLILINT_BIN) ./cmd/... ./pkg/...
+
+logcopter-generate:
+	go generate ./...
+
+logcopter-check:
+	go tool logcopter-gen -area-prefix go-go-golems.glazed -strip-prefix github.com/go-go-golems/glazed -check ./pkg/...
+
+logcopter-smoke:
+	GOWORK=off go test ./cmd/glaze ./pkg/cmds/logging ./pkg/cmds/fields
+	GOWORK=off go run ./cmd/glaze help logcopter-logging-architecture >/tmp/glazed-logcopter-help-smoke.txt
 
 gosec:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
@@ -69,8 +79,7 @@ version:
 	@echo $(VERSION)
 
 bump-glazed:
-	go get github.com/go-go-golems/glazed@latest
-	go get github.com/go-go-golems/clay@latest
+	go get github.com/go-go-golems/logcopter@latest
 	go mod tidy
 
 install:

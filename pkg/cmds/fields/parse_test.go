@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -331,9 +332,13 @@ func TestParseField(t *testing.T) {
 			Type:         TypeKeyValue,
 			DefaultValue: map[string]interface{}{"default": "default"},
 			Cases: []FieldTestCase{
-				{Name: "Valid single key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
-				{Name: "Valid multiple key-value pairs, no error expected", Input: []string{"test:test", "test2:test2"}, Expected: map[string]string{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
-				{Name: "Invalid input without colon separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "Valid single colon key-value pair, no error expected", Input: []string{"test:test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid single equals key-value pair, no error expected", Input: []string{"test=test"}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Valid equals key-value pair with colon-containing URL value, no error expected", Input: []string{"DATABASE_URL=postgres://db:5432/app"}, Expected: map[string]string{"DATABASE_URL": "postgres://db:5432/app"}, WantErr: ErrorNotExpected},
+				{Name: "Valid mixed key-value pairs, no error expected", Input: []string{"test:test", "test2=test2"}, Expected: map[string]string{"test": "test", "test2": "test2"}, WantErr: ErrorNotExpected},
+				{Name: "Valid key-value pair with spaces, no error expected", Input: []string{" test = test "}, Expected: map[string]string{"test": "test"}, WantErr: ErrorNotExpected},
+				{Name: "Invalid input without separator, error expected", Input: []string{"test"}, WantErr: ErrorExpected},
+				{Name: "Invalid input with empty value, error expected", Input: []string{"test:"}, WantErr: ErrorExpected},
 				{Name: "No input uses default key-value map, no error expected", Input: []string{}, Expected: map[string]string{"default": "default"}, WantErr: ErrorNotExpected},
 			},
 		},
@@ -358,6 +363,22 @@ func TestParseField(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestTypeKeyValueParsesPflagStringSliceCommaValues(t *testing.T) {
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	values := fs.StringSlice("log-area", []string{}, "")
+	require.NoError(t, fs.Parse([]string{"--log-area", "app.view=debug,app.db=warn", "--log-area", "lib.parser:trace", "--log-area", "DATABASE_URL=postgres://db:5432/app"}))
+
+	field := New("log-area", TypeKeyValue)
+	got, err := field.ParseField(*values)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"app.view":     "debug",
+		"app.db":       "warn",
+		"lib.parser":   "trace",
+		"DATABASE_URL": "postgres://db:5432/app",
+	}, got.Value)
 }
 
 func TestParseStringListFromReader(t *testing.T) {

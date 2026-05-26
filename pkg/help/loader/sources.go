@@ -17,7 +17,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 // ContentLoader loads help sections from an external source into a HelpSystem.

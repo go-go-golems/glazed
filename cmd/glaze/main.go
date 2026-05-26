@@ -11,6 +11,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/help/server"
 	"github.com/go-go-golems/glazed/pkg/help/site"
 	"github.com/go-go-golems/glazed/pkg/web"
+	logcopterdoc "github.com/go-go-golems/logcopter/pkg/doc"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +33,7 @@ func main() {
 	helpSystem := help.NewHelpSystem()
 	err = doc.AddDocToHelpSystem(helpSystem)
 	cobra.CheckErr(err)
+	cobra.CheckErr(addLogcopterDocs(helpSystem))
 
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
@@ -95,4 +97,8 @@ func main() {
 	rootCmd.AddCommand(htmlCommand)
 
 	_ = rootCmd.Execute()
+}
+
+func addLogcopterDocs(helpSystem *help.HelpSystem) error {
+	return helpSystem.LoadSectionsFromFS(logcopterdoc.FS, ".")
 }

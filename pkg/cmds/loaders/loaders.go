@@ -11,7 +11,6 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/helpers/cast"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 

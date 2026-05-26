@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 // Loader handles loading and syncing markdown files into the SQLite store
