@@ -1,0 +1,99 @@
+
+vault_identity_oidc
+  id optional string
+  issuer optional string
+  namespace optional string
+
+vault_identity_oidc_assignment
+  entity_ids optional ['set', 'string']
+  group_ids optional ['set', 'string']
+  id optional string
+  name required string
+  namespace optional string
+
+vault_identity_oidc_client
+  access_token_ttl optional number
+  assignments optional ['set', 'string']
+  client_id computed string
+  client_secret computed string
+  client_type optional string
+  id optional string
+  id_token_ttl optional number
+  key optional string
+  name required string
+  namespace optional string
+  redirect_uris optional ['set', 'string']
+
+vault_identity_oidc_key
+  algorithm optional string
+  allowed_client_ids optional ['set', 'string']
+  id optional string
+  name required string
+  namespace optional string
+  rotation_period optional number
+  verification_ttl optional number
+
+vault_identity_oidc_key_allowed_client_id
+  allowed_client_id required string
+  id optional string
+  key_name required string
+  namespace optional string
+
+vault_identity_oidc_provider
+  allowed_client_ids optional ['set', 'string']
+  https_enabled optional bool
+  id optional string
+  issuer computed string
+  issuer_host optional string
+  name required string
+  namespace optional string
+  scopes_supported optional ['set', 'string']
+
+vault_identity_oidc_role
+  client_id optional string
+  id optional string
+  key required string
+  name required string
+  namespace optional string
+  template optional string
+  ttl optional number
+
+vault_identity_oidc_scope
+  description optional string
+  id optional string
+  name required string
+  namespace optional string
+  template optional string
+
+vault_jwt_auth_backend_role
+  alias_metadata optional ['map', 'string']
+  allowed_redirect_uris optional ['set', 'string']
+  backend optional string
+  bound_audiences optional ['set', 'string']
+  bound_claims optional ['map', 'string']
+  bound_claims_type optional string
+  bound_subject optional string
+  claim_mappings optional ['map', 'string']
+  clock_skew_leeway optional number
+  disable_bound_claims_parsing optional bool
+  expiration_leeway optional number
+  groups_claim optional string
+  id optional string
+  max_age optional number
+  namespace optional string
+  not_before_leeway optional number
+  oidc_scopes optional ['set', 'string']
+  role_name required string
+  role_type optional string
+  token_bound_cidrs optional ['set', 'string']
+  token_explicit_max_ttl optional number
+  token_max_ttl optional number
+  token_no_default_policy optional bool
+  token_num_uses optional number
+  token_period optional number
+  token_policies optional ['set', 'string']
+  token_ttl optional number
+  token_type optional string
+  user_claim required string
+  user_claim_json_pointer optional bool
+  verbose_oidc_logging optional bool

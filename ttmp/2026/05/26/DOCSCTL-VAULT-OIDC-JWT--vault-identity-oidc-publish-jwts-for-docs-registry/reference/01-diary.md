@@ -1,0 +1,539 @@
+---
+Title: Diary
+Ticket: DOCSCTL-VAULT-OIDC-JWT
+Status: active
+Topics:
+    - docsctl
+    - docs-yolo
+    - vault
+    - oidc
+    - github-actions
+    - security
+    - cicd
+DocType: reference
+Intent: long-term
+Owners:
+    - manuel
+RelatedFiles:
+    - Path: ../../../../../../../../../../code/wesen/terraform/vault/github-actions/envs/k3s/main.tf
+      Note: Existing Terraform Vault GitHub Actions JWT role pattern
+    - Path: cmd/docs-registry/main.go
+      Note: Registry command boot path used to design auth-mode flags
+    - Path: pkg/help/publish/auth.go
+      Note: PublisherAuth interface that should receive the JWT implementation
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/design-doc/01-vault-identity-oidc-publish-jwt-implementation-guide.md
+      Note: |-
+        Primary design document created for this ticket
+        Primary design deliverable recorded by this diary
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/01-vault-identity-tokens.defuddle.md
+      Note: Vault Identity Token conceptual evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/02-vault-identity-token-api.defuddle.md
+      Note: Vault Identity Token API evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/05-github-oidc-reference.defuddle.md
+      Note: GitHub Actions OIDC claim evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/github-oidc-reference.defuddle.md
+      Note: GitHub Actions OIDC claim evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/terraform-vault-oidc-resource-schema.txt
+      Note: Local Terraform Vault provider schema evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/vault-identity-token-api.defuddle.md
+      Note: Vault Identity Token API evidence
+    - Path: ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/vault-identity-tokens.defuddle.md
+      Note: Vault Identity Token conceptual evidence
+ExternalSources:
+    - https://developer.hashicorp.com/vault/docs/secrets/identity/identity-token
+    - https://developer.hashicorp.com/vault/api-docs/secret/identity/tokens
+    - https://docs.github.com/actions/reference/openid-connect-reference
+Summary: Chronological notes for designing Vault Identity/OIDC publish JWTs for docs-registry.
+LastUpdated: 2026-05-26T07:51:07.835369732-04:00
+WhatFor: Use this to resume or review the investigation behind DOCSCTL-VAULT-OIDC-JWT.
+WhenToUse: Read before implementing the Vault Identity Token Terraform, registry JWT auth mode, or reusable workflow changes.
+---
+
+
+
+# Diary
+
+## Goal
+
+This diary records the creation of the `DOCSCTL-VAULT-OIDC-JWT` ticket and the design work for the second implementation of docs-registry authentication: GitHub Actions authenticates to Vault, Vault mints a short-lived OIDC-compliant docs publish JWT, and docs-registry validates that JWT instead of reading `publishers.json`.
+
+## Step 1: Create ticket, gather Vault/OIDC evidence, and write the implementation guide
+
+I created a new docmgr ticket for the Vault Identity/OIDC publish JWT design, fetched the relevant Vault and GitHub OIDC documentation into the ticket sources, inspected the existing docs-registry and docsctl code paths, checked local Terraform provider support for Vault Identity/OIDC resources, and wrote the primary implementation guide. The guide uses a textbook style for the cryptography and OIDC material: it explains the token types, signature verification, issuer/audience checks, JWKS, Vault Identity Token roles, and the difference between Vault Identity/OIDC and Vault Transit.
+
+The design intentionally chooses Vault Identity Tokens rather than direct Transit signing. Vault Identity Token roles let operators define a package-specific claims template and control access through Vault policy. Transit can sign bytes, but it does not itself decide whether a CI job should be allowed to sign a JWT with `package = glazed` or `package = pinocchio`. For this ticket, the token issuer should be Vault Identity/OIDC, with Terraform managing the key, role, GitHub claim bindings, and token-minting policies.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a new ticket to add vault identity/oidc publish JWT. (second implementation).
+
+Explain all the cryptography / OIDC part in a section for our intern.
+
+Create  a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references. It should be very clear and technical. Store in the ticket and the nupload to remarkable.
+
+Use a textbook writing style where appropriate (skip analogies, read the skill).
+
+Keep a diary as you work."
+
+**Assistant interpretation:** Create a structured docmgr ticket and write a detailed intern-ready design for Vault-issued OIDC/JWT publish credentials for docs-registry, including cryptographic foundations and implementation guidance, then upload the result to reMarkable.
+
+**Inferred user intent:** The user wants to turn the prior discussion about Vault as an internal token issuer into an actionable implementation package that can be handed to an intern without losing the security reasoning.
+
+**Commit (code):** N/A — documentation-only work in the ticket workspace.
+
+### What I did
+
+- Read the `textbook-authoring` skill to match the requested writing style.
+- Created ticket `DOCSCTL-VAULT-OIDC-JWT` with topics:
+  - `docsctl`
+  - `docs-yolo`
+  - `vault`
+  - `oidc`
+  - `github-actions`
+  - `security`
+  - `cicd`
+- Created the design doc:
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/design-doc/01-vault-identity-oidc-publish-jwt-implementation-guide.md`
+- Created this diary:
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/reference/01-diary.md`
+- Added ticket tasks for evidence gathering, design, cryptography explanation, Terraform/API/test design, and reMarkable upload.
+- Fetched source documentation with `defuddle`:
+  - `sources/01-vault-identity-tokens.defuddle.md`
+  - `sources/02-vault-identity-token-api.defuddle.md`
+  - `sources/03-vault-oidc-provider-concepts.defuddle.md`
+  - `sources/04-vault-jwt-auth.defuddle.md`
+  - `sources/05-github-oidc-reference.defuddle.md`
+- Tried to fetch Terraform registry pages with `defuddle`; those pages produced empty files because the registry docs are script-heavy.
+- Used `terraform providers schema -json` in a temporary Terraform directory to confirm local Vault provider resource support and saved the relevant schema summary to:
+  - `sources/terraform-vault-oidc-resource-schema.txt`
+- Inspected implementation files:
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/cmd/docs-registry/main.go`
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry.go`
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/auth.go`
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/cmd/docsctl/publish.go`
+  - `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml`
+
+### Why
+
+- The current `publishers.json` model uses long-lived static package tokens. That is acceptable for internal-only operation, but less attractive for a public registry endpoint.
+- Vault Identity Tokens can issue short-lived signed JWTs with operator-defined claims. This is the correct shape for an application-specific publish token.
+- The intern implementing the feature needs to understand not only which files to edit, but also why issuer, audience, signature, expiration, JWKS, and package claims are security-critical.
+
+### What worked
+
+- Vault's Identity Token docs directly support the desired design: authenticated clients can request signed OIDC-compliant ID tokens against a role, roles define templates and TTL, keys publish public JWKS for verification, and tokens can be validated by standard OIDC/JWT libraries.
+- GitHub's OIDC docs identify the exact claims needed for caller validation: `repository`, `repository_id`, `ref`, `event_name`, `workflow_ref`, `job_workflow_ref`, and run metadata.
+- The local Terraform provider schema confirmed support for `vault_identity_oidc`, `vault_identity_oidc_key`, `vault_identity_oidc_role`, and `vault_jwt_auth_backend_role`.
+- The existing Go code has a clean `PublisherAuth` interface, so the registry can add JWT auth mode without changing the upload route or storage code.
+
+### What didn't work
+
+- Terraform provider docs on `registry.terraform.io` fetched through `defuddle` produced empty files:
+  - `terraform-vault-identity-oidc-role.defuddle.md`
+  - `terraform-vault-identity-oidc-key.defuddle.md`
+  - `terraform-vault-identity-oidc-provider.defuddle.md`
+- First attempt to inspect the existing Terraform provider schema in `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s` failed because the S3 backend wanted credentials:
+
+```text
+Error: No valid credential sources found
+Please see https://developer.hashicorp.com/terraform/language/backend/s3
+for more information about providing credentials.
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, request canceled, context deadline exceeded
+```
+
+- A second attempt with `AWS_EC2_METADATA_DISABLED=true` still failed because the backend remained active:
+
+```text
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, access disabled to EC2 IMDS via
+client option, or "AWS_EC2_METADATA_DISABLED" environment variable
+```
+
+- I then created a temporary Terraform config with `terraform init -backend=false`. The first temporary config had invalid single-line provider syntax:
+
+```text
+Error: Invalid single-argument block definition
+on main.tf line 6, in provider "vault":
+A single-line block definition must end with a closing brace immediately
+after its single argument definition.
+```
+
+- Rewriting the provider block across multiple lines fixed the Terraform schema extraction.
+
+### What I learned
+
+- Vault Identity Tokens are the relevant Vault feature for this ticket, not the interactive OIDC authorization-code provider flow.
+- Vault Identity Token role templates can add custom claims to a signed JWT, but top-level template keys must not overwrite standard OIDC claims such as `iss`, `sub`, `aud`, `iat`, or `exp`.
+- The Vault JWT auth role can copy incoming GitHub claims into token and alias metadata using `claim_mappings`, which can then be used by Identity Token templates.
+- Terraform provider support exists locally for the needed Vault resources, so this should be implementable without imperative bootstrap scripts except for proof/debugging.
+
+### What was tricky to build
+
+- The main tricky part is the metadata path between GitHub's OIDC token and Vault's emitted publish JWT. GitHub claims enter Vault during `auth/github-actions` login. The JWT auth role must validate claims and map selected claims into Vault metadata. The Identity Token role template then reads those mapped values using the JWT auth mount accessor. This is powerful but precise: if a claim mapping is absent, or if the template references the wrong alias accessor, the emitted publish JWT will have missing values.
+- The design avoids making CI choose the JWT payload. That is the reason for choosing Identity Token roles instead of raw Transit signing. The package claim is fixed in the Vault role template, and CI only requests the role it has policy permission to read.
+
+### What warrants a second pair of eyes
+
+- Confirm the exact Vault issuer URL before implementation. The registry verifier must use the same issuer string that appears in the token's `iss` claim.
+- Confirm whether the deployed Vault version allows multiple Identity Token roles to share `client_id = "docs-registry"`. If not, the design should switch to package-specific audiences.
+- Confirm the exact GitHub repository names and immutable repository IDs before writing Terraform roles.
+- Review whether `github.com/coreos/go-oidc/v3/oidc` is the preferred Go dependency for OIDC validation in this repository.
+
+### What should be done in the future
+
+- Add a live proof job for `glazed` that logs into Vault with GitHub OIDC, mints a publish JWT, decodes non-sensitive claims, and verifies the token against Vault JWKS.
+- Implement `pkg/help/publish/jwt_auth.go` with unit tests covering issuer, audience, expiration, tampering, token use, and package mismatch.
+- Update k3s GitOps manifests to run `docs-registry --auth-mode vault-oidc-jwt` once the proof is complete.
+
+### Code review instructions
+
+- Start with the design doc's Sections 5-7:
+  - cryptography/OIDC foundations;
+  - Vault configuration;
+  - docs-registry implementation design.
+- Then inspect:
+  - `cmd/docs-registry/main.go` for the auth selection point.
+  - `pkg/help/publish/auth.go` for the interface.
+  - `pkg/help/publish/registry.go` for where `AuthorizePublish` is called.
+  - `cmd/docsctl/publish.go` for existing bearer-token behavior.
+  - Terraform `main.tf` for GitHub Actions JWT auth role conventions.
+
+### Technical details
+
+Ticket setup commands:
+
+```bash
+docmgr ticket create-ticket \
+  --ticket DOCSCTL-VAULT-OIDC-JWT \
+  --title "Vault Identity OIDC publish JWTs for docs-registry" \
+  --topics docsctl,docs-yolo,vault,oidc,github-actions,security,cicd
+
+docmgr doc add \
+  --ticket DOCSCTL-VAULT-OIDC-JWT \
+  --doc-type design-doc \
+  --title "Vault Identity OIDC publish JWT implementation guide"
+
+docmgr doc add \
+  --ticket DOCSCTL-VAULT-OIDC-JWT \
+  --doc-type reference \
+  --title "Diary"
+```
+
+Source fetching commands:
+
+```bash
+defuddle parse https://developer.hashicorp.com/vault/docs/secrets/identity/identity-token --md -o sources/vault-identity-tokens.defuddle.md
+defuddle parse https://developer.hashicorp.com/vault/api-docs/secret/identity/tokens --md -o sources/vault-identity-token-api.defuddle.md
+defuddle parse https://developer.hashicorp.com/vault/docs/concepts/oidc-provider --md -o sources/vault-oidc-provider-concepts.defuddle.md
+defuddle parse https://developer.hashicorp.com/vault/docs/auth/jwt --md -o sources/vault-jwt-auth.defuddle.md
+defuddle parse https://docs.github.com/actions/reference/openid-connect-reference --md -o sources/github-oidc-reference.defuddle.md
+
+# Later normalized to docmgr-friendly numeric filenames with frontmatter:
+# sources/01-vault-identity-tokens.defuddle.md
+# sources/02-vault-identity-token-api.defuddle.md
+# sources/03-vault-oidc-provider-concepts.defuddle.md
+# sources/04-vault-jwt-auth.defuddle.md
+# sources/05-github-oidc-reference.defuddle.md
+```
+
+Terraform schema proof used a temporary config with backend disabled:
+
+```bash
+terraform init -backend=false -input=false
+terraform providers schema -json > /tmp/vault-provider-schema2.json
+```
+
+Key Terraform resources confirmed:
+
+```text
+vault_identity_oidc
+vault_identity_oidc_key
+vault_identity_oidc_role
+vault_identity_oidc_provider
+vault_identity_oidc_client
+vault_identity_oidc_scope
+vault_jwt_auth_backend_role
+```
+
+## Step 2: Normalize sources, validate ticket, and upload to reMarkable
+
+I cleaned up the ticket source files so `docmgr doctor` could validate the workspace, uploaded the final bundle to reMarkable, and checked the final upload task. The final ticket now has a passing doctor report and a delivered PDF bundle.
+
+The main cleanup was caused by external documentation captures. `defuddle` creates clean Markdown but not docmgr frontmatter, and Terraform Registry pages produced empty Markdown captures. I removed the empty Terraform captures, renamed the real source files with numeric prefixes, added minimal source frontmatter, refreshed diary relations, and reran validation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Finish docmgr hygiene and deliver the Vault Identity/OIDC publish JWT design package to reMarkable.
+
+**Inferred user intent:** The user wants a durable, searchable ticket plus a readable PDF bundle for review away from the terminal.
+
+**Commit (code):** N/A — documentation-only work in the ticket workspace.
+
+### What I did
+
+- Removed empty Terraform Registry captures:
+  - `terraform-vault-identity-oidc-key.defuddle.md`
+  - `terraform-vault-identity-oidc-provider.defuddle.md`
+  - `terraform-vault-identity-oidc-role.defuddle.md`
+- Renamed source docs to numeric docmgr-friendly filenames.
+- Added minimal frontmatter to source Markdown files.
+- Refreshed diary file relations to the renamed source files.
+- Ran `docmgr doctor --ticket DOCSCTL-VAULT-OIDC-JWT --stale-after 30` until it passed.
+- Uploaded the bundle to reMarkable:
+  - `/ai/2026/05/26/DOCSCTL-VAULT-OIDC-JWT/DOCSCTL Vault OIDC Publish JWT.pdf`
+- Checked the final upload task.
+
+### Why
+
+- `docmgr doctor` enforces frontmatter and filename conventions. The ticket should pass validation before handoff.
+- The user requested reMarkable upload, so the design doc, diary, tasks, and changelog were bundled into one PDF.
+
+### What worked
+
+- The final doctor report passed:
+
+```text
+## Doctor Report (1 findings)
+
+### DOCSCTL-VAULT-OIDC-JWT
+
+- ✅ All checks passed
+```
+
+- The reMarkable upload completed with:
+
+```text
+OK: uploaded DOCSCTL Vault OIDC Publish JWT.pdf -> /ai/2026/05/26/DOCSCTL-VAULT-OIDC-JWT
+```
+
+### What didn't work
+
+- Initial `docmgr doctor` failed because the fetched source Markdown files had no YAML frontmatter:
+
+```text
+[error] YAML/frontmatter syntax error
+Problem: frontmatter delimiters '---' not found
+```
+
+- The Terraform Registry defuddle captures were empty, so keeping them as `.md` files created invalid ticket sources. I removed those empty files and kept the Terraform provider schema output as a `.txt` source.
+
+### What I learned
+
+- When storing defuddle captures inside a docmgr ticket, add frontmatter and numeric prefixes before running `docmgr doctor`.
+- For Terraform provider docs, `terraform providers schema -json` can be more reliable than scraping the dynamic Registry UI.
+
+### What was tricky to build
+
+- The source capture cleanup touched both filesystem names and docmgr relations. I refreshed the diary relations after renaming so the ticket would point at the actual source files rather than the pre-normalization paths.
+
+### What warrants a second pair of eyes
+
+- Check whether the design should include the source documents in the reMarkable bundle. I uploaded only the design, diary, tasks, and changelog to keep the PDF focused.
+
+### What should be done in the future
+
+- Consider a small helper script for ticket research that runs `defuddle`, adds source frontmatter, and prefixes filenames automatically.
+
+### Code review instructions
+
+- Validate ticket hygiene with:
+  - `docmgr doctor --ticket DOCSCTL-VAULT-OIDC-JWT --stale-after 30`
+- Review uploaded source list under:
+  - `/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/sources/`
+
+### Technical details
+
+Successful upload command:
+
+```bash
+remarquee upload bundle \
+  "$TICKET_DIR/design-doc/01-vault-identity-oidc-publish-jwt-implementation-guide.md" \
+  "$TICKET_DIR/reference/01-diary.md" \
+  "$TICKET_DIR/tasks.md" \
+  "$TICKET_DIR/changelog.md" \
+  --name "DOCSCTL Vault OIDC Publish JWT" \
+  --remote-dir "/ai/2026/05/26/DOCSCTL-VAULT-OIDC-JWT" \
+  --toc-depth 2 \
+  --non-interactive 2>&1
+```
+
+## Step 3: Expand the ticket into implementation phases
+
+I replaced the coarse task list with a phase-by-phase implementation checklist. The phases now separate planning, Glazed registry code, Terraform Vault resources, reusable workflow integration, live proof, k3s migration, and final delivery. This makes the ticket executable rather than only descriptive.
+
+The ordering is deliberate. The registry can learn to validate Vault-issued JWTs before production uses that mode. Terraform can define the Vault token issuer before k3s switches the deployment. The reusable workflow can be proven against one package before all packages are onboarded.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Alright, create a detailed set of phases + tasks in the ticket. Then implement them one by one, committing at appropriate intervals (in the terraform repo etc...) and keeping a detailed diary (in the customer format with why things worked / not worked etc...)"
+
+**Assistant interpretation:** Turn the design into a sequenced implementation plan, then begin implementing the phases with focused commits and detailed diary updates.
+
+**Inferred user intent:** The user wants this to move from research/design into actual implementation across Glazed, Terraform, and eventually GitOps, while preserving a reviewable audit trail.
+
+**Commit (code):** Pending — planning update will be committed with the first implementation batch or as a focused docs commit if needed.
+
+### What I did
+
+- Rewrote `tasks.md` with phases 0 through 6.
+- Broke the registry implementation into concrete testable tasks.
+- Broke the Terraform implementation into concrete Vault resources and validation steps.
+- Left workflow, live proof, k3s migration, and package onboarding as later phases because they depend on code and Terraform being ready first.
+
+### Why
+
+- The design document explained the system, but implementation needs a checklist that can be checked off as commits land.
+- Splitting work by repository reduces the chance of mixing unrelated changes in one commit.
+- The live k3s deployment should not be migrated before the image and Vault resources exist.
+
+### What worked
+
+- The existing ticket structure already had a `tasks.md`, so the implementation plan could be recorded directly in the ticket.
+- The phase boundaries align with natural commit boundaries: Glazed code, Terraform resources, workflow integration, GitOps migration.
+
+### What didn't work
+
+- N/A for this planning step.
+
+### What I learned
+
+- The safest path is not to update the live GitOps deployment in the same step as the registry code. The registry image must exist, and Vault JWT issuance must be proven first.
+
+### What was tricky to build
+
+- The task list needed to be detailed enough to guide implementation but not pretend that later phases can be completed before their prerequisites exist. I kept phase 5 k3s migration pending for that reason.
+
+### What warrants a second pair of eyes
+
+- Review whether the shared reusable workflow should live in an existing automation repository or in a new repository. The task list intentionally leaves that discovery in Phase 3.
+
+### What should be done in the future
+
+- Check off tasks only after validation commands have been run and the relevant commit hashes are recorded.
+
+### Code review instructions
+
+- Start with `tasks.md` and confirm the ordering matches the desired rollout safety.
+- Then review the next implementation commit against Phase 1.
+
+### Technical details
+
+Updated file:
+
+```text
+/home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-VAULT-OIDC-JWT--vault-identity-oidc-publish-jwts-for-docs-registry/tasks.md
+```
+
+## Step 4: Implement docs-registry Vault OIDC JWT auth mode in Glazed
+
+I implemented the registry-side JWT validation path in Glazed. The new `JWTPublisherAuth` uses OIDC discovery and JWKS validation through `github.com/coreos/go-oidc/v3/oidc`, then applies docs-registry-specific authorization checks: the token must have `token_use = docsctl-publish` and its `package` claim must match the package in the upload URL.
+
+This step keeps the existing static catalog auth mode as the default. That preserves the current deployment behavior and gives us a rollback path while the Vault Identity Token and CI pieces are implemented.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Begin implementing the phased plan, starting with the Glazed registry code because Terraform and k3s rollout depend on a registry image that can validate Vault-issued publish JWTs.
+
+**Inferred user intent:** The user wants concrete code changes, tests, and commits rather than only a design document.
+
+**Commit (code):** Pending at time of diary entry; intended commit message: `docs-registry: add Vault OIDC JWT auth mode`.
+
+### What I did
+
+- Added `pkg/help/publish/jwt_auth.go`.
+- Added `pkg/help/publish/jwt_auth_test.go`.
+- Added dependency `github.com/coreos/go-oidc/v3/oidc` via `go get`.
+- Updated `cmd/docs-registry/main.go` with:
+  - `--auth-mode` flag;
+  - `--jwt-issuer` flag;
+  - `--jwt-client-id` flag;
+  - `buildPublisherAuth` helper;
+  - static catalog mode as the default.
+- Ran `gofmt`.
+- Ran targeted tests:
+
+```bash
+cd /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed
+go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl
+```
+
+### Why
+
+- The registry already delegates authorization to `PublisherAuth`, so adding a new implementation is the smallest safe change.
+- OIDC discovery/JWKS validation should be handled by a maintained library. The registry should not implement JWT signature verification by hand.
+- Static mode should remain available until the Vault roles, reusable workflow, and k3s deployment have all been proven.
+
+### What worked
+
+- The OIDC/JWKS unit tests use a local `httptest.Server` as a miniature OIDC issuer, which lets the test suite cover signature, issuer, audience, expiry, tampering, token-use, and package-claim behavior without live Vault.
+- Targeted Go tests passed:
+
+```text
+ok  	github.com/go-go-golems/glazed/pkg/help/publish	1.069s
+?   	github.com/go-go-golems/glazed/cmd/docs-registry	[no test files]
+ok  	github.com/go-go-golems/glazed/cmd/docsctl	0.065s
+```
+
+### What didn't work
+
+- N/A in this code step. The implementation and targeted tests passed on the first run after formatting.
+
+### What I learned
+
+- The existing `PublisherAuth` interface was the correct extension point. The upload path in `registry.go` did not need to change.
+- `docsctl publish` can carry the Vault-issued JWT without client changes because it already sends `Authorization: Bearer <token>` from `--token-file`.
+
+### What was tricky to build
+
+- The tests needed to exercise real cryptographic verification without depending on Vault. I generated an RSA key in the test, served OIDC discovery and JWKS endpoints, signed RS256 tokens, and verified them through the same OIDC library the registry will use in production.
+- The tamper test intentionally rewrites the payload while keeping the original signature so the verifier rejects the token before any package claim is trusted.
+
+### What warrants a second pair of eyes
+
+- Review whether `github.com/coreos/go-oidc/v3/oidc` is the preferred dependency for this repository.
+- Review whether `token_use = docsctl-publish` and `package` are sufficient application-specific checks for Phase 1, or whether repository ID should also be enforced locally by the registry.
+
+### What should be done in the future
+
+- Add live Vault integration proof after Terraform creates the Identity Token role.
+- Consider first-class `docsctl publish --auth vault-identity-oidc` after the shell-based workflow proof works.
+
+### Code review instructions
+
+- Start with `pkg/help/publish/jwt_auth.go` for the authorization logic.
+- Then read `pkg/help/publish/jwt_auth_test.go` to see the security expectations encoded as tests.
+- Finally inspect `cmd/docs-registry/main.go` for migration behavior and flag validation.
+- Validate with:
+
+```bash
+go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl
+```
+
+### Technical details
+
+New production command shape:
+
+```bash
+docs-registry \
+  --auth-mode vault-oidc-jwt \
+  --jwt-issuer https://vault.yolo.scapegoat.dev/v1/identity/oidc \
+  --jwt-client-id docs-registry \
+  --address :8090 \
+  --package-root /var/lib/glazed-docs/packages
+```
+
+Static mode remains:
+
+```bash
+docs-registry \
+  --auth-mode static-catalog \
+  --publisher-catalog /etc/docs-yolo/publishers.json \
+  --address :8090 \
+  --package-root /var/lib/glazed-docs/packages
+```
