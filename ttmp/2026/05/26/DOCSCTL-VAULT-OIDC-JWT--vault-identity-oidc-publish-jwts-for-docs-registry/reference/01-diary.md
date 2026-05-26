@@ -857,3 +857,102 @@ terraform plan -input=false -out=/tmp/docsctl-vault-oidc-jwt.tfplan
 ### Technical details
 
 I did not use `terraform init -backend=false` against the real checkout for apply. Backend-free validation remains acceptable for syntax checks only, not for changing live Vault resources.
+
+## Step 8: Use the Terraform `.envrc` for the real backend plan
+
+I checked `/home/manuel/code/wesen/terraform/.envrc` after the user asked whether that file contains the missing credentials. It does: it sets `AWS_PROFILE`, and that profile can authenticate to AWS. After sourcing it from the Terraform repository, `terraform init` succeeded against the real S3 backend and `terraform plan` succeeded for the Vault GitHub Actions environment.
+
+The resulting plan proposes only the expected docsctl publish JWT resources: Vault Identity/OIDC issuer configuration, a docs-registry signing key, four package-specific Identity OIDC roles, four package-specific policies, and four GitHub Actions JWT auth roles. It reports `14 to add, 0 to change, 0 to destroy`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "does ~/code/wesen/terraform/.envrc contain them?"
+
+**Assistant interpretation:** Inspect the Terraform repository `.envrc` for AWS backend credentials/profile and, if present, retry Terraform initialization/planning with that environment.
+
+**Inferred user intent:** The user is pointing to the likely correct credential source so we can unblock the real Terraform backend plan.
+
+**Commit (code):** Pending diary-only commit at time of writing.
+
+### What I did
+
+- Checked that `/home/manuel/code/wesen/terraform/.envrc` exists.
+- Inspected it with secret values redacted.
+- Confirmed it exports `AWS_PROFILE`.
+- Confirmed the AWS profile works with `aws sts get-caller-identity` without recording sensitive values.
+- Sourced the Terraform `.envrc` from `/home/manuel/code/wesen/terraform`.
+- Ran:
+
+```bash
+cd /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s
+terraform init -input=false
+terraform plan -input=false -out=/tmp/docsctl-vault-oidc-jwt.tfplan
+```
+
+### Why
+
+- The k3s `.envrc` contains cluster and application tokens but not AWS S3 backend credentials.
+- The Terraform `.envrc` is the correct place to load the AWS profile used by the Terraform backend.
+
+### What worked
+
+- `aws sts get-caller-identity` succeeded using the sourced `AWS_PROFILE`.
+- `terraform init` succeeded against the real backend.
+- `terraform plan` succeeded and wrote:
+
+```text
+/tmp/docsctl-vault-oidc-jwt.tfplan
+```
+
+- Plan summary:
+
+```text
+Plan: 14 to add, 0 to change, 0 to destroy.
+```
+
+### What didn't work
+
+- N/A for this retry. The Terraform `.envrc` unblocked the backend.
+
+### What I learned
+
+- The correct credential source for this Terraform state is `/home/manuel/code/wesen/terraform/.envrc`, not the k3s `.envrc`.
+- The plan does not modify existing GitHub Actions Vault roles; it only adds the docsctl publish JWT resources.
+
+### What was tricky to build
+
+- It was important to source `.envrc` from the Terraform repository because it also conditionally sources `.envrc.local` and may rely on repository-relative behavior.
+- I avoided printing secret values while still proving that the relevant variables and AWS identity are available.
+
+### What warrants a second pair of eyes
+
+- Review the plan before apply, especially the `job_workflow_ref` and package `workflow_ref` values, because applying these roles will enforce those exact GitHub Actions workflow paths.
+- Confirm that `go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@refs/heads/main` is the intended reusable workflow identity before applying.
+
+### What should be done in the future
+
+- If the workflow refs are correct, apply the saved plan:
+
+```bash
+cd /home/manuel/code/wesen/terraform
+source ./.envrc
+cd /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s
+terraform apply /tmp/docsctl-vault-oidc-jwt.tfplan
+```
+
+### Code review instructions
+
+- Review Terraform commit `04451fe795314065d872f22c8710044682525963` together with the generated plan.
+- Pay special attention to the exact role names and bound claims.
+
+### Technical details
+
+The successful plan showed the following high-level resource count:
+
+```text
+1 x vault_identity_oidc.docs_registry
+1 x vault_identity_oidc_key.docs_registry_publish
+4 x vault_identity_oidc_role.docsctl_publish
+4 x vault_policy.docsctl_publish
+4 x vault_jwt_auth_backend_role.docsctl_publish
+```
