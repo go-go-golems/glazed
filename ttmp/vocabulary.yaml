@@ -133,6 +133,14 @@ topics:
       description: URL structure and deep linking
     - slug: ux
       description: User experience and usability improvements
+    - slug: cicd
+      description: Continuous integration and deployment automation
+    - slug: docs-yolo
+      description: docs.yolo.scapegoat.dev dynamic documentation deployment
+    - slug: github-actions
+      description: GitHub Actions workflow automation
+    - slug: oidc
+      description: OpenID Connect identity and token-based authentication
 docTypes:
     - slug: index
       description: Ticket index
