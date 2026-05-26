@@ -102,13 +102,17 @@ export default function App() {
   const { data: listData, isLoading, error } = useListSectionsQuery(
     selectedPackage ? { packageName: selectedPackage, version: effectiveVersion } : undefined,
   );
-  const { data: section } = useGetSectionQuery({
+  const { data: sectionData } = useGetSectionQuery({
     slug: activeSlug!,
     packageName: selectedPackage,
     version: effectiveVersion,
   }, {
     skip: !activeSlug || !selectedPackage,
   });
+  // Only use section data when a slug is actually active in the URL.
+  // When skip is true, useGetSectionQuery returns stale cached data;
+  // we must null it out when no slug is selected.
+  const section = activeSlug ? sectionData : undefined;
 
   const handleSelect = (slug: string) => {
     navigate(`/${selectedPackage}/${versionToUrl(effectiveVersion)}/sections/${slug}`);
