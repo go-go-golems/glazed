@@ -32,3 +32,13 @@ Opened PR 583 for glazedclilint suppressions and triggered Codex review before d
 
 - /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/analyzer.go — Suppression implementation under PR review
 
+
+## 2026-05-27
+
+Fixed PR 583 Codex feedback by expanding previous-line suppressions across the next AST node range and adding a multi-line fixture.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/analyzer.go — next-node range suppression fix
+- /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/testdata/src/a/suppressions.go — multi-line suppression fixture
+

@@ -246,3 +246,69 @@ terminal: false
 ```bash
 ggg pr ready https://github.com/go-go-golems/glazed/pull/583 --output json
 ```
+
+## Step 4: Address Codex feedback for multi-line suppressions
+
+Codex reviewed PR 583 and found that previous-line suppressions only marked the first line of the next AST node. That was too narrow for multi-line statements because a diagnostic can be reported on a later line inside the same suppressed statement.
+
+The fix keeps the previous-line suppression narrow, but expands it across the full source range of the next AST node. This preserves the intended behavior for a comment immediately above a statement while allowing multi-line Cobra or Glazed calls to be suppressed with one reasoned comment.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 3)
+
+**Assistant interpretation:** Keep the PR moving through review and fix analyzer feedback before merge/release/downstream use.
+
+**Inferred user intent:** The suppression implementation should be reliable enough to use in downstream repositories without creating broad Makefile allow paths.
+
+**Commit (code):** 8714219 — "Fix multiline glazedclilint suppressions"
+
+### What I did
+- Replaced `nextNodeLine` with `nextNodeRange`.
+- When a previous-line `glazedclilint:ignore` is valid, the analyzer now marks every line from the next node start through its end as ignored.
+- Added a multi-line Cobra flag fixture to prove the suppression applies to a diagnostic reported inside a multi-line call.
+- Ran focused and full tests.
+- Pushed the fix and retriggered Codex on PR 583.
+
+### Why
+- A single reasoned suppression comment above a legacy statement should cover the complete statement, not just the first token line.
+- Without this, downstream repositories would either need awkward same-line suppressions on arguments or broader file/path suppressions.
+
+### What worked
+- Focused analyzer tests passed.
+- Full repository tests passed.
+- Pre-push hooks passed again.
+- Codex was retriggered on the fixed head.
+
+### What didn't work
+- The initial implementation was too narrow for multi-line statements. Codex reported:
+
+```text
+Track next-node ranges for suppressions
+
+For a //glazedclilint:ignore placed before a multi-line statement, this only records the first line ...
+```
+
+### What I learned
+- Suppression mapping should follow the analyzer's diagnostic positions, not just the visual position of the statement start.
+- AST node ranges give a simple and reviewable boundary for previous-line suppressions.
+
+### What was tricky to build
+- The fix needed to avoid turning `ignore` into a broad block suppression. It still selects only the next AST node after the comment, then marks that node's source range. It does not suppress subsequent statements.
+
+### What warrants a second pair of eyes
+- Whether choosing the smallest AST node after the comment is the correct long-term behavior for every formatting pattern. It works for the tested statement/call cases, but statement-oriented selection could be considered later if edge cases appear.
+
+### What should be done in the future
+- Consider adding tests for multi-line Glazed `cmds.WithSections(...)` diagnostics during a later analyzer-hardening pass.
+
+### Code review instructions
+- Review `nextNodeRange` and the loop that marks ignored lines in `parseSuppressions`.
+- Review `previousLineMultiLineCobraFlagSuppressed` in `suppressions.go`.
+- Validate with:
+  - `go test ./pkg/analysis/glazedclilint -count=1`
+  - `go test ./...`
+
+### Technical details
+- PR URL: https://github.com/go-go-golems/glazed/pull/583
+- Latest pushed head after this fix: `8714219`.
