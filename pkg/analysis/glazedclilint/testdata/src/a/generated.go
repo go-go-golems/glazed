@@ -4,6 +4,8 @@ package a
 
 import "os"
 
+//glazedclilint:ignore
+
 func generatedEnvIsSkipped() string {
 	return os.Getenv("GENERATED")
 }

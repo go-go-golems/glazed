@@ -56,8 +56,8 @@ func run(pass *analysis.Pass) (any, error) {
 	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	fileInfo := buildFileInfo(pass)
-	reportInvalidSuppressions(pass, fileInfo)
 	allowedPaths := splitCSV(allowPathsFlag)
+	reportInvalidSuppressions(pass, fileInfo, allowedPaths)
 
 	// Function-local analysis is needed for the Glazed-section rule because it has
 	// to connect a local variable initialized from settings.NewGlazedSection to a
@@ -459,9 +459,12 @@ func nextNodeRange(pass *analysis.Pass, file *ast.File, after token.Pos) (int, i
 	return start, end
 }
 
-func reportInvalidSuppressions(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta) {
+func reportInvalidSuppressions(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, allowedPaths []string) {
 	for _, meta := range fileInfo {
 		for _, pos := range meta.suppressions.invalidComments {
+			if shouldSkip(pass, fileInfo, allowedPaths, pos) {
+				continue
+			}
 			pass.Reportf(pos, diagnosticInvalidSuppression)
 		}
 	}
