@@ -29,8 +29,16 @@ RelatedFiles:
       Note: Filesystem publication
     - Path: pkg/help/publish/jwt_auth.go
       Note: Vault Identity/OIDC JWT verification and package claim authorization
+    - Path: pkg/help/publish/metrics.go
+      Note: In-process Prometheus text metrics for request and publish outcome counters (commit ee4ffe6)
     - Path: pkg/help/publish/registry.go
-      Note: Upload API handler
+      Note: |-
+        Upload API handler
+        Wires /metrics endpoint and records publish outcomes (commit ee4ffe6)
+    - Path: pkg/help/publish/registry_middleware.go
+      Note: Records HTTP request counters from access-log middleware (commit ee4ffe6)
+    - Path: pkg/help/publish/registry_test.go
+      Note: Verifies metrics endpoint counters and publish success output (commit ee4ffe6)
     - Path: pkg/help/publish/sqlite_validator.go
       Note: Read-only SQLite validation gate before package publication
 ExternalSources: []
@@ -39,6 +47,7 @@ LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: 'Use this when implementing or reviewing docs-registry production hardening: limits, quotas, audit logs, immutability, alerts, rollback, and negative auth proofs.'
 WhenToUse: Before onboarding additional packages such as pinocchio, sqleton, and remarquee to automated docs publishing.
 ---
+
 
 
 
@@ -1109,3 +1118,114 @@ Related tickets:
 - `DOCSCTL-VAULT-OIDC-JWT`: Vault Identity/OIDC publish JWT design and implementation.
 - `DOCSCTL-SSR-K3S`: SSR sidecar deployment on k3s.
 - `DOCSCTL-REACT-SSR-HTML`: full React-rendered SSR HTML and metadata/font polish.
+
+## Phase 5 implementation update: metrics and alerting
+
+Phase 5 adds a lightweight `/metrics` endpoint to `docs-registry`. The first implementation uses in-process counters because the production registry currently runs as one replica. That is enough to expose operational signals immediately without adding a new dependency or changing the deployment topology. If the registry later scales horizontally, Prometheus should scrape every pod and aggregate these counters across instances.
+
+The endpoint emits Prometheus text format and intentionally uses low-cardinality labels. Request metrics are grouped by route class, method, and status. Publish metrics are grouped by package, outcome, and stable error code. The endpoint does not expose repository, workflow, run ID, request ID, subject, user agent, or client IP labels because those values are too high-cardinality for metrics. Those fields stay in structured audit logs instead.
+
+### Metrics exported
+
+```text
+# HELP docs_registry_http_requests_total Total docs-registry HTTP requests by route class, method, and status.
+# TYPE docs_registry_http_requests_total counter
+docs_registry_http_requests_total{route_class="publish",method="PUT",status="200"} 1
+
+# HELP docs_registry_publish_attempts_total Total docs-registry publish attempts by package, outcome, and stable error code.
+# TYPE docs_registry_publish_attempts_total counter
+docs_registry_publish_attempts_total{package="glazed",outcome="success",error_code="none"} 1
+```
+
+`route_class` is one of:
+
+- `publish`
+- `list`
+- `health`
+- `other`
+
+`outcome` is currently:
+
+- `success`
+- `rejected`
+- `failed` only if an unexpected path leaves the publish handler with the default internal-error state.
+
+Important `error_code` values include:
+
+- `none`
+- `unauthorized`
+- `forbidden`
+- `upload_too_large`
+- `invalid_upload`
+- `invalid_help_db`
+- `version_already_exists`
+- `quota_exceeded`
+- `version_quota_exceeded`
+- `too_many_concurrent_uploads`
+- `publish_failed`
+- `auth_not_configured`
+- `store_not_configured`
+
+### Alert sketches
+
+These examples assume Prometheus scrapes the registry pod and evaluates over a 5 minute window. Thresholds should be tuned after observing real release traffic.
+
+#### Any registry 5xx response
+
+```promql
+sum(rate(docs_registry_http_requests_total{status=~"5.."}[5m])) > 0
+```
+
+Reason: a publish endpoint should normally reject bad input with 4xx. Any 5xx suggests registry misconfiguration, filesystem failure, storage failure, or an unhandled bug.
+
+#### Authentication or authorization spike
+
+```promql
+sum(rate(docs_registry_publish_attempts_total{error_code=~"unauthorized|forbidden"}[5m])) > 0.05
+```
+
+Reason: occasional failed manual testing is possible, but repeated auth failures can indicate broken Vault role bindings, a repository trying to publish the wrong package, or abuse of the public registry endpoint.
+
+#### Immutable-version conflict spike
+
+```promql
+sum(rate(docs_registry_publish_attempts_total{error_code="version_already_exists"}[5m])) > 0
+```
+
+Reason: same-SHA retries are accepted; a `version_already_exists` error means a release tag is trying to overwrite an existing version with different bytes. That should be rare and needs human review.
+
+#### Quota exhaustion
+
+```promql
+sum(rate(docs_registry_publish_attempts_total{error_code=~"quota_exceeded|version_quota_exceeded"}[5m])) > 0
+```
+
+Reason: quota failures are deliberate safety stops. The operator should decide whether to increase the per-package limit, prune old versions, or investigate a package that unexpectedly grew.
+
+#### Rate/concurrency pressure
+
+```promql
+sum(rate(docs_registry_http_requests_total{status="429"}[5m])) > 0.1
+```
+
+Reason: repeated 429s mean clients are hitting per-client route limits or concurrent upload limits. For release workflows, this can indicate retries, parallel releases, or abuse.
+
+### Log-based fallback
+
+If Prometheus scraping is not configured yet, operators can alert on the structured publish audit log message:
+
+```text
+docs registry publish
+```
+
+Recommended log filters:
+
+- `outcome="rejected" error_code="unauthorized"`
+- `outcome="rejected" error_code="forbidden"`
+- `outcome="rejected" error_code="version_already_exists"`
+- `outcome="rejected" error_code="quota_exceeded"`
+- `outcome="rejected" error_code="version_quota_exceeded"`
+- `outcome="rejected" error_code="too_many_concurrent_uploads"`
+- `status>=500`
+
+The audit log includes repository/workflow/run provenance for authenticated attempts. Metrics intentionally do not include these fields.

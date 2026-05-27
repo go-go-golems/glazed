@@ -77,3 +77,15 @@ Phase 4: enriched PublisherIdentity with JWT provenance claims and added publish
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/jwt_auth.go — JWT claim propagation into PublisherIdentity
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry.go — Publish outcome audit emission and error-code mapping
 
+
+## 2026-05-26
+
+Phase 5: exposed Prometheus text metrics for registry requests and publish outcomes, and documented alert sketches/log fallbacks (commit ee4ffe6)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/metrics.go — Metrics collector and /metrics renderer
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry.go — /metrics route and publish outcome metric recording
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_middleware.go — HTTP request metric recording
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/design-doc/01-docs-registry-hardening-analysis-design-and-implementation-guide.md — Phase 5 metric and alert guidance
+

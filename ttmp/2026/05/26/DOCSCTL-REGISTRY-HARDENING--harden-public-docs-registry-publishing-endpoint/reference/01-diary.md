@@ -33,6 +33,8 @@ RelatedFiles:
       Note: Copies Vault publish JWT repository/workflow/run claims into PublisherIdentity (commit 889dffe)
     - Path: pkg/help/publish/jwt_auth_test.go
       Note: Verifies JWT claim propagation into PublisherIdentity (commit 889dffe)
+    - Path: pkg/help/publish/metrics.go
+      Note: Phase 5 in-process Prometheus text metrics collector (commit ee4ffe6)
     - Path: pkg/help/publish/publish_policy.go
       Note: Defines stable publish policy sentinel errors and typed quota/immutability errors (commit 4d519f8)
     - Path: pkg/help/publish/registry.go
@@ -40,18 +42,23 @@ RelatedFiles:
         Wired request ID/access-log/rate-limit middleware and publish concurrency gate into registry handler (commit f68238b)
         Maps publish policy errors to stable HTTP status and JSON error codes (commit 4d519f8)
         Emits publish audit outcomes for success
+        Exposes /metrics and records publish outcome counters (commit ee4ffe6)
     - Path: pkg/help/publish/registry_middleware.go
-      Note: New request ID
+      Note: |-
+        New request ID
+        Records HTTP request counters from final response status (commit ee4ffe6)
     - Path: pkg/help/publish/registry_test.go
       Note: |-
         Added tests for request IDs
         Verifies publish audit logs do not leak bearer tokens (commit 889dffe)
+        Metrics endpoint and counter regression test (commit ee4ffe6)
 ExternalSources: []
 Summary: Chronological diary for docs-registry hardening design and implementation.
 LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -865,3 +872,109 @@ sha256, client_ip, remote_addr, user_agent,
 subject, auth_method, identity_package, repository, repository_id,
 workflow_ref, job_workflow_ref, run_id
 ```
+
+## Step 8: Add registry metrics and alert guidance
+
+This step implemented Phase 5 of the hardening plan. The registry now exposes a lightweight Prometheus-compatible `/metrics` endpoint with low-cardinality counters for HTTP requests and publish attempts.
+
+The implementation deliberately keeps high-cardinality provenance in structured audit logs rather than metrics. Metrics answer operational questions such as “are there 5xxs?”, “are publish attempts being rejected?”, and “which package is hitting quota or immutable-version policy?”; audit logs answer forensic questions such as “which repository/workflow/run attempted this publish?”
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue from Phase 4 into the next hardening phase, keeping implementation, tests, design notes, tasks, and changelog synchronized.
+
+**Inferred user intent:** The user wants the public registry to become observable enough for operations and incident response, not only secure at request time.
+
+**Commit (code):** ee4ffe6 — "docs-registry: expose publish metrics"
+
+### What I did
+
+- Added `pkg/help/publish/metrics.go` with an in-process `RegistryMetrics` collector.
+- Exposed `GET /metrics` from the registry handler in Prometheus text format.
+- Added HTTP request counters keyed by low-cardinality labels:
+  - `route_class`,
+  - `method`,
+  - `status`.
+- Added publish attempt counters keyed by low-cardinality labels:
+  - `package`,
+  - `outcome`,
+  - `error_code`.
+- Wired access-log middleware to record request counters after each response.
+- Wired the publish audit defer path to record publish outcome counters for every publish attempt.
+- Added a registry test that publishes a valid package, calls `/metrics`, and verifies both the HTTP request counter and publish success counter.
+- Updated the hardening design guide with:
+  - metric names,
+  - label rationale,
+  - alert sketches for 5xxs, auth failures, immutable-version conflicts, quota exhaustion, and 429 pressure,
+  - log-based fallback alert filters.
+
+### Why
+
+- Phase 4 gave us event-level auditability; Phase 5 gives us aggregate operational visibility.
+- Prometheus text output avoids adding a dependency while still being compatible with common scraping systems.
+- Low-cardinality labels protect the metrics system from repository names, workflow refs, run IDs, request IDs, IP addresses, and user agents. Those details stay in logs.
+
+### What worked
+
+- Targeted tests passed:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+- Pre-commit validation passed:
+  - targeted tests,
+  - golangci-lint,
+  - gosec,
+  - govulncheck.
+- The metrics endpoint required no new CLI flags and no client-facing API changes.
+
+### What didn't work
+
+- N/A. The first implementation and tests passed locally and through pre-commit.
+
+### What I learned
+
+- The existing access-log middleware is the right place to record HTTP-level counters because it sees final response status for rate-limited requests as well as normal mux responses.
+- The publish audit defer path is the right place to record domain counters because every publish branch already normalizes its outcome and stable error code there.
+
+### What was tricky to build
+
+- The metrics endpoint must not accidentally introduce high-cardinality labels. The tempting labels are request ID, repository, workflow ref, run ID, user agent, and client IP, but those values would make time-series cardinality grow without bound. The implementation only exposes package/outcome/error-code at the publish level.
+- `/metrics` itself passes through the access-log middleware, so the scrape request is recorded as an `other` route-class request after the response body is generated. That is acceptable for operational visibility and avoids special-case middleware wiring.
+
+### What warrants a second pair of eyes
+
+- Review whether `package` is an acceptable metric label. It is bounded by the publisher allowlist and current package catalog, so it should be safe, but it is still higher-cardinality than status/outcome.
+- Review whether `/metrics` should remain public behind the existing registry ingress or be restricted by network policy/ingress rules before production rollout.
+- Review whether future multi-replica deployment should keep in-process counters or switch to a full Prometheus client library with per-pod scraping.
+
+### What should be done in the future
+
+- Deploy the new registry image and verify `https://docs-registry.yolo.scapegoat.dev/metrics` or an internal scrape path, depending on the chosen ingress exposure.
+- If exposing `/metrics` publicly is not desired, add an ingress restriction or scrape it inside the cluster.
+- Phase 6 should generate negative proof cases and verify that expected error codes increment.
+
+### Code review instructions
+
+- Start with `pkg/help/publish/metrics.go` for metric names, labels, locking, and Prometheus text rendering.
+- Review `pkg/help/publish/registry_middleware.go` for HTTP request counter recording.
+- Review `pkg/help/publish/registry.go` for `/metrics` wiring and publish counter recording.
+- Review `pkg/help/publish/registry_test.go` for endpoint coverage.
+- Validate with:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+
+### Technical details
+
+The new metrics are:
+
+```text
+docs_registry_http_requests_total{route_class="publish",method="PUT",status="200"}
+docs_registry_publish_attempts_total{package="pinocchio",outcome="success",error_code="none"}
+```
+
+Alert sketches were added to the design guide for:
+
+- any 5xx response,
+- auth/authorization failure spikes,
+- immutable-version overwrite conflicts,
+- quota exhaustion,
+- rate/concurrency pressure.

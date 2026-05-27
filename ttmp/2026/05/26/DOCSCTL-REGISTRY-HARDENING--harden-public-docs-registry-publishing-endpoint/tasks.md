@@ -4,8 +4,8 @@
 
 - [x] Phase 2: Add request ID, structured access logs, explicit production body limit, publish concurrency limit, and basic rate limiting.
 - [x] Phase 3: Add immutable release-version policy with idempotent same-SHA retries and quota checks.
-- [ ] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
-- [ ] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
+- [x] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
+- [x] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
 - [ ] Phase 6: Add local and production-safe negative auth proof cases.
 - [ ] Phase 7: Roll out to production and capture validation evidence.
 
@@ -25,3 +25,6 @@
 - [x] Phase 4.1: Copy non-sensitive Vault publish JWT claims into PublisherIdentity
 - [x] Phase 4.2: Emit publish-specific audit events for auth, upload, validation, policy, and success outcomes
 - [x] Phase 4.3: Add tests for identity claim propagation and audit/error response behavior
+- [x] Phase 5.1: Expose in-process Prometheus metrics for HTTP requests and publish outcomes
+- [x] Phase 5.2: Add tests for metrics counters and /metrics output
+- [x] Phase 5.3: Document alert queries for auth failures, conflicts, quotas, 5xxs, and rate/concurrency rejections
