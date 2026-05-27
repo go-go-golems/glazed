@@ -10,6 +10,7 @@ set -euo pipefail
 REGISTRY_URL="${REGISTRY_URL:-https://docs-registry.yolo.scapegoat.dev}"
 PACKAGE_NAME="${PACKAGE_NAME:-glazed}"
 VERSION="${VERSION:-negative-proof-$(date -u +%Y%m%dT%H%M%SZ)}"
+TMP_BODY=""
 
 fail() {
   echo "FAIL: $*" >&2
@@ -40,13 +41,12 @@ expect_status() {
 }
 
 main() {
-  local tmp_body
-  tmp_body=$(mktemp)
-  trap 'rm -f "$tmp_body" /tmp/docs-registry-negative-body.json' EXIT
-  printf 'not a sqlite database\n' > "$tmp_body"
+  TMP_BODY=$(mktemp)
+  trap 'rm -f "$TMP_BODY" /tmp/docs-registry-negative-body.json' EXIT
+  printf 'not a sqlite database\n' > "$TMP_BODY"
 
   expect_status 200 GET "$REGISTRY_URL/healthz"
-  expect_status 401 PUT "$REGISTRY_URL/v1/packages/$PACKAGE_NAME/versions/$VERSION/sqlite" "$tmp_body"
+  expect_status 401 PUT "$REGISTRY_URL/v1/packages/$PACKAGE_NAME/versions/$VERSION/sqlite" "$TMP_BODY"
 
   local metrics_status
   metrics_status=$(curl -sS -o /tmp/docs-registry-negative-body.json -w '%{http_code}' "$REGISTRY_URL/metrics" || true)
