@@ -65,3 +65,15 @@ Phase 3 deployed immutable registry policy and quotas; fixed boolean flag CrashL
 
 - /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production immutable/quota registry args and rollout fix
 
+
+## 2026-05-26
+
+Phase 4: enriched PublisherIdentity with JWT provenance claims and added publish-specific audit events without token logging (commit 889dffe)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/audit.go — Publish audit event fields and structured logging
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/auth.go — PublisherIdentity provenance fields
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/jwt_auth.go — JWT claim propagation into PublisherIdentity
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry.go — Publish outcome audit emission and error-code mapping
+

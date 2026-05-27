@@ -21,26 +21,38 @@ RelatedFiles:
       Note: |-
         Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
         Adds overwrite and quota CLI flags (commit 4d519f8)
+    - Path: pkg/help/publish/audit.go
+      Note: New publish-specific structured audit event implementation without token logging (commit 889dffe)
+    - Path: pkg/help/publish/auth.go
+      Note: PublisherIdentity now carries non-sensitive JWT provenance fields for audit and response metadata (commit 889dffe)
     - Path: pkg/help/publish/directory_store.go
       Note: Enforces immutable versions
     - Path: pkg/help/publish/directory_store_test.go
       Note: Tests immutable publish behavior
+    - Path: pkg/help/publish/jwt_auth.go
+      Note: Copies Vault publish JWT repository/workflow/run claims into PublisherIdentity (commit 889dffe)
+    - Path: pkg/help/publish/jwt_auth_test.go
+      Note: Verifies JWT claim propagation into PublisherIdentity (commit 889dffe)
     - Path: pkg/help/publish/publish_policy.go
       Note: Defines stable publish policy sentinel errors and typed quota/immutability errors (commit 4d519f8)
     - Path: pkg/help/publish/registry.go
       Note: |-
         Wired request ID/access-log/rate-limit middleware and publish concurrency gate into registry handler (commit f68238b)
         Maps publish policy errors to stable HTTP status and JSON error codes (commit 4d519f8)
+        Emits publish audit outcomes for success
     - Path: pkg/help/publish/registry_middleware.go
       Note: New request ID
     - Path: pkg/help/publish/registry_test.go
-      Note: Added tests for request IDs
+      Note: |-
+        Added tests for request IDs
+        Verifies publish audit logs do not leak bearer tokens (commit 889dffe)
 ExternalSources: []
 Summary: Chronological diary for docs-registry hardening design and implementation.
 LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -736,4 +748,120 @@ Final registry args include:
 - "536870912"
 - --max-versions-per-package
 - "25"
+```
+
+## Step 7: Add publish identity enrichment and audit events
+
+This step implemented Phase 4 of the registry hardening plan. The registry now carries non-sensitive Vault publish JWT provenance claims through `PublisherIdentity` and emits a publish-specific structured audit event for every upload attempt outcome.
+
+The existing request access log remains useful for HTTP-level visibility. The new publish audit event is more specific: it records the requested package/version, auth method, subject, repository metadata, workflow references, run ID, upload size, validation counts, stored SHA, outcome, and stable error code. It still never logs bearer tokens or Authorization headers.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue the next hardening phase after Phase 3, keeping tasks, diary, tests, and focused commits current.
+
+**Inferred user intent:** The user wants the registry hardening work to progress into auditability and provenance, not just request bounding and storage policy.
+
+**Commit (code):** 889dffe — "docs-registry: add publish audit events"
+
+### What I did
+
+- Added granular Phase 4 tasks for:
+  - copying non-sensitive Vault JWT claims into `PublisherIdentity`,
+  - emitting publish-specific audit events,
+  - adding tests for identity propagation and audit behavior.
+- Extended `PublisherIdentity` in `pkg/help/publish/auth.go` with JSON-tagged fields:
+  - `Repository`,
+  - `RepositoryID`,
+  - `WorkflowRef`,
+  - `JobWorkflowRef`,
+  - `RunID`.
+- Updated `JWTPublisherAuth.AuthorizePublish` in `pkg/help/publish/jwt_auth.go` to copy these claims out of the verified JWT.
+- Added `pkg/help/publish/audit.go` with a `publishAuditEvent` type and `logPublishAudit` helper.
+- Updated `handlePublishSQLite` in `pkg/help/publish/registry.go` to emit a publish audit event through a deferred logger for:
+  - concurrency rejection,
+  - auth-not-configured rejection,
+  - store-not-configured rejection,
+  - unauthorized/forbidden auth rejection,
+  - upload-too-large rejection,
+  - invalid upload rejection,
+  - invalid SQLite rejection,
+  - immutable-version/quota/publish policy rejection,
+  - successful publish.
+- Added helper functions to map auth/publish errors to stable status/error-code pairs for both HTTP responses and audit logs.
+- Added tests:
+  - `TestJWTPublisherAuthAllowsMatchingPackage` now verifies repository/workflow/run claim propagation.
+  - `TestRegistryPublishAuditDoesNotLogBearerToken` captures JSON slog output and checks the publish audit event contains the request ID while excluding raw bearer token material.
+
+### Why
+
+- The Phase 2 access log tells operators that a request happened; the Phase 4 publish audit event tells operators who attempted to publish what, from which workflow, and how the publish ended.
+- The registry already verifies the JWT claims; copying non-sensitive claims into `PublisherIdentity` avoids throwing away provenance that is critical for incident response.
+- Keeping stable error codes in audit logs makes future alerting and dashboards simpler.
+
+### What worked
+
+- Targeted tests passed:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+- Pre-commit validation passed:
+  - targeted tests,
+  - golangci-lint,
+  - gosec,
+  - govulncheck.
+- The audit event was added without changing the upload API or client workflow.
+
+### What didn't work
+
+- N/A. This phase passed tests and pre-commit checks on the first commit attempt.
+
+### What I learned
+
+- The registry can now return richer `actor` metadata in successful publish responses because `PublisherIdentity` has JSON tags and provenance fields.
+- Publish-specific audit should be separate from generic access logging: the access log is route-level; publish audit is domain-level and includes validation/storage outcomes.
+
+### What was tricky to build
+
+- The audit event needed to cover many early-return paths without duplicating logging code at every return. A deferred audit logger with a mutable event struct keeps each branch responsible only for setting `status`, `outcome`, and `error_code`.
+- The audit logger must not see or log the raw bearer token. The implementation only receives request metadata and `PublisherIdentity`, never the Authorization header.
+- The upload byte count is only known after the temp file is written; failed auth paths and early upload rejections intentionally log `upload_bytes=0`.
+
+### What warrants a second pair of eyes
+
+- Review the list of logged fields to ensure they are sufficient for incident response but do not expose sensitive material.
+- Review whether successful publish responses should include all `PublisherIdentity` fields or whether response metadata should be narrower than audit metadata.
+- Review whether failed auth attempts should log additional safe context, such as package/version and client IP only, without identity fields.
+
+### What should be done in the future
+
+- Deploy this image and capture production log evidence from a health-safe or controlled publish path.
+- Phase 5 should add metrics/alerts or document log-based alerting using these new stable audit fields.
+- Phase 6 should use the audit fields while collecting negative proof evidence.
+
+### Code review instructions
+
+- Start with `pkg/help/publish/auth.go` and `pkg/help/publish/jwt_auth.go` to review identity enrichment.
+- Review `pkg/help/publish/audit.go` for logged fields and token-safety.
+- Review `pkg/help/publish/registry.go` to ensure every publish outcome sets an appropriate audit status/outcome/error code.
+- Review tests in `pkg/help/publish/jwt_auth_test.go` and `pkg/help/publish/registry_test.go`.
+- Validate with:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+
+### Technical details
+
+Publish audit events use the log message:
+
+```text
+docs registry publish
+```
+
+Representative fields include:
+
+```text
+request_id, package, version, status, outcome, error_code,
+duration_ms, content_length, upload_bytes, section_count, slug_count,
+sha256, client_ip, remote_addr, user_agent,
+subject, auth_method, identity_package, repository, repository_id,
+workflow_ref, job_workflow_ref, run_id
 ```

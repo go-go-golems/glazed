@@ -22,3 +22,6 @@
 - [x] Phase 3.1: Enforce immutable package versions with idempotent same-SHA retries
 - [x] Phase 3.2: Add per-package byte and version-count quotas with stable API errors
 - [x] Phase 3.3: Make production quota and overwrite settings explicit in k3s GitOps
+- [x] Phase 4.1: Copy non-sensitive Vault publish JWT claims into PublisherIdentity
+- [x] Phase 4.2: Emit publish-specific audit events for auth, upload, validation, policy, and success outcomes
+- [x] Phase 4.3: Add tests for identity claim propagation and audit/error response behavior
