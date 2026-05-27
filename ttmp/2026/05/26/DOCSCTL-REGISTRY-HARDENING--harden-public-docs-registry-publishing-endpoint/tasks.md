@@ -3,7 +3,7 @@
 ## TODO
 
 - [x] Phase 2: Add request ID, structured access logs, explicit production body limit, publish concurrency limit, and basic rate limiting.
-- [ ] Phase 3: Add immutable release-version policy with idempotent same-SHA retries and quota checks.
+- [x] Phase 3: Add immutable release-version policy with idempotent same-SHA retries and quota checks.
 - [ ] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
 - [ ] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
 - [ ] Phase 6: Add local and production-safe negative auth proof cases.
@@ -21,4 +21,4 @@
 - [x] Phase 2.4: Make production docs-registry upload/body/rate/concurrency settings explicit in k3s GitOps
 - [x] Phase 3.1: Enforce immutable package versions with idempotent same-SHA retries
 - [x] Phase 3.2: Add per-package byte and version-count quotas with stable API errors
-- [ ] Phase 3.3: Make production quota and overwrite settings explicit in k3s GitOps
+- [x] Phase 3.3: Make production quota and overwrite settings explicit in k3s GitOps

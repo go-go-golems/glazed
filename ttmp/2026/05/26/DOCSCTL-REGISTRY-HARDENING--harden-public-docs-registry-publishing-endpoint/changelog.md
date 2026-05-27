@@ -56,3 +56,12 @@ Phase 3: added immutable version policy, idempotent retries, package quotas, and
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/directory_store_test.go — Storage policy tests
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/publish_policy.go — Policy error contracts
 
+
+## 2026-05-26
+
+Phase 3 deployed immutable registry policy and quotas; fixed boolean flag CrashLoopBackOff with --allow-overwrite=false (Glazed 1e27788, k3s c349919/a702799/5f395e8)
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production immutable/quota registry args and rollout fix
+

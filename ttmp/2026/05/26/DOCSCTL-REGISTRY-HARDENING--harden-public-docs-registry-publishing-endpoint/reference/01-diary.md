@@ -14,7 +14,9 @@ Owners:
     - manuel
 RelatedFiles:
     - Path: ../../../../../../../../../../code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml
-      Note: Deployed sha-e50da7e images and made registry body/rate/concurrency flags explicit (k3s commit 99e3f5f)
+      Note: |-
+        Deployed sha-e50da7e images and made registry body/rate/concurrency flags explicit (k3s commit 99e3f5f)
+        Deployed sha-1e27788 and explicit immutable/quota registry settings; fixed boolean flag syntax after CrashLoopBackOff (k3s commits c349919
     - Path: cmd/docs-registry/main.go
       Note: |-
         Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
@@ -39,6 +41,7 @@ LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -597,4 +600,140 @@ New stable API error examples:
 
 ```json
 {"error":"quota_exceeded","message":"glazed would exceed configured storage quota"}
+```
+
+## Step 6: Deploy immutable registry policy and quota settings
+
+This step deployed the Phase 3 registry storage policy to production. The live registry now runs the image containing immutable version enforcement and quota support, and the k3s deployment explicitly configures per-package quota values.
+
+There was one rollout failure caused by passing a boolean Cobra flag as two Kubernetes arguments. I corrected the GitOps args to use `--allow-overwrite=false` as one argument, applied the fixed manifest, and the deployment rolled out successfully.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue Phase 3 through production rollout and record any deployment issues.
+
+**Inferred user intent:** The user wants the implemented storage policy to be deployed and documented with exact failures and fixes.
+
+**Commit (code):** 1e27788 — "DOCSCTL-REGISTRY-HARDENING: record phase 3 policy"; includes code commit 4d519f8 in history.
+
+**Commit (k3s):** c349919 — "docs-yolo: deploy immutable registry policy"
+
+**Commit (k3s fix):** a702799 — "docs-yolo: fix registry boolean flag args"
+
+**Commit (k3s fix):** 5f395e8 — "docs-yolo: pass overwrite flag with equals syntax"
+
+### What I did
+
+- Pushed Glazed `1e27788` to `origin/main`.
+- Waited for GitHub Actions container build to succeed:
+  - Container image run `26481442543` passed.
+- Updated k3s `docs-yolo` images to:
+  - `ghcr.io/go-go-golems/glazed:sha-1e27788`,
+  - `ghcr.io/go-go-golems/glazed-ssr:sha-1e27788`.
+- Added explicit registry policy args:
+  - `--max-package-bytes 536870912`,
+  - `--max-versions-per-package 25`,
+  - `--allow-overwrite=false`.
+- Pushed GitOps commits and forced Argo CD refresh.
+- Used `kubectl apply -n docs-yolo -k gitops/kustomize/docs-yolo` to apply the corrected local manifest after the bad boolean argument caused a crashloop.
+- Validated production health after rollout:
+  - `https://docs-registry.yolo.scapegoat.dev/healthz` returned `{"ok":true}`,
+  - `https://docs.yolo.scapegoat.dev/api/health` returned `{"ok":true,"sections":333}`.
+
+### Why
+
+- Phase 3 is not complete until the running registry is using immutable-version and quota-capable code.
+- The production deployment should document quota settings explicitly, just like Phase 2 documented rate/body/concurrency settings explicitly.
+
+### What worked
+
+- All GitHub Actions checks for `1e27788` are green:
+  - Secret Scanning,
+  - golangci-lint,
+  - golang-pipeline,
+  - Dependency Scanning,
+  - Container image,
+  - CodeQL Analysis.
+- The corrected deployment rolled out successfully with registry args including:
+  - `--allow-overwrite=false`,
+  - `--max-package-bytes 536870912`,
+  - `--max-versions-per-package 25`.
+- Public health checks continued to pass.
+
+### What didn't work
+
+- The first k3s rollout failed. The registry container entered `CrashLoopBackOff`.
+- Previous container logs showed:
+
+```text
+Too many arguments
+Error: Too many arguments
+```
+
+- The bad argument shape was:
+
+```yaml
+- --allow-overwrite
+- "false"
+```
+
+- This Cobra/Glazed boolean flag accepts either presence for true or equals syntax for explicit false; passing `false` as a separate positional argument caused the command to reject it as an extra argument.
+- I first removed the flag/value pair, but Argo had already applied/still retained the prior bad desired state. I then changed the desired manifest to the unambiguous single-argument form:
+
+```yaml
+- --allow-overwrite=false
+```
+
+- Applying that fixed manifest recovered the rollout.
+
+### What I learned
+
+- Boolean CLI flags in Kubernetes arg arrays should use `--flag=false` when an explicit false value is desired. Do not split boolean false into `--flag` and `"false"` unless the specific CLI parser documents that form.
+- When a bad GitOps revision causes a crashloop, the old ReplicaSet can keep the service available while the new ReplicaSet fails, but the deployment remains degraded until the argument issue is fixed.
+
+### What was tricky to build
+
+- The production deploy needed the docs-browser and docs-registry containers to use the same Go image tag, and the SSR sidecar to use the matching SSR image tag.
+- Argo CD and manual `kubectl apply` interacted during recovery. Manual apply was used only to recover quickly from the crashloop after the corrected manifest was committed and pushed.
+
+### What warrants a second pair of eyes
+
+- Review whether `512 MiB` per package and `25` versions per package are the right initial production limits.
+- Review whether explicitly including `--allow-overwrite=false` is preferable to omitting the flag and relying on the code default.
+- Confirm Argo CD returns to a clean synced state after the manual recovery apply.
+
+### What should be done in the future
+
+- Phase 4 should enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish-specific audit events.
+- Phase 6 should include a production-safe negative proof that different-content duplicate version publishes are rejected.
+
+### Code review instructions
+
+- Review the k3s deployment args:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml`
+- Validate production:
+  - `curl -sS https://docs-registry.yolo.scapegoat.dev/healthz`,
+  - `curl -sS https://docs.yolo.scapegoat.dev/api/health`,
+  - `kubectl -n docs-yolo get deploy docs-yolo -o json | jq '.spec.template.spec.containers[] | select(.name=="docs-registry") | {image,args}'`.
+
+### Technical details
+
+Final registry args include:
+
+```yaml
+- --max-upload-bytes
+- "67108864"
+- --max-concurrent-uploads
+- "2"
+- --rate-limit-requests-per-minute
+- "60"
+- --rate-limit-burst
+- "10"
+- --allow-overwrite=false
+- --max-package-bytes
+- "536870912"
+- --max-versions-per-package
+- "25"
 ```
