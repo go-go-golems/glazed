@@ -1,7 +1,7 @@
 ---
 Title: Harden Public docs-registry Publishing Endpoint
 Ticket: DOCSCTL-REGISTRY-HARDENING
-Status: active
+Status: complete
 Topics:
     - docs-yolo
     - cicd
@@ -15,10 +15,11 @@ Owners:
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-05-26T19:12:56.408564307-04:00
+LastUpdated: 2026-05-26T22:40:55.537540264-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Harden Public docs-registry Publishing Endpoint
 
