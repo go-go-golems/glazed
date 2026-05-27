@@ -112,9 +112,18 @@ func TestRegistryPublishSQLiteForbiddenPackage(t *testing.T) {
 
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusForbidden {
-		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
-	}
+	assertRegistryError(t, rr, http.StatusForbidden, "forbidden")
+}
+
+func TestRegistryPublishSQLiteUnauthenticated(t *testing.T) {
+	h := NewRegistryHandler(newRegistryTestAuth(t), &fakePackageStore{}).Handler()
+	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	assertRegistryError(t, rr, http.StatusUnauthorized, "unauthorized")
 }
 
 func TestRegistryPublishAuditDoesNotLogBearerToken(t *testing.T) {
@@ -152,9 +161,7 @@ func TestRegistryPublishSQLiteInvalidDB(t *testing.T) {
 
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
-	}
+	assertRegistryError(t, rr, http.StatusBadRequest, "invalid_help_db")
 	if store.publishCalls != 0 {
 		t.Fatalf("store should not be called for invalid DB")
 	}
@@ -288,9 +295,7 @@ func TestRegistryPublishSQLiteVersionAlreadyExists(t *testing.T) {
 
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusConflict {
-		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
-	}
+	assertRegistryError(t, rr, http.StatusConflict, "version_already_exists")
 }
 
 func TestRegistryPublishSQLitePackageQuotaExceeded(t *testing.T) {
@@ -303,9 +308,7 @@ func TestRegistryPublishSQLitePackageQuotaExceeded(t *testing.T) {
 
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusInsufficientStorage {
-		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
-	}
+	assertRegistryError(t, rr, http.StatusInsufficientStorage, "quota_exceeded")
 }
 
 func TestRegistryPublishSQLiteStoreFailure(t *testing.T) {
@@ -320,6 +323,20 @@ func TestRegistryPublishSQLiteStoreFailure(t *testing.T) {
 
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func assertRegistryError(t *testing.T, rr *httptest.ResponseRecorder, status int, code string) {
+	t.Helper()
+	if rr.Code != status {
+		t.Fatalf("status = %d, want %d body=%s", rr.Code, status, rr.Body.String())
+	}
+	var payload registryError
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal error response: %v", err)
+	}
+	if payload.Error != code {
+		t.Fatalf("error code = %q, want %q body=%s", payload.Error, code, rr.Body.String())
 	}
 }
 
