@@ -42,6 +42,7 @@ type RegistryHandler struct {
 	MaxConcurrentUploads    int
 	RateLimitRequestsPerMin int
 	RateLimitBurst          int
+	Metrics                 *RegistryMetrics
 
 	publishSem chan struct{}
 }
@@ -99,14 +100,18 @@ func (h *RegistryHandler) Handler() http.Handler {
 	if h.MaxConcurrentUploads > 0 && h.publishSem == nil {
 		h.publishSem = make(chan struct{}, h.MaxConcurrentUploads)
 	}
+	if h.Metrics == nil {
+		h.Metrics = NewRegistryMetrics()
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", h.handleHealth)
+	mux.Handle("GET /metrics", h.Metrics)
 	mux.HandleFunc("GET /v1/packages", h.handleListPackages)
 	mux.HandleFunc("PUT /v1/packages/{package}/versions/{version}/sqlite", h.handlePublishSQLite)
 
 	var handler http.Handler = mux
 	handler = withRateLimit(handler, NewSimpleRateLimiter(h.RateLimitRequestsPerMin, h.RateLimitBurst))
-	handler = withAccessLog(handler)
+	handler = withAccessLog(handler, h.Metrics)
 	handler = withRequestID(handler)
 	return handler
 }
@@ -144,6 +149,7 @@ func (h *RegistryHandler) handlePublishSQLite(w http.ResponseWriter, r *http.Req
 	defer func() {
 		audit.Duration = time.Since(started)
 		logPublishAudit(r, audit)
+		h.Metrics.RecordPublish(audit)
 	}()
 
 	if !h.acquirePublishSlot() {

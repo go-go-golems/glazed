@@ -70,17 +70,20 @@ func withRequestID(next http.Handler) http.Handler {
 	})
 }
 
-func withAccessLog(next http.Handler) http.Handler {
+func withAccessLog(next http.Handler, metrics *RegistryMetrics) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		recorder := &statusRecorder{ResponseWriter: w}
 		next.ServeHTTP(recorder, r)
+		status := recorder.statusCode()
+		routeClass := registryRouteClass(r)
+		metrics.RecordRequest(routeClass, r.Method, status)
 		slog.Info("docs registry request",
 			"request_id", requestIDFromContext(r.Context()),
 			"method", r.Method,
 			"path", r.URL.Path,
-			"route_class", registryRouteClass(r),
-			"status", recorder.statusCode(),
+			"route_class", routeClass,
+			"status", status,
 			"response_bytes", recorder.bytes,
 			"duration_ms", time.Since(start).Milliseconds(),
 			"client_ip", clientIP(r),

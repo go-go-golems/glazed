@@ -74,6 +74,35 @@ func TestRegistryPublishSQLiteSuccess(t *testing.T) {
 	}
 }
 
+func TestRegistryMetricsEndpointRecordsRequestsAndPublishOutcomes(t *testing.T) {
+	store := &fakePackageStore{}
+	h := NewRegistryHandler(newRegistryTestAuth(t), store)
+	h.TempDir = t.TempDir()
+	server := h.Handler()
+
+	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	rr := httptest.NewRecorder()
+	server.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("publish status = %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	rr = httptest.NewRecorder()
+	server.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("metrics status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	metrics := rr.Body.String()
+	if !strings.Contains(metrics, `docs_registry_http_requests_total{route_class="publish",method="PUT",status="200"} 1`) {
+		t.Fatalf("metrics missing publish request counter: %s", metrics)
+	}
+	if !strings.Contains(metrics, `docs_registry_publish_attempts_total{package="pinocchio",outcome="success",error_code="none"} 1`) {
+		t.Fatalf("metrics missing publish success counter: %s", metrics)
+	}
+}
+
 func TestRegistryPublishSQLiteForbiddenPackage(t *testing.T) {
 	h := NewRegistryHandler(newRegistryTestAuth(t), &fakePackageStore{}).Handler()
 	body := readFileBytes(t, createRegistryHelpDB(t, "intro"))
