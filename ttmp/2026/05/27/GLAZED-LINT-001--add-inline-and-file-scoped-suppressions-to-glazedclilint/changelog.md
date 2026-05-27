@@ -23,3 +23,12 @@ Implemented reasoned inline and file scoped glazedclilint suppressions with anal
 - /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/analyzer.go — Suppression implementation
 - /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/testdata/src/a/suppressions.go — Suppression fixtures
 
+
+## 2026-05-27
+
+Opened PR 583 for glazedclilint suppressions and triggered Codex review before downstream rollout.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-24/add-js-providers/glazed/pkg/analysis/glazedclilint/analyzer.go — Suppression implementation under PR review
+

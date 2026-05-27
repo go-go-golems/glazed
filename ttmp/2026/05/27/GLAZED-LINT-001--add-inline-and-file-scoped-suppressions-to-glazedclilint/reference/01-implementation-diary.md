@@ -176,3 +176,73 @@ go test ./pkg/analysis/glazedclilint -count=1
 ```bash
 go test ./...
 ```
+
+## Step 3: Open the suppression PR and trigger Codex
+
+This step published the suppression branch for review. The branch is intentionally separate from the earlier INFRA-002 rollout branch so the analyzer capability can be reviewed, merged, and released before downstream repositories start replacing broad Makefile allow paths with source-local suppressions.
+
+The PR is now the gate for the downstream cleanup pass. I triggered Codex immediately so any analyzer design feedback can be addressed before we depend on the new syntax in downstream repositories.
+
+### Prompt Context
+
+**User prompt (verbatim):** "open PR, then after merge and release, bump-glazed downstream and using the new capabilities. Also tighten up the allowances and ask me about which os.Getenv / cobra should be allowed and which not, and if we should adjust the glazed lint in the first place."
+
+**Assistant interpretation:** Publish the Glazed suppression feature for review first, then only after merge/release update downstream packages to a released Glazed version and use narrower suppressions/allowances. Before deciding suppressions, gather user policy decisions about which raw env/Cobra usages should remain allowed and whether the analyzer rules themselves need adjustment.
+
+**Inferred user intent:** The user wants a controlled two-stage rollout: first land the analyzer capability in Glazed, then use it downstream with policy review rather than blindly suppressing every current finding.
+
+**Commit (code):** N/A — PR creation and Codex trigger only.
+
+### What I did
+- Opened PR 583: https://github.com/go-go-golems/glazed/pull/583
+- Triggered Codex on the PR with `ggg pr codex-trigger`.
+- Checked initial readiness with `ggg pr ready`.
+
+### Why
+- Downstream repositories should not use unreleased suppression syntax.
+- Codex feedback should be handled before broad downstream lint cleanup depends on this implementation.
+
+### What worked
+- GitHub PR creation succeeded.
+- Codex trigger succeeded and posted a review request comment.
+- Initial readiness classified the PR as waiting for Codex rather than failed.
+
+### What didn't work
+- The PR is not ready yet because Codex has not produced its latest signal.
+
+```text
+state: waiting_codex
+terminal: false
+```
+
+### What I learned
+- The correct next gate is PR 583 readiness, not downstream mutation.
+- Downstream cleanup needs a policy pass with the user before converting every broad allow path into inline suppressions.
+
+### What was tricky to build
+- The sequencing matters: downstream suppression comments would be invalid until a tagged Glazed release contains the analyzer change. The downstream pass must wait for the PR to merge and for the release to become visible to `go list -m -versions`.
+
+### What warrants a second pair of eyes
+- Whether the suppression syntax and invalid-suppression diagnostic are acceptable before they become part of downstream policy.
+- Whether the analyzer should distinguish rule IDs before downstream packages start accumulating suppressions.
+
+### What should be done in the future
+- After PR 583 is merged and released, bump downstream Glazed versions.
+- For each downstream finding, ask whether to:
+  - migrate to Glazed settings/parameters;
+  - allow exact legacy files;
+  - add inline/file scoped suppression with a reason;
+  - or adjust the analyzer rule.
+
+### Code review instructions
+- Review PR 583 in GitHub.
+- Validate readiness with:
+  - `ggg pr ready https://github.com/go-go-golems/glazed/pull/583 --output json`
+
+### Technical details
+- PR URL: https://github.com/go-go-golems/glazed/pull/583
+- Initial readiness command:
+
+```bash
+ggg pr ready https://github.com/go-go-golems/glazed/pull/583 --output json
+```
