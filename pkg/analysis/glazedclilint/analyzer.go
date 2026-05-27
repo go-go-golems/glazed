@@ -13,12 +13,15 @@ import (
 )
 
 const (
-	diagnosticRawEnv            = "use Glazed config/env middleware or an explicit command field instead of os.Getenv in CLI code"
-	diagnosticRawFlags          = "define CLI flags with cmds.WithFlags(fields.New(...)) instead of raw Cobra/pflag/flag APIs"
-	diagnosticGlazedWithoutRows = "this command exposes Glazed output flags but does not implement RunIntoGlazeProcessor"
-	glazedSettingsPkg           = "github.com/go-go-golems/glazed/pkg/settings"
-	glazedCmdsPkg               = "github.com/go-go-golems/glazed/pkg/cmds"
-	pflagPkg                    = "github.com/spf13/pflag"
+	diagnosticRawEnv             = "use Glazed config/env middleware or an explicit command field instead of os.Getenv in CLI code"
+	diagnosticRawFlags           = "define CLI flags with cmds.WithFlags(fields.New(...)) instead of raw Cobra/pflag/flag APIs"
+	diagnosticGlazedWithoutRows  = "this command exposes Glazed output flags but does not implement RunIntoGlazeProcessor"
+	diagnosticInvalidSuppression = "glazedclilint suppression requires a reason"
+	glazedSettingsPkg            = "github.com/go-go-golems/glazed/pkg/settings"
+	glazedCmdsPkg                = "github.com/go-go-golems/glazed/pkg/cmds"
+	pflagPkg                     = "github.com/spf13/pflag"
+	suppressionIgnorePrefix      = "glazedclilint:ignore"
+	suppressionFileIgnorePrefix  = "glazedclilint:file-ignore"
 )
 
 var (
@@ -53,6 +56,7 @@ func run(pass *analysis.Pass) (any, error) {
 	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	fileInfo := buildFileInfo(pass)
+	reportInvalidSuppressions(pass, fileInfo)
 	allowedPaths := splitCSV(allowPathsFlag)
 
 	// Function-local analysis is needed for the Glazed-section rule because it has
@@ -76,8 +80,8 @@ func run(pass *analysis.Pass) (any, error) {
 		if shouldSkip(pass, fileInfo, allowedPaths, call.Pos()) {
 			return
 		}
-		checkRawEnv(pass, call)
-		checkRawFlags(pass, call)
+		checkRawEnv(pass, fileInfo, call)
+		checkRawFlags(pass, fileInfo, call)
 	})
 
 	return nil, nil
@@ -127,7 +131,7 @@ func analyzeFunction(
 			}
 			for _, arg := range node.Args {
 				if isTrackedGlazedSectionArg(pass, glazedVars, arg) {
-					pass.Reportf(arg.Pos(), diagnosticGlazedWithoutRows)
+					reportDiagnostic(pass, fileInfo, arg.Pos(), diagnosticGlazedWithoutRows)
 					break
 				}
 			}
@@ -136,17 +140,17 @@ func analyzeFunction(
 	})
 }
 
-func checkRawEnv(pass *analysis.Pass, call *ast.CallExpr) {
+func checkRawEnv(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, call *ast.CallExpr) {
 	fn := calledFunction(pass, call)
 	if fn == nil || fn.Pkg() == nil {
 		return
 	}
 	if fn.Pkg().Path() == "os" && fn.Name() == "Getenv" {
-		pass.Reportf(call.Pos(), diagnosticRawEnv)
+		reportDiagnostic(pass, fileInfo, call.Pos(), diagnosticRawEnv)
 	}
 }
 
-func checkRawFlags(pass *analysis.Pass, call *ast.CallExpr) {
+func checkRawFlags(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, call *ast.CallExpr) {
 	fn := calledFunction(pass, call)
 	if fn == nil {
 		return
@@ -156,7 +160,7 @@ func checkRawFlags(pass *analysis.Pass, call *ast.CallExpr) {
 		switch fn.Pkg().Path() {
 		case "flag", pflagPkg:
 			if isFlagDefinitionName(fn.Name()) {
-				pass.Reportf(call.Pos(), diagnosticRawFlags)
+				reportDiagnostic(pass, fileInfo, call.Pos(), diagnosticRawFlags)
 				return
 			}
 		}
@@ -166,7 +170,7 @@ func checkRawFlags(pass *analysis.Pass, call *ast.CallExpr) {
 		return
 	}
 	if receiverIsPFlagSet(pass, call) {
-		pass.Reportf(call.Pos(), diagnosticRawFlags)
+		reportDiagnostic(pass, fileInfo, call.Pos(), diagnosticRawFlags)
 	}
 }
 
@@ -332,8 +336,15 @@ func unwrapParens(expr ast.Expr) ast.Expr {
 }
 
 type fileMeta struct {
-	filename  string
-	generated bool
+	filename     string
+	generated    bool
+	suppressions suppressionSet
+}
+
+type suppressionSet struct {
+	fileIgnore      bool
+	ignoredLines    map[int]bool
+	invalidComments []token.Pos
 }
 
 func buildFileInfo(pass *analysis.Pass) map[*ast.File]fileMeta {
@@ -341,11 +352,114 @@ func buildFileInfo(pass *analysis.Pass) map[*ast.File]fileMeta {
 	for _, file := range pass.Files {
 		pos := pass.Fset.Position(file.Pos())
 		ret[file] = fileMeta{
-			filename:  filepath.ToSlash(pos.Filename),
-			generated: isGeneratedFile(file),
+			filename:     filepath.ToSlash(pos.Filename),
+			generated:    isGeneratedFile(file),
+			suppressions: parseSuppressions(pass, file),
 		}
 	}
 	return ret
+}
+
+func parseSuppressions(pass *analysis.Pass, file *ast.File) suppressionSet {
+	set := suppressionSet{ignoredLines: map[int]bool{}}
+	for _, group := range file.Comments {
+		for _, comment := range group.List {
+			text := normalizedCommentText(comment.Text)
+			switch {
+			case strings.HasPrefix(text, suppressionFileIgnorePrefix):
+				if suppressionReason(text, suppressionFileIgnorePrefix) == "" {
+					set.invalidComments = append(set.invalidComments, comment.Slash)
+					continue
+				}
+				set.fileIgnore = true
+			case strings.HasPrefix(text, suppressionIgnorePrefix):
+				if suppressionReason(text, suppressionIgnorePrefix) == "" {
+					set.invalidComments = append(set.invalidComments, comment.Slash)
+					continue
+				}
+				start := pass.Fset.Position(comment.Slash)
+				end := pass.Fset.Position(comment.End())
+				set.ignoredLines[start.Line] = true
+				set.ignoredLines[end.Line] = true
+				if nextLine := nextNodeLine(pass, file, comment.End()); nextLine > 0 {
+					set.ignoredLines[nextLine] = true
+				}
+			}
+		}
+	}
+	return set
+}
+
+func normalizedCommentText(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "//")
+	s = strings.TrimPrefix(s, "/*")
+	s = strings.TrimSuffix(s, "*/")
+	s = strings.TrimSpace(s)
+	// analysistest expectations live in comments as "// want ...". They are
+	// not part of the suppression syntax under test.
+	if i := strings.Index(s, " // want "); i >= 0 {
+		s = strings.TrimSpace(s[:i])
+	}
+	return s
+}
+
+func suppressionReason(text, prefix string) string {
+	return strings.TrimSpace(strings.TrimPrefix(text, prefix))
+}
+
+func nextNodeLine(pass *analysis.Pass, file *ast.File, after token.Pos) int {
+	best := token.NoPos
+	ast.Inspect(file, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		pos := n.Pos()
+		if pos <= after {
+			return true
+		}
+		if best == token.NoPos || pos < best {
+			best = pos
+		}
+		return true
+	})
+	if best == token.NoPos {
+		return 0
+	}
+	return pass.Fset.Position(best).Line
+}
+
+func reportInvalidSuppressions(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta) {
+	for _, meta := range fileInfo {
+		for _, pos := range meta.suppressions.invalidComments {
+			pass.Reportf(pos, diagnosticInvalidSuppression)
+		}
+	}
+}
+
+func reportDiagnostic(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, pos token.Pos, message string) {
+	if isSuppressed(pass, fileInfo, pos) {
+		return
+	}
+	pass.Report(analysis.Diagnostic{Pos: pos, Message: message})
+}
+
+func isSuppressed(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, pos token.Pos) bool {
+	if fileInfo == nil {
+		return false
+	}
+	filename := filepath.ToSlash(pass.Fset.Position(pos).Filename)
+	line := pass.Fset.Position(pos).Line
+	for _, meta := range fileInfo {
+		if meta.filename != filename {
+			continue
+		}
+		if meta.suppressions.fileIgnore {
+			return true
+		}
+		return meta.suppressions.ignoredLines[line]
+	}
+	return false
 }
 
 func shouldSkip(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta, allowedPaths []string, pos token.Pos) bool {
