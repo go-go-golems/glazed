@@ -1,6 +1,6 @@
 GLAZED_LINT_DIRS ?= ./cmd/... ./pkg/...
 GLAZED_LINT_FLAGS ?=
-.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
+.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-go-go-golems install version
 
 all: test build
 
@@ -82,8 +82,15 @@ release:
 version:
 	@echo $(VERSION)
 
-bump-glazed:
-	go get github.com/go-go-golems/logcopter@latest
+bump-go-go-golems:
+	@deps="$$(awk '/^require[[:space:]]+github\.com\/go-go-golems\// { print $$2 } /^[[:space:]]*github\.com\/go-go-golems\// { print $$1 }' go.mod | sort -u)"; \
+	if [ -z "$$deps" ]; then \
+		echo "No github.com/go-go-golems dependencies in go.mod"; \
+	else \
+		echo "Bumping go-go-golems dependencies:"; \
+		echo "$$deps"; \
+		for dep in $$deps; do go get "$${dep}@latest"; done; \
+	fi
 	go mod tidy
 
 install:

@@ -145,6 +145,8 @@ topics:
       description: Server-side rendering of frontend routes and HTML
     - slug: backend
       description: Backend services, APIs, persistence, and operational server-side implementation details
+    - slug: automation
+      description: Automation scripts, tooling, and workflow orchestration
 docTypes:
     - slug: index
       description: Ticket index

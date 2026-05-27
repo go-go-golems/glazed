@@ -20,18 +20,19 @@ ShowPerDefault: true
 SectionType: Tutorial
 ---
 
-This tutorial is the operational playbook for moving an existing go-go-golems Go repository from package-level `github.com/rs/zerolog/log` diagnostics to generated logcopter package loggers. It describes the exact dependency, generation, code conversion, validation, and smoke-test steps that should be used for Glazed-family repositories such as Glazed, Geppetto, Pinocchio, and Clay.
+This tutorial is the operational playbook for moving an existing go-go-golems Go repository from package-level `github.com/rs/zerolog/log` diagnostics to generated logcopter package loggers. It describes the exact dependency, generation, code conversion, validation, dependency-bump, PR submission, and Codex-review readiness steps that should be used for Glazed-family repositories such as Glazed, Geppetto, Pinocchio, and Clay.
 
 The goal is not to replace every explicit `zerolog.Logger` value. Keep injected loggers, request-scoped loggers, middleware loggers, and APIs that intentionally accept a concrete logger. Convert package diagnostics: calls that currently use the global zerolog `log` package only because the package needs a convenient local logger.
 
 ## The target shape
 
-A converted repository has four visible properties:
+A converted repository has five visible properties:
 
 1. `go.mod` directly requires `github.com/go-go-golems/logcopter`.
 2. `go.mod` registers `github.com/go-go-golems/logcopter/cmd/logcopter-gen` as a Go tool.
 3. A repository-local `go:generate` file makes `go generate ./...` regenerate package logger files.
 4. Packages use a generated package variable named `log`, backed by logcopter, instead of importing the global zerolog `log` package.
+5. The Makefile has a generic `bump-go-go-golems` target that scans `go.mod` and bumps every `github.com/go-go-golems/...` dependency instead of hand-maintaining a stale `bump-glazed` list.
 
 A generated package logger looks like this:
 
@@ -46,6 +47,26 @@ var log = logcopter.Package("go-go-golems.example.pkg.help.store")
 ```
 
 The area name is stable, path-derived, and configurable at runtime through Glazed logging flags or a logcopter profile file.
+
+## Roll out in dependency order
+
+When adding logcopter across many go-go-golems repositories, move from foundational dependencies toward leaf applications. A downstream repository should not be bumped until the upstream PR it needs has been merged and published, otherwise local `go.work` can hide missing published symbols.
+
+Use this loop for each repository:
+
+1. Merge and release/publish the upstream repository.
+2. In the downstream repository, run `make bump-go-go-golems` to update every direct go-go-golems dependency listed in `go.mod`.
+3. Run `GOWORK=off` tests or smoke tests that prove the published dependency graph works without local workspace checkouts.
+4. Open the downstream PR.
+5. Wait for Actions and Codex review readiness before merging.
+
+For the logcopter rollout, the order is generally:
+
+```text
+logcopter -> glazed/clay -> geppetto -> pinocchio -> leaf applications
+```
+
+The exact order depends on the current `go.mod` graph. Always inspect `go.mod` rather than relying on memory.
 
 ## Step 1: choose the area prefix
 
@@ -294,13 +315,107 @@ Use `--strict-log-areas` to validate configured area names, but remember that st
 
 The exact smoke command should be safe, deterministic, and should not require network credentials. Help commands are usually good smoke tests.
 
-## Step 10: commit in layers
+## Step 10: replace hand-maintained dependency bump targets
+
+Do not maintain repository-specific `bump-glazed` target bodies such as:
+
+```make
+bump-glazed:
+	go get github.com/go-go-golems/glazed@latest
+	go get github.com/go-go-golems/clay@latest
+	go get github.com/go-go-golems/logcopter@latest
+	go mod tidy
+```
+
+Those lists go stale as repositories gain or lose go-go-golems dependencies. Instead, add one generic target that scans `go.mod` for direct `github.com/go-go-golems/...` requirements and bumps each of them:
+
+```make
+bump-go-go-golems:
+	@deps="$$(awk '/^require[[:space:]]+github\.com\/go-go-golems\// { print $$2 } /^[[:space:]]*github\.com\/go-go-golems\// { print $$1 }' go.mod | sort -u)"; \
+	if [ -z "$$deps" ]; then \
+		echo "No github.com/go-go-golems dependencies in go.mod"; \
+	else \
+		echo "Bumping go-go-golems dependencies:"; \
+		echo "$$deps"; \
+		for dep in $$deps; do go get "$${dep}@latest"; done; \
+	fi
+	go mod tidy
+```
+
+For repositories that intentionally run all Makefile Go commands outside a local workspace, keep that convention inside the loop:
+
+```make
+bump-go-go-golems:
+	@deps="$$(awk '/^require[[:space:]]+github\.com\/go-go-golems\// { print $$2 } /^[[:space:]]*github\.com\/go-go-golems\// { print $$1 }' go.mod | sort -u)"; \
+	if [ -z "$$deps" ]; then \
+		echo "No github.com/go-go-golems dependencies in go.mod"; \
+	else \
+		echo "Bumping go-go-golems dependencies:"; \
+		echo "$$deps"; \
+		for dep in $$deps; do GOWORK=off go get "$${dep}@latest"; done; \
+	fi
+	GOWORK=off go mod tidy
+```
+
+Run the target after each upstream merge/release before validating downstream logcopter support:
+
+```bash
+make bump-go-go-golems
+go test ./...
+make logcopter-check
+```
+
+If the bump changes too many unrelated dependencies, split the update into a separate PR before doing the logcopter conversion. This keeps review smaller and makes dependency-order failures easier to diagnose.
+
+## Step 11: submit the PR and wait for Actions plus Codex review
+
+After pushing a repository's logcopter branch, create or update the PR and trigger Codex review:
+
+```bash
+gh pr create --fill --base main --head task/logcopter
+# or, for an existing PR:
+gh pr comment <pr-number-or-url> --body '@codex review'
+```
+
+Use the PR readiness scripts stored with the `PR-REVIEW-READY-001` ticket to avoid manually inspecting every repository:
+
+```bash
+READY_SCRIPTS=/home/manuel/workspaces/2026-05-25/logcopter/logcopter/ttmp/2026/05/26/PR-REVIEW-READY-001--automate-pr-readiness-checks-for-codex-reviews/scripts
+$READY_SCRIPTS/00-pr-ready-check.sh https://github.com/go-go-golems/<repo>/pull/<number>
+```
+
+The script returns success only when:
+
+- Actions/status checks exist and have completed successfully;
+- a Codex signal exists;
+- the latest Codex signal has a thumbs-up reaction;
+- the latest Codex signal has no eyes reaction;
+- Codex did not leave substantive review comments in the latest Codex-authored body.
+
+If it reports an eyes reaction, Codex is still reviewing. If it reports a substantive Codex body, fix the review comments, push, and trigger another `@codex review`.
+
+For a large dependency-order rollout, keep a simple queue:
+
+```text
+repo        upstream requirement          PR      state
+logcopter   none                          #...    merged/released
+glazed      logcopter release             #...    wait for Codex
+clay        glazed/logcopter release      #...    wait for Actions
+geppetto    glazed/clay/logcopter release #...    blocked on clay
+pinocchio   geppetto/glazed/clay release  #...    blocked on geppetto
+```
+
+Only move to the next row when the required upstream release is available and the current PR is ready by script.
+
+## Step 12: commit in layers
 
 Use focused commits:
 
 1. Documentation/playbook commit if you are adding or updating this tutorial.
-2. Repository conversion commit with dependency, generation, imports, generated files, and validation target.
-3. Ticket diary commit that records what changed, what failed, and how to review it.
+2. Dependency-bump commit if `make bump-go-go-golems` changes existing go-go-golems module versions.
+3. Repository conversion commit with dependency, generation, imports, generated files, and validation target.
+4. CI/playbook commit if generation checks, smoke tests, or PR-readiness docs changed.
+5. Ticket diary commit that records what changed, what failed, and how to review it.
 
 This makes generated-file diffs easier to review and lets downstream repositories adopt the same recipe.
 
@@ -314,7 +429,10 @@ This makes generated-file diffs easier to review and lets downstream repositorie
 | Area overrides do nothing | The CLI did not initialize Glazed logging, the area name is different from the generated path, or the package is not linked into the running binary. | Inspect generated `logcopter.go` files, verify the root command calls Glazed logging initialization, and test with an area known to emit during the command. |
 | Trace/debug logs remain hidden | The default level is higher than the package area level, or output format hides the fields you expect. | Set the exact package area with `--log-area area=debug` or in a `--log-config` file; use `format: json` to inspect fields. |
 | `--log-level debug` shows logs without `area` | Those records are emitted through the global zerolog logger, not a generated logcopter package logger. | This is expected. Only generated package loggers include `area`. Convert package diagnostics if they should be area-scoped. |
-| `GOWORK=off` fails but workspace tests pass | The repo relies on a local checkout that has symbols not present in the required published version. | Publish the dependency version first, update `go.mod`, then rerun `GOWORK=off` smoke tests. |
+| `GOWORK=off` fails but workspace tests pass | The repo relies on a local checkout that has symbols not present in the required published version. | Publish the dependency version first, run `make bump-go-go-golems`, then rerun `GOWORK=off` smoke tests. |
+| `make bump-go-go-golems` updates an unexpected module | The module is already a direct `github.com/go-go-golems/...` requirement in `go.mod`, so the target treats it as part of the repo family. | Inspect the diff. If the update is unrelated to logcopter, split it into a dependency-only PR. |
+| Codex review has an eyes reaction | Codex is still reviewing the PR. | Wait and rerun `00-pr-ready-check.sh`; do not merge while eyes is present. |
+| Codex review has a substantive body | Codex left review comments or suggestions. | Fix the comments, push, and trigger another `@codex review`. |
 | Same-package tests fail after generation | Test files import standard library `log` in the same package. | Alias the import as `stdlog`. |
 
 ## Review checklist
@@ -331,6 +449,9 @@ Before merging a conversion, verify:
 - CLI smoke tests cover both `--log-area` and `--log-config`.
 - At least one smoke test uses `GOWORK=off` when cross-repository imports are involved.
 - Area field visibility is verified with JSON output or by checking `area=...` in text output from a generated package logger.
+- The Makefile has `bump-go-go-golems`, not a hand-maintained `bump-glazed` list.
+- `make bump-go-go-golems` was run after any upstream go-go-golems release needed by this repository.
+- The PR readiness checker reports Actions complete, Codex thumbs-up present, no Codex eyes reaction, and no substantive Codex review body.
 - The ticket diary records failures and exact validation commands.
 
 ## See Also
