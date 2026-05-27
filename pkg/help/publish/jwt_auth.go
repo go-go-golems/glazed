@@ -93,5 +93,14 @@ func (a *JWTPublisherAuth) AuthorizePublish(ctx context.Context, rawToken string
 		subject = claims.PackageName
 	}
 
-	return &PublisherIdentity{Subject: subject, PackageName: claims.PackageName, Method: "vault-oidc-jwt"}, nil
+	return &PublisherIdentity{
+		Subject:        subject,
+		PackageName:    claims.PackageName,
+		Method:         "vault-oidc-jwt",
+		Repository:     claims.Repository,
+		RepositoryID:   claims.RepositoryID,
+		WorkflowRef:    claims.WorkflowRef,
+		JobWorkflowRef: claims.JobWorkflowRef,
+		RunID:          claims.RunID,
+	}, nil
 }

@@ -152,6 +152,12 @@ func TestJWTPublisherAuthAllowsMatchingPackage(t *testing.T) {
 	if identity.Subject != "go-go-golems/glazed" {
 		t.Fatalf("subject = %q", identity.Subject)
 	}
+	if identity.Repository != "go-go-golems/glazed" || identity.RepositoryID != "123456" {
+		t.Fatalf("unexpected repository identity: %#v", identity)
+	}
+	if identity.WorkflowRef == "" || identity.JobWorkflowRef == "" || identity.RunID != "987654321" {
+		t.Fatalf("missing workflow/run identity: %#v", identity)
+	}
 }
 
 func TestJWTPublisherAuthRejectsPackageMismatch(t *testing.T) {

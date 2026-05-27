@@ -6,10 +6,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -83,6 +85,32 @@ func TestRegistryPublishSQLiteForbiddenPackage(t *testing.T) {
 
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRegistryPublishAuditDoesNotLogBearerToken(t *testing.T) {
+	var logs bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(previous) })
+
+	h := NewRegistryHandler(newRegistryTestAuth(t), &fakePackageStore{}).Handler()
+	req := httptest.NewRequest(http.MethodPut, "/v1/packages/pinocchio/versions/v1/sqlite", bytes.NewReader([]byte("not sqlite")))
+	req.Header.Set("Authorization", "Bearer pinocchio-token")
+	req.Header.Set(requestIDHeader, "audit-test-request")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	logText := logs.String()
+	if !strings.Contains(logText, "docs registry publish") || !strings.Contains(logText, "audit-test-request") {
+		t.Fatalf("publish audit log missing expected fields: %s", logText)
+	}
+	if strings.Contains(logText, "pinocchio-token") || strings.Contains(logText, "Authorization") {
+		t.Fatalf("publish audit log leaked auth material: %s", logText)
 	}
 }
 

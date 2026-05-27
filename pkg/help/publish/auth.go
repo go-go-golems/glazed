@@ -27,9 +27,14 @@ type PublishRequest struct {
 
 // PublisherIdentity describes the authenticated publisher after authorization.
 type PublisherIdentity struct {
-	Subject     string
-	PackageName string
-	Method      string
+	Subject        string `json:"subject"`
+	PackageName    string `json:"packageName"`
+	Method         string `json:"method"`
+	Repository     string `json:"repository,omitempty"`
+	RepositoryID   string `json:"repositoryId,omitempty"`
+	WorkflowRef    string `json:"workflowRef,omitempty"`
+	JobWorkflowRef string `json:"jobWorkflowRef,omitempty"`
+	RunID          string `json:"runId,omitempty"`
 }
 
 // PublisherAuth authorizes package/version publishing requests.

@@ -129,54 +129,99 @@ func (h *RegistryHandler) handleListPackages(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *RegistryHandler) handlePublishSQLite(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+	packageName := r.PathValue("package")
+	version := r.PathValue("version")
+	audit := publishAuditEvent{
+		RequestID:     requestIDFromContext(r.Context()),
+		PackageName:   packageName,
+		Version:       version,
+		ContentLength: r.ContentLength,
+		Status:        http.StatusInternalServerError,
+		Outcome:       "failed",
+		ErrorCode:     "unknown",
+	}
+	defer func() {
+		audit.Duration = time.Since(started)
+		logPublishAudit(r, audit)
+	}()
+
 	if !h.acquirePublishSlot() {
+		audit.Status = http.StatusTooManyRequests
+		audit.Outcome = "rejected"
+		audit.ErrorCode = "too_many_concurrent_uploads"
 		writeRegistryError(w, http.StatusTooManyRequests, "too_many_concurrent_uploads", "too many concurrent uploads")
 		return
 	}
 	defer h.releasePublishSlot()
 
 	if h.Auth == nil {
+		audit.Status = http.StatusServiceUnavailable
+		audit.Outcome = "rejected"
+		audit.ErrorCode = "auth_not_configured"
 		writeRegistryError(w, http.StatusServiceUnavailable, "auth_not_configured", "publisher auth is not configured")
 		return
 	}
 	if h.Store == nil {
+		audit.Status = http.StatusServiceUnavailable
+		audit.Outcome = "rejected"
+		audit.ErrorCode = "store_not_configured"
 		writeRegistryError(w, http.StatusServiceUnavailable, "store_not_configured", "package store is not configured")
 		return
 	}
 
-	packageName := r.PathValue("package")
-	version := r.PathValue("version")
-	req := PublishRequest{PackageName: packageName, Version: version}
-
-	identity, err := h.Auth.AuthorizePublish(r.Context(), bearerToken(r), req)
+	identity, err := h.Auth.AuthorizePublish(r.Context(), bearerToken(r), PublishRequest{PackageName: packageName, Version: version})
 	if err != nil {
+		audit.Status, audit.ErrorCode = authErrorStatusAndCode(err)
+		audit.Outcome = "rejected"
 		writeAuthError(w, err)
 		return
 	}
+	audit.Identity = identity
 
 	tmpPath, err := h.receiveUpload(r)
 	if err != nil {
 		var maxErr *maxUploadError
 		if errors.As(err, &maxErr) {
+			audit.Status = http.StatusRequestEntityTooLarge
+			audit.Outcome = "rejected"
+			audit.ErrorCode = "upload_too_large"
 			writeRegistryError(w, http.StatusRequestEntityTooLarge, "upload_too_large", maxErr.Error())
 			return
 		}
+		audit.Status = http.StatusBadRequest
+		audit.Outcome = "rejected"
+		audit.ErrorCode = "invalid_upload"
 		writeRegistryError(w, http.StatusBadRequest, "invalid_upload", err.Error())
 		return
 	}
 	defer func() { _ = os.Remove(tmpPath) }()
+	if info, err := os.Stat(tmpPath); err == nil {
+		audit.UploadBytes = info.Size()
+	}
 
 	result, err := ValidateSQLiteHelpDB(r.Context(), tmpPath, SQLiteValidationOptions{PackageName: packageName, Version: version})
 	if err != nil {
+		audit.Status = http.StatusBadRequest
+		audit.Outcome = "rejected"
+		audit.ErrorCode = "invalid_help_db"
 		writeRegistryError(w, http.StatusBadRequest, "invalid_help_db", err.Error())
 		return
 	}
+	audit.SectionCount = result.SectionCount
+	audit.SlugCount = result.SlugCount
 
 	published, err := h.Store.Publish(r.Context(), packageName, version, tmpPath, result, identity)
 	if err != nil {
+		audit.Status, audit.ErrorCode = publishErrorStatusAndCode(err)
+		audit.Outcome = "rejected"
 		writePublishError(w, err)
 		return
 	}
+	audit.Status = http.StatusOK
+	audit.Outcome = "success"
+	audit.ErrorCode = ""
+	audit.SHA256 = published.SHA256
 	writeRegistryJSON(w, http.StatusOK, publishResponse{OK: true, Package: *published, Result: result, Actor: identity})
 }
 
@@ -248,27 +293,50 @@ func bearerToken(r *http.Request) string {
 	return strings.TrimSpace(parts[1])
 }
 
-func writePublishError(w http.ResponseWriter, err error) {
+func publishErrorStatusAndCode(err error) (int, string) {
 	switch {
 	case errors.Is(err, ErrVersionAlreadyExists):
-		writeRegistryError(w, http.StatusConflict, "version_already_exists", err.Error())
+		return http.StatusConflict, "version_already_exists"
 	case errors.Is(err, ErrPackageQuotaExceeded):
-		writeRegistryError(w, http.StatusInsufficientStorage, "quota_exceeded", err.Error())
+		return http.StatusInsufficientStorage, "quota_exceeded"
 	case errors.Is(err, ErrPackageVersionQuotaExceeded):
-		writeRegistryError(w, http.StatusConflict, "version_quota_exceeded", err.Error())
+		return http.StatusConflict, "version_quota_exceeded"
 	default:
-		writeRegistryError(w, http.StatusInternalServerError, "publish_failed", "failed to publish package")
+		return http.StatusInternalServerError, "publish_failed"
+	}
+}
+
+func writePublishError(w http.ResponseWriter, err error) {
+	status, code := publishErrorStatusAndCode(err)
+	if code == "publish_failed" {
+		writeRegistryError(w, status, code, "failed to publish package")
+		return
+	}
+	writeRegistryError(w, status, code, err.Error())
+}
+
+func authErrorStatusAndCode(err error) (int, string) {
+	switch {
+	case errors.Is(err, ErrUnauthorized):
+		return http.StatusUnauthorized, "unauthorized"
+	case errors.Is(err, ErrForbidden):
+		return http.StatusForbidden, "forbidden"
+	default:
+		return http.StatusForbidden, "forbidden"
 	}
 }
 
 func writeAuthError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, ErrUnauthorized):
-		writeRegistryError(w, http.StatusUnauthorized, "unauthorized", "missing or invalid publish token")
-	case errors.Is(err, ErrForbidden):
-		writeRegistryError(w, http.StatusForbidden, "forbidden", "publish token is not allowed for this package")
-	default:
-		writeRegistryError(w, http.StatusForbidden, "forbidden", err.Error())
+	status, code := authErrorStatusAndCode(err)
+	switch code {
+	case "unauthorized":
+		writeRegistryError(w, status, code, "missing or invalid publish token")
+	case "forbidden":
+		if errors.Is(err, ErrForbidden) {
+			writeRegistryError(w, status, code, "publish token is not allowed for this package")
+			return
+		}
+		writeRegistryError(w, status, code, err.Error())
 	}
 }
 
