@@ -17,6 +17,7 @@ RelatedFiles:
       Note: |-
         Deployed sha-e50da7e images and made registry body/rate/concurrency flags explicit (k3s commit 99e3f5f)
         Deployed sha-1e27788 and explicit immutable/quota registry settings; fixed boolean flag syntax after CrashLoopBackOff (k3s commits c349919
+        Production image rollout to sha-312fa79 (k3s commit 05deb9c)
     - Path: cmd/docs-registry/main.go
       Note: |-
         Added registry hardening CLI flags for concurrency and per-client rate limits (commit f68238b)
@@ -54,15 +55,20 @@ RelatedFiles:
         Metrics endpoint and counter regression test (commit ee4ffe6)
         HTTP-level negative publish response assertions for stable error codes (commit 1e14425)
     - Path: ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/scripts/01-production-safe-negative-probes.sh
-      Note: Secret-free production-safe unauthenticated registry probes
+      Note: |-
+        Secret-free production-safe unauthenticated registry probes
+        Fixed cleanup trap after production validation exposed set -u issue (commit 6a99c4c)
     - Path: ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/03-negative-proof-plan.md
       Note: Phase 6 local and production-safe negative proof matrix
+    - Path: ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/04-production-rollout-evidence.md
+      Note: Phase 7 production rollout and validation evidence
 ExternalSources: []
 Summary: Chronological diary for docs-registry hardening design and implementation.
 LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -1079,3 +1085,129 @@ REGISTRY_URL=https://docs-registry.yolo.scapegoat.dev \
 ```
 
 It does not read any token environment variables and does not send an Authorization header.
+
+## Step 10: Roll out audit, metrics, and negative proof hardening to production
+
+This step completed Phase 7 by pushing the Phase 4-6 Glazed commits, building the production container images, updating the k3s GitOps deployment, and validating the live registry behavior. The deployed registry now serves the publish audit and metrics implementation in production.
+
+The rollout also found and fixed a small bug in the production-safe negative probe script. The registry behaved correctly and returned `401`; the script itself failed during shell cleanup because a local variable was referenced from an `EXIT` trap under `set -u`. The script now uses a global cleanup variable and exits cleanly.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue from completed local Phases 4-6 into production rollout, validation, and ticket evidence capture.
+
+**Inferred user intent:** The user wants the hardening work to be live, proven, and documented rather than only implemented locally.
+
+**Commit (code):** 6a99c4c — "DOCSCTL-REGISTRY-HARDENING: fix negative probe cleanup"
+
+### What I did
+
+- Pushed Glazed commits through `312fa79` to `go-go-golems/glazed` `main`.
+- Confirmed GitHub Actions container workflow success:
+  - run `26484320165`,
+  - job `77988328251`,
+  - status `success`,
+  - images `ghcr.io/go-go-golems/glazed:sha-312fa79` and `ghcr.io/go-go-golems/glazed-ssr:sha-312fa79`.
+- Updated k3s GitOps deployment images from `sha-1e27788` to `sha-312fa79`.
+- Committed and pushed k3s rollout:
+  - `05deb9c` — `docs-yolo: deploy registry audit metrics proofs`.
+- Forced Argo CD hard refresh and waited for the Deployment spec to show the new registry image.
+- Watched `deploy/docs-yolo` rollout to success.
+- Validated:
+  - registry health,
+  - docs browser health,
+  - `/metrics`,
+  - safe negative unauthenticated probe,
+  - publish audit log lines,
+  - metrics counters for `401 unauthorized` publish rejections.
+- Fixed the negative probe cleanup trap and re-ran it successfully.
+- Added production rollout evidence in `sources/04-production-rollout-evidence.md`.
+- Checked off Phase 7 and its subtasks.
+
+### Why
+
+- Phase 4-6 were only locally implemented until the image was built, deployed, and validated against production traffic.
+- The `/metrics` endpoint and publish audit events needed production evidence to prove that middleware ordering, ingress routing, and live container args work as expected.
+- The negative probe is intended to be repeatable. Fixing its cleanup bug keeps it useful for future operators.
+
+### What worked
+
+- Glazed full pre-push validation passed before pushing to `main`.
+- The container workflow succeeded and published the expected SHA tags.
+- Argo CD reached `Synced Healthy Succeeded`.
+- Kubernetes rollout completed successfully.
+- `https://docs-registry.yolo.scapegoat.dev/healthz` returned `{"ok":true}`.
+- `https://docs.yolo.scapegoat.dev/api/health` returned `{"ok":true,"sections":333}`.
+- `/metrics` exposed registry counters.
+- The safe negative probe returned `401` for an unauthenticated publish.
+- Audit logs recorded `docs registry publish` events with `error_code=unauthorized` and no bearer token material.
+
+### What didn't work
+
+- The first `git push` command timed out after local pre-push validation completed, before the push itself finished. I re-ran the push with `--no-verify` because the hook had already completed successfully.
+- My first Kubernetes command sourced the k3s `.envrc` from the wrong working directory, so relative kubeconfig setup did not happen and `kubectl` tried `localhost:8080`:
+
+```text
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+```
+
+  Running from `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` and sourcing `.envrc` there fixed the context.
+- The first production-safe probe script run proved the expected registry rejection but exited with a cleanup error:
+
+```text
+ttmp/.../scripts/01-production-safe-negative-probes.sh: line 1: tmp_body: unbound variable
+```
+
+  The trap ran after the local `tmp_body` variable went out of scope under `set -u`. I replaced it with a global `TMP_BODY` variable and re-ran the script successfully.
+
+### What I learned
+
+- The public `/metrics` endpoint is currently reachable through the registry ingress. This is useful for validation, but it should be revisited if metrics should become in-cluster-only.
+- The publish audit event works for unauthenticated attempts too: it records package, version, status, outcome, stable error code, and request metadata while omitting identity fields because authorization did not succeed.
+- Shell `trap` handlers under `set -u` should not reference function-local variables after the function returns.
+
+### What was tricky to build
+
+- The rollout spans two repos and two control planes: Glazed GitHub Actions produces the image, while k3s GitOps consumes the image. The safe sequence was push Glazed, wait for container success, update k3s image tags, push GitOps, hard-refresh Argo CD, poll the Deployment spec, then watch rollout.
+- The validation had to avoid secrets. The negative proof uses no Authorization header, so it proves rejection behavior without exposing Vault/GitHub tokens.
+- The deployed image is `sha-312fa79`; the later `6a99c4c` commit only fixes the ticket probe script and does not change registry runtime code.
+
+### What warrants a second pair of eyes
+
+- Decide whether `/metrics` should remain publicly reachable or be restricted to cluster-internal scraping.
+- Review whether `client_ip=10.42.0.1` in audit logs is sufficient, or whether Traefik should forward the original external IP into `X-Forwarded-For` for registry requests.
+- Review whether the k3s deployment should eventually use a dedicated metrics ServiceMonitor instead of public scrape access.
+
+### What should be done in the future
+
+- Add controlled GitHub/Vault negative proof runs for wrong repository ID, workflow ref, job workflow ref, event, tag/ref shape, and package claim.
+- Decide whether to close `DOCSCTL-REGISTRY-HARDENING` now or keep it open for controlled proof work.
+- Re-upload the updated hardening guide to reMarkable if a final reader-facing bundle is desired.
+
+### Code review instructions
+
+- Review Glazed runtime changes through `312fa79` for Phase 4-6 behavior.
+- Review k3s commit `05deb9c` for image tag updates.
+- Review `sources/04-production-rollout-evidence.md` for exact production evidence.
+- Validate with:
+  - `curl -fsS https://docs-registry.yolo.scapegoat.dev/healthz`,
+  - `curl -fsS https://docs-registry.yolo.scapegoat.dev/metrics`,
+  - the production-safe negative probe script.
+
+### Technical details
+
+Live Deployment images after rollout:
+
+```text
+docs-browser=ghcr.io/go-go-golems/glazed:sha-312fa79
+docs-registry=ghcr.io/go-go-golems/glazed:sha-312fa79
+docs-ssr=ghcr.io/go-go-golems/glazed-ssr:sha-312fa79
+```
+
+Observed publish rejection metric:
+
+```text
+docs_registry_publish_attempts_total{package="glazed",outcome="rejected",error_code="unauthorized"} 2
+```

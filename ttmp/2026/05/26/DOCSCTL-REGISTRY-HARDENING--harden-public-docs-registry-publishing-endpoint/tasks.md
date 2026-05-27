@@ -7,7 +7,7 @@
 - [x] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
 - [x] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
 - [x] Phase 6: Add local and production-safe negative auth proof cases.
-- [ ] Phase 7: Roll out to production and capture validation evidence.
+- [x] Phase 7: Roll out to production and capture validation evidence.
 
 ## DONE
 
@@ -31,3 +31,6 @@
 - [x] Phase 6.1: Add HTTP-level tests for unauthenticated, forbidden, invalid DB, duplicate-version, and quota negative responses
 - [x] Phase 6.2: Document JWT and GitHub/Vault negative proof matrix
 - [x] Phase 6.3: Add production-safe negative probe script that does not require secrets
+- [x] Phase 7.1: Push Phase 4-6 Glazed commits and build GHCR images
+- [x] Phase 7.2: Deploy Phase 4-6 images through k3s GitOps
+- [x] Phase 7.3: Validate health, metrics, safe negative probe, and audit logs in production

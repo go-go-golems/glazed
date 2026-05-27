@@ -100,3 +100,13 @@ Phase 6: added HTTP-level negative response assertions, a negative proof plan, a
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/scripts/01-production-safe-negative-probes.sh — Production-safe unauthenticated probe script
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/03-negative-proof-plan.md — Negative proof matrix and evidence rules
 
+
+## 2026-05-26
+
+Phase 7: deployed registry audit/metrics/negative-proof hardening to production, validated health, metrics, safe negative probe, and audit logs (Glazed 312fa79, k3s 05deb9c)
+
+### Related Files
+
+- /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/docs-yolo/deployment.yaml — Production images updated to sha-312fa79
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/04-production-rollout-evidence.md — Production validation evidence
+
