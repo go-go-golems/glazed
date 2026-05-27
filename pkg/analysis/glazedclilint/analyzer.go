@@ -381,8 +381,10 @@ func parseSuppressions(pass *analysis.Pass, file *ast.File) suppressionSet {
 				end := pass.Fset.Position(comment.End())
 				set.ignoredLines[start.Line] = true
 				set.ignoredLines[end.Line] = true
-				if nextLine := nextNodeLine(pass, file, comment.End()); nextLine > 0 {
-					set.ignoredLines[nextLine] = true
+				if nextStart, nextEnd := nextNodeRange(pass, file, comment.End()); nextStart > 0 {
+					for line := nextStart; line <= nextEnd; line++ {
+						set.ignoredLines[line] = true
+					}
 				}
 			}
 		}
@@ -408,8 +410,8 @@ func suppressionReason(text, prefix string) string {
 	return strings.TrimSpace(strings.TrimPrefix(text, prefix))
 }
 
-func nextNodeLine(pass *analysis.Pass, file *ast.File, after token.Pos) int {
-	best := token.NoPos
+func nextNodeRange(pass *analysis.Pass, file *ast.File, after token.Pos) (int, int) {
+	var best ast.Node
 	ast.Inspect(file, func(n ast.Node) bool {
 		if n == nil {
 			return true
@@ -418,15 +420,20 @@ func nextNodeLine(pass *analysis.Pass, file *ast.File, after token.Pos) int {
 		if pos <= after {
 			return true
 		}
-		if best == token.NoPos || pos < best {
-			best = pos
+		if best == nil || pos < best.Pos() {
+			best = n
 		}
 		return true
 	})
-	if best == token.NoPos {
-		return 0
+	if best == nil {
+		return 0, 0
 	}
-	return pass.Fset.Position(best).Line
+	start := pass.Fset.Position(best.Pos()).Line
+	end := pass.Fset.Position(best.End()).Line
+	if end < start {
+		end = start
+	}
+	return start, end
 }
 
 func reportInvalidSuppressions(pass *analysis.Pass, fileInfo map[*ast.File]fileMeta) {

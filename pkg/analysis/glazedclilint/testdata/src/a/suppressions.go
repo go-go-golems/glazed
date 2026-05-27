@@ -28,6 +28,19 @@ func previousLineCobraFlagSuppressed() *cobra.Command {
 	return cmd
 }
 
+func previousLineMultiLineCobraFlagSuppressed() *cobra.Command {
+	var address string
+	cmd := &cobra.Command{}
+	//glazedclilint:ignore legacy multi-line Cobra bridge in test fixture
+	cmd.Flags().StringVar(
+		&address,
+		"address",
+		":8080",
+		"listen address",
+	)
+	return cmd
+}
+
 func invalidSuppressionStillReports() string {
 	//glazedclilint:ignore // want `glazedclilint suppression requires a reason`
 	return os.Getenv("INVALID") // want `use Glazed config/env middleware`
