@@ -16,6 +16,12 @@ func previousLineEnvSuppressed() string {
 	return os.Getenv("PREVIOUS_LINE")
 }
 
+func trailingSuppressionDoesNotSuppressNextStatement() string {
+	first := os.Getenv("TRAILING")   //glazedclilint:ignore legacy bootstrap env read in test fixture
+	second := os.Getenv("NEXT_LINE") // want `use Glazed config/env middleware`
+	return first + second
+}
+
 func sameLineRawFlagSuppressed() {
 	_ = flag.String("legacy", "", "legacy") //glazedclilint:ignore legacy standard flag adapter in test fixture
 }

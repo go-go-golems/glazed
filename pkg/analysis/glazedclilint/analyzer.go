@@ -381,9 +381,11 @@ func parseSuppressions(pass *analysis.Pass, file *ast.File) suppressionSet {
 				end := pass.Fset.Position(comment.End())
 				set.ignoredLines[start.Line] = true
 				set.ignoredLines[end.Line] = true
-				if nextStart, nextEnd := nextNodeRange(pass, file, comment.End()); nextStart > 0 {
-					for line := nextStart; line <= nextEnd; line++ {
-						set.ignoredLines[line] = true
+				if !hasNodeStartingOnLineBefore(pass, file, start.Line, comment.Slash) {
+					if nextStart, nextEnd := nextNodeRange(pass, file, comment.End()); nextStart > 0 {
+						for line := nextStart; line <= nextEnd; line++ {
+							set.ignoredLines[line] = true
+						}
 					}
 				}
 			}
@@ -408,6 +410,27 @@ func normalizedCommentText(s string) string {
 
 func suppressionReason(text, prefix string) string {
 	return strings.TrimSpace(strings.TrimPrefix(text, prefix))
+}
+
+func hasNodeStartingOnLineBefore(pass *analysis.Pass, file *ast.File, line int, before token.Pos) bool {
+	found := false
+	ast.Inspect(file, func(n ast.Node) bool {
+		if n == nil || found {
+			return !found
+		}
+		pos := n.Pos()
+		if pos == token.NoPos || pos >= before {
+			return true
+		}
+		if pass.Fset.Position(pos).Line == line {
+			switch n.(type) {
+			case ast.Expr, ast.Stmt, ast.Spec, ast.Decl:
+				found = true
+			}
+		}
+		return true
+	})
+	return found
 }
 
 func nextNodeRange(pass *analysis.Pass, file *ast.File, after token.Pos) (int, int) {
