@@ -1,3 +1,5 @@
+GLAZED_LINT_DIRS ?= ./cmd/... ./pkg/...
+GLAZED_LINT_FLAGS ?=
 .PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-glazed install version
 
 all: test build
@@ -18,17 +20,19 @@ golangci-lint-install:
 	mkdir -p $(dir $(GOLANGCI_LINT_BIN))
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI_LINT_BIN)) $(GOLANGCI_LINT_VERSION)
 
-lint: golangci-lint-install
+lint: golangci-lint-install glazed-lint-build
 	$(GOLANGCI_LINT_BIN) run -v
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) $(GLAZED_LINT_FLAGS) $(GLAZED_LINT_DIRS)
 
-lintmax: golangci-lint-install
+lintmax: golangci-lint-install glazed-lint-build
 	$(GOLANGCI_LINT_BIN) run -v --max-same-issues=100
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) $(GLAZED_LINT_FLAGS) $(GLAZED_LINT_DIRS)
 
 glazed-lint-build:
 	go build -o $(GLAZED_LINT_BIN) ./cmd/tools/glazed-lint
 
 glazed-lint: glazed-lint-build
-	go vet -vettool=$(GLAZED_LINT_BIN) ./cmd/... ./pkg/...
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) $(GLAZED_LINT_FLAGS) $(GLAZED_LINT_DIRS)
 
 glazedclilint:
 	go build -o $(GLAZEDCLILINT_BIN) ./cmd/tools/glazedclilint
