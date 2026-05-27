@@ -365,15 +365,16 @@ func parseSuppressions(pass *analysis.Pass, file *ast.File) suppressionSet {
 	for _, group := range file.Comments {
 		for _, comment := range group.List {
 			text := normalizedCommentText(comment.Text)
-			switch {
-			case strings.HasPrefix(text, suppressionFileIgnorePrefix):
-				if suppressionReason(text, suppressionFileIgnorePrefix) == "" {
+			if reason, ok := suppressionDirectiveReason(text, suppressionFileIgnorePrefix); ok {
+				if reason == "" {
 					set.invalidComments = append(set.invalidComments, comment.Slash)
 					continue
 				}
 				set.fileIgnore = true
-			case strings.HasPrefix(text, suppressionIgnorePrefix):
-				if suppressionReason(text, suppressionIgnorePrefix) == "" {
+				continue
+			}
+			if reason, ok := suppressionDirectiveReason(text, suppressionIgnorePrefix); ok {
+				if reason == "" {
 					set.invalidComments = append(set.invalidComments, comment.Slash)
 					continue
 				}
@@ -408,8 +409,21 @@ func normalizedCommentText(s string) string {
 	return s
 }
 
-func suppressionReason(text, prefix string) string {
-	return strings.TrimSpace(strings.TrimPrefix(text, prefix))
+func suppressionDirectiveReason(text, prefix string) (string, bool) {
+	if text == prefix {
+		return "", true
+	}
+	if !strings.HasPrefix(text, prefix) {
+		return "", false
+	}
+	remaining := strings.TrimPrefix(text, prefix)
+	if remaining == "" {
+		return "", true
+	}
+	if remaining[0] != ' ' && remaining[0] != '\t' {
+		return "", false
+	}
+	return strings.TrimSpace(remaining), true
 }
 
 func hasNodeStartingOnLineBefore(pass *analysis.Pass, file *ast.File, line int, before token.Pos) bool {

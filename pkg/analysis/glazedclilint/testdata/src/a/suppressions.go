@@ -22,6 +22,11 @@ func trailingSuppressionDoesNotSuppressNextStatement() string {
 	return first + second
 }
 
+func malformedDirectiveDoesNotSuppress() string {
+	//glazedclilint:ignore-old legacy typo in test fixture
+	return os.Getenv("MALFORMED") // want `use Glazed config/env middleware`
+}
+
 func sameLineRawFlagSuppressed() {
 	_ = flag.String("legacy", "", "legacy") //glazedclilint:ignore legacy standard flag adapter in test fixture
 }
