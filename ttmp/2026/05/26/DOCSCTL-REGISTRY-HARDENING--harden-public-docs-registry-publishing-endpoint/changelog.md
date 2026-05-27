@@ -89,3 +89,14 @@ Phase 5: exposed Prometheus text metrics for registry requests and publish outco
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_middleware.go — HTTP request metric recording
 - /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/design-doc/01-docs-registry-hardening-analysis-design-and-implementation-guide.md — Phase 5 metric and alert guidance
 
+
+## 2026-05-26
+
+Phase 6: added HTTP-level negative response assertions, a negative proof plan, and a secret-free production-safe probe script (commit 1e14425)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/pkg/help/publish/registry_test.go — Stable negative HTTP response assertions
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/scripts/01-production-safe-negative-probes.sh — Production-safe unauthenticated probe script
+- /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed/ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/03-negative-proof-plan.md — Negative proof matrix and evidence rules
+

@@ -52,12 +52,18 @@ RelatedFiles:
         Added tests for request IDs
         Verifies publish audit logs do not leak bearer tokens (commit 889dffe)
         Metrics endpoint and counter regression test (commit ee4ffe6)
+        HTTP-level negative publish response assertions for stable error codes (commit 1e14425)
+    - Path: ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/scripts/01-production-safe-negative-probes.sh
+      Note: Secret-free production-safe unauthenticated registry probes
+    - Path: ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/sources/03-negative-proof-plan.md
+      Note: Phase 6 local and production-safe negative proof matrix
 ExternalSources: []
 Summary: Chronological diary for docs-registry hardening design and implementation.
 LastUpdated: 2026-05-26T19:20:00-04:00
 WhatFor: Use this to resume hardening work and understand what was created, validated, and uploaded.
 WhenToUse: Before implementing future DOCSCTL-REGISTRY-HARDENING phases.
 ---
+
 
 
 
@@ -978,3 +984,98 @@ Alert sketches were added to the design guide for:
 - immutable-version overwrite conflicts,
 - quota exhaustion,
 - rate/concurrency pressure.
+
+## Step 9: Add negative proof coverage and production-safe probes
+
+This step implemented Phase 6 of the hardening plan. The local test suite now asserts stable HTTP error codes for the main negative publish paths, and the ticket now includes a negative proof plan plus a production-safe probe script that does not require secrets.
+
+The production-safe script intentionally proves only what can be proven without credentials: health, unauthenticated publish rejection, and optional metrics visibility. The more sensitive GitHub/Vault bound-claim cases are documented as controlled proof cases because they require temporary workflows or constrained Vault roles, not manual token handling.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue hardening into Phase 6 by adding negative proof coverage and documenting safe production validation boundaries.
+
+**Inferred user intent:** The user wants evidence that the registry rejects bad publish attempts and a safe repeatable way to validate production behavior without leaking credentials.
+
+**Commit (code):** 1e14425 — "docs-registry: cover negative publish responses"
+
+### What I did
+
+- Added an HTTP-level unauthenticated publish test that expects `401 unauthorized`.
+- Updated existing forbidden, invalid DB, duplicate-version, and quota tests to assert stable JSON error codes, not only status codes.
+- Added an `assertRegistryError` helper to decode and verify registry error responses consistently.
+- Added `sources/03-negative-proof-plan.md` with:
+  - local automated proof cases,
+  - production-safe proof cases,
+  - GitHub/Vault controlled proof cases,
+  - evidence to capture without secrets.
+- Added `scripts/01-production-safe-negative-probes.sh`, an executable script that:
+  - checks `GET /healthz`,
+  - sends an unauthenticated tiny invalid upload and expects `401`,
+  - optionally checks `/metrics` if it is publicly reachable.
+- Checked off Phase 6 and its subtasks in docmgr.
+
+### Why
+
+- Stable error codes are part of the hardened API contract; tests should catch accidental regressions in both status and JSON body.
+- Production negative proof must avoid raw Vault/GitHub tokens. A script that proves unauthenticated rejection is safe to run and safe to store in the ticket.
+- Bound-claim failures need controlled GitHub/Vault environments because production tokens are intentionally short-lived and sensitive.
+
+### What worked
+
+- Targeted tests passed:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+- Pre-commit validation passed:
+  - targeted tests,
+  - golangci-lint,
+  - gosec,
+  - govulncheck.
+- The probe script is secret-free and defaults to `https://docs-registry.yolo.scapegoat.dev`.
+
+### What didn't work
+
+- N/A. Local tests and pre-commit checks passed.
+
+### What I learned
+
+- The registry already had broad negative coverage, but several tests only asserted status codes. Adding body-code assertions makes the test suite align better with CI/client behavior.
+- Production-safe negative proof must distinguish between “safe unauthenticated probes” and “controlled credentialed failure proofs.” Mixing those would invite unsafe token handling.
+
+### What was tricky to build
+
+- Some important negative cases are enforced by Vault/GitHub bound claims before the registry ever sees a token. The registry unit tests can prove JWT verifier behavior with a local issuer, but production proof for wrong repository/workflow/ref/event requires a controlled Actions/Vault setup.
+- The production script must not accidentally publish anything. It omits Authorization entirely, so the registry rejects before upload validation and storage.
+
+### What warrants a second pair of eyes
+
+- Review the production-safe script before running it against production, especially if ingress/rate limits become stricter.
+- Review the controlled proof plan for wrong repository/workflow/ref/event and decide whether to create temporary Vault roles or temporary GitHub workflows for those cases.
+- Review whether `/metrics` should be public or ingress-restricted before using the script’s metrics check as a hard requirement.
+
+### What should be done in the future
+
+- Run the production-safe negative probe after deploying the Phase 4–6 image.
+- Add controlled GitHub/Vault negative proof runs for wrong repository, workflow, ref, event, and package claim.
+- Capture audit log and metrics evidence for each controlled negative case.
+
+### Code review instructions
+
+- Review `pkg/help/publish/registry_test.go` for stable negative response assertions.
+- Review `sources/03-negative-proof-plan.md` for proof boundaries and evidence requirements.
+- Review `scripts/01-production-safe-negative-probes.sh` for safety before production execution.
+- Validate with:
+  - `go test ./pkg/help/publish ./cmd/docs-registry ./cmd/docsctl`
+
+### Technical details
+
+The production-safe probe can be run as:
+
+```bash
+cd /home/manuel/workspaces/2026-05-25/docsctl-cicd-deploy/glazed
+REGISTRY_URL=https://docs-registry.yolo.scapegoat.dev \
+  ttmp/2026/05/26/DOCSCTL-REGISTRY-HARDENING--harden-public-docs-registry-publishing-endpoint/scripts/01-production-safe-negative-probes.sh
+```
+
+It does not read any token environment variables and does not send an Authorization header.

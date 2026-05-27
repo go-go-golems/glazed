@@ -6,7 +6,7 @@
 - [x] Phase 3: Add immutable release-version policy with idempotent same-SHA retries and quota checks.
 - [x] Phase 4: Enrich `PublisherIdentity` with non-sensitive JWT claims and emit publish audit events.
 - [x] Phase 5: Add metrics and alerting, or document log-based alerts if metrics are not available yet.
-- [ ] Phase 6: Add local and production-safe negative auth proof cases.
+- [x] Phase 6: Add local and production-safe negative auth proof cases.
 - [ ] Phase 7: Roll out to production and capture validation evidence.
 
 ## DONE
@@ -28,3 +28,6 @@
 - [x] Phase 5.1: Expose in-process Prometheus metrics for HTTP requests and publish outcomes
 - [x] Phase 5.2: Add tests for metrics counters and /metrics output
 - [x] Phase 5.3: Document alert queries for auth failures, conflicts, quotas, 5xxs, and rate/concurrency rejections
+- [x] Phase 6.1: Add HTTP-level tests for unauthenticated, forbidden, invalid DB, duplicate-version, and quota negative responses
+- [x] Phase 6.2: Document JWT and GitHub/Vault negative proof matrix
+- [x] Phase 6.3: Add production-safe negative probe script that does not require secrets
