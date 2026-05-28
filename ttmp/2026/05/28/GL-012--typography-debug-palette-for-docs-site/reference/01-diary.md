@@ -560,3 +560,69 @@ The original article was written after the initial implementation. It didn't cov
 - Article: 50,334 bytes (was 32,669)
 - Vault commit: `49e9a4f`
 - reMarkable: uploaded to `/ai/2026/05/28/GL-012`
+
+---
+
+## Step 8: Fix Display typeface role + add Garamond Reading preset
+
+### Prompt Context
+
+**User prompt (verbatim):** "The 'Display typeface role' doesn't seem to take effect. Also make a preset with titles/header/navigation chicago, code monaco, body text garamond. Probably an issue of css? or maybe introduce css role or so"
+
+**Assistant interpretation:** The Display typeface role wasn't applying font family changes to chrome elements (titlebar, menubar, etc.). Also add a preset for Chicago_ chrome + EB Garamond body + Monaco code.
+
+**Inferred user intent:** Fix the bug that prevents the Display role from working, and create a clean preset that demonstrates the role system working correctly.
+
+**Commit (code):** `2197b2f` — "fix(typography-palette): Display typeface role now applies to all elements"
+
+### What I did
+
+1. Diagnosed the root cause: resolution layer checked `elem.adjustable.includes('fontFamily')` before injecting role-based fontFamily. Display elements (titlebar, menubar, sidebar controls, statusbar, badges) didn't have `fontFamily` in their `adjustable` array, so they were skipped.
+2. Fixed resolution layer: removed the `adjustable.includes('fontFamily')` guard — now injects role-based fontFamily for ALL elements with a `typefaceRole`
+3. Added `fontFamily` to `adjustable` for all 17 elements that lacked it, so users can per-element override the role
+4. Added `--font-serif` CSS variable to `global.css` alongside `--font-ui` and `--font-mono`
+5. Added 'Garamond Reading' preset: `typefaceRoles: { display: 'ui', body: 'serif', code: 'mono' }` with minimal size overrides (prose 15px/1.7, heading letter-spacing)
+6. Verified in browser: titlebar/menubar render in Chicago_, body/tree/cards render in EB Garamond, code stays in Monaco
+
+### Why
+
+The `adjustable` array was designed to control what the per-element UI shows. But the resolution layer used it as a gate for role-based injection. These are two different concerns: the role system is a higher-level mechanism that should apply regardless of whether the per-element UI exposes a fontFamily dropdown.
+
+### What worked
+
+- The fix was a single line removal (`if (!elem.adjustable.includes('fontFamily')) continue;`) that immediately made the Display role work
+- The injected CSS now shows `font-family: 'Chicago_'` on titlebar, menubar, searchbar, etc.
+- The Garamond Reading preset is the cleanest demonstration of the role system: only 3 lines of role assignments + 3 lines of size overrides
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The `adjustable` array has two distinct purposes: (1) control what UI controls appear, and (2) previously, gate whether resolution applies. These should be decoupled. The resolution layer should apply role-based values regardless of `adjustable`.
+
+### What was tricky to build
+
+- Diagnosing the bug required tracing the data flow: Redux → resolution hook → element map lookup → `adjustable` check → skip. The issue wasn't in CSS at all — it was in the TypeScript resolution logic.
+
+### What warrants a second pair of eyes
+
+- Verify that the 17 elements that gained `fontFamily` in `adjustable` now show the FontFamilySelect dropdown in their per-element UI
+
+### What should be done in the future
+
+- Add a visual indicator in the element UI showing which role the element belongs to (e.g., a small badge "Display", "Body", "Code")
+- Consider adding CSS variable references as an alternative export format (using `var(--font-ui)` instead of concrete stacks)
+
+### Code review instructions
+
+- Check `useTypographyOverrides.ts`: the role injection loop no longer has the `adjustable.includes` guard
+- Check `element-registry.ts`: all elements with `typefaceRole` now have `fontFamily` in `adjustable`
+- Test: select Garamond Reading preset → titlebar should be Chicago_, body should be Garamond
+
+### Technical details
+
+- 4 files changed, 51 insertions, 20 deletions
+- 8 built-in presets total (was 7)
+- Commit: `2197b2f`

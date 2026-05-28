@@ -50,3 +50,8 @@ Step 5: Add EB Garamond serif font and two serif presets (commit 11b25d9)
 
 Step 6: Add typeface role system (Display/Body/Code) — three dropdowns cascade font to element groups (commit a1c83c0)
 
+
+## 2026-05-28
+
+Step 8: Fix Display typeface role (was skipped due to adjustable guard) + add Garamond Reading preset (commit 2197b2f)
+
