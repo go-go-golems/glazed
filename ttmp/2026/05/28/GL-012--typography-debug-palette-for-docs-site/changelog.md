@@ -25,3 +25,14 @@ Implemented full Typography Debug Palette: 18 new files, 3 modified files. Featu
 - /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/components/TypographyPalette/css-override-engine.ts — CSS generation and clipboard export engine
 - /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/store/typographyPaletteSlice.ts — Redux slice with localStorage persistence
 
+
+## 2026-05-28
+
+Added baseline design system, scale mode, and spacing controls. Baseline panel with base font size, 8 scale ratios, line height, letter/word spacing. Custom/Scale toggle per element with scale step selectors. New 'Scale System (1.25)' preset. Letter-spacing and word-spacing CSS overrides. Commit: 8488851
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/components/TypographyPalette/BaselineParameters.tsx — New baseline parameter controls component
+- /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/components/TypographyPalette/useTypographyOverrides.ts — Scale-mode resolution logic
+- /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/types/typography-palette.ts — New types: BaselineParameters
+

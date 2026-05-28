@@ -178,3 +178,90 @@ The design doc laid out the architecture; this step makes it real.
 - Go API server: tmux session `glazed-api`, port 8088
 - 20 files changed, 1753 insertions
 - localStorage key: `glazed-typography-palette`
+
+---
+
+## Step 3: Baseline Design System, Scale Mode, and Spacing Controls
+
+### Prompt Context
+
+**User prompt (verbatim):** "also allow adjusting line spacing (vertical and horizontal). also, in order to minimize visual styles, allow defining baseline parmeters that can be selected, and then a override mode, at least for the styles where it makes sense to have some design system, because thats alot of settings."
+
+**Assistant interpretation:** Add letter-spacing/word-spacing controls, and add a baseline design system with scale ratios so elements can reference steps instead of absolute values. This reduces the number of individual settings users need to tweak.
+
+**Inferred user intent:** The palette has too many individual settings. A design system approach (baseline params + scale steps) lets you set a few global values and have all elements derive their sizes from those. This is how real design systems work (e.g., Tailwind, Material Design type scale).
+
+### What I did
+
+1. Added `BaselineParameters` type and `DEFAULT_BASELINE` constants to `types/typography-palette.ts`
+2. Added `ScaleRatioName`, `SCALE_RATIOS`, `SCALE_STEP_LABELS`, `computeScaledValue()` utility
+3. Added `ElementSizeMode` ('custom' | 'scale'), `ElementScaleSteps`, `ElementSizeModeMap` types
+4. Added `letterSpacing` and `wordSpacing` to `TypographyProperties`
+5. Updated `element-registry.ts`: added `supportsScale`, `defaultFontSizeStep`, `defaultLineHeightStep` to 25+ elements; added `letterSpacing` and `wordSpacing` to adjustable properties on prose, headings, and code
+6. Created `BaselineParameters.tsx` component: base font size, scale ratio dropdown, line height, letter spacing, word spacing + scale preview
+7. Created `ScaleStepSelect.tsx` component: dropdown showing step labels (xs/−3 through 5xl/+6) with computed values
+8. Updated `TypographyPaletteElement.tsx`: added Custom/Scale mode toggle per element, ScaleStepSelect for size in scale mode
+9. Updated `useTypographyOverrides.ts`: resolve scale-mode elements to concrete CSS using `computeScaledValue()`, merge with custom overrides
+10. Updated Redux slice with `setBaseline`, `setElementMode`, `setElementScaleSteps` actions
+11. Updated persistence to save/load baseline, elementModes, elementScaleSteps
+12. Added "Scale System (1.25)" preset that puts all elements in scale mode with Major Third ratio and base 16px
+13. Updated CSS override engine to emit `letter-spacing` and `word-spacing` declarations
+14. Verified in browser: Scale System preset correctly computes all sizes from baseline
+15. Committed: `8488851 feat(web): add baseline design system, scale mode, and spacing controls`
+
+### Why
+
+The v1 palette had 30+ individual settings. Without a design system, every element is independent — changing the overall scale requires adjusting every element manually. The baseline + scale steps approach means you set 5 global params and every scale-mode element derives its value automatically.
+
+### What worked
+
+- The `computeScaledValue(base, ratio, step)` utility is simple and correct
+- Scale preview row in baseline panel shows computed sizes at a glance
+- Custom/Scale toggle per element gives fine-grained control
+- The "Scale System (1.25)" preset demonstrates the full design system approach
+- CSS override engine correctly generates rules for scale-mode elements
+- HMR picked up all changes instantly
+
+### What didn't work
+
+- No major failures. The implementation went smoothly.
+
+### What I learned
+
+- Modular scales are powerful: Major Third (1.25) at base 16px gives: 8.19, 10.24, 12.8, 16, 20, 25, 31.25, 39.06 — these are the classic "design system" sizes
+- Em-based elements (markdown headings) need special handling in scale mode: the step applies to the em multiplier, not the px value, since the parent's px is already scaled
+- Letter spacing at 0.01–0.05em is the sweet spot for readability improvement without looking odd
+- The persistence layer needed to expand to store baseline + modes + steps, not just overrides
+
+### What was tricky to build
+
+- **Scale mode for em-based elements:** Markdown headings use `em` units (1.6em, 1.3em, etc.). In scale mode, the step computes a multiplier, not a px value. For `headings.h1` at step +4 with ratio 1.25: `1 × 1.25^4 = 2.44em`. This is close to but not identical to the CSS default of 1.6em. The step values give a different but consistent scale.
+- **Resolving scale to CSS:** The `useTypographyOverrides` hook now does a two-pass: first resolve all scale-mode elements to concrete properties, then merge custom overrides on top. This means you can use scale mode for most elements and override specific ones with custom values.
+- **Line height in scale mode:** Line height isn't really a "scale step" — it's a multiplier. I implemented it as an offset from the baseline: `baseLineHeight + step × 0.1`. Step 0 = exactly the baseline, step +1 = 0.1 more, etc.
+
+### What warrants a second pair of eyes
+
+- The em-based scale computation: when prose body is 16px and h1 step is +4, `computeScaledValue(1, 1.25, 4) = 2.44em`. The actual rendered size would be 16 × 2.44 = 39px. Is this the right behavior? Alternative: compute px values and convert to em at the end.
+- The line height offset approach (step × 0.1) is simple but arbitrary. A better approach might be to scale line height proportionally with font size.
+
+### What should be done in the future
+
+- Consider a "Convert to CSS" action that takes the current scale-mode state and outputs CSS custom properties that can be pasted into global.css
+- Add a visual preview of the type scale (all steps rendered with sample text)
+- Consider allowing custom scale ratios (not just the 8 named ones)
+- The presets should store and restore baseline + mode + steps (partially done)
+
+### Code review instructions
+
+- Start with `web/src/types/typography-palette.ts` — all the new types
+- Check `web/src/components/TypographyPalette/useTypographyOverrides.ts` — the scale resolution logic
+- Check `web/src/components/TypographyPalette/BaselineParameters.tsx` — the baseline UI
+- Check `web/src/components/TypographyPalette/TypographyPaletteElement.tsx` — the Custom/Scale toggle
+- Verify the "Scale System (1.25)" preset works by selecting it in the browser
+
+### Technical details
+
+- Commit: `8488851` — "feat(web): add baseline design system, scale mode, and spacing controls"
+- 13 files changed, 878 insertions, 96 deletions
+- New components: BaselineParameters.tsx, ScaleStepSelect.tsx
+- localStorage now stores: overrides + baseline + elementModes + elementScaleSteps
