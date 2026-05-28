@@ -1,13 +1,15 @@
 // store.ts
-// Redux store configuration. RTK Query is the only piece of state management needed;
-// no additional slices are required for v1.
+// Redux store configuration. RTK Query handles API state;// typographyPalette handles the debug palette state.
 
 import { configureStore } from '@reduxjs/toolkit';
 import { helpApi } from './services/api';
+import typographyPaletteReducer from './store/typographyPaletteSlice';
 
 const reducer = {
   // RTK Query auto-generates a reducer and a middleware from helpApi.
   [helpApi.reducerPath]: helpApi.reducer,
+  // Typography Debug Palette — dev-only overlay for experimenting with fonts/sizes/weights.
+  typographyPalette: typographyPaletteReducer,
 };
 
 export function makeStore(preloadedState?: unknown) {

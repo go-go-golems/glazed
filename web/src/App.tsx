@@ -23,6 +23,8 @@ import { StatusBar } from './components/StatusBar/StatusBar';
 import { AppLayout } from './components/AppLayout/AppLayout';
 import { useListPackagesQuery, useListSectionsQuery, useGetSectionQuery } from './services/api';
 import type { SectionSummary } from './types';
+import { TypographyPalette } from './components/TypographyPalette/TypographyPalette';
+import { usePaletteShortcut } from './components/TypographyPalette/usePaletteShortcut';
 
 /** URL segment used for packages that have no version. */
 const NO_VERSION = '_';
@@ -46,6 +48,8 @@ function versionToUrl(apiVersion: string): string {
 }
 
 export default function App() {
+  usePaletteShortcut();
+
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterValue>('All');
   const [navigationMode, setNavigationMode] = useState<NavigationMode>('tree');
@@ -162,6 +166,7 @@ export default function App() {
   }, [listData, search, filter]);
 
   return (
+    <>
     <div className="app-root">
       <AppLayout
         sidebar={
@@ -241,5 +246,7 @@ export default function App() {
         }
       />
     </div>
+    <TypographyPalette />
+    </>
   );
 }

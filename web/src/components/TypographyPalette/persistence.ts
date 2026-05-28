@@ -1,0 +1,50 @@
+// components/TypographyPalette/persistence.ts
+// localStorage persistence for typography palette state.
+// Saves/loads overrides, active preset, and custom presets.
+
+import type { PersistedPaletteState, TypographyOverrides, TypographyPreset } from '../../types/typography-palette';
+import { PALETTE_STORAGE_KEY } from '../../types/typography-palette';
+
+/** Save palette state to localStorage. */
+export function persistPaletteState(
+  overrides: TypographyOverrides,
+  activePreset: string | null,
+  customPresets: TypographyPreset[],
+): void {
+  const state: PersistedPaletteState = {
+    overrides,
+    activePreset,
+    customPresets,
+  };
+
+  try {
+    localStorage.setItem(PALETTE_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // localStorage may be full or unavailable — silently ignore
+  }
+}
+
+/** Load palette state from localStorage. Returns null if nothing saved. */
+export function loadPaletteState(): PersistedPaletteState | null {
+  try {
+    const raw = localStorage.getItem(PALETTE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedPaletteState;
+    // Basic validation
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    if (typeof parsed.overrides !== 'object') return null;
+    if (!Array.isArray(parsed.customPresets)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Clear persisted palette state. */
+export function clearPaletteState(): void {
+  try {
+    localStorage.removeItem(PALETTE_STORAGE_KEY);
+  } catch {
+    // silently ignore
+  }
+}

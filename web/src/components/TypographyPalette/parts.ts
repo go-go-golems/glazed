@@ -1,0 +1,28 @@
+// parts.ts — data-part selectors for the TypographyPalette component.
+
+export const TypographyPaletteParts = {
+  root:              'typography-palette',
+  header:            'typography-palette-header',
+  title:             'typography-palette-title',
+  closeBtn:          'typography-palette-close-btn',
+  presetRow:         'typography-palette-preset-row',
+  presetLabel:       'typography-palette-preset-label',
+  presetSelect:      'typography-palette-preset-select',
+  groups:            'typography-palette-groups',
+  group:             'typography-palette-group',
+  groupHeader:        'typography-palette-group-header',
+  groupBody:         'typography-palette-group-body',
+  element:           'typography-palette-element',
+  elementLabel:      'typography-palette-element-label',
+  controlRow:        'typography-palette-control-row',
+  controlLabel:      'typography-palette-control-label',
+  stepper:           'typography-palette-stepper',
+  stepperBtn:        'typography-palette-stepper-btn',
+  stepperValue:      'typography-palette-stepper-value',
+  select:            'typography-palette-select',
+  footer:            'typography-palette-footer',
+  resetBtn:          'typography-palette-reset-btn',
+  savePresetBtn:     'typography-palette-save-preset-btn',
+  exportBtn:         'typography-palette-export-btn',
+  exportMenu:        'typography-palette-export-menu',
+} as const;
