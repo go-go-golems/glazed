@@ -59,9 +59,10 @@
 
 /* Card short description */
 [data-part~='section-card-short'] {
-  font-size: 10px;
+  font-family: var(--font-serif);
+  font-size: 11px;
   color: #777;
-  line-height: 1.4;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
