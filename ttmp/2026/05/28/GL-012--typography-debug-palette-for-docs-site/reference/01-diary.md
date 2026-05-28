@@ -626,3 +626,83 @@ The `adjustable` array was designed to control what the per-element UI shows. Bu
 - 4 files changed, 51 insertions, 20 deletions
 - 8 built-in presets total (was 7)
 - Commit: `2197b2f`
+
+---
+
+## Step 9: Element highlight + inspector/dropper mode
+
+### Prompt Context
+
+**User prompt (verbatim):** "Add a 'highlight' button for each section that sets the background color or something like that so I can see what I'm targeting. Similar, a dropper mode that allow me to ucollapse the relevant section in the palette"
+
+**Assistant interpretation:** Add two visual discovery features: (1) a highlight button per element that visually marks the targeted DOM elements, and (2) an inspector/dropper mode where clicking an element on the page opens the corresponding palette section.
+
+**Inferred user intent:** The palette lets you control 30+ elements, but it's hard to know which CSS selector maps to which visual element. The highlight shows you; the dropper lets you discover from the other direction.
+
+**Commit (code):** `8c4b73e` — "feat(typography-palette): add element highlight and inspector/dropper mode"
+
+### What I did
+
+1. Added `highlightedElementId` and `inspectorMode` to Redux slice state
+2. Created `useHighlightElement.ts` hook:
+   - `useHighlightSync()`: syncs `highlightedElementId` to DOM by adding/removing `.typography-palette-highlight` CSS class
+   - `useHighlightToggle()`: returns a toggle function that dispatches `setHighlightedElement`
+   - Highlight CSS: 2px solid #ff6600 outline + rgba(255,102,0,0.08) background, injected as `<style>` on first use
+3. Created `useInspectorMode.ts` hook:
+   - Builds a reverse lookup map: CSS selector → { elementId, groupId }
+   - On click (capture phase), walks up the DOM from the target, testing each ancestor against registered selectors via `element.matches(selector)`
+   - On match: opens the accordion group (`setActiveGroup`), highlights the element (`setHighlightedElement`), and deactivates inspector mode
+   - Ignores clicks inside the palette itself
+4. Added 🔍 button next to each element label in `TypographyPaletteElement`
+   - Orange background when active (matching element is highlighted)
+   - Click toggles: same element = off, different element = switch
+5. Added 💉 toggle button in palette header
+   - Active state: orange border + light orange background
+   - After one click on the page, auto-deactivates
+6. Wired both hooks in `TypographyPalette.tsx`
+7. Verified: clicking 🔍 on "Title Text" highlighted 2 `titlebar-title` elements with orange outline
+
+### Why
+
+The palette controls abstract typography through CSS selectors, but the mapping from selector to visual element is invisible. A designer looking at "Title Text" doesn't know if that targets the title bar, a heading, or a subtitle. The highlight makes the mapping visible. The dropper inverts the discovery: instead of guessing which palette element controls the visual element you're looking at, you click it and the palette shows you.
+
+### What worked
+
+- The CSS highlight (orange outline + background) is distinctive and non-destructive
+- The `element.matches()` approach in the inspector works for all selector types (data-part, class, compound)
+- Auto-deactivation after one click is the right UX — you don't want to stay in inspector mode
+- Capture-phase event listener ensures the click is intercepted before any other handler
+
+### What didn't work
+
+- Playwright's accessibility snapshot couldn't resolve the 🔍 button ref for clicking (had to use `document.querySelector` + `.click()` instead). This is a test automation issue, not a code issue.
+
+### What I learned
+
+- `element.matches(selector)` is the correct API for reverse lookup — it tests if an element matches a CSS selector without needing to actually query the DOM
+- Capture-phase event listeners are essential for inspector mode because other click handlers (React synthetic events, navigation links) might fire before our handler in the bubble phase
+
+### What was tricky to build
+
+- JSX nesting: added a wrapper `<div>` for the highlight button + scale toggle, which required matching the closing `</div>` correctly. First build failed due to mismatched JSX tags.
+
+### What warrants a second pair of eyes
+
+- The inspector's `findMatchingElement` walks up the entire DOM tree — for deeply nested elements this could be slow. Should add an early exit when hitting `.app-root`.
+
+### What should be done in the future
+
+- Show a count of matched elements next to the 🔍 button (e.g., "🔍 2" if 2 elements match)
+- Add keyboard shortcut to toggle inspector mode
+- Consider highlighting the entire group (all elements in a group) when hovering a group header
+
+### Code review instructions
+
+- Test 🔍 on various elements: Title Text (2 matches on this page), Status Bar (1 match), Body Text (0 matches on index page, matches on section pages)
+- Test 💉: activate, click sidebar tree, verify the "Sidebar Tree" accordion opens
+
+### Technical details
+
+- 5 files changed, 254 insertions, 1 deletion
+- 2 new files: useHighlightElement.ts (81 lines), useInspectorMode.ts (95 lines)
+- Commit: `8c4b73e`
