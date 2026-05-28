@@ -1,6 +1,7 @@
 /* section-view.css — SectionHeader + SectionView */
 
 [data-part='section-header'] {
+  font-family: var(--font-ui);
   margin-bottom: 24px;
 }
 
@@ -23,9 +24,10 @@
 }
 
 [data-part='section-header-subtitle'] {
-  font-size: 12px;
+  font-family: var(--font-serif);
+  font-size: 14px;
   color: #555;
-  line-height: 1.55;
+  line-height: 1.65;
   margin: 0 0 14px;
 }
 
@@ -40,7 +42,6 @@
   max-width: 680px;
   margin: 0 auto;
   padding: 28px 32px 60px;
-  font-family: var(--font-ui);
 }
 
 [data-part='section-view-body'] {

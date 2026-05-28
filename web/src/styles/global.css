@@ -7,6 +7,28 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/EBGaramond12-Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/EBGaramond12-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('/fonts/EBGaramond12-Bold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+}
+
 *,
 *::before,
 *::after {
@@ -20,6 +42,7 @@
   /* Typography — classic Mac stack */
   --font-ui: 'Chicago_', 'Geneva', 'Charcoal', 'Lucida Grande', 'Helvetica Neue', sans-serif;
   --font-mono: 'Monaco', 'Courier New', monospace;
+  --font-serif: 'EB Garamond', 'Garamond', 'Palatino', 'Georgia', serif;
   --font-size-sm: 11px;
   --font-size-base: 13px;
   --font-size-lg: 15px;
