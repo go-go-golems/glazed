@@ -78,6 +78,7 @@ export function TypographyPalette() {
           baseline: preset.baseline,
           elementModes: preset.elementModes,
           elementScaleSteps: preset.elementScaleSteps,
+          typefaceRoles: preset.typefaceRoles,
         }));
       }
     },

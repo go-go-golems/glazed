@@ -1,17 +1,28 @@
 // components/TypographyPalette/presets.ts
 // Built-in typography presets and utilities for managing custom presets.
+// Typeface role assignments (display/body/code) now handle font family
+// selection, so per-element fontFamily overrides are only needed for
+// exceptions that deviate from the role assignment.
 
-import type { TypographyPreset, TypographyOverrides, BaselineParameters, ElementSizeModeMap, ElementScaleSteps } from '../../types/typography-palette';
-import { DEFAULT_BASELINE, SCALE_RATIOS } from '../../types/typography-palette';
+import type { TypographyPreset, TypographyOverrides, BaselineParameters, ElementSizeModeMap, ElementScaleSteps, TypefaceRoleMap } from '../../types/typography-palette';
+import { DEFAULT_BASELINE } from '../../types/typography-palette';
+
+// ---------------------------------------------------------------------------
+// Classic Mac (default)
+// ---------------------------------------------------------------------------
 
 const CLASSIC_MAC_DEFAULTS: TypographyOverrides = {};
 
+// ---------------------------------------------------------------------------
+// Clean Modern
+// ---------------------------------------------------------------------------
+
 const CLEAN_MODERN_OVERRIDES: TypographyOverrides = {
-  'root.body':           { fontFamily: 'ui', fontSize: 16, fontWeight: 400, color: '#222', lineHeight: 1.7, letterSpacing: 0.01 },
+  'root.body':           { fontSize: 16, fontWeight: 400, color: '#222', lineHeight: 1.7, letterSpacing: 0.01 },
   'titlebar.title':      { fontSize: 13, fontWeight: 600, color: '#111' },
   'header.heading':      { fontSize: 28, fontWeight: 700, color: '#111', letterSpacing: -0.02 },
   'header.subtitle':     { fontSize: 14, fontWeight: 400, color: '#666' },
-  'prose.body':          { fontFamily: 'ui', fontSize: 16, fontWeight: 400, color: '#222', lineHeight: 1.7, letterSpacing: 0.01 },
+  'prose.body':          { fontSize: 16, fontWeight: 400, color: '#222', lineHeight: 1.7, letterSpacing: 0.01 },
   'headings.h1':         { fontSize: 2.0, fontSizeUnit: 'em', fontWeight: 700, color: '#111', letterSpacing: -0.02 },
   'headings.h2':         { fontSize: 1.5, fontSizeUnit: 'em', fontWeight: 600, color: '#222', letterSpacing: -0.01 },
   'headings.h3':         { fontSize: 1.25, fontSizeUnit: 'em', fontWeight: 600, color: '#333' },
@@ -31,17 +42,21 @@ const CLEAN_MODERN_BASELINE: BaselineParameters = {
   baseWordSpacing: 0,
 };
 
+// ---------------------------------------------------------------------------
+// Dense Terminal — all mono
+// ---------------------------------------------------------------------------
+
 const DENSE_TERMINAL_OVERRIDES: TypographyOverrides = {
-  'root.body':           { fontFamily: 'mono', fontSize: 12, fontWeight: 400, color: '#111', lineHeight: 1.4, letterSpacing: 0 },
+  'root.body':           { fontSize: 12, fontWeight: 400, color: '#111', lineHeight: 1.4, letterSpacing: 0 },
   'titlebar.title':      { fontSize: 11, fontWeight: 700, color: '#000' },
   'header.heading':      { fontSize: 16, fontWeight: 700, color: '#000' },
   'header.subtitle':     { fontSize: 11, fontWeight: 400, color: '#888' },
-  'prose.body':          { fontFamily: 'mono', fontSize: 12, fontWeight: 400, color: '#111', lineHeight: 1.4, letterSpacing: 0 },
+  'prose.body':          { fontSize: 12, fontWeight: 400, color: '#111', lineHeight: 1.4, letterSpacing: 0 },
   'headings.h1':         { fontSize: 1.4, fontSizeUnit: 'em', fontWeight: 700, color: '#000' },
   'headings.h2':         { fontSize: 1.2, fontSizeUnit: 'em', fontWeight: 700, color: '#000' },
   'headings.h3':         { fontSize: 1.0, fontSizeUnit: 'em', fontWeight: 700, color: '#222' },
-  'code.inline':         { fontFamily: 'mono', fontSize: 1.0, fontSizeUnit: 'em', color: '#111' },
-  'code.block':          { fontFamily: 'mono', fontSize: 11, color: '#111', lineHeight: 1.3 },
+  'code.inline':         { fontSize: 1.0, fontSizeUnit: 'em', color: '#111' },
+  'code.block':          { fontSize: 11, color: '#111', lineHeight: 1.3 },
   'statusbar.text':      { fontSize: 9, color: '#999' },
   'badges.badge':        { fontSize: 9, fontWeight: 700, color: '#000' },
 };
@@ -54,12 +69,18 @@ const DENSE_TERMINAL_BASELINE: BaselineParameters = {
   baseWordSpacing: 0,
 };
 
+const DENSE_TERMINAL_ROLES: TypefaceRoleMap = { display: 'mono', body: 'mono', code: 'mono' };
+
+// ---------------------------------------------------------------------------
+// Large Print
+// ---------------------------------------------------------------------------
+
 const LARGE_PRINT_OVERRIDES: TypographyOverrides = {
-  'root.body':           { fontFamily: 'ui', fontSize: 18, fontWeight: 400, color: '#000', lineHeight: 1.8, letterSpacing: 0.02 },
+  'root.body':           { fontSize: 18, fontWeight: 400, color: '#000', lineHeight: 1.8, letterSpacing: 0.02 },
   'titlebar.title':      { fontSize: 15, fontWeight: 700, color: '#000' },
   'header.heading':      { fontSize: 32, fontWeight: 700, color: '#000', letterSpacing: -0.02 },
   'header.subtitle':     { fontSize: 16, fontWeight: 400, color: '#333' },
-  'prose.body':          { fontFamily: 'ui', fontSize: 18, fontWeight: 400, color: '#000', lineHeight: 1.8, letterSpacing: 0.02, wordSpacing: 0.05 },
+  'prose.body':          { fontSize: 18, fontWeight: 400, color: '#000', lineHeight: 1.8, letterSpacing: 0.02, wordSpacing: 0.05 },
   'headings.h1':         { fontSize: 2.0, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: -0.02 },
   'headings.h2':         { fontSize: 1.5, fontSizeUnit: 'em', fontWeight: 700, color: '#000' },
   'headings.h3':         { fontSize: 1.3, fontSizeUnit: 'em', fontWeight: 700, color: '#111' },
@@ -77,32 +98,75 @@ const LARGE_PRINT_BASELINE: BaselineParameters = {
   baseWordSpacing: 0.05,
 };
 
-// Scale-mode presets: these use elementModes + elementScaleSteps instead of overrides
-// This demonstrates the design system approach — baseline drives everything.
+// ---------------------------------------------------------------------------
+// Scale System (1.25) — all elements in scale mode
+// ---------------------------------------------------------------------------
 
-const CLEAN_MODERN_SCALE_MODES: ElementSizeModeMap = {};
-const CLEAN_MODERN_SCALE_STEPS: Record<string, ElementScaleSteps> = {};
+const SCALE_SYSTEM_OVERRIDES: TypographyOverrides = {};
 
-const DENSE_TERMINAL_SCALE_MODES: ElementSizeModeMap = {};
-const DENSE_TERMINAL_SCALE_STEPS: Record<string, ElementScaleSteps> = {};
+const SCALE_SYSTEM_BASELINE: BaselineParameters = {
+  baseFontSize: 16,
+  scaleRatioName: 'major-third',
+  baseLineHeight: 1.6,
+  baseLetterSpacing: 0,
+  baseWordSpacing: 0,
+};
 
-const LARGE_PRINT_SCALE_MODES: ElementSizeModeMap = {};
-const LARGE_PRINT_SCALE_STEPS: Record<string, ElementScaleSteps> = {};
+const SCALE_SYSTEM_MODES: ElementSizeModeMap = {
+  'root.body': 'scale', 'titlebar.title': 'scale', 'menubar.items': 'scale',
+  'menubar.appname': 'scale', 'sidebar.search': 'scale', 'sidebar.packageselector': 'scale',
+  'sidebar.navtoggle': 'scale', 'sidebar.typefilter': 'scale', 'tree.row': 'scale',
+  'tree.heading': 'scale', 'cards.title': 'scale', 'cards.short': 'scale',
+  'header.slug': 'scale', 'header.heading': 'scale', 'header.subtitle': 'scale',
+  'prose.body': 'scale', 'headings.h1': 'scale', 'headings.h2': 'scale',
+  'headings.h3': 'scale', 'code.inline': 'scale', 'code.block': 'scale',
+  'extras.blockquote': 'scale', 'statusbar.text': 'scale', 'badges.badge': 'scale',
+};
 
-// Serif Editorial: Garamond body, Chicago_ chrome — a reading-focused preset
-// with generous line height and comfortable proportions.
+const SCALE_SYSTEM_STEPS: Record<string, ElementScaleSteps> = {
+  'root.body':          { fontSizeStep: 0, lineHeightStep: 0 },
+  'titlebar.title':     { fontSizeStep: -1 },
+  'menubar.items':      { fontSizeStep: -1 },
+  'menubar.appname':    { fontSizeStep: -2 },
+  'sidebar.search':     { fontSizeStep: -1 },
+  'sidebar.packageselector': { fontSizeStep: 0 },
+  'sidebar.navtoggle':  { fontSizeStep: 0 },
+  'sidebar.typefilter': { fontSizeStep: -3 },
+  'tree.row':           { fontSizeStep: -1 },
+  'tree.heading':       { fontSizeStep: -2 },
+  'cards.title':        { fontSizeStep: -1 },
+  'cards.short':        { fontSizeStep: -3 },
+  'header.slug':        { fontSizeStep: -3 },
+  'header.heading':     { fontSizeStep: 4 },
+  'header.subtitle':    { fontSizeStep: -1 },
+  'prose.body':         { fontSizeStep: 0, lineHeightStep: 0 },
+  'headings.h1':        { fontSizeStep: 4 },
+  'headings.h2':        { fontSizeStep: 3 },
+  'headings.h3':        { fontSizeStep: 2 },
+  'code.inline':        { fontSizeStep: -1 },
+  'code.block':         { fontSizeStep: -1, lineHeightStep: 0 },
+  'extras.blockquote':  { fontSizeStep: 0 },
+  'statusbar.text':     { fontSizeStep: -3 },
+  'badges.badge':       { fontSizeStep: -3 },
+};
+
+// ---------------------------------------------------------------------------
+// Serif Editorial — Garamond body, Chicago_ chrome, generous line height
+// Font family handled by typefaceRoles: display=ui, body=serif, code=mono
+// ---------------------------------------------------------------------------
+
 const SERIF_EDITORIAL_OVERRIDES: TypographyOverrides = {
-  'root.body':           { fontFamily: 'serif', fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
-  'titlebar.title':      { fontFamily: 'ui', fontSize: 13, fontWeight: 600, color: '#000' },
-  'header.heading':      { fontFamily: 'serif', fontSize: 30, fontWeight: 700, color: '#000', letterSpacing: -0.01 },
-  'header.subtitle':     { fontFamily: 'serif', fontSize: 15, fontWeight: 400, color: '#555' },
-  'prose.body':          { fontFamily: 'serif', fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
-  'headings.h1':         { fontFamily: 'serif', fontSize: 2.0, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: -0.01 },
-  'headings.h2':         { fontFamily: 'serif', fontSize: 1.5, fontSizeUnit: 'em', fontWeight: 600, color: '#111', letterSpacing: -0.01 },
-  'headings.h3':         { fontFamily: 'serif', fontSize: 1.2, fontSizeUnit: 'em', fontWeight: 600, color: '#222' },
-  'extras.blockquote':   { fontFamily: 'serif', fontSize: 16, fontWeight: 400, color: '#555', lineHeight: 1.7 },
-  'code.inline':         { fontFamily: 'mono', fontSize: 0.88, fontSizeUnit: 'em', fontWeight: 400, color: '#333' },
-  'code.block':          { fontFamily: 'mono', fontSize: 14, fontWeight: 400, color: '#222', lineHeight: 1.55 },
+  'root.body':           { fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
+  'titlebar.title':      { fontSize: 13, fontWeight: 600, color: '#000' },
+  'header.heading':      { fontSize: 30, fontWeight: 700, color: '#000', letterSpacing: -0.01 },
+  'header.subtitle':     { fontSize: 15, fontWeight: 400, color: '#555' },
+  'prose.body':          { fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
+  'headings.h1':         { fontSize: 2.0, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: -0.01 },
+  'headings.h2':         { fontSize: 1.5, fontSizeUnit: 'em', fontWeight: 600, color: '#111', letterSpacing: -0.01 },
+  'headings.h3':         { fontSize: 1.2, fontSizeUnit: 'em', fontWeight: 600, color: '#222' },
+  'extras.blockquote':   { fontSize: 16, fontWeight: 400, color: '#555', lineHeight: 1.7 },
+  'code.inline':         { fontSize: 0.88, fontSizeUnit: 'em', fontWeight: 400, color: '#333' },
+  'code.block':          { fontSize: 14, fontWeight: 400, color: '#222', lineHeight: 1.55 },
   'extras.link':         { color: '#222' },
   'statusbar.text':      { fontSize: 11, color: '#888' },
   'badges.badge':        { fontSize: 11, fontWeight: 500, color: '#333' },
@@ -116,20 +180,13 @@ const SERIF_EDITORIAL_BASELINE: BaselineParameters = {
   baseWordSpacing: 0.03,
 };
 
-// Serif Scale: full design system with EB Garamond as the body and heading font,
-// Chicago_ for chrome. Everything in scale mode.
-const SERIF_SCALE_OVERRIDES: TypographyOverrides = {
-  'root.body':           { fontFamily: 'serif', color: '#111' },
-  'titlebar.title':      { fontFamily: 'ui' },
-  'header.heading':      { fontFamily: 'serif', color: '#000' },
-  'prose.body':          { fontFamily: 'serif', color: '#111' },
-  'headings.h1':         { fontFamily: 'serif', color: '#000' },
-  'headings.h2':         { fontFamily: 'serif', color: '#111' },
-  'headings.h3':         { fontFamily: 'serif', color: '#222' },
-  'extras.blockquote':   { fontFamily: 'serif', color: '#555' },
-  'code.inline':         { fontFamily: 'mono', color: '#333' },
-  'code.block':          { fontFamily: 'mono', color: '#222' },
-};
+const SERIF_EDITORIAL_ROLES: TypefaceRoleMap = { display: 'ui', body: 'serif', code: 'mono' };
+
+// ---------------------------------------------------------------------------
+// Serif Scale — full design system with Garamond body, scale-driven sizes
+// ---------------------------------------------------------------------------
+
+const SERIF_SCALE_OVERRIDES: TypographyOverrides = {};
 
 const SERIF_SCALE_BASELINE: BaselineParameters = {
   baseFontSize: 17,
@@ -139,31 +196,17 @@ const SERIF_SCALE_BASELINE: BaselineParameters = {
   baseWordSpacing: 0.03,
 };
 
+const SERIF_SCALE_ROLES: TypefaceRoleMap = { display: 'ui', body: 'serif', code: 'mono' };
+
 const SERIF_SCALE_MODES: ElementSizeModeMap = {
-  'root.body': 'scale',
-  'titlebar.title': 'scale',
-  'menubar.items': 'scale',
-  'menubar.appname': 'scale',
-  'sidebar.search': 'scale',
-  'sidebar.packageselector': 'scale',
-  'sidebar.navtoggle': 'scale',
-  'sidebar.typefilter': 'scale',
-  'tree.row': 'scale',
-  'tree.heading': 'scale',
-  'cards.title': 'scale',
-  'cards.short': 'scale',
-  'header.slug': 'scale',
-  'header.heading': 'scale',
-  'header.subtitle': 'scale',
-  'prose.body': 'scale',
-  'headings.h1': 'scale',
-  'headings.h2': 'scale',
-  'headings.h3': 'scale',
-  'code.inline': 'scale',
-  'code.block': 'scale',
-  'extras.blockquote': 'scale',
-  'statusbar.text': 'scale',
-  'badges.badge': 'scale',
+  'root.body': 'scale', 'titlebar.title': 'scale', 'menubar.items': 'scale',
+  'menubar.appname': 'scale', 'sidebar.search': 'scale', 'sidebar.packageselector': 'scale',
+  'sidebar.navtoggle': 'scale', 'sidebar.typefilter': 'scale', 'tree.row': 'scale',
+  'tree.heading': 'scale', 'cards.title': 'scale', 'cards.short': 'scale',
+  'header.slug': 'scale', 'header.heading': 'scale', 'header.subtitle': 'scale',
+  'prose.body': 'scale', 'headings.h1': 'scale', 'headings.h2': 'scale',
+  'headings.h3': 'scale', 'code.inline': 'scale', 'code.block': 'scale',
+  'extras.blockquote': 'scale', 'statusbar.text': 'scale', 'badges.badge': 'scale',
 };
 
 const SERIF_SCALE_STEPS: Record<string, ElementScaleSteps> = {
@@ -193,6 +236,10 @@ const SERIF_SCALE_STEPS: Record<string, ElementScaleSteps> = {
   'badges.badge':       { fontSizeStep: -3 },
 };
 
+// ---------------------------------------------------------------------------
+// Preset array
+// ---------------------------------------------------------------------------
+
 export const BUILT_IN_PRESETS: TypographyPreset[] = [
   {
     id: 'classic-mac',
@@ -207,8 +254,6 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
     isBuiltIn: true,
     overrides: CLEAN_MODERN_OVERRIDES,
     baseline: CLEAN_MODERN_BASELINE,
-    elementModes: CLEAN_MODERN_SCALE_MODES,
-    elementScaleSteps: CLEAN_MODERN_SCALE_STEPS,
   },
   {
     id: 'dense-terminal',
@@ -216,8 +261,7 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
     isBuiltIn: true,
     overrides: DENSE_TERMINAL_OVERRIDES,
     baseline: DENSE_TERMINAL_BASELINE,
-    elementModes: DENSE_TERMINAL_SCALE_MODES,
-    elementScaleSteps: DENSE_TERMINAL_SCALE_STEPS,
+    typefaceRoles: DENSE_TERMINAL_ROLES,
   },
   {
     id: 'large-print',
@@ -225,84 +269,24 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
     isBuiltIn: true,
     overrides: LARGE_PRINT_OVERRIDES,
     baseline: LARGE_PRINT_BASELINE,
-    elementModes: LARGE_PRINT_SCALE_MODES,
-    elementScaleSteps: LARGE_PRINT_SCALE_STEPS,
   },
-  // Scale-driven preset: demonstrates the design system approach
   {
     id: 'scale-system',
     label: 'Scale System (1.25)',
     isBuiltIn: true,
-    overrides: {},
-    baseline: {
-      baseFontSize: 16,
-      scaleRatioName: 'major-third',
-      baseLineHeight: 1.6,
-      baseLetterSpacing: 0,
-      baseWordSpacing: 0,
-    },
-    elementModes: {
-      'root.body': 'scale',
-      'titlebar.title': 'scale',
-      'menubar.items': 'scale',
-      'menubar.appname': 'scale',
-      'sidebar.search': 'scale',
-      'sidebar.packageselector': 'scale',
-      'sidebar.navtoggle': 'scale',
-      'sidebar.typefilter': 'scale',
-      'tree.row': 'scale',
-      'tree.heading': 'scale',
-      'cards.title': 'scale',
-      'cards.short': 'scale',
-      'header.slug': 'scale',
-      'header.heading': 'scale',
-      'header.subtitle': 'scale',
-      'prose.body': 'scale',
-      'headings.h1': 'scale',
-      'headings.h2': 'scale',
-      'headings.h3': 'scale',
-      'code.inline': 'scale',
-      'code.block': 'scale',
-      'extras.blockquote': 'scale',
-      'statusbar.text': 'scale',
-      'badges.badge': 'scale',
-    },
-    elementScaleSteps: {
-      'root.body':          { fontSizeStep: 0, lineHeightStep: 0 },
-      'titlebar.title':     { fontSizeStep: -1 },
-      'menubar.items':      { fontSizeStep: -1 },
-      'menubar.appname':    { fontSizeStep: -2 },
-      'sidebar.search':     { fontSizeStep: -1 },
-      'sidebar.packageselector': { fontSizeStep: 0 },
-      'sidebar.navtoggle':  { fontSizeStep: 0 },
-      'sidebar.typefilter': { fontSizeStep: -3 },
-      'tree.row':           { fontSizeStep: -1 },
-      'tree.heading':       { fontSizeStep: -2 },
-      'cards.title':        { fontSizeStep: -1 },
-      'cards.short':        { fontSizeStep: -3 },
-      'header.slug':        { fontSizeStep: -3 },
-      'header.heading':     { fontSizeStep: 4 },
-      'header.subtitle':    { fontSizeStep: -1 },
-      'prose.body':         { fontSizeStep: 0, lineHeightStep: 0 },
-      'headings.h1':        { fontSizeStep: 4 },
-      'headings.h2':        { fontSizeStep: 3 },
-      'headings.h3':        { fontSizeStep: 2 },
-      'code.inline':        { fontSizeStep: -1 },
-      'code.block':         { fontSizeStep: -1, lineHeightStep: 0 },
-      'extras.blockquote':  { fontSizeStep: 0 },
-      'statusbar.text':     { fontSizeStep: -3 },
-      'badges.badge':       { fontSizeStep: -3 },
-    },
+    overrides: SCALE_SYSTEM_OVERRIDES,
+    baseline: SCALE_SYSTEM_BASELINE,
+    elementModes: SCALE_SYSTEM_MODES,
+    elementScaleSteps: SCALE_SYSTEM_STEPS,
   },
-  // Serif Editorial: Garamond body with generous reading proportions
   {
     id: 'serif-editorial',
     label: 'Serif Editorial',
     isBuiltIn: true,
     overrides: SERIF_EDITORIAL_OVERRIDES,
     baseline: SERIF_EDITORIAL_BASELINE,
+    typefaceRoles: SERIF_EDITORIAL_ROLES,
   },
-  // Serif Scale: full design system with Garamond body, scale-driven sizes
   {
     id: 'serif-scale',
     label: 'Serif Scale',
@@ -311,6 +295,7 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
     baseline: SERIF_SCALE_BASELINE,
     elementModes: SERIF_SCALE_MODES,
     elementScaleSteps: SERIF_SCALE_STEPS,
+    typefaceRoles: SERIF_SCALE_ROLES,
   },
 ];
 

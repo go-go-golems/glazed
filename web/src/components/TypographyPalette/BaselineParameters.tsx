@@ -4,9 +4,9 @@
 
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../store';
-import { setBaseline } from '../../store/typographyPaletteSlice';
-import type { BaselineParameters, ScaleRatioName } from '../../types/typography-palette';
-import { SCALE_RATIOS, SCALE_RATIO_NAMES, SCALE_RATIO_LABELS, computeScaledValue } from '../../types/typography-palette';
+import { setBaseline, setTypefaceRole } from '../../store/typographyPaletteSlice';
+import type { BaselineParameters, ScaleRatioName, TypefaceRole, FontFamily } from '../../types/typography-palette';
+import { SCALE_RATIOS, SCALE_RATIO_NAMES, SCALE_RATIO_LABELS, computeScaledValue, TYPEFACE_ROLES, TYPEFACE_ROLE_LABELS, FONT_FAMILY_LABELS } from '../../types/typography-palette';
 import { TypographyPaletteParts } from './parts';
 import { FontSizeStepper } from './FontSizeStepper';
 
@@ -28,9 +28,14 @@ function ScalePreview({ baseline }: { baseline: BaselineParameters }) {
 export function BaselineParametersPanel() {
   const dispatch = useDispatch();
   const baseline = useSelector((s: RootState) => s.typographyPalette.baseline);
+  const typefaceRoles = useSelector((s: RootState) => s.typographyPalette.typefaceRoles);
 
   const handleChange = (partial: Partial<BaselineParameters>) => {
     dispatch(setBaseline(partial));
+  };
+
+  const handleRoleChange = (role: TypefaceRole, fontFamily: FontFamily) => {
+    dispatch(setTypefaceRole({ role, fontFamily }));
   };
 
   const ratio = SCALE_RATIOS[baseline.scaleRatioName];
@@ -110,6 +115,27 @@ export function BaselineParametersPanel() {
 
       {/* Scale preview */}
       <ScalePreview baseline={baseline} />
+
+      {/* Typeface Roles */}
+      <div style={{ fontWeight: 700, fontSize: 11, margin: '8px 0 4px', color: '#444' }}>
+        🔤 Typeface Roles
+      </div>
+      {TYPEFACE_ROLES.map(role => (
+        <div key={role} data-part={TypographyPaletteParts.controlRow}>
+          <span data-part={TypographyPaletteParts.controlLabel}>
+            {TYPEFACE_ROLE_LABELS[role].split(' /')[0]}
+          </span>
+          <select
+            data-part={TypographyPaletteParts.select}
+            value={typefaceRoles[role]}
+            onChange={(e) => handleRoleChange(role, e.target.value as FontFamily)}
+          >
+            {Object.entries(FONT_FAMILY_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+      ))}
     </div>
   );
 }

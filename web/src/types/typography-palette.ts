@@ -55,6 +55,35 @@ export interface TypographyProperties {
 export type TypographyOverrides = Record<string, TypographyProperties>;
 
 // ---------------------------------------------------------------------------
+// Typeface Roles
+// ---------------------------------------------------------------------------
+
+/** Typeface roles: each element is assigned to one of three roles,
+ *  and the role's font family cascades to all its elements.
+ *  Per-element fontFamily overrides still win when set. */
+export type TypefaceRole = 'display' | 'body' | 'code';
+
+/** Human-readable labels for typeface roles. */
+export const TYPEFACE_ROLE_LABELS: Record<TypefaceRole, string> = {
+  display: 'Display / Chrome',
+  body:    'Body / Reading',
+  code:    'Code',
+};
+
+/** All typeface role names for iteration. */
+export const TYPEFACE_ROLES: TypefaceRole[] = ['display', 'body', 'code'];
+
+/** Map of role → font family. */
+export type TypefaceRoleMap = Record<TypefaceRole, FontFamily>;
+
+/** Default typeface role assignments matching Classic Mac aesthetic. */
+export const DEFAULT_TYPEFACE_ROLES: TypefaceRoleMap = {
+  display: 'ui',
+  body:    'ui',
+  code:    'mono',
+};
+
+// ---------------------------------------------------------------------------
 // Design System Baseline
 // ---------------------------------------------------------------------------
 
@@ -168,6 +197,8 @@ export interface TypographyPreset {
   elementModes?: ElementSizeModeMap;
   /** Optional scale steps stored with the preset. */
   elementScaleSteps?: Record<string, ElementScaleSteps>;
+  /** Optional typeface role assignments. */
+  typefaceRoles?: TypefaceRoleMap;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,6 +229,8 @@ export interface TypographyElement {
   defaultFontSizeStep?: ScaleStep;
   /** Default scale step for line height offset (when in scale mode). */
   defaultLineHeightStep?: ScaleStep;
+  /** Which typeface role this element belongs to. Determines inherited fontFamily. */
+  typefaceRole: TypefaceRole;
 }
 
 // ---------------------------------------------------------------------------
@@ -215,4 +248,5 @@ export interface PersistedPaletteState {
   baseline: BaselineParameters;
   elementModes: ElementSizeModeMap;
   elementScaleSteps: Record<string, ElementScaleSteps>;
+  typefaceRoles?: TypefaceRoleMap;
 }

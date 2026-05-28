@@ -6,9 +6,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type {
   TypographyOverrides, TypographyProperties, TypographyPreset,
-  BaselineParameters, ElementSizeModeMap, ElementScaleSteps,
+  BaselineParameters, ElementSizeModeMap, ElementScaleSteps, TypefaceRoleMap,
 } from '../types/typography-palette';
-import { DEFAULT_BASELINE } from '../types/typography-palette';
+import { DEFAULT_BASELINE, DEFAULT_TYPEFACE_ROLES } from '../types/typography-palette';
 import { loadPaletteState, persistPaletteState, clearPaletteState } from '../components/TypographyPalette/persistence';
 
 interface TypographyPaletteState {
@@ -24,6 +24,8 @@ interface TypographyPaletteState {
   elementModes: ElementSizeModeMap;
   // Per-element scale steps (when in 'scale' mode)
   elementScaleSteps: Record<string, ElementScaleSteps>;
+  // Typeface role assignments (display/body/code → font family)
+  typefaceRoles: TypefaceRoleMap;
 }
 
 /** Load initial state from localStorage if available. */
@@ -40,6 +42,7 @@ function loadInitialState(): TypographyPaletteState {
       baseline: persisted.baseline ?? { ...DEFAULT_BASELINE },
       elementModes: persisted.elementModes ?? {},
       elementScaleSteps: persisted.elementScaleSteps ?? {},
+      typefaceRoles: persisted.typefaceRoles ?? { ...DEFAULT_TYPEFACE_ROLES },
     };
   }
   return {
@@ -52,6 +55,7 @@ function loadInitialState(): TypographyPaletteState {
     baseline: { ...DEFAULT_BASELINE },
     elementModes: {},
     elementScaleSteps: {},
+    typefaceRoles: { ...DEFAULT_TYPEFACE_ROLES },
   };
 }
 
@@ -64,6 +68,7 @@ function persistAfterChange(state: TypographyPaletteState) {
     state.baseline,
     state.elementModes,
     state.elementScaleSteps,
+    state.typefaceRoles,
   );
 }
 
@@ -89,12 +94,14 @@ const typographyPaletteSlice = createSlice({
       baseline?: BaselineParameters;
       elementModes?: ElementSizeModeMap;
       elementScaleSteps?: Record<string, ElementScaleSteps>;
+      typefaceRoles?: TypefaceRoleMap;
     }>) {
       state.activePreset = action.payload.presetId;
       state.overrides = { ...action.payload.overrides };
       if (action.payload.baseline) state.baseline = { ...action.payload.baseline };
       if (action.payload.elementModes) state.elementModes = { ...action.payload.elementModes };
       if (action.payload.elementScaleSteps) state.elementScaleSteps = { ...action.payload.elementScaleSteps };
+      if (action.payload.typefaceRoles) state.typefaceRoles = { ...action.payload.typefaceRoles };
       persistAfterChange(state);
     },
     setOverride(state, action: PayloadAction<{ elementId: string; properties: TypographyProperties }>) {
@@ -120,6 +127,7 @@ const typographyPaletteSlice = createSlice({
       state.elementModes = {};
       state.elementScaleSteps = {};
       state.baseline = { ...DEFAULT_BASELINE };
+      state.typefaceRoles = { ...DEFAULT_TYPEFACE_ROLES };
       persistAfterChange(state);
     },
     /** Update a baseline parameter. */
@@ -143,6 +151,12 @@ const typographyPaletteSlice = createSlice({
       state.activePreset = null;
       persistAfterChange(state);
     },
+    /** Set a typeface role's font family. */
+    setTypefaceRole(state, action: PayloadAction<{ role: string; fontFamily: string }>) {
+      state.typefaceRoles[action.payload.role as keyof TypefaceRoleMap] = action.payload.fontFamily as TypefaceRoleMap[keyof TypefaceRoleMap];
+      state.activePreset = null;
+      persistAfterChange(state);
+    },
     /** Save current overrides as a new custom preset. */
     saveAsPreset(state, action: PayloadAction<{ label: string; id: string }>) {
       const newPreset: TypographyPreset = {
@@ -153,6 +167,7 @@ const typographyPaletteSlice = createSlice({
         baseline: { ...state.baseline },
         elementModes: { ...state.elementModes },
         elementScaleSteps: { ...state.elementScaleSteps },
+        typefaceRoles: { ...state.typefaceRoles },
       };
       state.customPresets.push(newPreset);
       state.activePreset = newPreset.id;
@@ -189,6 +204,7 @@ export const {
   setBaseline,
   setElementMode,
   setElementScaleSteps,
+  setTypefaceRole,
   saveAsPreset,
   deleteCustomPreset,
   setCopiedFeedback,

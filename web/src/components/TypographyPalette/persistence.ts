@@ -4,9 +4,9 @@
 
 import type {
   PersistedPaletteState, TypographyOverrides, TypographyPreset,
-  BaselineParameters, ElementSizeModeMap, ElementScaleSteps,
+  BaselineParameters, ElementSizeModeMap, ElementScaleSteps, TypefaceRoleMap,
 } from '../../types/typography-palette';
-import { PALETTE_STORAGE_KEY } from '../../types/typography-palette';
+import { PALETTE_STORAGE_KEY, DEFAULT_TYPEFACE_ROLES } from '../../types/typography-palette';
 
 /** Save palette state to localStorage. */
 export function persistPaletteState(
@@ -16,6 +16,7 @@ export function persistPaletteState(
   baseline: BaselineParameters,
   elementModes: ElementSizeModeMap,
   elementScaleSteps: Record<string, ElementScaleSteps>,
+  typefaceRoles: TypefaceRoleMap,
 ): void {
   const state: PersistedPaletteState = {
     overrides,
@@ -24,6 +25,7 @@ export function persistPaletteState(
     baseline,
     elementModes,
     elementScaleSteps,
+    typefaceRoles,
   };
 
   try {
@@ -43,6 +45,10 @@ export function loadPaletteState(): PersistedPaletteState | null {
     if (typeof parsed !== 'object' || parsed === null) return null;
     if (typeof parsed.overrides !== 'object') return null;
     if (!Array.isArray(parsed.customPresets)) return null;
+    // Gracefully handle missing typefaceRoles from older persisted state
+    if (!parsed.typefaceRoles) {
+      parsed.typefaceRoles = { ...DEFAULT_TYPEFACE_ROLES };
+    }
     return parsed;
   } catch {
     return null;

@@ -7,20 +7,25 @@
 import { useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../store';
-import type { TypographyOverrides, TypographyProperties, ScaleStep, ElementScaleSteps } from '../../types/typography-palette';
+import type { TypographyOverrides, TypographyProperties, ScaleStep, ElementScaleSteps, TypefaceRoleMap } from '../../types/typography-palette';
 import { SCALE_RATIOS, computeScaledValue } from '../../types/typography-palette';
 import { applyOverrides, clearOverrides } from './css-override-engine';
 import { buildElementMap } from './element-registry';
 
 /**
- * Resolve scale-mode elements: for each element in 'scale' mode,
- * compute concrete typography properties from the baseline + scale steps.
+ * Resolve scale-mode elements and typeface role assignments.
+ * Priority (highest to lowest):
+ *   1. Per-element custom overrides (explicit fontFamily set by user)
+ *   2. Typeface role assignment (element inherits from its role)
+ *   3. Scale-mode computed values (size, line-height from baseline)
+ *   4. Element defaults
  */
 function resolveScaleOverrides(
   baseline: { baseFontSize: number; scaleRatioName: string; baseLineHeight: number; baseLetterSpacing: number; baseWordSpacing: number },
   elementModes: Record<string, string>,
   elementScaleSteps: Record<string, ElementScaleSteps>,
   customOverrides: TypographyOverrides,
+  typefaceRoles: TypefaceRoleMap,
 ): TypographyOverrides {
   const elementMap = buildElementMap();
   const ratio = SCALE_RATIOS[baseline.scaleRatioName];
@@ -71,6 +76,18 @@ function resolveScaleOverrides(
     }
   }
 
+  // Apply typeface role fontFamily to every element that has adjustable fontFamily
+  // and doesn't already have a custom override for it
+  for (const [elementId, elem] of elementMap.entries()) {
+    if (!elem.adjustable.includes('fontFamily')) continue;
+    const roleFont = typefaceRoles[elem.typefaceRole];
+    if (!roleFont) continue;
+    // If custom override already sets fontFamily, skip
+    if (customOverrides[elementId]?.fontFamily) continue;
+    if (!resolved[elementId]) resolved[elementId] = {};
+    resolved[elementId].fontFamily = roleFont;
+  }
+
   // Merge custom overrides on top (custom takes precedence for properties it sets)
   for (const [elementId, customProps] of Object.entries(customOverrides)) {
     if (resolved[elementId]) {
@@ -88,13 +105,15 @@ export function useTypographyOverrides(): void {
   const baseline = useSelector((s: RootState) => s.typographyPalette.baseline);
   const elementModes = useSelector((s: RootState) => s.typographyPalette.elementModes);
   const elementScaleSteps = useSelector((s: RootState) => s.typographyPalette.elementScaleSteps);
+  const typefaceRoles = useSelector((s: RootState) => s.typographyPalette.typefaceRoles);
 
-  // Resolve scale-mode elements + merge with custom overrides
+  // Resolve scale-mode elements + merge with custom overrides + apply typeface roles
   const resolvedOverrides = useMemo(() => {
     const hasScaleModes = Object.values(elementModes).some(m => m === 'scale');
-    if (!hasScaleModes) return customOverrides;
-    return resolveScaleOverrides(baseline, elementModes, elementScaleSteps, customOverrides);
-  }, [customOverrides, baseline, elementModes, elementScaleSteps]);
+    const hasRoleOverrides = true; // typeface roles always apply
+    if (!hasScaleModes && !hasRoleOverrides) return customOverrides;
+    return resolveScaleOverrides(baseline, elementModes, elementScaleSteps, customOverrides, typefaceRoles);
+  }, [customOverrides, baseline, elementModes, elementScaleSteps, typefaceRoles]);
 
   useEffect(() => {
     if (Object.keys(resolvedOverrides).length === 0) {
