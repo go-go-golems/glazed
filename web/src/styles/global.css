@@ -76,6 +76,7 @@
   /* Typography — classic Mac stack */
   --font-ui: 'Chicago_', 'Geneva', 'Charcoal', 'Lucida Grande', 'Helvetica Neue', sans-serif;
   --font-mono: 'Monaco', 'Courier New', monospace;
+  --font-serif: 'EB Garamond', 'Garamond', 'Georgia', 'Palatino', 'Times New Roman', serif;
   --font-size-sm: 11px;
   --font-size-base: 13px;
   --font-size-lg: 15px;

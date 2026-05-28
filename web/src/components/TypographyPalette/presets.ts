@@ -183,6 +183,27 @@ const SERIF_EDITORIAL_BASELINE: BaselineParameters = {
 const SERIF_EDITORIAL_ROLES: TypefaceRoleMap = { display: 'ui', body: 'serif', code: 'mono' };
 
 // ---------------------------------------------------------------------------
+// Garamond Reading — pure role assignment: Chicago_ chrome, EB Garamond body,
+// Monaco code. Minimal size tweaks for serif readability.
+// ---------------------------------------------------------------------------
+
+const GARAMOND_READING_OVERRIDES: TypographyOverrides = {
+  'prose.body':      { fontSize: 15, lineHeight: 1.7, letterSpacing: 0.01 },
+  'headings.h1':    { letterSpacing: -0.01 },
+  'headings.h2':    { letterSpacing: -0.01 },
+};
+
+const GARAMOND_READING_BASELINE: BaselineParameters = {
+  baseFontSize: 13,
+  scaleRatioName: 'major-third',
+  baseLineHeight: 1.7,
+  baseLetterSpacing: 0.01,
+  baseWordSpacing: 0,
+};
+
+const GARAMOND_READING_ROLES: TypefaceRoleMap = { display: 'ui', body: 'serif', code: 'mono' };
+
+// ---------------------------------------------------------------------------
 // Serif Scale — full design system with Garamond body, scale-driven sizes
 // ---------------------------------------------------------------------------
 
@@ -286,6 +307,14 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
     overrides: SERIF_EDITORIAL_OVERRIDES,
     baseline: SERIF_EDITORIAL_BASELINE,
     typefaceRoles: SERIF_EDITORIAL_ROLES,
+  },
+  {
+    id: 'garamond-reading',
+    label: 'Garamond Reading',
+    isBuiltIn: true,
+    overrides: GARAMOND_READING_OVERRIDES,
+    baseline: GARAMOND_READING_BASELINE,
+    typefaceRoles: GARAMOND_READING_ROLES,
   },
   {
     id: 'serif-scale',

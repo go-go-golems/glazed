@@ -30,7 +30,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'titlebar.title',
         label: 'Title Text',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', fontWeight: 700, color: '#000' },
         selector: "[data-part='titlebar-title']",
         supportsScale: true,
@@ -46,7 +46,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'menubar.items',
         label: 'Menu Items',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', fontWeight: 700, color: '#000' },
         selector: "[data-part='menubar']",
         supportsScale: true,
@@ -56,7 +56,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'menubar.appname',
         label: 'App Name',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 11, fontSizeUnit: 'px', fontWeight: 400, color: '#000' },
         selector: "[data-part='menubar-title']",
         supportsScale: true,
@@ -72,7 +72,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'sidebar.search',
         label: 'Search Input',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', color: '#000' },
         selector: "[data-part='searchbar-input']",
         supportsScale: true,
@@ -82,7 +82,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'sidebar.packageselector',
         label: 'Package Selector',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 13, fontSizeUnit: 'px', color: '#000' },
         selector: "[data-part='package-selector-root']",
         supportsScale: true,
@@ -92,7 +92,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'sidebar.navtoggle',
         label: 'Nav Mode Toggle',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 13, fontSizeUnit: 'px', color: '#000' },
         selector: "[data-part='navigation-mode-toggle-root']",
         supportsScale: true,
@@ -102,7 +102,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'sidebar.typefilter',
         label: 'Type Filter',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 10, fontSizeUnit: 'px', fontWeight: 400, color: '#000' },
         selector: "[data-part='typefilter-button']",
         supportsScale: true,
@@ -118,7 +118,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'tree.row',
         label: 'Document Row',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', color: '#111' },
         selector: "[data-part='documentation-tree-row']",
         supportsScale: true,
@@ -128,7 +128,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'tree.heading',
         label: 'Heading Row',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 11, fontSizeUnit: 'px', color: '#3f4b5a' },
         selector: "[data-part='documentation-tree-row'][data-kind='heading']",
         supportsScale: true,
@@ -144,7 +144,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'cards.title',
         label: 'Card Title',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', fontWeight: 700, color: '#000' },
         selector: "[data-part~='section-card-title']",
         supportsScale: true,
@@ -154,7 +154,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'cards.short',
         label: 'Card Description',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 10, fontSizeUnit: 'px', color: '#777' },
         selector: "[data-part~='section-card-short']",
         supportsScale: true,
@@ -190,7 +190,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'header.subtitle',
         label: 'Subtitle',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 12, fontSizeUnit: 'px', fontWeight: 400, color: '#555' },
         selector: "[data-part='section-header-subtitle']",
         supportsScale: true,
@@ -286,7 +286,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'extras.blockquote',
         label: 'Blockquote',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 13, fontSizeUnit: 'px', fontWeight: 400, color: '#555' },
         selector: "[data-part='markdown-content'] blockquote",
         supportsScale: true,
@@ -296,7 +296,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'extras.link',
         label: 'Link',
-        adjustable: ['fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontWeight', 'color'],
         defaults: { fontWeight: 400, color: '#000' },
         selector: "[data-part='markdown-content'] a",
         typefaceRole: 'body',
@@ -304,7 +304,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'extras.table-header',
         label: 'Table Header',
-        adjustable: ['fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontWeight', 'color'],
         defaults: { fontWeight: 700, color: '#000' },
         selector: "[data-part='markdown-content'] th",
         typefaceRole: 'body',
@@ -318,7 +318,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'statusbar.text',
         label: 'Status Text',
-        adjustable: ['fontSize', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'color'],
         defaults: { fontSize: 10, fontSizeUnit: 'px', color: '#777' },
         selector: "[data-part='statusbar']",
         supportsScale: true,
@@ -334,7 +334,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'badges.badge',
         label: 'Badge',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 10, fontSizeUnit: 'px', fontWeight: 400, color: '#000' },
         selector: "[data-part='badge']",
         supportsScale: true,

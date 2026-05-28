@@ -76,10 +76,11 @@ function resolveScaleOverrides(
     }
   }
 
-  // Apply typeface role fontFamily to every element that has adjustable fontFamily
-  // and doesn't already have a custom override for it
+  // Apply typeface role fontFamily to every element that has a typefaceRole.
+  // This runs regardless of whether fontFamily is in the adjustable list,
+  // because the role system is a higher-level mechanism than per-element control.
+  // Per-element custom overrides still win when set.
   for (const [elementId, elem] of elementMap.entries()) {
-    if (!elem.adjustable.includes('fontFamily')) continue;
     const roleFont = typefaceRoles[elem.typefaceRole];
     if (!roleFont) continue;
     // If custom override already sets fontFamily, skip
