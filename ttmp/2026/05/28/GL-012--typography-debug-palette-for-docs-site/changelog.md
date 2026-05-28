@@ -45,3 +45,8 @@ Step 5: Add EB Garamond serif font and two serif presets (commit 11b25d9)
 
 - /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/public/fonts/eb-garamond-latin-400-normal.woff2 — Vendored serif font for editorial presets
 
+
+## 2026-05-28
+
+Step 6: Add typeface role system (Display/Body/Code) — three dropdowns cascade font to element groups (commit a1c83c0)
+

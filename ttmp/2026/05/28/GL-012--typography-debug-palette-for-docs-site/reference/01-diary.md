@@ -414,3 +414,77 @@ Apple Garamond is proprietary. EB Garamond is the closest open-source equivalent
 - Font files: 10 woff2 files, total ~460KB on disk (latin-ext: 57–65KB each, latin: 22–23KB each)
 - FontFamily type now has 3 values: 'ui' | 'mono' | 'serif'
 - 7 built-in presets total (was 5)
+
+---
+
+## Step 6: Typeface Role System (Display / Body / Code)
+
+### Prompt Context
+
+**User prompt (verbatim):** "allow me to set different typefaces for titles / tree nav etc... For example I would use chicago as title / menu / headers, monaco for code, and EB garamond for body text. I think that's the big three from which the rest derives."
+
+**Assistant interpretation:** Add a typeface role system with three roles — Display, Body, Code — that cascade font family assignments to element groups. This replaces per-element font family picking with a higher-level abstraction.
+
+**Inferred user intent:** The user wants to control font family at the role level, not the element level. Changing "Body" from serif to ui should update all body-assigned elements (prose, tree, cards, blockquote) in one action. The three roles capture the fundamental typographic structure of a documentation browser.
+
+**Commit (code):** `a1c83c0` — "feat(typography-palette): add typeface role system (Display/Body/Code)"
+
+### What I did
+
+1. Added `TypefaceRole` type (`'display' | 'body' | 'code'`), `TypefaceRoleMap`, and `DEFAULT_TYPEFACE_ROLES` to `types/typography-palette.ts`
+2. Added `typefaceRole: TypefaceRole` field to every element in `element-registry.ts`:
+   - **Display**: titlebar.title, menubar.items/appname, sidebar controls, header.heading, statusbar, badges
+   - **Body**: root.body, prose.body, tree.row/heading, cards.title/short, header.subtitle, blockquote, links, table headers
+   - **Code**: header.slug, code.inline, code.block
+3. Added `typefaceRoles` state + `setTypefaceRole` action to Redux slice
+4. Updated resolution layer: for each element, if no explicit fontFamily override exists, inherit from the element's `typefaceRole` mapping
+5. Added 🔤 Typeface Roles section to BaselineParameters panel with three dropdowns
+6. Simplified presets: serif presets now use `typefaceRoles: { display: 'ui', body: 'serif', code: 'mono' }` instead of per-element `fontFamily` overrides
+7. Added Dense Terminal preset role: `{ display: 'mono', body: 'mono', code: 'mono' }`
+8. Updated persistence to include `typefaceRoles` with graceful migration from older localStorage state
+
+### Why
+
+Per-element font family selection is correct for fine-tuning but wrong as the primary mechanism. The user's mental model is "I want Garamond for reading, Chicago for chrome, Monaco for code" — three decisions, not thirty. The role system maps this mental model directly. Role assignments cascade to element groups; per-element overrides remain available as escape hatches.
+
+### What worked
+
+- Adding `typefaceRole` to the element registry was the right place to define the default role assignment — it's co-located with the element definition
+- The resolution layer naturally fits between scale-mode computation and custom override merging: role → scale → custom
+- Verified interactively: changing Body from serif to ui in the dropdown immediately switches all body-assigned elements
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The three-role model (Display/Body/Code) is a standard pattern in design systems. Material Design uses display/headline/body/label/code. The user's model is even simpler — three roles cover everything in a documentation browser.
+- Headings (h1/h2/h3) are assigned to 'display' because they function as titles/signposts, not reading text. This matches the user's intent ("Chicago as title / menu / headers").
+- Tree navigation is assigned to 'body' because it's reading-oriented — you scan tree labels the same way you scan body text.
+
+### What was tricky to build
+
+- The role resolution must happen before custom override merging, because per-element fontFamily overrides should win over the role assignment. This means the resolution loop iterates over all elements (not just scale-mode elements) to apply role fonts, then merges custom overrides on top.
+
+### What warrants a second pair of eyes
+
+- Verify the role assignments in element-registry.ts match the user's expectation. Specifically: are headings really "display" or should they be "body"? The user said "chicago as title / menu / headers" — headers are display.
+- Verify that per-element fontFamily overrides still work when a role is set (the escape hatch).
+
+### What should be done in the future
+
+- Consider adding a fourth role: "Navigation" (for tree, sidebar controls) — but the current three seem sufficient
+- Consider showing which role each element belongs to in the accordion group UI
+
+### Code review instructions
+
+- Check `element-registry.ts` for typefaceRole assignments on all 30+ elements
+- Verify resolution logic in `useTypographyOverrides.ts`: role fonts → scale computed → custom overrides
+- Test: select Serif Editorial preset, then change Body role to ui — all body text should switch to Chicago_
+
+### Technical details
+
+- 8 files changed, 265 insertions, 152 deletions (net +113 lines)
+- Serif presets simplified: ~20 fontFamily overrides removed, replaced by 3-line typefaceRoles
+- Commit: `a1c83c0`
