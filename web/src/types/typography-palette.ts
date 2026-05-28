@@ -17,18 +17,20 @@ export const GRAY_SHADES: GrayColor[] = [
 ];
 
 /** Available font families for the dropdown. */
-export type FontFamily = 'ui' | 'mono';
+export type FontFamily = 'ui' | 'mono' | 'serif';
 
 /** Human-readable labels for font families. */
 export const FONT_FAMILY_LABELS: Record<FontFamily, string> = {
   ui: 'Chicago_',
   mono: 'Monaco',
+  serif: 'EB Garamond',
 };
 
 /** CSS font stacks that correspond to each FontFamily value. */
 export const FONT_STACKS: Record<FontFamily, string> = {
   ui: "'Chicago_', 'Geneva', 'Charcoal', 'Lucida Grande', 'Helvetica Neue', sans-serif",
   mono: "'Monaco', 'Courier New', monospace",
+  serif: "'EB Garamond', 'Garamond', 'Georgia', 'Palatino', 'Times New Roman', serif",
 };
 
 /** Standard font weight values. */

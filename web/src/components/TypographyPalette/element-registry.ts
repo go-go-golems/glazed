@@ -167,7 +167,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'header.heading',
         label: 'Heading',
-        adjustable: ['fontSize', 'fontWeight', 'color'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color'],
         defaults: { fontSize: 24, fontSizeUnit: 'px', fontWeight: 700, color: '#000' },
         selector: "[data-part='section-header-heading']",
         supportsScale: true,
@@ -207,7 +207,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'headings.h1',
         label: 'H1',
-        adjustable: ['fontSize', 'fontWeight', 'color', 'letterSpacing'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color', 'letterSpacing'],
         defaults: { fontSize: 1.6, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: 0 },
         selector: "[data-part='markdown-content'] h1",
         supportsScale: true,
@@ -216,7 +216,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'headings.h2',
         label: 'H2',
-        adjustable: ['fontSize', 'fontWeight', 'color', 'letterSpacing'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color', 'letterSpacing'],
         defaults: { fontSize: 1.3, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: 0 },
         selector: "[data-part='markdown-content'] h2",
         supportsScale: true,
@@ -225,7 +225,7 @@ export const TYPOGRAPHY_GROUPS: TypographyGroup[] = [
       {
         id: 'headings.h3',
         label: 'H3',
-        adjustable: ['fontSize', 'fontWeight', 'color', 'letterSpacing'],
+        adjustable: ['fontFamily', 'fontSize', 'fontWeight', 'color', 'letterSpacing'],
         defaults: { fontSize: 1.1, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: 0 },
         selector: "[data-part='markdown-content'] h3",
         supportsScale: true,

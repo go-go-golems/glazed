@@ -7,6 +7,62 @@
   font-display: swap;
 }
 
+/* EB Garamond — serif body font for editorial/reading presets */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin-ext-400-normal.woff2') format('woff2');
+  src: local('EB Garamond'),
+       url('/fonts/eb-garamond-latin-ext-400-normal.woff2') format('woff2'),
+       url('/fonts/eb-garamond-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin-ext-400-italic.woff2') format('woff2');
+  src: local('EB Garamond Italic'),
+       url('/fonts/eb-garamond-latin-ext-400-italic.woff2') format('woff2'),
+       url('/fonts/eb-garamond-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin-ext-500-normal.woff2') format('woff2');
+  src: local('EB Garamond Medium'),
+       url('/fonts/eb-garamond-latin-ext-500-normal.woff2') format('woff2'),
+       url('/fonts/eb-garamond-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin-ext-600-normal.woff2') format('woff2');
+  src: local('EB Garamond SemiBold'),
+       url('/fonts/eb-garamond-latin-ext-600-normal.woff2') format('woff2'),
+       url('/fonts/eb-garamond-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/eb-garamond-latin-ext-700-normal.woff2') format('woff2');
+  src: local('EB Garamond Bold'),
+       url('/fonts/eb-garamond-latin-ext-700-normal.woff2') format('woff2'),
+       url('/fonts/eb-garamond-latin-700-normal.woff2') format('woff2');
+}
+
 *,
 *::before,
 *::after {

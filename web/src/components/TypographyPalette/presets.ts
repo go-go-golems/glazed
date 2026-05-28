@@ -89,6 +89,110 @@ const DENSE_TERMINAL_SCALE_STEPS: Record<string, ElementScaleSteps> = {};
 const LARGE_PRINT_SCALE_MODES: ElementSizeModeMap = {};
 const LARGE_PRINT_SCALE_STEPS: Record<string, ElementScaleSteps> = {};
 
+// Serif Editorial: Garamond body, Chicago_ chrome — a reading-focused preset
+// with generous line height and comfortable proportions.
+const SERIF_EDITORIAL_OVERRIDES: TypographyOverrides = {
+  'root.body':           { fontFamily: 'serif', fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
+  'titlebar.title':      { fontFamily: 'ui', fontSize: 13, fontWeight: 600, color: '#000' },
+  'header.heading':      { fontFamily: 'serif', fontSize: 30, fontWeight: 700, color: '#000', letterSpacing: -0.01 },
+  'header.subtitle':     { fontFamily: 'serif', fontSize: 15, fontWeight: 400, color: '#555' },
+  'prose.body':          { fontFamily: 'serif', fontSize: 17, fontWeight: 400, color: '#111', lineHeight: 1.75, letterSpacing: 0.01, wordSpacing: 0.03 },
+  'headings.h1':         { fontFamily: 'serif', fontSize: 2.0, fontSizeUnit: 'em', fontWeight: 700, color: '#000', letterSpacing: -0.01 },
+  'headings.h2':         { fontFamily: 'serif', fontSize: 1.5, fontSizeUnit: 'em', fontWeight: 600, color: '#111', letterSpacing: -0.01 },
+  'headings.h3':         { fontFamily: 'serif', fontSize: 1.2, fontSizeUnit: 'em', fontWeight: 600, color: '#222' },
+  'extras.blockquote':   { fontFamily: 'serif', fontSize: 16, fontWeight: 400, color: '#555', lineHeight: 1.7 },
+  'code.inline':         { fontFamily: 'mono', fontSize: 0.88, fontSizeUnit: 'em', fontWeight: 400, color: '#333' },
+  'code.block':          { fontFamily: 'mono', fontSize: 14, fontWeight: 400, color: '#222', lineHeight: 1.55 },
+  'extras.link':         { color: '#222' },
+  'statusbar.text':      { fontSize: 11, color: '#888' },
+  'badges.badge':        { fontSize: 11, fontWeight: 500, color: '#333' },
+};
+
+const SERIF_EDITORIAL_BASELINE: BaselineParameters = {
+  baseFontSize: 17,
+  scaleRatioName: 'perfect-fourth',
+  baseLineHeight: 1.75,
+  baseLetterSpacing: 0.01,
+  baseWordSpacing: 0.03,
+};
+
+// Serif Scale: full design system with EB Garamond as the body and heading font,
+// Chicago_ for chrome. Everything in scale mode.
+const SERIF_SCALE_OVERRIDES: TypographyOverrides = {
+  'root.body':           { fontFamily: 'serif', color: '#111' },
+  'titlebar.title':      { fontFamily: 'ui' },
+  'header.heading':      { fontFamily: 'serif', color: '#000' },
+  'prose.body':          { fontFamily: 'serif', color: '#111' },
+  'headings.h1':         { fontFamily: 'serif', color: '#000' },
+  'headings.h2':         { fontFamily: 'serif', color: '#111' },
+  'headings.h3':         { fontFamily: 'serif', color: '#222' },
+  'extras.blockquote':   { fontFamily: 'serif', color: '#555' },
+  'code.inline':         { fontFamily: 'mono', color: '#333' },
+  'code.block':          { fontFamily: 'mono', color: '#222' },
+};
+
+const SERIF_SCALE_BASELINE: BaselineParameters = {
+  baseFontSize: 17,
+  scaleRatioName: 'major-third',
+  baseLineHeight: 1.75,
+  baseLetterSpacing: 0.01,
+  baseWordSpacing: 0.03,
+};
+
+const SERIF_SCALE_MODES: ElementSizeModeMap = {
+  'root.body': 'scale',
+  'titlebar.title': 'scale',
+  'menubar.items': 'scale',
+  'menubar.appname': 'scale',
+  'sidebar.search': 'scale',
+  'sidebar.packageselector': 'scale',
+  'sidebar.navtoggle': 'scale',
+  'sidebar.typefilter': 'scale',
+  'tree.row': 'scale',
+  'tree.heading': 'scale',
+  'cards.title': 'scale',
+  'cards.short': 'scale',
+  'header.slug': 'scale',
+  'header.heading': 'scale',
+  'header.subtitle': 'scale',
+  'prose.body': 'scale',
+  'headings.h1': 'scale',
+  'headings.h2': 'scale',
+  'headings.h3': 'scale',
+  'code.inline': 'scale',
+  'code.block': 'scale',
+  'extras.blockquote': 'scale',
+  'statusbar.text': 'scale',
+  'badges.badge': 'scale',
+};
+
+const SERIF_SCALE_STEPS: Record<string, ElementScaleSteps> = {
+  'root.body':          { fontSizeStep: 0, lineHeightStep: 0 },
+  'titlebar.title':     { fontSizeStep: -1 },
+  'menubar.items':      { fontSizeStep: -1 },
+  'menubar.appname':    { fontSizeStep: -2 },
+  'sidebar.search':     { fontSizeStep: -1 },
+  'sidebar.packageselector': { fontSizeStep: 0 },
+  'sidebar.navtoggle':  { fontSizeStep: 0 },
+  'sidebar.typefilter': { fontSizeStep: -3 },
+  'tree.row':           { fontSizeStep: -1 },
+  'tree.heading':       { fontSizeStep: -2 },
+  'cards.title':        { fontSizeStep: -1 },
+  'cards.short':        { fontSizeStep: -3 },
+  'header.slug':        { fontSizeStep: -3 },
+  'header.heading':     { fontSizeStep: 4 },
+  'header.subtitle':    { fontSizeStep: -1 },
+  'prose.body':         { fontSizeStep: 0, lineHeightStep: 0 },
+  'headings.h1':        { fontSizeStep: 4 },
+  'headings.h2':        { fontSizeStep: 3 },
+  'headings.h3':        { fontSizeStep: 2 },
+  'code.inline':        { fontSizeStep: -1 },
+  'code.block':         { fontSizeStep: -1, lineHeightStep: 0 },
+  'extras.blockquote':  { fontSizeStep: 0 },
+  'statusbar.text':     { fontSizeStep: -3 },
+  'badges.badge':       { fontSizeStep: -3 },
+};
+
 export const BUILT_IN_PRESETS: TypographyPreset[] = [
   {
     id: 'classic-mac',
@@ -189,6 +293,24 @@ export const BUILT_IN_PRESETS: TypographyPreset[] = [
       'statusbar.text':     { fontSizeStep: -3 },
       'badges.badge':       { fontSizeStep: -3 },
     },
+  },
+  // Serif Editorial: Garamond body with generous reading proportions
+  {
+    id: 'serif-editorial',
+    label: 'Serif Editorial',
+    isBuiltIn: true,
+    overrides: SERIF_EDITORIAL_OVERRIDES,
+    baseline: SERIF_EDITORIAL_BASELINE,
+  },
+  // Serif Scale: full design system with Garamond body, scale-driven sizes
+  {
+    id: 'serif-scale',
+    label: 'Serif Scale',
+    isBuiltIn: true,
+    overrides: SERIF_SCALE_OVERRIDES,
+    baseline: SERIF_SCALE_BASELINE,
+    elementModes: SERIF_SCALE_MODES,
+    elementScaleSteps: SERIF_SCALE_STEPS,
   },
 ];
 
