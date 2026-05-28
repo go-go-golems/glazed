@@ -488,3 +488,75 @@ Per-element font family selection is correct for fine-tuning but wrong as the pr
 - 8 files changed, 265 insertions, 152 deletions (net +113 lines)
 - Serif presets simplified: ~20 fontFamily overrides removed, replaced by 3-line typefaceRoles
 - Commit: `a1c83c0`
+
+---
+
+## Step 7: Full rewrite of Obsidian vault article
+
+### Prompt Context
+
+**User prompt (verbatim):** "Update the vault article in full details, now that we have a solid mechanism"
+
+**Assistant interpretation:** Rewrite the entire Obsidian vault article to reflect the typeface role system, EB Garamond serif font, and all refinements since the original article was written.
+
+**Inferred user intent:** The article was written before the role system and serif font existed. Now that the mechanism is solid, produce a definitive reference that covers the complete system.
+
+### What I did
+
+1. Rewrote the entire 50KB article from scratch (was 32KB)
+2. Added new major sections: "The typeface role system" (with role table, role resolution, UI description, preset simplification), "The font system" (font families, EB Garamond details, woff2 file inventory)
+3. Updated architecture diagram from 4 layers to 5 layers, showing `typefaceRoles` in data flow
+4. Updated resolution layer from "two sources" to "three sources" with full three-phase algorithm (scale → roles → custom)
+5. Updated Redux slice table from 7 to 9 state categories (added `typefaceRoles`)
+6. Updated element registry table to include Typeface role column
+7. Updated presets table to include Display/Body/Code columns
+8. Added "How typeface roles simplify presets" section with before/after code comparison
+9. Added new failure mode: "Role assignment does not affect an element" (per-element override shadows role)
+10. Added new working rule: font family addition checklist
+11. Updated file inventory with revised line counts
+12. Committed to vault: `49e9a4f`
+13. Uploaded to reMarkable at `/ai/2026/05/28/GL-012`
+
+### Why
+
+The original article was written after the initial implementation. It didn't cover the typeface role system or the serif font — the two most impactful additions. A full rewrite produces a single coherent document instead of a patched one.
+
+### What worked
+
+- The before/after code comparison for preset simplification (10 fontFamily overrides → 3-line typefaceRoles) makes the role system's value concrete
+- The three-phase resolution algorithm (scale → roles → custom) is clearer than the previous two-source description
+- The font system section with woff2 file sizes and @font-face strategy is new and useful
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- A 50KB article is substantial but justified for a system with this many interacting parts
+- The "Design decisions and their rationale" section benefits from being written after the implementation is stable — each decision has a clear "why" that emerged during development
+
+### What was tricky to build
+
+- N/A — this was a documentation step, not a code change
+
+### What warrants a second pair of eyes
+
+- Verify the three-phase resolution algorithm description matches the actual `useTypographyOverrides` implementation
+- Verify the typeface role assignments in the element registry table match the code
+
+### What should be done in the future
+
+- Add a visual type scale diagram (showing all steps rendered with sample text for each role)
+- Add a section on testing strategy
+
+### Code review instructions
+
+- Read the article at: `/home/manuel/code/wesen/go-go-golems/go-go-parc/Projects/2026/05/28/ARTICLE - Typography Debug Palette - Design System, Live Overrides, and Modular Scale.md`
+- Cross-reference the architecture diagram with the actual component imports
+
+### Technical details
+
+- Article: 50,334 bytes (was 32,669)
+- Vault commit: `49e9a4f`
+- reMarkable: uploaded to `/ai/2026/05/28/GL-012`
