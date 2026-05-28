@@ -36,3 +36,12 @@ Added baseline design system, scale mode, and spacing controls. Baseline panel w
 - /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/components/TypographyPalette/useTypographyOverrides.ts — Scale-mode resolution logic
 - /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/src/types/typography-palette.ts — New types: BaselineParameters
 
+
+## 2026-05-28
+
+Step 5: Add EB Garamond serif font and two serif presets (commit 11b25d9)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-28/better-docs-fonts/glazed/web/public/fonts/eb-garamond-latin-400-normal.woff2 — Vendored serif font for editorial presets
+

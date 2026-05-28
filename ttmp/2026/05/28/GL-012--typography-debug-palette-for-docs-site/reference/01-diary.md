@@ -340,3 +340,77 @@ The article captures the design knowledge in a form that other teams can reuse. 
 - Article: 32,669 bytes, 537 lines
 - Vault commit: `96f56a4`
 - reMarkable: uploaded to `/ai/2026/05/28/GL-012`
+
+---
+
+## Step 5: Add EB Garamond Serif Font and Serif Presets
+
+### Prompt Context
+
+**User prompt (verbatim):** "also make presets with serif body as well (apple garamond? or close)"
+
+**Assistant interpretation:** Add a serif body font (closest free equivalent to Apple Garamond) and create presets that use it.
+
+**Inferred user intent:** Expand the palette's font selection with a serif option for editorial/reading presets, making the tool useful for experimenting with traditional book-like typography.
+
+**Commit (code):** `11b25d9` — "feat(typography-palette): add EB Garamond serif font and two serif presets"
+
+### What I did
+
+- Downloaded EB Garamond woff2 files (latin + latin-ext subsets, weights 400/500/600/700) from @fontsource npm package
+- Added 5 `@font-face` declarations in `global.css` (400 normal, 400 italic, 500 normal, 600 normal, 700 normal) with `local()` fallback
+- Extended `FontFamily` type from `'ui' | 'mono'` to `'ui' | 'mono' | 'serif'`
+- Added `FONT_STACKS.serif`: `'EB Garamond', 'Garamond', 'Georgia', 'Palatino', 'Times New Roman', serif`
+- Added `fontFamily` to `adjustable` for headings.h1/h2/h3 and header.heading in element-registry.ts
+- Created two new built-in presets:
+  - **Serif Editorial**: Garamond body+headings, Chicago_ chrome, generous line height (1.75), slight letter/word spacing
+  - **Serif Scale**: Full design system with Garamond, all elements in scale mode, Major Third ratio at 17px base
+- Updated `fonts/NOTICE.md` with EB Garamond SIL OFL 1.1 license info
+- Verified both presets render correctly in the browser (EB Garamond 400/600/700 all loaded)
+
+### Why
+
+Apple Garamond is proprietary. EB Garamond is the closest open-source equivalent — digitized by Georg Duffner from the original Garamond typeface designs, available under SIL OFL 1.1. It has the same old-style serif characteristics: high stroke contrast, humanist letterforms, comfortable reading rhythm.
+
+### What worked
+
+- Using @fontsource npm package to get properly subset woff2 files — much easier than scraping Google Fonts URLs
+- Adding the `local()` fallback in `@font-face` src — users who have EB Garamond installed system-wide will use that instead of downloading
+- Serif Scale preset demonstrates that the design system works with any font family, not just the default Chicago_
+
+### What didn't work
+
+- First attempt to download woff2 from Google Fonts gstatic URLs returned 404 HTML pages (1.6KB). The gstatic URLs from the CSS API are TTF, not woff2, and the subset-specific URLs are unstable across versions. @fontsource was the reliable path.
+
+### What I learned
+
+- Google Fonts CSS API serves different formats based on `Accept` header, but the woff2 URLs are not stable — they change with each font version update
+- @fontsource packages fonts as individual subset+weight woff2 files, which is exactly what you need for vendoring
+- EB Garamond has excellent weight coverage (400–800) including italic, making it a strong candidate for body text presets
+
+### What was tricky to build
+
+- The `@font-face` src stacking: `src: local('EB Garamond'), url('latin-ext') format('woff2'), url('latin') format('woff2')`. The latin-ext subset includes more glyphs but is larger; browsers load the smallest file that covers the needed characters. Placing latin-ext first ensures extended Latin support when needed, while the latin-only file serves as a smaller fallback.
+
+### What warrants a second pair of eyes
+
+- Verify the @font-face `src` ordering: should `local()` come before the first `url()`, or does it need to be in a separate `src` descriptor? Current spec says `local()` can be part of the same `src` list, and browsers try each source in order.
+- Verify that the `font-display: swap` on serif faces doesn't cause layout shift when the font loads after initial render.
+
+### What should be done in the future
+
+- Consider adding italic-specific presets (EB Garamond italic is beautiful for blockquotes)
+- Consider a "Book" preset with even more generous line height (1.9+) and wider letter spacing for sustained reading
+- Test with long-form markdown content that uses many italic passages
+
+### Code review instructions
+
+- Check `global.css` for correct @font-face syntax
+- Verify preset values in `presets.ts` produce good visual results at different viewport sizes
+- Confirm FONT_STACKS fallback chain is sensible
+
+### Technical details
+
+- Font files: 10 woff2 files, total ~460KB on disk (latin-ext: 57–65KB each, latin: 22–23KB each)
+- FontFamily type now has 3 values: 'ui' | 'mono' | 'serif'
+- 7 built-in presets total (was 5)
