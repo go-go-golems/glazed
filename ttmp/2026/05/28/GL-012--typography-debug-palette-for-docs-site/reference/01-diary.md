@@ -265,3 +265,78 @@ The v1 palette had 30+ individual settings. Without a design system, every eleme
 - 13 files changed, 878 insertions, 96 deletions
 - New components: BaselineParameters.tsx, ScaleStepSelect.tsx
 - localStorage now stores: overrides + baseline + elementModes + elementScaleSteps
+
+---
+
+## Step 4: Writing the Obsidian Vault Article
+
+### Prompt Context
+
+**User prompt (verbatim):** "Write a detailed project report about the work you did as a deep dive technical report for other developers and designers who might want to implement a similar system, for our obsidian vault, in a textbook writing style (no analogies, see skill)"
+
+**Assistant interpretation:** Write a comprehensive technical deep-dive article in the Obsidian vault using textbook-authoring style (Peter Norvig: foundational first, no analogies, concrete examples, prose paragraphs with bullet rhythm breaks). Target audience: other developers/designers who want to build a similar system.
+
+**Inferred user intent:** Create durable engineering knowledge — an article that outlives the specific project and teaches the pattern to future readers.
+
+### What I did
+
+1. Read the textbook-authoring skill and the obsidian-vault-writing skill
+2. Read the existing ARTICLE exemplar (Go Wasm Browser Playbook) to match tone and structure
+3. Re-read all 20 implementation files to ground the article in concrete details
+4. Wrote a 32KB article with 9 major sections:
+   - Why this system exists
+   - Architecture overview (with mermaid diagram)
+   - The type system (TypographyProperties, BaselineParameters, ScaleSteps)
+   - The element registry (full table of 13 groups)
+   - The CSS override engine (rule generation, export formats)
+   - The resolution layer (scale/custom merge algorithm)
+   - The Redux slice (state categories, action design)
+   - The element control component (Custom/Scale toggle, spacing controls)
+   - Presets, persistence, keyboard shortcut, file inventory
+5. Added design decisions section with rationale for each key choice
+6. Added common failure modes section
+7. Added working rules section
+8. Committed to vault: `96f56a4 ARTICLE: Typography Debug Palette`
+9. Uploaded to reMarkable at `/ai/2026/05/28/GL-012`
+
+### Why
+
+The article captures the design knowledge in a form that other teams can reuse. The ticket docs are project-specific; the vault article is durable and discoverable.
+
+### What worked
+
+- The textbook-authoring style produced clean, direct prose without analogies
+- The mermaid architecture diagram is clear and shows data flow between layers
+- The code snippets are grounded in actual implementation
+- The failure modes section covers the three most likely issues
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The Peter Norvig style works well for technical reports: explain why before how, use concrete code, break rhythm with tables and diagrams
+- Obsidian mermaid diagrams render natively in the vault
+
+### What warrants a second pair of eyes
+
+- The resolution algorithm description — verify it matches the actual `useTypographyOverrides` implementation
+- The failure modes — are there others we've hit during development that should be documented?
+
+### What should be done in the future
+
+- Add a section on testing strategy (unit tests for the override engine, integration tests for the palette)
+- Consider adding interactive exercises if the article is ever used for onboarding
+
+### Code review instructions
+
+- Read the article at: `/home/manuel/code/wesen/go-go-golems/go-go-parc/Projects/2026/05/28/ARTICLE - Typography Debug Palette - Design System, Live Overrides, and Modular Scale.md`
+- Verify the architecture diagram matches the actual component structure
+- Check that the code snippets are accurate
+
+### Technical details
+
+- Article: 32,669 bytes, 537 lines
+- Vault commit: `96f56a4`
+- reMarkable: uploaded to `/ai/2026/05/28/GL-012`
