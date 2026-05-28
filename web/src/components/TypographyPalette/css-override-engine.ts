@@ -75,6 +75,12 @@ function buildDeclarations(props: TypographyProperties): string[] {
   if (props.lineHeight !== undefined) {
     declarations.push(`  line-height: ${props.lineHeight};`);
   }
+  if (props.letterSpacing !== undefined) {
+    declarations.push(`  letter-spacing: ${props.letterSpacing}em;`);
+  }
+  if (props.wordSpacing !== undefined) {
+    declarations.push(`  word-spacing: ${props.wordSpacing}em;`);
+  }
 
   return declarations;
 }
@@ -158,6 +164,10 @@ function getPropertyValue(props: TypographyProperties, prop: string): string | u
       return props.color;
     case 'lineHeight':
       return props.lineHeight !== undefined ? String(props.lineHeight) : undefined;
+    case 'letterSpacing':
+      return props.letterSpacing !== undefined ? `${props.letterSpacing}em` : undefined;
+    case 'wordSpacing':
+      return props.wordSpacing !== undefined ? `${props.wordSpacing}em` : undefined;
     default:
       return undefined;
   }

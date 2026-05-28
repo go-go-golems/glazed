@@ -1,8 +1,11 @@
 // components/TypographyPalette/persistence.ts
 // localStorage persistence for typography palette state.
-// Saves/loads overrides, active preset, and custom presets.
+// Saves/loads overrides, active preset, custom presets, baseline, modes, and scale steps.
 
-import type { PersistedPaletteState, TypographyOverrides, TypographyPreset } from '../../types/typography-palette';
+import type {
+  PersistedPaletteState, TypographyOverrides, TypographyPreset,
+  BaselineParameters, ElementSizeModeMap, ElementScaleSteps,
+} from '../../types/typography-palette';
 import { PALETTE_STORAGE_KEY } from '../../types/typography-palette';
 
 /** Save palette state to localStorage. */
@@ -10,11 +13,17 @@ export function persistPaletteState(
   overrides: TypographyOverrides,
   activePreset: string | null,
   customPresets: TypographyPreset[],
+  baseline: BaselineParameters,
+  elementModes: ElementSizeModeMap,
+  elementScaleSteps: Record<string, ElementScaleSteps>,
 ): void {
   const state: PersistedPaletteState = {
     overrides,
     activePreset,
     customPresets,
+    baseline,
+    elementModes,
+    elementScaleSteps,
   };
 
   try {

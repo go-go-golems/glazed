@@ -1,9 +1,14 @@
 // store/typographyPaletteSlice.ts
 // Redux slice for the Typography Debug Palette.
-// Manages override state, presets, visibility, and localStorage persistence.
+// Manages override state, baseline parameters, scale modes, presets,
+// visibility, and localStorage persistence.
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { TypographyOverrides, TypographyProperties, TypographyPreset } from '../types/typography-palette';
+import type {
+  TypographyOverrides, TypographyProperties, TypographyPreset,
+  BaselineParameters, ElementSizeModeMap, ElementScaleSteps,
+} from '../types/typography-palette';
+import { DEFAULT_BASELINE } from '../types/typography-palette';
 import { loadPaletteState, persistPaletteState, clearPaletteState } from '../components/TypographyPalette/persistence';
 
 interface TypographyPaletteState {
@@ -12,7 +17,13 @@ interface TypographyPaletteState {
   activePreset: string | null;
   overrides: TypographyOverrides;
   customPresets: TypographyPreset[];
-  copiedFeedback: string | null;  // 'rules' | 'variables' | null — brief "Copied!" flash
+  copiedFeedback: string | null;
+  // Design system baseline
+  baseline: BaselineParameters;
+  // Per-element mode: 'custom' = absolute values, 'scale' = derived from baseline
+  elementModes: ElementSizeModeMap;
+  // Per-element scale steps (when in 'scale' mode)
+  elementScaleSteps: Record<string, ElementScaleSteps>;
 }
 
 /** Load initial state from localStorage if available. */
@@ -23,9 +34,12 @@ function loadInitialState(): TypographyPaletteState {
       isOpen: false,
       activeGroup: null,
       activePreset: persisted.activePreset,
-      overrides: persisted.overrides,
-      customPresets: persisted.customPresets,
+      overrides: persisted.overrides ?? {},
+      customPresets: persisted.customPresets ?? [],
       copiedFeedback: null,
+      baseline: persisted.baseline ?? { ...DEFAULT_BASELINE },
+      elementModes: persisted.elementModes ?? {},
+      elementScaleSteps: persisted.elementScaleSteps ?? {},
     };
   }
   return {
@@ -35,12 +49,22 @@ function loadInitialState(): TypographyPaletteState {
     overrides: {},
     customPresets: [],
     copiedFeedback: null,
+    baseline: { ...DEFAULT_BASELINE },
+    elementModes: {},
+    elementScaleSteps: {},
   };
 }
 
 /** Persist after any state change that affects overrides or presets. */
 function persistAfterChange(state: TypographyPaletteState) {
-  persistPaletteState(state.overrides, state.activePreset, state.customPresets);
+  persistPaletteState(
+    state.overrides,
+    state.activePreset,
+    state.customPresets,
+    state.baseline,
+    state.elementModes,
+    state.elementScaleSteps,
+  );
 }
 
 const typographyPaletteSlice = createSlice({
@@ -59,9 +83,18 @@ const typographyPaletteSlice = createSlice({
     setActiveGroup(state, action: PayloadAction<string | null>) {
       state.activeGroup = action.payload;
     },
-    setPreset(state, action: PayloadAction<{ presetId: string; overrides: TypographyOverrides }>) {
+    setPreset(state, action: PayloadAction<{
+      presetId: string;
+      overrides: TypographyOverrides;
+      baseline?: BaselineParameters;
+      elementModes?: ElementSizeModeMap;
+      elementScaleSteps?: Record<string, ElementScaleSteps>;
+    }>) {
       state.activePreset = action.payload.presetId;
       state.overrides = { ...action.payload.overrides };
+      if (action.payload.baseline) state.baseline = { ...action.payload.baseline };
+      if (action.payload.elementModes) state.elementModes = { ...action.payload.elementModes };
+      if (action.payload.elementScaleSteps) state.elementScaleSteps = { ...action.payload.elementScaleSteps };
       persistAfterChange(state);
     },
     setOverride(state, action: PayloadAction<{ elementId: string; properties: TypographyProperties }>) {
@@ -70,7 +103,7 @@ const typographyPaletteSlice = createSlice({
         ...state.overrides[elementId],
         ...properties,
       };
-      state.activePreset = null; // manual edit clears preset indicator
+      state.activePreset = null;
       persistAfterChange(state);
     },
     removeOverride(state, action: PayloadAction<string>) {
@@ -84,6 +117,30 @@ const typographyPaletteSlice = createSlice({
       state.overrides = {};
       state.activePreset = null;
       state.activeGroup = null;
+      state.elementModes = {};
+      state.elementScaleSteps = {};
+      state.baseline = { ...DEFAULT_BASELINE };
+      persistAfterChange(state);
+    },
+    /** Update a baseline parameter. */
+    setBaseline(state, action: PayloadAction<Partial<BaselineParameters>>) {
+      state.baseline = { ...state.baseline, ...action.payload };
+      state.activePreset = null;
+      persistAfterChange(state);
+    },
+    /** Set an element's size mode ('custom' or 'scale'). */
+    setElementMode(state, action: PayloadAction<{ elementId: string; mode: ElementSizeModeMap[string] }>) {
+      state.elementModes[action.payload.elementId] = action.payload.mode;
+      state.activePreset = null;
+      persistAfterChange(state);
+    },
+    /** Set an element's scale steps (when in 'scale' mode). */
+    setElementScaleSteps(state, action: PayloadAction<{ elementId: string; steps: ElementScaleSteps }>) {
+      state.elementScaleSteps[action.payload.elementId] = {
+        ...state.elementScaleSteps[action.payload.elementId],
+        ...action.payload.steps,
+      };
+      state.activePreset = null;
       persistAfterChange(state);
     },
     /** Save current overrides as a new custom preset. */
@@ -93,6 +150,9 @@ const typographyPaletteSlice = createSlice({
         label: action.payload.label,
         isBuiltIn: false,
         overrides: { ...state.overrides },
+        baseline: { ...state.baseline },
+        elementModes: { ...state.elementModes },
+        elementScaleSteps: { ...state.elementScaleSteps },
       };
       state.customPresets.push(newPreset);
       state.activePreset = newPreset.id;
@@ -126,6 +186,9 @@ export const {
   setOverride,
   removeOverride,
   resetAllOverrides,
+  setBaseline,
+  setElementMode,
+  setElementScaleSteps,
   saveAsPreset,
   deleteCustomPreset,
   setCopiedFeedback,

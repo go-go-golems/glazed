@@ -2,26 +2,22 @@
 // Accordion group that expands to show element controls.
 
 import { useDispatch } from 'react-redux';
-import type { TypographyGroup, TypographyOverrides, TypographyProperties } from '../../types/typography-palette';
-import { setOverride } from '../../store/typographyPaletteSlice';
+import type { TypographyGroup } from '../../types/typography-palette';
+import { setActiveGroup } from '../../store/typographyPaletteSlice';
 import { TypographyPaletteParts } from './parts';
 import { TypographyPaletteElement } from './TypographyPaletteElement';
 
 interface TypographyPaletteGroupProps {
   group: TypographyGroup;
   isExpanded: boolean;
-  overrides: TypographyOverrides;
   onToggle: () => void;
 }
 
 export function TypographyPaletteGroup({
   group,
   isExpanded,
-  overrides,
   onToggle,
 }: TypographyPaletteGroupProps) {
-  const dispatch = useDispatch();
-
   return (
     <div data-part={TypographyPaletteParts.group}>
       <button
@@ -39,10 +35,7 @@ export function TypographyPaletteGroup({
             <TypographyPaletteElement
               key={elem.id}
               element={elem}
-              currentOverrides={overrides[elem.id]}
-              onChange={(properties: TypographyProperties) =>
-                dispatch(setOverride({ elementId: elem.id, properties }))
-              }
+              currentOverrides={undefined}
             />
           ))}
         </div>

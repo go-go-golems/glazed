@@ -1,7 +1,7 @@
 // components/TypographyPalette/TypographyPalette.tsx
 // Main panel component for the Typography Debug Palette.
-// Renders as a floating overlay with preset selector, accordion groups,
-// save-preset form, CSS export, and reset.
+// Renders as a floating overlay with baseline parameters, preset selector,
+// accordion groups, save-preset form, CSS export, and reset.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,6 +21,7 @@ import { getAllPresets } from './presets';
 import { copyCssToClipboard } from './css-override-engine';
 import { TYPOGRAPHY_GROUPS } from './element-registry';
 import { useTypographyOverrides } from './useTypographyOverrides';
+import { BaselineParametersPanel } from './BaselineParameters';
 import { TypographyPaletteParts } from './parts';
 import { TypographyPaletteGroup } from './TypographyPaletteGroup';
 import './styles/typography-palette.css';
@@ -33,13 +34,16 @@ export function TypographyPalette() {
   const overrides = useSelector((s: RootState) => s.typographyPalette.overrides);
   const customPresets = useSelector((s: RootState) => s.typographyPalette.customPresets);
   const copiedFeedback = useSelector((s: RootState) => s.typographyPalette.copiedFeedback);
+  const baseline = useSelector((s: RootState) => s.typographyPalette.baseline);
+  const elementModes = useSelector((s: RootState) => s.typographyPalette.elementModes);
+  const elementScaleSteps = useSelector((s: RootState) => s.typographyPalette.elementScaleSteps);
 
   const [saveFormVisible, setSaveFormVisible] = useState(false);
   const [presetName, setPresetName] = useState('');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // Keep DOM in sync with overrides
+  // Keep DOM in sync with overrides + scale-mode resolved values
   useTypographyOverrides();
 
   // Clear "Copied!" feedback after 2 seconds
@@ -68,7 +72,13 @@ export function TypographyPalette() {
     (presetId: string) => {
       const preset = allPresets.find((p) => p.id === presetId);
       if (preset) {
-        dispatch(setPreset({ presetId: preset.id, overrides: preset.overrides }));
+        dispatch(setPreset({
+          presetId: preset.id,
+          overrides: preset.overrides,
+          baseline: preset.baseline,
+          elementModes: preset.elementModes,
+          elementScaleSteps: preset.elementScaleSteps,
+        }));
       }
     },
     [dispatch, allPresets],
@@ -100,7 +110,8 @@ export function TypographyPalette() {
 
   if (!isOpen) return null;
 
-  const hasOverrides = Object.keys(overrides).length > 0;
+  const hasOverrides = Object.keys(overrides).length > 0 || Object.values(elementModes).some(m => m === 'scale');
+  const hasScaleModes = Object.values(elementModes).some(m => m === 'scale');
 
   return (
     <div data-part={TypographyPaletteParts.root}>
@@ -114,6 +125,9 @@ export function TypographyPalette() {
           ×
         </button>
       </div>
+
+      {/* Baseline Design System parameters */}
+      <BaselineParametersPanel />
 
       {/* Preset selector */}
       <div data-part={TypographyPaletteParts.presetRow}>
@@ -172,7 +186,6 @@ export function TypographyPalette() {
             key={group.id}
             group={group}
             isExpanded={activeGroup === group.id}
-            overrides={overrides}
             onToggle={() =>
               dispatch(setActiveGroup(activeGroup === group.id ? null : group.id))
             }
