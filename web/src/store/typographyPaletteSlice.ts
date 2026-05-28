@@ -26,6 +26,10 @@ interface TypographyPaletteState {
   elementScaleSteps: Record<string, ElementScaleSteps>;
   // Typeface role assignments (display/body/code → font family)
   typefaceRoles: TypefaceRoleMap;
+  // Element currently highlighted on the page (selector-based overlay)
+  highlightedElementId: string | null;
+  // Inspector/dropper mode: click on page to find element in palette
+  inspectorMode: boolean;
 }
 
 /** Load initial state from localStorage if available. */
@@ -185,6 +189,14 @@ const typographyPaletteSlice = createSlice({
     setCopiedFeedback(state, action: PayloadAction<string | null>) {
       state.copiedFeedback = action.payload;
     },
+    /** Set which element is highlighted on the page. */
+    setHighlightedElement(state, action: PayloadAction<string | null>) {
+      state.highlightedElementId = action.payload;
+    },
+    /** Toggle inspector/dropper mode. */
+    toggleInspectorMode(state) {
+      state.inspectorMode = !state.inspectorMode;
+    },
     /** Clear persisted state from localStorage. */
     clearPersistence() {
       clearPaletteState();
@@ -208,6 +220,8 @@ export const {
   saveAsPreset,
   deleteCustomPreset,
   setCopiedFeedback,
+  setHighlightedElement,
+  toggleInspectorMode,
   clearPersistence,
 } = typographyPaletteSlice.actions;
 

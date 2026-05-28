@@ -21,6 +21,8 @@ import { getAllPresets } from './presets';
 import { copyCssToClipboard } from './css-override-engine';
 import { TYPOGRAPHY_GROUPS } from './element-registry';
 import { useTypographyOverrides } from './useTypographyOverrides';
+import { useHighlightSync } from './useHighlightElement';
+import { useInspectorMode, useInspectorToggle } from './useInspectorMode';
 import { BaselineParametersPanel } from './BaselineParameters';
 import { TypographyPaletteParts } from './parts';
 import { TypographyPaletteGroup } from './TypographyPaletteGroup';
@@ -45,6 +47,11 @@ export function TypographyPalette() {
 
   // Keep DOM in sync with overrides + scale-mode resolved values
   useTypographyOverrides();
+  // Sync highlighted element overlay to DOM
+  useHighlightSync();
+  // Inspector mode click handler
+  useInspectorMode();
+  const inspector = useInspectorToggle();
 
   // Clear "Copied!" feedback after 2 seconds
   useEffect(() => {
@@ -119,6 +126,24 @@ export function TypographyPalette() {
       {/* Header */}
       <div data-part={TypographyPaletteParts.header}>
         <span data-part={TypographyPaletteParts.title}>𝒜a Typography</span>
+        {/* Inspector/dropper toggle */}
+        <button
+          title={inspector.active ? 'Inspector active — click an element on the page' : 'Inspect: click to find element in palette'}
+          onClick={inspector.toggle}
+          style={{
+            border: inspector.active ? '2px solid #ff6600' : 'none',
+            padding: '0 4px',
+            fontSize: 12,
+            cursor: 'pointer',
+            background: inspector.active ? '#fff3e0' : 'transparent',
+            color: inspector.active ? '#ff6600' : '#888',
+            borderRadius: 2,
+            fontFamily: 'inherit',
+            marginRight: 4,
+          }}
+        >
+          💉
+        </button>
         <button
           data-part={TypographyPaletteParts.closeBtn}
           onClick={() => dispatch(closePalette())}

@@ -17,6 +17,7 @@ import { FontSizeStepper } from './FontSizeStepper';
 import { FontWeightSelect } from './FontWeightSelect';
 import { ColorStepper } from './ColorStepper';
 import { ScaleStepSelect } from './ScaleStepSelect';
+import { useHighlightToggle } from './useHighlightElement';
 
 interface TypographyPaletteElementProps {
   element: TypographyElement;
@@ -35,6 +36,10 @@ export function TypographyPaletteElement({
   const elementSteps = useSelector(
     (s: RootState) => s.typographyPalette.elementScaleSteps[element.id] ?? {}
   ) as ElementScaleSteps;
+  const highlightedElementId = useSelector(
+    (s: RootState) => s.typographyPalette.highlightedElementId
+  );
+  const toggleHighlight = useHighlightToggle();
 
   const effective: TypographyProperties = { ...element.defaults, ...currentOverrides };
 
@@ -59,7 +64,25 @@ export function TypographyPaletteElement({
         <span data-part={TypographyPaletteParts.elementLabel}>
           {element.label}
         </span>
-        {element.supportsScale && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Highlight button */}
+          <button
+            title="Highlight this element on the page"
+            onClick={() => toggleHighlight(element.id)}
+            style={{
+              border: 'none',
+              padding: '1px 4px',
+              fontSize: 9,
+              cursor: 'pointer',
+              background: highlightedElementId === element.id ? '#ff6600' : 'transparent',
+              color: highlightedElementId === element.id ? '#fff' : '#888',
+              borderRadius: 2,
+              fontFamily: 'inherit',
+            }}
+          >
+            🔍
+          </button>
+          {element.supportsScale && (
           <div style={{ display: 'inline-flex', border: '1px solid #aaa', borderRadius: 2, overflow: 'hidden' }}>
             <button
               style={{
@@ -94,6 +117,7 @@ export function TypographyPaletteElement({
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Font family — always custom (not scale-derived) */}
