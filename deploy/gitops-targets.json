@@ -1,0 +1,24 @@
+{
+  "targets": [
+    {
+      "name": "docs-yolo-prod",
+      "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
+      "gitops_branch": "main",
+      "manifest_path": "gitops/kustomize/docs-yolo/deployment.yaml",
+      "images": [
+        {
+          "container_name": "docs-browser",
+          "image_name": "ghcr.io/go-go-golems/glazed"
+        },
+        {
+          "container_name": "docs-registry",
+          "image_name": "ghcr.io/go-go-golems/glazed"
+        },
+        {
+          "container_name": "docs-ssr",
+          "image_name": "ghcr.io/go-go-golems/glazed-ssr"
+        }
+      ]
+    }
+  ]
+}
