@@ -46,7 +46,9 @@
 }
 
 [data-part='package-index-section-short'] {
+  font-family: var(--font-serif);
   color: #555;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.65;
   margin: 2px 0 0;
 }
