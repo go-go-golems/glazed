@@ -20,7 +20,7 @@ jobs:
       image_tag: ${{ steps.compute.outputs.image_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Compute image coordinates
         id: compute
@@ -94,10 +94,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check out infra-tooling repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: go-go-golems/infra-tooling
           ref: main
