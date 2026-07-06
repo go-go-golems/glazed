@@ -156,7 +156,10 @@ func updateFromEnv(
 			base := sectionPrefix + p.Name
 			envKey := strings.ToUpper(strings.ReplaceAll(base, "-", "_"))
 			if prefix != "" {
-				envKey = strings.ToUpper(prefix) + "_" + envKey
+				// Normalize the app-name prefix the same way the field name is, so a
+				// hyphenated AppName (e.g. "llm-proxy") yields shell-exportable
+				// env vars like LLM_PROXY_* instead of LLM-PROXY_*.
+				envKey = strings.ToUpper(strings.ReplaceAll(prefix, "-", "_")) + "_" + envKey
 			}
 
 			if v, ok := os.LookupEnv(envKey); ok {

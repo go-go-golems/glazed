@@ -138,3 +138,76 @@ func TestUpdateFromEnvInvalidChoice(t *testing.T) {
 	err = Execute(schema_, parsed, FromEnv("APP"))
 	require.Error(t, err, "should error on invalid choice")
 }
+
+// TestUpdateFromEnvNormalizesHyphenatedPrefix is a regression test for issue #596:
+// a hyphenated AppName (e.g. "llm-proxy") must produce shell-exportable env vars
+// like LLM_PROXY_CFG_USER, not LLM-PROXY_CFG_USER (which shells cannot export).
+func TestUpdateFromEnvNormalizesHyphenatedPrefix(t *testing.T) {
+	cfgSection, err := schema.NewSection("cfg", "Config",
+		schema.WithPrefix("cfg-"),
+		schema.WithFields(
+			fields.New("user", fields.TypeString),
+			fields.New("retries", fields.TypeInteger),
+		),
+	)
+	require.NoError(t, err)
+
+	schema_ := schema.NewSchema(schema.WithSections(cfgSection))
+	parsed := values.New()
+
+	// The prefix is hyphenated; the normalized env key must be LLM_PROXY_CFG_USER.
+	env := map[string]string{
+		"LLM_PROXY_CFG_USER":    "sk-test",
+		"LLM_PROXY_CFG_RETRIES": "5",
+	}
+	prev := map[string]*string{}
+	for k, v := range env {
+		if old, ok := os.LookupEnv(k); ok {
+			prev[k] = &old
+		} else {
+			prev[k] = nil
+		}
+		err := os.Setenv(k, v)
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() {
+		for k, v := range prev {
+			if v == nil {
+				_ = os.Unsetenv(k)
+			} else {
+				_ = os.Setenv(k, *v)
+			}
+		}
+	})
+
+	// Hyphenated prefix must be normalized to LLM_PROXY_* (issue #596).
+	err = Execute(schema_, parsed,
+		FromEnv("llm-proxy", fields.WithSource("env")),
+	)
+	require.NoError(t, err)
+
+	sectionValues, ok := parsed.Get("cfg")
+	require.True(t, ok)
+
+	get := func(name string) interface{} {
+		v, ok := sectionValues.Fields.Get(name)
+		require.True(t, ok, "field %s should be set", name)
+		return v.Value
+	}
+	require.Equal(t, "sk-test", get("user"))
+	require.Equal(t, 5, get("retries"))
+
+	// The recorded env_key must be the normalized, shell-safe form.
+	up, ok := sectionValues.Fields.Get("user")
+	require.True(t, ok)
+	found := false
+	for _, step := range up.Log {
+		if step.Source == "env" && step.Metadata != nil {
+			if ek, ok := step.Metadata["env_key"]; ok && ek == "LLM_PROXY_CFG_USER" {
+				found = true
+				break
+			}
+		}
+	}
+	require.True(t, found, "expected normalized env_key LLM_PROXY_CFG_USER on user")
+}
