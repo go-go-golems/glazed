@@ -780,3 +780,139 @@ func TestInitializeStructWithFileDataContainingInterfaceMap(t *testing.T) {
 	assert.Equal(t, "simple string", subArray[1])
 	assert.Equal(t, int(42), subArray[2]) // JSON numbers are float64
 }
+
+// --- Embedded struct regression tests (issue #597) ---
+//
+// DecodeInto and StructToDataMap previously iterated only direct struct fields,
+// so a glazed-tagged field promoted from an embedded (anonymous) struct was
+// silently skipped. These tests lock in the promoted-field behavior.
+
+func TestDecodeIntoEmbeddedStruct(t *testing.T) {
+	type commonSettings struct {
+		DB string `glazed:"db"`
+	}
+	type ServeSettings struct {
+		commonSettings
+		Listen string `glazed:"listen"`
+	}
+
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
+			fields.New("db", fields.TypeString),
+			"db", "/tmp/x.db"),
+		fields.WithFieldValue(
+			fields.New("listen", fields.TypeString),
+			"listen", ":8080"),
+	)
+
+	testStruct := &ServeSettings{}
+
+	err := parsedParams.DecodeInto(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, "/tmp/x.db", testStruct.DB) // promoted from embedded struct
+	assert.Equal(t, ":8080", testStruct.Listen)
+}
+
+func TestDecodeIntoEmbeddedPointerStruct(t *testing.T) {
+	type CommonSettings struct {
+		DB string `glazed:"db"`
+	}
+	type ServeSettings struct {
+		*CommonSettings
+		Listen string `glazed:"listen"`
+	}
+
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
+			fields.New("db", fields.TypeString),
+			"db", "/tmp/x.db"),
+		fields.WithFieldValue(
+			fields.New("listen", fields.TypeString),
+			"listen", ":8080"),
+	)
+
+	testStruct := &ServeSettings{}
+
+	err := parsedParams.DecodeInto(testStruct)
+
+	require.NoError(t, err)
+	require.NotNil(t, testStruct.CommonSettings) // nil pointer allocated
+	assert.Equal(t, "/tmp/x.db", testStruct.DB)
+	assert.Equal(t, ":8080", testStruct.Listen)
+}
+
+// TestDecodeIntoEmbeddedNilUnexportedPointerSkipped checks that an unexported
+// nil pointer-to-struct embedded field is skipped gracefully (it cannot be
+// allocated via reflect) instead of panicking (issue #597).
+func TestDecodeIntoEmbeddedNilUnexportedPointerSkipped(t *testing.T) {
+	type commonSettings struct {
+		DB string `glazed:"db"`
+	}
+	type ServeSettings struct {
+		*commonSettings
+		Listen string `glazed:"listen"`
+	}
+
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
+			fields.New("db", fields.TypeString),
+			"db", "/tmp/x.db"),
+		fields.WithFieldValue(
+			fields.New("listen", fields.TypeString),
+			"listen", ":8080"),
+	)
+
+	testStruct := &ServeSettings{}
+
+	err := parsedParams.DecodeInto(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, ":8080", testStruct.Listen)
+	// The unexported nil pointer can't be allocated via reflect, so decoding
+	// must skip it without panicking (DB is left untouched).
+}
+
+func TestStructToDataMapWithEmbeddedStruct(t *testing.T) {
+	type commonSettings struct {
+		DB string `glazed:"db"`
+	}
+	type ServeSettings struct {
+		commonSettings
+		Listen string `glazed:"listen"`
+	}
+
+	testStruct := &ServeSettings{
+		commonSettings: commonSettings{DB: "/tmp/x.db"},
+		Listen:         ":8080",
+	}
+
+	dataMap, err := fields.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"db":     "/tmp/x.db", // promoted from embedded struct
+		"listen": ":8080",
+	}, dataMap)
+}
+
+func TestStructToDataMapWithNilEmbeddedPointer(t *testing.T) {
+	type commonSettings struct {
+		DB string `glazed:"db"`
+	}
+	type ServeSettings struct {
+		*commonSettings
+		Listen string `glazed:"listen"`
+	}
+
+	testStruct := &ServeSettings{
+		Listen: ":8080",
+	}
+
+	dataMap, err := fields.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"listen": ":8080",
+	}, dataMap)
+}

@@ -140,12 +140,28 @@ func (p *FieldValues) DecodeInto(s interface{}) error {
 	if of.Elem().Kind() != reflect.Struct {
 		return errors.Errorf("s is not a pointer to a struct")
 	}
-	st := of.Elem()
 	v := reflect.ValueOf(s).Elem()
+	return p.decodeIntoValue(v)
+}
 
+// decodeIntoValue iterates the direct fields of a struct value, decoding each
+// glazed-tagged field from p. Embedded (anonymous) structs are recursed into
+// via decodeEmbedded so their promoted glazed-tagged fields are decoded
+// instead of silently skipped (issue #597).
+func (p *FieldValues) decodeIntoValue(v reflect.Value) error {
+	st := v.Type()
 	for i := 0; i < st.NumField(); i++ {
 		structField := st.Field(i)
 		tag, ok := structField.Tag.Lookup("glazed")
+
+		// Recurse into embedded (anonymous) structs so their promoted
+		// glazed-tagged fields are decoded instead of silently skipped (#597).
+		if structField.Anonymous && !ok {
+			if err := p.decodeEmbedded(v.Field(i)); err != nil {
+				return errors.Wrapf(err, "failed to decode embedded field %s", structField.Name)
+			}
+			continue
+		}
 		if !ok {
 			continue
 		}
@@ -174,6 +190,32 @@ func (p *FieldValues) DecodeInto(s interface{}) error {
 		}
 	}
 	return nil
+}
+
+// decodeEmbedded decodes the promoted glazed-tagged fields of an embedded
+// (anonymous) struct field into the same FieldValues, fixing the silent skip
+// reported in issue #597. It handles both struct and pointer-to-struct embedded
+// fields, allocating the pointer when nil. Non-struct anonymous fields are
+// ignored.
+func (p *FieldValues) decodeEmbedded(field reflect.Value) error {
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			// Only settable (exported) fields can be allocated via reflect; an
+			// unexported nil pointer-to-struct cannot be, so skip it silently.
+			if !field.CanSet() {
+				return nil
+			}
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		field = field.Elem()
+	}
+	if field.Kind() != reflect.Struct {
+		return nil
+	}
+	// Recurse via the reflect.Value directly (not .Interface()) so embedded
+	// structs of unexported type are still decoded: their exported fields
+	// remain settable through the addressable embedded value (#597).
+	return p.decodeIntoValue(field)
 }
 
 // setWildcardValues matches field names from FieldValues against a supplied pattern using the
@@ -461,12 +503,41 @@ func StructToDataMap(s interface{}) (map[string]interface{}, error) {
 		return nil, errors.New("input must be a struct or a pointer to a struct")
 	}
 
+	return structValueToDataMap(v)
+}
+
+// structValueToDataMap walks a struct value and returns a map of its glazed-tagged
+// fields. Embedded (anonymous) structs are recursed into so their promoted
+// glazed-tagged fields are included instead of silently skipped (issue #597).
+func structValueToDataMap(v reflect.Value) (map[string]interface{}, error) {
 	dataMap := make(map[string]interface{})
 
 	structType := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := structType.Field(i)
 		tag, ok := field.Tag.Lookup("glazed")
+
+		// Recurse into embedded (anonymous) structs and merge their promoted
+		// glazed-tagged fields (#597).
+		if field.Anonymous && !ok {
+			fieldValue := v.Field(i)
+			if fieldValue.Kind() == reflect.Ptr {
+				if fieldValue.IsNil() {
+					continue
+				}
+				fieldValue = fieldValue.Elem()
+			}
+			if fieldValue.Kind() == reflect.Struct {
+				embedded, err := structValueToDataMap(fieldValue)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to encode embedded field %s", field.Name)
+				}
+				for k, val := range embedded {
+					dataMap[k] = val
+				}
+			}
+			continue
+		}
 		if !ok {
 			continue
 		}
