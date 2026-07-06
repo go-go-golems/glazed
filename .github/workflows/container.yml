@@ -104,7 +104,7 @@ jobs:
           path: .infra-tooling
 
       - name: Read GitOps PR token from Vault
-        uses: hashicorp/vault-action@v3
+        uses: hashicorp/vault-action@v4
         with:
           url: https://vault.yolo.scapegoat.dev
           method: jwt
