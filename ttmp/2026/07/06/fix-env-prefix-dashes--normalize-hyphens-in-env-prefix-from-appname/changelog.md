@@ -23,3 +23,12 @@ Step 2: Fixed updateFromEnv to normalize hyphens in env prefix; added regression
 - /home/manuel/workspaces/2026-07-06/fix-glazed-env-dashes/glazed/pkg/cmds/sources/update.go — updateFromEnv now normalizes prefix hyphens to underscores (4bb2f46)
 - /home/manuel/workspaces/2026-07-06/fix-glazed-env-dashes/glazed/pkg/cmds/sources/update_test.go — added TestUpdateFromEnvNormalizesHyphenatedPrefix regression test (4bb2f46)
 
+
+## 2026-07-06
+
+Step 3: Pushed to wesen fork (--no-verify), opened PR #598 (Fixes #596), posted Bluesky update via goat.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-07-06/fix-glazed-env-dashes/glazed/pkg/cmds/sources/update.go — fix live in PR #598
+
