@@ -147,6 +147,8 @@ topics:
       description: Backend services, APIs, persistence, and operational server-side implementation details
     - slug: automation
       description: Automation scripts, tooling, and workflow orchestration
+    - slug: fields
+      description: Field definitions, parsing, and FieldValues/struct decoding (pkg/cmds/fields)
 docTypes:
     - slug: index
       description: Ticket index
