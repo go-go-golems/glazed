@@ -916,3 +916,57 @@ func TestStructToDataMapWithNilEmbeddedPointer(t *testing.T) {
 		"listen": ":8080",
 	}, dataMap)
 }
+
+// --- Shadowing regression tests (PR #599 review) ---
+//
+// When an outer struct declares its own tagged field with the same Go name as
+// a field inside an anonymous struct, the embedded field is not promoted (it is
+// shadowed). DecodeInto/StructToDataMap must respect Go's promotion/shadowing
+// rules and leave the hidden embedded field alone instead of double-decoding
+// it (which previously caused spurious type-conversion errors).
+
+func TestDecodeIntoShadowedEmbeddedFieldSkipped(t *testing.T) {
+	type Common struct {
+		Port int `glazed:"port"`
+	}
+	type Outer struct {
+		Port string `glazed:"port"` // shadows Common.Port
+		Common
+	}
+
+	parsedParams := fields.NewFieldValues(
+		fields.WithFieldValue(
+			fields.New("port", fields.TypeString),
+			"port", ":8080"),
+	)
+
+	testStruct := &Outer{}
+
+	err := parsedParams.DecodeInto(testStruct)
+
+	require.NoError(t, err)                    // no conversion error from the hidden int field
+	assert.Equal(t, ":8080", testStruct.Port)  // outer string decoded
+	assert.Equal(t, 0, testStruct.Common.Port) // shadowed int left untouched
+}
+
+func TestStructToDataMapShadowedEmbeddedFieldSkipped(t *testing.T) {
+	type Common struct {
+		Port int `glazed:"port"`
+	}
+	type Outer struct {
+		Port string `glazed:"port"` // shadows Common.Port
+		Common
+	}
+
+	testStruct := &Outer{
+		Port:   ":8080",
+		Common: Common{Port: 9999},
+	}
+
+	dataMap, err := fields.StructToDataMap(testStruct)
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"port": ":8080", // only the outer (non-shadowed) field
+	}, dataMap)
+}

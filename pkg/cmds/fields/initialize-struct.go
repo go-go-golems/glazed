@@ -144,24 +144,22 @@ func (p *FieldValues) DecodeInto(s interface{}) error {
 	return p.decodeIntoValue(v)
 }
 
-// decodeIntoValue iterates the direct fields of a struct value, decoding each
-// glazed-tagged field from p. Embedded (anonymous) structs are recursed into
-// via decodeEmbedded so their promoted glazed-tagged fields are decoded
-// instead of silently skipped (issue #597).
+// decodeIntoValue iterates the visible (promoted, non-shadowed) fields of a
+// struct value, decoding each glazed-tagged field from p. Using
+// reflect.VisibleFields honors Go's field promotion/shadowing rules: promoted
+// fields from embedded structs are decoded (issue #597) while fields hidden by
+// an outer field of the same name are skipped (PR #599 review). Access is via
+// fieldByIndex so embedded pointer-to-struct fields are allocated when nil.
 func (p *FieldValues) decodeIntoValue(v reflect.Value) error {
 	st := v.Type()
-	for i := 0; i < st.NumField(); i++ {
-		structField := st.Field(i)
-		tag, ok := structField.Tag.Lookup("glazed")
-
-		// Recurse into embedded (anonymous) structs so their promoted
-		// glazed-tagged fields are decoded instead of silently skipped (#597).
-		if structField.Anonymous && !ok {
-			if err := p.decodeEmbedded(v.Field(i)); err != nil {
-				return errors.Wrapf(err, "failed to decode embedded field %s", structField.Name)
-			}
+	for _, structField := range reflect.VisibleFields(st) {
+		// VisibleFields also returns the embedded (anonymous) fields themselves;
+		// they carry no glazed tag and their promoted fields appear as separate
+		// visible entries, so skip them.
+		if structField.Anonymous {
 			continue
 		}
+		tag, ok := structField.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}
@@ -170,8 +168,15 @@ func (p *FieldValues) decodeIntoValue(v reflect.Value) error {
 			return errors.Wrapf(err, "failed to parse glazed tag for field %s", structField.Name)
 		}
 
+		dst := fieldByIndex(v, structField.Index, true)
+		if !dst.IsValid() {
+			// Field is reachable only through a nil pointer-to-struct that
+			// cannot be allocated (e.g. an unexported nil embedded pointer);
+			// skip it rather than panicking.
+			continue
+		}
+
 		if options.IsWildcard {
-			dst := v.FieldByName(structField.Name)
 			if dst.Kind() != reflect.Map {
 				return errors.Errorf("wildcard fields require a map field, field %s is not a map", structField.Name)
 			}
@@ -183,7 +188,6 @@ func (p *FieldValues) decodeIntoValue(v reflect.Value) error {
 			if !ok {
 				continue
 			}
-			dst := v.FieldByName(structField.Name)
 			if err := p.setTargetValue(dst, fieldValue.Value, options.FromJson); err != nil {
 				return errors.Wrapf(err, "failed to set value for %s", options.Name)
 			}
@@ -192,30 +196,27 @@ func (p *FieldValues) decodeIntoValue(v reflect.Value) error {
 	return nil
 }
 
-// decodeEmbedded decodes the promoted glazed-tagged fields of an embedded
-// (anonymous) struct field into the same FieldValues, fixing the silent skip
-// reported in issue #597. It handles both struct and pointer-to-struct embedded
-// fields, allocating the pointer when nil. Non-struct anonymous fields are
-// ignored.
-func (p *FieldValues) decodeEmbedded(field reflect.Value) error {
-	if field.Kind() == reflect.Ptr {
-		if field.IsNil() {
-			// Only settable (exported) fields can be allocated via reflect; an
-			// unexported nil pointer-to-struct cannot be, so skip it silently.
-			if !field.CanSet() {
-				return nil
+// fieldByIndex traverses the index of a (possibly promoted) struct field and
+// returns the leaf field value. Unlike reflect.Value.FieldByIndex, it allocates
+// nil settable (exported) pointer-to-struct intermediates when alloc is true,
+// so embedded pointer fields can be decoded into instead of panicking. When
+// alloc is false (read-only traversal, e.g. StructToDataMap) or a nil pointer
+// cannot be allocated (unexported), it returns the zero Value so the caller can
+// skip the field.
+func fieldByIndex(v reflect.Value, index []int, alloc bool) reflect.Value {
+	for i, x := range index {
+		if i > 0 && v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				if !alloc || !v.CanSet() {
+					return reflect.Value{}
+				}
+				v.Set(reflect.New(v.Type().Elem()))
 			}
-			field.Set(reflect.New(field.Type().Elem()))
+			v = v.Elem()
 		}
-		field = field.Elem()
+		v = v.Field(x)
 	}
-	if field.Kind() != reflect.Struct {
-		return nil
-	}
-	// Recurse via the reflect.Value directly (not .Interface()) so embedded
-	// structs of unexported type are still decoded: their exported fields
-	// remain settable through the addressable embedded value (#597).
-	return p.decodeIntoValue(field)
+	return v
 }
 
 // setWildcardValues matches field names from FieldValues against a supplied pattern using the
@@ -507,37 +508,19 @@ func StructToDataMap(s interface{}) (map[string]interface{}, error) {
 }
 
 // structValueToDataMap walks a struct value and returns a map of its glazed-tagged
-// fields. Embedded (anonymous) structs are recursed into so their promoted
-// glazed-tagged fields are included instead of silently skipped (issue #597).
+// fields. Using reflect.VisibleFields honors Go's field promotion/shadowing
+// rules: promoted fields from embedded structs are included (issue #597) while
+// fields hidden by an outer field of the same name are skipped (PR #599 review).
+// Read-only traversal (fieldByIndex with alloc=false) so nil embedded pointers
+// are skipped rather than allocated.
 func structValueToDataMap(v reflect.Value) (map[string]interface{}, error) {
 	dataMap := make(map[string]interface{})
 
-	structType := v.Type()
-	for i := 0; i < v.NumField(); i++ {
-		field := structType.Field(i)
-		tag, ok := field.Tag.Lookup("glazed")
-
-		// Recurse into embedded (anonymous) structs and merge their promoted
-		// glazed-tagged fields (#597).
-		if field.Anonymous && !ok {
-			fieldValue := v.Field(i)
-			if fieldValue.Kind() == reflect.Ptr {
-				if fieldValue.IsNil() {
-					continue
-				}
-				fieldValue = fieldValue.Elem()
-			}
-			if fieldValue.Kind() == reflect.Struct {
-				embedded, err := structValueToDataMap(fieldValue)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to encode embedded field %s", field.Name)
-				}
-				for k, val := range embedded {
-					dataMap[k] = val
-				}
-			}
+	for _, field := range reflect.VisibleFields(v.Type()) {
+		if field.Anonymous {
 			continue
 		}
+		tag, ok := field.Tag.Lookup("glazed")
 		if !ok {
 			continue
 		}
@@ -547,7 +530,12 @@ func structValueToDataMap(v reflect.Value) (map[string]interface{}, error) {
 			return nil, errors.Wrapf(err, "failed to parse glazed tag for field %s", field.Name)
 		}
 
-		fieldValue := v.Field(i)
+		fieldValue := fieldByIndex(v, field.Index, false)
+		if !fieldValue.IsValid() {
+			// Field is behind a nil embedded pointer; nothing to serialize.
+			continue
+		}
+
 		if options.IsWildcard {
 			if fieldValue.Kind() != reflect.Map {
 				return nil, errors.Errorf("wildcard fields require a map field, field %s is not a map", field.Name)
