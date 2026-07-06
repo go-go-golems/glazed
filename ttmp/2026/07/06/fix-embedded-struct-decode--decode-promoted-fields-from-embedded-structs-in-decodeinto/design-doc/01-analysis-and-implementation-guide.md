@@ -18,6 +18,8 @@ RelatedFiles:
       Note: |-
         existing DecodeInto / StructToDataMap tests (patterns to mirror)
         existing DecodeInto/StructToDataMap tests to mirror
+    - Path: ttmp/2026/07/06/fix-embedded-struct-decode--decode-promoted-fields-from-embedded-structs-in-decodeinto/scripts/02-visible-fields-probe.go
+      Note: proves VisibleFields includes promoted-from-unexported-embed and excludes shadowed fields (basis for the Step 4 fix)
 ExternalSources:
     - https://github.com/go-go-golems/glazed/issues/597
 Summary: DecodeInto silently skips glazed-tagged fields on embedded structs. Walk anonymous struct fields recursively (and apply the same fix to the symmetric StructToDataMap).
@@ -25,6 +27,7 @@ LastUpdated: 2026-07-06T00:00:00Z
 WhatFor: 'Fixing the embedded-struct silent-skip bug reported in issue #597'
 WhenToUse: When a glazed-tagged field on an embedded struct decodes to its zero value with no error
 ---
+
 
 
 # Analysis and Implementation Guide
