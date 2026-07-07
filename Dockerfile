@@ -11,7 +11,7 @@ RUN corepack enable \
 COPY web/ ./
 RUN pnpm build:all
 
-FROM golang:1.25-bookworm AS builder
+FROM golang:1.26-bookworm AS builder
 ENV CI=true \
   COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /src
