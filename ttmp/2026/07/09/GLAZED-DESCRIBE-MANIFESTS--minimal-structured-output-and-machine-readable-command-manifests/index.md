@@ -1,7 +1,7 @@
 ---
 Title: Minimal Structured Output and Machine-Readable Command Manifests
 Ticket: GLAZED-DESCRIBE-MANIFESTS
-Status: active
+Status: complete
 Topics:
     - glazed
     - commands
@@ -26,12 +26,14 @@ RelatedFiles:
       Note: Current rich structured-output settings aggregate.
     - Path: pkg/settings/flags
       Note: Current 44-flag automatic structured-data surface.
-ExternalSources: []
+ExternalSources:
+    - https://github.com/go-go-golems/glazed/issues/600
 Summary: Design ticket for reducing Glazed commands to one output-format flag and adding versioned static command manifests exposed through a standard describe command.
-LastUpdated: 2026-07-09T17:30:00-04:00
+LastUpdated: 2026-07-09T17:19:59.989199348-04:00
 WhatFor: Track the design, evidence, implementation plan, and GitHub handoff for the framework change.
 WhenToUse: Start here when implementing or reviewing minimal structured output and machine-readable command discovery.
 ---
+
 
 # Minimal Structured Output and Machine-Readable Command Manifests
 
@@ -50,7 +52,7 @@ The design also introduces atomic command compilation so duplicate paths, aliase
 
 ## Status
 
-The design document is drafted and awaiting repository validation and GitHub issue publication.
+The design is validated, committed, and published in [Glazed issue #600](https://github.com/go-go-golems/glazed/issues/600). Implementation has not started.
 
 ## Central decisions
 

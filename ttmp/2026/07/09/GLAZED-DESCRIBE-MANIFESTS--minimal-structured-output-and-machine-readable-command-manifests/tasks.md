@@ -7,5 +7,5 @@
 - [x] Specify immutable command manifests and the describe command <!-- t:qb9o -->
 - [x] Define package boundaries, implementation phases, tests, and migration <!-- t:crr8 -->
 - [x] Validate and commit the design ticket <!-- t:tapn -->
-- [ ] Create the GitHub implementation issue with the design attached <!-- t:cen9 -->
-- [ ] Record the issue link and finalize the ticket handoff <!-- t:3hos -->
+- [x] Create the GitHub implementation issue with the design attached <!-- t:cen9 -->
+- [x] Record the issue link and finalize the ticket handoff <!-- t:3hos -->

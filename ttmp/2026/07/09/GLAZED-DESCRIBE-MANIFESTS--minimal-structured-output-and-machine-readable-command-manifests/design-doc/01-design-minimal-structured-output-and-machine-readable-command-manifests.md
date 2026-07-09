@@ -1,7 +1,7 @@
 ---
 Title: 'Design: Minimal Structured Output and Machine-Readable Command Manifests'
 Ticket: GLAZED-DESCRIBE-MANIFESTS
-Status: active
+Status: complete
 Topics:
     - glazed
     - commands
@@ -34,15 +34,19 @@ RelatedFiles:
       Note: Schema-to-Cobra conversion that the compiled mounting boundary must preserve
     - Path: repo://pkg/formatters/formatter.go
       Note: Core formatter interfaces retained behind the smaller CLI surface
-ExternalSources: []
+ExternalSources:
+    - https://github.com/go-go-golems/glazed/issues/600
 Summary: A hard-cut Glazed framework design that replaces 44 generic per-command transformation flags with a five-format output boundary and adds static, versioned command manifests exposed through a standard describe command.
-LastUpdated: 2026-07-09T17:30:00-04:00
+LastUpdated: 2026-07-09T17:20:17.313153667-04:00
 WhatFor: Guide implementation of a smaller agent-friendly CLI surface, atomic command compilation, and a stable machine-readable discovery API.
 WhenToUse: Use when implementing command contracts, describe/catalog output, structured-output simplification, declarative command loaders, or migration documentation.
 ---
 
 
+
 # Design: Minimal Structured Output and Machine-Readable Command Manifests
+
+Implementation issue: [go-go-golems/glazed#600](https://github.com/go-go-golems/glazed/issues/600)
 
 ## Executive summary
 

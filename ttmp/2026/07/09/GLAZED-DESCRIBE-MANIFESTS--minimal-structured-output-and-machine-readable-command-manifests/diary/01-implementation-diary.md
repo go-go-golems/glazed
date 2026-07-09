@@ -1,7 +1,7 @@
 ---
 Title: Implementation Diary
 Ticket: GLAZED-DESCRIBE-MANIFESTS
-Status: active
+Status: complete
 Topics:
     - glazed
     - commands
@@ -26,12 +26,14 @@ RelatedFiles:
       Note: Inspected construction of the complete Glazed settings bundle.
     - Path: pkg/settings/flags
       Note: Counted and classified all automatically mounted flags.
-ExternalSources: []
+ExternalSources:
+    - https://github.com/go-go-golems/glazed/issues/600
 Summary: Chronological record of repository inspection, design decisions, validation, commits, and GitHub issue publication.
-LastUpdated: 2026-07-09T17:30:00-04:00
+LastUpdated: 2026-07-09T17:20:17.441229146-04:00
 WhatFor: Preserve the evidence and reasoning behind the framework design and its GitHub handoff.
 WhenToUse: Read before implementing or revising the design to understand what was inspected and why decisions were made.
 ---
+
 
 # Implementation diary
 
@@ -100,6 +102,18 @@ I translated the evidence and decisions into an intern-oriented implementation s
 - Created ticket `GLAZED-DESCRIBE-MANIFESTS` with design and diary documents.
 - Added phased tasks covering evidence, flag disposition, contracts, package boundaries, validation, GitHub publication, and final handoff.
 - Wrote the design with current-state evidence, a flag-by-flag disposition table, architecture diagrams, Go API sketches, pseudocode, manifest JSON, implementation phases, documentation inventory, test strategy, acceptance criteria, risks, alternatives, and an intern review path.
+
+### Step 7: committed and published the design
+
+I validated and committed the complete ticket before changing GitHub state, then created one implementation issue in the canonical Glazed repository. The issue body contains the full design with docmgr frontmatter removed, so reviewers do not need access to the local checkout to evaluate or implement the proposal.
+
+**Commit (documentation):** `d3ce4e4417795cec092fab63be614630376b5b9e` — `docs: design minimal command manifests and output`
+
+- Ran `docmgr doctor --ticket GLAZED-DESCRIBE-MANIFESTS --stale-after 30`; all checks passed.
+- Staged only the six files in this ticket and ran `git diff --cached --check`.
+- The pre-commit hook skipped Go lint and tests because the commit contained documentation only.
+- Created [go-go-golems/glazed#600](https://github.com/go-go-golems/glazed/issues/600) with labels `enhancement`, `refactor`, and `documentation`.
+- Queried the issue after creation and verified its title, open state, labels, URL, and full body.
 
 ### Commands used during investigation
 
