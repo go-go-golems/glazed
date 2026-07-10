@@ -2,7 +2,7 @@ module github.com/go-go-golems/glazed
 
 go 1.26.1
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require (
 	dagger.io/dagger v0.21.7
