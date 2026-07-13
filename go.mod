@@ -15,7 +15,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
-	github.com/coreos/go-oidc/v3 v3.19.0
+	github.com/coreos/go-oidc/v3 v3.20.0
 	github.com/dave/jennifer v1.7.0
 	github.com/go-go-golems/logcopter v0.1.0
 	github.com/hashicorp/vault/api v1.20.0
