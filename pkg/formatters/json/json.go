@@ -23,16 +23,16 @@ type OutputFormatter struct {
 }
 
 func (f *OutputFormatter) Close(ctx context.Context, w io.Writer) error {
-	if f.isStreamingRows {
-		if !f.OutputIndividualRows {
-			_, err := w.Write([]byte("]\n"))
-			if err != nil {
-				return err
-			}
-		}
-
+	// Table-mode output is completed by OutputTable and closes with no writer.
+	if w == nil || f.OutputIndividualRows {
+		return nil
 	}
-	return nil
+	if !f.isStreamingRows {
+		_, err := w.Write([]byte("[]\n"))
+		return err
+	}
+	_, err := w.Write([]byte("]\n"))
+	return err
 }
 
 func (f *OutputFormatter) RegisterTableMiddlewares(mw *middlewares.TableProcessor) error {

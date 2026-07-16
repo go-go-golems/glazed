@@ -13,6 +13,20 @@ import (
 	"testing"
 )
 
+func TestStreamingJSONArrayCloseWithoutRowsEmitsEmptyArray(t *testing.T) {
+	formatter := NewOutputFormatter()
+	buf := &bytes.Buffer{}
+	require.NoError(t, formatter.Close(context.Background(), buf))
+	assert.Equal(t, "[]\n", buf.String())
+}
+
+func TestStreamingJSONIndividualRowsCloseWithoutRowsEmitsNothing(t *testing.T) {
+	formatter := NewOutputFormatter(WithOutputIndividualRows(true))
+	buf := &bytes.Buffer{}
+	require.NoError(t, formatter.Close(context.Background(), buf))
+	assert.Empty(t, buf.String())
+}
+
 func TestJSONRenameEndToEnd(t *testing.T) {
 	of := NewOutputFormatter()
 	renames := map[string]string{
