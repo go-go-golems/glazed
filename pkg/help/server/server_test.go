@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
@@ -355,6 +357,50 @@ func TestContentTypeJSON(t *testing.T) {
 
 	if got := rw.Header().Get("Content-Type"); got != "application/json" {
 		t.Errorf("expected Content-Type=application/json, got %s", got)
+	}
+}
+
+func TestHandlePackagesSortsVersionsBySemanticPrecedence(t *testing.T) {
+	st, err := store.NewInMemory()
+	if err != nil {
+		t.Fatalf("store.NewInMemory: %v", err)
+	}
+	ctx := context.Background()
+	versions := []string{"v0.8.9", "v0.10.4", "v0.10.4-rc.1", "nightly"}
+	for i, version := range versions {
+		section := &model.Section{
+			PackageName:    "go-go-goja",
+			PackageVersion: version,
+			Slug:           fmt.Sprintf("section-%d", i),
+			Title:          version,
+			SectionType:    model.SectionGeneralTopic,
+		}
+		if err := st.Upsert(ctx, section); err != nil {
+			t.Fatalf("Upsert(%q): %v", version, err)
+		}
+	}
+	handler := NewHandler(HandlerDeps{Store: st})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/packages", nil)
+	rw := httptest.NewRecorder()
+	handler.ServeHTTP(rw, req)
+	if rw.Code != http.StatusOK {
+		t.Fatalf("packages status = %d: %s", rw.Code, rw.Body.String())
+	}
+
+	var response ListPackagesResponse
+	if err := json.Unmarshal(rw.Body.Bytes(), &response); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if len(response.Packages) != 1 {
+		t.Fatalf("expected one package, got %#v", response.Packages)
+	}
+	want := []string{"v0.10.4", "v0.10.4-rc.1", "v0.8.9", "nightly"}
+	if !slices.Equal(response.Packages[0].Versions, want) {
+		t.Fatalf("versions = %v, want %v", response.Packages[0].Versions, want)
+	}
+	if response.Packages[0].LatestVersion != "v0.10.4" {
+		t.Fatalf("latestVersion = %q, want v0.10.4", response.Packages[0].LatestVersion)
 	}
 }
 
