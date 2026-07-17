@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/mod/semver"
+
 	"github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/glazed/pkg/help/store"
 )
@@ -144,10 +146,10 @@ func (h *Handler) handleListPackages(w http.ResponseWriter, r *http.Request) {
 
 	packages := make([]PackageSummary, 0, len(byName))
 	for _, pkg := range byName {
-		sort.Sort(sort.Reverse(sort.StringSlice(pkg.Versions)))
-		// After reverse-sorting, versions[0] is the lexicographically highest version.
-		// For standard semver (vX.Y.Z), this is the latest version. The LatestVersion
-		// field makes this contract explicit so the frontend doesn't rely on array order.
+		sortPackageVersions(pkg.Versions)
+		// Semantic versions sort newest-first, making versions[0] the latest release.
+		// LatestVersion keeps that contract explicit for clients that do not rely on
+		// array order.
 		if len(pkg.Versions) > 0 {
 			pkg.LatestVersion = pkg.Versions[0]
 		}
@@ -163,6 +165,30 @@ func (h *Handler) handleListPackages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func sortPackageVersions(versions []string) {
+	sort.SliceStable(versions, func(i, j int) bool {
+		left, right := versions[i], versions[j]
+		leftValid, rightValid := semver.IsValid(left), semver.IsValid(right)
+		switch {
+		case leftValid && rightValid:
+			if comparison := semver.Compare(left, right); comparison != 0 {
+				return comparison > 0
+			}
+			// Build metadata does not affect semantic precedence. Use the original
+			// strings as a deterministic tie-breaker.
+			return left > right
+		case leftValid:
+			return true
+		case rightValid:
+			return false
+		default:
+			// Preserve deterministic behavior for legacy non-semver labels while
+			// keeping real releases ahead of them.
+			return left > right
+		}
+	})
 }
 
 func displayPackageName(name string) string {
