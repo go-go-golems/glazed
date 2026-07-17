@@ -103,7 +103,7 @@ jobs:
           ref: main
           path: .infra-tooling
 
-      - name: Read GitOps PR token from Vault
+      - name: Read GitHub App credentials from Vault
         uses: hashicorp/vault-action@v4
         with:
           url: https://vault.yolo.scapegoat.dev
@@ -113,7 +113,23 @@ jobs:
           jwtGithubAudience: https://vault.yolo.scapegoat.dev
           exportToken: true
           secrets: |
-            kv/data/ci/github/glazed/gitops-pr-token token | GITOPS_PR_TOKEN
+            kv/data/ci/github/glazed/gitops-pr-app app_id | GITOPS_APP_ID ;
+            kv/data/ci/github/glazed/gitops-pr-app private_key | GITOPS_APP_PRIVATE_KEY
+
+      - name: Mint GitHub App token for GitOps repository
+        id: gitops-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ env.GITOPS_APP_ID }}
+          private-key: ${{ env.GITOPS_APP_PRIVATE_KEY }}
+          owner: wesen
+          repositories: 2026-03-27--hetzner-k3s
+
+      - name: Export GitHub App token for GitOps action
+        shell: bash
+        run: |
+          echo "GITOPS_PR_TOKEN=${{ steps.gitops-app-token.outputs.token }}" >> "$GITHUB_ENV"
+          echo "::add-mask::${{ steps.gitops-app-token.outputs.token }}"
 
       - name: Open GitOps pull request for docs-yolo image bump
         uses: ./.infra-tooling/actions/open-gitops-pr
