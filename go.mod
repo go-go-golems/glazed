@@ -39,7 +39,7 @@ require (
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/gopher-lua v1.1.1
 	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
-	golang.org/x/mod v0.37.0
+	golang.org/x/mod v0.38.0
 	golang.org/x/net v0.56.0
 	golang.org/x/tools v0.47.0
 	gopkg.in/errgo.v2 v2.1.0
