@@ -118,7 +118,7 @@ jobs:
 
       - name: Mint GitHub App token for GitOps repository
         id: gitops-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ env.GITOPS_APP_ID }}
           private-key: ${{ env.GITOPS_APP_PRIVATE_KEY }}
