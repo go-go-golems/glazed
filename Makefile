@@ -1,6 +1,6 @@
 GLAZED_LINT_DIRS ?= ./cmd/... ./pkg/...
 GLAZED_LINT_FLAGS ?=
-.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-go-go-golems install version
+.PHONY: all test build lint lintmax docker-lint golangci-lint-install glazed-lint-build glazed-lint glazedclilint glazed-migrate-build logcopter-generate logcopter-check logcopter-smoke gosec govulncheck goreleaser tag-major tag-minor tag-patch release bump-go-go-golems install version
 
 all: test build
 
@@ -37,6 +37,9 @@ glazed-lint: glazed-lint-build
 glazedclilint:
 	go build -o $(GLAZEDCLILINT_BIN) ./cmd/tools/glazedclilint
 	go vet -vettool=$(GLAZEDCLILINT_BIN) ./cmd/... ./pkg/...
+
+glazed-migrate-build:
+	go build -o /tmp/glazed-migrate ./cmd/tools/glazed-migrate
 
 logcopter-generate:
 	go generate ./...
