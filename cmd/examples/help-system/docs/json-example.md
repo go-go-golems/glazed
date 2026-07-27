@@ -9,10 +9,10 @@ Topics:
 - output
 Commands:
 - json
-- format
 Flags:
-- --output
-- --pretty
+- --format
+- --output-fields
+- --max-output-rows
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
@@ -21,26 +21,21 @@ Order: 2
 
 # JSON Output Example
 
-Use the json command to format data as JSON output.
-
-## Basic Usage
+Use `--format json` for a JSON array or `--format jsonl` for one compact object per line.
 
 ```bash
-json --input=data.csv --output=json
+json --input=data.csv --format=json
+json --input=data.csv --format=jsonl --max-output-rows=100
 ```
 
-## Pretty Printing
-
-For human-readable output:
+Project fields before serialization when only a subset is needed:
 
 ```bash
-json --input=data.csv --output=json --pretty
+json --input=data.csv --format=jsonl --output-fields=id,status
 ```
 
-## Integration with Other Tools
-
-Pipe JSON output to other commands:
+Ad hoc filtering stays in the caller:
 
 ```bash
-json --input=data.csv | jq '.[] | select(.status == "active")'
+json --input=data.csv --format=json | jq '.[] | select(.status == "active")'
 ```

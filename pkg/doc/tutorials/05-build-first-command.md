@@ -152,14 +152,14 @@ The `GlazeProcessor` collects these rows and can output them in multiple formats
 
 ### Command Configuration and Fields
 
-Command configuration combines your custom fields with Glazed's built-in output formatting capabilities. The `settings.NewGlazedSchema()` helper adds standard flags like `--output`, `--fields`, and `--sort-columns`, while your custom field definitions specify the command's business logic inputs.
+Command configuration combines application fields with Glazed's minimal structured-output section. `settings.NewStructuredOutputSection()` defines `--format`, `--output-fields`, and `--max-output-rows`; `cli.BuildCobraCommand` adds it automatically for `GlazeCommand` implementations.
 
 ```go
 // Step 2.4: Create constructor function
 func NewListUsersCommand() (*ListUsersCommand, error) {
-    // Create glazed schema section for output formatting options
-    // Note: cli.BuildCobraCommand will also auto-add this section for GlazeCommand implementations.
-    glazedSection, err := settings.NewGlazedSchema()
+    // Create the minimal structured-output section.
+    // cli.BuildCobraCommand also adds it automatically for GlazeCommand implementations.
+    glazedSection, err := settings.NewStructuredOutputSection()
     if err != nil {
         return nil, err
     }
@@ -183,8 +183,8 @@ Examples:
   list-users --limit 5                 # Show only first 5 users
   list-users --name-filter admin       # Filter users containing "admin"
   list-users --active-only             # Show only active users
-  list-users --output json             # Output as JSON
-  list-users --output csv              # Output as CSV
+  list-users --format json             # Output as JSON
+  list-users --format csv              # Output as CSV
         `),
         
         // Define command flags
@@ -224,7 +224,7 @@ Examples:
 
 **Configuration components:**
 
-1. **Glazed Schema Section**: `settings.NewGlazedSchema()` adds built-in fields like `--output`, `--fields`, `--sort-columns` (and `cli.BuildCobraCommand` will auto-add it for `GlazeCommand` implementations if you don't)
+1. **Structured Output Section**: `settings.NewStructuredOutputSection()` adds `--format`, `--output-fields`, and `--max-output-rows` (and `cli.BuildCobraCommand` auto-adds it for `GlazeCommand` implementations)
 2. **Command Settings Section**: `cli.NewCommandSettingsSection()` adds debugging and configuration fields:
    - `--print-parsed-fields`: Debug field parsing
    - `--print-schema`: Show command schema
@@ -491,31 +491,27 @@ The primary benefit of using `types.Row` objects is automatic support for multip
 # Table output (default)
 ./glazed-quickstart list-users --limit 3
 
-# JSON output
-./glazed-quickstart list-users --limit 3 --output json
+# JSON, YAML, and CSV output
+./glazed-quickstart list-users --limit 3 --format json
+./glazed-quickstart list-users --limit 3 --format yaml
+./glazed-quickstart list-users --limit 3 --format csv
 
-# YAML output
-./glazed-quickstart list-users --limit 3 --output yaml
+# Select and order output fields
+./glazed-quickstart list-users --output-fields id,name,email
 
-# CSV output
-./glazed-quickstart list-users --limit 3 --output csv
+# Cap serialized rows
+./glazed-quickstart list-users --max-output-rows 3
 
-# Select specific fields
-./glazed-quickstart list-users --fields id,name,email
-
-# Sort by field
-./glazed-quickstart list-users --sort-columns name
-
-# Combine options
-./glazed-quickstart list-users --name-filter Engineering --output json --fields name,department
+# Combine business filtering with output controls
+./glazed-quickstart list-users --name-filter Engineering --format json --output-fields name,department
 ```
 
 **Key capabilities demonstrated:**
 
 1. **Zero Additional Code**: All output formats work automatically through the `types.Row` and `GlazeProcessor` pattern
-2. **Field Selection**: `--fields id,name,email` displays only specified columns
-3. **Sorting**: `--sort-columns name` sorts alphabetically (use `--sort-columns -name` for reverse order)
-4. **Composability**: All flags combine seamlessly for flexible data presentation
+2. **Output Projection**: `--output-fields id,name,email` serializes only those fields in the requested order
+3. **Output Guard**: `--max-output-rows 3` caps serialized rows independently of business inputs
+4. **Small Surface**: Structured commands reserve only these three output flags
 
 ## Step 5: Dual Commands (Advanced)
 
@@ -544,7 +540,7 @@ cli.BuildCobraCommand(cmd,
 ./glazed-quickstart status
 
 # Glaze mode
-./glazed-quickstart status --with-glaze-output --output json
+./glazed-quickstart status --with-glaze-output --format json
 ```
 
 See [Dual Commands](../topics/07-dual-commands.md) for advanced options like `WithDefaultToGlaze`, setting default output format, and common patterns.

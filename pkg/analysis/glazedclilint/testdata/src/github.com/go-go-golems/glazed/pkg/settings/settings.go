@@ -1,11 +1,7 @@
 package settings
 
-type GlazedSection struct{}
+type StructuredOutputSection struct{}
 
-func NewGlazedSection() (*GlazedSection, error) {
-	return &GlazedSection{}, nil
-}
-
-func NewGlazedSchema() (*GlazedSection, error) {
-	return &GlazedSection{}, nil
+func NewStructuredOutputSection() (*StructuredOutputSection, error) {
+	return &StructuredOutputSection{}, nil
 }

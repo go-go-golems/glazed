@@ -276,22 +276,6 @@ func NewOutputMiddleware(formatter formatters.TableOutputFormatter, writer io.Wr
 ```
 
 
-### 4.3 Object Middlewares
-
-#### JqObjectMiddleware
-
-Applies jq-like transformations to objects before they become rows.
-
-
-```13:17:glazed/pkg/middlewares/jq_test.go
-	ret, err := NewJqObjectMiddleware(e)
-	require.NoError(t, err)
-
-	return ret
-}
-```
-
-
 ## 5. Putting It All Together
 
 Here's an example that demonstrates how to use the `TableProcessor` with various middlewares:

@@ -15,6 +15,7 @@ import (
 
 type OutputFormatter struct {
 	OutputIndividualRows bool
+	Compact              bool
 	OutputFile           string
 	OutputFileTemplate   string
 	OutputMultipleFiles  bool
@@ -150,6 +151,12 @@ func WithOutputIndividualRows(outputIndividualRows bool) OutputFormatterOption {
 	}
 }
 
+func WithCompact(compact bool) OutputFormatterOption {
+	return func(formatter *OutputFormatter) {
+		formatter.Compact = compact
+	}
+}
+
 func WithOutputFile(file string) OutputFormatterOption {
 	return func(formatter *OutputFormatter) {
 		formatter.OutputFile = file
@@ -182,6 +189,17 @@ func NewOutputFormatter(options ...OutputFormatterOption) *OutputFormatter {
 	return ret
 }
 
+func NewArrayOutputFormatter() *OutputFormatter {
+	return NewOutputFormatter()
+}
+
+func NewLinesOutputFormatter() *OutputFormatter {
+	return NewOutputFormatter(
+		WithOutputIndividualRows(true),
+		WithCompact(true),
+	)
+}
+
 func (r *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Writer) error {
 	m := types.RowToMap(row)
 	if r.isFirstRow {
@@ -202,7 +220,9 @@ func (r *OutputFormatter) OutputRow(ctx context.Context, row types.Row, w io.Wri
 		}
 	}
 	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
+	if !r.Compact {
+		encoder.SetIndent("", "  ")
+	}
 	err := encoder.Encode(m)
 	if err != nil {
 		return err

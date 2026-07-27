@@ -17,21 +17,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// CreateGlazedProcessorFromCobra is a helper for cobra centric apps that quickly want to add
-// the glazed processing section.
-//
-// If you are more serious about using glazed, consider using the `cmds.GlazeCommand` and `fields.Definition`
-// abstraction to define your CLI applications, which allows you to use sections and other nice features
-// of the glazed ecosystem.
-//
-// If so, use SetupTableProcessor instead, and create a proper glazed.GlazeCommand for your command.
-func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, formatters.OutputFormatter, error) {
-	gpl, err := settings.NewGlazedSection()
+// CreateStructuredOutputProcessorFromCobra creates a processor for Cobra-centric
+// applications that mounted NewStructuredOutputSection on the command.
+func CreateStructuredOutputProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProcessor, formatters.OutputFormatter, error) {
+	outputSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	schema_ := schema.NewSchema(schema.WithSections(gpl))
+	schema_ := schema.NewSchema(schema.WithSections(outputSection))
 	parser, err := NewCobraParserFromSections(schema_, &CobraParserConfig{
 		MiddlewaresFunc: CobraCommandDefaultMiddlewares,
 	})
@@ -43,29 +37,25 @@ func CreateGlazedProcessorFromCobra(cmd *cobra.Command) (*middlewares.TableProce
 		return nil, nil, err
 	}
 
-	parsedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
+	parsedSectionValues, ok := parsedValues.Get(settings.StructuredOutputSlug)
 	if !ok {
-		return nil, nil, errors.Errorf("section %s not found", settings.GlazedSlug)
+		return nil, nil, errors.Errorf("section %s not found", settings.StructuredOutputSlug)
 	}
 
-	gp, err := settings.SetupTableProcessor(parsedSectionValues)
+	gp, outputFormatter, err := settings.SetupStructuredOutput(parsedSectionValues, os.Stdout)
 	cobra.CheckErr(err)
-
-	of, err := settings.SetupProcessorOutput(gp, parsedSectionValues, os.Stdout)
-	cobra.CheckErr(err)
-
-	return gp, of, nil
+	return gp, outputFormatter, nil
 }
 
-// AddGlazedProcessorFlagsToCobraCommand is a helper for cobra centric apps that quickly want to add
-// the glazed processing section to their CLI flags.
-func AddGlazedProcessorFlagsToCobraCommand(cmd *cobra.Command, options ...settings.GlazeSectionOption) error {
-	gpl, err := settings.NewGlazedSection(options...)
+// AddStructuredOutputFlagsToCobraCommand adds --format, --output-fields, and
+// --max-output-rows to a Cobra command.
+func AddStructuredOutputFlagsToCobraCommand(cmd *cobra.Command, options ...schema.SectionOption) error {
+	outputSection, err := settings.NewStructuredOutputSection(options...)
 	if err != nil {
 		return err
 	}
 
-	return gpl.AddSectionToCobraCommand(cmd)
+	return outputSection.AddSectionToCobraCommand(cmd)
 }
 
 // HandleCommandSettings handles the framework-level --print-* command settings

@@ -37,13 +37,16 @@ func CallGlazedCommandFromLua(L *lua2.LState, cmd cmds.GlazeCommand, luaTable *l
 		return nil, fmt.Errorf("error executing middlewares: %v", err)
 	}
 
-	glazedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
+	structuredOutputValues, ok := parsedValues.Get(settings.StructuredOutputSlug)
 	if !ok {
-		return nil, fmt.Errorf("glazed section not found")
+		return nil, fmt.Errorf("structured output section not found")
 	}
-	gp, err := settings.SetupTableProcessor(glazedSectionValues, middlewares2.WithTableMiddleware(&table.NullTableMiddleware{}))
+	gp, _, err := settings.SetupStructuredProcessor(
+		structuredOutputValues,
+		middlewares2.WithTableMiddleware(&table.NullTableMiddleware{}),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("error setting up table processor: %v", err)
+		return nil, fmt.Errorf("error setting up structured processor: %v", err)
 	}
 
 	ctx := context.Background()

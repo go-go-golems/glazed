@@ -653,7 +653,7 @@ FIELD QUERIES:
   type:application            Find applications
   topic:database              Find database-related content
   command:json                Find JSON command help
-  flag:--output               Find flag documentation
+  flag:--format               Find flag documentation
   slug:help-system            Find specific section
 
 BOOLEAN OPERATIONS:

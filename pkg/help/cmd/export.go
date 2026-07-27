@@ -38,16 +38,16 @@ type ExportSettings struct {
 	Flag        string `glazed:"flag"`
 	Slug        string `glazed:"slug"`
 	WithContent bool   `glazed:"with-content"`
-	Format      string `glazed:"format"`
+	ExportMode  string `glazed:"export-mode"`
 	OutputPath  string `glazed:"output-path"`
 	FlattenDirs bool   `glazed:"flatten-dirs"`
 }
 
 // NewExportCommand creates a new export command.
 func NewExportCommand(hs *help.HelpSystem) (*ExportCommand, error) {
-	glazedSection, err := settings.NewGlazedSchema()
+	structuredOutputSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create glazed schema")
+		return nil, errors.Wrap(err, "failed to create structured output section")
 	}
 
 	return &ExportCommand{
@@ -59,7 +59,7 @@ func NewExportCommand(hs *help.HelpSystem) (*ExportCommand, error) {
 By default, exports all matching sections as JSON/CSV/table/YAML via the Glazed
 processor, including full markdown content (--with-content defaults to true).
 
-Use --format files to write individual .md files, or --format sqlite to
+Use --export-mode files to write individual .md files, or --export-mode sqlite to
 produce a portable SQLite database. Use --with-content=false for lightweight
 metadata-only exports.
 `),
@@ -70,11 +70,11 @@ metadata-only exports.
 				fields.New("flag", fields.TypeString, fields.WithHelp("Filter by flag"), fields.WithDefault("")),
 				fields.New("slug", fields.TypeString, fields.WithHelp("Filter by slug(s), comma-separated"), fields.WithDefault("")),
 				fields.New("with-content", fields.TypeBool, fields.WithHelp("Include content field in tabular output"), fields.WithDefault(true)),
-				fields.New("format", fields.TypeString, fields.WithHelp("Export mode: glazed, files, sqlite"), fields.WithDefault("glazed")),
+				fields.New("export-mode", fields.TypeString, fields.WithHelp("Export mode: glazed, files, sqlite"), fields.WithDefault("glazed")),
 				fields.New("output-path", fields.TypeString, fields.WithHelp("Output path for files/sqlite mode"), fields.WithDefault("")),
 				fields.New("flatten-dirs", fields.TypeBool, fields.WithHelp("Flatten directory structure in files mode"), fields.WithDefault(false)),
 			),
-			cmds.WithSchema(schema.NewSchema(schema.WithSections(glazedSection))),
+			cmds.WithSchema(schema.NewSchema(schema.WithSections(structuredOutputSection))),
 		),
 		helpSystem: hs,
 	}, nil
@@ -87,12 +87,12 @@ func (c *ExportCommand) Run(ctx context.Context, parsedValues *values.Values) er
 		return errors.Wrap(err, "failed to decode export settings")
 	}
 
-	// Validate format
-	switch s.Format {
+	// Validate export mode.
+	switch s.ExportMode {
 	case "glazed", "files", "sqlite":
 		// OK
 	default:
-		return errors.Errorf("unknown format: %s (expected glazed, files, or sqlite)", s.Format)
+		return errors.Errorf("unknown export mode: %s (expected glazed, files, or sqlite)", s.ExportMode)
 	}
 
 	predicate, err := buildExportPredicate(s)
@@ -104,7 +104,7 @@ func (c *ExportCommand) Run(ctx context.Context, parsedValues *values.Values) er
 		return errors.Wrap(err, "failed to query sections")
 	}
 
-	switch s.Format {
+	switch s.ExportMode {
 	case "glazed":
 		return c.runGlazed(ctx, parsedValues, sections, s)
 	case "files":
@@ -118,19 +118,14 @@ func (c *ExportCommand) Run(ctx context.Context, parsedValues *values.Values) er
 
 // runGlazed emits sections through the Glaze processor.
 func (c *ExportCommand) runGlazed(ctx context.Context, parsedValues *values.Values, sections []*model.Section, s *ExportSettings) error {
-	glazedValues, ok := parsedValues.Get(settings.GlazedSlug)
+	structuredOutputValues, ok := parsedValues.Get(settings.StructuredOutputSlug)
 	if !ok {
-		return errors.New("glazed section not found in parsed values")
+		return errors.New("structured output section not found in parsed values")
 	}
 
-	gp, err := settings.SetupTableProcessor(glazedValues)
+	gp, _, err := settings.SetupStructuredOutput(structuredOutputValues, os.Stdout)
 	if err != nil {
-		return errors.Wrap(err, "failed to setup table processor")
-	}
-
-	_, err = settings.SetupProcessorOutput(gp, glazedValues, os.Stdout)
-	if err != nil {
-		return errors.Wrap(err, "failed to setup processor output")
+		return errors.Wrap(err, "failed to setup structured output")
 	}
 
 	for _, section := range sections {

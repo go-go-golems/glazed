@@ -59,5 +59,5 @@ func ExampleGetQueryInfo() {
 	// Output:
 	// Valid fields count: 8
 	// Valid types: [example tutorial topic application]
-	// Example queries: [type:example topic:database flag:--output]
+	// Example queries: [type:example topic:database flag:--format]
 }

@@ -1,5 +1,0 @@
-renames:
-  Title: title
-  Salary: salary_dollars
-regexpRenames:
-  "^(.*) Name$": "$1_name"

@@ -38,11 +38,10 @@ flags:
     default: |
       ```markdown
       ---
-      Title: Table Output Format
-      Slug: table-format
+      Title: Structured Output
+      Slug: structured-output
       Short: |
-        Glazed supports a wide variety of table output formats. Besides HTML and Markdown, 
-        it leverages the go-pretty library to provide a rich set of styled terminal output.
+        Glazed serializes command rows through a small, predictable output surface.
       Topics:
       - output
       IsTemplate: false
@@ -51,28 +50,19 @@ flags:
       SectionType: GeneralTopic
       ---
 
-      Glazed supports a wide variety of table output formats.
+      Structured commands expose three output controls: `--format`, `--output-fields`, and `--max-output-rows`.
 
-      Besides HTML and Markdown, it leverages the go-pretty library to provide a rich set of styled terminal output.
+      ## JSONL output
 
-      `--output table` is the default and so wouldn't need to be explicitly specified in most cases.
+      Use JSONL for streaming and agent pipelines:
 
-      ## Markdown output
-
-      Use `--output table --table-format markdown` to output a table in markdown format.
-
-      ``` 
-      ❯ glaze json misc/test-data/[123].json --table-format markdown
-      | b   | c          | a   | d.e | d.f |
-      | --- | ---------- | --- | --- | --- |
-      | 2   | 3, 4, 5    | 1   | 6   | 7   |
-      | 20  | 30, 40, 50 | 10  | 60  | 70  |
-      | 200 | 300        | 100 |     |     |
+      ```console
+      $ glaze json records.json --format jsonl --output-fields id,name --max-output-rows 100
+      {"id":1,"name":"Ada"}
+      {"id":2,"name":"Grace"}
       ```
 
-      By piping it into [glow](https://github.com/charmbracelet/glow), you can get a nice looking markdown table:
-
-      ...
+      Perform ad hoc filtering and transformation with a focused caller-side tool such as `jq`.
       ```
   - name: additional_system
     type: string

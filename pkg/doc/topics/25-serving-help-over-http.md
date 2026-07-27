@@ -216,7 +216,7 @@ The recommended pattern for viewing help from multiple Glazed-based tools in a b
 glaze serve --from-glazed-cmd pinocchio,sqleton
 ```
 
-This loads each tool's help data via `help export --output json` and serves it in a single browser UI. You don't need to embed the SPA in each individual binary. If a tool does need its own standalone browser UI, use the release-asset workflow described in `glaze help distribute-help-browser-spa`.
+This loads each tool's help data via `help export --format json` and serves it in a single browser UI. You don't need to embed the SPA in each individual binary. If a tool does need its own standalone browser UI, use the release-asset workflow described in `glaze help distribute-help-browser-spa`.
 
 ## Package names and section visibility
 

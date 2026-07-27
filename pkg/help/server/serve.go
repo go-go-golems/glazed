@@ -117,7 +117,7 @@ using MountPrefix or NewMountedHandler.`),
 				fields.New(
 					"from-glazed-cmd",
 					fields.TypeStringList,
-					fields.WithHelp("Glazed binaries to load by running '<binary> help export --output json'"),
+					fields.WithHelp("Glazed binaries to load by running '<binary> help export --format json'"),
 				),
 				fields.New(
 					"with-embedded",

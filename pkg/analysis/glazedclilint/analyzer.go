@@ -15,7 +15,7 @@ import (
 const (
 	diagnosticRawEnv             = "use Glazed config/env middleware or an explicit command field instead of os.Getenv in CLI code"
 	diagnosticRawFlags           = "define CLI flags with cmds.WithFlags(fields.New(...)) instead of raw Cobra/pflag/flag APIs"
-	diagnosticGlazedWithoutRows  = "this command exposes Glazed output flags but does not implement RunIntoGlazeProcessor"
+	diagnosticGlazedWithoutRows  = "this command exposes structured output flags but does not implement RunIntoGlazeProcessor"
 	diagnosticInvalidSuppression = "glazedclilint suppression requires a reason"
 	glazedSettingsPkg            = "github.com/go-go-golems/glazed/pkg/settings"
 	glazedCmdsPkg                = "github.com/go-go-golems/glazed/pkg/cmds"
@@ -59,8 +59,8 @@ func run(pass *analysis.Pass) (any, error) {
 	allowedPaths := splitCSV(allowPathsFlag)
 	reportInvalidSuppressions(pass, fileInfo, allowedPaths)
 
-	// Function-local analysis is needed for the Glazed-section rule because it has
-	// to connect a local variable initialized from settings.NewGlazedSection to a
+	// Function-local analysis is needed for the structured-output rule because it has
+	// to connect a local variable initialized from settings.NewStructuredOutputSection to a
 	// later cmds.WithSections call and the command type returned by the constructor.
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -247,7 +247,7 @@ func isGlazedSectionConstructorCall(pass *analysis.Pass, expr ast.Expr) bool {
 		return false
 	}
 	switch fn.Name() {
-	case "NewGlazedSection", "NewGlazedSchema":
+	case "NewStructuredOutputSection":
 		return true
 	default:
 		return false

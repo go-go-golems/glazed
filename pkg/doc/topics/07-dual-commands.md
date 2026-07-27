@@ -87,15 +87,13 @@ cobraCmd, err := cli.BuildCobraCommand(cmd,
 
 ## Default Output Format
 
-Set the default output format for glaze mode using `WithOutputSectionOptions`:
+Set the default output format when constructing the structured-output section:
 
 ```go
-glazedSection, err := settings.NewGlazedSection(
-    settings.WithOutputSectionOptions(
-        schema.WithDefaults(map[string]interface{}{
-            "output": "json", // default to JSON
-        }),
-    ),
+outputSection, err := settings.NewStructuredOutputSection(
+    schema.WithDefaults(&settings.StructuredOutputSettings{
+        Format: settings.OutputJSON,
+    }),
 )
 ```
 
@@ -173,9 +171,9 @@ func (c *FindCommand) RunIntoGlazeProcessor(ctx context.Context, vals *values.Va
 # Glaze mode - JSON (now default if configured)
 ./remarquee cloud ls --with-glaze-output
 
-# Override format
-./remarquee cloud ls --with-glaze-output --output yaml
-./remarquee cloud ls --with-glaze-output --output csv --fields name,path
+# Override format and project fields
+./remarquee cloud ls --with-glaze-output --format yaml
+./remarquee cloud ls --with-glaze-output --format csv --output-fields name,path
 ```
 
 ## Reference

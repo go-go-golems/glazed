@@ -13,10 +13,10 @@ The framework implements ideas from [14 great tips to make amazing command line 
 
 ## Core Features
 
-### Rich Output Formats
-Output structured data in multiple formats with automatic field flattening, filtering, and transformation:
+### Structured Output
+Output rows in six predictable formats. Glazed reserves only three output flags: `--format`, `--output-fields`, and `--max-output-rows`.
 
-**Tables**: Human-readable ASCII tables and Markdown format
+**Tables**: Human-readable ASCII tables
 ```
 ❯ glaze json misc/test-data/*.json
 +-----+-----+------------+-----+-----+
@@ -28,9 +28,9 @@ Output structured data in multiple formats with automatic field flattening, filt
 +-----+-----+------------+-----+-----+
 ```
 
-**JSON/YAML**: Structured data with optional flattening
+**JSON/YAML**: Structured data for tools and humans
 ```
-❯ glaze json misc/test-data/2.json --output json
+❯ glaze json misc/test-data/2.json --format json
 [
   {
     "a": 10,
@@ -46,24 +46,14 @@ Output structured data in multiple formats with automatic field flattening, filt
 
 **CSV/TSV**: Spreadsheet-compatible output
 ```
-❯ glaze json misc/test-data/*.json --output csv
+❯ glaze json misc/test-data/*.json --format csv
 a,b,c,d.e,d.f
 1,2,[3 4 5],6,7
 10,20,[30 40 50],60,70
 100,200,[300],,
 ```
 
-**Templates**: Go template support for custom formatting
-```
-❯ glaze json misc/test-data/*.json --template '{{.a}}-{{.b}}: {{.d.f}}'
-+---------------------+
-| _0                  |
-+---------------------+
-| 1-2: 7              |
-| 10-20: 70           |
-| 100-200: <no value> |
-+---------------------+
-```
+Use `--format jsonl` for streaming pipelines, `--output-fields name,status` to project output columns, and `--max-output-rows 100` to cap serialized rows. Perform ad hoc transformations with tools such as `jq` rather than adding them to every command.
 
 ### Flexible Command System
 Build CLI applications with multiple command types and output modes:
@@ -251,11 +241,12 @@ cobraCmd, err := cli.BuildCobraCommandFromGlazeCommand(cmd)
 rootCmd.AddCommand(cobraCmd)
 ```
 
-3. **Run with multiple output formats:**
+3. **Run with structured output controls:**
 ```bash
-myapp command --output json
-myapp command --output table --fields name,status
-myapp command --output csv > data.csv
+myapp command --format json
+myapp command --format table --output-fields name,status
+myapp command --format jsonl --max-output-rows 100
+myapp command --format csv > data.csv
 ```
 
 ## Documentation

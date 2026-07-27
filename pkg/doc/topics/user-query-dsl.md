@@ -82,7 +82,7 @@ glaze help --query "type:application"
 # Content filters
 glaze help --query "topic:database"
 glaze help --query "command:json"
-glaze help --query "flag:--output"
+glaze help --query "flag:--format"
 glaze help --query "slug:help-system"
 
 # Metadata filters
@@ -228,9 +228,9 @@ Flags are automatically normalized:
 
 ```bash
 # These all find the same flag
-glaze help --query "flag:output"
-glaze help --query "flag:-output"
-glaze help --query "flag:--output"
+glaze help --query "flag:format"
+glaze help --query "flag:-format"
+glaze help --query "flag:--format"
 ```
 
 ## Query Examples
@@ -264,14 +264,14 @@ glaze help --query "command:json OR command:yaml"
 ### Flag Documentation
 
 ```bash
-# All sections mentioning --output flag
-glaze help --query "flag:--output"
+# All sections mentioning --format
+glaze help --query "flag:--format"
 
-# Examples using specific flags
-glaze help --query "type:example AND (flag:--output OR flag:--format)"
+# Examples using structured-output controls
+glaze help --query "type:example AND (flag:--format OR flag:--output-fields)"
 
-# Flag documentation for json command
-glaze help --query "command:json AND flag:--output"
+# Format documentation for json command
+glaze help --query "command:json AND flag:--format"
 ```
 
 ### Content Discovery
@@ -416,7 +416,7 @@ glaze help --query "toplevel:maybe"
 |-------|-------------|---------|-----------|
 | `type` | Section type | `example`, `tutorial`, `topic`, `application` | `type:example` |
 | `topic` | Topic tags | Any topic name | `topic:database` |
-| `flag` | Flag names | Flag names (with/without dashes) | `flag:--output` |
+| `flag` | Flag names | Flag names (with/without dashes) | `flag:--format` |
 | `command` | Command names | Command names | `command:json` |
 | `slug` | Section slug | Exact slug match | `slug:help-system` |
 | `toplevel` | Top-level status | `true`, `false` | `toplevel:true` |

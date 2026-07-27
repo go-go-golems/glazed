@@ -217,14 +217,14 @@ sections:
 
 **Old:**
 
-- `settings.NewGlazedLayer` -> `settings.NewGlazedSection`
+- `settings.NewGlazedLayer` -> `settings.NewStructuredOutputSection`
 - `logging.LoggingLayer` -> `logging.LoggingSection`
 - `AddLoggingLayerToRootCommand` -> `AddLoggingSectionToRootCommand`
 
 **New:**
 
 ```go
-glazedSection, _ := settings.NewGlazedSection()
+glazedSection, _ := settings.NewStructuredOutputSection()
 loggingSection, _ := logging.NewLoggingSection("myapp")
 ```
 
@@ -362,44 +362,7 @@ If you reference example paths or files in docs/scripts:
 - github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTestsYAML -> wrapWithRestrictedSectionsTestsYAML
 - github.com/go-go-golems/glazed/pkg/cmds/sources_test: wrapWithRestrictedLayersTest -> wrapWithRestrictedSectionsTest
 - github.com/go-go-golems/glazed/pkg/cmds/sources_test: TestWrapWithRestrictedLayers -> TestWrapWithRestrictedSections
-- github.com/go-go-golems/glazed/pkg/settings: GlazedParameterLayers -> GlazedSection
-- github.com/go-go-golems/glazed/pkg/settings: GlazeParameterLayerOption -> GlazeSectionOption
-- github.com/go-go-golems/glazed/pkg/settings: NewGlazedParameterLayers -> NewGlazedSection
-- github.com/go-go-golems/glazed/pkg/settings: FieldsFiltersParameterLayer -> FieldsFiltersSection
-- github.com/go-go-golems/glazed/pkg/settings: OutputParameterLayer -> OutputSection
-- github.com/go-go-golems/glazed/pkg/settings: RenameParameterLayer -> RenameSection
-- github.com/go-go-golems/glazed/pkg/settings: ReplaceParameterLayer -> ReplaceSection
-- github.com/go-go-golems/glazed/pkg/settings: SelectParameterLayer -> SelectSection
-- github.com/go-go-golems/glazed/pkg/settings: TemplateParameterLayer -> TemplateSection
-- github.com/go-go-golems/glazed/pkg/settings: JqParameterLayer -> JqSection
-- github.com/go-go-golems/glazed/pkg/settings: SortParameterLayer -> SortSection
-- github.com/go-go-golems/glazed/pkg/settings: SkipLimitParameterLayer -> SkipLimitSection
-- github.com/go-go-golems/glazed/pkg/settings: NewFieldsFiltersParameterLayer -> NewFieldsFiltersSection
-- github.com/go-go-golems/glazed/pkg/settings: NewOutputParameterLayer -> NewOutputSection
-- github.com/go-go-golems/glazed/pkg/settings: NewRenameParameterLayer -> NewRenameSection
-- github.com/go-go-golems/glazed/pkg/settings: NewReplaceParameterLayer -> NewReplaceSection
-- github.com/go-go-golems/glazed/pkg/settings: NewSelectParameterLayer -> NewSelectSection
-- github.com/go-go-golems/glazed/pkg/settings: NewTemplateParameterLayer -> NewTemplateSection
-- github.com/go-go-golems/glazed/pkg/settings: NewJqParameterLayer -> NewJqSection
-- github.com/go-go-golems/glazed/pkg/settings: NewSortParameterLayer -> NewSortSection
-- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitParameterLayer -> NewSkipLimitSection
-- github.com/go-go-golems/glazed/pkg/settings: WithOutputParameterLayerOptions -> WithOutputSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithSelectParameterLayerOptions -> WithSelectSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithTemplateParameterLayerOptions -> WithTemplateSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithRenameParameterLayerOptions -> WithRenameSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithReplaceParameterLayerOptions -> WithReplaceSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithFieldsFiltersParameterLayerOptions -> WithFieldsFiltersSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithJqParameterLayerOptions -> WithJqSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithSortParameterLayerOptions -> WithSortSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: WithSkipLimitParameterLayerOptions -> WithSkipLimitSectionOptions
-- github.com/go-go-golems/glazed/pkg/settings: GlazedTemplateLayerSlug -> GlazedTemplateSectionSlug
-- github.com/go-go-golems/glazed/pkg/settings: NewSelectSettingsFromParameters -> NewSelectSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: NewRenameSettingsFromParameters -> NewRenameSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: NewReplaceSettingsFromParameters -> NewReplaceSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: NewJqSettingsFromParameters -> NewJqSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: NewSortSettingsFromParameters -> NewSortSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: NewSkipLimitSettingsFromParameters -> NewSkipLimitSettingsFromValues
-- github.com/go-go-golems/glazed/pkg/settings: glazedLayer -> glazedValues
+- github.com/go-go-golems/glazed/pkg/settings: legacy rich output layers were removed; use NewStructuredOutputSection for format, output-fields, and max-output-rows
 - github.com/go-go-golems/glazed/pkg/cmds: Layers -> Schema
 - github.com/go-go-golems/glazed/pkg/cmds: WithLayersList -> WithSections
 - github.com/go-go-golems/glazed/pkg/cmds: WithLayers -> WithSchema

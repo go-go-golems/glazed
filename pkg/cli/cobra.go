@@ -37,7 +37,9 @@ func GetVerbsFromCobraCommand(cmd *cobra.Command) []string {
 	return verbs
 }
 
-// runCobraCommand executes the common run flow for all Cobra commands.
+// runCobraCommand executes the common run flow for all Cobra commands. It uses
+// RunE so command and setup errors propagate to the application's Execute call;
+// libraries must not choose process exit codes for their callers.
 func runCobraCommand(
 	cmd *cobra.Command,
 	s cmds.Command,
@@ -45,32 +47,30 @@ func runCobraCommand(
 	parser *CobraParser,
 	cfg *commandBuildConfig,
 ) {
-	cmd.Run = func(cmd *cobra.Command, args []string) {
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		// Parse sections into values
 		parsedValues, err := parser.Parse(cmd, args)
 		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, err)
 			_ = cmd.Help()
-			cobra.CheckErr(err)
-			os.Exit(1)
+			return err
 		}
 
 		// Minimal command settings: debug flags
 		if handled, err := HandleCommandSettings(s, parsedValues, os.Stdout); handled || err != nil {
-			cobra.CheckErr(err)
-			return
+			return err
 		}
 
 		// Create command settings: cliopatra, alias, create
 		if createSectionValues, ok := parsedValues.Get(CreateCommandSettingsSlug); ok {
 			createSettings := &CreateCommandSettings{}
-			err = createSectionValues.DecodeInto(createSettings)
-			cobra.CheckErr(err)
+			if err = createSectionValues.DecodeInto(createSettings); err != nil {
+				return err
+			}
 
 			if createSettings.CreateCliopatra != "" {
 				verbs := GetVerbsFromCobraCommand(cmd)
 				if len(verbs) == 0 {
-					cobra.CheckErr(errors.New("could not get verbs from cobra command"))
+					return errors.New("could not get verbs from cobra command")
 				}
 				p := cliopatra.NewProgramFromCapture(
 					s.Description(),
@@ -81,10 +81,11 @@ func runCobraCommand(
 				)
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(p)
-				cobra.CheckErr(err)
+				if err = encoder.Encode(p); err != nil {
+					return err
+				}
 				fmt.Println(sb.String())
-				os.Exit(0)
+				return nil
 			}
 
 			if createSettings.CreateAlias != "" {
@@ -113,10 +114,11 @@ func runCobraCommand(
 				})
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(alias)
-				cobra.CheckErr(err)
+				if err = encoder.Encode(alias); err != nil {
+					return err
+				}
 				fmt.Println(sb.String())
-				os.Exit(0)
+				return nil
 			}
 
 			if createSettings.CreateCommand != "" {
@@ -129,10 +131,11 @@ func runCobraCommand(
 				}
 				sb := strings.Builder{}
 				encoder := yaml.NewEncoder(&sb)
-				err = encoder.Encode(cmdDesc)
-				cobra.CheckErr(err)
+				if err = encoder.Encode(cmdDesc); err != nil {
+					return err
+				}
 				fmt.Println(sb.String())
-				os.Exit(0)
+				return nil
 			}
 		}
 
@@ -155,18 +158,16 @@ func runCobraCommand(
 			// Run in glaze mode
 			glazeCmd, ok := s.(cmds.GlazeCommand)
 			if !ok {
-				cobra.CheckErr(errors.New("Glaze mode requested but command does not implement GlazeCommand"))
-				return
+				return errors.New("Glaze mode requested but command does not implement GlazeCommand")
 			}
-			glazedSectionValues, ok := parsedValues.Get(settings.GlazedSlug)
+			structuredOutputValues, ok := parsedValues.Get(settings.StructuredOutputSlug)
 			if !ok {
-				cobra.CheckErr(errors.New("glazed section not found"))
-				return
+				return errors.New("structured output section not found")
 			}
-			gp, err := settings.SetupTableProcessor(glazedSectionValues)
-			cobra.CheckErr(err)
-			_, err = settings.SetupProcessorOutput(gp, glazedSectionValues, os.Stdout)
-			cobra.CheckErr(err)
+			gp, _, err := settings.SetupStructuredOutput(structuredOutputValues, os.Stdout)
+			if err != nil {
+				return err
+			}
 
 			// Add signal handling for all command types
 			ctx, cancel := context.WithCancel(cmd.Context())
@@ -177,15 +178,13 @@ func runCobraCommand(
 			err = glazeCmd.RunIntoGlazeProcessor(ctx, parsedValues, gp)
 			var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
 			if errors.As(err, &exitWithoutGlazeError) {
-				return
+				return nil
 			}
-			if !errors.Is(err, context.Canceled) {
-				cobra.CheckErr(err)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				return err
 			}
-			// Close will run the TableMiddlewares
-			err = gp.Close(ctx)
-			cobra.CheckErr(err)
-			return
+			// Close will run the TableMiddlewares.
+			return gp.Close(ctx)
 		}
 
 		// Classic mode: run the provided runFunc
@@ -196,10 +195,11 @@ func runCobraCommand(
 		defer stop()
 
 		err = runFunc(ctx, parsedValues)
-		if _, ok := err.(*cmds.ExitWithoutGlazeError); ok {
-			os.Exit(0)
+		var exitWithoutGlazeError *cmds.ExitWithoutGlazeError
+		if errors.As(err, &exitWithoutGlazeError) {
+			return nil
 		}
-		cobra.CheckErr(err)
+		return err
 	}
 }
 
@@ -222,20 +222,20 @@ func BuildCobraCommandFromCommandAndFunc(
 
 	// Start with the original description
 	description := s.Description()
-	// If the command implements GlazeCommand, ensure a glazed section is present
+	// If the command implements GlazeCommand, ensure structured output settings are present.
 	if _, isGlazeCmd := s.(cmds.GlazeCommand); isGlazeCmd {
 		originalSchema := description.Schema
-		glazedSchema := originalSchema.Clone()
-		if _, ok := glazedSchema.Get(settings.GlazedSlug); !ok {
-			glazedSection, err := settings.NewGlazedSection()
+		structuredSchema := originalSchema.Clone()
+		if _, ok := structuredSchema.Get(settings.StructuredOutputSlug); !ok {
+			structuredOutputSection, err := settings.NewStructuredOutputSection()
 			if err != nil {
 				return nil, err
 			}
-			glazedSchema.Set(settings.GlazedSlug, glazedSection)
+			structuredSchema.Set(settings.StructuredOutputSlug, structuredOutputSection)
 		}
 		// clone the description so we don't mutate the original
 		newDesc := description.Clone(false)
-		newDesc.Schema = glazedSchema
+		newDesc.Schema = structuredSchema
 		description = newDesc
 	}
 	cmd := NewCobraCommandFromCommandDescription(description)
@@ -280,7 +280,7 @@ func BuildCobraCommandAlias(
 		return nil, err
 	}
 
-	origRun := cmd.Run
+	origRunE := cmd.RunE
 
 	cmd.Use = alias.Name
 	description := alias.AliasedCommand.Description()
@@ -305,17 +305,18 @@ func BuildCobraCommandAlias(
 
 	cmd.Args = cobra.MinimumNArgs(minArgs)
 
-	cmd.Run = func(cmd *cobra.Command, args []string) {
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		for k, v := range alias.Flags {
 			if !cmd.Flags().Changed(k) {
-				err = cmd.Flags().Set(k, v)
-				cobra.CheckErr(err)
+				if err := cmd.Flags().Set(k, v); err != nil {
+					return err
+				}
 			}
 		}
 		if len(args) == 0 {
 			args = alias.Arguments
 		}
-		origRun(cmd, args)
+		return origRunE(cmd, args)
 	}
 
 	return cmd, nil
@@ -387,22 +388,30 @@ func AddCommandsToRootCommand(
 	aliases []*alias.CommandAlias,
 	opts ...CobraOption,
 ) error {
+	type pendingCommand struct {
+		parents []string
+		command *cobra.Command
+	}
+
 	commandsByName := map[string]cmds.Command{}
+	pending := make([]pendingCommand, 0, len(commands)+len(aliases))
 
+	// Build every command before mutating the root. A flag collision or invalid
+	// schema must not leave a partially mounted command tree.
 	for _, command := range commands {
-		// find the proper subcommand, or create if it doesn't exist
 		description := command.Description()
-		parentCmd := findOrCreateParentCommand(rootCmd, description.Parents)
-
 		cobraCommand, err := BuildCobraCommandFromCommand(command, opts...)
 		if err != nil {
-			log.Warn().Err(err).Str("command", description.Name).Str("source", description.Source).Msg("Could not build cobra command")
-			return nil
+			return errors.Wrapf(err, "could not build command %s from %s", description.FullPath(), description.Source)
 		}
-		parentCmd.AddCommand(cobraCommand)
+		pending = append(pending, pendingCommand{
+			parents: append([]string(nil), description.Parents...),
+			command: cobraCommand,
+		})
 		commandsByName[description.Name] = command
 
-		path := strings.Join(append(description.Parents, description.Name), " ")
+		pathParts := append(append([]string(nil), description.Parents...), description.Name)
+		path := strings.Join(pathParts, " ")
 		commandsByName[path] = command
 	}
 
@@ -411,16 +420,23 @@ func AddCommandsToRootCommand(
 		path := strings.Join(resolvedPath, " ")
 		aliasedCommand, ok := commandsByName[path]
 		if !ok {
-			return errors.Errorf("Command %s not found for alias %s", path, alias.Name)
+			return errors.Errorf("command %s not found for alias %s", path, alias.Name)
 		}
 		alias.AliasedCommand = aliasedCommand
 
-		parentCmd := findOrCreateParentCommand(rootCmd, alias.Parents)
 		cobraCommand, err := BuildCobraCommandAlias(alias, opts...)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "could not build alias %s", alias.Name)
 		}
-		parentCmd.AddCommand(cobraCommand)
+		pending = append(pending, pendingCommand{
+			parents: append([]string(nil), alias.Parents...),
+			command: cobraCommand,
+		})
+	}
+
+	for _, command := range pending {
+		parentCmd := findOrCreateParentCommand(rootCmd, command.parents)
+		parentCmd.AddCommand(command.command)
 	}
 
 	return nil

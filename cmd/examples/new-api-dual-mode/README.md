@@ -13,6 +13,6 @@ go run ./cmd/examples/new-api-dual-mode status --verbose
 
 # Switch to glaze mode
 go run ./cmd/examples/new-api-dual-mode status --with-glaze-output
-go run ./cmd/examples/new-api-dual-mode status --with-glaze-output --output json
+go run ./cmd/examples/new-api-dual-mode status --with-glaze-output --format json
 ```
 

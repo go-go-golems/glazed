@@ -22,7 +22,7 @@ type CsvCommand struct {
 var _ cmds.GlazeCommand = (*CsvCommand)(nil)
 
 func NewCsvCommand() (*CsvCommand, error) {
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}
