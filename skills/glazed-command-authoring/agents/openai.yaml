@@ -1,0 +1,4 @@
+interface:
+  display_name: "Glazed Command Authoring"
+  short_description: "Build modern Glazed commands and Cobra integrations"
+  default_prompt: "Use $glazed-command-authoring to create or refactor this Glazed command with the current structured-output, middleware, help, logging, and error-propagation conventions."
