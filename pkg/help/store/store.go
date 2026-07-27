@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-go-golems/glazed/pkg/help/model"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 )
 
 // ErrSectionNotFound is returned by GetBySlug and GetByID when no matching
@@ -23,7 +23,7 @@ type Store struct {
 
 // New creates a new SQLite store
 func New(dbPath string) (*Store, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open database")
 	}

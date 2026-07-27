@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func TestValidateSQLiteHelpDB_Valid(t *testing.T) {
@@ -104,7 +104,7 @@ type testSection struct {
 func createHelpDB(t *testing.T, sections []testSection) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "help.db")
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -135,7 +135,7 @@ func createHelpDB(t *testing.T, sections []testSection) string {
 func createSQLiteDB(t *testing.T, sqlText string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "fixture.db")
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

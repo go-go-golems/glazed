@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func TestValidateCommandSuccessText(t *testing.T) {
@@ -90,7 +90,7 @@ func executeDocsctl(args ...string) (string, string, error) {
 func createDocsctlHelpDB(t *testing.T, slug string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "help.db")
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
