@@ -159,7 +159,6 @@ Build one command with:
 cobraCommand, err := cli.BuildCobraCommandFromCommand(command,
     cli.WithParserConfig(cli.CobraParserConfig{
         ShortHelpSections: []string{schema.DefaultSlug},
-        MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
     }),
 )
 if err != nil {
@@ -230,7 +229,12 @@ Execution characteristics:
 - JSONL writes one compact JSON object per line.
 - JSON streams array elements and completes array framing during `Close`.
 
-Always call `processor.Close(ctx)` after command emission succeeds. Closing runs table middleware and finalizes formatter framing.
+Processor ownership determines who closes it:
+
+- A `GlazeCommand.RunIntoGlazeProcessor` implementation receives a builder-owned processor. It must emit rows and return without closing the processor; the Cobra `RunE` path closes it exactly once.
+- Code that directly creates a processor with `SetupStructuredOutput`, `SetupStructuredProcessor`, or `CreateStructuredOutputProcessorFromCobra` owns that processor and must close it exactly once after emission.
+
+Closing runs table middleware and finalizes formatter framing. Closing a processor twice is invalid: buffered formats can be emitted twice and streaming JSON can receive duplicate closing syntax.
 
 ## Custom sections
 
