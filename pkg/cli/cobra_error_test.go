@@ -103,6 +103,17 @@ func TestBuiltCobraCommandAliasPropagatesErrors(t *testing.T) {
 	require.ErrorIs(t, err, expected)
 }
 
+func TestCreateStructuredOutputProcessorFromCobraReturnsSetupErrors(t *testing.T) {
+	command := &cobra.Command{Use: "raw"}
+	require.NoError(t, AddStructuredOutputFlagsToCobraCommand(command))
+	require.NoError(t, command.Flags().Set("max-output-rows", "-1"))
+
+	processor, formatter, err := CreateStructuredOutputProcessorFromCobra(command)
+	require.EqualError(t, err, "max-output-rows must be greater than or equal to zero")
+	assert.Nil(t, processor)
+	assert.Nil(t, formatter)
+}
+
 func TestBuildCobraCommandFromCommandAndFuncPropagatesErrors(t *testing.T) {
 	expected := &cobraErrorTestError{what: "greenhouse"}
 	command := &cobraErrorBareCommand{

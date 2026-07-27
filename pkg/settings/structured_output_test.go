@@ -110,6 +110,23 @@ func TestStructuredOutputCSVPreservesProjectionOrderAndCap(t *testing.T) {
 	assert.Equal(t, "name,id\nAda,1\n", buf.String())
 }
 
+func TestStructuredOutputCSVPreservesProjectionOrderAcrossSparseRows(t *testing.T) {
+	sectionValues := parseStructuredOutputSettings(
+		t,
+		"--format", "csv",
+		"--output-fields", "a,missing,b",
+	)
+	buf := &bytes.Buffer{}
+	processor, _, err := SetupStructuredOutput(sectionValues, buf)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	require.NoError(t, processor.AddRow(ctx, types.NewRow(types.MRP("a", 1))))
+	require.NoError(t, processor.AddRow(ctx, types.NewRow(types.MRP("b", 2))))
+	require.NoError(t, processor.Close(ctx))
+	assert.Equal(t, "a,b\n1,\n,2\n", buf.String())
+}
+
 func TestEveryStructuredOutputFormatProducesOutput(t *testing.T) {
 	for _, format := range structuredOutputFormats {
 		t.Run(format, func(t *testing.T) {

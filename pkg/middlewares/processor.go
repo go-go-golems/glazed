@@ -16,6 +16,8 @@ type TableProcessor struct {
 	RowMiddlewares    []RowMiddleware
 
 	Table *types.Table
+
+	preferredColumnOrder []types.FieldName
 }
 
 var _ Processor = (*TableProcessor)(nil)
@@ -68,6 +70,41 @@ func NewTableProcessor(options ...TableProcessorOption) *TableProcessor {
 	}
 
 	return ret
+}
+
+// SetPreferredColumnOrder pins the relative order of discovered table columns
+// independently of the fields present in any individual row. Preferred columns
+// that never occur are not added to the table; additional discovered columns
+// remain appended after preferred columns.
+func (p *TableProcessor) SetPreferredColumnOrder(columns ...types.FieldName) {
+	p.preferredColumnOrder = append(p.preferredColumnOrder[:0], columns...)
+	p.applyPreferredColumnOrder()
+}
+
+func (p *TableProcessor) applyPreferredColumnOrder() {
+	if len(p.preferredColumnOrder) == 0 || len(p.Table.Columns) == 0 {
+		return
+	}
+
+	discovered := make(map[types.FieldName]struct{}, len(p.Table.Columns))
+	for _, column := range p.Table.Columns {
+		discovered[column] = struct{}{}
+	}
+
+	columns := make([]types.FieldName, 0, len(p.Table.Columns))
+	preferred := make(map[types.FieldName]struct{}, len(p.preferredColumnOrder))
+	for _, column := range p.preferredColumnOrder {
+		preferred[column] = struct{}{}
+		if _, ok := discovered[column]; ok {
+			columns = append(columns, column)
+		}
+	}
+	for _, column := range p.Table.Columns {
+		if _, ok := preferred[column]; !ok {
+			columns = append(columns, column)
+		}
+	}
+	p.Table.SetColumnOrder(columns)
 }
 
 func (p *TableProcessor) GetTable() *types.Table {
@@ -143,6 +180,7 @@ func (p *TableProcessor) AddRow(ctx context.Context, row types.Row) error {
 	// otherwise discard the row so that we don't waste memory.
 	if len(p.TableMiddlewares) > 0 {
 		p.Table.AddRows(rows...)
+		p.applyPreferredColumnOrder()
 	}
 
 	return nil

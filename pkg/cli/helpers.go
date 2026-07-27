@@ -43,7 +43,9 @@ func CreateStructuredOutputProcessorFromCobra(cmd *cobra.Command) (*middlewares.
 	}
 
 	gp, outputFormatter, err := settings.SetupStructuredOutput(parsedSectionValues, os.Stdout)
-	cobra.CheckErr(err)
+	if err != nil {
+		return nil, nil, err
+	}
 	return gp, outputFormatter, nil
 }
 

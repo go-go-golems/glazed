@@ -82,7 +82,7 @@ The default is `table`. JSONL is the explicit streaming contract; the old `strea
 
 The flag accepts a string list. Empty means all fields. Values are trimmed and deduplicated while preserving the first requested occurrence.
 
-The middleware constructs a new row by looking up fields in requested order. Missing fields are omitted. CSV, TSV, and table output preserve that order. JSON object key ordering is not part of the wire contract.
+The middleware constructs a new row by looking up fields in requested order. Missing fields are omitted. CSV, TSV, and table output preserve that order. The processor separately records a preferred column order so sparse rows such as `{a: 1}` followed by `{b: 2}` cannot reverse a requested `a,b` schema; preferred fields that never occur are still omitted. JSON object key ordering is not part of the wire contract.
 
 Example:
 
@@ -220,7 +220,7 @@ Errors include command full path and source.
 
 Issue [#611](https://github.com/go-go-golems/glazed/issues/611) identified that generated commands used Cobra's non-returning `Run` callback and called `cobra.CheckErr`. That let a library callback print an error and terminate the process with status 1 before the embedding application's `Execute()` could inspect it.
 
-Generated commands and aliases now use `RunE`. Parsing, settings, command execution, structured-output setup, and processor-close failures return through Cobra to the application. This preserves typed errors for application-owned logging, telemetry, cleanup, and exit-code mapping. `ExitWithoutGlazeError` remains a successful early return, and context cancellation retains its prior non-error behavior.
+Generated commands and aliases now use `RunE`. Parsing, settings, command execution, structured-output setup, and processor-close failures return through Cobra to the application. The raw-Cobra `CreateStructuredOutputProcessorFromCobra` helper likewise returns setup errors instead of invoking `cobra.CheckErr`. This preserves typed errors for application-owned logging, telemetry, cleanup, and exit-code mapping. `ExitWithoutGlazeError` remains a successful early return, and context cancellation retains its prior non-error behavior.
 
 Tests cover bare commands, `GlazeCommand`, explicit `BuildCobraCommandFromCommandAndFunc` callbacks, and aliases. They assert that the original typed error reaches `Execute()`.
 

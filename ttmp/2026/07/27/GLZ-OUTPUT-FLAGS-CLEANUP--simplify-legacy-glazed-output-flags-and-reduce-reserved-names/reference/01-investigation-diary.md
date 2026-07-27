@@ -21,12 +21,18 @@ RelatedFiles:
       Note: Issue 611 RunE error propagation implementation
     - Path: repo://pkg/cli/cobra_error_test.go
       Note: Typed-error propagation coverage for all builder paths
+    - Path: repo://pkg/cli/helpers.go
+      Note: Raw Cobra setup error propagation fix
     - Path: repo://pkg/cli/structured_output_test.go
       Note: Characterizes flags collisions and atomic mounting
     - Path: repo://pkg/doc/topics/32-structured-output.md
       Note: New canonical help page
     - Path: repo://pkg/help/cmd/export.go
       Note: Concrete evidence that format is valid application-owned vocabulary
+    - Path: repo://pkg/middlewares/processor.go
+      Note: Preferred sparse-row column ordering from PR review
+    - Path: repo://pkg/middlewares/processor_test.go
+      Note: Sparse-row processor regression test
     - Path: repo://pkg/settings/structured_output.go
       Note: Primary implementation recorded in Steps 5-7
     - Path: repo://ttmp/2026/07/09/GLAZED-DESCRIBE-MANIFESTS--minimal-structured-output-and-machine-readable-command-manifests/design-doc/01-design-minimal-structured-output-and-machine-readable-command-manifests.md
@@ -39,6 +45,7 @@ LastUpdated: 2026-07-27T14:41:28-04:00
 WhatFor: Preserve research commands, observed failures, design choices, and review instructions for continuation.
 WhenToUse: Read before implementing or revising GLZ-OUTPUT-FLAGS-CLEANUP.
 ---
+
 
 
 
@@ -764,4 +771,78 @@ The upgrade was deliberately narrow: OpenTelemetry's API, metric, and trace modu
 ```text
 GO-2026-5970: golang.org/x/text v0.38.0 -> v0.39.0
 GO-2026-5158: go.opentelemetry.io/otel* v1.41.0 -> v1.42.0
+```
+
+## Step 10: Address PR #612 review findings
+
+I addressed both automated review findings on PR #612. Raw Cobra processor setup now returns validation errors to its caller, and projected table schemas retain requested order across sparse rows without inventing columns that never occur.
+
+The sparse-row fix belongs in `TableProcessor`, not in the projection middleware. Rows continue to omit absent fields, while the processor tracks preferred ordering independently from each row's actual field set.
+
+### Prompt Context
+
+**User prompt (verbatim):** "address code review issues: https://github.com/go-go-golems/glazed/pull/612
+
+[REMINDER] Output a <summary>...</summary> block at the VERY END of your response. This is mandatory."
+
+**Assistant interpretation:** Read all PR review threads, implement both requested corrections, validate them, and update the pull request branch.
+
+**Inferred user intent:** Make PR #612 review-ready without weakening the new output or error-propagation contracts.
+
+### What I did
+
+- Replaced the remaining `cobra.CheckErr` in `CreateStructuredOutputProcessorFromCobra` with an ordinary returned error.
+- Added a regression test using negative `max-output-rows` on a raw Cobra command.
+- Added preferred-column ordering to `TableProcessor`.
+- Applied the configured output-field order during structured processor setup.
+- Added processor and CSV integration tests for rows `{a: 1}` followed by `{b: 2}`.
+- Verified that a requested field which never occurs remains omitted.
+- Updated the design document with both review-driven contracts.
+
+### Why
+
+- Error-returning helpers must not terminate the embedding process.
+- Per-row projection order cannot by itself define a table schema when different rows contain different selected fields.
+
+### What worked
+
+- The raw helper returns the exact max-row validation error with nil processor and formatter results.
+- Sparse CSV output now renders `a,b`, then `1,`, then `,2`.
+- Complete tests, build, vet, and project lint pass.
+
+### What didn't work
+
+- The first preferred-order implementation inserted every requested column into the table immediately. That contradicted the documented rule that fields missing from all rows are omitted. It was replaced with an intersection between preferred fields and discovered table columns.
+- The first `git commit` ran the Lefthook security scan without `GOWORK=off`. It selected the enclosing Go 1.26.1 toolchain and failed with `Your code is affected by 13 vulnerabilities from the Go standard library`; all are fixed by the module's `toolchain go1.26.5`. The commit was retried as `GOWORK=off git commit ...` so hooks use the declared module toolchain.
+
+### What I learned
+
+- Row field order and table schema order are separate state. Sparse rows require schema-level ordering information.
+
+### What was tricky to build
+
+- Reapplying the full requested list would have created all-null columns. The final implementation tracks the requested list but applies only preferred columns that have actually been discovered, followed by non-preferred discovered columns.
+
+### What warrants a second pair of eyes
+
+- Review `applyPreferredColumnOrder` for behavior when callers combine preferred fields with custom middleware that emits additional fields.
+
+### What should be done in the future
+
+- Consider exposing preferred column order as a `TableProcessorOption` if more callers need to configure it at construction time.
+
+### Code review instructions
+
+- Start with `pkg/middlewares/processor.go`, then read the sparse-row tests in `pkg/middlewares/processor_test.go` and `pkg/settings/structured_output_test.go`.
+- Review `pkg/cli/helpers.go` and the negative-cap regression in `pkg/cli/cobra_error_test.go`.
+- Run `GOWORK=off go test ./... -count=1` and `GOWORK=off make glazed-lint`.
+
+### Technical details
+
+```text
+requested: [a, missing, b]
+row 1:     {a: 1}
+row 2:     {b: 2}
+columns:   [a, b]
+CSV:       a,b\n1,\n,2\n
 ```

@@ -83,3 +83,14 @@ Resolved govulncheck findings GO-2026-5970 and GO-2026-5158 by upgrading x/text 
 - /home/manuel/workspaces/2026-07-27/glazed-cleanup/glazed/go.mod — Fixed dependency versions
 - /home/manuel/workspaces/2026-07-27/glazed-cleanup/glazed/go.sum — Updated dependency checksums
 
+
+## 2026-07-27
+
+Addressed PR #612 review: raw Cobra setup errors now propagate and sparse projected rows preserve requested tabular order
+
+### Related Files
+
+- /home/manuel/workspaces/2026-07-27/glazed-cleanup/glazed/pkg/cli/helpers.go — Returns setup errors
+- /home/manuel/workspaces/2026-07-27/glazed-cleanup/glazed/pkg/middlewares/processor.go — Tracks preferred discovered-column order
+- /home/manuel/workspaces/2026-07-27/glazed-cleanup/glazed/pkg/settings/structured_output_test.go — Sparse CSV regression coverage
+

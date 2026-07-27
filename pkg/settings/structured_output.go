@@ -15,6 +15,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/middlewares/row"
 	"github.com/go-go-golems/glazed/pkg/middlewares/table"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
 )
 
@@ -118,6 +119,11 @@ func SetupStructuredProcessor(
 
 	processor := middlewares.NewTableProcessor(options...)
 	if len(settings.OutputFields) > 0 {
+		preferredColumns := make([]types.FieldName, 0, len(settings.OutputFields))
+		for _, field := range settings.OutputFields {
+			preferredColumns = append(preferredColumns, types.FieldName(field))
+		}
+		processor.SetPreferredColumnOrder(preferredColumns...)
 		processor.AddRowMiddleware(row.NewOutputFieldsMiddleware(settings.OutputFields...))
 	}
 	if settings.MaxOutputRows > 0 {
