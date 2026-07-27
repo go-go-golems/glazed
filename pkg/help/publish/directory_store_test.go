@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func TestDirectoryPackageStorePublishAndList(t *testing.T) {
@@ -139,7 +139,7 @@ func TestDirectoryPackageStoreMaxVersionsPerPackage(t *testing.T) {
 func createDirectoryStoreDB(t *testing.T, slug string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "help.db")
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

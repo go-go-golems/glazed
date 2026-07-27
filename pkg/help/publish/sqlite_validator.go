@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	_ "modernc.org/sqlite"
 )
 
 // SQLiteValidationOptions controls validation of a Glazed help SQLite export.
@@ -51,7 +51,7 @@ func ValidateSQLiteHelpDB(ctx context.Context, path string, opts SQLiteValidatio
 		return nil, errors.Wrap(err, "resolve database path")
 	}
 
-	db, err := sql.Open("sqlite3", readOnlySQLiteDSN(absPath))
+	db, err := sql.Open("sqlite", readOnlySQLiteDSN(absPath))
 	if err != nil {
 		return nil, errors.Wrap(err, "open SQLite database")
 	}
