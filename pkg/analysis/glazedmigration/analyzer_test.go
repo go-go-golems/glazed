@@ -36,6 +36,12 @@ func TestAnalyzerSuggestedFix(t *testing.T) {
 			wantFixes:       1,
 		},
 		{
+			name:            "dot import with shadowed replacement",
+			source:          `package p; import . "github.com/go-go-golems/glazed/pkg/settings"; func NewStructuredOutputSection() {}; func f() { NewGlazedSchema() }`,
+			wantDiagnostics: 1,
+			wantFixes:       0,
+		},
+		{
 			name:            "legacy options require manual migration",
 			source:          `package p; import "github.com/go-go-golems/glazed/pkg/settings"; func f() { settings.NewGlazedSchema(option) }`,
 			wantDiagnostics: 1,

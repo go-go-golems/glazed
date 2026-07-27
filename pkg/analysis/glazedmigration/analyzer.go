@@ -47,7 +47,12 @@ func run(pass *analysis.Pass) (any, error) {
 				End:     name.End(),
 				Message: "replace settings.NewGlazedSchema with settings.NewStructuredOutputSection",
 			}
-			if len(call.Args) == 0 {
+			canFix := len(call.Args) == 0
+			if canFix && !dotImportReplacementIsSafe(pass, file, call) {
+				canFix = false
+				diagnostic.Message += "; a local NewStructuredOutputSection declaration shadows the dot-imported replacement"
+			}
+			if canFix {
 				diagnostic.SuggestedFixes = []analysis.SuggestedFix{{
 					Message: "use NewStructuredOutputSection",
 					TextEdits: []analysis.TextEdit{{
@@ -56,7 +61,7 @@ func run(pass *analysis.Pass) (any, error) {
 						NewText: []byte(newConstructor),
 					}},
 				}}
-			} else {
+			} else if len(call.Args) > 0 {
 				diagnostic.Message += "; legacy GlazeSectionOption arguments require manual migration"
 			}
 			pass.Report(diagnostic)
@@ -92,6 +97,43 @@ func settingsImports(file *ast.File) importNames {
 		ret.qualified["settings"] = true
 	}
 	return ret
+}
+
+func dotImportReplacementIsSafe(pass *analysis.Pass, file *ast.File, call *ast.CallExpr) bool {
+	if _, dotCall := call.Fun.(*ast.Ident); !dotCall {
+		return true
+	}
+
+	// Prefer type-checker scope data. Dot-imported names and local declarations
+	// both appear in these scopes, so the object visible at the call site tells us
+	// whether the replacement would still resolve to pkg/settings.
+	var innermost *types.Scope
+	for _, scope := range pass.TypesInfo.Scopes {
+		if scope.Contains(call.Pos()) && (innermost == nil || scope.Pos() >= innermost.Pos()) {
+			innermost = scope
+		}
+	}
+	if innermost != nil {
+		_, obj := innermost.LookupParent(newConstructor, call.Pos())
+		if obj != nil {
+			fn, ok := obj.(*types.Func)
+			return ok && fn.Pkg() != nil && fn.Pkg().Path() == settingsImportPath
+		}
+	}
+
+	// Tests and heavily broken packages may not provide scope information. Be
+	// conservative if the parser recorded any declaration with the replacement
+	// name: withholding a fix is safer than silently changing call ownership.
+	safe := true
+	ast.Inspect(file, func(node ast.Node) bool {
+		ident, ok := node.(*ast.Ident)
+		if ok && ident.Name == newConstructor && ident.Obj != nil && ident.Obj.Pos() == ident.Pos() {
+			safe = false
+			return false
+		}
+		return safe
+	})
+	return safe
 }
 
 func legacyConstructorName(pass *analysis.Pass, expr ast.Expr, imports importNames) (*ast.Ident, bool) {
