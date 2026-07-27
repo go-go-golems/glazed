@@ -40,7 +40,7 @@ type RefactorDemoCommand struct {
 
 func NewRefactorDemoCommand() (*RefactorDemoCommand, error) {
 	// Create glazed schema section for output formatting
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

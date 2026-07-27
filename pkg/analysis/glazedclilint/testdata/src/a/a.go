@@ -45,11 +45,11 @@ type TextCommand struct {
 }
 
 func NewTextCommand() (*TextCommand, error) {
-	glazedSection, _ := settings.NewGlazedSection()
+	glazedSection, _ := settings.NewStructuredOutputSection()
 	return &TextCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"text",
-			cmds.WithSections(glazedSection), // want `exposes Glazed output flags but does not implement RunIntoGlazeProcessor`
+			cmds.WithSections(glazedSection), // want `exposes structured output flags but does not implement RunIntoGlazeProcessor`
 		),
 	}, nil
 }
@@ -63,11 +63,11 @@ type SchemaTextCommand struct {
 }
 
 func NewSchemaTextCommand() (*SchemaTextCommand, error) {
-	glazedSection, _ := settings.NewGlazedSchema()
+	glazedSection, _ := settings.NewStructuredOutputSection()
 	return &SchemaTextCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"schema-text",
-			cmds.WithSections(glazedSection), // want `exposes Glazed output flags but does not implement RunIntoGlazeProcessor`
+			cmds.WithSections(glazedSection), // want `exposes structured output flags but does not implement RunIntoGlazeProcessor`
 		),
 	}, nil
 }
@@ -77,7 +77,7 @@ type RowsCommand struct {
 }
 
 func NewRowsCommand() (*RowsCommand, error) {
-	glazedSection, _ := settings.NewGlazedSection()
+	glazedSection, _ := settings.NewStructuredOutputSection()
 	return &RowsCommand{
 		CommandDescription: cmds.NewCommandDescription(
 			"rows",

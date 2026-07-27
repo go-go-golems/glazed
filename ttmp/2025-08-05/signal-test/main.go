@@ -174,7 +174,7 @@ func (c *SignalTestCommand) testRawSocket(ctx context.Context, settings *SignalT
 }
 
 func NewSignalTestCommand() (*SignalTestCommand, error) {
-	glazedLayer, err := settings.NewGlazedSection()
+	glazedLayer, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}

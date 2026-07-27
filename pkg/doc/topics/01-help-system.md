@@ -165,7 +165,7 @@ topLevel, err := hs.QuerySections("toplevel:true")
 defaults, err := hs.QuerySections("default:true")
 
 // Flag and command associations
-flagHelp, err := hs.QuerySections("flag:--output")
+flagHelp, err := hs.QuerySections("flag:--format")
 cmdHelp, err := hs.QuerySections("command:json OR command:yaml")
 ```
 

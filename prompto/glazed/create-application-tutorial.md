@@ -330,7 +330,7 @@ func NewListCmd() (*cobra.Command, error) {
 
 func NewListGlazedCmd() (*ListCommand, error) {
     // 1. Create glazed field section
-    glazedSection, err := settings.NewGlazedSchema()
+    glazedSection, err := settings.NewStructuredOutputSection()
     if err != nil {
         return nil, fmt.Errorf("could not create Glazed field section: %w", err)
     }

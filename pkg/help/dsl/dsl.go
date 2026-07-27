@@ -54,7 +54,7 @@ func GetQueryInfo() *QueryInfo {
 		Examples: []string{
 			"type:example",
 			"topic:database",
-			"flag:--output",
+			"flag:--format",
 			"command:json",
 			"\"full text search\"",
 			"'single quoted text'",

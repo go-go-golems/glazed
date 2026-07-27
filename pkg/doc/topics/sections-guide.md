@@ -97,7 +97,7 @@ var (
     DatabaseSection = CreateDatabaseSection()  // --db-host, --db-port, --db-name
     LoggingSection  = CreateLoggingSection()   // --log-level, --log-file, --verbose
     ServerSection   = CreateServerSection()    // --host, --port, --timeout
-    GlazedSection   = CreateGlazedSection()    // --output, --fields, --format
+    OutputSection   = settings.NewStructuredOutputSection() // --format, --output-fields, --max-output-rows
 )
 
 // Compose commands by combining relevant sections
@@ -324,22 +324,22 @@ commandDesc := cmds.NewCommandDescription("serve",
 // Fields live in default section, unique to "serve" command
 ```
 
-#### Glazed Section
+#### Structured Output Section
 
-The Glazed Section provides comprehensive output formatting capabilities for commands producing structured data.
+The structured-output section provides the small, standard output surface for commands that emit rows.
 
-- **Purpose**: Output formatting, filtering, and transformation options
-- **Slug**: `"glazed"` (constant: `settings.GlazedSlug`)
-- **Creation**: `settings.NewGlazedSchema()`
-- **Use Case**: Commands outputting structured data requiring flexible formatting
+- **Purpose**: Serialization, output projection, and an output-row cap
+- **Slug**: `"structured-output"` (constant: `settings.StructuredOutputSlug`)
+- **Creation**: `settings.NewStructuredOutputSection()`
+- **Use Case**: Commands implementing `cmds.GlazeCommand`
 
 ```go
-glazedSection, err := settings.NewGlazedSchema()
+outputSection, err := settings.NewStructuredOutputSection()
 if err != nil {
-    return nil, fmt.Errorf("failed to create glazed section: %w", err)
+    return nil, fmt.Errorf("failed to create structured output section: %w", err)
 }
-// Provides: --output, --fields, --sort-columns, --filter, etc.
-// Users can run: myapp data --output json --fields name,age --filter "age > 25"
+// Provides: --format, --output-fields, --max-output-rows.
+// cli.BuildCobraCommand adds this section automatically to GlazeCommand implementations.
 ```
 
 ### Custom Section Components

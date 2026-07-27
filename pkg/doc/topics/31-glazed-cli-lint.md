@@ -75,22 +75,22 @@ cmds.NewCommandDescription(
 
 This lets Glazed expose the flag in schemas, help pages, aliases, config/env resolution, defaults, and command generation tools.
 
-### Glazed output flags on non-row commands
+### Structured output flags on non-row commands
 
-The Glazed output section adds flags such as `--output`, `--fields`, `--jq`, sorting, templating, and skip/limit controls. Those flags only make sense when a command emits rows through `RunIntoGlazeProcessor`.
+The structured-output section adds `--format`, `--output-fields`, and `--max-output-rows`. These controls only make sense when a command emits rows through `RunIntoGlazeProcessor`.
 
-Do not attach `settings.NewGlazedSection` or `settings.NewGlazedSchema` to a command that only implements `cmds.BareCommand` or `cmds.WriterCommand`:
+Do not attach `settings.NewStructuredOutputSection` to a command that only implements `cmds.BareCommand` or `cmds.WriterCommand`:
 
 ```go
-// Bad: this exposes --output and --fields, but the command writes text itself.
+// Bad: this exposes structured-output flags, but the command writes text itself.
 type TextCommand struct { *cmds.CommandDescription }
 var _ cmds.WriterCommand = (*TextCommand)(nil)
 
 func NewTextCommand() (*TextCommand, error) {
-    glazedSection, _ := settings.NewGlazedSection()
+    outputSection, _ := settings.NewStructuredOutputSection()
     return &TextCommand{CommandDescription: cmds.NewCommandDescription(
         "text",
-        cmds.WithSections(glazedSection),
+        cmds.WithSections(outputSection),
     )}, nil
 }
 ```
@@ -166,7 +166,7 @@ When the linter reports a finding, first identify which convention was violated.
 |---|---|---|
 | `use Glazed config/env middleware...` | Command reads process env directly. | Add a Glazed field and resolve env through `cmd_sources.FromEnv`, `CobraParserConfig.AppName`, or config plans. |
 | `define CLI flags with cmds.WithFlags...` | Command defines user-facing flags via Cobra, pflag, or `flag`. | Convert the command to `cmds.BareCommand`, `cmds.WriterCommand`, or `cmds.GlazeCommand` and declare flags with `fields.New`. |
-| `exposes Glazed output flags but does not implement RunIntoGlazeProcessor` | Command adds `settings.NewGlazedSection` but does not emit structured rows. | Remove the Glazed output section or implement `RunIntoGlazeProcessor`. |
+| `exposes structured output flags but does not implement RunIntoGlazeProcessor` | Command adds `settings.NewStructuredOutputSection` but does not emit structured rows. | Remove the structured-output section or implement `RunIntoGlazeProcessor`. |
 
 Prefer changing the command shape over suppressing the diagnostic. A suppression or allowlist should mean "this file is framework bridge code", not "this command is hard to migrate".
 
@@ -175,7 +175,7 @@ Prefer changing the command shape over suppressing the diagnostic. A suppression
 | Problem | Cause | Solution |
 |---|---|---|
 | The linter flags framework code in `pkg/cli` or help internals | The file path is not covered by `allow-paths`. | Add a narrow path fragment to `-glazedclilint.allow-paths` and document why that package is framework bridge code. |
-| A command with `--output` is flagged | The command does not implement `RunIntoGlazeProcessor`. | Either remove `settings.NewGlazedSection` or convert the command to `cmds.GlazeCommand`. |
+| A command with `--format` is flagged | The command does not implement `RunIntoGlazeProcessor`. | Either remove `settings.NewStructuredOutputSection` or convert the command to `cmds.GlazeCommand`. |
 | A raw Cobra command is flagged but it only starts a server | Server commands can still be Glazed `BareCommand`s. | Put flags in `cmds.WithFlags`, decode with `values.DecodeSectionInto`, and call the server function from `Run`. |
 | Downstream CI installs a stale vettool | The Makefile uses `@latest` instead of the module version. | Install `github.com/go-go-golems/glazed/cmd/tools/glazed-lint@$(GLAZED_VERSION)` or fall back to workspace install for `(devel)`. |
 | The analyzer misses a complex command constructor | The v1 inference handles common constructor return patterns. | Add a small regression test in `pkg/analysis/glazedclilint/testdata` and extend command type inference. |

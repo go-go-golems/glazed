@@ -554,8 +554,8 @@ func NewProcessDataCommand() (*ProcessDataCommand, error) {
         return nil, err
     }
     
-    // Create glazed section for output formatting
-    glazedSection, err := settings.NewGlazedSchema()
+    // Create the minimal structured-output section
+    glazedSection, err := settings.NewStructuredOutputSection()
     if err != nil {
         return nil, err
     }
@@ -679,7 +679,7 @@ func NewAnalyzeDataCommand() (*AnalyzeDataCommand, error) {
         return nil, err
     }
     
-    glazedSection, err := settings.NewGlazedSchema()
+    glazedSection, err := settings.NewStructuredOutputSection()
     if err != nil {
         return nil, err
     }
@@ -788,8 +788,8 @@ go build -o data-processor
 # Test analyze command (same logging options!)
 ./data-processor analyze-data --data-file test.csv --algorithm neural-net --log-level debug
 
-# Combine with Glazed output options
-./data-processor process-data --input-file test.csv --output json --fields worker_id,status,processed_items
+# Combine with structured output controls
+./data-processor process-data --input-file test.csv --format json --output-fields worker_id,status,processed_items
 ```
 
 ## Step 8: Advanced Features

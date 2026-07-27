@@ -308,13 +308,12 @@ func (c *MonitorServersCommand) RunIntoGlazeProcessor(
 ```
 
 Now your users can run:
-- `monitor --output table` for a human-readable overview
-- `monitor --output json | jq '.[] | select(.status != "healthy")'` to find problem servers  
-- `monitor --output csv > servers.csv` to import into spreadsheets
-- `monitor --filter 'cpu_percent > 80' --sort cpu_percent` to find CPU hotspots
-- `monitor --template custom.tmpl` to generate custom reports
+- `monitor --format table` for a human-readable overview
+- `monitor --format json | jq '.[] | select(.status != "healthy")'` to find problem servers
+- `monitor --format csv --output-fields hostname,status,disk_used_percent > servers.csv` to import selected fields
+- `monitor --format jsonl --max-output-rows 100` to bound agent-facing output
 
-All from the same command implementation.
+Ad hoc filtering, sorting, and rendering stay outside the universal command surface.
 
 ### Dual Commands
 

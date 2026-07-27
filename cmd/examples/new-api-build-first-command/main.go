@@ -36,8 +36,8 @@ func NewListUsersCommand() (*ListUsersCommand, error) {
 
 Examples:
   list-users --limit 3
-  list-users --limit 3 --output json
-  list-users --name-filter engineering --fields id,name,department
+  list-users --limit 3 --format json
+  list-users --name-filter engineering --output-fields id,name,department
 `),
 		cmds.WithFlags(
 			fields.New(

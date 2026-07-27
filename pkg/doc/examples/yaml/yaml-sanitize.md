@@ -3,7 +3,7 @@ Title: Sanitize YAML
 Slug: yaml-sanitize
 Short: |
   ```
-  glaze yaml --sanitize misc/broken.yaml --output yaml
+  glaze yaml --sanitize misc/broken.yaml --format yaml
   ```
 Commands:
 - yaml
@@ -26,7 +26,7 @@ With the `--sanitize` flag, you can attempt to cleanup YAML before processing it
 This is quite hacky, and may not work for all cases.
 
 ```
-❯ glaze yaml --sanitize misc/broken.yaml --output yaml
+❯ glaze yaml --sanitize misc/broken.yaml --format yaml
 - a: 1
   b:
     - 2
@@ -43,7 +43,7 @@ This is quite hacky, and may not work for all cases.
 It can also handle multiline strings:
 
 ```
-❯ glaze yaml --sanitize misc/broken2.yaml --output yaml
+❯ glaze yaml --sanitize misc/broken2.yaml --format yaml
 - a: 1
   b: 'foobar: blabla'
   c: |

@@ -62,19 +62,15 @@ func RunCommand(
 		return c.RunIntoWriter(ctx, parsedValues, opts.Writer)
 
 	case cmds.GlazeCommand:
-		// If no processor is provided, create one from glazed settings
+		// If no processor is provided, create one from structured output settings.
 		if opts.GlazeProcessor == nil {
-			glazedSection, ok := parsedValues.Get(settings.GlazedSlug)
+			structuredOutputValues, ok := parsedValues.Get(settings.StructuredOutputSlug)
 			if !ok {
-				return fmt.Errorf("glazed section not found")
+				return fmt.Errorf("structured output section not found")
 			}
-			gp, err := settings.SetupTableProcessor(glazedSection)
+			gp, _, err := settings.SetupStructuredOutput(structuredOutputValues, opts.Writer)
 			if err != nil {
-				return fmt.Errorf("failed to setup processor: %w", err)
-			}
-			_, err = settings.SetupProcessorOutput(gp, glazedSection, opts.Writer)
-			if err != nil {
-				return fmt.Errorf("failed to setup processor output: %w", err)
+				return fmt.Errorf("failed to setup structured output: %w", err)
 			}
 			opts.GlazeProcessor = gp
 		}

@@ -162,7 +162,7 @@ func TestExportToFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	s := &ExportSettings{
-		Format:      "files",
+		ExportMode:  "files",
 		OutputPath:  tmpDir,
 		FlattenDirs: false,
 	}
@@ -199,7 +199,7 @@ func TestExportToFiles_Flatten(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	s := &ExportSettings{
-		Format:      "files",
+		ExportMode:  "files",
 		OutputPath:  tmpDir,
 		FlattenDirs: true,
 	}
@@ -226,7 +226,7 @@ func TestExportToFiles_RejectsUnsafeSlug(t *testing.T) {
 		SectionType: model.SectionGeneralTopic,
 	}}
 
-	err := exportToFiles(sections, &ExportSettings{Format: "files", OutputPath: tmpDir})
+	err := exportToFiles(sections, &ExportSettings{ExportMode: "files", OutputPath: tmpDir})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsafe section slug")
 	assert.NoFileExists(t, filepath.Join(tmpDir, "..", "escape.md"))
@@ -246,7 +246,7 @@ func TestExportToSQLite(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.sqlite")
 	s := &ExportSettings{
-		Format:     "sqlite",
+		ExportMode: "sqlite",
 		OutputPath: dbPath,
 	}
 

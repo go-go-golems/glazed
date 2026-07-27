@@ -48,7 +48,7 @@ glaze serve --from-glazed-cmd pinocchio
 For each binary, `glaze serve` runs:
 
 ```bash
-<binary> help export --with-content=true --output json
+<binary> help export --with-content=true --format json
 ```
 
 Then it imports the JSON into the in-memory help store and starts the existing help browser.
@@ -106,14 +106,14 @@ glaze serve --with-embedded=true --from-glazed-cmd pinocchio
 JSON files are useful when you want a cached snapshot or when the source binary is not available on the serving machine.
 
 ```bash
-pinocchio help export --output json > /tmp/pinocchio-help.json
+pinocchio help export --format json > /tmp/pinocchio-help.json
 glaze serve --from-json /tmp/pinocchio-help.json
 ```
 
 You can also read JSON from stdin:
 
 ```bash
-pinocchio help export --output json | glaze serve --from-json -
+pinocchio help export --format json | glaze serve --from-json -
 ```
 
 Only one `--from-json -` source is allowed because stdin can only be read once.
@@ -123,7 +123,7 @@ Only one `--from-json -` source is allowed because stdin can only be read once.
 SQLite files are useful for archived snapshots and tooling that wants a queryable database.
 
 ```bash
-pinocchio help export --format sqlite --output-path ./pinocchio-help.db
+pinocchio help export --export-mode sqlite --output-path ./pinocchio-help.db
 glaze serve --from-sqlite ./pinocchio-help.db
 ```
 
@@ -153,7 +153,7 @@ If two sources contain the same slug, the later source wins. The loading order i
 |---------|-------|----------|
 | `executable file not found` | A `--from-glazed-cmd` binary is not on `PATH` | Use an absolute path or install the binary. |
 | Browser shows only one tool's docs | Explicit sources clear embedded docs by default | Add more sources or use `--with-embedded=true` to include built-in Glazed docs. |
-| JSON import fails with missing type | The JSON file is not a Glazed help export | Generate it with `<binary> help export --output json`. |
+| JSON import fails with missing type | The JSON file is not a Glazed help export | Generate it with `<binary> help export --format json`. |
 | Stdin source hangs | The process feeding stdin did not finish | Verify the upstream command exits and writes valid JSON. |
 | Duplicate pages disappear | Later sources overwrite earlier slugs | Rename slugs or change source order. |
 

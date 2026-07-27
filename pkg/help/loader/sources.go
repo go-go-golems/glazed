@@ -293,7 +293,7 @@ func splitPath(path string) []string {
 	return ret
 }
 
-// GlazedCommandLoader runs '<binary> help export --output json' for each binary.
+// GlazedCommandLoader runs '<binary> help export --format json' for each binary.
 type GlazedCommandLoader struct {
 	Binaries []string
 }
@@ -317,7 +317,7 @@ func (l *GlazedCommandLoader) String() string {
 }
 
 func runGlazedHelpExport(ctx context.Context, binary string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, binary, "help", "export", "--with-content=true", "--output", "json")
+	cmd := exec.CommandContext(ctx, binary, "help", "export", "--with-content=true", "--format", "json")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout

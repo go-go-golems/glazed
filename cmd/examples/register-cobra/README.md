@@ -31,10 +31,10 @@ A command that implements the `GlazeCommand` interface:
 go run . glaze --rows 3
 
 # JSON format
-go run . glaze --rows 3 --output json
+go run . glaze --rows 3 --format json
 
 # CSV format
-go run . glaze --rows 3 --output csv
+go run . glaze --rows 3 --format csv
 ```
 
 ## 4. Dual Command (`dual`) - NEW!
@@ -51,7 +51,7 @@ go run . dual --name "Manuel" --times 2
 go run . dual --name "Manuel" --times 2 --with-glaze-output
 
 # Glaze mode with JSON output
-go run . dual --name "Manuel" --times 2 --with-glaze-output --output json
+go run . dual --name "Manuel" --times 2 --with-glaze-output --format json
 ```
 
 ## Key Features of the Dual Command

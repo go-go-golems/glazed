@@ -175,7 +175,7 @@ var parseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateStructuredOutputProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze processors: %v\n", err)
 			os.Exit(1)
@@ -396,7 +396,7 @@ var splitByHeadingCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateStructuredOutputProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		level, _ := cmd.Flags().GetInt("level")
@@ -472,16 +472,11 @@ var splitByHeadingCmd = &cobra.Command{
 
 func init() {
 	parseCmd.Flags().SortFlags = false
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		panic(err)
 	}
-	cobraSection, ok := glazedSection.(schema.CobraSection)
-	if !ok {
-		panic("glazed section is not a CobraSection")
-	}
-
-	err = cobraSection.AddSectionToCobraCommand(parseCmd)
+	err = glazedSection.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		panic(err)
 	}
@@ -496,7 +491,7 @@ func init() {
 	MarkdownCmd.AddCommand(parseCmd)
 
 	splitByHeadingCmd.Flags().SortFlags = false
-	err = cobraSection.AddSectionToCobraCommand(splitByHeadingCmd)
+	err = glazedSection.AddSectionToCobraCommand(splitByHeadingCmd)
 	if err != nil {
 		panic(err)
 	}

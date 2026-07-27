@@ -10,7 +10,7 @@ Run:
 
 ```bash
 go run ./cmd/examples/new-api-build-first-command list-users --limit 3
-go run ./cmd/examples/new-api-build-first-command list-users --limit 3 --output json
-go run ./cmd/examples/new-api-build-first-command list-users --name-filter engineering --fields id,name,department
+go run ./cmd/examples/new-api-build-first-command list-users --limit 3 --format json
+go run ./cmd/examples/new-api-build-first-command list-users --name-filter engineering --output-fields id,name,department
 ```
 

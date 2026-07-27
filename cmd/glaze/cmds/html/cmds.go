@@ -1,7 +1,6 @@
 package html
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -26,7 +25,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
-			gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, _, err := cli.CreateStructuredOutputProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
@@ -53,16 +52,11 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		},
 	}
 
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, err
 	}
-	cobraSection, ok := glazedSection.(schema.CobraSection)
-	if !ok {
-		return nil, fmt.Errorf("glazed section is not a CobraSection")
-	}
-
-	err = cobraSection.AddSectionToCobraCommand(parseCmd)
+	err = glazedSection.AddSectionToCobraCommand(parseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +70,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
-			gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
+			gp, _, err := cli.CreateStructuredOutputProcessorFromCobra(cmd)
 			cobra.CheckErr(err)
 
 			for _, arg := range args {
@@ -145,7 +139,7 @@ func NewHTMLCommand() (*cobra.Command, error) {
 		return nil, err
 	}
 
-	err = cobraSection.AddSectionToCobraCommand(extractCmd)
+	err = glazedSection.AddSectionToCobraCommand(extractCmd)
 	if err != nil {
 		return nil, err
 	}

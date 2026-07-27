@@ -28,7 +28,7 @@ type ExampleSettings struct {
 }
 
 func NewExampleCommand() (*ExampleCommand, error) {
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed section")
 	}

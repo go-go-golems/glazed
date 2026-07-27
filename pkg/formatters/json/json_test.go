@@ -27,6 +27,24 @@ func TestStreamingJSONIndividualRowsCloseWithoutRowsEmitsNothing(t *testing.T) {
 	assert.Empty(t, buf.String())
 }
 
+func TestJSONLinesFormatterEmitsOneCompactObjectPerLine(t *testing.T) {
+	formatter := NewLinesOutputFormatter()
+	buf := &bytes.Buffer{}
+
+	require.NoError(t, formatter.OutputRow(
+		context.Background(),
+		types.NewRow(types.MRP("id", 1), types.MRP("name", "Ada")),
+		buf,
+	))
+	require.NoError(t, formatter.OutputRow(
+		context.Background(),
+		types.NewRow(types.MRP("id", 2), types.MRP("name", "Grace")),
+		buf,
+	))
+	require.NoError(t, formatter.Close(context.Background(), buf))
+	assert.Equal(t, "{\"id\":1,\"name\":\"Ada\"}\n{\"id\":2,\"name\":\"Grace\"}\n", buf.String())
+}
+
 func TestJSONRenameEndToEnd(t *testing.T) {
 	of := NewOutputFormatter()
 	renames := map[string]string{

@@ -18,7 +18,7 @@ var DocsCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateStructuredOutputProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		for _, arg := range args {
@@ -49,39 +49,28 @@ var DocsCmd = &cobra.Command{
 
 func init() {
 	DocsCmd.Flags().SortFlags = false
-	// This is an example of selective use of glazed schema.
-	// If we extracted out the docs command into a cmd.GlazeCommand, which we should
-	// in order to expose it as a REST API, all of this would not even be necessary,
-	// I think.
-	glazedSection, err := settings.NewGlazedSchema(
-		settings.WithFieldsFiltersSectionOptions(
-			schema.WithDefaults(
-				&settings.FieldsFilterFlagsDefaults{
-					Fields: []string{
-						"path",
-						"Title",
-						"SectionType",
-						"Slug",
-						"Commands",
-						"Flags",
-						"Topics",
-						"IsTopLevel",
-						"ShowPerDefault",
-					},
-				},
-			),
-		),
+	// This raw Cobra command mounts structured output explicitly. GlazeCommand
+	// implementations receive the same section automatically.
+	outputSection, err := settings.NewStructuredOutputSection(
+		schema.WithDefaults(map[string]interface{}{
+			"output-fields": []string{
+				"path",
+				"Title",
+				"SectionType",
+				"Slug",
+				"Commands",
+				"Flags",
+				"Topics",
+				"IsTopLevel",
+				"ShowPerDefault",
+			},
+		}),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	cobraSection, ok := glazedSection.(schema.CobraSection)
-	if !ok {
-		panic("glazed section is not a CobraSection")
-	}
-
-	err = cobraSection.AddSectionToCobraCommand(DocsCmd)
+	err = outputSection.AddSectionToCobraCommand(DocsCmd)
 	if err != nil {
 		panic(err)
 	}

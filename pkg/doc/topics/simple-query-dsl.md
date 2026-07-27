@@ -22,7 +22,7 @@ The Glazed help system supports a simple Domain Specific Language (DSL) for quer
 | ---- | ------ | ------- |
 | Filter by section type | `type:<value>` or shortcut word | `type:example`, `tutorials` |
 | Filter by metadata | `toplevel:true`, `default:false`, `template:true` | `toplevel:true` |
-| Match commands/flags | `command:<name>`, `flag:--<flag>` | `command:json`, `flag:--output` |
+| Match commands/flags | `command:<name>`, `flag:--<flag>` | `command:json`, `flag:--format` |
 | Search topics/tags | `topic:<tag>` | `topic:database` |
 | Text search | `"quoted phrase"` | `"SQLite database"` |
 | Combine expressions | `AND`, `OR`, `NOT`, parentheses | `examples AND topic:database`, `(tutorials OR examples) AND NOT topic:advanced` |
@@ -36,7 +36,7 @@ Shortcuts (`examples`, `tutorials`, `topics`, `applications`, `toplevel`, `defau
 type:tutorial
 topic:templates
 command:json
-flag:--output
+flag:--format
 slug:help-system
 ```
 
@@ -44,7 +44,7 @@ Mix multiple filters with boolean operators to narrow results:
 ```
 type:example AND topic:database
 (examples OR tutorials) AND command:json
-flag:--output AND NOT topic:advanced
+flag:--format AND NOT topic:advanced
 ```
 
 ### Metadata Filters
@@ -74,7 +74,7 @@ glaze help --query "(examples) AND (\"SQLite\" OR topic:sql) AND NOT topic:advan
 glaze help --query "command:json"
 
 # Search for CLI flags across docs
-glaze help --query 'flag:--output AND "table"'
+glaze help --query 'flag:--format AND "table"'
 ```
 
 ## CLI Usage
@@ -82,7 +82,7 @@ glaze help --query 'flag:--output AND "table"'
 ```bash
 glaze help --query "examples AND topic:database"
 glaze help --query "(tutorials OR examples) AND toplevel:true"
-glaze help --query 'flag:--output AND "JSON"' --short
+glaze help --query 'flag:--format AND "JSON"' --short
 ```
 
 Combine `--query` with the standard help flags:

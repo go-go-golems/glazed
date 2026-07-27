@@ -27,7 +27,7 @@ type YamlCommand struct {
 var _ cmds.GlazeCommand = (*YamlCommand)(nil)
 
 func NewYamlCommand() (*YamlCommand, error) {
-	glazedSection, err := settings.NewGlazedSchema()
+	glazedSection, err := settings.NewStructuredOutputSection()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create Glazed section")
 	}
