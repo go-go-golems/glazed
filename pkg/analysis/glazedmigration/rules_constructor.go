@@ -157,8 +157,15 @@ func canDeleteRedundantSection(pass *analysis.Pass, file *ast.File, call *ast.Ca
 		return false
 	}
 	// Find a cmds.WithSections call in the same function that uses this ident.
-	withSections := findWithSectionsUsingIdent(file, ident.Name)
-	if withSections == nil {
+	// The deletion is only safe if the variable is used exactly once (in one
+	// WithSections call) within the enclosing function, so we do not leave
+	// dangling references in other call sites.
+	fn := findEnclosingFuncDecl(file, call.Pos())
+	if fn == nil {
+		return false
+	}
+	withSections, count := findWithSectionsUsingIdentInFunc(fn, ident.Name)
+	if withSections == nil || count != 1 {
 		return false
 	}
 	// Prove the command type implements GlazeCommand.
@@ -206,14 +213,18 @@ func containsPos(node ast.Node, pos token.Pos) bool {
 	return contained
 }
 
-// findWithSectionsUsingIdent finds a cmds.WithSections(...) call that has the
-// given identifier as one of its arguments.
-func findWithSectionsUsingIdent(file *ast.File, identName string) *ast.CallExpr {
+// findWithSectionsUsingIdentInFunc finds cmds.WithSections(...) calls within
+// the given function that have the given identifier as a direct argument. It
+// returns the first match and the total count of matches. The count lets the
+// caller withhold deletion when the variable is used in multiple WithSections
+// calls (which would leave dangling references).
+func findWithSectionsUsingIdentInFunc(fn *ast.FuncDecl, identName string) (*ast.CallExpr, int) {
 	var found *ast.CallExpr
-	ast.Inspect(file, func(node ast.Node) bool {
-		if found != nil {
-			return false
-		}
+	count := 0
+	if fn.Body == nil {
+		return nil, 0
+	}
+	ast.Inspect(fn.Body, func(node ast.Node) bool {
 		call, ok := node.(*ast.CallExpr)
 		if !ok {
 			return true
@@ -224,13 +235,15 @@ func findWithSectionsUsingIdent(file *ast.File, identName string) *ast.CallExpr 
 		}
 		for _, arg := range call.Args {
 			if id, ok := arg.(*ast.Ident); ok && id.Name == identName {
-				found = call
-				return false
+				count++
+				if found == nil {
+					found = call
+				}
 			}
 		}
 		return true
 	})
-	return found
+	return found, count
 }
 
 // enclosingTypeIsGlazeCommand resolves the concrete command type returned by
@@ -371,8 +384,12 @@ func deletionFix(pass *analysis.Pass, file *ast.File, call *ast.CallExpr) *analy
 	if !ok {
 		return nil
 	}
-	withSections := findWithSectionsUsingIdent(file, ident.Name)
-	if withSections == nil {
+	fn := findEnclosingFuncDecl(file, call.Pos())
+	if fn == nil {
+		return nil
+	}
+	withSections, count := findWithSectionsUsingIdentInFunc(fn, ident.Name)
+	if withSections == nil || count != 1 {
 		return nil
 	}
 

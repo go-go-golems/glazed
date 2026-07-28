@@ -300,6 +300,35 @@ func TestNoSettingsImport(t *testing.T) {
 	}
 }
 
+// TestR1DeletionWithheldForMultipleUses verifies that R1 deletion is withheld
+// (falling back to rename) when the variable is used in multiple WithSections
+// calls within the same function, which would leave dangling references.
+func TestR1DeletionWithheldForMultipleUses(t *testing.T) {
+	source := "package p\n" +
+		"import (\n" +
+		"\t\"github.com/go-go-golems/glazed/pkg/cmds\"\n" +
+		"\t\"github.com/go-go-golems/glazed/pkg/settings\"\n" +
+		")\n" +
+		"type C struct{ *cmds.CommandDescription }\n" +
+		"func (c *C) RunIntoGlazeProcessor() {}\n" +
+		"func f() (*C, error) {\n" +
+		"\tglazedLayer, err := settings.NewGlazedSection()\n" +
+		"\tif err != nil { return nil, err }\n" +
+		"\t_ = cmds.WithSections(glazedLayer)\n" +
+		"\treturn &C{CommandDescription: cmds.NewCommandDescription(\"x\", cmds.WithSections(glazedLayer))}, nil\n" +
+		"}\n"
+	diag := runAnalyzer(t, source)
+	foundDeletion := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "redundant and can be deleted") {
+			foundDeletion = true
+		}
+	}
+	if foundDeletion {
+		t.Fatalf("R1 deletion should be withheld when the variable is used in multiple WithSections calls")
+	}
+}
+
 func contains(slice []string, s string) bool {
 	for _, v := range slice {
 		if v == s {
