@@ -106,6 +106,10 @@ func run(pass *analysis.Pass) (any, error) {
 		// Wrapper unwrapping (R3) and key rename (R4) operate on the schema
 		// package's WithDefaults calls nested inside settings constructor args.
 		applyWrapperAndKeyRules(pass, file, settingsImp, schemaImp)
+		// Extended R4: rename the "output" field name to "format" in GetField,
+		// GetParameter, UpdateExistingValue, map indices, and FromMap-style
+		// literals that reference the structured-output section.
+		applyFieldNameRules(pass, file, settingsImp)
 	}
 	return nil, nil
 }

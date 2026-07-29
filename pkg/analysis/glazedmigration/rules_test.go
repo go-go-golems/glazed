@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -292,6 +293,120 @@ func TestOtherPackageNotMigrated(t *testing.T) {
 
 // TestNoSettingsImport verifies that files without the settings import are
 // skipped entirely.
+// TestR4FieldNameGetField verifies that GetField(GlazedSlug, "output") is
+// renamed to GetField(StructuredOutputSlug, "format").
+func TestR4FieldNameGetField(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+func f(parsedValues interface{}) {
+	_, _ = parsedValues.(interface{ GetField(string, string) interface{} }).GetField(settings.GlazedSlug, "output")
+}`
+	diag := runAnalyzer(t, source)
+	found := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "rename field name \"output\" to \"format\"") && len(d.SuggestedFixes) > 0 {
+			found = true
+			// Verify the fix text is "format".
+			for _, f := range d.SuggestedFixes {
+				for _, e := range f.TextEdits {
+					if string(e.NewText) != strconv.Quote("format") {
+						t.Fatalf("fix text = %q, want %q", string(e.NewText), strconv.Quote("format"))
+					}
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected a field-name rename diagnostic, got: %+v", diag)
+	}
+}
+
+// TestR4FieldNameGetParameter verifies GetParameter(GlazedSlug, "output") is
+// renamed.
+func TestR4FieldNameGetParameter(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+func f(layers interface{}) {
+	_, _ = layers.(interface{ GetParameter(string, string) interface{} }).GetParameter(settings.GlazedSlug, "output")
+}`
+	diag := runAnalyzer(t, source)
+	found := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "rename field name") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a GetParameter field-name rename diagnostic, got: %+v", diag)
+	}
+}
+
+// TestR4FieldNameUpdateExistingValue verifies UpdateExistingValue("output", ...)
+// is renamed.
+func TestR4FieldNameUpdateExistingValue(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+var _ = settings.GlazedSlug
+func f(glazedLayer interface{}) {
+	_, _ = glazedLayer.(interface{ UpdateExistingValue(string, string, ...interface{}) interface{} }).UpdateExistingValue("output", "table")
+}`
+	diag := runAnalyzer(t, source)
+	found := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "UpdateExistingValue") && strings.Contains(d.Message, "format") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected an UpdateExistingValue field-name rename diagnostic, got: %+v", diag)
+	}
+}
+
+// TestR4FieldNameFromMap verifies the sources.FromMap(map{GlazedSlug: {"output":...}})
+// pattern renames the inner "output" key to "format".
+func TestR4FieldNameFromMap(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+func f() {
+	_ = map[string]map[string]interface{}{
+		settings.GlazedSlug: {
+			"output": "json",
+		},
+	}
+}`
+	diag := runAnalyzer(t, source)
+	found := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "rename default-map key \"output\" to \"format\"") && len(d.SuggestedFixes) > 0 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a FromMap inner-key rename diagnostic, got: %+v", diag)
+	}
+}
+
+// TestR4MapIndexReported verifies that expr["output"] map index expressions are
+// reported (with a fix) when they may reference the structured-output field.
+func TestR4MapIndexReported(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+func f() {
+	var m map[string]interface{}
+	_ = m["output"]
+}`
+	diag := runAnalyzer(t, source)
+	found := false
+	for _, d := range diag {
+		if strings.Contains(d.Message, "map key \"output\"") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a map-index diagnostic, got: %+v", diag)
+	}
+}
+
 func TestNoSettingsImport(t *testing.T) {
 	source := `package p; import "fmt"; func f() { fmt.Println("hi") }`
 	diag := runAnalyzer(t, source)

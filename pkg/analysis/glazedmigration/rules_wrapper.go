@@ -108,7 +108,7 @@ func reportKeyRename(pass *analysis.Pass, call *ast.CallExpr, ident *ast.Ident) 
 	// or a struct. We only auto-fix map literals with string keys.
 	for _, arg := range call.Args {
 		if lit, ok := arg.(*ast.CompositeLit); ok {
-			fixKeyInMapLiteral(pass, call, lit)
+			fixKeyInMapLiteral(pass, lit)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func reportKeyRename(pass *analysis.Pass, call *ast.CallExpr, ident *ast.Ident) 
 // fixKeyInMapLiteral scans a composite literal's elements for {key, value}
 // pairs where the key is the string "output" and emits a rename fix. It also
 // validates the value against the supported format set.
-func fixKeyInMapLiteral(pass *analysis.Pass, call *ast.CallExpr, lit *ast.CompositeLit) {
+func fixKeyInMapLiteral(pass *analysis.Pass, lit *ast.CompositeLit) {
 	for _, elt := range lit.Elts {
 		kv, ok := elt.(*ast.KeyValueExpr)
 		if !ok {
