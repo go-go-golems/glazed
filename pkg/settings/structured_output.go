@@ -44,6 +44,13 @@ var structuredOutputFormats = []string{
 	string(OutputYAML),
 }
 
+// StructuredOutputFormats returns the supported structured-output format
+// values. It is exported so that tooling (such as the glazed-migrate analyzer)
+// can validate format values without hardcoding the list.
+func StructuredOutputFormats() []string {
+	return append([]string(nil), structuredOutputFormats...)
+}
+
 type StructuredOutputSettings struct {
 	Format        OutputFormat `glazed:"format"`
 	OutputFields  []string     `glazed:"output-fields"`
