@@ -32,14 +32,34 @@ func applyWrapperAndKeyRules(pass *analysis.Pass, file *ast.File, settingsImp, s
 			return true
 		}
 
-		// R3: unwrap With*SectionOptions wrappers.
-		if ident, ok := selectorMatches(pass, call.Fun, settingsImp, settingsImportPath, wrapperNames()...); ok {
+		// R3: unwrap only the output-section options wrapper. Its arguments
+		// targeted the output subsection (replaced by the structured-output
+		// section), so they are valid schema.SectionOption values to splice
+		// directly into NewStructuredOutputSection.
+		if ident, ok := selectorMatches(pass, call.Fun, settingsImp, settingsImportPath, outputSectionOptionsWrapper); ok {
 			reportWrapperUnwrap(pass, call, ident)
 		}
 
-		// R4: rename "output" -> "format" in schema.WithDefaults map literals.
+		// R9: feature-section option wrappers (select/template/rename/etc.)
+		// targeted removed subsections. Report them for manual redesign; do not
+		// unwrap, because their args configure the wrong schema.
+		if ident, ok := selectorMatches(pass, call.Fun, settingsImp, settingsImportPath, featureWrapperNames()...); ok {
+			pass.Report(analysis.Diagnostic{
+				Pos:     ident.Pos(),
+				End:     ident.End(),
+				Message: "settings." + ident.Name + " targets a removed feature subsection with no mechanical migration; redesign using application fields or caller-side tools",
+			})
+		}
+
+		// R4: rename "output" -> "format" in schema.WithDefaults map literals
+		// that target the structured-output section. Only fire when the
+		// WithDefaults call is an argument to a known structured-output
+		// constructor (new or removed), so application-defined sections with a
+		// legitimate "output" field are not touched.
 		if ident, ok := selectorMatches(pass, call.Fun, schemaImp, schemaImportPath, "WithDefaults"); ok {
-			reportKeyRename(pass, call, ident)
+			if withDefaultsTargetsStructuredOutput(pass, file, call, settingsImp) {
+				reportKeyRename(pass, call, ident)
+			}
 		}
 		return true
 	})
@@ -95,6 +115,45 @@ func reportWrapperUnwrap(pass *analysis.Pass, call *ast.CallExpr, ident *ast.Ide
 			}},
 		}},
 	})
+}
+
+// withDefaultsTargetsStructuredOutput reports whether a schema.WithDefaults call
+// is an argument to a known structured-output section constructor (new or
+// removed), meaning its "output" key refers to the renamed flag rather than an
+// application-defined field.
+func withDefaultsTargetsStructuredOutput(pass *analysis.Pass, file *ast.File, call *ast.CallExpr, settingsImp importNames) bool {
+	parent := findEnclosingCallExpr(file, call.Pos())
+	if parent == nil {
+		return false
+	}
+	// Match the new and removed structured-output constructors.
+	if _, ok := selectorMatches(pass, parent.Fun, settingsImp, settingsImportPath, newConstructor, oldConstructor, altConstructor, altConstructor2); ok {
+		return true
+	}
+	return false
+}
+
+// findEnclosingCallExpr finds the *ast.CallExpr that directly contains pos as
+// one of its arguments.
+func findEnclosingCallExpr(file *ast.File, pos token.Pos) *ast.CallExpr {
+	var found *ast.CallExpr
+	ast.Inspect(file, func(node ast.Node) bool {
+		if found != nil {
+			return false
+		}
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		for _, arg := range call.Args {
+			if arg.Pos() == pos {
+				found = call
+				return false
+			}
+		}
+		return true
+	})
+	return found
 }
 
 // reportKeyRename inspects a schema.WithDefaults call for a map literal with

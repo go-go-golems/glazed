@@ -2,6 +2,7 @@ package glazedmigration
 
 import (
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -31,7 +32,18 @@ func applySetupRules(pass *analysis.Pass, file *ast.File, imports importNames) {
 		replacement := setupHelpers[ident.Name]
 		msg := "replace settings." + ident.Name + " with settings." + replacement
 		switch ident.Name {
-		case "SetupTableProcessor", "SetupProcessorOutput":
+		case "SetupTableProcessor":
+			// If the same function also calls SetupProcessorOutput, the pair
+			// collapses into SetupStructuredOutput (which attaches a formatter
+			// and needs a writer). Otherwise the standalone processor contract
+			// is preserved by SetupStructuredProcessor (no writer, no formatter).
+			if functionContainsCall(file, call.Pos(), "SetupProcessorOutput") {
+				msg += "; collapse SetupTableProcessor + SetupProcessorOutput into a single SetupStructuredOutput(values, writer) call; note the return tuple changes to (*TableProcessor, OutputFormatter, error)"
+			} else {
+				msg = "replace settings.SetupTableProcessor with settings.SetupStructuredProcessor"
+				msg += "; the standalone processor contract is preserved by SetupStructuredProcessor (no writer, no formatter); note the return tuple changes to (*TableProcessor, *StructuredOutputSettings, error)"
+			}
+		case "SetupProcessorOutput":
 			msg += "; collapse SetupTableProcessor + SetupProcessorOutput into a single SetupStructuredOutput(values, writer) call; note the return tuple changes to (*TableProcessor, OutputFormatter, error)"
 		case "SetupTableOutputFormatter", "SetupRowOutputFormatter", "SetupSimpleTableProcessor":
 			msg += "; restructure to use SetupStructuredOutput(values, writer), which builds the processor and attaches the formatter"
@@ -53,4 +65,31 @@ func setupHelperNames() []string {
 		out = append(out, n)
 	}
 	return out
+}
+
+// functionContainsCall reports whether the function enclosing pos contains a
+// call to a selector named name (e.g. "SetupProcessorOutput"). It walks only
+// the enclosing function body.
+func functionContainsCall(file *ast.File, pos token.Pos, name string) bool {
+	fn := findEnclosingFuncDecl(file, pos)
+	if fn == nil || fn.Body == nil {
+		return false
+	}
+	found := false
+	ast.Inspect(fn.Body, func(node ast.Node) bool {
+		if found {
+			return false
+		}
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if ok && sel.Sel.Name == name {
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
 }

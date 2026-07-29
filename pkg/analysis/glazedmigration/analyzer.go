@@ -32,6 +32,7 @@ const (
 
 	oldConstructor = "NewGlazedSchema"
 	altConstructor  = "NewGlazedSection"
+	altConstructor2 = "NewOutputSection"
 	newConstructor  = "NewStructuredOutputSection"
 
 	oldSlug = "GlazedSlug"
@@ -40,13 +41,14 @@ const (
 	glazeCommandMethod = "RunIntoGlazeProcessor"
 )
 
-// withSectionOptionWrappers are the removed settings.With*SectionOptions
-// adapters. Each accepted schema.SectionOption variadics and re-wrapped them as
-// a GlazeSectionOption. The replacement constructor accepts schema.SectionOption
-// directly, so these wrappers are no-ops whose arguments should be spliced
-// through.
-var withSectionOptionWrappers = map[string]bool{
-	"WithOutputSectionOptions":        true,
+// featureSectionOptionWrappers are the removed settings.With*SectionOptions
+// adapters that targeted distinct feature subsections (select, rename, replace,
+// template, jq, sort, skip-limit, fields-filters) which no longer exist.
+// Their arguments configured those removed subsections, so unwrapping them
+// into NewStructuredOutputSection would pass wrong-schema defaults (e.g.
+// template-file or select defaults) that fail as unknown fields. They are
+// reported (R9) for manual redesign, never auto-unwrapped.
+var featureSectionOptionWrappers = map[string]bool{
 	"WithSelectSectionOptions":        true,
 	"WithTemplateSectionOptions":      true,
 	"WithRenameSectionOptions":        true,
@@ -56,6 +58,11 @@ var withSectionOptionWrappers = map[string]bool{
 	"WithSortSectionOptions":          true,
 	"WithSkipLimitSectionOptions":     true,
 }
+
+// outputSectionOptionsWrapper is the only With*SectionOptions adapter whose
+// arguments targeted the output subsection (replaced by the structured-output
+// section). It is a safe no-op to unwrap into NewStructuredOutputSection.
+const outputSectionOptionsWrapper = "WithOutputSectionOptions"
 
 // removedFeatureSectionConstructors built the now-deleted feature sections
 // (select, rename, replace, template, jq, sort, skip-limit, fields-filters).

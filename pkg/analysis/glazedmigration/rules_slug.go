@@ -23,19 +23,26 @@ func applySlugRules(pass *analysis.Pass, file *ast.File, imports importNames) {
 			}
 			reportSlugRename(pass, ident)
 		case *ast.Ident:
-			// Dot-imported bare ident.
+			// Dot-imported bare ident. Require it to be a *use* of the settings
+			// package symbol, not a local declaration that merely shares the name.
+			// Without this guard, a locally declared `GlazedSlug` (which has no
+			// Uses entry) would be wrongly renamed.
 			if !imports.dot || n.Name != oldSlug {
 				return true
 			}
-			// Confirm it resolves to the settings package when type info is
-			// available; otherwise (no type info) accept the dot-import match.
-			if obj := pass.TypesInfo.Uses[n]; obj != nil {
-				// GlazedSlug is a const, so it's a *types.Const, not *types.Func.
-				// Accept any object whose package is the settings package.
-				pkg := obj.Pkg()
-				if pkg != nil && pkg.Path() != settingsImportPath {
-					return true
-				}
+			// Skip declarations (defs) entirely.
+			if _, isDef := pass.TypesInfo.Defs[n]; isDef {
+				return true
+			}
+			obj := pass.TypesInfo.Uses[n]
+			if obj == nil {
+				// No type info: be conservative and skip rather than risk
+				// renaming a local declaration.
+				return true
+			}
+			pkg := obj.Pkg()
+			if pkg == nil || pkg.Path() != settingsImportPath {
+				return true
 			}
 			reportSlugRename(pass, n)
 		}

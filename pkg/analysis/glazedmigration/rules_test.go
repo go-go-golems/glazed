@@ -171,9 +171,12 @@ func TestR4KeyRename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			source := `package p
-import "github.com/go-go-golems/glazed/pkg/cmds/schema"
+import (
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/settings"
+)
 func f() {
-	_ = schema.WithDefaults(map[string]interface{}{"output": "` + tt.value + `"})
+	_, _ = settings.NewStructuredOutputSection(schema.WithDefaults(map[string]interface{}{"output": "` + tt.value + `"}))
 }`
 			diag := runAnalyzer(t, source)
 			foundKeyFix := false
@@ -219,8 +222,19 @@ func TestR5SlugRename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			diag := runAnalyzer(t, tt.source)
-			if len(diag) != 1 {
-				t.Fatalf("got %d diagnostics, want 1: %+v", len(diag), diag)
+			// The dot-import case is conservative: without type-checker info
+			// the harness cannot prove the ident is the settings-package
+			// symbol rather than a local declaration, so it produces no
+			// diagnostic. Qualified/aliased imports always fire.
+			wantDiag := 1
+			if tt.name == "dot-import" {
+				wantDiag = 0
+			}
+			if len(diag) != wantDiag {
+				t.Fatalf("got %d diagnostics, want %d: %+v", len(diag), wantDiag, diag)
+			}
+			if wantDiag == 0 {
+				return
 			}
 			if countFixes(diag) != 1 {
 				t.Fatalf("got %d fixes, want 1", countFixes(diag))
@@ -254,8 +268,15 @@ func TestR6R7R8SetupHelpers(t *testing.T) {
 			if countFixes(diag) != 0 {
 				t.Fatalf("expected no fixes for report-only helper %s, got %d", h, countFixes(diag))
 			}
-			if !strings.Contains(diag[0].Message, setupHelpers[h]) {
-				t.Fatalf("diagnostic %q does not mention replacement %q", diag[0].Message, setupHelpers[h])
+			// Each helper recommends a specific replacement. SetupTableProcessor
+			// standalone (no SetupProcessorOutput in scope) recommends
+			// SetupStructuredProcessor; the pair case recommends SetupStructuredOutput.
+			want := setupHelpers[h]
+			if h == "SetupTableProcessor" {
+				want = "SetupStructuredProcessor"
+			}
+			if !strings.Contains(diag[0].Message, want) {
+				t.Fatalf("diagnostic %q does not mention replacement %q", diag[0].Message, want)
 			}
 		})
 	}
@@ -383,6 +404,72 @@ func f() {
 	}
 	if !found {
 		t.Fatalf("expected a FromMap inner-key rename diagnostic, got: %+v", diag)
+	}
+}
+
+// TestR4StandaloneWithDefaultsNotRenamed verifies that a schema.WithDefaults
+// call with an "output" key is NOT renamed when it is not an argument to a
+// structured-output constructor, because application-defined sections may
+// legitimately define a field named "output".
+func TestR4StandaloneWithDefaultsNotRenamed(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/cmds/schema"
+func f() {
+	_ = schema.WithDefaults(map[string]interface{}{"output": "json"})
+}`
+	diag := runAnalyzer(t, source)
+	for _, d := range diag {
+		if strings.Contains(d.Message, "rename default-map key") {
+			t.Fatalf("standalone WithDefaults should not be renamed, got: %s", d.Message)
+		}
+	}
+}
+
+// TestR3FeatureWrapperReportedNotUnwrapped verifies that feature-section
+// option wrappers are reported for manual redesign and NOT auto-unwrapped.
+func TestR3FeatureWrapperReportedNotUnwrapped(t *testing.T) {
+	for w := range featureSectionOptionWrappers {
+		t.Run(w, func(t *testing.T) {
+			source := `package p
+import (
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/settings"
+)
+func f() {
+	_, _ = settings.NewGlazedSection(settings.` + w + `(schema.WithDefaults(map[string]interface{}{"x": 1})))
+}`
+			diag := runAnalyzer(t, source)
+			foundReport := false
+			for _, d := range diag {
+				if strings.Contains(d.Message, "targets a removed feature subsection") {
+					foundReport = true
+				}
+				if strings.Contains(d.Message, "unwrap removed settings") && len(d.SuggestedFixes) > 0 {
+					t.Fatalf("feature wrapper %s should not be auto-unwrapped", w)
+				}
+			}
+			if !foundReport {
+				t.Fatalf("expected a report-only diagnostic for feature wrapper %s, got: %+v", w, diag)
+			}
+		})
+	}
+}
+
+// TestR2NewOutputSectionRename verifies that the removed NewOutputSection
+// constructor is also migrated to NewStructuredOutputSection.
+func TestR2NewOutputSectionRename(t *testing.T) {
+	source := `package p
+import "github.com/go-go-golems/glazed/pkg/settings"
+func f() { _, _ = settings.NewOutputSection() }`
+	diag := runAnalyzer(t, source)
+	if len(diag) != 1 {
+		t.Fatalf("got %d diagnostics, want 1: %+v", len(diag), diag)
+	}
+	if countFixes(diag) != 1 {
+		t.Fatalf("got %d fixes, want 1", countFixes(diag))
+	}
+	if !contains(fixTexts(diag), newConstructor) {
+		t.Fatalf("fix does not rename to %s", newConstructor)
 	}
 }
 

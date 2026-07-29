@@ -21,13 +21,13 @@ func applyConstructorRules(pass *analysis.Pass, file *ast.File, imports importNa
 		if !ok {
 			return true
 		}
-		name, ok := selectorMatches(pass, call.Fun, imports, settingsImportPath, oldConstructor, altConstructor)
+		name, ok := selectorMatches(pass, call.Fun, imports, settingsImportPath, oldConstructor, altConstructor, altConstructor2)
 		if !ok {
 			return true
 		}
 
 		// Determine whether the call is the legacy constructor.
-		isLegacy := name.Name == oldConstructor || name.Name == altConstructor
+		isLegacy := name.Name == oldConstructor || name.Name == altConstructor || name.Name == altConstructor2
 		if !isLegacy {
 			return true
 		}
@@ -114,9 +114,11 @@ func argsAreSchemaSectionOptions(pass *analysis.Pass, call *ast.CallExpr, settin
 		if !ok {
 			return false
 		}
-		// Accept settings.With*SectionOptions wrappers (R3 will unwrap them) and
-		// direct schema.* calls (the unwrapped form).
-		if _, ok := selectorMatches(pass, sub.Fun, settingsImp, settingsImportPath, wrapperNames()...); ok {
+		// Accept the output-section options wrapper (R3 will unwrap it) and
+		// direct schema.* calls (the unwrapped form). Feature-section wrappers
+		// (select/template/rename/etc.) are NOT accepted: their args target
+		// removed subsections and would fail as unknown fields.
+		if _, ok := selectorMatches(pass, sub.Fun, settingsImp, settingsImportPath, outputSectionOptionsWrapper); ok {
 			continue
 		}
 		if isSchemaPackageCall(pass, sub.Fun, schemaImp) {
@@ -127,9 +129,12 @@ func argsAreSchemaSectionOptions(pass *analysis.Pass, call *ast.CallExpr, settin
 	return true
 }
 
-func wrapperNames() []string {
-	out := make([]string, 0, len(withSectionOptionWrappers))
-	for n := range withSectionOptionWrappers {
+// featureWrapperNames returns the names of the removed feature-section option
+// wrappers that target distinct removed subsections and must be reported (R9)
+// for manual redesign rather than auto-unwrapped.
+func featureWrapperNames() []string {
+	out := make([]string, 0, len(featureSectionOptionWrappers))
+	for n := range featureSectionOptionWrappers {
 		out = append(out, n)
 	}
 	return out
