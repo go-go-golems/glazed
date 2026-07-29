@@ -157,9 +157,9 @@ func f() {
 // "format", and that unsupported values are reported.
 func TestR4KeyRename(t *testing.T) {
 	tests := []struct {
-		name        string
-		value       string
-		wantKeyFix  bool
+		name          string
+		value         string
+		wantKeyFix    bool
 		wantValueDiag bool
 	}{
 		{"json supported", "json", true, false},

@@ -101,6 +101,7 @@ func isSchemaPackageCall(pass *analysis.Pass, expr ast.Expr, schemaImp importNam
 		return false
 	}
 }
+
 // constructor call is a schema.* call (or a settings.With*SectionOptions
 // wrapper that R3 will unwrap). When true, the arguments are valid
 // schema.SectionOption values and the constructor can be renamed to
@@ -340,7 +341,7 @@ func findNextStmt(file *ast.File, stmt ast.Node) ast.Stmt {
 			if s == stmt || (s.Pos() == stmt.Pos() && s.End() == stmt.End()) {
 				if i+1 < len(bl.List) {
 					next = bl.List[i+1]
-			}
+				}
 				return false
 			}
 		}

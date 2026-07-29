@@ -30,7 +30,7 @@ const (
 	schemaImportPath   = "github.com/go-go-golems/glazed/pkg/cmds/schema"
 	cmdsImportPath     = "github.com/go-go-golems/glazed/pkg/cmds"
 
-	oldConstructor = "NewGlazedSchema"
+	oldConstructor  = "NewGlazedSchema"
 	altConstructor  = "NewGlazedSection"
 	altConstructor2 = "NewOutputSection"
 	newConstructor  = "NewStructuredOutputSection"
@@ -82,12 +82,12 @@ var removedFeatureSectionConstructors = map[string]bool{
 // auto-fixed) because their replacements change the return tuple and call
 // structure.
 var setupHelpers = map[string]string{
-	"SetupTableProcessor":         "SetupStructuredOutput",
-	"SetupProcessorOutput":        "SetupStructuredOutput",
-	"SetupTableOutputFormatter":   "SetupStructuredOutput",
-	"SetupRowOutputFormatter":     "SetupStructuredOutput",
-	"SetupSimpleTableProcessor":   "SetupStructuredOutput",
-	"NewOutputFormatterSettings":  "DecodeStructuredOutputSettings",
+	"SetupTableProcessor":        "SetupStructuredOutput",
+	"SetupProcessorOutput":       "SetupStructuredOutput",
+	"SetupTableOutputFormatter":  "SetupStructuredOutput",
+	"SetupRowOutputFormatter":    "SetupStructuredOutput",
+	"SetupSimpleTableProcessor":  "SetupStructuredOutput",
+	"NewOutputFormatterSettings": "DecodeStructuredOutputSettings",
 }
 
 // Analyzer rewrites and reports calls to removed Glazed settings APIs.
