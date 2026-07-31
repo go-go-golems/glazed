@@ -149,6 +149,10 @@ topics:
       description: Automation scripts, tooling, and workflow orchestration
     - slug: fields
       description: Field definitions, parsing, and FieldValues/struct decoding (pkg/cmds/fields)
+    - slug: go-analysis
+      description: Go x/tools go/analysis analyzers, vet rules, and source migration tooling
+    - slug: diary
+      description: Chronological investigation or implementation diary documents
 docTypes:
     - slug: index
       description: Ticket index
@@ -190,3 +194,7 @@ status:
       description: In progress / active work
     - slug: complete
       description: Completed ticket
+    - slug: proposed
+      description: Design proposed but not yet accepted or implemented
+    - slug: in-progress
+      description: Work actively underway
