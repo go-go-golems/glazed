@@ -18,3 +18,12 @@ Step 1: ported glazed-migrate to command framework with driver, check/fix comman
 
 Pushed task/glazed-migrate-cli, opened glazed PR #620; commented adaptation status on geppetto PR #408
 
+
+## 2026-08-07
+
+Step 2: addressed all six PR #620 review findings (commit 668999b)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-08-06/add-cohere-reranking/glazed/pkg/analysis/glazedmigration/driver.go — Driver safety and path behavior
+

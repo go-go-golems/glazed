@@ -20,13 +20,20 @@ RelatedFiles:
     - Path: repo://cmd/tools/glazed-migrate/main.go
       Note: Binary root with logging + help system (commit 89fb3ee)
     - Path: repo://pkg/analysis/glazedmigration/driver.go
-      Note: Parse-only driver Scan/ApplyFixes (commit 89fb3ee)
+      Note: |-
+        Parse-only driver Scan/ApplyFixes (commit 89fb3ee)
+        Review fixes—recursive path normalization, dedupe, cancellation, partial results (commit 668999b)
+    - Path: repo://pkg/analysis/glazedmigration/rules_slug.go
+      Note: Dot-import fallback with parser object shadow guard (commit 668999b)
+    - Path: repo://pkg/doc/topics/33-glazed-source-migrations.md
+      Note: Public guide migrated to check/fix syntax (commit 668999b)
 ExternalSources: []
 Summary: Implementation diary for porting glazed-migrate to the Glazed command framework.
 LastUpdated: 2026-08-07T00:00:00-04:00
 WhatFor: Record implementation steps, failures, and review guidance for GLAZED-MIGRATE-CLI-001.
 WhenToUse: Read before resuming or reviewing work on this ticket.
 ---
+
 
 
 # Diary
@@ -102,3 +109,73 @@ I first verified the actual adaptation need by running the analyzer over geppett
 ### Technical details
 - Rules covered (analyzer.go): R1/R2 constructors, R3 wrapper unwrap, R4 "output"→"format" key, R5 slug rename, R6–R9 report-only.
 - Validation evidence: 8 new tests total (4 driver + 4 command), all passing; hooks green on commit 89fb3ee.
+
+## Step 2: Address six PR review findings
+
+PR #620 received two P1 and four P2 inline findings. The fixes harden both usability and destructive-operation semantics: documented `./...` paths now work, overlapping roots are deduplicated, dot-imported slug references survive parse-only scanning, cancellation stops writes, and partial application is always surfaced before an error returns.
+
+I also migrated the older public help topic to the new `check`/`fix` subcommands. This closed a documentation split where the newly embedded guides were correct but `pkg/doc/topics/33-glazed-source-migrations.md` still taught the removed singlechecker CLI.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Address code review issues: https://github.com/go-go-golems/glazed/pull/620"
+
+**Assistant interpretation:** Fetch every review issue on glazed PR #620, implement and test each requested correction, update ticket records, push, reply, and resolve the threads.
+
+**Inferred user intent:** Make the new migration CLI safe, internally consistent, and ready to merge rather than merely replying to automated review.
+
+**Commit (code):** `668999b` — "fix(glazed-migrate): address PR review findings"
+
+### What I did
+- Made `Scan` context-aware and taught path collection to normalize Go-style trailing `/...` before `os.Stat`.
+- Deduplicated collected files by cleaned absolute path, eliminating duplicate diagnostics and duplicate/conflicting fix edits from overlapping roots.
+- Made `ApplyFixes` context-aware; it checks cancellation before work and immediately before every file write.
+- Added `ApplyResult` (`AppliedPerFile`, `Skipped`) and return it even on later failure. `FixCommand` emits partial modifications before returning the error, using `context.WithoutCancel` only for final accounting after a cancellation that followed earlier writes.
+- Added the explicit post-scan cancellation check so SIGINT cannot turn already-scanned diagnostics into writes.
+- Restored dot-imported R5 detection in parse-only mode using `go/parser`'s `Ident.Obj`: imported bare `GlazedSlug` has nil Obj, while same-file local declarations/usages retain Obj and are not rewritten.
+- Updated `pkg/doc/topics/33-glazed-source-migrations.md` from the removed no-subcommand/`-fix` syntax to `check` and `fix`.
+- Added regression tests for literal `./...`, overlapping roots/explicit files, dot imports plus local shadowing, cancellation-before-write, partial results after a later file disappears, command cancellation, and partial-result row emission.
+
+### Why
+- The guide repeatedly used `./...`; accepting that familiar Go package pattern is less surprising than rewriting every example to `.`.
+- Destructive tools need stronger cancellation and failure accounting than read-only commands. A non-transactional multi-file rewrite must at least report every file changed before a later failure.
+- Full type checking is inappropriate for a migration tool targeting code broken by removed APIs; parser object resolution supplies the narrow shadowing guard needed for dot imports without reintroducing that dependency.
+
+### What worked
+- `/tmp/glazed-migrate check ./... --format json` completed successfully against glazed itself (empty JSON result).
+- `GOWORK=off go test ./... -count=1`, targeted vet, `git diff --check`, and all focused driver/command tests passed.
+- Commit hook passed tests, lintmax, gosec (0 issues), and govulncheck (0 called vulnerabilities).
+
+### What didn't work
+- The first focused run failed because the old degraded-mode R5 unit test intentionally expected zero dot-import diagnostics:
+  `--- FAIL: TestR5SlugRename (0.00s)`
+  `--- FAIL: TestR5SlugRename/dot-import (0.00s)`
+  `rules_test.go:234: got 1 diagnostics, want 0`
+  The expected behavior changed per review; I updated the test and added a local-shadow regression.
+- My first `/...` normalization draft called `filepath.Clean` before suffix detection. During self-review I caught that `filepath.Clean("./...")` becomes literal `"..."`; detection now happens first, with a direct `normalizeScanPath("./...") == "."` assertion.
+
+### What I learned
+- Go package patterns are CLI conventions, not filesystem paths; tools accepting source roots must normalize them deliberately.
+- `analysis.Pass.TypesInfo` is not the only source of name resolution: the parser's same-file `Ident.Obj` is sufficient to distinguish a dot-imported bare name from local shadowing in this narrow rule.
+
+### What was tricky to build
+- Partial writes plus canceled contexts conflict with structured reporting: a canceled context may reject `AddRow`, exactly when the user most needs to know what changed. The command uses `context.WithoutCancel` only when `ApplyFixes` returned an error after at least one successful write; normal operation and pre-write cancellation retain the original context.
+- Cross-file transactional writes would require temp files, metadata preservation, rename orchestration, and rollback. The review explicitly allowed surfacing partial results, so `ApplyResult` provides a smaller honest contract without pretending atomicity.
+
+### What warrants a second pair of eyes
+- Dot-import fallback protects same-file local declarations; a package-level `GlazedSlug` declared in another file is not visible to per-file parser object resolution and could still look imported. Dot imports are rare and the documented migration requires recognition, but reviewers should confirm this tradeoff.
+- Confirm partial-result rows are flushed by every configured Glazed formatter when command execution subsequently returns an error.
+
+### What should be done in the future
+- Consider a dry-run patch-plan mode if the migration tool grows broader destructive rewrites.
+- Consider package-level parsing if future dot-import rules need cross-file shadow resolution.
+
+### Code review instructions
+- Start at `pkg/analysis/glazedmigration/driver.go` (`Scan`, `collectGoFiles`, `ApplyResult`, `ApplyFixes`) and `cmd/tools/glazed-migrate/cmds/migrate.go` (`FixCommand`, `emitApplyResult`).
+- Review R5 fallback in `rules_slug.go` and regressions in `driver_test.go`/`migrate_test.go`.
+- Validate: `GOWORK=off go test ./... -count=1 && make lintmax gosec govulncheck`.
+- Dogfood: `go build -o /tmp/glazed-migrate ./cmd/tools/glazed-migrate && /tmp/glazed-migrate check ./... --format json`.
+
+### Technical details
+- Review comments addressed: `3737028788`, `3737028798`, `3737028799`, `3737028804`, `3737028812`, `3737028815`.
+- New driver signatures: `Scan(context.Context, []string)` and `ApplyFixes(context.Context, []Diagnostic) (ApplyResult, error)`.
