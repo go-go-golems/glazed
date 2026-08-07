@@ -12,10 +12,10 @@ Owners:
     - manuel
 RelatedFiles: []
 ExternalSources: []
-Summary: ""
+Summary: Port glazed-migrate from a bare singlechecker to a Glazed command-framework binary (check/fix GlazeCommands, logging, embedded help) and verify downstream adaptation against glazed v1.4.2.
 LastUpdated: 2026-08-07T08:50:34.700635508-04:00
-WhatFor: ""
-WhenToUse: ""
+WhatFor: Track the glazed-migrate command-framework port.
+WhenToUse: Use when reviewing or extending the glazed-migrate CLI or its driver.
 ---
 
 # Port glazed-migrate to the Glazed command framework with help entries
