@@ -25,7 +25,7 @@ func pathsArgument() *fields.Definition {
 		fields.TypeStringList,
 		fields.WithIsArgument(true),
 		fields.WithDefault([]string{"."}),
-		fields.WithHelp("Directories (walked recursively) or .go files to scan"),
+		fields.WithHelp("Directories (including ./...), or .go files to scan"),
 	)
 }
 
@@ -66,7 +66,7 @@ func (c *CheckCommand) RunIntoGlazeProcessor(
 		return err
 	}
 
-	diagnostics, err := glazedmigration.Scan(settings.Paths)
+	diagnostics, err := glazedmigration.Scan(ctx, settings.Paths)
 	if err != nil {
 		return err
 	}
@@ -124,44 +124,30 @@ func (c *FixCommand) RunIntoGlazeProcessor(
 		return err
 	}
 
-	diagnostics, err := glazedmigration.Scan(settings.Paths)
+	diagnostics, err := glazedmigration.Scan(ctx, settings.Paths)
 	if err != nil {
 		return err
 	}
-
-	appliedPerFile, skipped, err := glazedmigration.ApplyFixes(diagnostics)
-	if err != nil {
+	// A signal may arrive after scanning but before the destructive phase.
+	// Stop here so Ctrl-C cannot trigger writes from already-collected findings.
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	files := make([]string, 0, len(appliedPerFile))
-	for f := range appliedPerFile {
-		files = append(files, f)
+	result, applyErr := glazedmigration.ApplyFixes(ctx, diagnostics)
+	// ApplyFixes can fail after earlier files were written. Always emit those
+	// partial results before returning the error so the user is never left with
+	// silent working-tree changes. WithoutCancel permits this final accounting
+	// when cancellation happened after one or more writes.
+	emitCtx := ctx
+	if applyErr != nil && len(result.AppliedPerFile) > 0 {
+		emitCtx = context.WithoutCancel(ctx)
 	}
-	sort.Strings(files)
-	for _, f := range files {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if err := processor.AddRow(ctx, types.NewRow(
-			types.MRP("file", f),
-			types.MRP("line", 0),
-			types.MRP("message", "applied automatic migrations"),
-			types.MRP("edits_applied", appliedPerFile[f]),
-		)); err != nil {
-			return err
-		}
+	if err := emitApplyResult(emitCtx, processor, result); err != nil {
+		return err
 	}
-
-	if skipped > 0 {
-		if err := processor.AddRow(ctx, types.NewRow(
-			types.MRP("file", ""),
-			types.MRP("line", 0),
-			types.MRP("message", "conflicting edits skipped (review manually)"),
-			types.MRP("edits_applied", skipped),
-		)); err != nil {
-			return err
-		}
+	if applyErr != nil {
+		return applyErr
 	}
 
 	// Report-only findings (no automatic fix) remain after fixing; surface
@@ -175,6 +161,35 @@ func (c *FixCommand) RunIntoGlazeProcessor(
 			types.MRP("line", d.Line),
 			types.MRP("message", "manual migration required: "+d.Message),
 			types.MRP("edits_applied", 0),
+		)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func emitApplyResult(ctx context.Context, processor middlewares.Processor, result glazedmigration.ApplyResult) error {
+	files := make([]string, 0, len(result.AppliedPerFile))
+	for file := range result.AppliedPerFile {
+		files = append(files, file)
+	}
+	sort.Strings(files)
+	for _, file := range files {
+		if err := processor.AddRow(ctx, types.NewRow(
+			types.MRP("file", file),
+			types.MRP("line", 0),
+			types.MRP("message", "applied automatic migrations"),
+			types.MRP("edits_applied", result.AppliedPerFile[file]),
+		)); err != nil {
+			return err
+		}
+	}
+	if result.Skipped > 0 {
+		if err := processor.AddRow(ctx, types.NewRow(
+			types.MRP("file", ""),
+			types.MRP("line", 0),
+			types.MRP("message", "conflicting edits skipped (review manually)"),
+			types.MRP("edits_applied", result.Skipped),
 		)); err != nil {
 			return err
 		}

@@ -2,11 +2,13 @@ package cmds
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/go-go-golems/glazed/pkg/analysis/glazedmigration"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
@@ -176,5 +178,50 @@ func TestCobraBuilderAddsUniversalOutputFlagsOnly(t *testing.T) {
 	// paths is a positional argument, not a flag.
 	if checkCobra.Flags().Lookup("paths") != nil {
 		t.Error("paths should be a positional argument, not a flag")
+	}
+}
+
+func TestFixCommandStopsBeforeWritingWhenContextCanceled(t *testing.T) {
+	dir := writeFixture(t)
+	target := filepath.Join(dir, "legacy.go")
+	before, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewFixCommand()
+	processor := &collectProcessor{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err = cmd.RunIntoGlazeProcessor(ctx, parsedWithPaths(t, cmd.Description(), dir), processor)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("fix error = %v, want context.Canceled", err)
+	}
+	after, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(before) {
+		t.Fatal("canceled fix command changed the source file")
+	}
+}
+
+func TestEmitApplyResultReportsPartialProgress(t *testing.T) {
+	processor := &collectProcessor{}
+	result := glazedmigration.ApplyResult{
+		AppliedPerFile: map[string]int{"/tmp/first.go": 3},
+		Skipped:        1,
+	}
+	if err := emitApplyResult(context.Background(), processor, result); err != nil {
+		t.Fatalf("emitApplyResult: %v", err)
+	}
+	if len(processor.rows) != 2 {
+		t.Fatalf("emitted %d rows, want modified-file + skipped row", len(processor.rows))
+	}
+	if rowGet(t, processor.rows[0], "file") != "/tmp/first.go" {
+		t.Fatalf("first row file = %v", rowGet(t, processor.rows[0], "file"))
+	}
+	if rowGet(t, processor.rows[0], "edits_applied") != 3 {
+		t.Fatalf("first row edits = %v", rowGet(t, processor.rows[0], "edits_applied"))
 	}
 }

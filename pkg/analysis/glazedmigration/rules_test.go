@@ -222,19 +222,11 @@ func TestR5SlugRename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			diag := runAnalyzer(t, tt.source)
-			// The dot-import case is conservative: without type-checker info
-			// the harness cannot prove the ident is the settings-package
-			// symbol rather than a local declaration, so it produces no
-			// diagnostic. Qualified/aliased imports always fire.
-			wantDiag := 1
-			if tt.name == "dot-import" {
-				wantDiag = 0
-			}
-			if len(diag) != wantDiag {
-				t.Fatalf("got %d diagnostics, want %d: %+v", len(diag), wantDiag, diag)
-			}
-			if wantDiag == 0 {
-				return
+			// Dot imports are recognized in degraded (no type-checker) mode via
+			// go/parser's same-file object resolution; local declarations still
+			// carry Ident.Obj and remain protected.
+			if len(diag) != 1 {
+				t.Fatalf("got %d diagnostics, want 1: %+v", len(diag), diag)
 			}
 			if countFixes(diag) != 1 {
 				t.Fatalf("got %d fixes, want 1", countFixes(diag))

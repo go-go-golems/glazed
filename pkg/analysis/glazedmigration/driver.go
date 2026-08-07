@@ -1,6 +1,7 @@
 package glazedmigration
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -43,14 +44,13 @@ type Diagnostic struct {
 // Scan parses every Go source file reachable from paths and runs the
 // migration analyzer over each file. paths entries may be directories
 // (walked recursively, skipping hidden directories, vendor, node_modules,
-// and testdata) or individual .go files. Parsing uses go/parser directly —
-// the analyzer is designed to run despite type errors, because consuming
-// code that references removed Glazed APIs does not type-check. With no
-// type-checker information, the rules fall back to import-aware AST
-// matching, which is the same degraded mode the analyzer's own unit tests
-// exercise.
-func Scan(paths []string) ([]Diagnostic, error) {
-	files, err := collectGoFiles(paths)
+// and testdata), Go-style directory patterns ending in /..., or individual
+// .go files. Parsing uses go/parser directly — the analyzer is designed to
+// run despite type errors, because consuming code that references removed
+// Glazed APIs does not type-check. With no type-checker information, the
+// rules fall back to import-aware AST matching.
+func Scan(ctx context.Context, paths []string) ([]Diagnostic, error) {
+	files, err := collectGoFiles(ctx, paths)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +60,9 @@ func Scan(paths []string) ([]Diagnostic, error) {
 
 	var diagnostics []Diagnostic
 	for _, path := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		fileDiags, err := scanFile(path)
 		if err != nil {
 			return nil, err
@@ -75,13 +78,19 @@ func Scan(paths []string) ([]Diagnostic, error) {
 	return diagnostics, nil
 }
 
-// collectGoFiles expands paths into a sorted list of .go files.
-func collectGoFiles(paths []string) ([]string, error) {
-	var files []string
-	for _, p := range paths {
+// collectGoFiles expands paths into a sorted, deduplicated list of absolute
+// .go file paths. A trailing /... is interpreted like the common Go package
+// pattern and normalized to its directory root before walking.
+func collectGoFiles(ctx context.Context, paths []string) ([]string, error) {
+	filesByPath := map[string]struct{}{}
+	for _, original := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		p := normalizeScanPath(original)
 		info, err := os.Stat(p)
 		if err != nil {
-			return nil, fmt.Errorf("cannot stat %s: %w", p, err)
+			return nil, fmt.Errorf("cannot stat %s: %w", original, err)
 		}
 		if !info.IsDir() {
 			if strings.HasSuffix(p, ".go") {
@@ -89,13 +98,16 @@ func collectGoFiles(paths []string) ([]string, error) {
 				if err != nil {
 					return nil, err
 				}
-				files = append(files, abs)
+				filesByPath[filepath.Clean(abs)] = struct{}{}
 			}
 			continue
 		}
 		root := p
-		err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
+		err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if err := ctx.Err(); err != nil {
 				return err
 			}
 			if d.IsDir() {
@@ -110,16 +122,36 @@ func collectGoFiles(paths []string) ([]string, error) {
 				if err != nil {
 					return err
 				}
-				files = append(files, abs)
+				filesByPath[filepath.Clean(abs)] = struct{}{}
 			}
 			return nil
 		})
 		if err != nil {
-			return nil, fmt.Errorf("cannot walk %s: %w", p, err)
+			return nil, fmt.Errorf("cannot walk %s: %w", original, err)
 		}
+	}
+	files := make([]string, 0, len(filesByPath))
+	for path := range filesByPath {
+		files = append(files, path)
 	}
 	sort.Strings(files)
 	return files, nil
+}
+
+func normalizeScanPath(path string) string {
+	// Detect the Go-style suffix before filepath.Clean: Clean("./...") is
+	// "...", which would otherwise lose the separator that distinguishes the
+	// recursive pattern from a literal directory named "...".
+	for _, suffix := range []string{"/...", `\...`} {
+		if strings.HasSuffix(path, suffix) {
+			root := strings.TrimSuffix(path, suffix)
+			if root == "" {
+				root = "."
+			}
+			return filepath.Clean(root)
+		}
+	}
+	return filepath.Clean(path)
 }
 
 // scanFile parses one file and runs the analyzer over it, resolving all
@@ -184,15 +216,25 @@ func writeMigratedFile(path string, content []byte, mode os.FileMode) error {
 	return os.WriteFile(cleaned, content, mode) // #nosec G703 -- paths are the scan roots' .go files by construction
 }
 
+// ApplyResult reports every file modified before ApplyFixes returned. It is
+// populated even when a later file fails, so callers can surface partial
+// progress instead of leaving silent working-tree changes.
+type ApplyResult struct {
+	AppliedPerFile map[string]int
+	Skipped        int
+}
+
 // ApplyFixes applies every suggested fix carried by diagnostics, grouped per
 // file. Edits within a file are applied from the end of the file backwards so
 // offsets stay valid. Overlapping or out-of-range edits are skipped (counted,
-// not fatal); a file whose edits all conflict is left untouched. Returns the
-// number of applied edits per modified file and the total number of skipped
-// edits.
-func ApplyFixes(diagnostics []Diagnostic) (map[string]int, int, error) {
-	skipped := 0
-	appliedPerFile := map[string]int{}
+// not fatal); a file whose edits all conflict is left untouched. Cancellation
+// is checked before work and before each file write. On error, the returned
+// ApplyResult describes any files already modified.
+func ApplyFixes(ctx context.Context, diagnostics []Diagnostic) (ApplyResult, error) {
+	result := ApplyResult{AppliedPerFile: map[string]int{}}
+	if err := ctx.Err(); err != nil {
+		return result, err
+	}
 	byFile := map[string][]fileEdit{}
 	for _, d := range diagnostics {
 		byFile[d.File] = append(byFile[d.File], d.edits...)
@@ -205,14 +247,18 @@ func ApplyFixes(diagnostics []Diagnostic) (map[string]int, int, error) {
 	sort.Strings(files)
 
 	for _, path := range files {
+		if err := ctx.Err(); err != nil {
+			return result, err
+		}
 		edits := byFile[path]
 		if len(edits) == 0 {
 			continue
 		}
 		content, readErr := os.ReadFile(path)
 		if readErr != nil {
-			return appliedPerFile, skipped, fmt.Errorf("cannot read %s: %w", path, readErr)
-		} // Apply from the back so earlier offsets remain valid. lastStart is the
+			return result, fmt.Errorf("cannot read %s: %w", path, readErr)
+		}
+		// Apply from the back so earlier offsets remain valid. lastStart is the
 		// start of the nearest already-applied edit behind the current one; an
 		// edit ending past it overlaps and is skipped.
 		sort.Slice(edits, func(i, j int) bool { return edits[i].start > edits[j].start })
@@ -220,7 +266,7 @@ func ApplyFixes(diagnostics []Diagnostic) (map[string]int, int, error) {
 		fileApplied := 0
 		for _, e := range edits {
 			if e.start < 0 || e.end < e.start || e.end > len(content) || e.end > lastStart {
-				skipped++
+				result.Skipped++
 				continue
 			}
 			replacement := append([]byte{}, e.newText...)
@@ -233,12 +279,15 @@ func ApplyFixes(diagnostics []Diagnostic) (map[string]int, int, error) {
 		}
 		info, statErr := os.Stat(path)
 		if statErr != nil {
-			return appliedPerFile, skipped, fmt.Errorf("cannot stat %s: %w", path, statErr)
+			return result, fmt.Errorf("cannot stat %s: %w", path, statErr)
+		}
+		if err := ctx.Err(); err != nil {
+			return result, err
 		}
 		if writeErr := writeMigratedFile(path, content, info.Mode()); writeErr != nil {
-			return appliedPerFile, skipped, fmt.Errorf("cannot write %s: %w", path, writeErr)
+			return result, fmt.Errorf("cannot write %s: %w", path, writeErr)
 		}
-		appliedPerFile[path] = fileApplied
+		result.AppliedPerFile[path] = fileApplied
 	}
-	return appliedPerFile, skipped, nil
+	return result, nil
 }

@@ -36,8 +36,15 @@ func applySlugRules(pass *analysis.Pass, file *ast.File, imports importNames) {
 			}
 			obj := pass.TypesInfo.Uses[n]
 			if obj == nil {
-				// No type info: be conservative and skip rather than risk
-				// renaming a local declaration.
+				// The standalone migration driver intentionally runs without
+				// type-checking because removed APIs make target packages fail to
+				// compile. go/parser still resolves same-file declarations through
+				// Ident.Obj: a nil Obj on a bare identifier under a settings dot
+				// import is therefore the imported symbol, while local declarations
+				// and their uses remain protected from rewriting.
+				if n.Obj == nil {
+					reportSlugRename(pass, n)
+				}
 				return true
 			}
 			pkg := obj.Pkg()
