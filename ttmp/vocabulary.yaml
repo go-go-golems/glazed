@@ -149,6 +149,8 @@ topics:
       description: Automation scripts, tooling, and workflow orchestration
     - slug: fields
       description: Field definitions, parsing, and FieldValues/struct decoding (pkg/cmds/fields)
+    - slug: architecture
+      description: Architecture and command-framework topics
 docTypes:
     - slug: index
       description: Ticket index
