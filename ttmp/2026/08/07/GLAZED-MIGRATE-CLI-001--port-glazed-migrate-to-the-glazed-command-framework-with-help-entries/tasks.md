@@ -1,0 +1,9 @@
+# Tasks
+
+## TODO
+
+- [x] Adapt dependent repos to glazed v1.4.2 using glazed-migrate (probe: geppetto + pinocchio clean) <!-- t:bd42 -->
+- [x] Port glazed-migrate to Glazed command framework (check/fix, logging, help) <!-- t:niok -->
+- [x] Add embedded help entries (guide + examples) <!-- t:aka7 -->
+- [x] Push branch and open glazed PR <!-- t:bjmj -->
+- [x] Address all six review findings on glazed PR #620 <!-- t:e7qd -->

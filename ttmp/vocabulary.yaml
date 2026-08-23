@@ -151,6 +151,8 @@ topics:
       description: Field definitions, parsing, and FieldValues/struct decoding (pkg/cmds/fields)
     - slug: go-analysis
       description: Go x/tools go/analysis analyzers, vet rules, and source migration tooling
+    - slug: architecture
+      description: Architecture and command-framework topics
     - slug: diary
       description: Chronological investigation or implementation diary documents
 docTypes:

@@ -57,7 +57,7 @@ gosec:
 
 govulncheck:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
-	govulncheck ./...
+	GOWORK=off govulncheck ./...
 
 test:
 	go test $(shell go list ./... | grep -v 'ttmp')

@@ -7,9 +7,8 @@ Topics:
 - cli
 - migration
 Commands:
-- glazed-migrate
-Flags:
-- fix
+- glazed-migrate check
+- glazed-migrate fix
 IsTemplate: false
 IsTopLevel: true
 ShowPerDefault: true
@@ -24,13 +23,13 @@ Build the migration command and preview findings:
 
 ```bash
 make glazed-migrate-build
-/tmp/glazed-migrate ./...
+/tmp/glazed-migrate check ./...
 ```
 
 Apply safe fixes in place:
 
 ```bash
-/tmp/glazed-migrate -fix ./...
+/tmp/glazed-migrate fix ./...
 gofmt -w .
 go test ./...
 ```
@@ -38,7 +37,7 @@ go test ./...
 You can also run the released command without cloning Glazed:
 
 ```bash
-go run github.com/go-go-golems/glazed/cmd/tools/glazed-migrate@latest -fix ./...
+go run github.com/go-go-golems/glazed/cmd/tools/glazed-migrate@latest fix ./...
 ```
 
 A call without legacy options is rewritten as follows:
