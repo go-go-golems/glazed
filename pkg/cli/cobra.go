@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -56,7 +57,7 @@ func runCobraCommand(
 		}
 
 		// Minimal command settings: debug flags
-		if handled, err := HandleCommandSettings(s, parsedValues, os.Stdout); handled || err != nil {
+		if handled, err := HandleCommandSettings(s, parsedValues, cmd.OutOrStdout()); handled || err != nil {
 			return err
 		}
 
@@ -164,7 +165,7 @@ func runCobraCommand(
 			if !ok {
 				return errors.New("structured output section not found")
 			}
-			gp, _, err := settings.SetupStructuredOutput(structuredOutputValues, os.Stdout)
+			gp, _, err := settings.SetupStructuredOutput(structuredOutputValues, cmd.OutOrStdout())
 			if err != nil {
 				return err
 			}
@@ -180,11 +181,13 @@ func runCobraCommand(
 			if errors.As(err, &exitWithoutGlazeError) {
 				return nil
 			}
-			if err != nil && !errors.Is(err, context.Canceled) {
-				return err
+			if errors.Is(err, context.Canceled) {
+				err = nil
 			}
-			// Close will run the TableMiddlewares.
-			return gp.Close(ctx)
+			// Close runs table middlewares and flushes any rows emitted before a
+			// command error. Preserve both failures when execution and output
+			// finalization fail.
+			return stderrors.Join(err, gp.Close(ctx))
 		}
 
 		// Classic mode: run the provided runFunc

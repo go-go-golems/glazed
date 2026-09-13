@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	cmdalias "github.com/go-go-golems/glazed/pkg/cmds/alias"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,14 +33,20 @@ func (c *cobraErrorBareCommand) Run(context.Context, *values.Values) error {
 
 type cobraErrorGlazeCommand struct {
 	*cmds.CommandDescription
-	err error
+	err     error
+	emitRow bool
 }
 
 func (c *cobraErrorGlazeCommand) RunIntoGlazeProcessor(
-	context.Context,
-	*values.Values,
-	middlewares.Processor,
+	ctx context.Context,
+	_ *values.Values,
+	processor middlewares.Processor,
 ) error {
+	if c.emitRow {
+		if err := processor.AddRow(ctx, types.NewRow(types.MRP("status", "partial"))); err != nil {
+			return err
+		}
+	}
 	return c.err
 }
 
@@ -81,6 +89,26 @@ func TestBuiltCobraCommandsPropagateCommandErrorsToExecute(t *testing.T) {
 			assert.Equal(t, "greenhouse", target.what)
 		})
 	}
+}
+
+func TestBuiltCobraGlazeCommandClosesOutputAfterCommandError(t *testing.T) {
+	expected := &cobraErrorTestError{what: "greenhouse"}
+	command := &cobraErrorGlazeCommand{
+		CommandDescription: cmds.NewCommandDescription("fail"),
+		err:                expected,
+		emitRow:            true,
+	}
+	built, err := BuildCobraCommandFromCommand(command)
+	require.NoError(t, err)
+	require.NoError(t, built.Flags().Set("format", "json"))
+
+	var output bytes.Buffer
+	built.SilenceErrors = true
+	built.SilenceUsage = true
+	built.SetOut(&output)
+	err = built.Execute()
+	require.ErrorIs(t, err, expected)
+	assert.JSONEq(t, `[{"status":"partial"}]`, output.String())
 }
 
 func TestBuiltCobraCommandAliasPropagatesErrors(t *testing.T) {
