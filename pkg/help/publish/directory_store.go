@@ -310,6 +310,7 @@ func (s *DirectoryPackageStore) upsertCatalog(ctx context.Context, root string, 
 
 func readCatalog(root string) (PackageCatalog, error) {
 	var catalog PackageCatalog
+	// #nosec G703 -- root is the configured package-store root normalized with filepath.Abs; the filename is a constant.
 	data, err := os.ReadFile(filepath.Join(root, CatalogFileName))
 	if err != nil {
 		return catalog, err
@@ -321,6 +322,7 @@ func readCatalog(root string) (PackageCatalog, error) {
 }
 
 func writeCatalog(root string, catalog PackageCatalog) error {
+	// #nosec G703 -- root is the configured package-store root normalized with filepath.Abs by Publish.
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return fmt.Errorf("create package root: %w", err)
 	}
@@ -337,6 +339,7 @@ func writeCatalog(root string, catalog PackageCatalog) error {
 	remove := true
 	defer func() {
 		if remove {
+			// #nosec G703 -- tmpPath is returned by os.CreateTemp within the normalized package-store root.
 			_ = os.Remove(tmpPath)
 		}
 	}()
@@ -351,6 +354,7 @@ func writeCatalog(root string, catalog PackageCatalog) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
+	// #nosec G703 -- both paths are inside the normalized package-store root and the destination filename is constant.
 	if err := os.Rename(tmpPath, filepath.Join(root, CatalogFileName)); err != nil {
 		return err
 	}
